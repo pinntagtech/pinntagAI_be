@@ -35,7 +35,7 @@ export class AppService implements OnModuleInit {
     const users = await this.userModel.find().select({ email: 1 }).exec();
     const result = await Promise.all(
       users.map(async (user) => {
-        const email = user.email.trim().toLowerCase();
+        const email = user.email?.trim().toLowerCase();
         return await this.userModel.updateOne({ _id: user._id }, { email });
       }),
     );
