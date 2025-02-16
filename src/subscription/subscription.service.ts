@@ -1,0 +1,138 @@
+import { Injectable } from '@nestjs/common';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import {
+  Subscription,
+  SubscriptionDocument,
+} from './models/subscription.model';
+import mongoose, { Model } from 'mongoose';
+import {
+  SubscriptionProduct,
+  SubscriptionProductDocument,
+} from './models/subscriptionProduct.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import {
+  Transaction,
+  TransactionDocument,
+} from 'src/user/models/transaction.model';
+import { User, UserDocument } from 'src/user/models/user.model';
+import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
+import { TransactionPopulates } from 'src/enums/user.enum';
+
+@Injectable()
+export class SubscriptionService {
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(SubscriptionProduct.name)
+    private readonly subscriptionProductModel: Model<SubscriptionProductDocument>,
+    @InjectModel(Subscription.name)
+    private readonly subscriptionModel: Model<SubscriptionDocument>,
+    @InjectModel(Transaction.name)
+    private readonly transactionModel: Model<TransactionDocument>,
+  ) {}
+  async getProducts() {
+    return await this.subscriptionProductModel
+      .find()
+      .select({
+        createdAt: 0,
+        updatedAt: 0,
+        __v: 0,
+      })
+      .exec();
+  }
+
+  // async create(
+  //   createSubscriptionDto: CreateSubscriptionDto,
+  //   user: DecodedUser,
+  // ) {
+  //   if (!mongoose.isValidObjectId(createSubscriptionDto.product)) {
+  //     return { success: false, message: 'Invalid product id' };
+  //   } else {
+  //     const subscriptionProduct = await this.subscriptionProductModel.findById(
+  //       createSubscriptionDto.product,
+  //     );
+  //     if (!subscriptionProduct) {
+  //       return { success: false, message: 'Product not found' };
+  //     } else {
+  //       let endDate = new Date();
+  //       if (subscriptionProduct.durationType === 'monthly') {
+  //         endDate.setMonth(endDate.getMonth() + subscriptionProduct.duration);
+  //       } else if (subscriptionProduct.durationType === 'annual') {
+  //         endDate.setFullYear(
+  //           endDate.getFullYear() + subscriptionProduct.duration,
+  //         );
+  //       }
+  //       const subscription = new this.subscriptionModel({
+  //         user: new mongoose.Types.ObjectId(user.id),
+  //         product: subscriptionProduct._id,
+  //         startDate: new Date(),
+  //         endDate,
+  //       });
+  //       await subscription.save();
+  //       delete createSubscriptionDto.product;
+  //       const transaction = await this.transactionModel.create({
+  //         ...createSubscriptionDto,
+  //         subscription: subscription._id,
+  //         amount: subscriptionProduct.price * createSubscriptionDto.quantity,
+  //         businessProfile: createSubscriptionDto.businessProfileId,
+  //         user: new mongoose.Types.ObjectId(user.id),
+  //       });
+  //       const updatedSubscription = await this.subscriptionModel
+  //         .findByIdAndUpdate(
+  //           subscription._id,
+  //           { transaction: transaction._id },
+  //           { new: true },
+  //         )
+  //         .populate('product', 'name')
+  //         .populate('transaction', TransactionPopulates.FOREIGN);
+
+  //       await this.userModel.updateOne(
+  //         { _id: new mongoose.Types.ObjectId(user.id) },
+  //         {
+  //           $set: { hasSubscribedForBusiness: true },
+  //           $push: { subscriptions: subscription._id },
+  //         },
+  //       );
+  //       return { success: true, subscription: updatedSubscription };
+  //     }
+  //   }
+  // }
+
+  async findAll(user: DecodedUser) {
+    return await this.subscriptionModel
+      .find({
+        user: new mongoose.Types.ObjectId(user.id),
+        endDate: { $gte: new Date() },
+      })
+      .populate('product', '-createdAt -updatedAt -__v')
+      .populate('transaction', TransactionPopulates.FOREIGN)
+      .sort({ createdAt: -1 });
+  }
+
+  async findOne(id: string, user: DecodedUser) {
+    if (!mongoose.isValidObjectId(id)) {
+      return { success: false, message: 'Invalid subscription id' };
+    } else {
+      const subscription = await this.subscriptionModel
+        .findOne({
+          _id: new mongoose.Types.ObjectId(id),
+          user: new mongoose.Types.ObjectId(user.id),
+        })
+        .populate('product', 'name')
+        .populate('transaction', TransactionPopulates.FOREIGN);
+      if (!subscription) {
+        return { success: false, message: 'Subscription not found' };
+      } else {
+        return { success: true, subscription };
+      }
+    }
+  }
+
+  update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
+    return `This action updates a #${id} subscription`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} subscription`;
+  }
+}

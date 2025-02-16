@@ -1,0 +1,112 @@
+import { MailerService } from '@nestjs-modules/mailer';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Otp, OtpDocument } from 'src/auth/models/otp.model';
+import { OtpTypes } from 'src/enums/auth.enums';
+import { User, UserDocument } from 'src/user/models/user.model';
+import { UserService } from 'src/user/user.service';
+
+@Injectable()
+export class MailService {
+  constructor(
+    @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly mailerService: MailerService,
+    private readonly userService: UserService,
+  ) {}
+
+  async sendSampleMail(content: any) {
+    await this.mailerService.sendMail({
+      to: 'rahulmvn13259@gmail.com',
+      subject: 'Sample Mail',
+      template: process.cwd() + '/src/mail/templates/sampleMail.template.hbs',
+      context: {
+        content,
+      },
+    });
+  }
+
+  async sendUserWelcomeMail(userId: string) {
+    const user = await this.userService.getUserById(userId);
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Welcome to Pinntag',
+      template: process.cwd() + '/src/mail/templates/welcomeMail.template.hbs',
+      context: {
+        name: user.firstName,
+      },
+    });
+  }
+
+  async sendUserVerificationMail(userId: string) {
+    const user = await this.userService.getUserById(userId);
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: {
+        name: user.firstName,
+        otp,
+        otpExpiry: '5 minutes',
+      },
+    });
+  }
+
+  async sendForgotPasswordMail(userId: string) {
+    const user = await this.userService.getUserById(userId);
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Reset your account password',
+      template:
+        process.cwd() + '/src/mail/templates/forgotPassword.template.hbs',
+      context: {
+        name: user.firstName,
+        otp,
+        otpExpiry: '5 minutes',
+      },
+    });
+  }
+
+  async sendStaffInviteMail(email: string, password: string) {
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Staff Invite',
+      template: process.cwd() + '/src/mail/templates/invite-email.template.hbs',
+      context: {
+        password,
+      },
+    });
+  }
+
+  async sendUserReports(totalUsers: number, usersWithFcm: number, file: any) {
+    await this.mailerService.sendMail({
+      to: 'tony.lynock@pinntag.com',
+      // to: 'suraj123@yopmail.com',
+      subject: 'Users Reporting',
+      template: process.cwd() + '/src/mail/templates/userReports.template.hbs',
+      context: {
+        totalUsers,
+        usersWithFcm,
+        usersWithoutFcm: totalUsers - usersWithFcm,
+      },
+      attachments: [
+        {
+          filename: `users-fcm-report-${new Date().toLocaleString('default', {
+            month: 'long',
+          })}.xlsx`,
+          content: file,
+        },
+      ],
+    });
+  }
+}

@@ -1,0 +1,81 @@
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { ConfigModule } from '@nestjs/config';
+import { User, UserSchema } from './user/models/user.model';
+import { Role, RoleSchema } from './models/role.model';
+import { Category, CategorySchema } from './models/category.model';
+import { MailModule } from './mail/mail.module';
+import { Logger } from 'winston';
+import { EventModule } from './event/event.module';
+import { BusinessProfileModule } from './business-profile/business-profile.module';
+import { AgeGroup, AgeGroupSchema } from './models/ageGroup.model';
+import { SeederModule } from './seeder/seeder.module';
+import { SeederService } from './seeder/seeder.service';
+import { SubscriptionModule } from './subscription/subscription.module';
+import {
+  SubscriptionProduct,
+  SubscriptionProductSchema,
+} from './subscription/models/subscriptionProduct.model';
+import { NotificationModule } from './notification/notification.module';
+import { AppVersion, AppVersionSchema } from './models/appVersion.model';
+import { StripeModule } from 'nestjs-stripe';
+import { StripeeModule } from './stripe/stripe.module';
+import { InAppPurchaseModule } from './in-app-purchase/in-app-purchase.module';
+import { Event, EventSchema } from './event/models/event.model';
+import {
+  BusinessProfile,
+  BusinessProfileSchema,
+} from './business-profile/models/businessProfile.model';
+import { Token, TokenSchema } from './auth/models/token.model';
+import { CronModule } from './cron/cron.module';
+
+@Module({
+  imports: [
+    // ServeStaticModule.forRoot({
+    //   rootPath: join(__dirname, '..', 'uploads'),
+    // }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: './.env',
+    }),
+    MulterModule.register({
+      dest: './uploads',
+    }),
+    MongooseModule.forRoot(process.env.MONGO_URI),
+    MongooseModule.forFeature([
+      {
+        name: User.name,
+        schema: UserSchema,
+      },
+      { name: Role.name, schema: RoleSchema },
+      { name: Category.name, schema: CategorySchema },
+      { name: AgeGroup.name, schema: AgeGroupSchema },
+      { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
+      { name: AppVersion.name, schema: AppVersionSchema },
+      { name: AppVersion.name, schema: AppVersionSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      { name: Token.name, schema: TokenSchema },
+    ]),
+    StripeeModule,
+    AuthModule,
+    UserModule,
+    MailModule,
+    EventModule,
+    SeederModule,
+    BusinessProfileModule,
+    SubscriptionModule,
+    NotificationModule,
+    StripeModule,
+    InAppPurchaseModule,
+    CronModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService, Logger, SeederService],
+})
+export class AppModule {}

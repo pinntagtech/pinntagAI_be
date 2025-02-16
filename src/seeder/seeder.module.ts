@@ -1,0 +1,30 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
+import { Category, CategorySchema } from 'src/models/category.model';
+import { Role, RoleSchema } from 'src/models/role.model';
+import { User, UserSchema } from 'src/user/models/user.model';
+import { SeederService } from './seeder.service';
+import {
+  SubscriptionProduct,
+  SubscriptionProductSchema,
+} from 'src/subscription/models/subscriptionProduct.model';
+import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
+import { Event, EventSchema } from 'src/event/models/event.model';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Role.name, schema: RoleSchema },
+      { name: Category.name, schema: CategorySchema },
+      { name: AgeGroup.name, schema: AgeGroupSchema },
+      { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
+      { name: AppVersion.name, schema: AppVersionSchema },
+      { name: Event.name, schema: EventSchema },
+    ]),
+  ],
+  controllers: [],
+  providers: [SeederService],
+})
+export class SeederModule {}
