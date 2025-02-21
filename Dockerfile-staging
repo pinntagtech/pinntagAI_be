@@ -1,0 +1,35 @@
+# Base image
+FROM public.ecr.aws/docker/library/node:18-alpine
+
+# Install AWS CLI
+RUN apk add --no-cache aws-cli
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
+
+# Install app dependencies
+RUN npm install --force
+
+# Bundle app source
+COPY . .
+
+RUN ls -la /usr/src/app
+
+# Ensure the script is executable
+RUN chmod +x /usr/src/app/staging-aws_ssm.sh
+
+# Set the environment variable to limit the memory usage to 4GB
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+ENV NODE_ENV="staging"
+
+# Creates a "dist" folder with the production build
+RUN npm run build
+
+EXPOSE 9009
+
+# Start the server using the AWS SSM script
+ENTRYPOINT ["/bin/sh", "/usr/src/app/docker-scripts/staging-start.sh"]

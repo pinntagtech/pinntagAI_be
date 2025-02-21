@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - chmod +x cicd-scripts/backend-build-staging.sh  # Ensure the script is executable
+  pre_build:
+    commands:
+      - echo "Fetching environment variables from AWS SSM..."
+  build:
+    commands:
+      - aws ssm get-parameter --name "/COMMON/FIREBASE_FILE" --with-decryption --query "Parameter.Value" --output text > $CODEBUILD_SRC_DIR/firebase-service-account.json
+      - ./cicd-scripts/backend-build-staging.sh
+      - cp $CODEBUILD_SRC_DIR/appspec-backend-staging.yml $CODEBUILD_SRC_DIR/appspec.yml
+
+artifacts:
+  files:
+    - appspec.yml
+    - cicd-scripts/**  # Include any required deployment scripts
