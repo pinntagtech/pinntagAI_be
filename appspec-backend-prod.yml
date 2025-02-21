@@ -1,0 +1,19 @@
+version: 0.0
+os: linux
+hooks:
+  BeforeInstall:
+    - location: cicd-scripts/backend-prod-build-stop.sh
+      timeout: 300
+      runas: ubuntu
+  AfterInstall:
+    - location: cicd-scripts/backend-prod-build-start.sh
+      timeout: 600
+      runas: ubuntu
+
+files:
+  - source: cicd-scripts/backend-prod-build-stop.sh
+    destination: /home/ubuntu/cicd-scripts
+    mode: 755
+  - source: cicd-scripts/backend-prod-build-start.sh
+    destination: /home/ubuntu/cicd-scripts
+    mode: 755
