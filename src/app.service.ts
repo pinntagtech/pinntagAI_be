@@ -32,25 +32,25 @@ export class AppService implements OnModuleInit {
   ) {}
   async onModuleInit() {
     // trim and lowercase to emails for all users
-    const users = await this.userModel.find().select({ email: 1 }).exec();
-    const result = await Promise.all(
-      users.map(async (user) => {
-        const email = user.email?.trim().toLowerCase();
-        return await this.userModel.updateOne({ _id: user._id }, { email });
-      }),
-    );
+    // const users = await this.userModel.find().select({ email: 1 }).exec();
+    // const result = await Promise.all(
+    //   users.map(async (user) => {
+    //     const email = user.email.trim().toLowerCase();
+    //     return await this.userModel.updateOne({ _id: user._id }, { email });
+    //   }),
+    // );
     //Remove duplicate fcm tokens for all users
-    users.forEach(async (user) => {
-      const fcmTokens = await this.tokenModel
-        .find({ userId: user._id })
-        .sort({ createdAt: -1 })
-        .exec();
-      if (fcmTokens.length > 1) {
-        const fcmTokenIds = fcmTokens.map((token) => token._id);
-        const fcmTokenIdsToDelete = fcmTokenIds.slice(1);
-        await this.tokenModel.deleteMany({ _id: { $in: fcmTokenIdsToDelete } });
-      }
-    });
+    // users.forEach(async (user) => {
+    //   const fcmTokens = await this.tokenModel
+    //     .find({ userId: user._id })
+    //     .sort({ createdAt: -1 })
+    //     .exec();
+    //   if (fcmTokens.length > 1) {
+    //     const fcmTokenIds = fcmTokens.map((token) => token._id);
+    //     const fcmTokenIdsToDelete = fcmTokenIds.slice(1);
+    //     await this.tokenModel.deleteMany({ _id: { $in: fcmTokenIdsToDelete } });
+    //   }
+    // });
 
     //Fetch All the business profiles which are not having isDeleted field in the document and append isDeleted field to the document with value false
     const businessProfiles = await this.businessProfileModel
