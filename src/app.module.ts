@@ -35,6 +35,7 @@ import { Token, TokenSchema } from './auth/models/token.model';
 import { CronModule } from './cron/cron.module';
 import { SmsModule } from './sms/sms.module';
 import { Otp, OtpSchema } from './auth/models/otp.model';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { Otp, OtpSchema } from './auth/models/otp.model';
     StripeModule,
     InAppPurchaseModule,
     CronModule,
+    AiModule,
     SmsModule,
   ],
   controllers: [AppController],
