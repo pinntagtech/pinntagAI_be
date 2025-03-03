@@ -41,7 +41,7 @@ export class Event {
   })
   status: string;
   @Prop({ required: true, ref: Category.name })
-  category: mongoose.Types.ObjectId;
+  category: Array<mongoose.Types.ObjectId>;
   @Prop({ ref: Image.name })
   images: Array<mongoose.Types.ObjectId>;
   @Prop()
