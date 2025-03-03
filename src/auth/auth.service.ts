@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { User, UserDocument } from 'src/user/models/user.model';
+import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
 import mongoose, { Model } from 'mongoose';
 import { Role, RoleDocument } from 'src/models/role.model';
 import {
@@ -17,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
-import { OtpTypes, TokenTypes } from 'src/enums/auth.enums';
+import { OtpTypes, SMSType, TokenTypes } from 'src/enums/auth.enums';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
 import { GuestLoginDto } from './dto/guestLogin.dto';
@@ -76,6 +76,11 @@ import {
   PlatformConfigDocument,
 } from './models/platformConfig.model';
 import { PlatformConfigDto } from './dto/platformConfig.dto';
+import { SignupAuthDto } from './dto/signup-auth.dto';
+import parsePhoneNumberFromString from 'libphonenumber-js';
+import { PersonDetailDto } from './dto/personalDetail.dto';
+import { SmsService } from 'src/sms/sms.service';
+import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -94,7 +99,6 @@ export class AuthService {
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Category.name)
     private readonly categoryModel: Model<CategoryDocument>,
-    @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Follow.name)
     private readonly followModel: Model<FollowDocument>,
@@ -111,6 +115,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
+    private readonly smsService: SmsService,
   ) {
     const clientID = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_SECRET;
@@ -206,6 +211,277 @@ export class AuthService {
         user,
         fcmExists: fcmExists ? true : false,
       };
+    }
+  }
+  async signupOTP(
+    signupAuthDto: SignupAuthDto,
+    userAgent: string,
+    ipAddress: string,
+  ) {
+    const { signupMethod, email, phone, countryCode } = signupAuthDto;
+
+    if (!phone && !email) {
+      return {
+        success: false,
+        message: 'Please provide email or phone number.',
+      };
+    }
+
+    let createdUser;
+    const role = await this.roleModel.findOne({ name: Roles.USER });
+    if (signupMethod === SignupMethod.EMAIL) {
+      const foundUser = await this.userModel.findOne({
+        email: signupAuthDto.email,
+      });
+      if (foundUser) {
+        return {
+          success: false,
+          message: 'User with this email already exists',
+        };
+      }
+
+      createdUser = await this.userModel.create({
+        ...signupAuthDto,
+        role: role._id,
+        userAgent,
+        ipAddress,
+      });
+      await this.mailService.sendUserWelcomeMail(createdUser.id);
+      await this.mailService.sendUserVerificationMail(createdUser.id);
+    } else if (signupMethod === SignupMethod.PHONE) {
+      const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return {
+          success: false,
+          message: 'Invalid phone number',
+        };
+      }
+      let fullPhoneNumber = phoneNumber.format('E.164');
+      const foundUser = await this.userModel.findOne({
+        fullPhoneNumber: fullPhoneNumber,
+      });
+      if (foundUser) {
+        return {
+          success: false,
+          message: 'User already exists with the given mobile number!',
+        };
+      } else {
+        console.log('createAuthDto', signupAuthDto);
+        createdUser = await this.userModel.create({
+          ...signupAuthDto,
+          fullPhoneNumber: fullPhoneNumber,
+          role: role._id,
+          userAgent,
+          ipAddress,
+        });
+
+        await this.smsService.sendSMS(
+          createdUser.id,
+          fullPhoneNumber,
+          SMSType.OTP,
+        );
+      }
+    }
+    const refferalCode = await this.generateUniqueRefferalCode();
+    const refferal = await this.refferalModel.create({
+      user: createdUser._id,
+      code: refferalCode,
+    });
+    await this.userModel.updateOne(
+      { _id: createdUser.id },
+      { $set: { refferal: refferal._id } },
+    );
+    const customer = await this.stripeService.createCustomer(
+      createdUser.email,
+      createdUser.name,
+    );
+    if (customer.id) {
+      await this.userModel.updateOne(
+        { _id: createdUser._id },
+        { $set: { stripeCustomerId: customer.id } },
+      );
+    }
+    if (signupAuthDto.fcmToken) {
+      await this.tokenModel.create({
+        token: signupAuthDto.fcmToken,
+        type: TokenTypes.FCM,
+        userId: createdUser._id,
+        deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
+      });
+    }
+    const fcmExists = await this.tokenModel.exists({
+      type: TokenTypes.FCM,
+      userId: createdUser._id,
+      deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
+    });
+    const user = await this.userService.getUserById(createdUser.id);
+    return {
+      success: true,
+      message: 'User created successfully',
+      user,
+      fcmExists: fcmExists ? true : false,
+    };
+  }
+  async updateContactDetails(
+    updateAuthDto: UpdateAuthDto,
+    id: string,
+    userAgent: string,
+    ipAddress: string,
+  ) {
+    const { email, phone, countryCode } = updateAuthDto;
+    const foundUser = await this.userModel.findById(id, {
+      isEmailVerified: 1,
+      isPhoneVerified: 1,
+    });
+    if (!foundUser) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+    if (foundUser.isEmailVerified && foundUser.isPhoneVerified) {
+      return {
+        success: false,
+        message: 'Email and Mobile both already verified',
+      };
+    }
+    if (foundUser.isPhoneVerified && !foundUser.isEmailVerified && !email) {
+      return {
+        success: false,
+        message: 'Please Provide Email address to verify!',
+      };
+    }
+    if (foundUser.isEmailVerified && !foundUser.isPhoneVerified) {
+      if (!phone) {
+        return {
+          success: false,
+          message: 'Please Provide mobile number to verify!',
+        };
+      }
+      if (!countryCode) {
+        return {
+          success: false,
+          message: 'Country Code is missing',
+        };
+      }
+    }
+
+    if (!foundUser.isEmailVerified && email) {
+      const checkExistingEmail = await this.userModel.findOne({
+        email,
+      });
+
+      if (checkExistingEmail) {
+        return {
+          success: false,
+          message: 'User with this email already exists',
+        };
+      }
+
+      await this.userModel.updateOne(
+        { _id: id },
+        {
+          $set: { email },
+        },
+      );
+      await this.mailService.sendUserVerificationMail(id);
+      return {
+        success: true,
+        message: 'Email saved successfully and OTP sent to verify it.',
+      };
+    }
+    if (!foundUser.isPhoneVerified && phone && countryCode) {
+      const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return {
+          success: false,
+          message: 'Invalid phone number',
+        };
+      }
+      let fullPhoneNumber = phoneNumber.format('E.164');
+      const checkExistingPhone = await this.userModel.findOne({
+        fullPhoneNumber: fullPhoneNumber,
+      });
+      if (checkExistingPhone) {
+        return {
+          success: false,
+          message: 'User already exists with the given mobile number!',
+        };
+      }
+      await this.userModel.updateOne(
+        { _id: id },
+        {
+          $set: {
+            fullPhoneNumber: fullPhoneNumber,
+            phone: phone,
+            countryCode: countryCode,
+          },
+        },
+      );
+      //send mobile otp
+      await this.smsService.sendSMS(id, fullPhoneNumber, SMSType.OTP);
+      return {
+        success: true,
+        message: 'Phone Number saved successfully and OTP sent to verify it.',
+      };
+    }
+
+    return {
+      success: false,
+      message: 'User cannot be updated successfully',
+      // user,
+      // fcmExists: fcmExists
+    };
+  }
+  async updatePersonalDetails(
+    personalDetailDTO: PersonDetailDto,
+    id: string,
+    userAgent: string,
+    ipAddress: string,
+  ) {
+    console.log('personalDetailDTO::', personalDetailDTO);
+    await this.userModel.updateOne(
+      { _id: id },
+      {
+        $set: {
+          ...personalDetailDTO,
+        },
+      },
+    );
+
+    return {
+      success: true,
+      message: 'User Personal Details updated successfully!',
+    };
+  }
+  async verifyContactDetails(data: VerifyOtpDto) {
+    const user = await this.userService.getUserById(data.user);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found with the id provided.',
+      };
+    } else {
+      const otpResult = await this.userService.validateOtp(data);
+      if (!otpResult.success) {
+        return {
+          success: false,
+          message: otpResult.message,
+        };
+      } else {
+        const updateObj =
+          data.type == OtpTypes.EMAIL
+            ? { isEmailVerified: true }
+            : { isPhoneVerified: true };
+        await this.userModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(data.user) },
+          { $set: updateObj },
+        );
+        return {
+          success: true,
+          message: 'Otp verified successfully',
+        };
+      }
     }
   }
 
@@ -571,7 +847,6 @@ export class AuthService {
       token: data.token,
     };
   }
-
   async login(loginDto: LoginDto) {
     const validatedUser = await this.validateUser(
       loginDto.email,
@@ -647,6 +922,118 @@ export class AuthService {
       return {
         success: false,
         message: validatedUser.message,
+      };
+    }
+  }
+  async loginOTP(loginDto: SignupAuthDto, userAgent: string, ipAddress: string) {
+    try {
+      const { email, phone, countryCode, signupMethod } = loginDto;
+      let foundUser;
+      if (!email && !phone) {
+        return {
+          success: false,
+          message: 'Please provide email or phone number.',
+        };
+      }
+      if (signupMethod === SignupMethod.PHONE) {
+        if (!phone) {
+          return {
+            success: false,
+            message: 'Please provide phone number',
+          };
+        }
+        if (!countryCode) {
+          return {
+            success: false,
+            message: 'Please provide your Country Code',
+          };
+        }
+        const phoneNumber = parsePhoneNumberFromString(
+          `${countryCode}${phone}`,
+        );
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          return {
+            success: false,
+            message: 'Invalid phone number',
+          };
+        }
+        let fullPhoneNumber = phoneNumber.format('E.164');
+        foundUser = await this.userModel.findOne({
+          fullPhoneNumber: fullPhoneNumber,
+        });
+        if (!foundUser) {
+          return {
+            success: false,
+            message: 'User not found!',
+          };
+        } else {
+          //send mobile otp:::
+          await this.smsService.sendSMS(
+            foundUser.id,
+            fullPhoneNumber,
+            SMSType.OTP,
+          );
+        }
+      } else if (signupMethod === SignupMethod.EMAIL) {
+        foundUser = await this.userModel.findOne({
+          email: loginDto.email,
+        });
+        if (!foundUser) {
+          return {
+            success: false,
+            message: 'User not found!',
+          };
+        }
+        await this.mailService.sendUserVerificationMail(foundUser.id);
+      }
+      await foundUser.updateOne(
+        { _id: foundUser.id },
+        { $set: { userAgent, ipAddress } },
+      );
+      if (loginDto.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            userId: foundUser._id,
+            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: loginDto.fcmToken,
+            },
+          },
+        );
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: loginDto.fcmToken,
+            type: TokenTypes.FCM,
+            userId: foundUser._id,
+            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
+          });
+        }
+      }
+      if (!foundUser.stripeCustomerId) {
+        const customer = await this.stripeService.createCustomer(
+          foundUser.email,
+          foundUser.name,
+        );
+        if (customer.id) {
+          foundUser.stripeCustomerId = customer.id;
+          await this.userModel.updateOne(
+            { _id: foundUser.id },
+            { $set: { stripeCustomerId: customer.id } },
+          );
+        }
+      }
+      return {
+        success: true,
+        user: foundUser.id,
+        message: `OTP has been sent to your registered ${email ? 'Email' : 'Mobile Number'}.`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Internal Server Error!',
       };
     }
   }
@@ -964,13 +1351,18 @@ export class AuthService {
 
   async resendOtp(data: ResendOtpDto) {
     const user = await this.userService.getUserById(data.user);
+    console.log('User:', user);
     if (!user) {
       return {
         success: false,
         message: 'User not found with the id provided.',
       };
     } else {
-      await this.mailService.sendUserVerificationMail(data.user);
+      if (data.type === OtpTypes.EMAIL) {
+        await this.mailService.sendUserVerificationMail(data.user);
+      } else if (data.type === OtpTypes.MOBILE) {
+        this.smsService.sendSMS(data.user, user.fullPhoneNumber, SMSType.OTP);
+      }
       return {
         success: true,
         message: 'Otp resent successfully.',

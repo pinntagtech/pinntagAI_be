@@ -67,6 +67,7 @@ import {
   PlatformConfig,
   PlatformConfigSchema,
 } from './models/platformConfig.model';
+import { SmsService } from 'src/sms/sms.service';
 
 @Module({
   imports: [
@@ -113,6 +114,7 @@ import {
     UserService,
     S3Service,
     StripeService,
+    SmsService,
     // GoogleStrategy
   ],
 })

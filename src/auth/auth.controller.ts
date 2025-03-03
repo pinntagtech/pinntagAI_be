@@ -38,6 +38,9 @@ import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
 import { AdminGuard } from './guards/admin.guard';
 import { PlatformConfigDto } from './dto/platformConfig.dto';
+import { SignupAuthDto } from './dto/signup-auth.dto';
+import { PersonDetailDto } from './dto/personalDetail.dto';
+import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -78,6 +81,98 @@ export class AuthController {
         message: result.message,
         user: result.user,
         fcmExists: result.fcmExists,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('signupOTP')
+  async signupOTP(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() createAuthDto: SignupAuthDto,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.signupOTP(
+      createAuthDto,
+      userAgent,
+      ip,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        user: result.user,
+        fcmExists: result.fcmExists,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('updateContactDetails/:id')
+  async contactDetails(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() createAuthDto: UpdateAuthDto,
+    @Param('id') id: string,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.updateContactDetails(
+      createAuthDto,
+      id,
+      userAgent,
+      ip,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.ACCEPTED).json({
+        message: result.message,
+        // user: result.user,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('verifyContactDetails')
+  async verifyContactDetails(@Res() res: Response, @Body() body: VerifyOtpDto) {
+    const result = await this.authService.verifyContactDetails(body);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // user: result.user,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('updatePersonalDetails/:id')
+  async updatePersonalDetails(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() personalDetailDTO: PersonDetailDto,
+    @Param('id') id: string,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.updatePersonalDetails(
+      personalDetailDTO,
+      id,
+      userAgent,
+      ip,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.ACCEPTED).json({
+        message: result.message,
+        // user: result.user,
+        // fcmExists: result.fcmExists,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -136,7 +231,6 @@ export class AuthController {
       });
     }
   }
-
   @Post('login')
   async login(@Res() res: Response, @Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
@@ -146,6 +240,29 @@ export class AuthController {
         user: result.user,
         token: result.token,
         fcmExists: result.fcmExists,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('loginOTP')
+  async loginOTP(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() loginDto: SignupAuthDto,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.loginOTP(loginDto, userAgent, ip);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
+        // token: result.token,
+        // fcmExists: result.fcmExists,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

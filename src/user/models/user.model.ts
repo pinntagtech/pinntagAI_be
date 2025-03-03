@@ -12,6 +12,10 @@ export const Genders = {
   OTHER: 'other',
   RATHER_NOT_SAY: 'rather_not_say',
 };
+export const SignupMethod = {
+  EMAIL: 'email',
+  PHONE: 'phone',
+};
 
 export type UserDocument = User & Document;
 
@@ -31,7 +35,7 @@ export class User {
     default: 'https://pinntagbucket.s3.amazonaws.com/defaults/user_avatar.png',
   })
   profilePhoto: string;
-  @Prop({ unique: true, required: true })
+  @Prop({ unique: true, sparse: true })
   email: string;
   @Prop({ default: false })
   isEmailVerified: boolean;
@@ -39,6 +43,8 @@ export class User {
   countryCode: string;
   @Prop()
   phone: string;
+  @Prop({ unique: true, sparse: true })
+  fullPhoneNumber: string;
   @Prop({ default: false })
   isPhoneVerified: boolean;
   @Prop({ default: null })
@@ -55,6 +61,10 @@ export class User {
   gender: string;
   @Prop()
   age: number;
+
+  @Prop()
+  dob: Date;
+
   @Prop()
   oAuthProvider: string;
   @Prop({ default: false })
@@ -97,8 +107,8 @@ export const UserSchema = SchemaFactory.createForClass(User);
 //   }
 //   next();
 // });
-UserSchema.pre<User>('save', async function (next) {
-  this.name =
-    `${this.firstName ? this.firstName : ''} ${this.lastName ? this.lastName : ''}`.trim();
-  next();
-});
+// UserSchema.pre<User>('save', async function (next) {
+//   this.name =
+//     `${this.firstName ? this.firstName : ''} ${this.lastName ? this.lastName : ''}`.trim();
+//   next();
+// });

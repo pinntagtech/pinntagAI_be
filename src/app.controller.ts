@@ -1,7 +1,23 @@
-import { Controller, Get, HttpStatus, Param, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { Response } from 'express';
+import OpenAI from 'openai';
+import { IsNotEmpty, IsString } from 'class-validator';
 
+class GPTRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  prompt: string;
+}
 @Controller('v1')
 export class AppController {
   constructor(private readonly appService: AppService) {}
@@ -24,5 +40,17 @@ export class AppController {
   async getAppVersion(@Res() res: Response) {
     const appVersion = await this.appService.getAppVersion();
     return res.status(HttpStatus.OK).json(appVersion);
+  }
+
+  @Post('test/openAI')
+  async testGPT(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() paramsDto: GPTRequestDto,
+  ) {
+    console.log('paramsDto.prompt::', paramsDto.prompt);
+    return res.status(HttpStatus.OK).json({
+      response: await this.appService.generateText(paramsDto.prompt),
+    });
   }
 }

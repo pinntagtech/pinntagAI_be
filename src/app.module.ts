@@ -33,6 +33,8 @@ import {
 } from './business-profile/models/businessProfile.model';
 import { Token, TokenSchema } from './auth/models/token.model';
 import { CronModule } from './cron/cron.module';
+import { SmsModule } from './sms/sms.module';
+import { Otp, OtpSchema } from './auth/models/otp.model';
 
 @Module({
   imports: [
@@ -61,6 +63,7 @@ import { CronModule } from './cron/cron.module';
       { name: Event.name, schema: EventSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Token.name, schema: TokenSchema },
+      { name: Otp.name, schema: OtpSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -74,6 +77,7 @@ import { CronModule } from './cron/cron.module';
     StripeModule,
     InAppPurchaseModule,
     CronModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],

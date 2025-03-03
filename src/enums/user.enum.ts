@@ -28,7 +28,7 @@ export const UserPopulates = {
 
 export const BusinessPopulates = {
   FOREIGN:
-    'id _id name bio brandColor profilePhoto followersCount phone email website isDeleted',
+    'id _id name bio brandColor profilePhoto followersCount phone email website isDeleted instagramPageUrl twitterPageUrl facebookPageUrl',
 };
 
 export const LocationPopulates = {

@@ -1,7 +1,8 @@
 # compiled output
 /dist
 /node_modules
-
+.env
+firebase-service-account.json
 # Logs
 logs
 *.log

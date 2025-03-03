@@ -1,6 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Category, CategoryDocument } from './models/category.model';
 import { AgeGroup, AgeGroupDocument } from './models/ageGroup.model';
 import { SeederService } from './seeder/seeder.service';
@@ -13,6 +17,10 @@ import {
   BusinessProfileDocument,
 } from './business-profile/models/businessProfile.model';
 import { Token, TokenDocument } from './auth/models/token.model';
+import { Client } from 'twilio/lib/base/BaseTwilio';
+import OpenAI from 'openai';
+
+import { Otp, OtpDocument } from './auth/models/otp.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -28,29 +36,30 @@ export class AppService implements OnModuleInit {
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {
     // trim and lowercase to emails for all users
-    // const users = await this.userModel.find().select({ email: 1 }).exec();
-    // const result = await Promise.all(
-    //   users.map(async (user) => {
-    //     const email = user.email.trim().toLowerCase();
-    //     return await this.userModel.updateOne({ _id: user._id }, { email });
-    //   }),
-    // );
+    const users = await this.userModel.find().select({ email: 1 }).exec();
+    const result = await Promise.all(
+      users.map(async (user) => {
+        const email = user.email?.trim().toLowerCase();
+        return await this.userModel.updateOne({ _id: user._id }, { email });
+      }),
+    );
     //Remove duplicate fcm tokens for all users
-    // users.forEach(async (user) => {
-    //   const fcmTokens = await this.tokenModel
-    //     .find({ userId: user._id })
-    //     .sort({ createdAt: -1 })
-    //     .exec();
-    //   if (fcmTokens.length > 1) {
-    //     const fcmTokenIds = fcmTokens.map((token) => token._id);
-    //     const fcmTokenIdsToDelete = fcmTokenIds.slice(1);
-    //     await this.tokenModel.deleteMany({ _id: { $in: fcmTokenIdsToDelete } });
-    //   }
-    // });
+    users.forEach(async (user) => {
+      const fcmTokens = await this.tokenModel
+        .find({ userId: user._id })
+        .sort({ createdAt: -1 })
+        .exec();
+      if (fcmTokens.length > 1) {
+        const fcmTokenIds = fcmTokens.map((token) => token._id);
+        const fcmTokenIdsToDelete = fcmTokenIds.slice(1);
+        await this.tokenModel.deleteMany({ _id: { $in: fcmTokenIdsToDelete } });
+      }
+    });
 
     //Fetch All the business profiles which are not having isDeleted field in the document and append isDeleted field to the document with value false
     const businessProfiles = await this.businessProfileModel
@@ -90,5 +99,21 @@ export class AppService implements OnModuleInit {
 
   async getAppVersion() {
     return await this.appVersionModel.find().select({ __v: 0, updatedAt: 0 });
+  }
+  async generateText(prompt: string) {
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_KEY,
+      });
+      const response = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo', // Change model if needed
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+      });
+      return { response: response.choices[0].message.content };
+    } catch (error) {
+      console.error('OpenAI API Error:', error.message);
+      return 'Error generating text.';
+    }
   }
 }

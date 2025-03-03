@@ -7,6 +7,7 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { NextFunction } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: WinstonModule.createLogger({
@@ -51,16 +52,20 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log('API ENDPOINT:----', req.url);
+    next();
+  });
   const apiPath = 'api';
   const options = new DocumentBuilder()
-    .addBearerAuth()
     .setTitle('Pinntag')
     .setDescription('Pinntag API documentation')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup(`/${apiPath}/docs`, app, document);
-  await app.listen(9009);
+  SwaggerModule.setup(`${apiPath}/docs`, app, document);
+  await app.listen(process.env.PORT);
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log('Application host:---', app.getHttpServer().address());
 }

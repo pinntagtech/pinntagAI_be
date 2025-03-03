@@ -40,3 +40,10 @@ export const allowedRoutesForGuest = [
   '/v1/auth/dashboard/map-view',
   '/v1/auth/logout',
 ];
+
+export const SMSType = {
+  OTP: 'OTP',
+  WELCOME: 'WELCOME',
+  ORDER_CONFIRMATION: 'ORDER_CONFIRMATION',
+  ALERT: 'ALERT',
+};

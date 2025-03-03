@@ -540,10 +540,11 @@ export class UserService {
       .exec();
   }
 
-  private async saveOtpToDb(id: string, otp: number) {
+  async saveOtpToDb(id: string, otp: number, type: string) {
     const savedOtpDoc = await this.otpModel.create({
       otp,
       user: new mongoose.Types.ObjectId(id),
+      type,
     });
     this.logger.log(`Otp saved successfully ${savedOtpDoc}`);
   }
@@ -581,7 +582,7 @@ export class UserService {
     });
     const otp = generateOtp();
     if (!foundOtpDoc) {
-      this.saveOtpToDb(user, otp);
+      this.saveOtpToDb(user, otp, type);
     } else {
       foundOtpDoc.otp = otp;
       await foundOtpDoc.save();

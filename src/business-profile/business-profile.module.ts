@@ -71,7 +71,11 @@ import {
   DashboardConfig,
   DashboardConfigSchema,
 } from 'src/auth/models/dashboardConfig.model';
-import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformConfig.model';
+import {
+  PlatformConfig,
+  PlatformConfigSchema,
+} from 'src/auth/models/platformConfig.model';
+import { SmsService } from 'src/sms/sms.service';
 
 @Module({
   imports: [
@@ -117,6 +121,7 @@ import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformCo
     FacebookService,
     StripeService,
     MailService,
+    SmsService,
   ],
 })
 export class BusinessProfileModule {}
