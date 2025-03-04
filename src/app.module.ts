@@ -36,6 +36,7 @@ import { CronModule } from './cron/cron.module';
 import { SmsModule } from './sms/sms.module';
 import { Otp, OtpSchema } from './auth/models/otp.model';
 import { AdminModule } from './admin/admin.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { AdminModule } from './admin/admin.module';
     StripeModule,
     InAppPurchaseModule,
     CronModule,
+    AiModule,
     SmsModule,
     AdminModule,
   ],
@@ -85,3 +87,4 @@ import { AdminModule } from './admin/admin.module';
   providers: [AppService, Logger, SeederService],
 })
 export class AppModule {}
+
