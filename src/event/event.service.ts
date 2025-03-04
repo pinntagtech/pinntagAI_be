@@ -81,7 +81,7 @@ import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
 import { TokenTypes } from 'src/enums/auth.enums';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, from } from 'rxjs';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
 import { extname } from 'path';
@@ -171,25 +171,31 @@ export class EventService {
     //       'You have already created an event. Please subscribe to create more events.',
     //   };
     // }
-    if (!mongoose.isValidObjectId(createEventDto.category)) {
-      return {
-        success: false,
-        message: 'Please provide a valid category id',
-      };
+    //  createEventDto.category.forEach((category) => 
+    if(createEventDto.categories){
+      let categoriesInObjectId = [];
+      createEventDto.categories = createEventDto.categories.split(',');
+      for(let category of createEventDto.categories)
+      {
+      if(!mongoose.isValidObjectId(category)){
+        return {
+          success: false,
+          message: 'Please provide a valid category id',
+        }
+      }
+      const foundCategory = await this.categoryModel.findById(
+        category
+      );
+      if (!foundCategory) {
+        return {
+          success: false,
+          message: 'Category not found',
+        };
+      }
+      categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+     }
+     createEventDto.categories = categoriesInObjectId;
     }
-    const foundCategory = await this.categoryModel.findById(
-      createEventDto.category,
-    );
-    if (!foundCategory) {
-      return {
-        success: false,
-        message: 'Category not found',
-      };
-    }
-
-    createEventDto.category = new mongoose.Types.ObjectId(
-      createEventDto.category,
-    );
     let createQuery = {
       ...createEventDto,
       creatorType: user.isBusiness ? BusinessProfile.name : User.name,
@@ -226,7 +232,10 @@ export class EventService {
         { new: true },
       )
       .populate('images', ImagePopulates.FOREIGN)
-      .populate('category', CategoryPopulates.FOREIGN);
+      .populate({
+        path: 'categories',
+        select: '_id name image color'
+      });
     // if (event.type == EventTypes.PRIVATE) {
     //   await this.eventModel.findByIdAndUpdate(event._id, {
     //     $push: { participants: new mongoose.Types.ObjectId(user.id) },
@@ -381,25 +390,39 @@ export class EventService {
         message: 'Please provide a valid event id',
       };
     }
-    if (updateEventDto.category) {
-      if (!mongoose.isValidObjectId(updateEventDto.category)) {
-        return {
-          success: false,
-          message: 'Please provide a valid category id',
-        };
+    const event = await this.eventModel.findById(id);
+    if (!event) {
+      return {
+        success: false,
+        message: 'Event not found',
+      };
+    }
+
+    if (updateEventDto.categories) {
+      let categoriesInObjectId = [];
+      if(updateEventDto.categories){
+        updateEventDto.categories = updateEventDto.categories.split(',');
+        for(let category of updateEventDto.categories)
+        {
+        if(!mongoose.isValidObjectId(category)){
+          return {
+            success: false,
+            message: 'Please provide a valid category id',
+          }
+        }
+        const foundCategory = await this.categoryModel.findById(
+          category
+        );
+        if (!foundCategory) {
+          return {
+            success: false,
+            message: 'Category not found',
+          };
+        }
+        categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+       }
+       updateEventDto.categories = categoriesInObjectId;
       }
-      const foundCategory = await this.categoryModel.findById(
-        updateEventDto.category,
-      );
-      if (!foundCategory) {
-        return {
-          success: false,
-          message: 'Category not found',
-        };
-      }
-      updateEventDto.category = new mongoose.Types.ObjectId(
-        updateEventDto.category,
-      );
     }
 
     if (updateEventDto.schedule && updateEventDto.schedule.length) {
@@ -442,13 +465,7 @@ export class EventService {
       }
     }
 
-    const event = await this.eventModel.findById(id);
-    if (!event) {
-      return {
-        success: false,
-        message: 'Event not found',
-      };
-    }
+    
     if (
       event.creatorType === BusinessProfile.name &&
       event.businessProfile.toString() !== user.businessProfile
@@ -710,7 +727,10 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', 'name')
-      .populate('category', CategoryPopulates.FOREIGN);
+      .populate({
+        path: 'categories',
+        select: '_id name image color',
+      });
 
     const eventLatestDetails = await this.eventModel
       .findById(id)

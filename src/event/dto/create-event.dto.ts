@@ -20,8 +20,7 @@ export class CreateEventDto {
   type: string;
 
   @IsNotEmpty()
-  @IsString()
-  category: string | mongoose.Types.ObjectId;
+  categories: any;
 
   @IsNotEmpty()
   @IsString()

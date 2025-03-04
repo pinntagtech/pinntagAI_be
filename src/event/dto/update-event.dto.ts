@@ -37,8 +37,7 @@ export class UpdateEventDto {
   // type: string;
 
   @IsOptional()
-  @IsString()
-  category: string | mongoose.Types.ObjectId;
+  categories: any;
 
   @IsOptional()
   @IsString()
