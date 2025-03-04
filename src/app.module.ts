@@ -35,6 +35,7 @@ import { Token, TokenSchema } from './auth/models/token.model';
 import { CronModule } from './cron/cron.module';
 import { SmsModule } from './sms/sms.module';
 import { Otp, OtpSchema } from './auth/models/otp.model';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { Otp, OtpSchema } from './auth/models/otp.model';
     InAppPurchaseModule,
     CronModule,
     SmsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],
