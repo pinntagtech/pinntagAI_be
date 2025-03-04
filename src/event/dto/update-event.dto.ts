@@ -37,7 +37,7 @@ export class UpdateEventDto {
   // type: string;
 
   @IsOptional()
-  categories: any;
+  categories: Array<string> | Array<mongoose.Types.ObjectId>;
 
   @IsOptional()
   @IsString()

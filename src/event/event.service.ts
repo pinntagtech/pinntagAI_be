@@ -398,10 +398,9 @@ export class EventService {
       };
     }
 
-    if (updateEventDto.categories) {
       let categoriesInObjectId = [];
       if(updateEventDto.categories){
-        updateEventDto.categories = updateEventDto.categories.split(',');
+
         for(let category of updateEventDto.categories)
         {
         if(!mongoose.isValidObjectId(category)){
@@ -421,9 +420,9 @@ export class EventService {
         }
         categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
        }
+       
        updateEventDto.categories = categoriesInObjectId;
       }
-    }
 
     if (updateEventDto.schedule && updateEventDto.schedule.length) {
       for (let i = 0; i < updateEventDto.schedule.length; i++) {
@@ -737,7 +736,10 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', 'name')
-      .populate('category', CategoryPopulates.FOREIGN)
+      .populate({
+        path: 'categories',
+        select: '_id name image color',
+      })
       .populate('user', UserPopulates.FOREIGN)
       .populate('businessProfile', BusinessPopulates.FOREIGN);
     const eventObj = JSON.parse(JSON.stringify(eventLatestDetails));
@@ -997,7 +999,10 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', 'name')
-      .populate('category', CategoryPopulates.FOREIGN)
+      .populate({
+        path: 'categories',
+        select: CategoryPopulates.FOREIGN,
+      })
       .populate({
         path: 'user',
         select: UserPopulates.FOREIGN,
@@ -1177,7 +1182,7 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', 'name')
-      .populate('category', CategoryPopulates.FOREIGN)
+      .populate({path:'categories',select: CategoryPopulates.FOREIGN})
       .populate({
         path: 'user',
         select: UserPopulates.FOREIGN,
@@ -1280,7 +1285,7 @@ export class EventService {
         .populate('images', ImagePopulates.FOREIGN)
         .populate('locations', LocationPopulates.FOREIGN)
         .populate('ageGroupsAllowed', 'name')
-        .populate('category', CategoryPopulates.FOREIGN)
+        .populate({ path:'categories',select: CategoryPopulates.FOREIGN})
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN);
       if (!event) {
@@ -2108,7 +2113,7 @@ export class EventService {
                   { new: true },
                 )
                 .populate('images', ImagePopulates.FOREIGN)
-                .populate('category', CategoryPopulates.FOREIGN)
+                .populate({path:'categories', select:CategoryPopulates.FOREIGN})
                 .populate('user', UserPopulates.FOREIGN)
                 .populate('businessProfile', BusinessPopulates.FOREIGN);
               return {
@@ -2509,7 +2514,7 @@ export class EventService {
         {
           $lookup: {
             from: 'categories',
-            localField: 'event.category',
+            localField: 'event.categories',
             foreignField: '_id',
             as: 'category',
           },
@@ -3245,7 +3250,7 @@ export class EventService {
         {
           $lookup: {
             from: 'categories',
-            localField: 'event.category',
+            localField: 'event.categories',
             foreignField: '_id',
             as: 'category',
           },

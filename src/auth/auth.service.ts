@@ -1931,7 +1931,7 @@ export class AuthService {
       {
         $lookup: {
           from: 'categories',
-          localField: 'event.category',
+          localField: 'event.categories',
           foreignField: '_id',
           as: 'category',
         },
@@ -2594,7 +2594,7 @@ export class AuthService {
   ) {
     let match = {};
     if (categoryIds.length) {
-      match['event.category'] = {
+      match['event.categories'] = {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
@@ -2806,7 +2806,7 @@ export class AuthService {
   ) {
     let match = {};
     if (categoryIds.length) {
-      match['event.category'] = {
+      match['event.categories'] = {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
@@ -2901,10 +2901,10 @@ export class AuthService {
           if (match['event.type']) {
             delete match['event.type'];
           }
-          if (match['event.category']) {
-            delete match['event.category'];
+          if (match['event.categories']) {
+            delete match['event.categories'];
           }
-          match['event.category'] = {
+          match['event.categories'] = {
             $in: dashConfig.categories,
           };
           if (!dashConfig.freeIncluded) {
@@ -3280,7 +3280,7 @@ export class AuthService {
   async getEventDetails(id: string, user: DecodedUser, data: GetDashboardDto) {
     const event = await this.eventModel
       .findById(id)
-      .populate('category', CategoryPopulates.FOREIGN)
+      .populate({path:'categories', select:CategoryPopulates.FOREIGN})
       .populate('images', '_id url')
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', '_id name')
