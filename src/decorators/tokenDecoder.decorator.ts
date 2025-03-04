@@ -34,7 +34,8 @@ export const TokenDecoder = createParamDecorator(
       const user: DecodedUser = {
         isGuest: false,
         role: 'user',
-        name: request.user.firstName + ' ' + request.user.lastName,
+        // name: request.user.firstName + ' ' + request.user.lastName,
+        name: `${request.user?.name || ''}`,
         id: request.user._id,
         businessProfile: '',
         isBusiness: false,
