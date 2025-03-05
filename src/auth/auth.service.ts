@@ -1499,12 +1499,12 @@ export class AuthService {
       {
         $lookup: {
           from: 'categories',
-          localField: 'event.category',
+          localField: 'event.categories',
           foreignField: '_id',
-          as: 'category',
+          as: 'categoryDetails',
         },
       },
-      { $unwind: '$category' },
+      { $unwind: '$categoryDetails' },
       {
         $lookup: {
           from: 'images',
@@ -1744,9 +1744,9 @@ export class AuthService {
               },
             },
           },
-          'category._id': 1,
-          'category.name': 1,
-          'category.image': 1,
+          'categoryDetails.id':1,
+          'categoryDetails.name': 1,
+          'categoryDetails.image': 1,
           images: { _id: 1, url: 1 },
           ageGroupsAllowed: { _id: 1, name: 1 },
           isSaved: 1,
@@ -1933,10 +1933,10 @@ export class AuthService {
           from: 'categories',
           localField: 'event.categories',
           foreignField: '_id',
-          as: 'category',
+          as: 'categories',
         },
       },
-      { $unwind: '$category' },
+      { $unwind: '$categories' },
       {
         $lookup: {
           from: 'images',
@@ -2176,9 +2176,9 @@ export class AuthService {
               },
             },
           },
-          'category._id': 1,
-          'category.name': 1,
-          'category.image': 1,
+          'categories._id': 1,
+          'categories.name': 1,
+          'categories.image': 1,
           images: { _id: 1, url: 1 },
           ageGroupsAllowed: { _id: 1, name: 1 },
           isSaved: 1,
@@ -2211,7 +2211,7 @@ export class AuthService {
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
           creatorDetails: { $first: '$event.creatorDetails' },
-          category: { $first: '$category' },
+          categories: { $push: '$categories' },
           images: { $first: '$images' },
           ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
           isSaved: { $first: '$isSaved' },
@@ -2689,6 +2689,7 @@ export class AuthService {
       start,
       maxDistance,
     );
+    console.log("Freee EVENTS:",freeEvents);
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
