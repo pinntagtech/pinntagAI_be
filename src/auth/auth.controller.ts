@@ -330,6 +330,21 @@ export class AuthController {
       });
     }
   }
+  @Get('dashboard/getAllConfigs')
+  @UseGuards(UserGuard)
+  async getDashboardAllConfigs(@Res() res: Response) {
+    const result = await this.authService.getDashboardAllConfigs();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
   @Post('dashboard/config/update/:id')
   @UseGuards(AdminGuard)
@@ -663,6 +678,112 @@ export class AuthController {
       });
     }
   }
+  @Post('fixedCarouselEvents')
+  @UseGuards(JwtGuard)
+  async dashboardFixedCarouselEvents(
+    @Res() res: Response,
+    @Body() body: GetDashboardDto,
+    @Query('search') search: string,
+    @Query('distance') distance: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (body.categories && body.categories.length) {
+      body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+    if (distance) {
+      if (isNaN(parseInt(distance))) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'Please provide a valid distance value.',
+        });
+      }
+    }
+    const result = await this.authService.dashboardFixedCarouselEvents(
+      user,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      distance ? parseInt(distance) : 1000000000000,
+      search ? search : '',
+      body.categories ? body.categories : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // events: result.events,
+        // freeEvents: result.freeEvents,
+        // privateEvents: result.privateEvents,
+        // offers: result.offers,
+        // data: result.data,
+        ...result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('getDashboardCarouselEvent/:id')
+  @UseGuards(JwtGuard)
+  async getDashboardCarouselEvent(
+    @Res() res: Response,
+    @Body() body: GetDashboardDto,
+    @Param('id') id: string,
+    @Query('search') search: string,
+    @Query('distance') distance: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (body.categories && body.categories.length) {
+      body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+    if (distance) {
+      if (isNaN(parseInt(distance))) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'Please provide a valid distance value.',
+        });
+      }
+    }
+    const result = await this.authService.getDashboardCarouselEvent(
+      user,
+      id,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      distance ? parseInt(distance) : 1000000000000,
+      search ? search : '',
+      body.categories ? body.categories : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // events: result.events,
+        // freeEvents: result.freeEvents,
+        // privateEvents: result.privateEvents,
+        // offers: result.offers,
+        // data: result.data,
+        ...result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+
 
   @Post('dashboard/map-view')
   @UseGuards(JwtGuard)
