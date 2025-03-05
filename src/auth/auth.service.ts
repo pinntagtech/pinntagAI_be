@@ -2231,7 +2231,7 @@ export class AuthService {
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
           creatorDetails: { $first: '$event.creatorDetails' },
-          categories: { $push: '$categories' },
+          categories: { $addToSet: '$categories' },
           images: { $first: '$images' },
           ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
           isSaved: { $first: '$isSaved' },
