@@ -2701,6 +2701,7 @@ export class AuthService {
       maxDistance,
     );
 
+    console.log("match:",match);
     let data = {};
     const dashboardConfigs = await this.dashboardConfigModel.find().sort({
       sortOrder: 1,
@@ -2708,8 +2709,8 @@ export class AuthService {
     console.log('dashboardConfigs', dashboardConfigs.length);
     for (let i = 0; i < dashboardConfigs.length; i++) {
       const config = dashboardConfigs[i];
-      if (match['event.category']) {
-        delete match['event.category'];
+      if (match['event.categories']) {
+        delete match['event.categories'];
       }
       // if (config.name == 'Food & Drinks') {
       //   // console.log('query after type:----->', match);
@@ -2727,7 +2728,7 @@ export class AuthService {
         } else {
           query = {
             ...query,
-            'event.category': {
+            'event.categories': {
               $in: sameCategories,
             },
           };
@@ -2735,7 +2736,7 @@ export class AuthService {
       } else {
         query = {
           ...query,
-          'event.category': { $in: config.categories },
+          'event.categories': { $in: config.categories },
         };
       }
       if (!config.freeIncluded) {
