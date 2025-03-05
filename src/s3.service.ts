@@ -21,6 +21,11 @@ export class S3Service {
   }
 
   async s3_upload(file, bucket, name, mimetype) {
+    console.log('Uploading file to S3.....................');
+    console.log('AWS_S3_BUCKET>>>>>>>>>>>>>>>>', process.env.AWS_S3_BUCKET);
+    console.log('AWS_S3_ACCESS_KEY>>>>>>>>>>>>>>>>', process.env.AWS_S3_BUCKET);
+    console.log('AWS_S3_KEY_SECRET>>>>>>>>>>>>>>>>', process.env.AWS_S3_BUCKET);
+
     const params = {
       Bucket: bucket,
       Key: `${process.env.APP_ENV || ''}/${String(name)}`,
