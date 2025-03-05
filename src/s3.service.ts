@@ -44,7 +44,7 @@ export class S3Service {
       ContentDisposition: 'inline',
     };
 
-    // console.log(params);
+    console.log(params);
 
     try {
       let s3Response = await this.s3
