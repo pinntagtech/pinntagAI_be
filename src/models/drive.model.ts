@@ -10,14 +10,14 @@ export type DriveDocument = Drive & mongoose.Document;
 export class Drive {
   @Prop({ required: true, refPath: 'ownerType' })
   owner: mongoose.Types.ObjectId;
-  @Prop({required:true,enum:[User.name,BusinessProfile.name,Event.name,A]})
-  ownerType:string;
+  @Prop({ required: true, enum: [User.name, BusinessProfile.name, Event.name] })
+  ownerType: string;
   @Prop()
-  images:Array<mongoose.Types.ObjectId>;
+  images: Array<mongoose.Types.ObjectId>;
   @Prop()
-  videos:Array<mongoose.Types.ObjectId>;
+  videos: Array<mongoose.Types.ObjectId>;
   @Prop()
-  documents:Array<mongoose.Types.ObjectId>;
-}   
+  documents: Array<mongoose.Types.ObjectId>;
+}
 
 export const DriveSchema = SchemaFactory.createForClass(Drive);
