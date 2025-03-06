@@ -16,6 +16,7 @@ export class CreateEventDto {
     EventTypes.INFORMAL,
     EventTypes.OFFER,
     EventTypes.PRIVATE,
+    EventTypes.LISTING,
   ])
   type: string;
 
