@@ -8,7 +8,7 @@ export class File {
   @Prop()
   gallery: mongoose.Types.ObjectId;
   @Prop()
-  type:;
+  type:string;
   @Prop({ required: true })
   url: string;
   @Prop()
