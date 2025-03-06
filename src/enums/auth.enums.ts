@@ -5,6 +5,15 @@ export const DeviceTypes = {
   POSTMAN: 'postman',
   MOBILE: 'mobile',
 };
+export const fileType = {
+  IMAGE: 'image',
+  VIDEO: 'video',
+  DOCUMENT: 'document',
+  GIF: 'gif',
+  AUDIO: 'audio',
+  OTHER: 'other',
+  
+}
 
 export const TokenTypes = {
   ACCESS: 'access',

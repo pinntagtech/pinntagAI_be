@@ -1,13 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 
+
 export type fileDocument = File & Document;
 @Schema({ timestamps: true })
 export class File {
   @Prop()
   gallery: mongoose.Types.ObjectId;
-  @Prop()
-  event: mongoose.Types.ObjectId;
+  @Prop({
+    enum: []
+  })
+  type:string;
   @Prop({ required: true })
   url: string;
   @Prop()
