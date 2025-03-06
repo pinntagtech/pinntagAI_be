@@ -7,10 +7,8 @@ export type fileDocument = File & Document;
 export class File {
   @Prop()
   gallery: mongoose.Types.ObjectId;
-  @Prop({
-    enum: []
-  })
-  type:string;
+  @Prop()
+  type:;
   @Prop({ required: true })
   url: string;
   @Prop()
