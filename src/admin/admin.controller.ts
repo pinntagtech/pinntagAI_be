@@ -1,0 +1,330 @@
+import { Response } from 'express';
+
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
+import { AdminService } from './admin.service';
+import mongoose from 'mongoose';
+import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
+import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
+import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
+import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
+import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
+import { LoginDto } from 'src/auth/dto/login.dto';
+
+@Controller('v1/admin')
+export class AdminController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Get('list')
+  @UseGuards(AdminGuard)
+  async getUsers(@Res() res: Response) {
+    const result = await this.adminService.getUsers();
+    return res.status(HttpStatus.OK).json({
+      message: 'Users fetched successfully',
+      users: result,
+    });
+  }
+
+  @Get('crawled')
+  @UseGuards(AdminGuard)
+  async getCrawledEvents(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('status') status: string,
+  ) {
+    if (!page || page == '') {
+      page = '1';
+    }
+    if (!limit || limit == '') {
+      limit = '10';
+    }
+    if (!status || status == '') {
+      status = 'all';
+    }
+    const result = await this.adminService.getCrawledEvents(
+      parseInt(page),
+      parseInt(limit),
+      status,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        count: result.count,
+        events: result.crawledEvents,
+        pages: result.pages,
+        page: result.page,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Delete('crawled/:id')
+  @UseGuards(AdminGuard)
+  async removeCrawledEvent(@Res() res: Response, @Param('id') id: string) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid event id',
+      });
+    }
+    const result = await this.adminService.deleteCrawledEvent(id);
+    return res
+      .status(result.success ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
+      .json({
+        message: result.message,
+      });
+  }
+
+  @Post('crawled/edit/:id')
+  @UseGuards(AdminGuard)
+  async updateCrawledEvent(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() body: UpdateCrawledEventDto,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide a valid id',
+      });
+    }
+    const result = await this.adminService.updateCrawledEvent(id, body);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        event: result.event,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('crawled/publish')
+  @UseGuards(AdminGuard)
+  async publishCrawledEvent(
+    @Res() res: Response,
+    @Body() body: PublishCrawledEventDto,
+  ) {
+    // if (!mongoose.isValidObjectId(body.id)) {
+    //   return res.status(HttpStatus.BAD_REQUEST).json({
+    //     message: 'Please provide a valid id',
+    //   });
+    // }
+    body.ids.forEach((id) => {
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: `Please provide a valid id for ${id}`,
+        });
+      }
+    });
+    if (!mongoose.isValidObjectId(body.businessProfile)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide a valid business id',
+      });
+    }
+    if (!mongoose.isValidObjectId(body.user)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide a valid user id',
+      });
+    }
+    const result = await this.adminService.publishCrawledEvent(body);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('dashboard/config/add')
+  @UseGuards(AdminGuard)
+  async configureDashboard(
+    @Res() res: Response,
+    @Body() body: ConfigureDashboardDto,
+  ) {
+    if (body.categories && body.categories.length) {
+      body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+    const result = await this.adminService.addDashboardConfiguration(body);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('dashboard/config')
+  @UseGuards(AdminGuard)
+  async getDashboardConfig(@Res() res: Response) {
+    const result = await this.adminService.getDashboardConfig();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('dashboard/config/update/:id')
+  @UseGuards(AdminGuard)
+  async editDashboardConfig(
+    @Res() res: Response,
+    @Body() body: UpdateConfigureDashboardDto,
+    @Param('id') id: string,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id',
+      });
+    }
+    if (body.categories && body.categories.length) {
+      body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+    const result = await this.adminService.updateDashboardConfiguration(
+      id,
+      body,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Delete('dashboard/config/delete/:id')
+  @UseGuards(AdminGuard)
+  async deleteDashboardConfig(@Res() res: Response, @Param('id') id: string) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id',
+      });
+    }
+    const result = await this.adminService.deleteDashboardConfiguration(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('dashboard/weight')
+  @UseGuards(AdminGuard)
+  async getDashboardWeight(@Res() res: Response) {
+    const result = await this.adminService.getDashboardWeight();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('dashboard/weight/update')
+  @UseGuards(AdminGuard)
+  async updateDashboardWeight(
+    @Res() res: Response,
+    @Body() body: PlatformConfigDto,
+  ) {
+    if (!body.distanceWeightage && !body.timeWeightage) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide data to update',
+      });
+    }
+    // body.distanceWeightage and body.timeWeightage both should be in the range of 0.1 to 1.0 and their sum should be 1.0
+    if (body.distanceWeightage < 0.1 || body.distanceWeightage > 1.0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Distance weightage should be between 0.1 to 1.0',
+      });
+    }
+    if (body.timeWeightage < 0.1 || body.timeWeightage > 1.0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Time weightage should be between 0.1 to 1.0',
+      });
+    }
+    if (body.distanceWeightage + body.timeWeightage !== 1.0) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Sum of distance and time weightage should be 1.0',
+      });
+    }
+    const result = await this.adminService.editDashboardWeight(body);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('login')
+  async adminLogin(@Res() res: Response, @Body() loginDto: LoginDto) {
+    const result = await this.adminService.adminLogin(loginDto);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+}
