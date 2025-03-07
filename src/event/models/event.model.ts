@@ -21,6 +21,7 @@ export class Event {
       EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
+      EventTypes.LISTING,
     ],
   })
   type: string;

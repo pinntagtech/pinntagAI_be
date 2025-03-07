@@ -39,7 +39,8 @@ export class S3Service {
       Bucket: bucket,
       Key: `${process.env.APP_ENV || ''}/${String(name)}`,
       Body: file,
-      ACL: 'public-read',
+      // ACL: 'public-read',
+      ACL: 'private',
       ContentType: mimetype,
       ContentDisposition: 'inline',
     };
