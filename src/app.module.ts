@@ -36,6 +36,10 @@ import { CronModule } from './cron/cron.module';
 import { SmsModule } from './sms/sms.module';
 import { Otp, OtpSchema } from './auth/models/otp.model';
 import { AiModule } from './ai/ai.module';
+import {
+  PlatformConfig,
+  PlatformConfigSchema,
+} from './auth/models/platformConfig.model';
 
 @Module({
   imports: [
@@ -65,6 +69,7 @@ import { AiModule } from './ai/ai.module';
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
+      { name: PlatformConfig.name, schema: PlatformConfigSchema },
     ]),
     StripeeModule,
     AuthModule,

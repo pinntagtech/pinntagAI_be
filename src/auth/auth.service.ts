@@ -1181,7 +1181,7 @@ export class AuthService {
         message: 'Dashboard configuration not found with the id provided.',
       };
     } else {
-      if (data.categories.length) {
+      if (data.categories && data.categories.length) {
         data.categories = data.categories.map(
           (category) => new mongoose.Types.ObjectId(category),
         );
