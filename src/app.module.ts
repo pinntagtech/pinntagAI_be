@@ -33,6 +33,10 @@ import {
 } from './business-profile/models/businessProfile.model';
 import { Token, TokenSchema } from './auth/models/token.model';
 import { CronModule } from './cron/cron.module';
+import {
+  PlatformConfig,
+  PlatformConfigSchema,
+} from './auth/models/platformConfig.model';
 
 @Module({
   imports: [
@@ -61,6 +65,7 @@ import { CronModule } from './cron/cron.module';
       { name: Event.name, schema: EventSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Token.name, schema: TokenSchema },
+      { name: PlatformConfig.name, schema: PlatformConfigSchema },
     ]),
     StripeeModule,
     AuthModule,

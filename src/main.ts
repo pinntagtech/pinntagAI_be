@@ -60,7 +60,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup(`/${apiPath}/docs`, app, document);
-  await app.listen(9009);
+  await app.listen(process.env.PORT || 9009);
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log('Application host:---', app.getHttpServer().address());
 }

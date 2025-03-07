@@ -13,6 +13,10 @@ import {
   BusinessProfileDocument,
 } from './business-profile/models/businessProfile.model';
 import { Token, TokenDocument } from './auth/models/token.model';
+import {
+  PlatformConfig,
+  PlatformConfigDocument,
+} from './auth/models/platformConfig.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -28,6 +32,8 @@ export class AppService implements OnModuleInit {
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    @InjectModel(PlatformConfig.name)
+    private readonly platformConfigModel: Model<PlatformConfigDocument>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {
@@ -53,6 +59,13 @@ export class AppService implements OnModuleInit {
     // });
 
     //Fetch All the business profiles which are not having isDeleted field in the document and append isDeleted field to the document with value false
+    const foundPlatformConfig = await this.platformConfigModel.findOne().exec();
+    if (!foundPlatformConfig) {
+      const createdConfig = await this.platformConfigModel.create({
+        distanceWeightage: 0.5,
+        timeWeightage: 0.5,
+      });
+    }
     const businessProfiles = await this.businessProfileModel
       .find({ isDeleted: { $exists: false } })
       .exec();
