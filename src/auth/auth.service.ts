@@ -925,7 +925,11 @@ export class AuthService {
       };
     }
   }
-  async loginOTP(loginDto: SignupAuthDto, userAgent: string, ipAddress: string) {
+  async loginOTP(
+    loginDto: SignupAuthDto,
+    userAgent: string,
+    ipAddress: string,
+  ) {
     try {
       const { email, phone, countryCode, signupMethod } = loginDto;
       let foundUser;
@@ -1167,7 +1171,23 @@ export class AuthService {
       };
     }
   }
-
+  async getDashboardAllConfigs() {
+    const foundConfig = await this.dashboardConfigModel
+      .find({}, { _id: 1, name: 1 })
+      .sort({ sortOrder: 1 });
+    if (!foundConfig) {
+      return {
+        success: false,
+        message: 'Dashboard configuration not found with the name provided.',
+      };
+    } else {
+      return {
+        success: true,
+        message: 'Dashboard configuration found successfully',
+        data: foundConfig,
+      };
+    }
+  }
   async updateDashboardConfiguration(
     id: string,
     data: UpdateConfigureDashboardDto,
@@ -1499,12 +1519,12 @@ export class AuthService {
       {
         $lookup: {
           from: 'categories',
-          localField: 'event.category',
+          localField: 'event.categories',
           foreignField: '_id',
-          as: 'category',
+          as: 'categoryDetails',
         },
       },
-      { $unwind: '$category' },
+      { $unwind: '$categoryDetails' },
       {
         $lookup: {
           from: 'images',
@@ -1744,9 +1764,9 @@ export class AuthService {
               },
             },
           },
-          'category._id': 1,
-          'category.name': 1,
-          'category.image': 1,
+          'categoryDetails.id': 1,
+          'categoryDetails.name': 1,
+          'categoryDetails.image': 1,
           images: { _id: 1, url: 1 },
           ageGroupsAllowed: { _id: 1, name: 1 },
           isSaved: 1,
@@ -1933,10 +1953,10 @@ export class AuthService {
           from: 'categories',
           localField: 'event.categories',
           foreignField: '_id',
-          as: 'category',
+          as: 'categories',
         },
       },
-      { $unwind: '$category' },
+      { $unwind: '$categories' },
       {
         $lookup: {
           from: 'images',
@@ -2176,9 +2196,9 @@ export class AuthService {
               },
             },
           },
-          'category._id': 1,
-          'category.name': 1,
-          'category.image': 1,
+          'categories._id': 1,
+          'categories.name': 1,
+          'categories.image': 1,
           images: { _id: 1, url: 1 },
           ageGroupsAllowed: { _id: 1, name: 1 },
           isSaved: 1,
@@ -2211,7 +2231,7 @@ export class AuthService {
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
           creatorDetails: { $first: '$event.creatorDetails' },
-          category: { $first: '$category' },
+          categories: { $addToSet: '$categories' },
           images: { $first: '$images' },
           ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
           isSaved: { $first: '$isSaved' },
@@ -2708,8 +2728,8 @@ export class AuthService {
     console.log('dashboardConfigs', dashboardConfigs.length);
     for (let i = 0; i < dashboardConfigs.length; i++) {
       const config = dashboardConfigs[i];
-      if (match['event.category']) {
-        delete match['event.category'];
+      if (match['event.categories']) {
+        delete match['event.categories'];
       }
       // if (config.name == 'Food & Drinks') {
       //   // console.log('query after type:----->', match);
@@ -2727,7 +2747,7 @@ export class AuthService {
         } else {
           query = {
             ...query,
-            'event.category': {
+            'event.categories': {
               $in: sameCategories,
             },
           };
@@ -2735,7 +2755,7 @@ export class AuthService {
       } else {
         query = {
           ...query,
-          'event.category': { $in: config.categories },
+          'event.categories': { $in: config.categories },
         };
       }
       if (!config.freeIncluded) {
@@ -2787,6 +2807,300 @@ export class AuthService {
         Free: freeEvents,
         ...data,
         'Private Invitations': privateEvents,
+      },
+    };
+  }
+  async dashboardFixedCarouselEvents(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    maxDistance: number,
+    search: string,
+    categoryIds?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    let match = {};
+    if (categoryIds.length) {
+      match['event.categories'] = {
+        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
+    const currentDate = currentDateTz();
+    let start = getZeroDateTz(new Date());
+    if (!startDate && !endDate) {
+      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+      match['event.schedule.date'] = { $gte: start };
+      match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    } else if (startDate && endDate) {
+      start = getZeroBodyDateTz(startDate);
+      const end = getZeroBodyDateTz(endDate);
+      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+        if (
+          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+        ) {
+          console.log('start is equals to current');
+          // If the requested query is for today only then the end time should be greater than the current time
+          match['event.schedule.date'] = getZeroDateTz(new Date());
+          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+        } else {
+          console.log('start is not equals to current');
+          // If the start and end date are the same e.g. 2024-06-01
+          match['event.schedule.date'] = start;
+        }
+      } else if (end > start) {
+        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+          match['event.schedule.durations'] = {
+            $elemMatch: {
+              startTime: { $lte: end },
+              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+            },
+          };
+        } else {
+          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+          match['event.schedule.durations'] = {
+            $elemMatch: {
+              startTime: { $lte: end },
+              endTime: { $gte: start },
+            },
+          };
+        }
+      } else {
+        // If the request date is in past
+        match['event.schedule.date'] = { $gte: currentDate };
+        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+      }
+    }
+
+    if (search) {
+      // Search matching business profile name
+      const matchingBusinesses = await this.businessProfileModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
+      );
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+    }
+
+    let age = 0;
+    if (!user.isGuest) {
+      const foundUser = await this.userModel.findById(user.id);
+      age = foundUser.age ? foundUser.age : 0;
+    }
+
+    const freeEventsMatch = {
+      ...match,
+      'event.type': { $ne: EventTypes.PRIVATE },
+      'event.isFree': true,
+    };
+    const privateEventsMatch = {
+      ...match,
+      'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
+      'event.type': EventTypes.PRIVATE,
+    };
+    const freeEvents = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      age,
+      freeEventsMatch,
+      1,
+      15,
+      start,
+      maxDistance,
+    );
+    const privateEvents = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      age,
+      privateEventsMatch,
+      1,
+      15,
+      start,
+      maxDistance,
+    );
+    return {
+      success: true,
+      message: 'Dashboard fetched successfully',
+      data: {
+        Free: freeEvents,
+        'Private Invitations': privateEvents,
+      },
+    };
+  }
+  async getDashboardCarouselEvent(
+    user: DecodedUser,
+    carouselId: string,
+    latitude: number,
+    longitude: number,
+    maxDistance: number,
+    search: string,
+    categoryIds?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    if (!mongoose.isValidObjectId(carouselId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid id',
+      };
+    }
+
+    let match = {};
+    if (categoryIds.length) {
+      match['event.categories'] = {
+        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
+    const currentDate = currentDateTz();
+    let start = getZeroDateTz(new Date());
+    if (!startDate && !endDate) {
+      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+      match['event.schedule.date'] = { $gte: start };
+      match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    } else if (startDate && endDate) {
+      start = getZeroBodyDateTz(startDate);
+      const end = getZeroBodyDateTz(endDate);
+      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+        if (
+          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+        ) {
+          console.log('start is equals to current');
+          // If the requested query is for today only then the end time should be greater than the current time
+          match['event.schedule.date'] = getZeroDateTz(new Date());
+          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+        } else {
+          console.log('start is not equals to current');
+          // If the start and end date are the same e.g. 2024-06-01
+          match['event.schedule.date'] = start;
+        }
+      } else if (end > start) {
+        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+          match['event.schedule.durations'] = {
+            $elemMatch: {
+              startTime: { $lte: end },
+              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+            },
+          };
+        } else {
+          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+          match['event.schedule.durations'] = {
+            $elemMatch: {
+              startTime: { $lte: end },
+              endTime: { $gte: start },
+            },
+          };
+        }
+      } else {
+        // If the request date is in past
+        match['event.schedule.date'] = { $gte: currentDate };
+        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+      }
+    }
+
+    if (search) {
+      // Search matching business profile name
+      const matchingBusinesses = await this.businessProfileModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
+      );
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+    }
+
+    let age = 0;
+    if (!user.isGuest) {
+      const foundUser = await this.userModel.findById(user.id);
+      age = foundUser.age ? foundUser.age : 0;
+    }
+    let data = {};
+    const config = await this.dashboardConfigModel.findById(carouselId).sort({
+      sortOrder: 1,
+    });
+
+    if (match['event.categories']) {
+      delete match['event.categories'];
+    }
+    let query = { ...match };
+    if (categoryIds.length) {
+      const sameCategories = [];
+      categoryIds.forEach((id) => {
+        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+          sameCategories.push(new mongoose.Types.ObjectId(id));
+        }
+      });
+      if (sameCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: sameCategories,
+          },
+        };
+      }
+    } else {
+      query = {
+        ...query,
+        'event.categories': { $in: config.categories },
+      };
+    }
+    if (!config.freeIncluded) {
+      query = {
+        ...query,
+        'event.isFree': false,
+      };
+    }
+    if (config.eventsIncluded && !config.offersIncluded) {
+      query = {
+        ...query,
+        'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
+      };
+    } else if (config.offersIncluded && !config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': EventTypes.OFFER,
+      };
+    } else if (config.offersIncluded && config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': {
+          $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
+        },
+      };
+    }
+    const eventsResult = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      age,
+      query,
+      1,
+      config.limit,
+      start,
+      maxDistance,
+    );
+
+    return {
+      success: true,
+      message: 'Dashboard fetched successfully',
+      data: {
+        eventsResult,
       },
     };
   }
@@ -3280,7 +3594,7 @@ export class AuthService {
   async getEventDetails(id: string, user: DecodedUser, data: GetDashboardDto) {
     const event = await this.eventModel
       .findById(id)
-      .populate({path:'categories', select:CategoryPopulates.FOREIGN})
+      .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
       .populate('images', '_id url')
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', '_id name')
