@@ -23,8 +23,6 @@ export class S3Service {
       Bucket: this.AWS_S3_BUCKET,
       Key: fileKey, // Example: "uploads/user123/profile.jpg"
     });
-    console.log("env:", process.env.AWS_REGION, process.env.AWS_S3_ACCESS_KEY, process.env.AWS_S3_KEY_SECRET);
-
     return await getSignedUrl(this.s3Client, command, { expiresIn }); // Expires in 1 hour
   }
 

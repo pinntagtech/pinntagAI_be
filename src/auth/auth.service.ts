@@ -3757,11 +3757,12 @@ export class AuthService {
       if (!privateURL) {
         return { success: false, message: 'Please Provie URL' };
       }
-      const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`, '');
-      console.log("Pseudo URL:",fileKey);
-  
+      console.log("Private URL:",privateURL);
+      // const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,'');
+      const fileKey = privateURL.replace(`https://staging-pinntagbucket.s3.amazonaws.com/`,'');
+      // const fileKey = privateURL.split('/').pop();
+      console.log("File Key:",fileKey);
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
-      console.log("Presigned URL:",presignedUrl);
       return { success: true, url:presignedUrl };
     } catch(error){
       return { success: false, message: error.message };
