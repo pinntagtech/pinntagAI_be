@@ -3758,10 +3758,10 @@ export class AuthService {
         return { success: false, message: 'Please Provie URL' };
       }
       const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`, '');
-      console.log("fileKey:",fileKey);
+      console.log("Pseudo URL:",fileKey);
   
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
-  
+      console.log("Presigned URL:",presignedUrl);
       return { success: true, url:presignedUrl };
     } catch(error){
       return { success: false, message: error.message };
