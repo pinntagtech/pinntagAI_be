@@ -12,12 +12,6 @@ export class Drive {
   owner: mongoose.Types.ObjectId;
   @Prop({ required: true, enum: [User.name, BusinessProfile.name, Event.name] })
   ownerType: string;
-  @Prop()
-  images: Array<mongoose.Types.ObjectId>;
-  @Prop()
-  videos: Array<mongoose.Types.ObjectId>;
-  @Prop()
-  documents: Array<mongoose.Types.ObjectId>;
 }
 
 export const DriveSchema = SchemaFactory.createForClass(Drive);
