@@ -3752,6 +3752,21 @@ export class AuthService {
     }
     return await this.generateUniqueRefferalCode();
   }
+  async getPreSignedUrl(privateURL: string) {
+    try{
+      if (!privateURL) {
+        return { success: false, message: 'Please Provie URL' };
+      }
+      console.log("Private URL:",privateURL);
+      const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,'');
+      console.log("File Key:",fileKey);
+      const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
+      return { success: true, url:presignedUrl };
+    } catch(error){
+      return { success: false, message: error.message };
+    }
+   
+  }
 }
 
 // Relevant-logs:--- {

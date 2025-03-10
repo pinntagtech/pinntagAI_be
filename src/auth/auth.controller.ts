@@ -915,4 +915,19 @@ export class AuthController {
       });
     }
   }
+  @Get('preSignedURL')
+  // @UseGuards(JwtGuard)
+  async getPresignedUrl(@Res() res: Response, @Query('url') url: string) {
+    const result = await this.authService.getPreSignedUrl(url);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        preSignedUrl: result.url,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

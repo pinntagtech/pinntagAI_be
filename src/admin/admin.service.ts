@@ -502,4 +502,19 @@ export class AdminService {
     // }
     return token;
   }
+  async dbQueries () {
+    try{
+      // const images = await this.imageModel.find({url:{$regex:"s3.amazonaws.com"}},{url:1})
+      // for(let image of images){
+      //   const oldURL = image.url;
+      //   const newURL = oldURL.replace("s3.amazonaws.com","s3.us-east-1.amazonaws.com")
+      //   console.log("New URL:",newURL);
+      //   await this.imageModel.findByIdAndUpdate(image._id,{$set:{url:newURL}})
+      // }
+      return { success: true, message: 'Images fetched successfully', data: "All Good" };
+    }catch(error){
+      console.log(error);
+      return { success: false, message: error.message };
+    }
+  }
 }
