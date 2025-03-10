@@ -3,16 +3,22 @@ import mongoose from 'mongoose';
 
 
 export type fileDocument = File & Document;
-@Schema({ timestamps: true })
-export class File {
+class MetaData {
   @Prop()
-  gallery: mongoose.Types.ObjectId;
+  mimeType: string;
   @Prop()
-  type:string;
-  @Prop({ required: true })
   url: string;
   @Prop()
-  isCoverImage: boolean;
+  size: number;
+  @Prop()
+  originalName: string;
+}
+
+@Schema({ timestamps: true })
+export class File {
+  
+  @Prop({type: MetaData})
+  metaData: MetaData
 }
 
 export const FileSchema = SchemaFactory.createForClass(File);
