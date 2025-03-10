@@ -15,6 +15,8 @@ import { AppVersion, AppVersionDocument } from 'src/models/appVersion.model';
 import * as bcrypt from 'bcrypt';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { EventTypes } from 'src/enums/event.enums';
+import { Admin, AdminDocument } from 'src/admin/models/admin.model';
+import { FileCategory, FileCategoryDocument } from 'src/models/fileCategory.model';
 
 @Injectable()
 export class SeederService {
@@ -30,6 +32,8 @@ export class SeederService {
     @InjectModel(AppVersion.name)
     private readonly appVersionModel: Model<AppVersionDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
   ) {}
 
   async seed() {
@@ -40,6 +44,7 @@ export class SeederService {
     await this.seedSubscriptionProducts();
     await this.seedAppVersion();
     await this.setPrivateEvents();
+    await this.seedFileCategories();
   }
 
   public async seedRoles() {
@@ -53,12 +58,12 @@ export class SeederService {
 
   public async createDefaultAdmin() {
     const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
-    const admin = await this.userModel
+    const admin = await this.adminModel
       .findOne({ role: role._id, email: process.env.ADMIN_EMAIL })
       .exec();
     const password = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
     if (!admin) {
-      await this.userModel
+      await this.adminModel
         .create({
           firstName: process.env.ADMIN_FIRST_NAME,
           email: process.env.ADMIN_EMAIL,
@@ -122,4 +127,10 @@ export class SeederService {
       }
     }
   }
+  async seedFileCategories() {
+    const fileCategories = await this.fileCategoryModel.find();
+    if(!fileCategories.length) {
+      await this.fileCategoryModel.insertMany(Seeder.fileCategories);
+    }
+}
 }

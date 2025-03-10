@@ -328,13 +328,13 @@ export class AdminController {
     }
   }
   @Post('dbQueries')
-  @UseGuards(AdminGuard)
+  // @UseGuards(AdminGuard)
   async dbQueries(@Res() res: Response){
     const result = await this.adminService.dbQueries();
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data,
+        data: result.data
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
