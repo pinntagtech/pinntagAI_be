@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-
+import { Admin } from 'src/admin/models/admin.model';
+import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
+import { Event } from 'src/event/models/event.model';
+import { User } from 'src/user/models/user.model';
 
 export type fileDocument = File & Document;
 class MetaData {
@@ -16,9 +19,17 @@ class MetaData {
 
 @Schema({ timestamps: true })
 export class File {
-  
-  @Prop({type: MetaData})
-  metaData: MetaData
+  @Prop({ type: MetaData })
+  metaData: MetaData;
+  @Prop()
+  category: string;
+  @Prop({ refPath: 'parentType' })
+  parent: mongoose.Types.ObjectId;
+  @Prop({
+    required: true,
+    enum: [User.name, Admin.name, Event.name, BusinessProfile.name],
+  })
+  parentType: string;
 }
 
 export const FileSchema = SchemaFactory.createForClass(File);
