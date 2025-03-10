@@ -5,6 +5,46 @@ export const DeviceTypes = {
   POSTMAN: 'postman',
   MOBILE: 'mobile',
 };
+export const fileType = {
+  IMAGE: 'image',
+  VIDEO: 'video',
+  DOCUMENT: 'document',
+  GIF: 'gif',
+  AUDIO: 'audio',
+  OTHER: 'other',
+}
+export const allowedImageMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'image/bmp',
+  'image/tiff',
+  'image/x-icon',
+  'image/heif',
+  'image/heic',
+];
+export const allowedVideoMimeTypes = [
+  'video/mp4',
+  'video/x-msvideo',
+  'video/x-ms-wmv',
+  'video/webm',
+  'video/ogg',
+  'video/3gpp',
+  'video/quicktime',
+];
+export const allowedDocumentMimeTypes = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'application/x-rar-compressed',
+];
 
 export const TokenTypes = {
   ACCESS: 'access',
