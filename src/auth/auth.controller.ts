@@ -916,7 +916,7 @@ export class AuthController {
     }
   }
   @Get('preSignedURL')
-  // @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard)
   async getPresignedUrl(@Res() res: Response, @Query('url') url: string) {
     const result = await this.authService.getPreSignedUrl(url);
     if (result.success) {

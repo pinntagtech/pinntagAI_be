@@ -275,4 +275,48 @@ export const Seeder = {
       description: 'Initial release',
     },
   ],
+  fileCategories: [
+    {
+      name: 'profile picture',
+    },
+    {
+      name: 'thumbnail',
+    },
+    {
+      name: 'gallery image',
+    },
+    {
+      name: 'logo',
+    },
+    {
+      name: 'promotional image',
+    },
+    {
+      name: 'promotional video',
+    },
+    {
+      name: 'brochure',
+    },
+    {
+      name: 'live stream recording',
+    },
+    {
+      name: 'business license',
+    },
+    {
+      name: 'tax document',
+    },
+    {
+      name: 'ID Proof',
+    },
+    {
+      name: 'invoice',
+    },
+    {
+      name: 'Audio Note',
+    },
+    {
+      name: 'other',
+    },
+  ]
 };

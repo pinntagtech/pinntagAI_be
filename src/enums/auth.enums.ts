@@ -13,6 +13,22 @@ export const fileType = {
   AUDIO: 'audio',
   OTHER: 'other',
 }
+export const fileCategory = {
+  PROFILE_PICTURE: 'profile picture',
+  Thumbnail: 'thumbnail',
+  GALLERY_IMAGE: 'gallery image',
+  LOGO: 'logo',
+  PROMOTIONAL_IMAGE: 'promotional image',
+  PROMOTIONAL_VIDEO: 'promotional video',
+  BROCHURE: 'brochure',
+  LIVE_STREAM_RECORDING:'live stream recording',
+  BUSINESS_LICENSE: 'business license',
+  TAX_DOCUMENT: 'tax document',
+  ID_PROOF: 'ID Proof',
+  INVOICE: 'invoice',
+  AUDIO_NOTE: 'Audio Note',
+  OTHER: 'other'
+}
 export const allowedImageMimeTypes = [
   'image/jpeg',
   'image/png',
