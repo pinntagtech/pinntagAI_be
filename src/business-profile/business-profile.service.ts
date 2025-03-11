@@ -61,7 +61,6 @@ import {
   Notification,
   NotificationDocument,
 } from 'src/notification/models/notification.model';
-import { AppService } from 'src/app.service';
 import { SeederService } from 'src/seeder/seeder.service';
 
 @Injectable()

@@ -70,7 +70,6 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
-import { AppService } from 'src/app.service';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Drive, DriveSchema } from 'src/models/drive.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
@@ -140,7 +139,6 @@ import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model'
     S3Service,
     StripeService,
     SmsService,
-    AppService,
     SeederService,
     
   ],
