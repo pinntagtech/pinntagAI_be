@@ -41,6 +41,7 @@ import {
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { StripeService } from 'src/stripe/stripe.service';
 import { WebhookSnapshot, WebhookSnapshotSchema } from './models/webhook.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -61,6 +62,7 @@ import { WebhookSnapshot, WebhookSnapshotSchema } from './models/webhook.model';
       { name: Report.name, schema: ReportSchema },
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
+      { name: Admin.name, schema: AdminSchema},
       {
         name: WebhookSnapshot.name,
         schema: WebhookSnapshotSchema,
