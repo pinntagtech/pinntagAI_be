@@ -81,7 +81,6 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import { AppService } from 'src/app.service';
 import { SeederService } from 'src/seeder/seeder.service';
 
 @Injectable()
