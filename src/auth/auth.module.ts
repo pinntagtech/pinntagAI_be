@@ -68,11 +68,13 @@ import {
   PlatformConfigSchema,
 } from './models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 
 @Module({
   imports: [
     // MailModule,
     MongooseModule.forFeature([
+      { name: AdminV2.name, schema: AdminV2Schema },
       { name: User.name, schema: UserSchema },
       { name: Role.name, schema: RoleSchema },
       { name: Otp.name, schema: OtpSchema },

@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -44,6 +44,12 @@ import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
+import { Permission, PermissionDocument } from './models/permission.model';
+import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
+import {
+  BusinessRole,
+  BusinessRoleDocument,
+} from 'src/business-profile/models/businessRole.model';
 
 @Injectable()
 export class AdminService {
@@ -52,6 +58,12 @@ export class AdminService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(AdminRole.name)
+    private readonly adminRoleModel: Model<AdminRoleDocument>,
+    @InjectModel(BusinessRole.name)
+    private readonly businessRoleModel: Model<BusinessRoleDocument>,
+    @InjectModel(Permission.name)
+    private readonly permissionModel: Model<PermissionDocument>,
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
 
@@ -501,5 +513,36 @@ export class AdminService {
     await this.userService.saveToken(token, payload.id);
     // }
     return token;
+  }
+
+  async create(permissionData: Partial<Permission>): Promise<Permission> {
+    const newPermission = new this.permissionModel(permissionData);
+    return newPermission.save();
+  }
+
+  async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
+    try {
+      const newRole = new this.adminRoleModel(roleData);
+      return await newRole.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new ConflictException('Role name must be unique');
+      }
+      throw error;
+    }
+  }
+
+  async createBusinessRole(
+    roleData: Partial<BusinessRole>,
+  ): Promise<BusinessRole> {
+    try {
+      const newRole = new this.businessRoleModel({...roleData, isParent: true});
+      return await newRole.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new ConflictException('Role name must be unique');
+      }
+      throw error;
+    }
   }
 }

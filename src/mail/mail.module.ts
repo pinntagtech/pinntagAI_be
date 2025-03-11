@@ -70,11 +70,13 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 
 @Global()
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: AdminV2.name, schema: AdminV2Schema },
       { name: Otp.name, schema: OtpSchema },
       { name: User.name, schema: UserSchema },
       { name: Token.name, schema: TokenSchema },

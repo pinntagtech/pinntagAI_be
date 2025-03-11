@@ -76,10 +76,12 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: AdminV2.name, schema: AdminV2Schema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: User.name, schema: UserSchema },
       { name: Follow.name, schema: FollowSchema },
