@@ -5,6 +5,8 @@ import { BusinessProfile } from 'src/business-profile/models/businessProfile.mod
 import { fileCategory, fileType } from 'src/enums/auth.enums';
 import { Event } from 'src/event/models/event.model';
 import { User } from 'src/user/models/user.model';
+import { Folder } from './folder.model';
+import { Drive } from './drive.model';
 
 export type fileDocument = File & Document;
 class MetaData {
@@ -20,14 +22,20 @@ class MetaData {
 
 @Schema({ timestamps: true })
 export class File {
-  @Prop({ required: true })
-  drive: mongoose.Types.ObjectId;
+  @Prop({ refPath: 'ParentDirectoryType'})
+  parentDirectory: mongoose.Types.ObjectId;
+
+  @Prop({required:true, enum: [Drive.name,Folder.name]})
+  ParentDirectoryType:string;
+
+
   @Prop({ type: MetaData })
   metaData: MetaData;
   @Prop({ required: true, enum: fileType })
   fileType: string;
   @Prop({ required: true, enum: fileCategory })
   category: string;
+
   @Prop({ refPath: 'parentType' })
   parent: mongoose.Types.ObjectId;
   @Prop({
