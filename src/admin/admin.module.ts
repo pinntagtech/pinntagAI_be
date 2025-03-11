@@ -74,8 +74,11 @@ import { StripeService } from 'src/stripe/stripe.service';
 import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
-import { Drive, DriveSchema } from 'src/models/drive.model';
-import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
 
 @Module({

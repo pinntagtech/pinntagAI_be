@@ -22,12 +22,11 @@ class MetaData {
 
 @Schema({ timestamps: true })
 export class File {
-  @Prop({ refPath: 'ParentDirectoryType'})
+  @Prop({ refPath: 'ParentDirectoryType' })
   parentDirectory: mongoose.Types.ObjectId;
 
-  @Prop({required:true, enum: [Drive.name,Folder.name]})
-  ParentDirectoryType:string;
-
+  @Prop({ required: true, enum: [Drive.name, Folder.name] })
+  ParentDirectoryType: string;
 
   @Prop({ type: MetaData })
   metaData: MetaData;
@@ -43,6 +42,8 @@ export class File {
     enum: [User.name, Admin.name, Event.name, BusinessProfile.name],
   })
   parentType: string;
+  @Prop({ default: 'file' })
+  entity: string;
 }
 
 export const FileSchema = SchemaFactory.createForClass(File);
