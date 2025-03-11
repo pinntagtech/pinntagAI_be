@@ -135,35 +135,35 @@ export class AppService implements OnModuleInit {
       return 'Error generating text.';
     }
   }
-  async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
-    const admin = await this.adminModel.findOne(); 
-    const defaultSpace = admin?.driveDefaultSpace || 100;
-    if(!isValidObjectId(ownerId)){
-      throw new BadRequestException('Invalid ownerId format. Must be a valid MongoDB ObjectId.');
-    }
-    const foundDrive = await this.driveModel.findOne({owner:ownerId});
-    if(foundDrive){
-      return foundDrive;
-    }
-    let foundOwner = null;
-    if (ownerType === Admin.name) {
-      foundOwner = await this.adminModel.findById(ownerId);
-    } else if (ownerType === User.name) {
-      foundOwner = await this.userModel.findById(ownerId);
-    } else if (ownerType === BusinessProfile.name) {
-      foundOwner = await this.businessProfileModel.findById(ownerId);
-    }
+  // async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
+  //   const admin = await this.adminModel.findOne(); 
+  //   const defaultSpace = admin?.driveDefaultSpace || 100;
+  //   if(!isValidObjectId(ownerId)){
+  //     throw new BadRequestException('Invalid ownerId format. Must be a valid MongoDB ObjectId.');
+  //   }
+  //   const foundDrive = await this.driveModel.findOne({owner:ownerId});
+  //   if(foundDrive){
+  //     return foundDrive;
+  //   }
+  //   let foundOwner = null;
+  //   if (ownerType === Admin.name) {
+  //     foundOwner = await this.adminModel.findById(ownerId);
+  //   } else if (ownerType === User.name) {
+  //     foundOwner = await this.userModel.findById(ownerId);
+  //   } else if (ownerType === BusinessProfile.name) {
+  //     foundOwner = await this.businessProfileModel.findById(ownerId);
+  //   }
   
-    if (!foundOwner) {
-      throw new NotFoundException(`No ${ownerType} found with the given ownerId.`);
-    }
+  //   if (!foundOwner) {
+  //     throw new NotFoundException(`No ${ownerType} found with the given ownerId.`);
+  //   }
 
-      const newDrive = new this.driveModel({
-        owner: new mongoose.Types.ObjectId(ownerId),
-        ownerType,
-        TotalSpace: defaultSpace,
-        AvailableSpace: defaultSpace, 
-      });
-      return newDrive.save();
-  }
+  //     const newDrive = new this.driveModel({
+  //       owner: new mongoose.Types.ObjectId(ownerId),
+  //       ownerType,
+  //       TotalSpace: defaultSpace,
+  //       AvailableSpace: defaultSpace, 
+  //     });
+  //     return newDrive.save();
+  // }
 }

@@ -513,9 +513,9 @@ export class AdminService {
       //   console.log("New URL:",newURL);
       //   await this.imageModel.findByIdAndUpdate(image._id,{$set:{url:newURL}})
       // }
-      let admin = await this.adminModel.findOne({});
-      let details = await this.appService.createDrive("67b6d0c73ba308a7b5ee410f",User.name);
-      console.log("Drive Details:",details);
+      // let admin = await this.adminModel.findOne({});
+      // let details = await this.appService.createDrive("67b6d0c73ba308a7b5ee410f",User.name);
+      // console.log("Drive Details:",details);
       return { success: true, message: 'Images fetched successfully', data: "All Good" };
     }catch(error){
       console.log(error);

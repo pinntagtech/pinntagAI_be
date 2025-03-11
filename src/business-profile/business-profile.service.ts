@@ -62,6 +62,7 @@ import {
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { AppService } from 'src/app.service';
+import { SeederService } from 'src/seeder/seeder.service';
 
 @Injectable()
 export class BusinessProfileService {
@@ -92,7 +93,7 @@ export class BusinessProfileService {
     private readonly s3Service: S3Service,
     private readonly facebookService: FacebookService,
     private readonly mailService: MailService,
-    private readonly appService: AppService,
+    private readonly seederService: SeederService,
   ) {}
 
   async createBusinessProfile(data: createBusinessProfileDto, userId: string) {
@@ -237,7 +238,7 @@ export class BusinessProfileService {
       //   businessProfile: createdBusinessProfile._id,
       // });
 
-      await this.appService.createDrive(createdBusinessProfile._id,BusinessProfile.name);
+      await this.seederService.createDrive(createdBusinessProfile._id,BusinessProfile.name);
 
       await this.userModel.updateOne(
         { _id: new mongoose.Types.ObjectId(userId) },

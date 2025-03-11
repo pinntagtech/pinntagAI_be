@@ -132,7 +132,6 @@ import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model'
     StripeService,
     MailService,
     SmsService,
-    AppService,
     SeederService,
   ],
 })

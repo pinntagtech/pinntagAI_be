@@ -12,7 +12,13 @@ import {
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
-import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/models/fileCategory.model';
+import { AppService } from 'src/app.service';
+import { Drive, DriveSchema } from 'src/models/drive.model';
+import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
 
 @Module({
   imports: [
@@ -25,7 +31,9 @@ import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model'
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Event.name, schema: EventSchema },
       { name: Admin.name, schema: AdminSchema },
-      { name: FileCategory.name, schema: FileCategorySchema},
+      { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: BusinessProfile.name, schema: BusinessProfileSchema },
     ]),
   ],
   controllers: [],
