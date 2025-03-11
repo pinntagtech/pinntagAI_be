@@ -336,11 +336,11 @@ export class AdminController {
         message: result.message,
         data: result.data
       });
-    } else {
+    } 
+    
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
-    }
   }
 
 }

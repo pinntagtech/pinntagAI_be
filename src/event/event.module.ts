@@ -69,6 +69,7 @@ import {
   EventResponse,
   EventResponseSchema,
 } from './models/event-response.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import {
       { name: CrawledEvent.name, schema: CrawledEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: EventResponse.name, schema: EventResponseSchema },
+      { name:Admin.name, schema: AdminSchema},
     ]),
   ],
   controllers: [EventController],
