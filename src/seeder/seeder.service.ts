@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
@@ -16,9 +20,15 @@ import * as bcrypt from 'bcrypt';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { EventTypes } from 'src/enums/event.enums';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
-import { FileCategory, FileCategoryDocument } from 'src/models/fileCategory.model';
-import { Drive, DriveDocument } from 'src/models/drive.model';
-import { BusinessProfile, BusinessProfileDocument } from 'src/business-profile/models/businessProfile.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
+import { Drive, DriveDocument } from 'src/drive/models/drive.model';
+import {
+  BusinessProfile,
+  BusinessProfileDocument,
+} from 'src/business-profile/models/businessProfile.model';
 
 @Injectable()
 export class SeederService {
@@ -34,7 +44,8 @@ export class SeederService {
     @InjectModel(AppVersion.name)
     private readonly appVersionModel: Model<AppVersionDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
-    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(BusinessProfile.name)
@@ -61,14 +72,19 @@ export class SeederService {
     }
   }
 
-  async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
-    const admin = await this.adminModel.findOne(); 
+  async createDrive(
+    ownerId: string | mongoose.Types.ObjectId,
+    ownerType: string,
+  ): Promise<Drive> {
+    const admin = await this.adminModel.findOne();
     const defaultSpace = admin?.driveDefaultSpace || 100;
-    if(!isValidObjectId(ownerId)){
-      throw new BadRequestException('Invalid ownerId format. Must be a valid MongoDB ObjectId.');
+    if (!isValidObjectId(ownerId)) {
+      throw new BadRequestException(
+        'Invalid ownerId format. Must be a valid MongoDB ObjectId.',
+      );
     }
-    const foundDrive = await this.driveModel.findOne({owner:ownerId});
-    if(foundDrive){
+    const foundDrive = await this.driveModel.findOne({ owner: ownerId });
+    if (foundDrive) {
       return foundDrive;
     }
     let foundOwner = null;
@@ -79,18 +95,20 @@ export class SeederService {
     } else if (ownerType === BusinessProfile.name) {
       foundOwner = await this.businessProfileModel.findById(ownerId);
     }
-  
+
     if (!foundOwner) {
-      throw new NotFoundException(`No ${ownerType} found with the given ownerId.`);
+      throw new NotFoundException(
+        `No ${ownerType} found with the given ownerId.`,
+      );
     }
 
-      const newDrive = new this.driveModel({
-        owner: new mongoose.Types.ObjectId(ownerId),
-        ownerType,
-        TotalSpace: defaultSpace,
-        AvailableSpace: defaultSpace, 
-      });
-      return newDrive.save();
+    const newDrive = new this.driveModel({
+      owner: new mongoose.Types.ObjectId(ownerId),
+      ownerType,
+      TotalSpace: defaultSpace,
+      AvailableSpace: defaultSpace,
+    });
+    return newDrive.save();
   }
 
   public async createDefaultAdmin() {
@@ -100,18 +118,17 @@ export class SeederService {
       .exec();
     const password = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
     if (!admin) {
-      let admin = await this.adminModel
-        .create({
-          firstName: process.env.ADMIN_FIRST_NAME,
-          email: process.env.ADMIN_EMAIL,
-          password,
-          isEmailVerified: true,
-          isPhoneVerified: true,
-          role: role._id,
-        })
-        // .then(() => console.log('Def Admin created.'));
-        console.log("Def Admin created.");
-        await this.createDrive(admin.id,Admin.name);
+      let admin = await this.adminModel.create({
+        firstName: process.env.ADMIN_FIRST_NAME,
+        email: process.env.ADMIN_EMAIL,
+        password,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        role: role._id,
+      });
+      // .then(() => console.log('Def Admin created.'));
+      console.log('Def Admin created.');
+      await this.createDrive(admin.id, Admin.name);
     }
   }
 
@@ -168,8 +185,8 @@ export class SeederService {
   }
   async seedFileCategories() {
     const fileCategories = await this.fileCategoryModel.find();
-    if(!fileCategories.length) {
+    if (!fileCategories.length) {
       await this.fileCategoryModel.insertMany(Seeder.fileCategories);
     }
-}
+  }
 }

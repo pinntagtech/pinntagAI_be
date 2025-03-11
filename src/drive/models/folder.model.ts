@@ -10,7 +10,9 @@ export class Folder {
   parent: mongoose.Types.ObjectId;
   @Prop({ required: true, enum: [Folder.name, Drive.name] })
   parentType: string;
-  @Prop({default:'untitled'})
+  @Prop({ default: 'untitled' })
   folderName: string;
+  @Prop({ default: 'directory' })
+  entity: string;
 }
 export const folderSchema = SchemaFactory.createForClass(Folder);

@@ -41,9 +41,13 @@ import {
   PlatformConfig,
   PlatformConfigSchema,
 } from './auth/models/platformConfig.model';
-import { FileCategory, FileCategorySchema } from './models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from './drive/models/fileCategory.model';
 import { Admin, AdminSchema } from './admin/models/admin.model';
-import { Drive, DriveSchema } from './models/drive.model';
+import { Drive, DriveSchema } from './drive/models/drive.model';
+import { DriveModule } from './drive/drive.module';
 
 @Module({
   imports: [
@@ -74,9 +78,9 @@ import { Drive, DriveSchema } from './models/drive.model';
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
-      { name: FileCategory.name, schema: FileCategorySchema},
-      { name: Admin.name, schema: AdminSchema},
-      { name: Drive.name, schema: DriveSchema},
+      { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Admin.name, schema: AdminSchema },
+      { name: Drive.name, schema: DriveSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -93,9 +97,9 @@ import { Drive, DriveSchema } from './models/drive.model';
     AiModule,
     SmsModule,
     AdminModule,
+    DriveModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],
 })
 export class AppModule {}
-

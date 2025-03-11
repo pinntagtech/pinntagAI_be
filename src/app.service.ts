@@ -27,7 +27,7 @@ import {
   PlatformConfig,
   PlatformConfigDocument,
 } from './auth/models/platformConfig.model';
-import { Drive, DriveDocument } from './models/drive.model';
+import { Drive, DriveDocument } from './drive/models/drive.model';
 import { Admin, AdminDocument } from './admin/models/admin.model';
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -47,8 +47,8 @@ export class AppService implements OnModuleInit {
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
-    @InjectModel(Drive.name) private readonly driveModel:Model<DriveDocument>,
-    @InjectModel(Admin.name) private readonly adminModel:Model<AdminDocument>,
+    @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {
@@ -136,7 +136,7 @@ export class AppService implements OnModuleInit {
     }
   }
   // async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
-  //   const admin = await this.adminModel.findOne(); 
+  //   const admin = await this.adminModel.findOne();
   //   const defaultSpace = admin?.driveDefaultSpace || 100;
   //   if(!isValidObjectId(ownerId)){
   //     throw new BadRequestException('Invalid ownerId format. Must be a valid MongoDB ObjectId.');
@@ -153,7 +153,7 @@ export class AppService implements OnModuleInit {
   //   } else if (ownerType === BusinessProfile.name) {
   //     foundOwner = await this.businessProfileModel.findById(ownerId);
   //   }
-  
+
   //   if (!foundOwner) {
   //     throw new NotFoundException(`No ${ownerType} found with the given ownerId.`);
   //   }
@@ -162,7 +162,7 @@ export class AppService implements OnModuleInit {
   //       owner: new mongoose.Types.ObjectId(ownerId),
   //       ownerType,
   //       TotalSpace: defaultSpace,
-  //       AvailableSpace: defaultSpace, 
+  //       AvailableSpace: defaultSpace,
   //     });
   //     return newDrive.save();
   // }

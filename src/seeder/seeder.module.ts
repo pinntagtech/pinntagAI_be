@@ -15,10 +15,13 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import {
   FileCategory,
   FileCategorySchema,
-} from 'src/models/fileCategory.model';
+} from 'src/drive/models/fileCategory.model';
 import { AppService } from 'src/app.service';
-import { Drive, DriveSchema } from 'src/models/drive.model';
-import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import {
+  BusinessProfile,
+  BusinessProfileSchema,
+} from 'src/business-profile/models/businessProfile.model';
 
 @Module({
   imports: [
