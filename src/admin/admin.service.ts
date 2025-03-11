@@ -44,6 +44,7 @@ import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
+import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Injectable()
 export class AdminService {
@@ -502,8 +503,8 @@ export class AdminService {
     // }
     return token;
   }
-  async dbQueries () {
-    try{
+  async dbQueries() {
+    try {
       // const images = await this.imageModel.find({url:{$regex:"s3.amazonaws.com"}},{url:1})
       // for(let image of images){
       //   const oldURL = image.url;
@@ -513,11 +514,61 @@ export class AdminService {
       // }
       // let admin = await this.adminModel.findOne({});
       // let details = await this.appService.createDrive("67b6d0c73ba308a7b5ee410f",User.name);
-      console.log("Checking TOKEN GUARDS:######");
 
-      return { success: true, message: 'Images fetched successfully', data: "All Good" };
-    }catch(error){
-      console.log(error);
+      return {
+        success: true,
+        message: 'Images fetched successfully',
+        data: 'All Good',
+      };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: error.message };
+    }
+  }
+  async createCategory(createCategoryDto: CreateCategoryDto) {
+    try {
+      const createdCategory = await this.categoryModel.create({
+        ...createCategoryDto,
+      });
+      console.log('CreatedCategory:', createdCategory);
+      return {
+        success: true,
+        message: 'New Category Created Successfully!',
+        data: createdCategory,
+      };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: error.message };
+    }
+  }
+  async getCategories() {
+    return await this.categoryModel
+      .find()
+      .sort({ sortOrder: 1 })
+      .select({ createdAt: 0, updatedAt: 0, __v: 0 })
+      .exec();
+  }
+  async updateCategory(catId: string, updateCategoryDto: CreateCategoryDto) {
+    try {
+      if (!mongoose.isValidObjectId(catId)) {
+            return {
+              success: false,
+              message: 'Please provide a valid id',
+            };
+          }
+      const updatedCategory = await this.categoryModel.findOneAndUpdate(
+        { _id: catId },
+        { $set: { ...updateCategoryDto } },
+      );
+      console.log('UpdatedCategory:', updatedCategory);
+      
+      return {
+        success: true,
+        message: 'Category with given ID is Updated Successfully!',
+        data: updatedCategory,
+      };
+    } catch (error) {
+      console.error(error);
       return { success: false, message: error.message };
     }
   }
