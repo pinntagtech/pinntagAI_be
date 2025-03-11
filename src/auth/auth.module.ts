@@ -68,6 +68,11 @@ import {
   PlatformConfigSchema,
 } from './models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
+import { Drive, DriveSchema } from 'src/models/drive.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
+import { FileCategory, FileCategorySchema } from 'src/models/fileCategory.model';
+import { SeederService } from 'src/seeder/seeder.service';
 
 @Module({
   imports: [
@@ -97,6 +102,10 @@ import { SmsService } from 'src/sms/sms.service';
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: AppVersion.name, schema: AppVersionSchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Admin.name, schema: AdminSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
@@ -115,6 +124,7 @@ import { SmsService } from 'src/sms/sms.service';
     S3Service,
     StripeService,
     SmsService,
+    SeederService,
     // GoogleStrategy
   ],
 })

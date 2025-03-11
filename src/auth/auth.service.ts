@@ -81,6 +81,7 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { SeederService } from 'src/seeder/seeder.service';
 
 @Injectable()
 export class AuthService {
@@ -116,6 +117,7 @@ export class AuthService {
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
     private readonly smsService: SmsService,
+    private readonly seederService: SeederService,
   ) {
     const clientID = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_SECRET;
@@ -315,6 +317,8 @@ export class AuthService {
       deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
     });
     const user = await this.userService.getUserById(createdUser.id);
+
+    await this.seederService.createDrive(createdUser.id,User.name);
     return {
       success: true,
       message: 'User created successfully',

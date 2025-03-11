@@ -41,6 +41,9 @@ import {
   PlatformConfig,
   PlatformConfigSchema,
 } from './auth/models/platformConfig.model';
+import { FileCategory, FileCategorySchema } from './models/fileCategory.model';
+import { Admin, AdminSchema } from './admin/models/admin.model';
+import { Drive, DriveSchema } from './models/drive.model';
 
 @Module({
   imports: [
@@ -71,6 +74,9 @@ import {
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: FileCategory.name, schema: FileCategorySchema},
+      { name: Admin.name, schema: AdminSchema},
+      { name: Drive.name, schema: DriveSchema},
     ]),
     StripeeModule,
     AuthModule,

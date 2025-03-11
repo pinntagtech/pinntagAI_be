@@ -334,7 +334,7 @@ export class AdminController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data,
+        data: result.data
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

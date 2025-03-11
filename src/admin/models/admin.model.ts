@@ -90,11 +90,12 @@ export class Admin {
   userAgent: string;
   @Prop()
   ipAddress: string;
-
   @Prop()
   stripeCustomerId: string;
   @Prop()
   savedCards: Array<string>;
+  @Prop({default: 1024*1024})
+  driveDefaultSpace: number;
 }
 export const AdminSchema = SchemaFactory.createForClass(Admin);
 
