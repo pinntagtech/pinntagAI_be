@@ -44,7 +44,6 @@ import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
-import { AppService } from 'src/app.service';
 
 @Injectable()
 export class AdminService {
@@ -80,7 +79,6 @@ export class AdminService {
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    private readonly appService: AppService,
   ) {}
 
   async getUsers() {
