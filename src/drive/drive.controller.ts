@@ -1,5 +1,4 @@
 import { Controller, Post, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @Controller('drive')
