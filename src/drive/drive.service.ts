@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Drive, DriveDocument } from './models/drive.model';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { Folder, folderDocument } from './models/folder.model';
 
@@ -18,11 +18,19 @@ export class DriveService {
         file: Express.Multer.File,
       ) {
         try {
-          const drive = await this.driveModel.findOne({parentId});
-          const folder = await this.folderModel.findOne({parentId});
+            if(!isValidObjectId(parentId)){
+                return {
+                    success:false,
+                    message:"Invalid ObjectId"
+                }
+            }
+            console.log("parentId:",parentId)
+          const drive = await this.driveModel.findOne({_id:parentId});
+          const folder = await this.folderModel.findOne({_id:parentId});
           console.log("drive::",drive);
           console.log("folder:",folder);
-
+          const directory = (folder || drive);
+            if()
         //   if (!drive) {
         //     return {
         //       success: false,
