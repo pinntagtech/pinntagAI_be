@@ -98,8 +98,6 @@ export class Admin {
   savedCards: Array<string>;
   @Prop({ default: 1024 * 1024 })
   driveDefaultSpace: number;
-  @Prop({ ref: Drive.name })
-  Drive: mongoose.Types.ObjectId;
 }
 export const AdminSchema = SchemaFactory.createForClass(Admin);
 

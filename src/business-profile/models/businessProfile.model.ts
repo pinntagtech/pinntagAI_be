@@ -145,8 +145,6 @@ export class BusinessProfile {
   managerEmail: string;
   @Prop()
   managerPhone: string;
-  @Prop({ref:Drive.name})
-    Drive: mongoose.Types.ObjectId;
 }
 
 export const BusinessProfileSchema =

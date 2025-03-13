@@ -27,6 +27,8 @@ import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { JwtService } from '@nestjs/jwt';
+import { S3Service } from 'src/s3.service';
+import { File, FileSchema } from './models/file.model';
 
 
 @Module({
@@ -54,9 +56,10 @@ import { JwtService } from '@nestjs/jwt';
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: File.name,schema: FileSchema},
     ]),
   ],
   controllers: [DriveController],
-  providers: [DriveService,JwtService],
+  providers: [DriveService,JwtService,S3Service],
 })
 export class DriveModule {}

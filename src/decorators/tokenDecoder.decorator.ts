@@ -30,13 +30,26 @@ export const TokenDecoder = createParamDecorator(
         ...request.user,
       };
       return user;
-    } else {
+    } else if (request.isAdmin){
+      const user: DecodedUser = {
+        isGuest: false,
+        role: 'admin',
+        // name: request.user.firstName + ' ' + request.user.lastName,
+        name: `${request.user?.name || ''}`,
+        id: request.user?._id,
+        businessProfile: '',
+        isBusiness: false,
+        ...request.user,
+      };
+      return user;
+    } 
+    else {
       const user: DecodedUser = {
         isGuest: false,
         role: 'user',
         // name: request.user.firstName + ' ' + request.user.lastName,
         name: `${request.user?.name || ''}`,
-        id: request.user._id,
+        id: request.user?._id,
         businessProfile: '',
         isBusiness: false,
         ...request.user,

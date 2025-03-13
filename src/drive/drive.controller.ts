@@ -17,13 +17,14 @@ import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DriveService } from './drive.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
+import { Folder } from './models/folder.model';
 
 @Controller('drive')
 export class DriveController {
   constructor(private readonly driveService: DriveService) {}
 
   @Post('fileUpload')
-//   @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard)
   @UseInterceptors(
     FileInterceptor(
       'file',
@@ -51,11 +52,14 @@ export class DriveController {
     @Req() req: Request,
     @Res() res: Response,
     @Body('locationId') locationId: string,
-    // @TokenDecoder() user: DecodedUser,
+    @Body('fileCategory') fileCategory: string,
+    @TokenDecoder() user: DecodedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const result = await this.driveService.uploadFile(
+      user.id,
       locationId,
+      fileCategory,
       file,
     );
     if (result.success) {
@@ -70,8 +74,19 @@ export class DriveController {
     }
   }
 
-  @Post('createFolder/:locationId')
-  async createFolder(@Param('locationId') locationId:string){
-    
+  @Post('createFolder')
+  async createFolder(@Res() res:Response,@Body()createDto: Partial<Folder>){
+    const result = await this.driveService.createFolder(createDto);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data:result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }

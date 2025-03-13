@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Admin } from 'src/admin/models/admin.model';
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
-import { fileCategory, fileType } from 'src/enums/auth.enums';
+import { fileCategory, FileType } from 'src/enums/auth.enums';
 import { Event } from 'src/event/models/event.model';
 import { User } from 'src/user/models/user.model';
 import { Folder } from './folder.model';
@@ -31,7 +31,7 @@ export class File {
 
   @Prop({ type: MetaData })
   metaData: MetaData;
-  @Prop({ required: true, enum: fileType })
+  @Prop({ required: true, enum: FileType })
   fileType: string;
   @Prop({ required: true, enum: fileCategory })
   category: string;

@@ -33,7 +33,8 @@ export class User {
   @Prop({ default: '' })
   name: string;
   @Prop({
-    default: 'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
+    default:
+      'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
   })
   profilePhoto: string;
   @Prop({ unique: true, sparse: true })
@@ -98,8 +99,6 @@ export class User {
   stripeCustomerId: string;
   @Prop()
   savedCards: Array<string>;
-  @Prop({ref:Drive.name})
-  Drive: mongoose.Types.ObjectId;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 
