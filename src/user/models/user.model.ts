@@ -5,6 +5,7 @@ import { BusinessProfile } from '../../business-profile/models/businessProfile.m
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { Refferal } from './refferal.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export const Genders = {
   MALE: 'male',
@@ -97,6 +98,8 @@ export class User {
   stripeCustomerId: string;
   @Prop()
   savedCards: Array<string>;
+  @Prop({ref:Drive.name})
+  Drive: mongoose.Types.ObjectId;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 

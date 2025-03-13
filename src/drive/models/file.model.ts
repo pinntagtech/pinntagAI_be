@@ -28,6 +28,7 @@ export class File {
   @Prop({ required: true, enum: [Drive.name, Folder.name] })
   ParentDirectoryType: string;
 
+
   @Prop({ type: MetaData })
   metaData: MetaData;
   @Prop({ required: true, enum: fileType })

@@ -11,6 +11,7 @@ import {
 } from './types.model';
 import { BusinessLocation } from './businessLocation.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export class SocialMediaTokenDetails {
   value: string;
@@ -144,6 +145,8 @@ export class BusinessProfile {
   managerEmail: string;
   @Prop()
   managerPhone: string;
+  @Prop({ref:Drive.name})
+    Drive: mongoose.Types.ObjectId;
 }
 
 export const BusinessProfileSchema =

@@ -14,23 +14,40 @@ export class DriveService {
 
 
      async uploadFile(
-        parentId: string,
+        locationId: string,
         file: Express.Multer.File,
       ) {
         try {
-            if(!isValidObjectId(parentId)){
+            if(!isValidObjectId(locationId)){
                 return {
                     success:false,
                     message:"Invalid ObjectId"
                 }
             }
-            console.log("parentId:",parentId)
-          const drive = await this.driveModel.findOne({_id:parentId});
-          const folder = await this.folderModel.findOne({_id:parentId});
+            console.log("parentId:",locationId)
+          const drive = await this.driveModel.findOne({_id:locationId});
+          const folder = await this.folderModel.findOne({_id:locationId});
           console.log("drive::",drive);
           console.log("folder:",folder);
+          let parentDirectoryType = null;
+          let parentDrive = null;
+          if(drive){
+            parentDirectoryType = Drive.name;
+            parentDrive = drive;
+          }
+          if(folder){
+            parentDirectoryType = folder.parentType;
+            let parentType = parentDirectoryType;
+            let subFolder = folder;
+            while(parentType != Drive.name){
+              subFolder = await this.folderModel.findOne({_id:subFolder.parent});
+              parentType = subFolder.parentType;
+            }
+
+          }
           const directory = (folder || drive);
-            if()
+          console.log("file:",file)
+
         //   if (!drive) {
         //     return {
         //       success: false,
