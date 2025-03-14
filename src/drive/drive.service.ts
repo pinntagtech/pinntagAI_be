@@ -36,7 +36,7 @@ export class DriveService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<fileDocument>,
-    private readonly s3Service:S3Service,
+    private readonly s3Service: S3Service,
   ) {}
 
   async uploadFile(
@@ -46,16 +46,54 @@ export class DriveService {
     file: Express.Multer.File,
   ) {
     try {
-      if (!isValidObjectId(locationId) || !isValidObjectId(parentId)) {
+      if (!isValidObjectId(parentId)) {
         return {
           success: false,
           message: 'Invalid ObjectId',
         };
       }
+      let parentType = null;
+      let fileType = null;
+      // let [isUser, isAdmin, isBusinessProfile, isEvent] = await Promise.all([
+      //   this.userModel.findById(parentId),
+      //   this.adminModel.findById(parentId),
+      //   this.businessProfileModel.findById(parentId),
+      //   this.eventModel.findById(parentId),
+      // ]);
+      console.log('parentId:', parentId);
+      let driveDetails = await this.driveModel.findOne({ owner: new mongoose.Types.ObjectId(parentId) });
+      if (!driveDetails) {
+        return {
+          success: false,
+          message: 'Drive not found!',
+        };
+      }
+      console.log("not coming here why!");
+      parentType = driveDetails.ownerType;
+
+      if (!locationId) locationId = driveDetails.id;
+
+      // if (!locationId) {
+
+      //   locationId = driveDetails.id;
+      // }
+      // if (isUser) {
+      //   parentType = User.name;
+      // }
+      // if (isAdmin) {
+      //   parentType = Admin.name;
+      // }
+      // if (isBusinessProfile) {
+      //   parentType = BusinessProfile.name;
+      // }
+      // if (isEvent) {
+      //   parentType = Event.name;
+      // }
+
+      console.log('ParentType:', parentType);
       console.log('FILE:', file);
       const drive = await this.driveModel.findOne({ _id: locationId });
       const folder = await this.folderModel.findOne({ _id: locationId });
-      let parentDirectory = locationId;
       let parentDirectoryType = null;
       let parentDriveId = null;
       if (drive) {
@@ -72,7 +110,7 @@ export class DriveService {
         }
         parentDriveId = subFolder.parent;
       }
-      const driveDetails = await this.driveModel.findById(parentDriveId);
+
       console.log(driveDetails);
       if (file.size > driveDetails.AvailableSpace) {
         return {
@@ -81,72 +119,58 @@ export class DriveService {
           data: driveDetails,
         };
       }
-      let parentType = null;
-      let fileType = null;
-      let [isUser, isAdmin, isBusinessProfile, isEvent] = await Promise.all([
-        this.userModel.findById(parentId),
-        this.adminModel.findById(parentId),
-        this.businessProfileModel.findById(parentId),
-        this.eventModel.findById(parentId),
-      ]);
-      if (isUser) {
-        parentType = User.name;
-      }
-      if (isAdmin) {
-        parentType = Admin.name;
-      }
-      if (isBusinessProfile) {
-        parentType = BusinessProfile.name;
-      }
-      if (isEvent) {
-        parentType = Event.name;
-      }
-      console.log('ParentType:', parentType);
 
-      if (allowedImageMimeTypes.includes(file.mimetype)) fileType = FileType.IMAGE;
-      else if (allowedVideoMimeTypes.includes(file.mimetype)) fileType = FileType.VIDEO;
-      else if (allowedDocumentMimeTypes.includes(file.mimetype)) fileType = FileType.DOCUMENT;
+      if (allowedImageMimeTypes.includes(file.mimetype))
+        fileType = FileType.IMAGE;
+      else if (allowedVideoMimeTypes.includes(file.mimetype))
+        fileType = FileType.VIDEO;
+      else if (allowedDocumentMimeTypes.includes(file.mimetype))
+        fileType = FileType.DOCUMENT;
       else if (file.mimetype == 'image/gif') fileType = FileType.GIF;
-      else if (allowedAudioMimeTypes.includes(file.mimetype)) fileType = FileType.AUDIO;
+      else if (allowedAudioMimeTypes.includes(file.mimetype))
+        fileType = FileType.AUDIO;
       else fileType = FileType.OTHER;
 
-        if (!driveDetails) {
-          return {
-            success: false,
-            message: 'Drive not found',
-          };
+      if (!driveDetails) {
+        return {
+          success: false,
+          message: 'Drive not found',
+        };
       }
-        const uploadFileName = manipulateImageName(file.originalname);
-        console.log("uploadFileName",uploadFileName);
-          const uploadResult = await this.s3Service.s3_upload(
-            file.buffer,
-            process.env.AWS_S3_BUCKET_NAME,
-            uploadFileName,
-            file.mimetype,
-          );
-          //create file doc
-          let createdFile = await this.fileModel.create({
-            metaData:{
-              mimeType:file.mimetype,
-              url: uploadResult.Location,
-              size: file.size,
-              originalName: file.originalname
-            },
-            parentDirectory: new mongoose.Types.ObjectId(locationId),
-            ParentDirectoryType: parentDirectoryType,
-            fileType:fileType,
-            category: fileCategory,
-            parent: new mongoose.Types.ObjectId(parentId),
-            parentType: parentType
-          })
-          console.log("Created File:::",createdFile);
-          //
-          await this.driveModel.updateOne({_id:parentDriveId},{$set:{AvailableSpace:(driveDetails.AvailableSpace-file.size)}})
+      const uploadFileName = manipulateImageName(file.originalname);
+      console.log('uploadFileName', uploadFileName);
+      const uploadResult = await this.s3Service.s3_upload(
+        file.buffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        uploadFileName,
+        file.mimetype,
+      );
+      //create file doc
+      let createdFile = await this.fileModel.create({
+        metaData: {
+          mimeType: file.mimetype,
+          url: uploadResult.Location,
+          size: file.size,
+          originalName: file.originalname,
+        },
+        parentDirectory: new mongoose.Types.ObjectId(locationId),
+        ParentDirectoryType: parentDirectoryType,
+        fileType: fileType,
+        category: fileCategory,
+        parent: new mongoose.Types.ObjectId(parentId),
+        parentType: parentType,
+      });
+      console.log('Created File:::', createdFile);
+      //
+      await this.driveModel.updateOne(
+        { _id: parentDriveId },
+        { $set: { AvailableSpace: driveDetails.AvailableSpace - file.size } },
+      );
 
       return {
         success: true,
         message: 'File uploaded successfully',
-          data: createdFile,
+        data: createdFile,
       };
     } catch (error) {
       console.error('Error uploading media:', error);
@@ -181,4 +205,29 @@ export class DriveService {
       return { success: false, message: error };
     }
   }
+
+  async getFiles(id:string){
+    try{
+       if (!isValidObjectId(id))
+      return {
+        success: false,
+        message: 'Please Provide valid ObjectId!',
+      };
+
+      const files = await this.fileModel.find({parentDirectory:new mongoose.Types.ObjectId(id)});
+      const folders = await this.folderModel.find({parent:new mongoose.Types.ObjectId(id)});
+      
+      return {
+        success:true,
+        message:"files fetched successfully",
+        data: [...folders,...files]
+      }
+
+
+    }catch(error){
+      console.error('Error uploading media:', error);
+      return { success: false, message: 'Failed to upload media' };
+    }
+  }
+
 }

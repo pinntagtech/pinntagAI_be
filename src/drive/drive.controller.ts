@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpStatus,
   Param,
   Post,
@@ -18,6 +19,7 @@ import { DriveService } from './drive.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { Folder } from './models/folder.model';
+import { isValidObjectId } from 'mongoose';
 
 @Controller('drive')
 export class DriveController {
@@ -26,27 +28,24 @@ export class DriveController {
   @Post('fileUpload')
   @UseGuards(JwtGuard)
   @UseInterceptors(
-    FileInterceptor(
-      'file',
-      {
-        // fileFilter: (req, file, cb) => {
-        //   //      if (
-        //   //        allowedMimeTypes.images.includes(file.mimetype) ||
-        //   //        allowedMimeTypes.videos.includes(file.mimetype)
-        //   //      ) {
-        //   //        cb(null, true);
-        //   //      } else {
-        //   //        cb(
-        //   //          new BadRequestException(
-        //   //            'Invalid file type. Only images and videos are allowed.',
-        //   //          ),
-        //   //          false,
-        //   //        );
-        //   //      }
-        // },
-        limits: { fileSize: 100 * 1024 * 1024 }, // ✅ Set file size limit to 100MB
-      },
-    ),
+    FileInterceptor('file', {
+      // fileFilter: (req, file, cb) => {
+      //   //      if (
+      //   //        allowedMimeTypes.images.includes(file.mimetype) ||
+      //   //        allowedMimeTypes.videos.includes(file.mimetype)
+      //   //      ) {
+      //   //        cb(null, true);
+      //   //      } else {
+      //   //        cb(
+      //   //          new BadRequestException(
+      //   //            'Invalid file type. Only images and videos are allowed.',
+      //   //          ),
+      //   //          false,
+      //   //        );
+      //   //      }
+      // },
+      limits: { fileSize: 100 * 1024 * 1024 }, // ✅ Set file size limit to 100MB
+    }),
   )
   async uploadFile(
     @Req() req: Request,
@@ -56,6 +55,7 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log("user:",user);
     const result = await this.driveService.uploadFile(
       user.id,
       locationId,
@@ -75,18 +75,34 @@ export class DriveController {
   }
 
   @Post('createFolder')
-  async createFolder(@Res() res:Response,@Body()createDto: Partial<Folder>){
+  async createFolder(@Res() res: Response, @Body() createDto: Partial<Folder>) {
     const result = await this.driveService.createFolder(createDto);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data:result.data,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
+  }
+  @Get('getFiles/:id') // This id will be of drive or a folder
+  async getFiles(@Res() res:Response, @Param('id') id: string) {
+   
+      const result = await this.driveService.getFiles(id);
+
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
   }
 }
