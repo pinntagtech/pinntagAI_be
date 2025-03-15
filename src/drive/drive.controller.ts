@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -90,8 +91,44 @@ export class DriveController {
     }
   }
   @Get('getFiles/:id') // This id will be of drive or a folder
-  async getFiles(@Res() res: Response, @Param('id') id: string) {
-    const result = await this.driveService.getFiles(id);
+  async getFiles(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('fileCategory') fileCategory?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const result = await this.driveService.getFiles(id,fileCategory,page,limit);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('fileCategories')
+  async fileCategories(@Res() res: Response) {
+    const result = await this.driveService.fileCategories();
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('moveFile')
+  async moveFile(@Res() res: Response,@Body('toMove') toMove:string,@Body('dest') dest:string) {
+    const result = await this.driveService.moveFile(toMove,dest);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

@@ -13,7 +13,7 @@ export const FileType = {
   AUDIO: 'audio',
   OTHER: 'other',
 }
-export const fileCategory = {
+export const FileCategoryTypes = {
   PROFILE_PICTURE: 'profile picture',
   Thumbnail: 'thumbnail',
   GALLERY_IMAGE: 'gallery image',

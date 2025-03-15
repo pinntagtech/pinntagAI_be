@@ -17,12 +17,17 @@ import {
   allowedDocumentMimeTypes,
   allowedImageMimeTypes,
   allowedVideoMimeTypes,
+  FileCategoryTypes,
   FileType,
 } from 'src/enums/auth.enums';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { S3Service } from 'src/s3.service';
 import { In } from 'typeorm';
 import { File, fileDocument } from './models/file.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from './models/fileCategory.model';
 
 @Injectable()
 export class DriveService {
@@ -36,6 +41,8 @@ export class DriveService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<fileDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly s3Service: S3Service,
   ) {}
 
@@ -52,6 +59,12 @@ export class DriveService {
           message: 'Invalid ObjectId',
         };
       }
+      if (!fileCategoryId) {
+        let getFileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.OTHER,
+        });
+        fileCategoryId = getFileCategory.id;
+      }
       let parentType = null;
       let fileType = null;
       // let [isUser, isAdmin, isBusinessProfile, isEvent] = await Promise.all([
@@ -61,34 +74,18 @@ export class DriveService {
       //   this.eventModel.findById(parentId),
       // ]);
       console.log('parentId:', parentId);
-      let driveDetails = await this.driveModel.findOne({ owner: new mongoose.Types.ObjectId(parentId) });
+      let driveDetails = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(parentId),
+      });
       if (!driveDetails) {
         return {
           success: false,
           message: 'Drive not found!',
         };
       }
-      console.log("not coming here why!");
       parentType = driveDetails.ownerType;
 
       if (!locationId) locationId = driveDetails.id;
-
-      // if (!locationId) {
-
-      //   locationId = driveDetails.id;
-      // }
-      // if (isUser) {
-      //   parentType = User.name;
-      // }
-      // if (isAdmin) {
-      //   parentType = Admin.name;
-      // }
-      // if (isBusinessProfile) {
-      //   parentType = BusinessProfile.name;
-      // }
-      // if (isEvent) {
-      //   parentType = Event.name;
-      // }
 
       console.log('ParentType:', parentType);
       console.log('FILE:', file);
@@ -206,29 +203,107 @@ export class DriveService {
     }
   }
 
-  async getFiles(id:string){
-    try{
-       if (!isValidObjectId(id))
-      return {
-        success: false,
-        message: 'Please Provide valid ObjectId!',
+  async getFiles(
+    id: string,
+    fileCategory?: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+      if (!isValidObjectId(id))
+        return {
+          success: false,
+          message: 'Please Provide valid ObjectId!',
+        };
+      let fileFilter: any = {
+        parentDirectory: new mongoose.Types.ObjectId(id),
       };
-
-      const files = await this.fileModel.find({parentDirectory:new mongoose.Types.ObjectId(id)});
-      const folders = await this.folderModel.find({parent:new mongoose.Types.ObjectId(id)});
-      console.log("files:",files);
-      console.log("folders:",folders);
-      return {
-        success:true,
-        message:"files fetched successfully",
-        data: [...folders,...files]
+      if (fileCategory) {
+        fileFilter.fileCategory = new mongoose.Types.ObjectId(fileCategory);
       }
 
-
-    }catch(error){
-      console.error('Error uploading media:', error);
-      return { success: false, message: 'Failed to upload media' };
+      const [files, folders] = await Promise.all([
+        await this.fileModel
+          .find(fileFilter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        await this.folderModel
+          .find({
+            parent: new mongoose.Types.ObjectId(id),
+          })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+      ]);
+      return {
+        success: true,
+        message: 'files fetched successfully',
+        data: [...folders, ...files],
+      };
+    } catch (error) {
+      console.error('Error in fetching files:', error);
+      return { success: false, message: 'Failed to fetched files' };
     }
   }
+  async fileCategories() {
+    try {
+      const allFileCategories = await this.fileCategoryModel.find();
+      return {
+        success: true,
+        message: 'Files Categories fetched successfully!',
+        data: allFileCategories,
+      };
+    } catch (error) {
+      console.error('Error while fetching file categories:', error);
+      return { success: false, message: 'Failed to fetch file categories' };
+    }
+  }
+  async moveFile(toMove:string,dest:string) {
+    try{  
+      if(!isValidObjectId(toMove) || !isValidObjectId(dest)){
+        return {
+          success:false,
+          message:"Invalid ObjectID"
+        }
+      }
+      const [toMoveFile,toMoveFolder,driveDest,folderDest] = await Promise.all([this.fileModel.findOne({_id:toMove}),this.folderModel.findOne({_id:toMove}),this.driveModel.findOne({_id:dest}),this.folderModel.findOne({_id:dest})])
+      if(!toMoveFile && toMoveFolder){
+        return {
+          success:false,
+          message:"Please Provide valid fileID or FolderID! Only File or a Folder can be moved!"
+        }
+      }
+      if(!driveDest && !folderDest){
+        return {
+          success:false,
+          message:"Please Provide valid driveID or folderID"
+        }
+      }
+        let parentDirectoryType = null;
+      if(driveDest) parentDirectoryType = "DRIVE";
+      if(folderDest) parentDirectoryType = "FOLDER";
+     
+      let result = null;
+      if(toMoveFile){
+        result = await this.fileModel.findOneAndUpdate({_id:toMove},{$set:{parentDirectory:new mongoose.Types.ObjectId(dest),ParentDirectoryType:parentDirectoryType}})
+      }
+      if(toMoveFolder){
+        result = await this.folderModel.findOneAndUpdate({_id:toMove},{$set:{parent:new mongoose.Types.ObjectId(dest),parentType:parentDirectoryType}})
+      }
+      console.log("result:",result);
+      
 
+      return {
+        sucess:true,
+        message:"File moved successfully!",
+        data:result
+      }
+
+    }catch(error){
+      console.error('Error while moving file:', error);
+      return { success: false, message: 'Failed to move file' };
+    }
+  }
 }
