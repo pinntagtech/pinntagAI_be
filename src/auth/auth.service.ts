@@ -81,12 +81,19 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+<<<<<<< HEAD
 import { SeederService } from 'src/seeder/seeder.service';
+=======
+import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
+import { roleType } from 'src/contracts/enums/RoleType.enum';
+>>>>>>> 374bfe02c7732740e1b4ec06903ac43675e4bcec
 
 @Injectable()
 export class AuthService {
   private oAuth2Client: Auth.OAuth2Client;
   constructor(
+    @InjectModel(AdminV2.name)
+    private readonly adminV2Model: Model<AdminV2Document>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(GuestSession.name)
@@ -1078,6 +1085,41 @@ export class AuthService {
         success: true,
         message: 'Admin logged in successfully',
         user: foundAdmin,
+        token,
+      };
+    }
+  }
+
+  async adminLoginV2(loginDto: LoginDto) {
+    const admin = await this.adminV2Model.findOne({
+      email: loginDto.email,
+    });
+    if (!admin) {
+      return {
+        success: false,
+        message: 'Admin not found with the email provided.',
+      };
+    } else {
+      const validPassword = await bcrypt.compare(
+        loginDto.password,
+        admin.password,
+      );
+      if (!validPassword) {
+        return {
+          success: false,
+          message: 'Incorrect password',
+        };
+      }
+      const payload: JwtPayload = {
+        id: admin.id,
+        email: admin.email,
+        type: roleType.ADMIN,
+      };
+      const token = await this.generateJWT(payload);
+      return {
+        success: true,
+        message: 'Admin logged in successfully',
+        user: admin,
         token,
       };
     }

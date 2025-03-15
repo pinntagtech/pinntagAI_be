@@ -22,6 +22,9 @@ import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
 import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
+import { Permission } from './models/permission.model';
+import { AdminRole } from './models/adminRole.model';
+import { BusinessRole } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller('v1/admin')
@@ -328,6 +331,27 @@ export class AdminController {
         message: result.message,
       });
     }
+  }
+
+  @Post('create-permission')
+  async createPermission(
+    @Body() createDto: Partial<Permission>,
+  ): Promise<Permission> {
+    return this.adminService.create(createDto);
+  }
+
+  @Post('create-role')
+  async createAdminRole(
+    @Body() createDto: Partial<AdminRole>,
+  ): Promise<AdminRole> {
+    return this.adminService.createRole(createDto);
+  }
+
+  @Post('create-business-role')
+  async createBusinessRole(
+    @Body() createDto: Partial<BusinessRole>,
+  ): Promise<BusinessRole> {
+    return this.adminService.createBusinessRole(createDto);
   }
   @Post('dbQueries') //just to add run db queries or only for testing purpose
   @UseGuards(AdminGuard)
