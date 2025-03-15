@@ -287,6 +287,22 @@ export class AuthController {
     }
   }
 
+  @Post('admin/login-v2')
+  async adminLoginV2(@Res() res: Response, @Body() loginDto: LoginDto) {
+    const result = await this.authService.adminLoginV2(loginDto);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('dashboard/config/add')
   @UseGuards(AdminGuard)
   async configureDashboard(

@@ -70,6 +70,7 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
@@ -83,6 +84,7 @@ import {
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: AdminV2.name, schema: AdminV2Schema },
       { name: Otp.name, schema: OtpSchema },
       { name: User.name, schema: UserSchema },
       { name: Token.name, schema: TokenSchema },
