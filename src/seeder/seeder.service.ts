@@ -131,9 +131,38 @@ export class SeederService {
       await this.createDrive(admin.id, Admin.name);
     }
   }
-  public async createSuperAdmin() {
-    
+  async seedSuperAdminRole() {
+    const role = await this.roleModel.findOne({ isSuperAdmin: true });
+    if (!role) {
+      await this.roleModel.create({
+        name: SystmeRoles.SUPER_ADMIN,
+        creatorType: 'System',
+        isSuperAdmin: true,
+        isPrimaryAdmin: true,
+        belongsToSystem: true,
+        privileges: ['*'],
+      });
+    }
   }
+ 
+ 
+  async seedSuperAdmin() {
+    const role = await this.roleModel.findOne({ isSuperAdmin: true });
+    const admin = await this.adminModel.findOne({ isSuperAdmin: true });
+    if (role && !admin) {
+      const password = await this.authService.encryptPassword(
+        process.env.SUPER_ADMIN_PASSWORD,
+      );
+      await this.adminModel.create({
+        email: process.env.SUPER_ADMIN_EMAIL,
+        password,
+        name: process.env.SUPER_ADMIN_NAME,
+        role: role._id,
+        isSuperAdmin: true,
+      });
+    }
+  }
+ 
 
   public async seedCategories() {
     const categories = await this.categoryModel.find().exec();

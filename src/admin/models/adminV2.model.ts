@@ -31,7 +31,7 @@ export class AdminV2 {
   role: mongoose.Types.ObjectId;
  
 
-  @Prop({ ref: 'Admin' }) //will be empty for super admin
+  @Prop({ ref: AdminV2.name }) //will be empty for super admin
   parent: mongoose.Types.ObjectId;
 }
 
