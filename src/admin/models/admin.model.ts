@@ -4,6 +4,7 @@ import { Role } from 'src/models/role.model';
 import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export const Genders = {
   MALE: 'male',
@@ -31,7 +32,8 @@ export class Admin {
   @Prop({ default: '' })
   name: string;
   @Prop({
-    default: 'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
+    default:
+      'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
   })
   profilePhoto: string;
   @Prop({ unique: true, sparse: true })
@@ -94,7 +96,7 @@ export class Admin {
   stripeCustomerId: string;
   @Prop()
   savedCards: Array<string>;
-  @Prop({default: 1024*1024})
+  @Prop({ default: 1024 * 1024 })
   driveDefaultSpace: number;
 }
 export const AdminSchema = SchemaFactory.createForClass(Admin);

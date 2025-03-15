@@ -5,7 +5,7 @@ export const DeviceTypes = {
   POSTMAN: 'postman',
   MOBILE: 'mobile',
 };
-export const fileType = {
+export const FileType = {
   IMAGE: 'image',
   VIDEO: 'video',
   DOCUMENT: 'document',
@@ -13,7 +13,7 @@ export const fileType = {
   AUDIO: 'audio',
   OTHER: 'other',
 }
-export const fileCategory = {
+export const FileCategoryTypes = {
   PROFILE_PICTURE: 'profile picture',
   Thumbnail: 'thumbnail',
   GALLERY_IMAGE: 'gallery image',
@@ -32,7 +32,6 @@ export const fileCategory = {
 export const allowedImageMimeTypes = [
   'image/jpeg',
   'image/png',
-  'image/gif',
   'image/webp',
   'image/svg+xml',
   'image/bmp',
@@ -60,6 +59,18 @@ export const allowedDocumentMimeTypes = [
   'text/csv',
   'application/zip',
   'application/x-rar-compressed',
+];
+export const allowedAudioMimeTypes = [
+  'audio/mpeg',   // MP3
+  'audio/wav',    // WAV
+  'audio/aac',    // AAC
+  'audio/ogg',    // OGG
+  'audio/flac',   // FLAC
+  'audio/opus',   // OPUS
+  'audio/midi',   // MIDI
+  'audio/x-ms-wma', // WMA
+  'audio/x-aiff', // AIFF
+  'audio/webm'    // WebM Audio
 ];
 
 export const TokenTypes = {

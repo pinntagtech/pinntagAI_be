@@ -5,6 +5,7 @@ import { BusinessProfile } from '../../business-profile/models/businessProfile.m
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { Refferal } from './refferal.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export const Genders = {
   MALE: 'male',
@@ -32,7 +33,8 @@ export class User {
   @Prop({ default: '' })
   name: string;
   @Prop({
-    default: 'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
+    default:
+      'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
   })
   profilePhoto: string;
   @Prop({ unique: true, sparse: true })

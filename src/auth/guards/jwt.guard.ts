@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   HttpStatus,
   Injectable,
   UnauthorizedException,
@@ -23,6 +24,7 @@ import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
+import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 
 @Injectable()
 export class JwtGuard implements CanActivate {
@@ -34,6 +36,7 @@ export class JwtGuard implements CanActivate {
     @InjectModel(GuestSession.name)
     private readonly guestSessionModel: Model<GuestSessionDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private jwtService: JwtService,
   ) {}
 
@@ -42,9 +45,10 @@ export class JwtGuard implements CanActivate {
     const response = context.switchToHttp().getResponse();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      return response.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Unauthorised. Please provide a token.',
-      });
+      // return response.status(HttpStatus.UNAUTHORIZED).json({
+      //   message: 'Unauthorised. Please provide a token.',
+      // });
+      throw new UnauthorizedException('Unauthorised. Please provide a token.');
     } else {
       try {
         const payload: JwtPayload = await this.jwtService.verifyAsync(token, {
@@ -59,22 +63,31 @@ export class JwtGuard implements CanActivate {
             path = '/v1/auth/dashboard';
           }
           if (!allowedRoutesForGuest.includes(path)) {
-            return response.status(403).json({
-              message: 'The service is not accessible for guests',
-            });
+            // return response.status(403).json({
+            //   message: 'The service is not accessible for guests',
+            // });
+            throw new ForbiddenException(
+              'The service is not accessible for guests',
+            );
           } else {
             const foundSession = await this.guestSessionModel.findOne({
               _id: new mongoose.Types.ObjectId(payload.id),
             });
             if (!foundSession) {
-              return response.status(HttpStatus.UNAUTHORIZED).json({
-                message:
-                  'The login session has been expired. Please login again',
-              });
+              // return response.status(HttpStatus.UNAUTHORIZED).json({
+              //   message:
+              //     'The login session has been expired. Please login again',
+              // });
+              throw new ForbiddenException(
+                'The login session has been expired. Please login again',
+              );
             } else if (foundSession.isBlocked) {
-              return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Sorry. You are blocked by admin',
-              });
+              // return response.status(HttpStatus.UNAUTHORIZED).json({
+              //   message: 'Sorry. You are blocked by admin',
+              // });
+              throw new UnauthorizedException(
+                'Sorry. You are blocked by admin',
+              );
             } else {
               const foundTokenDoc = await this.tokenModel.findOne({
                 token,
@@ -82,9 +95,12 @@ export class JwtGuard implements CanActivate {
                 isBlacklisted: false,
               });
               if (!foundTokenDoc) {
-                return response.status(HttpStatus.UNAUTHORIZED).json({
-                  message: 'Token expired please login again',
-                });
+                throw new UnauthorizedException(
+                  'Token expired please login again',
+                );
+                // return response.status(HttpStatus.UNAUTHORIZED).json({
+                //   message: 'Token expired please login again',
+                // });
               } else {
                 request['isGuest'] = true;
                 request['sessionId'] = foundSession.id;
@@ -94,13 +110,19 @@ export class JwtGuard implements CanActivate {
           }
         }
         if (!payload.role) {
-          return response.status(HttpStatus.UNAUTHORIZED).json({
-            message: 'Invalid token. Please login again.',
-          });
+          // return response.status(HttpStatus.UNAUTHORIZED).json({
+          //   message: 'Invalid token. Please login again.',
+          // });
+          throw new UnauthorizedException('Invalid token. Please login again.');
         } else {
           const user = JSON.parse(
             JSON.stringify(
               await this.userModel.findById(payload.id).populate('role').exec(),
+            ),
+          );
+          const admin = JSON.parse(
+            JSON.stringify(
+              await this.adminModel.findById(payload.id, { _id: 1, email: 1 }),
             ),
           );
           if (user) {
@@ -111,9 +133,9 @@ export class JwtGuard implements CanActivate {
               isBlacklisted: false,
             });
             if (!tokenDoc) {
-              return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Token expired please login again',
-              });
+              throw new UnauthorizedException(
+                'Token expired please login again',
+              );
             }
             // console.log('user in guard:---', user);
             if (payload.role == Roles.BUSINESS_PROFILE) {
@@ -129,26 +151,39 @@ export class JwtGuard implements CanActivate {
               request['user'] = user;
               request['isBusiness'] = false;
             }
+          } else if (admin) {
+            request['user'] = admin;
+            request['isAdmin'] = true;
+            // return response.status(HttpStatus.UNAUTHORIZED).json({
+            // message: 'Invalid Token. User not found',
+            // });
+            // throw new UnauthorizedException('Invalid Token. User not found');
           } else {
-            return response.status(HttpStatus.UNAUTHORIZED).json({
-              message: 'Invalid Token. User not found',
-            });
+            // return response.status(HttpStatus.UNAUTHORIZED).json({
+            // message: 'Invalid Token. User not found',
+            // });
+            // throw new UnauthorizedException('Invalid Token. User not found');
           }
         }
+
+        return true;
       } catch (error) {
         console.log('error message:---', error);
         if (error.name == 'TokenExpiredError') {
-          return response.status(HttpStatus.UNAUTHORIZED).json({
-            message: 'Token expired',
-          });
+          // return response.status(HttpStatus.UNAUTHORIZED).json({
+          //   message: 'Token expired',
+          // });
+          throw new UnauthorizedException('Token expired');
         } else if (error.name == 'UnauthorizedException') {
-          return response.status(HttpStatus.UNAUTHORIZED).json({
-            message: error.message,
-          });
+          // return response.status(HttpStatus.UNAUTHORIZED).json({
+          //   message: error.message,
+          // });
+          throw new UnauthorizedException('UnauthorizedException');
         }
-        return response.status(HttpStatus.UNAUTHORIZED).json({
-          message: 'Invalid token. Please login again.',
-        });
+        // return response.status(HttpStatus.UNAUTHORIZED).json({
+        //   message: 'Invalid token. Please login again.',
+        // });
+        throw new UnauthorizedException('Invalid token. Please login again.');
       }
       return true;
     }
