@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -21,6 +22,7 @@ import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
 import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller('v1/admin')
 export class AdminController {
@@ -327,20 +329,65 @@ export class AdminController {
       });
     }
   }
-  @Post('dbQueries')
+  @Post('dbQueries') //just to add run db queries or only for testing purpose
   @UseGuards(AdminGuard)
-  async dbQueries(@Res() res: Response){
+  async dbQueries(@Res() res: Response) {
     const result = await this.adminService.dbQueries();
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data
+        data: result.data,
       });
-    } 
-    
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    }
+
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: result.message,
+    });
   }
 
+  @Post('createCategory')
+  @UseGuards(AdminGuard)
+  async createCategory(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() createCategoryDto: CreateCategoryDto,
+  ) {
+    const result = await this.adminService.createCategory(createCategoryDto);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    }
+
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: result.message,
+    });
+  }
+  @Get('categories')
+  @UseGuards(AdminGuard)
+  async getCategories(@Res() res: Response) {
+    return res.status(HttpStatus.OK).json({
+      categories: await this.adminService.getCategories(),
+    });
+  }
+  @Post('updateCategory/:id')
+  @UseGuards(AdminGuard)
+  async updateCategory(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() updateCategoryDto: CreateCategoryDto,
+  ) {
+    const result = await this.adminService.updateCategory(
+      id,
+      updateCategoryDto,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    }
+  }
 }
