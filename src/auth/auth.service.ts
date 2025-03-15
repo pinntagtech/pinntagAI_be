@@ -81,12 +81,9 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-<<<<<<< HEAD
 import { SeederService } from 'src/seeder/seeder.service';
-=======
 import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 import { roleType } from 'src/contracts/enums/RoleType.enum';
->>>>>>> 374bfe02c7732740e1b4ec06903ac43675e4bcec
 
 @Injectable()
 export class AuthService {
