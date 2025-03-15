@@ -51,21 +51,21 @@ export class DriveController {
     @Req() req: Request,
     @Res() res: Response,
     @Body('locationId') locationId: string,
-    @Body('fileCategory') fileCategory: string,
+    @Body('fileCategoryId') fileCategoryId: string,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log("user:",user);
+    console.log('user:', user);
     const result = await this.driveService.uploadFile(
       user.id,
       locationId,
-      fileCategory,
+      fileCategoryId,
       file,
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        //    gallery: result.gallery,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -90,19 +90,18 @@ export class DriveController {
     }
   }
   @Get('getFiles/:id') // This id will be of drive or a folder
-  async getFiles(@Res() res:Response, @Param('id') id: string) {
-   
-      const result = await this.driveService.getFiles(id);
+  async getFiles(@Res() res: Response, @Param('id') id: string) {
+    const result = await this.driveService.getFiles(id);
 
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }

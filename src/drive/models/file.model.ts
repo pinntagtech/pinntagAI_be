@@ -7,6 +7,7 @@ import { Event } from 'src/event/models/event.model';
 import { User } from 'src/user/models/user.model';
 import { Folder } from './folder.model';
 import { Drive } from './drive.model';
+import { FileCategory } from './fileCategory.model';
 
 export type fileDocument = File & Document;
 class MetaData {
@@ -29,12 +30,13 @@ export class File {
   ParentDirectoryType: string;
 
 
+
   @Prop({ type: MetaData })
   metaData: MetaData;
   @Prop({ required: true, enum: FileType })
   fileType: string;
-  @Prop({ required: true, enum: fileCategory })
-  category: string;
+  @Prop({ required: true, ref:FileCategory.name })
+  category: mongoose.Types.ObjectId;
 
   @Prop({ refPath: 'parentType' })
   parent: mongoose.Types.ObjectId;

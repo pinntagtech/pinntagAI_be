@@ -42,7 +42,7 @@ export class DriveService {
   async uploadFile(
     parentId: string,
     locationId: string,
-    fileCategory: string,
+    fileCategoryId: string,
     file: Express.Multer.File,
   ) {
     try {
@@ -156,7 +156,7 @@ export class DriveService {
         parentDirectory: new mongoose.Types.ObjectId(locationId),
         ParentDirectoryType: parentDirectoryType,
         fileType: fileType,
-        category: fileCategory,
+        category: new mongoose.Types.ObjectId(fileCategoryId),
         parent: new mongoose.Types.ObjectId(parentId),
         parentType: parentType,
       });
@@ -216,7 +216,8 @@ export class DriveService {
 
       const files = await this.fileModel.find({parentDirectory:new mongoose.Types.ObjectId(id)});
       const folders = await this.folderModel.find({parent:new mongoose.Types.ObjectId(id)});
-      
+      console.log("files:",files);
+      console.log("folders:",folders);
       return {
         success:true,
         message:"files fetched successfully",
