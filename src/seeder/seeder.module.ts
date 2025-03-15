@@ -22,6 +22,7 @@ import {
   BusinessProfile,
   BusinessProfileSchema,
 } from 'src/business-profile/models/businessProfile.model';
+import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import {
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      { name: AdminV2.name, schema: AdminV2Schema },
     ]),
   ],
   controllers: [],

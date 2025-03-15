@@ -5,7 +5,6 @@ import {
   FollowingStatus,
   ImagePopulates,
   LocationPopulates,
-  Roles,
   TransactionPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
@@ -62,6 +61,7 @@ import {
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { SeederService } from 'src/seeder/seeder.service';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class BusinessProfileService {

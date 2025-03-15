@@ -10,7 +10,6 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import mongoose, { Model } from 'mongoose';
-import { Roles } from 'src/enums/user.enum';
 import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
@@ -25,6 +24,7 @@ import {
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class JwtGuard implements CanActivate {

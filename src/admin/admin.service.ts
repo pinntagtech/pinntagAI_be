@@ -21,7 +21,6 @@ import {
 } from 'src/business-profile/models/businessLocation.model';
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { CrawledEventStatus, EventStatus } from 'src/enums/event.enums';
-import { Roles } from 'src/enums/user.enum';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
 import {
@@ -51,6 +50,7 @@ import {
   BusinessRoleDocument,
 } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class AdminService {

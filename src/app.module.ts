@@ -49,6 +49,7 @@ import { Admin, AdminSchema } from './admin/models/admin.model';
 import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
 import { RolesModule } from './roles/roles.module';
+import { AdminV2, AdminV2Schema } from './admin/models/adminV2.model';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { RolesModule } from './roles/roles.module';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Drive.name, schema: DriveSchema },
+      { name: AdminV2.name, schema: AdminV2Schema}
     ]),
     StripeeModule,
     AuthModule,

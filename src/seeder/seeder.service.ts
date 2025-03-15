@@ -10,7 +10,6 @@ import { Category, CategoryDocument } from 'src/models/category.model';
 import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Seeder } from './data';
-import { Roles } from 'src/enums/user.enum';
 import {
   SubscriptionProduct,
   SubscriptionProductDocument,
@@ -29,6 +28,8 @@ import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
+import { Roles } from 'src/roles/enums/roles.enum';
+import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 
 @Injectable()
 export class SeederService {
@@ -48,8 +49,8 @@ export class SeederService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(AdminV2.name) private readonly adminV2Model: Model<AdminV2Document>,
   ) {}
 
   async seed() {
@@ -61,6 +62,8 @@ export class SeederService {
     await this.seedAppVersion();
     await this.setPrivateEvents();
     await this.seedFileCategories();
+    await this.seedSuperAdminRole();
+    await this.seedSuperAdmin();
   }
 
   public async seedRoles() {
@@ -135,7 +138,7 @@ export class SeederService {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
     if (!role) {
       await this.roleModel.create({
-        name: SystmeRoles.SUPER_ADMIN,
+        name: Roles.SUPER_ADMIN,
         creatorType: 'System',
         isSuperAdmin: true,
         isPrimaryAdmin: true,
@@ -148,12 +151,10 @@ export class SeederService {
  
   async seedSuperAdmin() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
-    const admin = await this.adminModel.findOne({ isSuperAdmin: true });
+    const admin = await this.adminV2Model.findOne({ isSuperAdmin: true });
     if (role && !admin) {
-      const password = await this.authService.encryptPassword(
-        process.env.SUPER_ADMIN_PASSWORD,
-      );
-      await this.adminModel.create({
+      const password = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD, 10);
+      await this.adminV2Model.create({
         email: process.env.SUPER_ADMIN_EMAIL,
         password,
         name: process.env.SUPER_ADMIN_NAME,

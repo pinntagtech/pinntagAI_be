@@ -9,7 +9,6 @@ import {
   BusinessPopulates,
   CategoryPopulates,
   LocationPopulates,
-  Roles,
   UserPopulates,
 } from 'src/enums/user.enum';
 import { LoginDto } from './dto/login.dto';
@@ -84,6 +83,7 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
 import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 import { roleType } from 'src/contracts/enums/RoleType.enum';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class AuthService {

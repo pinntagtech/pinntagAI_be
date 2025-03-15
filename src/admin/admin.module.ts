@@ -86,6 +86,7 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
+import { AdminV2, AdminV2Schema } from './models/adminV2.model';
 
 @Module({
   imports: [
@@ -125,6 +126,7 @@ import { SeederService } from 'src/seeder/seeder.service';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: AdminV2.name, schema: AdminV2Schema}
     ]),
   ],
   controllers: [AdminController],

@@ -11,7 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import { Model } from 'mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
-import { Roles } from 'src/enums/user.enum';
+import { Roles } from 'src/roles/enums/roles.enum';
 import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 
