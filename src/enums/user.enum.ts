@@ -9,6 +9,7 @@ export const Roles = {
   STAFF: 'staff',
   GUEST: 'guest',
   BUSINESS_PROFILE: 'business_profile',
+  SUPER_ADMIN: 'Super Admin',
 };
 
 export const BusinessProfileStatus = {

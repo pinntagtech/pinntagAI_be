@@ -8,7 +8,7 @@ import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from 'src/auth/auth.service';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import {

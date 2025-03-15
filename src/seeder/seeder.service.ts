@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/category.model';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Seeder } from './data';
 import { Roles } from 'src/enums/user.enum';
@@ -130,6 +130,9 @@ export class SeederService {
       console.log('Def Admin created.');
       await this.createDrive(admin.id, Admin.name);
     }
+  }
+  public async createSuperAdmin() {
+    
   }
 
   public async seedCategories() {

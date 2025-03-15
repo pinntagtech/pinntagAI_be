@@ -12,7 +12,7 @@ import { Request } from 'express';
 import { Model } from 'mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Roles } from 'src/enums/user.enum';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 
 @Injectable()
@@ -42,17 +42,18 @@ export class AdminGuard implements CanActivate {
         ),
       );
       if (roleId != user.role._id) {
-        throw new ForbiddenException('The service is only accesible for admins');
-      } 
-        request['user'] = user;
-        return true;
+        throw new ForbiddenException(
+          'The service is only accesible for admins',
+        );
+      }
+      request['user'] = user;
+      return true;
     } catch (error) {
       console.log('error message:---', error.name);
       if (error.name == 'TokenExpiredError') {
         throw new UnauthorizedException('Token expired');
-      } 
+      }
       throw new UnauthorizedException('Invalid token. Please login again.');
-
     }
   }
 

@@ -7,7 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './strategies/local.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import { Otp, OtpSchema } from './models/otp.model';
 import { MailService } from 'src/mail/mail.service';
 import { UserService } from 'src/user/user.service';
@@ -68,7 +68,6 @@ import {
   PlatformConfigSchema,
 } from './models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
-<<<<<<< HEAD
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
@@ -77,9 +76,7 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
-=======
 import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
->>>>>>> 374bfe02c7732740e1b4ec06903ac43675e4bcec
 
 @Module({
   imports: [

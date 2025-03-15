@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import {
@@ -62,7 +62,7 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
       { name: Report.name, schema: ReportSchema },
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
-      { name: Admin.name, schema: AdminSchema},
+      { name: Admin.name, schema: AdminSchema },
       {
         name: WebhookSnapshot.name,
         schema: WebhookSnapshotSchema,
@@ -70,6 +70,6 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService, JwtService, Logger, S3Service, StripeService,],
+  providers: [UserService, JwtService, Logger, S3Service, StripeService],
 })
 export class UserModule {}

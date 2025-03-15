@@ -19,7 +19,7 @@ import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { CreateStaffDto } from './dto/createStaff.dto';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { Gallery, GalleryDocument } from './models/gallery.model';
 import { UpdateBusinessProfileDto } from './dto/updateBusinessProfile.dto';
 import { UpdateLocationDto } from './dto/updateLocation.dto';
@@ -237,7 +237,10 @@ export class BusinessProfileService {
       //   businessProfile: createdBusinessProfile._id,
       // });
 
-      await this.seederService.createDrive(createdBusinessProfile._id,BusinessProfile.name);
+      await this.seederService.createDrive(
+        createdBusinessProfile._id,
+        BusinessProfile.name,
+      );
 
       await this.userModel.updateOne(
         { _id: new mongoose.Types.ObjectId(userId) },

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { Category, CategorySchema } from 'src/models/category.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { SeederService } from './seeder.service';
 import {

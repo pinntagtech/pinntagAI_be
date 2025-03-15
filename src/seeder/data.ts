@@ -108,6 +108,9 @@ export const Seeder = {
       name: Roles.ADMIN,
     },
     {
+      name: Roles.SUPER_ADMIN,
+    },
+    {
       name: Roles.USER,
     },
     {

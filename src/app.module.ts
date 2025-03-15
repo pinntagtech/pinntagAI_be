@@ -7,7 +7,7 @@ import { UserModule } from './user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule } from '@nestjs/config';
 import { User, UserSchema } from './user/models/user.model';
-import { Role, RoleSchema } from './models/role.model';
+import { Role, RoleSchema } from './roles/models/role.model';
 import { Category, CategorySchema } from './models/category.model';
 import { MailModule } from './mail/mail.module';
 import { Logger } from 'winston';
@@ -48,6 +48,7 @@ import {
 import { Admin, AdminSchema } from './admin/models/admin.model';
 import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { DriveModule } from './drive/drive.module';
     SmsModule,
     AdminModule,
     DriveModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],

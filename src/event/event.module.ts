@@ -5,7 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Event, EventSchema } from './models/event.model';
 import { Category, CategorySchema } from 'src/models/category.model';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import {
   GuestSession,
   GuestSessionSchema,
@@ -101,7 +101,7 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
       { name: CrawledEvent.name, schema: CrawledEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: EventResponse.name, schema: EventResponseSchema },
-      { name:Admin.name, schema: AdminSchema},
+      { name: Admin.name, schema: AdminSchema },
     ]),
   ],
   controllers: [EventController],

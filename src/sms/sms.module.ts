@@ -6,7 +6,7 @@ import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { UserService } from 'src/user/user.service';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import {
   BusinessProfile,
   BusinessProfileSchema,

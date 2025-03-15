@@ -10,7 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import mongoose, { Model } from 'mongoose';
 import { Roles } from 'src/enums/user.enum';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
   GuestSession,
@@ -85,37 +85,36 @@ export class UserGuard implements CanActivate {
         });
       } else {
         // if (payload.role == Roles.USER) {
-          const roleId = (await this.roleModel.findOne({ name: Roles.USER }))
-            ._id;
-          const user = JSON.parse(
-            JSON.stringify(
-              await this.userModel.findById(payload.id).populate('role').exec(),
-            ),
-          );
-          if (user) {
-            const tokenDoc = await this.tokenModel.findOne({
-              token,
-              userId: new mongoose.Types.ObjectId(payload.id),
-              type: TokenTypes.ACCESS,
-              isBlacklisted: false,
-            });
-            if (!tokenDoc) {
-              return response.status(HttpStatus.UNAUTHORIZED).json({
-                message: 'Token expired please login again',
-              });
-            }
-            // if (roleId != user.role._id) {
-            //   return response.status(403).json({
-            //     message: 'The service is only accesible for users',
-            //   });
-            // } else {
-            request['user'] = user;
-            // }
-          } else {
+        const roleId = (await this.roleModel.findOne({ name: Roles.USER }))._id;
+        const user = JSON.parse(
+          JSON.stringify(
+            await this.userModel.findById(payload.id).populate('role').exec(),
+          ),
+        );
+        if (user) {
+          const tokenDoc = await this.tokenModel.findOne({
+            token,
+            userId: new mongoose.Types.ObjectId(payload.id),
+            type: TokenTypes.ACCESS,
+            isBlacklisted: false,
+          });
+          if (!tokenDoc) {
             return response.status(HttpStatus.UNAUTHORIZED).json({
-              message: 'Invalid Token. User not found',
+              message: 'Token expired please login again',
             });
           }
+          // if (roleId != user.role._id) {
+          //   return response.status(403).json({
+          //     message: 'The service is only accesible for users',
+          //   });
+          // } else {
+          request['user'] = user;
+          // }
+        } else {
+          return response.status(HttpStatus.UNAUTHORIZED).json({
+            message: 'Invalid Token. User not found',
+          });
+        }
         // } else {
         //   return response.status(403).json({
         //     message: 'The service is only accesible for users',

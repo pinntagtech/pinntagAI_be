@@ -3,7 +3,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import {
   CrawledEvent,
   CrawledEventSchema,

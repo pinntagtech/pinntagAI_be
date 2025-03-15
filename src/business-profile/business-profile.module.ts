@@ -11,7 +11,7 @@ import { User, UserSchema } from 'src/user/models/user.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/role.model';
 import {
   GuestSession,
   GuestSessionSchema,

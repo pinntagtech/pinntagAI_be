@@ -11,7 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import mongoose, { Model } from 'mongoose';
 import { Roles } from 'src/enums/user.enum';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
   GuestSession,

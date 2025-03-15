@@ -37,7 +37,7 @@ import { Image, ImageDocument } from 'src/event/models/image.model';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/category.model';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/role.model';
 import { S3Service } from 'src/s3.service';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
@@ -537,7 +537,10 @@ export class AdminService {
     roleData: Partial<BusinessRole>,
   ): Promise<BusinessRole> {
     try {
-      const newRole = new this.businessRoleModel({...roleData, isParent: true});
+      const newRole = new this.businessRoleModel({
+        ...roleData,
+        isParent: true,
+      });
       return await newRole.save();
     } catch (error) {
       if (error.code === 11000) {
@@ -594,17 +597,17 @@ export class AdminService {
   async updateCategory(catId: string, updateCategoryDto: CreateCategoryDto) {
     try {
       if (!mongoose.isValidObjectId(catId)) {
-            return {
-              success: false,
-              message: 'Please provide a valid id',
-            };
-          }
+        return {
+          success: false,
+          message: 'Please provide a valid id',
+        };
+      }
       const updatedCategory = await this.categoryModel.findOneAndUpdate(
         { _id: catId },
         { $set: { ...updateCategoryDto } },
       );
       console.log('UpdatedCategory:', updatedCategory);
-      
+
       return {
         success: true,
         message: 'Category with given ID is Updated Successfully!',
