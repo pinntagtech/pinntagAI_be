@@ -49,6 +49,7 @@ import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
 import { RolesModule } from './roles/roles.module';
 import { Role, RoleSchema } from './roles/models/roles.model';
+import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { Role, RoleSchema } from './roles/models/roles.model';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Drive.name, schema: DriveSchema },
+      { name: Privilege.name, schema: PrivilegeSchema}
     ]),
     StripeeModule,
     AuthModule,

@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Role } from 'src/roles/models/roles.model';
+Role
 
 export const Genders = {
   MALE: 'male',

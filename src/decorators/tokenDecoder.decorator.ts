@@ -1,5 +1,8 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
+import { Admin } from 'src/admin/models/admin.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
+import { User } from 'src/user/models/user.model';
 
 export const TokenDecoder = createParamDecorator(
   (data: any, ctx: ExecutionContext) => {
@@ -7,6 +10,7 @@ export const TokenDecoder = createParamDecorator(
     if (request.isGuest) {
       const user: DecodedUser = {
         isGuest: true,
+        userType: 'user',
         id: request.sessionId,
         role: 'GUEST',
         name: 'Guest',
@@ -23,6 +27,7 @@ export const TokenDecoder = createParamDecorator(
       const user: DecodedUser = {
         isGuest: false,
         role: 'business_profile',
+        userType: BusinessProfile.name,
         name: request.user.firstName + ' ' + request.user.lastName,
         id: request.user._id,
         businessProfile: request.businessProfile,
@@ -30,10 +35,10 @@ export const TokenDecoder = createParamDecorator(
         ...request.user,
       };
       return user;
-    } else if (request.isAdmin){
+    } else if (request.isAdmin) {
       const user: DecodedUser = {
         isGuest: false,
-        role: 'admin',
+        userType: Admin.name,
         // name: request.user.firstName + ' ' + request.user.lastName,
         name: `${request.user?.name || ''}`,
         id: request.user?._id,
@@ -42,8 +47,7 @@ export const TokenDecoder = createParamDecorator(
         ...request.user,
       };
       return user;
-    } 
-    else {
+    } else {
       const user: DecodedUser = {
         isGuest: false,
         role: 'user',

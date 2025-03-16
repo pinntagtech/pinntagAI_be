@@ -11,7 +11,6 @@ import { User, UserSchema } from 'src/user/models/user.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
-import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
   GuestSession,
   GuestSessionSchema,
@@ -84,6 +83,8 @@ import {
   FileCategory,
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 
 @Module({
   imports: [
@@ -119,6 +120,7 @@ import {
       { name: Drive.name, schema: DriveSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema: PrivilegeSchema}
     ]),
   ],
   controllers: [BusinessProfileController],

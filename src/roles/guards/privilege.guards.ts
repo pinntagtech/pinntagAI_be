@@ -7,6 +7,7 @@ import {
 import { PRIVILEGE_KEY } from '../privilege.decorator';
 import { Reflector } from '@nestjs/core';
 import { PrivilegeService } from '../privilege.service';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class PrivilegeGuard implements CanActivate {
@@ -28,7 +29,11 @@ export class PrivilegeGuard implements CanActivate {
     if (!user || !user.role) {
       throw new UnauthorizedException('User role not found');
     }
-
+    const findRole = await this.privilegeService.findRole(user.role);
+    
+    if(findRole.isSuperAdmin){
+      return true;
+    }
     const hasPrivilege = await this.privilegeService.hasPrivilege(
       user.role,
       requiredPrivilege.resource,

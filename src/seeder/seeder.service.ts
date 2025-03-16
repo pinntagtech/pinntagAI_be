@@ -28,7 +28,8 @@ import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
-import { Roles } from 'src/roles/enums/roles.enum';
+import { Actions, ResourceTypes, Roles } from 'src/roles/enums/roles.enum';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 
 @Injectable()
 export class SeederService {
@@ -50,6 +51,7 @@ export class SeederService {
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Privilege.name) private readonly privilegeModel:Model<PrivilegeDocument>,
   ) {}
 
   async seed() {
@@ -62,6 +64,7 @@ export class SeederService {
     await this.seedFileCategories();
     await this.seedSuperAdminRole();
     await this.seedSuperAdmin();
+    // await this.seedPrivileges();
   }
 
   public async seedRoles() {
@@ -204,5 +207,21 @@ export class SeederService {
     if (!fileCategories.length) {
       await this.fileCategoryModel.insertMany(Seeder.fileCategories);
     }
+  }
+  async seedPrivileges() {
+    const privileges = await this.privilegeModel.find();
+    if(!privileges.length){
+      const superAdmin = await this.adminModel.findOne({isSuperAdmin:true});
+      for(let [key,action] of Object.entries(Actions)){
+        for(let [resKey,resource] of Object.entries(ResourceTypes)){
+          await this.privilegeModel.create({
+            role:superAdmin._id,
+            resource:resource,
+            action: action
+          })
+        }
+      }
+    }
+    
   }
 }

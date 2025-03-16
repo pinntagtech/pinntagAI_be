@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 
 export type RoleDocument = Role & Document;
 @Schema({ timestamps: true })
@@ -16,7 +17,7 @@ export class Role {
  creator: string;
 
 
- @Prop({ required: true, enum: ['Admin', 'User', 'System'] })
+ @Prop({ required: true, enum: ['Admin', BusinessProfile.name, 'System'] })
  creatorType: string;
 
 

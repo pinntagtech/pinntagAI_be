@@ -1,5 +1,6 @@
 export interface DecodedUser {
   isGuest: boolean;
+  userType: string;
   id: string;
   email: string;
   role: string;

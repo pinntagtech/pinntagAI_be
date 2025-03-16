@@ -86,6 +86,7 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 
 @Module({
   imports: [
@@ -125,6 +126,7 @@ import { Role, RoleSchema } from 'src/roles/models/roles.model';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema: PrivilegeSchema},
     ]),
   ],
   controllers: [AdminController],

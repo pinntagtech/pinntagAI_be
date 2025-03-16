@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { Category, CategorySchema } from 'src/models/category.model';
-import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { SeederService } from './seeder.service';
 import {
@@ -22,6 +21,8 @@ import {
   BusinessProfile,
   BusinessProfileSchema,
 } from 'src/business-profile/models/businessProfile.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import {
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      { name: Privilege.name, schema: PrivilegeSchema},
     ]),
   ],
   controllers: [],

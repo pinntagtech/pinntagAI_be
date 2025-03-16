@@ -8,7 +8,6 @@ import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from 'src/auth/auth.service';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import {
@@ -78,6 +77,8 @@ import {
   FileCategory,
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 
 @Global()
 @Module({
@@ -111,6 +112,7 @@ import {
       { name: Drive.name, schema: DriveSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema:PrivilegeSchema}
     ]),
     MailerModule.forRoot({
       transport: {

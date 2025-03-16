@@ -7,7 +7,6 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './strategies/local.strategy';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Otp, OtpSchema } from './models/otp.model';
 import { MailService } from 'src/mail/mail.service';
 import { UserService } from 'src/user/user.service';
@@ -76,6 +75,8 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { SeederService } from 'src/seeder/seeder.service';
       { name: Drive.name, schema: DriveSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema: PrivilegeSchema}
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
