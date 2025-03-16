@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
 import mongoose, { Model } from 'mongoose';
-import { Role, RoleDocument } from 'src/roles/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessPopulates,
   CategoryPopulates,
@@ -81,16 +81,14 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
-import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 import { roleType } from 'src/contracts/enums/RoleType.enum';
 import { Roles } from 'src/roles/enums/roles.enum';
+import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 
 @Injectable()
 export class AuthService {
   private oAuth2Client: Auth.OAuth2Client;
   constructor(
-    @InjectModel(AdminV2.name)
-    private readonly adminV2Model: Model<AdminV2Document>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(GuestSession.name)
@@ -115,6 +113,7 @@ export class AuthService {
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -322,7 +321,7 @@ export class AuthService {
     });
     const user = await this.userService.getUserById(createdUser.id);
 
-    await this.seederService.createDrive(createdUser.id,User.name);
+    await this.seederService.createDrive(createdUser.id, User.name);
     return {
       success: true,
       message: 'User created successfully',
@@ -1088,7 +1087,7 @@ export class AuthService {
   }
 
   async adminLoginV2(loginDto: LoginDto) {
-    const admin = await this.adminV2Model.findOne({
+    const admin = await this.adminModel.findOne({
       email: loginDto.email,
     });
     if (!admin) {
@@ -3796,19 +3795,21 @@ export class AuthService {
     return await this.generateUniqueRefferalCode();
   }
   async getPreSignedUrl(privateURL: string) {
-    try{
+    try {
       if (!privateURL) {
         return { success: false, message: 'Please Provie URL' };
       }
-      console.log("Private URL:",privateURL);
-      const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,'');
-      console.log("File Key:",fileKey);
+      console.log('Private URL:', privateURL);
+      const fileKey = privateURL.replace(
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,
+        '',
+      );
+      console.log('File Key:', fileKey);
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
-      return { success: true, url:presignedUrl };
-    } catch(error){
+      return { success: true, url: presignedUrl };
+    } catch (error) {
       return { success: false, message: error.message };
     }
-   
   }
 }
 

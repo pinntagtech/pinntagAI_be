@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/category.model';
-import { Role, RoleDocument } from 'src/roles/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Seeder } from './data';
 import {
@@ -29,7 +29,6 @@ import {
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
 import { Roles } from 'src/roles/enums/roles.enum';
-import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 
 @Injectable()
 export class SeederService {
@@ -49,13 +48,12 @@ export class SeederService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
-    @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
-    @InjectModel(AdminV2.name) private readonly adminV2Model: Model<AdminV2Document>,
+    @InjectModel(BusinessProfile.name)
+    private readonly businessProfileModel: Model<BusinessProfileDocument>,
   ) {}
 
   async seed() {
     await this.seedRoles();
-    await this.createDefaultAdmin();
     await this.seedCategories();
     await this.seedAgeGroups();
     await this.seedSubscriptionProducts();
@@ -114,30 +112,30 @@ export class SeederService {
     return newDrive.save();
   }
 
-  public async createDefaultAdmin() {
-    const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
-    const admin = await this.adminModel
-      .findOne({ role: role._id, email: process.env.ADMIN_EMAIL })
-      .exec();
-    const password = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-    if (!admin) {
-      let admin = await this.adminModel.create({
-        firstName: process.env.ADMIN_FIRST_NAME,
+  public async seedSuperAdmin() {
+    const role = await this.roleModel.findOne({ isSuperAdmin: true });
+    const admin = await this.adminModel.findOne({
+      role: role._id,
+      isSuperAdmin: true,
+    });
+    if (role && !admin) {
+      const password = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+      const superAdmin = new this.adminModel({
         email: process.env.ADMIN_EMAIL,
         password,
         isEmailVerified: true,
-        isPhoneVerified: true,
+        name: process.env.ADMIN_FIRST_NAME,
         role: role._id,
+        isSuperAdmin: true,
       });
-      // .then(() => console.log('Def Admin created.'));
-      console.log('Def Admin created.');
-      await this.createDrive(admin.id, Admin.name);
+      superAdmin.$locals.isSeeding = true;
+      await superAdmin.save();
     }
   }
   async seedSuperAdminRole() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
     if (!role) {
-      await this.roleModel.create({
+      const superAdminRole = new this.roleModel({
         name: Roles.SUPER_ADMIN,
         creatorType: 'System',
         isSuperAdmin: true,
@@ -145,25 +143,10 @@ export class SeederService {
         belongsToSystem: true,
         privileges: ['*'],
       });
+      superAdminRole.$locals.isSeeding = true;
+      await superAdminRole.save();
     }
   }
- 
- 
-  async seedSuperAdmin() {
-    const role = await this.roleModel.findOne({ isSuperAdmin: true });
-    const admin = await this.adminV2Model.findOne({ isSuperAdmin: true });
-    if (role && !admin) {
-      const password = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD, 10);
-      await this.adminV2Model.create({
-        email: process.env.SUPER_ADMIN_EMAIL,
-        password,
-        name: process.env.SUPER_ADMIN_NAME,
-        role: role._id,
-        isSuperAdmin: true,
-      });
-    }
-  }
- 
 
   public async seedCategories() {
     const categories = await this.categoryModel.find().exec();

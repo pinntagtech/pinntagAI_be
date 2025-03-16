@@ -4,7 +4,7 @@ import { AiService } from './ai.service';
 import { HttpModule } from '@nestjs/axios';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Role, RoleSchema } from 'src/roles/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
   GuestSession,
   GuestSessionSchema,

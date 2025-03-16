@@ -3,7 +3,6 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { Role, RoleSchema } from 'src/roles/models/role.model';
 import {
   CrawledEvent,
   CrawledEventSchema,
@@ -86,7 +85,7 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
-import { AdminV2, AdminV2Schema } from './models/adminV2.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 
 @Module({
   imports: [
@@ -126,7 +125,6 @@ import { AdminV2, AdminV2Schema } from './models/adminV2.model';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-      { name: AdminV2.name, schema: AdminV2Schema}
     ]),
   ],
   controllers: [AdminController],

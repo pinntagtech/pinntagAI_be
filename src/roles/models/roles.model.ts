@@ -34,10 +34,6 @@ export class Role {
 
  @Prop({ default: false })
  isPrimaryAdmin: boolean;
-
-
- @Prop({ ref: 'Privilege', default: [] })
- privileges: mongoose.Types.ObjectId[];
 }
 
 
@@ -46,8 +42,11 @@ export const RoleSchema = SchemaFactory.createForClass(Role);
 
 //Protect that no role can be created with isSuperAdmin set to true and name set to 'Super Admin' or related to 'Super Admin' in any way(regex)
 RoleSchema.pre('save', function (next) {
- if (this.isSuperAdmin || /super\sadmin/i.test(this.name)) {
-   this.isSuperAdmin = false;
- }
- next();
+  if(this.$locals?.isSeeding){
+    return next();
+  }
+  if (this.isSuperAdmin || /super\sadmin/i.test(this.name)) {
+    this.isSuperAdmin = false;
+  }
+  next();
 });

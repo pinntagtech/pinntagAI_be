@@ -12,7 +12,7 @@ import {
   SubscriptionProduct,
   SubscriptionProductSchema,
 } from './models/subscriptionProduct.model';
-import { Role, RoleSchema } from 'src/roles/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
   GuestSession,
   GuestSessionSchema,

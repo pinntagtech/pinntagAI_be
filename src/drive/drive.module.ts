@@ -10,7 +10,7 @@ import {
   BusinessProfile,
   BusinessProfileSchema,
 } from 'src/business-profile/models/businessProfile.model';
-import { Role, RoleSchema } from 'src/roles/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
