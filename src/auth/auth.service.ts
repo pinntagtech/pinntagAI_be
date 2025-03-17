@@ -809,8 +809,9 @@ export class AuthService {
       } else {
         const payload: JwtPayload = {
           id: user.id,
-          email: user.email,
+          // email: user.email,
           role: Roles.USER,
+          userType: UserTypes.USER,
         };
         const token = await this.generateJWT(payload);
         return {
@@ -900,7 +901,8 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: user.id,
-        email: user.email,
+        // email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(payload);
@@ -1080,7 +1082,8 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: foundAdmin.id,
-        email: foundAdmin.email,
+        // email: foundAdmin.email,
+        userType: UserTypes.ADMIN,
         role: Roles.ADMIN,
       };
       const token = await this.generateJWT(payload);
@@ -1115,8 +1118,9 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: admin.id,
-        email: admin.email,
-        type: roleType.ADMIN,
+        // email: admin.email,
+        userType: UserTypes.ADMIN,
+        role: roleType.ADMIN,
       };
       const token = await this.generateJWT(payload);
       return {
