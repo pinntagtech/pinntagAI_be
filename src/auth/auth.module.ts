@@ -77,6 +77,8 @@ import {
 import { SeederService } from 'src/seeder/seeder.service';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Action, ActionSchema } from 'src/roles/models/actions.model';
 
 @Module({
   imports: [
@@ -110,7 +112,9 @@ import { Role, RoleSchema } from 'src/roles/models/roles.model';
       { name: Drive.name, schema: DriveSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-      { name: Privilege.name, schema: PrivilegeSchema}
+      { name: Privilege.name, schema: PrivilegeSchema},
+       { name: Resource.name, schema: ResourceSchema},
+       { name:Action.name, schema:ActionSchema}
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

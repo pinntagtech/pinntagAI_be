@@ -1,39 +1,28 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { DeviceTypes, TokenTypes } from 'src/enums/auth.enums';
-import { User } from 'src/user/models/user.model';
+import { DeviceTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 
 export type TokenDocument = Token & mongoose.Document;
 @Schema({ timestamps: true })
 export class Token {
+  @Prop({ required: true, enum: Object.values(UserTypes) })
+  userType: string;
+
+  @Prop({ refPath: 'userType', default: null })
+  user: mongoose.Types.ObjectId;
+
   @Prop()
   token: string;
-  @Prop({ ref: User.name })
-  userId: mongoose.Types.ObjectId;
-  @Prop({
-    enum: [
-      TokenTypes.ACCESS,
-      TokenTypes.REFRESH,
-      TokenTypes.RESET_PASSWORD,
-      TokenTypes.VERIFY_EMAIL,
-      TokenTypes.GUEST_USER,
-      TokenTypes.FCM,
-    ],
-    required: true,
-  })
+
+  @Prop({ required: true, enum: Object.values(TokenTypes) })
   type: string;
+
   @Prop()
   expiresAt: Date;
-  @Prop({
-    enum: [
-      DeviceTypes.WEB,
-      DeviceTypes.ANDROID,
-      DeviceTypes.IOS,
-      DeviceTypes.POSTMAN,
-      DeviceTypes.MOBILE,
-    ],
-  })
+
+  @Prop({ enum: Object.values(DeviceTypes) })
   deviceType: string;
+
   @Prop({ default: false })
   isBlacklisted: boolean;
 }

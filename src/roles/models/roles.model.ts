@@ -1,49 +1,44 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
+
+export const RoleBelonging = {
+  SYSTEM: 'System',
+  BUSINESS: 'Business',
+};
 
 export type RoleDocument = Role & Document;
 @Schema({ timestamps: true })
 export class Role {
- @Prop({ required: true })
- name: string;
+  @Prop({ required: true })
+  name: string;
 
+  @Prop()
+  description: string;
 
- @Prop()
- description: string;
+  @Prop({ refPath: 'creatorType' })
+  creator: string;
 
+  @Prop({ required: true, enum: ['Admin', 'Business', 'System'] })
+  creatorType: string;
+  
+  @Prop({ required: true, enum: Object.values(RoleBelonging) })
+  belongsTo: string;
 
- @Prop({ refPath: 'creatorType' })
- creator: string;
+  @Prop({ required: true, ref: 'Business' })
+  business: mongoose.Types.ObjectId;
 
+  @Prop({ default: false })
+  isSuperAdmin: boolean;
 
- @Prop({ required: true, enum: ['Admin', BusinessProfile.name, 'System'] })
- creatorType: string;
-
-
- @Prop({ default: false })
- belongsToBusiness: boolean;
-
-
- @Prop({ default: false })
- belongsToSystem: boolean;
-
-
- @Prop({ default: false })
- isSuperAdmin: boolean;
-
-
- @Prop({ default: false })
- isPrimaryAdmin: boolean;
+  @Prop({ default: false })
+  isPrimaryAdmin: boolean;
 }
-
 
 export const RoleSchema = SchemaFactory.createForClass(Role);
 
-
 //Protect that no role can be created with isSuperAdmin set to true and name set to 'Super Admin' or related to 'Super Admin' in any way(regex)
 RoleSchema.pre('save', function (next) {
-  if(this.$locals?.isSeeding){
+  if (this.$locals?.isSeeding) {
     return next();
   }
   if (this.isSuperAdmin || /super\sadmin/i.test(this.name)) {

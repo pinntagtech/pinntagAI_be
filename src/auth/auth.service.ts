@@ -16,7 +16,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
-import { OtpTypes, SMSType, TokenTypes } from 'src/enums/auth.enums';
+import { OtpTypes, SMSType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
 import { GuestLoginDto } from './dto/guestLogin.dto';
@@ -199,7 +199,8 @@ export class AuthService {
         await this.tokenModel.create({
           token: createAuthDto.fcmToken,
           type: TokenTypes.FCM,
-          userId: createdUser._id,
+          userType: UserTypes.USER,
+          user: createdUser._id,
           deviceType: createAuthDto.deviceType
             ? createAuthDto.deviceType
             : 'web',
@@ -310,7 +311,8 @@ export class AuthService {
       await this.tokenModel.create({
         token: signupAuthDto.fcmToken,
         type: TokenTypes.FCM,
-        userId: createdUser._id,
+        userType: UserTypes.USER,
+        user: createdUser._id,
         deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
       });
     }
@@ -563,8 +565,8 @@ export class AuthService {
     }
     const jwtPayload: JwtPayload = {
       id: user.id,
-      email: user.email,
-      role: Roles.USER,
+      role: user.role.toString(),
+      userType: UserTypes.USER,
     };
     const token = await this.generateJWT(jwtPayload);
     if (data.fcmToken) {
@@ -584,7 +586,8 @@ export class AuthService {
         await this.tokenModel.create({
           token: data.fcmToken,
           type: TokenTypes.FCM,
-          userId: user._id,
+          userType: UserTypes.USER,
+          user: user._id,
           deviceType: data.deviceType ? data.deviceType : 'web',
         });
       }
@@ -643,7 +646,7 @@ export class AuthService {
       await user.save();
       const jwtPayload: JwtPayload = {
         id: user.id,
-        email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(jwtPayload);
@@ -666,8 +669,8 @@ export class AuthService {
       }
       const jwtPayload: JwtPayload = {
         id: user.id,
-        email: user.email,
-        role: Roles.USER,
+        userType: UserTypes.USER,
+        role: user.role.toString(),
       };
       const token = await this.generateJWT(jwtPayload);
       if (data.fcmToken) {
@@ -687,7 +690,8 @@ export class AuthService {
           await this.tokenModel.create({
             token: data.fcmToken,
             type: TokenTypes.FCM,
-            userId: user._id,
+            userType: UserTypes.USER,
+            user: user._id,
             deviceType: data.deviceType ? data.deviceType : 'web',
           });
         }
@@ -792,9 +796,9 @@ export class AuthService {
         }
         const payload: JwtPayload = {
           id: user.id,
-          email: businessProfile.email,
-          businessProfile: businessProfile.id,
-          role: Roles.BUSINESS_PROFILE,
+          userType: UserTypes.BUSINESS,
+          business: businessProfile.id.toString(),
+          role: user.role,
         };
         const token = await this.generateJWT(payload);
         return {
@@ -835,7 +839,8 @@ export class AuthService {
       await this.tokenModel.create({
         token: data.token,
         type: TokenTypes.FCM,
-        userId: foundUser._id,
+        userType: UserTypes.USER,
+        user: foundUser._id,
         deviceType: data.deviceType,
       });
     } else {
@@ -887,7 +892,8 @@ export class AuthService {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
-            userId: user._id,
+            userType: UserTypes.USER,
+            user: user._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
         }
@@ -1018,7 +1024,8 @@ export class AuthService {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
-            userId: foundUser._id,
+            userType: UserTypes.USER,
+            user: foundUser._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
         }

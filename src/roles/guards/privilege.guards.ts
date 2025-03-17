@@ -6,14 +6,17 @@ import {
 } from '@nestjs/common';
 import { PRIVILEGE_KEY } from '../privilege.decorator';
 import { Reflector } from '@nestjs/core';
-import { PrivilegeService } from '../privilege.service';
-import mongoose from 'mongoose';
+import { RoleBelonging } from '../models/roles.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { UserTypes } from 'src/enums/auth.enums';
+import { RolesService } from '../roles.service';
 
 @Injectable()
-export class PrivilegeGuard implements CanActivate {
+export class 
+PrivilegeGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private privilegeService: PrivilegeService,
+    private readonly roleService: RolesService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -25,16 +28,26 @@ export class PrivilegeGuard implements CanActivate {
     if (!requiredPrivilege) return true; // No privilege required
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // Assume user is attached by AuthGuard
+    const user = request.user as DecodedUser; // Assume user is attached by AuthGuard
     if (!user || !user.role) {
       throw new UnauthorizedException('User role not found');
     }
-    const findRole = await this.privilegeService.findRole(user.role);
-    
-    if(findRole.isSuperAdmin){
-      return true;
+    let roleId = '';
+    if(user.userType == UserTypes.USER){
+      const foundUser = 
     }
-    const hasPrivilege = await this.privilegeService.hasPrivilege(
+    const foundRole = await this.roleService.findRole(user.role);
+
+    // if(findRole.isSuperAdmin){
+    //   return true;
+    // }
+    if(foundRole.belongsTo == RoleBelonging.BUSINESS){
+      if(user.)
+    } else {
+  }
+
+
+    const hasPrivilege = await this.roleService.hasPrivilege(
       user.role,
       requiredPrivilege.resource,
       requiredPrivilege.action,

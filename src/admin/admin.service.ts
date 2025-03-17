@@ -51,6 +51,7 @@ import {
 } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Roles } from 'src/roles/enums/roles.enum';
+import { UserTypes } from 'src/enums/auth.enums';
 
 @Injectable()
 export class AdminService {
@@ -467,10 +468,10 @@ export class AdminService {
   }
 
   async adminLogin(loginDto: LoginDto) {
-    const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
+    // const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
     const foundAdmin = await this.adminModel.findOne({
       email: loginDto.email,
-      role: role._id,
+      // role: role._id,
     });
     if (!foundAdmin) {
       return {
@@ -490,8 +491,8 @@ export class AdminService {
       }
       const payload: JwtPayload = {
         id: foundAdmin.id,
-        email: foundAdmin.email,
-        role: Roles.ADMIN,
+        userType: UserTypes.ADMIN,
+        role: foundAdmin.role.toString(),
       };
       const token = await this.generateJWT(payload);
       return {
@@ -501,6 +502,17 @@ export class AdminService {
         token,
       };
     }
+  }
+
+  async forgotPassword(email: string) {
+    const admin = await this.adminModel.findOne({ email });
+    if (!admin) {
+      return {
+        success: false,
+        message: 'No admin foun with the provided email.',
+      };
+    }
+    
   }
 
   async generateJWT(payload: JwtPayload) {

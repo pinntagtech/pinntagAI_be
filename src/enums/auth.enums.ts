@@ -1,3 +1,10 @@
+export const UserTypes = {
+  USER: 'Consumer',
+  BUSINESS: 'Business',
+  ADMIN: 'Admin',
+  GUEST: 'Guest',
+};
+
 export const DeviceTypes = {
   ANDROID: 'android',
   IOS: 'ios',
@@ -12,7 +19,7 @@ export const FileType = {
   GIF: 'gif',
   AUDIO: 'audio',
   OTHER: 'other',
-}
+};
 export const FileCategoryTypes = {
   PROFILE_PICTURE: 'profile picture',
   Thumbnail: 'thumbnail',
@@ -21,14 +28,14 @@ export const FileCategoryTypes = {
   PROMOTIONAL_IMAGE: 'promotional image',
   PROMOTIONAL_VIDEO: 'promotional video',
   BROCHURE: 'brochure',
-  LIVE_STREAM_RECORDING:'live stream recording',
+  LIVE_STREAM_RECORDING: 'live stream recording',
   BUSINESS_LICENSE: 'business license',
   TAX_DOCUMENT: 'tax document',
   ID_PROOF: 'ID Proof',
   INVOICE: 'invoice',
   AUDIO_NOTE: 'Audio Note',
-  OTHER: 'other'
-}
+  OTHER: 'other',
+};
 export const allowedImageMimeTypes = [
   'image/jpeg',
   'image/png',
@@ -61,16 +68,16 @@ export const allowedDocumentMimeTypes = [
   'application/x-rar-compressed',
 ];
 export const allowedAudioMimeTypes = [
-  'audio/mpeg',   // MP3
-  'audio/wav',    // WAV
-  'audio/aac',    // AAC
-  'audio/ogg',    // OGG
-  'audio/flac',   // FLAC
-  'audio/opus',   // OPUS
-  'audio/midi',   // MIDI
+  'audio/mpeg', // MP3
+  'audio/wav', // WAV
+  'audio/aac', // AAC
+  'audio/ogg', // OGG
+  'audio/flac', // FLAC
+  'audio/opus', // OPUS
+  'audio/midi', // MIDI
   'audio/x-ms-wma', // WMA
   'audio/x-aiff', // AIFF
-  'audio/webm'    // WebM Audio
+  'audio/webm', // WebM Audio
 ];
 
 export const TokenTypes = {

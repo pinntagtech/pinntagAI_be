@@ -87,6 +87,8 @@ import {
 import { SeederService } from 'src/seeder/seeder.service';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Action, ActionSchema } from 'src/roles/models/actions.model';
 
 @Module({
   imports: [
@@ -127,6 +129,8 @@ import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Privilege.name, schema: PrivilegeSchema},
+      { name: Resource.name, schema: ResourceSchema},
+      { name:Action.name, schema:ActionSchema}
     ]),
   ],
   controllers: [AdminController],

@@ -26,6 +26,7 @@ import { Permission } from './models/permission.model';
 import { AdminRole } from './models/adminRole.model';
 import { BusinessRole } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Controller('v1/admin')
 export class AdminController {
@@ -331,6 +332,12 @@ export class AdminController {
         message: result.message,
       });
     }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Res() res: Response, @Body() body: ForgotPasswordDto){
+    const result = await this.adminService.forgotPassword(body.email);
+
   }
 
   @Post('create-permission')

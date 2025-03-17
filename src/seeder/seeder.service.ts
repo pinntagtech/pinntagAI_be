@@ -30,6 +30,8 @@ import {
 } from 'src/business-profile/models/businessProfile.model';
 import { Actions, ResourceTypes, Roles } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
+import { Action, ActionDocument } from 'src/roles/models/actions.model';
 
 @Injectable()
 export class SeederService {
@@ -52,6 +54,8 @@ export class SeederService {
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Privilege.name) private readonly privilegeModel:Model<PrivilegeDocument>,
+    @InjectModel(Resource.name) private readonly resourceModel:Model<ResourceDocument>,
+    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
   ) {}
 
   async seed() {
@@ -64,6 +68,8 @@ export class SeederService {
     await this.seedFileCategories();
     await this.seedSuperAdminRole();
     await this.seedSuperAdmin();
+    await this.seedResources();
+    await this.seedActions();
     // await this.seedPrivileges();
   }
 
@@ -223,5 +229,26 @@ export class SeederService {
       }
     }
     
+  }
+  async seedResources() {
+    const resources = await this.resourceModel.find();
+   
+    if(resources.length <  Object.values(ResourceTypes).length){
+      for( let value of Object.values(ResourceTypes)){
+        let findResource = await this.resourceModel.findOne({title:value});
+        if(!findResource){
+          await this.resourceModel.create({title:value})
+        }
+      }
+    }
+    
+  }
+  async seedActions() {
+    const actions = await this.actionModel.find();
+    if(!actions.length){
+      for (let action of Object.values(Actions)){
+        await this.actionModel.create({title:action});
+      }
+    }
   }
 }

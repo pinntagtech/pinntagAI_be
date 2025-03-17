@@ -50,6 +50,9 @@ import { DriveModule } from './drive/drive.module';
 import { RolesModule } from './roles/roles.module';
 import { Role, RoleSchema } from './roles/models/roles.model';
 import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
+import { Resource, ResourceSchema } from './roles/models/resource.model';
+import { Action, ActionSchema } from './roles/models/actions.model';
+import { BusinessModule } from './business/business.module';
 
 @Module({
   imports: [
@@ -83,7 +86,9 @@ import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Drive.name, schema: DriveSchema },
-      { name: Privilege.name, schema: PrivilegeSchema}
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name:Action.name, schema:ActionSchema}
     ]),
     StripeeModule,
     AuthModule,
@@ -102,6 +107,7 @@ import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
     AdminModule,
     DriveModule,
     RolesModule,
+    BusinessModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],

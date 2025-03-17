@@ -1,8 +1,6 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
-import { Admin } from 'src/admin/models/admin.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
-import { User } from 'src/user/models/user.model';
+import { UserTypes } from 'src/enums/auth.enums';
 
 export const TokenDecoder = createParamDecorator(
   (data: any, ctx: ExecutionContext) => {
@@ -10,7 +8,7 @@ export const TokenDecoder = createParamDecorator(
     if (request.isGuest) {
       const user: DecodedUser = {
         isGuest: true,
-        userType: 'user',
+        userType: UserTypes.USER,
         id: request.sessionId,
         role: 'GUEST',
         name: 'Guest',
@@ -23,11 +21,10 @@ export const TokenDecoder = createParamDecorator(
       };
       return user;
     } else if (request.isBusiness) {
-      // console.log('User business......');
       const user: DecodedUser = {
         isGuest: false,
         role: 'business_profile',
-        userType: BusinessProfile.name,
+        userType: UserTypes.BUSINESS,
         name: request.user.firstName + ' ' + request.user.lastName,
         id: request.user._id,
         businessProfile: request.businessProfile,
@@ -38,20 +35,19 @@ export const TokenDecoder = createParamDecorator(
     } else if (request.isAdmin) {
       const user: DecodedUser = {
         isGuest: false,
-        userType: Admin.name,
-        // name: request.user.firstName + ' ' + request.user.lastName,
+        isBusiness: false,
+        role: request.user.role,
+        userType: UserTypes.ADMIN,
         name: `${request.user?.name || ''}`,
         id: request.user?._id,
         businessProfile: '',
-        isBusiness: false,
         ...request.user,
       };
       return user;
     } else {
       const user: DecodedUser = {
         isGuest: false,
-        role: 'user',
-        // name: request.user.firstName + ' ' + request.user.lastName,
+        role: UserTypes.USER,
         name: `${request.user?.name || ''}`,
         id: request.user?._id,
         businessProfile: '',

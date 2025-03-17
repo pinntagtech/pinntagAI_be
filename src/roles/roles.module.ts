@@ -4,10 +4,19 @@ import { PrivilegeService } from './privilege.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Role, RoleSchema } from './models/roles.model';
 import { Privilege, PrivilegeSchema } from './models/privilage.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
+import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
+import { Action, ActionSchema } from './models/actions.model';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Role.name, schema: RoleSchema },{name:Privilege.name, schema:PrivilegeSchema}]),
+    MongooseModule.forFeature([
+      { name: Role.name, schema: RoleSchema },
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Admin.name,schema: AdminSchema},
+       { name: BusinessProfile.name, schema: BusinessProfileSchema },
+       { name:Action.name, schema:ActionSchema}
+    ]),
   ],
   controllers: [RolesController],
   providers: [PrivilegeService],
