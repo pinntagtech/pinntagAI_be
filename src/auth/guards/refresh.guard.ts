@@ -57,7 +57,8 @@ export class RefreshGuard implements CanActivate {
       } else {
         if (payload.role == Roles.BUSINESS_PROFILE) {
           const businessProfile = await this.businessProfileModel.findById(
-            payload.businessProfile,
+            // payload.businessProfile,
+            payload.id,
           );
           delete user.isBusiness;
           request['user'] = user;

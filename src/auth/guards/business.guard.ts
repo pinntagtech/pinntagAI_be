@@ -68,7 +68,8 @@ export class BusinessProfileGuard implements CanActivate {
         });
       } else {
         const businessProfile = await this.businessProfileModel.findById(
-          payload.businessProfile,
+          // payload.businessProfile,
+          payload.id,
         );
         if (!businessProfile) {
           return response.status(HttpStatus.UNAUTHORIZED).json({

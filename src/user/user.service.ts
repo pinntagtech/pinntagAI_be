@@ -612,6 +612,16 @@ export class UserService {
     });
   }
 
+  async saveToken2(token: string, id: string, type?: string) {
+    return await this.tokenModel.create({
+      token,
+      userType: UserTypes.USER,
+      user: new mongoose.Types.ObjectId(id),
+      type,
+      expiresAt: new Date(Date.now() + 86400000),
+    });
+  }
+
   async updateToken(token: string, id: string) {
     return await this.tokenModel.updateOne(
       { userId: new mongoose.Types.ObjectId(id), type: TokenTypes.ACCESS },

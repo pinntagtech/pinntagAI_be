@@ -12,6 +12,7 @@ export const DeviceTypes = {
   POSTMAN: 'postman',
   MOBILE: 'mobile',
 };
+
 export const FileType = {
   IMAGE: 'image',
   VIDEO: 'video',

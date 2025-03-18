@@ -1,3 +1,14 @@
+export const RoleCreatorType = {
+  ADMIN: 'Admin',
+  BUSINESS: 'Business',
+  SYSTEM: 'System',
+};
+
+export const RoleBelonging = {
+  SYSTEM: 'System',
+  BUSINESS: 'Business',
+};
+
 export const Roles = {
   ADMIN: 'admin',
   USER: 'user',
@@ -9,26 +20,15 @@ export const Roles = {
 };
 
 export const Actions = {
+  ALL: 'all',
   CREATE: 'create',
   READ: 'read',
   UPDATE: 'update',
   DELETE: 'delete',
-  ALL: 'all',
-  // RESTORE: 'restore',
-  // SOFT_DELETE: 'soft_delete',
-  // READ_ALL: 'read_all',
-  // UPDATE_ALL: 'update_all',
-  // DELETE_ALL: 'delete_all',
-  // RESTORE_ALL: 'restore_all',
-  // SOFT_DELETE_ALL: 'soft_delete_all',
-  // READ_OWN: 'read_own',
-  // UPDATE_OWN: 'update_own',
-  // DELETE_OWN: 'delete_own',
-  // RESTORE_OWN: 'restore_own',
-  // SOFT_DELETE_OWN: 'soft_delete_own',
 };
 
 export const ResourceTypes = {
+  ADMIN: 'Admin',
   USERS: 'users',
   ROLES: 'roles',
   PERMISSIONS: 'permissions',

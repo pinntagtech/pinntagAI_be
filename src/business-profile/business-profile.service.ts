@@ -43,6 +43,7 @@ import {
   SubscriptionServiceTypes,
   SubscriptionServices,
   TransactionStatus,
+  UserTypes,
 } from 'src/enums/auth.enums';
 import {
   Transaction,
@@ -736,9 +737,10 @@ export class BusinessProfileService {
       // } else {
       const payload: JwtPayload = {
         id: userId,
-        email: businessProfile.email,
-        businessProfile: businessProfile.id,
+        // email: businessProfile.email,
+        // businessProfile: businessProfile.id,
         role: Roles.BUSINESS_PROFILE,
+        userType: UserTypes.BUSINESS,
       };
       const token = await this.authService.generateJWT(payload);
       return {

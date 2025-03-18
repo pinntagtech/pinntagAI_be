@@ -11,7 +11,8 @@ export enum ResourceEnums {
   USER = 'user',
   PROPERTY = 'property',
   TRANSACTION = 'transaction',
-  EVENT='event'
+  EVENT='event',
+  ADMIN = 'admin'
   // Add more resources as needed
 }
 
