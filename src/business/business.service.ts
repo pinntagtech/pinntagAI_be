@@ -14,6 +14,10 @@ import {
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from './model/business.model';
+import { LoginBusinessDto } from './dto/login-business.dto';
+import { MailService } from 'src/mail/mail.service';
+import { Token, TokenDocument } from 'src/auth/models/token.model';
+import { TokenTypes } from 'src/enums/auth.enums';
 
 @Injectable()
 export class BusinessService {
@@ -22,8 +26,9 @@ export class BusinessService {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(Business.name)
-    private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Token.name) private readonly tokenModel:Model<TokenDocument>,
+    private readonly mailService:MailService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -59,7 +64,6 @@ export class BusinessService {
       const createBusinessUser = await this.businessUserModel.create(createObj);
 
       //sendEmaillink verification
-      
 
       return {
         success: true,
@@ -154,10 +158,9 @@ export class BusinessService {
     businessIndustry?: string,
   ) {
     try {
-
       const query: any = {};
       if (name) {
-        query.name = { $regex: name, $options: "i" };
+        query.name = { $regex: name, $options: 'i' };
       }
       if (businessCategory) {
         query.businessCategory = businessCategory;
@@ -165,7 +168,7 @@ export class BusinessService {
       if (businessIndustry) {
         query.businessIndustry = businessIndustry;
       }
-  
+
       const total = await this.businessModel.countDocuments(query);
       const businesses = await this.businessModel
         .find(query)
@@ -188,18 +191,126 @@ export class BusinessService {
   }
 
   async findOne(id: string) {
-    try{
-      const business = await this.businessModel.findOne({_id: new mongoose.Types.ObjectId(id)});
+    try {
+      const business = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
       return {
         success: true,
         message: 'Business fetched Successfully!',
         data: business,
-      }
-    }catch(error){
+      };
+    } catch (error) {
       console.error('Error:', error);
       return {
         success: false,
         message: 'Internal Server Error!',
+      };
+    }
+  }
+
+  async validateBusiness(email: string, password: string) {
+    const foundBusiness = await this.businessUserModel.findOne({ email });
+    if (foundBusiness) {
+      const validPassword = await bcrypt.compare(
+        password,
+        foundBusiness.password,
+      );
+      if (!validPassword) {
+        return { success: false, message: 'Incorrect password' };
+      }
+      const business = await this.businessUserModel
+        .findById(foundBusiness.id)
+        .select({
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        });
+      return { success: true, user: business };
+    } else {
+      return { success: false, message: 'User not found' };
+    }
+  }
+
+  async login(loginDto: LoginBusinessDto) {
+
+    const validatedUser = await this.validateBusiness(
+      loginDto.email,
+      loginDto.password,
+    );
+    if (validatedUser.success) {
+      const user = validatedUser.user;
+      if (!user.isEmailVerified) {
+        await this.mailService.sendUserVerificationMail(user.id);
+        return {
+          success: true,
+          user: user.id,
+          message:
+            'Please verify your email to login, otp has been sent to the registered mail.',
+        };
+      }
+      if (loginDto.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            userId: user._id,
+            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: loginDto.fcmToken,
+            },
+          },
+        );
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: loginDto.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.USER,
+            user: user._id,
+            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
+          });
+        }
+      }
+      const payload: JwtPayload = {
+        id: user.id,
+        // email: user.email,
+        userType: UserTypes.USER,
+        role: Roles.USER,
+      };
+      const token = await this.generateJWT(payload);
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(user.id, {
+          $set: { isDeleted: false },
+        })
+        .populate('role', '_id name');
+      if (!user.stripeCustomerId) {
+        const customer = await this.stripeService.createCustomer(
+          user.email,
+          user.name,
+        );
+        if (customer.id) {
+          user.stripeCustomerId = customer.id;
+          await user.save();
+        }
+      }
+      const fcmExists = await this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        userId: user._id,
+        deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
+      });
+      return {
+        success: true,
+        message: 'User logged in successfully',
+        user: updatedUser,
+        token,
+        fcmExists: fcmExists ? true : false,
+      };
+    } else {
+      return {
+        success: false,
+        message: validatedUser.message,
       };
     }
   }

@@ -16,19 +16,16 @@ import { UpdateBusinessDto } from './dto/update-business.dto';
 import { Request, Response } from 'express';
 import { CreateBusinessUserDto } from './dto/create-businessUser.dto';
 import { isValidObjectId } from 'mongoose';
+import { LoginBusinessDto } from './dto/login-business.dto';
 
 @Controller('business')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
-  // @Post('user')
-  // create(@Body() data: CreateBusinessUserDto) {
-  //   return this.businessService.createBusinessUser(data);
-  // }
   @Post('user')
   async create(@Res() res: Response, @Body() data: CreateBusinessUserDto) {
     const result = await this.businessService.createBusinessUser(data);
-    
+
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -81,7 +78,6 @@ export class BusinessController {
     }
   }
 
-
   @Get('fetch')
   async search(
     @Res() res: Response,
@@ -97,6 +93,23 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('login')
+  async login(@Res() res: Response, @Body() data: LoginBusinessDto) {
+    const result = await this.businessService.login(data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
+        token: result.token,
+        fcmExists: result.fcmExists,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
