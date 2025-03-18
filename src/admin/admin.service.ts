@@ -510,7 +510,7 @@ export class AdminService {
     }
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(origin: string, email: string) {
     const admin = await this.adminModel.findOne({ email });
     if (!admin) {
       return {

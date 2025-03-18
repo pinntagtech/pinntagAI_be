@@ -32,6 +32,18 @@ import { Actions, ResourceTypes, Roles } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
+import {
+  OutletCategory,
+  OutletCategoryDocument,
+} from 'src/business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeDocument,
+} from 'src/business/model/outletType.model';
+import {
+  OutletCategoryList,
+  OutletTypesByCategory,
+} from 'src/business/enums/business.enum';
 
 @Injectable()
 export class SeederService {
@@ -53,9 +65,16 @@ export class SeederService {
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
-    @InjectModel(Privilege.name) private readonly privilegeModel:Model<PrivilegeDocument>,
-    @InjectModel(Resource.name) private readonly resourceModel:Model<ResourceDocument>,
-    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
+    @InjectModel(Resource.name)
+    private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Action.name)
+    private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(OutletCategory.name)
+    private readonly outletCategoryModel: Model<OutletCategoryDocument>,
+    @InjectModel(OutletType.name)
+    private readonly outletTypeModel: Model<OutletTypeDocument>,
   ) {}
 
   async seed() {
@@ -70,6 +89,7 @@ export class SeederService {
     await this.seedSuperAdmin();
     await this.seedResources();
     await this.seedActions();
+    await this.seedOutletCategories();
     // await this.seedPrivileges();
   }
 
@@ -216,38 +236,60 @@ export class SeederService {
   }
   async seedPrivileges() {
     const privileges = await this.privilegeModel.find();
-    if(!privileges.length){
-      const superAdmin = await this.adminModel.findOne({isSuperAdmin:true});
-      for(let [key,action] of Object.entries(Actions)){
-        for(let [resKey,resource] of Object.entries(ResourceTypes)){
+    if (!privileges.length) {
+      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+      for (let [key, action] of Object.entries(Actions)) {
+        for (let [resKey, resource] of Object.entries(ResourceTypes)) {
           await this.privilegeModel.create({
-            role:superAdmin._id,
-            resource:resource,
-            action: action
-          })
+            role: superAdmin._id,
+            resource: resource,
+            action: action,
+          });
         }
       }
     }
-    
   }
   async seedResources() {
     const resources = await this.resourceModel.find();
-   
-    if(resources.length <  Object.values(ResourceTypes).length){
-      for( let value of Object.values(ResourceTypes)){
-        let findResource = await this.resourceModel.findOne({title:value});
-        if(!findResource){
-          await this.resourceModel.create({title:value})
+
+    if (resources.length < Object.values(ResourceTypes).length) {
+      for (let value of Object.values(ResourceTypes)) {
+        let findResource = await this.resourceModel.findOne({ title: value });
+        if (!findResource) {
+          await this.resourceModel.create({ title: value });
         }
       }
     }
-    
   }
   async seedActions() {
     const actions = await this.actionModel.find();
-    if(!actions.length){
-      for (let action of Object.values(Actions)){
-        await this.actionModel.create({title:action});
+    if (!actions.length) {
+      for (let action of Object.values(Actions)) {
+        await this.actionModel.create({ title: action });
+      }
+    }
+  }
+  async seedOutletCategories() {
+    const findOutletCategories = await this.outletCategoryModel.find();
+    if (findOutletCategories.length < Object.keys(OutletTypesByCategory).length) {
+      for (const outletCategory of Object.values(OutletCategoryList)) {
+        const foundOutletCategory = await this.outletCategoryModel.findOne({
+          title: outletCategory,
+        });
+        if (!foundOutletCategory) {
+          const createdOutletCategory = await this.outletCategoryModel.create({
+            title: outletCategory,
+          });
+        }
+
+        for (const outletCategoryType of OutletTypesByCategory[outletCategory]) {
+          const foundType = await this.outletTypeModel.findOne({ title: outletCategoryType, category: foundOutletCategory._id });
+          if (!foundType) {
+            await this.outletTypeModel.create({ title: outletCategoryType, category: foundOutletCategory._id });
+          }
+        }
+
+
       }
     }
   }

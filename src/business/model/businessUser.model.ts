@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Business } from './business.model';
+import { OneToMany } from 'typeorm';
+import { BusinessUserCreatorType } from '../enums/business.enum';
 
 export type BusinessUserDocument = BusinessUser & Document;
 
@@ -8,16 +10,17 @@ export type BusinessUserDocument = BusinessUser & Document;
 export class BusinessUser {
   @Prop({ default: false })
   isDeleted: boolean;
-  @Prop({
-    required: true,
-    enum: [0, 1, 2],
-    default: 0,
-  })
-  status: number;
+
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId;
-  @Prop({ required: true, ref: 'BusinessUser' })
-  createdBy: mongoose.Types.ObjectId;
+
+  @Prop({ref: 'BusinessUser' })
+  creator: mongoose.Types.ObjectId;
+
+  @Prop({required:true,enum:Object.values(BusinessUserCreatorType)})
+  creatorType:string;
+
+
   @Prop({
     default:
       'https://pinntagbucket.s3.amazonaws.com/defaults/business_avatar.png',
@@ -31,10 +34,13 @@ export class BusinessUser {
   phone: string;
   @Prop()
   email: string;
+  @Prop({default:false})
+  isEmailVerified:boolean;
   @Prop()
   password: string;
-  @Prop({required:true,ref:Business.name})
+  @Prop({ref:Business.name})
   business:mongoose.Types.ObjectId;
+
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);

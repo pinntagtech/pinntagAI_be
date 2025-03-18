@@ -19,26 +19,41 @@ export type BusinessDocument = Business & Document;
 export class Business {
   @Prop({ default: false })
   isDeleted: boolean;
-  @Prop({
-    required: true,
-    enum: [0, 1, 2],
-    default: 0,
-  })
-  status: number;
+  // @Prop({
+  //   required: true,
+  //   enum: [0, 1, 2],
+  //   default: 0,
+  // })
+  // status: number;
   @Prop()
   logo: string;
   @Prop()
+  isRegistered:boolean;
+
+  @Prop()
+  businessCategory:string;
+
+  @Prop()
+  businessIndustry:string;
+
+  @Prop()
   cover: string;
+
   @Prop({ ref: Brand.name })
   brand: mongoose.Types.ObjectId;
-  @Prop({ required: true, ref: 'BusinessUser' })
+
+  @Prop({ref: 'BusinessUser' })
   authorisedUser: mongoose.Types.ObjectId; //owner of the business
+
   @Prop({ ref: 'BusinessUser' })
   boardMembers: mongoose.Types.ObjectId[];
+
   @Prop({ enum: ['Admin', 'BusinessUser'] })
   creatorType: string;
+
   @Prop({ required: true, refPath: 'creatorType' })
-  createdBy: mongoose.Types.ObjectId;
+  creator: mongoose.Types.ObjectId;
+
   @Prop({ required: true })
   name: string;
   @Prop({ required: true })
