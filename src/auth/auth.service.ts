@@ -809,7 +809,8 @@ export class AuthService {
       } else {
         const payload: JwtPayload = {
           id: user.id,
-          email: user.email,
+          // email: user.email,
+          userType: UserTypes.USER,
           role: Roles.USER,
         };
         const token = await this.generateJWT(payload);
@@ -900,7 +901,8 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: user.id,
-        email: user.email,
+        // email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(payload);
@@ -1080,7 +1082,7 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: foundAdmin.id,
-        email: foundAdmin.email,
+        userType: UserTypes.ADMIN,
         role: Roles.ADMIN,
       };
       const token = await this.generateJWT(payload);
@@ -1115,8 +1117,8 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: admin.id,
-        email: admin.email,
-        type: roleType.ADMIN,
+        userType: UserTypes.ADMIN,
+        role: admin.role.toString(),
       };
       const token = await this.generateJWT(payload);
       return {
@@ -1138,7 +1140,7 @@ export class AuthService {
         type: TokenTypes.FCM,
         userId: { $in: users.map((user) => user._id) },
       })
-      .populate('userId', 'email name');
+      .populate('user', 'email name');
     const workbook = new Workbook();
     const worksheet = workbook.addWorksheet('User Fcm Report');
     worksheet.columns = [
@@ -1166,9 +1168,9 @@ export class AuthService {
     for (let i = 0; i < fcmTokens.length; i++) {
       worksheet.addRow({
         sno: i + 1,
-        _id: fcmTokens[i].userId['_id'],
-        name: fcmTokens[i].userId['name'],
-        email: fcmTokens[i].userId['email'],
+        _id: fcmTokens[i].user['_id'],
+        name: fcmTokens[i].user['name'],
+        email: fcmTokens[i].user['email'],
       });
     }
     const fileBuffer = await workbook.xlsx.writeBuffer();
@@ -1360,8 +1362,8 @@ export class AuthService {
       const createdSession = new this.guestSessionModel(data);
       payload = {
         id: createdSession.id,
-        email: '',
         role: Roles.GUEST,
+        userType: UserTypes.GUEST,
       };
       token = await this.generateJWT(payload);
       const savedTokenDoc = await this.userService.saveToken(token, '', true);
@@ -1404,7 +1406,7 @@ export class AuthService {
         );
         const payload: JwtPayload = {
           id: data.user,
-          email: user.email,
+          userType: UserTypes.USER,
           role: Roles.USER,
         };
         const token = await this.generateJWT(payload);
@@ -1476,7 +1478,7 @@ export class AuthService {
     } else {
       const payload: JwtPayload = {
         id: userId,
-        email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(payload);

@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Role } from 'src/roles/models/roles.model';
-Role
 
 export const Genders = {
   MALE: 'male',
@@ -20,6 +18,9 @@ export type AdminDocument = Admin & Document;
 
 @Schema({ timestamps: true })
 export class Admin {
+  @Prop({ default: false })
+  forcePasswordReset: boolean;
+
   @Prop({ default: false })
   isDeleted: boolean;
 
@@ -88,6 +89,16 @@ AdminSchema.pre('save', function (next) {
   if (this.isSuperAdmin) {
     this.isSuperAdmin = false;
   }
+  next();
+});
+
+AdminSchema.pre('save', function (next) {
+  this.fullPhoneNumber = `${this.countryCode}${this.phone}`;
+  next();
+});
+
+AdminSchema.pre('save', function (next) {
+  this.name = `${this.firstName} ${this.lastName}`;
   next();
 });
 

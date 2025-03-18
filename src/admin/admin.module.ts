@@ -73,7 +73,7 @@ import { StripeService } from 'src/stripe/stripe.service';
 import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { Permission, PermissionSchema } from './models/permission.model';
-import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
+// import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
 import {
   BusinessRole,
   BusinessRoleSchema,
@@ -89,13 +89,16 @@ import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
+import { MailService } from 'src/mail/mail.service';
+import { RolesService } from 'src/roles/roles.service';
+import { PrivilegeService } from 'src/roles/privilege.service';
 
 @Module({
   imports: [
     HttpModule,
     MongooseModule.forFeature([
       { name: Permission.name, schema: PermissionSchema },
-      { name: AdminRole.name, schema: AdminRoleSchema },
+      // { name: AdminRole.name, schema: AdminRoleSchema },
       { name: BusinessRole.name, schema: BusinessRoleSchema },
       { name: User.name, schema: UserSchema },
       { name: Admin.name, schema: AdminSchema },
@@ -142,6 +145,9 @@ import { Action, ActionSchema } from 'src/roles/models/actions.model';
     StripeService,
     UserService,
     SeederService,
+    MailService,
+    RolesService,
+    PrivilegeService,
   ],
 })
 export class AdminModule {}

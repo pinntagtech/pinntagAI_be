@@ -12,11 +12,11 @@ import mongoose, { Model } from 'mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import {
   Role,
-  RoleBelonging,
   RoleDocument,
 } from 'src/roles/models/roles.model';
 import { TokenDocument } from '../models/token.model';
 import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { RoleBelonging } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class AdminGuard2 implements CanActivate {

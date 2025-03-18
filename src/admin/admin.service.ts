@@ -44,14 +44,17 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 import { Permission, PermissionDocument } from './models/permission.model';
-import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
+// import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import {
   BusinessRole,
   BusinessRoleDocument,
 } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { Roles } from 'src/roles/enums/roles.enum';
-import { UserTypes } from 'src/enums/auth.enums';
+import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { MailService } from 'src/mail/mail.service';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { RoleCreatorType } from 'src/roles/enums/roles.enum';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
 @Injectable()
 export class AdminService {
@@ -60,39 +63,31 @@ export class AdminService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
-    @InjectModel(AdminRole.name)
-    private readonly adminRoleModel: Model<AdminRoleDocument>,
     @InjectModel(BusinessRole.name)
     private readonly businessRoleModel: Model<BusinessRoleDocument>,
     @InjectModel(Permission.name)
     private readonly permissionModel: Model<PermissionDocument>,
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
-
     @InjectModel(Category.name)
     private readonly categoryModel: Model<CategoryDocument>,
-
     @InjectModel(Image.name)
     private readonly imageModel: Model<ImageDocument>,
     @InjectModel(BusinessLocation.name)
     private readonly businessLocationModel: Model<BusinessLocationDocument>,
-
     @InjectModel(AgeGroup.name)
     private readonly ageGroupModel: Model<AgeGroupDocument>,
-
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
-
     @InjectModel(DashboardConfig.name)
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
-
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
-
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async getUsers() {
@@ -494,11 +489,22 @@ export class AdminService {
         userType: UserTypes.ADMIN,
         role: foundAdmin.role.toString(),
       };
+      const adminDoc = JSON.parse(JSON.stringify(foundAdmin));
+      delete adminDoc.password;
+      if (foundAdmin.forcePasswordReset) {
+        return {
+          success: true,
+          status: false,
+          message: 'Please reset your password',
+          user: adminDoc,
+        };
+      }
       const token = await this.generateJWT(payload);
       return {
         success: true,
+        status: true,
         message: 'Admin logged in successfully',
-        user: foundAdmin,
+        user: adminDoc,
         token,
       };
     }
@@ -509,13 +515,64 @@ export class AdminService {
     if (!admin) {
       return {
         success: false,
-        message: 'No admin foun with the provided email.',
+        message: 'No admin found with the provided email.',
+      };
+    } else {
+      const token = await this.generateJWT(
+        {
+          id: admin.id,
+          userType: UserTypes.ADMIN,
+          role: admin.role.toString(),
+        },
+        TokenTypes.RESET_PASSWORD,
+      );
+      await this.mailService.sendForgotPasswordMail2(
+        admin.name,
+        admin.email,
+        token,
+      );
+      return {
+        success: true,
+        message: 'Password reset link sent to your email.',
       };
     }
-    
   }
 
-  async generateJWT(payload: JwtPayload) {
+  private async getAllChildAdminIds(
+    adminId: string,
+    collectedIds: string[] = [],
+  ): Promise<string[]> {
+    collectedIds.push(adminId);
+    const childAdmins = await this.roleModel
+      .find({ creator: adminId, creatorType: 'Admin' })
+      .select('_id');
+    const childAdminIds = childAdmins.map((admin) => admin._id.toString());
+    if (!childAdminIds.length) {
+      return collectedIds;
+    }
+    for (const childId of childAdminIds) {
+      await this.getAllChildAdminIds(childId, collectedIds);
+    }
+    return collectedIds;
+  }
+
+  async fetchRoles(adminId: string) {
+    const allAdminIds = await this.getAllChildAdminIds(adminId);
+    const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
+    if (!roles.length) {
+      return {
+        success: false,
+        message: 'No roles found',
+      };
+    }
+    return {
+      success: true,
+      message: 'Roles fetched successfully',
+      roles,
+    };
+  }
+
+  async generateJWT(payload: JwtPayload, type?: string) {
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: '365d',
@@ -523,7 +580,7 @@ export class AdminService {
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
     // } else {
-    await this.userService.saveToken(token, payload.id);
+    await this.userService.saveToken2(token, payload.id, type);
     // }
     return token;
   }
@@ -533,17 +590,17 @@ export class AdminService {
     return newPermission.save();
   }
 
-  async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
-    try {
-      const newRole = new this.adminRoleModel(roleData);
-      return await newRole.save();
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException('Role name must be unique');
-      }
-      throw error;
-    }
-  }
+  // async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
+  //   try {
+  //     const newRole = new this.roleModel(roleData);
+  //     return await newRole.save();
+  //   } catch (error) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('Role name must be unique');
+  //     }
+  //     throw error;
+  //   }
+  // }
 
   async createBusinessRole(
     roleData: Partial<BusinessRole>,
@@ -606,6 +663,7 @@ export class AdminService {
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .exec();
   }
+
   async updateCategory(catId: string, updateCategoryDto: CreateCategoryDto) {
     try {
       if (!mongoose.isValidObjectId(catId)) {
@@ -629,5 +687,65 @@ export class AdminService {
       console.error(error);
       return { success: false, message: error.message };
     }
+  }
+
+  async createAdmin(adminId: string, data: CreateAdminDto) {
+    const admin = await this.adminModel.findById(adminId);
+    if (!admin) {
+      return {
+        success: false,
+        message: 'Admin not found with the id provided.',
+      };
+    }
+    data.password = await bcrypt.hash(data.password, 10);
+    if (data.role) {
+      const role = await this.roleModel.findOne({ name: data.role });
+      if (!role) {
+        return {
+          success: false,
+          message: 'Role not found with the name provided.',
+        };
+      }
+      data.role = role._id;
+    }
+    const createdAdmin = await this.adminModel.create({
+      creatorType: RoleCreatorType.ADMIN,
+      creator: new mongoose.Types.ObjectId(adminId),
+      ...data,
+    });
+    return {
+      success: true,
+      message: 'Admin created successfully',
+      data: createdAdmin,
+    };
+  }
+
+  async assignRoleToAdmin(data: AssignRoleDto) {
+    const adminId = data.userId;
+    const roleId = data.roleId;
+    const admin = await this.adminModel.findById(adminId);
+    if (!admin) {
+      return {
+        success: false,
+        message: 'Admin not found with the id provided.',
+      };
+    }
+    const role = await this.roleModel.findById(roleId);
+    if (!role) {
+      return {
+        success: false,
+        message: 'Role not found with the id provided.',
+      };
+    }
+    const updatedAdmin = await this.adminModel.findByIdAndUpdate(
+      adminId,
+      { $set: { role: role._id } },
+      { new: true },
+    );
+    return {
+      success: true,
+      message: 'Role assigned to admin successfully',
+      data: updatedAdmin,
+    };
   }
 }

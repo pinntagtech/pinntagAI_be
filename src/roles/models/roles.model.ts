@@ -1,10 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-
-export const RoleBelonging = {
-  SYSTEM: 'System',
-  BUSINESS: 'Business',
-};
+import { RoleBelonging, RoleCreatorType } from '../enums/roles.enum';
 
 export type RoleDocument = Role & Document;
 @Schema({ timestamps: true })
@@ -18,13 +14,13 @@ export class Role {
   @Prop({ refPath: 'creatorType' })
   creator: string;
 
-  @Prop({ required: true, enum: ['Admin', 'Business', 'System'] })
+  @Prop({ required: true, enum: Object.values(RoleCreatorType) })
   creatorType: string;
   
   @Prop({ required: true, enum: Object.values(RoleBelonging) })
   belongsTo: string;
 
-  @Prop({ required: true, ref: 'Business' })
+  @Prop({ ref: 'Business' })
   business: mongoose.Types.ObjectId;
 
   @Prop({ default: false })

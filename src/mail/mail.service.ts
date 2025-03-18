@@ -109,4 +109,19 @@ export class MailService {
       ],
     });
   }
+
+  async sendForgotPasswordMail2(name: string, email: string, link: string) {
+    // const user = await this.userService.getUserById(userId);
+    // const otp = await this.userService.saveOtp({
+    //   user: userId,
+    //   type: OtpTypes.EMAIL,
+    // });
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Reset your account password',
+      template:
+        process.cwd() + '/src/mail/templates/resetPassword.template.hbs',
+      context: { name, link },
+    });
+  }
 }
