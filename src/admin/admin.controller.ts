@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import {
   Body,
   Controller,
@@ -342,8 +342,13 @@ export class AdminController {
   }
 
   @Post('forgot-password')
-  async forgotPassword(@Res() res: Response, @Body() body: ForgotPasswordDto) {
-    const result = await this.adminService.forgotPassword(body.email);
+  async forgotPassword(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: ForgotPasswordDto,
+  ) {
+    const origin = req.headers.origin;
+    const result = await this.adminService.forgotPassword(origin, body.email);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
