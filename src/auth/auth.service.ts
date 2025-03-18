@@ -812,7 +812,6 @@ export class AuthService {
           // email: user.email,
           userType: UserTypes.USER,
           role: Roles.USER,
-          userType: UserTypes.USER,
         };
         const token = await this.generateJWT(payload);
         return {
