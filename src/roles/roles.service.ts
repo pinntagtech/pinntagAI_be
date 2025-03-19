@@ -15,6 +15,11 @@ import { CreateRoleDto } from './dto/createRole.dto';
 import { UserTypes } from 'src/enums/auth.enums';
 import { MapPrivilegeDto } from './dto/mapPrivilege.dto';
 import { UpdateRoleDto } from './dto/updateRole.dto';
+import { RoleBelonging, RoleCreatorType } from './enums/roles.enum';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class RolesService {
@@ -22,27 +27,41 @@ export class RolesService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
-    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
-    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Resource.name)
+    private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
+    @InjectModel(Action.name)
+    private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
   ) {}
   async createRole(user: any, createRoleDto: CreateRoleDto) {
     try {
       const isAdmin = user.userType === UserTypes.ADMIN;
-      const isUser = user.userType === UserTypes.USER;
+      const isBusiness = user.userType === UserTypes.BUSINESS;
+      const [admin, business] = await Promise.all([
+        this.adminModel.findOne({ _id: user.id }),
+        this.businessUserModel.findOne({ _id: user.id }),
+      ]);
+      console.log('isAdmin:', isAdmin);
+      console.log('isUse:', isBusiness);
       const { name, description } = createRoleDto;
       const roleData = {
         name,
         description,
         creator: user.id,
-        creatorType: isAdmin ? UserTypes.ADMIN : UserTypes.USER,
-        belongsToBusiness: isUser,
-        belongsToSystem: isAdmin,
-        isPrimaryAdmin: isUser,
+        creatorType: isAdmin ? RoleCreatorType.ADMIN : RoleCreatorType.BUSINESS,
+        belongsTo: isAdmin ? RoleBelonging.SYSTEM : RoleBelonging.BUSINESS,
+        // business:
       };
+
       const existingRole = await this.roleModel.findOne({
+        creator: new mongoose.Types.ObjectId(user.id),
         name: createRoleDto.name,
       });
+      console.log('check 3:', existingRole);
+
       if (existingRole) {
         return {
           success: false,
@@ -64,7 +83,7 @@ export class RolesService {
     }
   }
 
-  async mapPrivilege(mapPrivilegeDto: MapPrivilegeDto) {
+  async createPrivilege(mapPrivilegeDto: MapPrivilegeDto) {
     try {
       const { roleId, actionId, resourceId } = mapPrivilegeDto;
       const [role, action, resource] = await Promise.all([
@@ -81,7 +100,19 @@ export class RolesService {
       if (!role) {
         return { success: false, message: 'Role not found' };
       }
-      await this.privilegeModel.create({
+      const findPrivilege = await this.privilegeModel.findOne({
+        role: role._id,
+        action: action.title,
+        resource: resource.title,
+      });
+      if (findPrivilege) {
+        return {
+          success: false,
+          message: 'Privilege already exist with this combination!',
+        };
+      }
+
+      const createdPrivilege = await this.privilegeModel.create({
         role: role._id,
         action: action.title,
         resource: resource.title,
@@ -89,6 +120,7 @@ export class RolesService {
       return {
         success: true,
         message: 'Privileges Mapped Successfully!',
+        data: createdPrivilege,
       };
     } catch (error) {
       console.error('Error:', error);
@@ -100,31 +132,31 @@ export class RolesService {
   }
 
   private async getAllChildAdminIds(
-    adminId: string,
+    id: string,
+    creatorType: string,
     collectedIds: string[] = [],
   ): Promise<string[]> {
-    collectedIds.push(adminId);
-    const childAdmins = await this.roleModel
-      .find({ creator: adminId, creatorType: 'Admin' })
+    collectedIds.push(id);
+    const children = await this.roleModel
+      .find({ creator: new mongoose.Types.ObjectId(id), creatorType })
       .select('_id');
-    const childAdminIds = childAdmins.map((admin) => admin._id.toString());
-    if (!childAdminIds.length) {
+    const childrenIds = children.map((child) => child._id.toString());
+    if (!childrenIds.length) {
       return collectedIds;
     }
-    for (const childId of childAdminIds) {
-      await this.getAllChildAdminIds(childId, collectedIds);
+    for (const childId of childrenIds) {
+      await this.getAllChildAdminIds(childId, creatorType, collectedIds);
     }
     return collectedIds;
   }
 
-  async fetchRoles(adminId: string, userType: string) {
+  async fetchRoles(id: string, userType: string) {
     try {
-      const allAdminIds = await this.getAllChildAdminIds(adminId);
+      const allAdminIds = await this.getAllChildAdminIds(id, userType);
       const roles = await this.roleModel.find({
         creator: { $in: allAdminIds },
         creatorType: userType,
       });
-
       return {
         success: true,
         message: 'Roles Fetched Successfully!',
@@ -155,6 +187,22 @@ export class RolesService {
       };
     }
   }
+  async actionsList() {
+    try {
+      const actions = await this.actionModel.find();
+      return {
+        success: true,
+        message: 'Resources Fetched Successfully!',
+        data: actions,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Error while fetching resources',
+      };
+    }
+  }
 
   async updateRole(updateRoleDto: UpdateRoleDto) {
     try {
@@ -173,7 +221,7 @@ export class RolesService {
       if (Object.keys(updateRoleObj).length > 0) {
         await this.roleModel.updateOne(
           { _id: new mongoose.Types.ObjectId(roleId) },
-          { $set: { updateRoleObj } },
+          { $set: updateRoleObj },
         );
       }
       const updatedRole = await this.roleModel.findById(roleId);
@@ -252,5 +300,38 @@ export class RolesService {
       };
     }
   }
+  
+  async assignRole(id: string, userType: string, roleId: string) {
+    try {
+      let assignedTo = null;
+      if (userType === UserTypes.ADMIN) {
+        assignedTo = await this.adminModel
+          .findByIdAndUpdate(
+            { _id: id },
+            { $set: { role: new mongoose.Types.ObjectId(roleId) } },
+            { new: true },
+          )
+          .populate('role', 'name');
+      } else if (userType === UserTypes.BUSINESS) {
+        assignedTo = await this.businessUserModel
+          .findByIdAndUpdate(
+            { _id: id },
+            { $set: { role: new mongoose.Types.ObjectId(roleId) } },
+            { new: true },
+          )
+          .populate('role', 'name');
+      }
+      return {
+        success: true,
+        message: 'Resources Fetched Successfully!',
+        data: assignedTo,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Error while fetching resources',
+      };
+    }
+  }
 }
-

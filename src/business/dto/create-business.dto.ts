@@ -11,17 +11,27 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsString()
   businessUser?:string;
+
   @IsString()
   name: string;
+  
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  registrationNumber:string;
+
+  @IsString()
+  registrationType:string;
 
   @IsBoolean()
   isRegistered: boolean;
+
   @IsString()
   businessCategory: string;
+
   @IsString()
   businessIndustry: string;
-  @IsEmail()
-  email: string;
 
   @IsString()
   phone: string;

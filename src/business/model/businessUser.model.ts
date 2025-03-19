@@ -12,7 +12,7 @@ export class BusinessUser {
   isDeleted: boolean;
 
   @Prop({ ref: 'Role' })
-  role: mongoose.Types.ObjectId;
+  role: mongoose.Types.ObjectId[];
 
   @Prop({ref: 'BusinessUser' })
   creator: mongoose.Types.ObjectId;
@@ -26,13 +26,13 @@ export class BusinessUser {
       'https://pinntagbucket.s3.amazonaws.com/defaults/business_avatar.png',
   })
   profilePhoto: string;
-  @Prop({ required: true })
+  @Prop()
   name: string;
   @Prop()
   countryCode: string;
   @Prop()
   phone: string;
-  @Prop()
+  @Prop({required: true,unique:true })
   email: string;
   @Prop({default:false})
   isEmailVerified:boolean;

@@ -9,6 +9,7 @@ import {
   Res,
   HttpStatus,
   Query,
+  Req,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -23,8 +24,9 @@ export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   @Post('user')
-  async create(@Res() res: Response, @Body() data: CreateBusinessUserDto) {
-    const result = await this.businessService.createBusinessUser(data);
+  async create(@Req() req:Request,@Res() res: Response, @Body() data: CreateBusinessUserDto) {
+    const origin = req.headers.origin;
+    const result = await this.businessService.createBusinessUser(data,origin);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

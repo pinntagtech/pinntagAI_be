@@ -31,6 +31,7 @@ export class PrivilegeGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as DecodedUser; // Assume user is attached by AuthGuard
     if (!user || !user.role) {
+      console.log
       throw new UnauthorizedException('User role not found');
     }
     let roleId = '';
@@ -46,20 +47,20 @@ export class PrivilegeGuard implements CanActivate {
     //     if(user.)
     //   } else {
     // }
-    if (user.userType == UserTypes.BUSINESS) {
-      {
-      }
+    // if (user.userType == UserTypes.BUSINESS)
+    //   {
+    //   }
 
-      const hasPrivilege = await this.privilegeService.hasPrivilege(
-        user.role,
-        requiredPrivilege.resource,
-        requiredPrivilege.action,
-      );
+    const hasPrivilege = await this.privilegeService.hasPrivilege(
+      user.role,
+      requiredPrivilege.resource,
+      requiredPrivilege.action,
+    );
 
-      if (!hasPrivilege) {
-        throw new UnauthorizedException('Insufficient privileges');
-      }
-      return true;
+    if (!hasPrivilege) {
+      throw new UnauthorizedException('Insufficient privileges');
     }
+
+    return true;
   }
 }

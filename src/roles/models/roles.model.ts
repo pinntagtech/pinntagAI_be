@@ -12,7 +12,7 @@ export class Role {
   description: string;
 
   @Prop({ refPath: 'creatorType' })
-  creator: string;
+  creator: mongoose.Types.ObjectId;
 
   @Prop({ required: true, enum: Object.values(RoleCreatorType) })
   creatorType: string;

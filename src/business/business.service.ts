@@ -28,19 +28,20 @@ export class BusinessService {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     private readonly mailService: MailService,
-    private readonly jwtService:JwtService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async createBusinessUser(data: CreateBusinessUserDto) {
+  async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
     try {
       const foundUser = await this.businessUserModel.findOne({
         email: data.email,
       });
 
-      if (!foundUser) {
+      if (foundUser) {
         return {
           success: false,
           message: 'Business User already found with this email',
@@ -49,24 +50,53 @@ export class BusinessService {
 
       //seed business default roles:
       let ownerDetails = null;
+      let defaultBusinessRoles = [];
       for (let defaultRole of DefaultBusinessRoles) {
         const createDefaultRole = await this.roleModel.create(defaultRole);
         if (defaultRole.name === 'Business Owner')
           ownerDetails = createDefaultRole;
+        defaultBusinessRoles.push(createDefaultRole.id);
       }
+
       const hashedPassword = await bcrypt.hash(data.password, 10);
       delete data.password;
 
       let createObj = {
-        role: new mongoose.Types.ObjectId(ownerDetails.id),
+        role: [new mongoose.Types.ObjectId(ownerDetails.id)],
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
       };
 
+      //append creator to roles
       const createBusinessUser = await this.businessUserModel.create(createObj);
-
+      for (let defaultRole of defaultBusinessRoles) {
+        await this.roleModel.updateOne(
+          { _id: defaultRole },
+          {
+            $set: {
+              creator: new mongoose.Types.ObjectId(createBusinessUser.id),
+            },
+          },
+        );
+      }
       //sendEmaillink verification
+
+      const token = await this.generateJWT(
+        {
+          id: createBusinessUser.id,
+          userType: UserTypes.BUSINESS,
+          // role: admin.role.toString(),
+          // business:
+        },
+        TokenTypes.VERIFY_EMAIL,
+      );
+      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
+      await this.mailService.sendEmailVerificationMail(
+        createBusinessUser.name,
+        createBusinessUser.email,
+        resetLink,
+      );
 
       return {
         success: true,
@@ -85,6 +115,15 @@ export class BusinessService {
   async createBusiness(data: CreateBusinessDto) {
     try {
       //unique business check
+      const findBusiness = await this.businessModel.findOne({
+        $or:[{email:data.email},{registrationNumber:data.registrationNumber}]
+      });
+      if(!findBusiness){
+        return {
+          success:false,
+          message:`Business already exist with given email:${data.email} or registration number:${data.registrationNumber}`
+        }
+      }
 
       //
       const adminDetails = await this.adminModel.findOne({
@@ -280,7 +319,7 @@ export class BusinessService {
         role: String(user.role),
         business: String(user.business),
       };
-      const token = await this.generateJWT(payload);
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
 
       const fcmExists = await this.tokenModel.exists({
         type: TokenTypes.FCM,
@@ -302,12 +341,16 @@ export class BusinessService {
       };
     }
   }
-  async generateJWT(payload: JwtPayload) {
+  async generateJWT(payload: JwtPayload, type: string) {
+    let expireIn = '365d';
+    if(type === TokenTypes.VERIFY_EMAIL){
+      expireIn = '1d'
+    }
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '365d',
+      expiresIn: expireIn,
     });
-    await this.saveToken(token, payload.id);
+    await this.saveToken(token, payload.id, type);
     return token;
   }
   async saveToken(token: string, id: string, type?: string) {

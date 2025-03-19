@@ -28,7 +28,7 @@ import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
-import { Actions, ResourceTypes, Roles } from 'src/roles/enums/roles.enum';
+import { Actions, ResourceTypes, RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
@@ -91,7 +91,7 @@ export class SeederService {
     await this.seedResources();
     await this.seedActions();
     await this.seedOutletCategories();
-    // await this.seedPrivileges();
+    await this.seedPrivileges();
   }
 
   public async seedRoles() {
@@ -141,7 +141,22 @@ export class SeederService {
     });
     return newDrive.save();
   }
-
+  async seedSuperAdminRole() {
+    const role = await this.roleModel.findOne({ isSuperAdmin: true });
+    if (!role) {
+      const superAdmin = await this.adminModel.findOne({isSuperAdmin:true});
+      const superAdminRole = new this.roleModel({
+        name: Roles.SUPER_ADMIN,
+        creatorType: 'System',
+        belongsTo:RoleBelonging.SYSTEM,
+        isSuperAdmin: true,
+        isPrimaryAdmin: true,
+        belongsToSystem: true,
+      });
+      superAdminRole.$locals.isSeeding = true;
+      await superAdminRole.save();
+    }
+  }
   public async seedSuperAdmin() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
     const admin = await this.adminModel.findOne({
@@ -160,23 +175,15 @@ export class SeederService {
       });
       superAdmin.$locals.isSeeding = true;
       await superAdmin.save();
-    }
-  }
-  async seedSuperAdminRole() {
-    const role = await this.roleModel.findOne({ isSuperAdmin: true });
-    if (!role) {
-      const superAdminRole = new this.roleModel({
-        name: Roles.SUPER_ADMIN,
-        creatorType: 'System',
+      const adminDetails = await this.adminModel.findOne({
+        role: role._id,
         isSuperAdmin: true,
-        isPrimaryAdmin: true,
-        belongsToSystem: true,
-        privileges: ['*'],
       });
-      superAdminRole.$locals.isSeeding = true;
-      await superAdminRole.save();
+      await this.roleModel.updateOne({_id:role.id },{$set:{creator:new mongoose.Types.ObjectId(adminDetails.id)}})
+
     }
   }
+
 
   public async seedCategories() {
     const categories = await this.categoryModel.find().exec();
@@ -242,7 +249,7 @@ export class SeederService {
       for (let [key, action] of Object.entries(Actions)) {
         for (let [resKey, resource] of Object.entries(ResourceTypes)) {
           await this.privilegeModel.create({
-            role: superAdmin._id,
+            role: new mongoose.Types.ObjectId(superAdmin.role),
             resource: resource,
             action: action,
           });

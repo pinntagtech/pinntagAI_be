@@ -39,6 +39,13 @@ export class Business {
   @Prop()
   cover: string;
 
+  @Prop()
+  registrationNumber:string;
+
+  @Prop()
+  registrationType:string;
+
+
   @Prop({ ref: Brand.name })
   brand: mongoose.Types.ObjectId;
 

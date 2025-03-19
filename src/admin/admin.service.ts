@@ -55,6 +55,7 @@ import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { Token } from 'aws-sdk';
 
 @Injectable()
 export class AdminService {
@@ -499,7 +500,8 @@ export class AdminService {
           user: adminDoc,
         };
       }
-      const token = await this.generateJWT(payload);
+      console.log("Last check::")
+      const token = await this.generateJWT(payload,TokenTypes.ACCESS);
       return {
         success: true,
         status: true,

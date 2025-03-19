@@ -3820,6 +3820,45 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
+  async verifyEmailviaLink(token: string) {
+    try {
+      const tokenDoc = await this.tokenModel.findOne({
+        token,
+        type: TokenTypes.VERIFY_EMAIL,
+      });
+      if (!tokenDoc) {
+        return {
+          success: false,
+          message: 'Unauthorised. Token expired.',
+        };
+      }
+
+      const linkPayload: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+      let loginToken = null;
+      if (linkPayload.userType === UserTypes.ADMIN) {
+      } else if (linkPayload.userType === UserTypes.USER) {
+      } else if (linkPayload.userType === UserTypes.BUSINESS) {
+        const payload: JwtPayload = {
+          id: linkPayload.id,
+          userType: UserTypes.BUSINESS,
+          // role: String(user.role),
+        };
+        loginToken = await this.generateJWT(payload);
+      }
+      //delete token
+      await this.tokenModel.deleteOne({})
+
+      return {
+        success: true,
+        message: 'User Verified Successfully',
+        token: loginToken,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 // Relevant-logs:--- {

@@ -124,4 +124,13 @@ export class MailService {
       context: { name, link },
     });
   }
+  async sendEmailVerificationMail(name:string,email:string,link:string){
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Reset your account password',
+      template:
+        process.cwd() + '/src/mail/templates/emailVerificationViaLink.template.hbs',
+      context: { name, link },
+    });
+  }
 }

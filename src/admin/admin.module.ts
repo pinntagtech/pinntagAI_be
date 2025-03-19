@@ -100,6 +100,10 @@ import {
   OutletType,
   OutletTypeSchema,
 } from 'src/business/model/outletType.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 
 @Module({
   imports: [
@@ -144,6 +148,7 @@ import {
       { name: Action.name, schema: ActionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
     ]),
   ],
   controllers: [AdminController],

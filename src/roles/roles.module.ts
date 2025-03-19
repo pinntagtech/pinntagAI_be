@@ -13,6 +13,11 @@ import { Action, ActionSchema } from './models/actions.model';
 import { RolesService } from './roles.service';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { Resource, ResourceSchema } from './models/resource.model';
+import { GuestSession, GuestSessionSchema } from 'src/auth/models/guestSession.model';
+import { Token, TokenSchema } from 'src/auth/models/token.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -24,9 +29,13 @@ import { Resource, ResourceSchema } from './models/resource.model';
       { name: Action.name, schema: ActionSchema },
       { name: User.name, schema: UserSchema },
       { name: Resource.name, schema: ResourceSchema },
+      { name:GuestSession.name, schema: GuestSessionSchema},
+      { name: Token.name,schema:TokenSchema},
+      { name: BusinessUser.name, schema:BusinessUserSchema},
+      { name:Business.name, schema:BusinessSchema}
     ]),
   ],
   controllers: [RolesController],
-  providers: [PrivilegeService, RolesService],
+  providers: [PrivilegeService, RolesService,JwtService],
 })
 export class RolesModule {}
