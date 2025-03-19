@@ -92,6 +92,14 @@ import { Action, ActionSchema } from 'src/roles/models/actions.model';
 import { MailService } from 'src/mail/mail.service';
 import { RolesService } from 'src/roles/roles.service';
 import { PrivilegeService } from 'src/roles/privilege.service';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from 'src/business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from 'src/business/model/outletType.model';
 
 @Module({
   imports: [
@@ -131,9 +139,11 @@ import { PrivilegeService } from 'src/roles/privilege.service';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-      { name: Privilege.name, schema: PrivilegeSchema},
-      { name: Resource.name, schema: ResourceSchema},
-      { name:Action.name, schema:ActionSchema}
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name: Action.name, schema: ActionSchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
     ]),
   ],
   controllers: [AdminController],

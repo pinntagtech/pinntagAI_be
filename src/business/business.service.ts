@@ -17,7 +17,9 @@ import { Business, BusinessDocument } from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { TokenTypes } from 'src/enums/auth.enums';
+import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class BusinessService {
@@ -27,8 +29,9 @@ export class BusinessService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
-    @InjectModel(Token.name) private readonly tokenModel:Model<TokenDocument>,
-    private readonly mailService:MailService,
+    @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    private readonly mailService: MailService,
+    private readonly jwtService:JwtService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -209,38 +212,35 @@ export class BusinessService {
     }
   }
 
-  async validateBusiness(email: string, password: string) {
-    const foundBusiness = await this.businessUserModel.findOne({ email });
-    if (foundBusiness) {
-      const validPassword = await bcrypt.compare(
-        password,
-        foundBusiness.password,
-      );
+  //helper
+  async validateBusinessUser(email: string, password: string) {
+    const user = await this.businessUserModel.findOne({ email });
+    if (user) {
+      const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
       }
-      const business = await this.businessUserModel
-        .findById(foundBusiness.id)
+      const businessUser = await this.businessUserModel
+        .findById(user.id)
         .select({
           password: 0,
           createdAt: 0,
           updatedAt: 0,
           __v: 0,
         });
-      return { success: true, user: business };
+      return { success: true, user: businessUser };
     } else {
       return { success: false, message: 'User not found' };
     }
   }
 
   async login(loginDto: LoginBusinessDto) {
-
-    const validatedUser = await this.validateBusiness(
+    const validatedBusinessUser = await this.validateBusinessUser(
       loginDto.email,
       loginDto.password,
     );
-    if (validatedUser.success) {
-      const user = validatedUser.user;
+    if (validatedBusinessUser.success) {
+      const user = validatedBusinessUser.user;
       if (!user.isEmailVerified) {
         await this.mailService.sendUserVerificationMail(user.id);
         return {
@@ -267,7 +267,7 @@ export class BusinessService {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
-            userType: UserTypes.USER,
+            userType: UserTypes.BUSINESS,
             user: user._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
@@ -276,45 +276,49 @@ export class BusinessService {
       const payload: JwtPayload = {
         id: user.id,
         // email: user.email,
-        userType: UserTypes.USER,
-        role: Roles.USER,
+        userType: UserTypes.BUSINESS,
+        role: String(user.role),
+        business: String(user.business),
       };
       const token = await this.generateJWT(payload);
-      const updatedUser = await this.userModel
-        .findByIdAndUpdate(user.id, {
-          $set: { isDeleted: false },
-        })
-        .populate('role', '_id name');
-      if (!user.stripeCustomerId) {
-        const customer = await this.stripeService.createCustomer(
-          user.email,
-          user.name,
-        );
-        if (customer.id) {
-          user.stripeCustomerId = customer.id;
-          await user.save();
-        }
-      }
+
       const fcmExists = await this.tokenModel.exists({
         type: TokenTypes.FCM,
         userId: user._id,
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
+
       return {
         success: true,
         message: 'User logged in successfully',
-        user: updatedUser,
+        user: user,
         token,
         fcmExists: fcmExists ? true : false,
       };
     } else {
       return {
         success: false,
-        message: validatedUser.message,
+        message: validatedBusinessUser.message,
       };
     }
   }
-
+  async generateJWT(payload: JwtPayload) {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn: '365d',
+    });
+    await this.saveToken(token, payload.id);
+    return token;
+  }
+  async saveToken(token: string, id: string, type?: string) {
+    return await this.tokenModel.create({
+      token,
+      userType: UserTypes.USER,
+      user: new mongoose.Types.ObjectId(id),
+      type,
+      expiresAt: new Date(Date.now() + 86400000),
+    });
+  }
   update(id: number, updateBusinessDto: UpdateBusinessDto) {
     return `This action updates a #${id} business`;
   }

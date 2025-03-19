@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
@@ -53,6 +52,15 @@ import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
 import { Resource, ResourceSchema } from './roles/models/resource.model';
 import { Action, ActionSchema } from './roles/models/actions.model';
 import { BusinessModule } from './business/business.module';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from './business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from './business/model/outletType.model';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -88,7 +96,9 @@ import { BusinessModule } from './business/business.module';
       { name: Drive.name, schema: DriveSchema },
       { name: Privilege.name, schema: PrivilegeSchema },
       { name: Resource.name, schema: ResourceSchema },
-      { name:Action.name, schema:ActionSchema}
+      { name: Action.name, schema: ActionSchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
     ]),
     StripeeModule,
     AuthModule,

@@ -44,6 +44,7 @@ import {
   OutletCategoryList,
   OutletTypesByCategory,
 } from 'src/business/enums/business.enum';
+import e from 'express';
 
 @Injectable()
 export class SeederService {
@@ -271,26 +272,54 @@ export class SeederService {
   }
   async seedOutletCategories() {
     const findOutletCategories = await this.outletCategoryModel.find();
-    if (findOutletCategories.length < Object.keys(OutletTypesByCategory).length) {
+    if (findOutletCategories.length < Object.values(OutletCategoryList).length) {
       for (const outletCategory of Object.values(OutletCategoryList)) {
         const foundOutletCategory = await this.outletCategoryModel.findOne({
           title: outletCategory,
         });
+
         if (!foundOutletCategory) {
+
           const createdOutletCategory = await this.outletCategoryModel.create({
             title: outletCategory,
           });
-        }
+          for (const outletCategoryType of OutletTypesByCategory[outletCategory]) {
 
-        for (const outletCategoryType of OutletTypesByCategory[outletCategory]) {
-          const foundType = await this.outletTypeModel.findOne({ title: outletCategoryType, category: foundOutletCategory._id });
-          if (!foundType) {
-            await this.outletTypeModel.create({ title: outletCategoryType, category: foundOutletCategory._id });
+      
+
+            const foundType = await this.outletTypeModel.findOne({
+              type: outletCategoryType,
+              OutletCategory: new mongoose.Types.ObjectId(createdOutletCategory.id),
+            });
+            console.log("foundType:",foundType);
+            if (!foundType) {
+              await this.outletTypeModel.create({
+                type: outletCategoryType,
+                OutletCategory: new mongoose.Types.ObjectId(createdOutletCategory._id),
+              });
+            }
+          }
+        } else {
+          for (const outletCategoryType of OutletTypesByCategory[
+            outletCategory
+          ]) {
+            console.log("outletCategoryType:",outletCategoryType);
+            const foundType = await this.outletTypeModel.findOne({
+              type: outletCategoryType,
+              category: foundOutletCategory._id,
+            });
+            if (!foundType) {
+              await this.outletTypeModel.create({
+                type: outletCategoryType,
+                category: foundOutletCategory._id,
+              });
+            }
           }
         }
-
-
       }
     }
   }
+  // async seedOutletCategoryTypes() {
+
+  // }
 }

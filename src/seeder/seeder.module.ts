@@ -25,6 +25,14 @@ import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from 'src/business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from 'src/business/model/outletType.model';
 
 @Module({
   imports: [
@@ -40,9 +48,11 @@ import { Action, ActionSchema } from 'src/roles/models/actions.model';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
-      { name: Privilege.name, schema: PrivilegeSchema},
-      { name: Resource.name, schema: ResourceSchema},
-      { name:Action.name, schema:ActionSchema}
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name: Action.name, schema: ActionSchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
     ]),
   ],
   controllers: [],
