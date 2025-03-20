@@ -18,6 +18,7 @@ import { Request, Response } from 'express';
 import { CreateBusinessUserDto } from './dto/create-businessUser.dto';
 import { isValidObjectId } from 'mongoose';
 import { LoginBusinessDto } from './dto/login-business.dto';
+import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -28,6 +29,26 @@ export class BusinessController {
     const origin = req.headers.origin;
     const result = await this.businessService.createBusinessUser(data,origin);
 
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('user/update/:id')
+  async updateBusinessUser(@Req() req:Request,@Res() res: Response,@Param('id')id:string, @Body() data: UpdateBusinessUserDto) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.updateBusinessUser(id,data);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -79,6 +100,7 @@ export class BusinessController {
       });
     }
   }
+
 
   @Get('fetch')
   async search(

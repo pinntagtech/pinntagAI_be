@@ -21,7 +21,7 @@ import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
 import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
-import { Permission, ResourceEnums } from './models/permission.model';
+// import { Permission, ResourceEnums } from './models/permission.model';
 import { BusinessRole } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -360,12 +360,12 @@ export class AdminController {
     }
   }
 
-  @Post('create-permission')
-  async createPermission(
-    @Body() createDto: Partial<Permission>,
-  ): Promise<Permission> {
-    return this.adminService.create(createDto);
-  }
+  // @Post('create-permission')
+  // async createPermission(
+  //   @Body() createDto: Partial<Permission>,
+  // ): Promise<Permission> {
+  //   return this.adminService.create(createDto);
+  // }
 
   // @Post('create-role')
   // async createAdminRole(

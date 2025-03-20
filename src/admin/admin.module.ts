@@ -72,7 +72,7 @@ import {
 import { StripeService } from 'src/stripe/stripe.service';
 import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Permission, PermissionSchema } from './models/permission.model';
+// import { Permission, PermissionSchema } from './models/permission.model';
 // import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
 import {
   BusinessRole,
@@ -109,7 +109,6 @@ import {
   imports: [
     HttpModule,
     MongooseModule.forFeature([
-      { name: Permission.name, schema: PermissionSchema },
       // { name: AdminRole.name, schema: AdminRoleSchema },
       { name: BusinessRole.name, schema: BusinessRoleSchema },
       { name: User.name, schema: UserSchema },

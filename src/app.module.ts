@@ -61,6 +61,7 @@ import {
   OutletTypeSchema,
 } from './business/model/outletType.model';
 import { AppController } from './app.controller';
+import { BusinessUser, BusinessUserSchema } from './business/model/businessUser.model';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { AppController } from './app.controller';
       { name: Action.name, schema: ActionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema},
     ]),
     StripeeModule,
     AuthModule,

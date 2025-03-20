@@ -28,7 +28,12 @@ import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
-import { Actions, ResourceTypes, RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
+import {
+  Actions,
+  ResourceTypes,
+  RoleBelonging,
+  Roles,
+} from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
@@ -45,6 +50,7 @@ import {
   OutletTypesByCategory,
 } from 'src/business/enums/business.enum';
 import e from 'express';
+import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class SeederService {
@@ -76,6 +82,7 @@ export class SeederService {
     private readonly outletCategoryModel: Model<OutletCategoryDocument>,
     @InjectModel(OutletType.name)
     private readonly outletTypeModel: Model<OutletTypeDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel:Model<BusinessUserDocument>
   ) {}
 
   async seed() {
@@ -123,8 +130,8 @@ export class SeederService {
       foundOwner = await this.adminModel.findById(ownerId);
     } else if (ownerType === User.name) {
       foundOwner = await this.userModel.findById(ownerId);
-    } else if (ownerType === BusinessProfile.name) {
-      foundOwner = await this.businessProfileModel.findById(ownerId);
+    } else if (ownerType === BusinessUser.name) {
+      foundOwner = await this.businessUserModel.findById(ownerId);
     }
 
     if (!foundOwner) {
@@ -144,11 +151,11 @@ export class SeederService {
   async seedSuperAdminRole() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
     if (!role) {
-      const superAdmin = await this.adminModel.findOne({isSuperAdmin:true});
+      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
       const superAdminRole = new this.roleModel({
         name: Roles.SUPER_ADMIN,
         creatorType: 'System',
-        belongsTo:RoleBelonging.SYSTEM,
+        belongsTo: RoleBelonging.SYSTEM,
         isSuperAdmin: true,
         isPrimaryAdmin: true,
         belongsToSystem: true,
@@ -172,6 +179,11 @@ export class SeederService {
         name: process.env.ADMIN_FIRST_NAME,
         role: role._id,
         isSuperAdmin: true,
+        firstName: 'Robin',
+        lastName: 'Seth',
+        // fullPhoneNumber: '+447917303330',
+        phone: '7917303330',
+        countryCode: '+44',
       });
       superAdmin.$locals.isSeeding = true;
       await superAdmin.save();
@@ -179,11 +191,13 @@ export class SeederService {
         role: role._id,
         isSuperAdmin: true,
       });
-      await this.roleModel.updateOne({_id:role.id },{$set:{creator:new mongoose.Types.ObjectId(adminDetails.id)}})
-
+      await this.roleModel.updateOne(
+        { _id: role.id },
+        { $set: { creator: new mongoose.Types.ObjectId(adminDetails.id) } },
+      );
+      await this.createDrive(adminDetails._id, Admin.name);
     }
   }
-
 
   public async seedCategories() {
     const categories = await this.categoryModel.find().exec();
@@ -279,30 +293,31 @@ export class SeederService {
   }
   async seedOutletCategories() {
     const findOutletCategories = await this.outletCategoryModel.find();
-    if (findOutletCategories.length < Object.values(OutletCategoryList).length) {
+    if (
+      findOutletCategories.length < Object.values(OutletCategoryList).length
+    ) {
       for (const outletCategory of Object.values(OutletCategoryList)) {
         const foundOutletCategory = await this.outletCategoryModel.findOne({
           title: outletCategory,
         });
 
         if (!foundOutletCategory) {
-
           const createdOutletCategory = await this.outletCategoryModel.create({
             title: outletCategory,
           });
-          for (const outletCategoryType of OutletTypesByCategory[outletCategory]) {
-
-      
-
+          for (const outletCategoryType of OutletTypesByCategory[
+            outletCategory
+          ]) {
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
-              OutletCategory: new mongoose.Types.ObjectId(createdOutletCategory.id),
+              category: new mongoose.Types.ObjectId(createdOutletCategory.id),
             });
-            console.log("foundType:",foundType);
             if (!foundType) {
               await this.outletTypeModel.create({
                 type: outletCategoryType,
-                OutletCategory: new mongoose.Types.ObjectId(createdOutletCategory._id),
+                category: new mongoose.Types.ObjectId(
+                  createdOutletCategory._id,
+                ),
               });
             }
           }
@@ -310,15 +325,15 @@ export class SeederService {
           for (const outletCategoryType of OutletTypesByCategory[
             outletCategory
           ]) {
-            console.log("outletCategoryType:",outletCategoryType);
+            console.log('outletCategoryType:', outletCategoryType);
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
-              category: foundOutletCategory._id,
+              category: new mongoose.Types.ObjectId(foundOutletCategory._id),
             });
             if (!foundType) {
               await this.outletTypeModel.create({
                 type: outletCategoryType,
-                category: foundOutletCategory._id,
+                category: new mongoose.Types.ObjectId(foundOutletCategory._id),
               });
             }
           }
