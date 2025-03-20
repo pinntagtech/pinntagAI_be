@@ -182,9 +182,8 @@ export class BusinessService {
 
   async updateBusiness(id: string, data: UpdateBusinessDto) {
     try {
-      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
-        $set: {
-          menu: data.menu,
+      let updateObj = {
+        menu: data.menu,
           allergenInformation: data.allergenInformation,
           openingHours: data.openingHours,
           paymentMethods: data.paymentMethods,
@@ -193,9 +192,13 @@ export class BusinessService {
           covidSafetyMeasures: data.covidSafetyMeasures,
           insuranceDetails: data.insuranceDetails,
           healthAndSafetyPolicies:data.healthAndSafetyPolicies,
-          
           ...data,
-        },
+      };
+      // if(data.brand){
+      //   updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
+      // }
+      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
+        $set: updateObj,
       });
       return {
         success: true,
