@@ -81,7 +81,6 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
-import { roleType } from 'src/contracts/enums/RoleType.enum';
 import { Roles } from 'src/roles/enums/roles.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 
@@ -3848,7 +3847,7 @@ export class AuthService {
         loginToken = await this.generateJWT(payload);
       }
       //delete token
-      await this.tokenModel.deleteOne({})
+      await this.tokenModel.deleteOne({});
 
       return {
         success: true,
