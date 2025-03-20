@@ -20,9 +20,13 @@ export class CreateBusinessDto {
 
   @IsString()
   registrationNumber:string;
-
+  
   @IsString()
   registrationType:string;
+  
+  @IsString()
+  bio:string;
+
 
   @IsBoolean()
   isRegistered: boolean;

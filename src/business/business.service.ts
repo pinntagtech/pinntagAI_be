@@ -116,13 +116,16 @@ export class BusinessService {
     try {
       //unique business check
       const findBusiness = await this.businessModel.findOne({
-        $or:[{email:data.email},{registrationNumber:data.registrationNumber}]
+        $or: [
+          { email: data.email },
+          { registrationNumber: data.registrationNumber },
+        ],
       });
-      if(!findBusiness){
+      if (findBusiness) {
         return {
-          success:false,
-          message:`Business already exist with given email:${data.email} or registration number:${data.registrationNumber}`
-        }
+          success: false,
+          message: `Business already exist with given email:${data.email} or registration number:${data.registrationNumber}`,
+        };
       }
 
       //
@@ -137,8 +140,12 @@ export class BusinessService {
         businessIndustry: data.businessIndustry,
         phone: data.phone,
         countryCode: data.countryCode,
+        registrationType: data.registrationType,
+        registrationNumber: data.registrationNumber,
+        bio: data.bio,
       };
       if (data.website) createObj['website'] = data.website;
+
       if (data.brand && isValidObjectId(data.brand))
         createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       if (data.businessUser) {
@@ -174,6 +181,37 @@ export class BusinessService {
   }
 
   async updateBusiness(id: string, data: UpdateBusinessDto) {
+    try {
+      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
+        $set: {
+          menu: data.menu,
+          allergenInformation: data.allergenInformation,
+          openingHours: data.openingHours,
+          paymentMethods: data.paymentMethods,
+          reviews: data.reviews,
+          promotions: data.promotions,
+          covidSafetyMeasures: data.covidSafetyMeasures,
+          insuranceDetails: data.insuranceDetails,
+          healthAndSafetyPolicies:data.healthAndSafetyPolicies,
+          
+          ...data,
+        },
+      });
+      return {
+        success: true,
+        message: 'Business Updated Successfully!',
+        data: updatedDetails,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Internal Server Error!',
+      };
+    }
+  }
+
+  async updateBusinessUser(id: string, data: UpdateBusinessDto) {
     try {
       const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
         $set: { data },
@@ -343,8 +381,8 @@ export class BusinessService {
   }
   async generateJWT(payload: JwtPayload, type: string) {
     let expireIn = '365d';
-    if(type === TokenTypes.VERIFY_EMAIL){
-      expireIn = '1d'
+    if (type === TokenTypes.VERIFY_EMAIL) {
+      expireIn = '1d';
     }
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,

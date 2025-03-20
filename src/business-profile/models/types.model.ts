@@ -13,8 +13,8 @@ export class Allergen {
 
 export class OpeningHours {
   day: string;
-  startTime: string;
-  endTime: string;
+  open: string;
+  close: string;
 }
 export class Review {
   user: mongoose.Types.ObjectId;
