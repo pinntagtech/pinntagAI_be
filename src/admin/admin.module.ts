@@ -3,7 +3,6 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { Role, RoleSchema } from 'src/models/role.model';
 import {
   CrawledEvent,
   CrawledEventSchema,
@@ -74,7 +73,7 @@ import { StripeService } from 'src/stripe/stripe.service';
 import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { Permission, PermissionSchema } from './models/permission.model';
-import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
+// import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
 import {
   BusinessRole,
   BusinessRoleSchema,
@@ -86,13 +85,32 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Action, ActionSchema } from 'src/roles/models/actions.model';
+import { MailService } from 'src/mail/mail.service';
+import { RolesService } from 'src/roles/roles.service';
+import { PrivilegeService } from 'src/roles/privilege.service';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from 'src/business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from 'src/business/model/outletType.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 
 @Module({
   imports: [
     HttpModule,
     MongooseModule.forFeature([
       { name: Permission.name, schema: PermissionSchema },
-      { name: AdminRole.name, schema: AdminRoleSchema },
+      // { name: AdminRole.name, schema: AdminRoleSchema },
       { name: BusinessRole.name, schema: BusinessRoleSchema },
       { name: User.name, schema: UserSchema },
       { name: Admin.name, schema: AdminSchema },
@@ -125,6 +143,12 @@ import { SeederService } from 'src/seeder/seeder.service';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name: Action.name, schema: ActionSchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
     ]),
   ],
   controllers: [AdminController],
@@ -136,6 +160,9 @@ import { SeederService } from 'src/seeder/seeder.service';
     StripeService,
     UserService,
     SeederService,
+    MailService,
+    RolesService,
+    PrivilegeService,
   ],
 })
 export class AdminModule {}

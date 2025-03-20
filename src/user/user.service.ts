@@ -7,7 +7,11 @@ import { VerifyOtpDto } from 'src/auth/dto/verifyOtp.dto';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { generateOtp } from 'src/helpers/auth.helpers';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { SubscriptionServiceTypes, TokenTypes } from 'src/enums/auth.enums';
+import {
+  SubscriptionServiceTypes,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import {
   BusinessProfile,
   BusinessProfileDocument,
@@ -595,13 +599,25 @@ export class UserService {
       return await this.tokenModel.create({
         token,
         type: TokenTypes.GUEST_USER,
+        userType: UserTypes.GUEST,
         expiresAt: new Date(Date.now() + 86400000),
       });
     }
     return await this.tokenModel.create({
       token,
-      userId: new mongoose.Types.ObjectId(id),
+      userType: UserTypes.USER,
+      user: new mongoose.Types.ObjectId(id),
       type: TokenTypes.ACCESS,
+      expiresAt: new Date(Date.now() + 86400000),
+    });
+  }
+
+  async saveToken2(token: string, id: string, type?: string) {
+    return await this.tokenModel.create({
+      token,
+      userType: UserTypes.USER,
+      user: new mongoose.Types.ObjectId(id),
+      type,
       expiresAt: new Date(Date.now() + 86400000),
     });
   }

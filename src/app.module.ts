@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
@@ -7,7 +6,6 @@ import { UserModule } from './user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule } from '@nestjs/config';
 import { User, UserSchema } from './user/models/user.model';
-import { Role, RoleSchema } from './models/role.model';
 import { Category, CategorySchema } from './models/category.model';
 import { MailModule } from './mail/mail.module';
 import { Logger } from 'winston';
@@ -48,6 +46,21 @@ import {
 import { Admin, AdminSchema } from './admin/models/admin.model';
 import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
+import { RolesModule } from './roles/roles.module';
+import { Role, RoleSchema } from './roles/models/roles.model';
+import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
+import { Resource, ResourceSchema } from './roles/models/resource.model';
+import { Action, ActionSchema } from './roles/models/actions.model';
+import { BusinessModule } from './business/business.module';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from './business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from './business/model/outletType.model';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -81,6 +94,11 @@ import { DriveModule } from './drive/drive.module';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Drive.name, schema: DriveSchema },
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name: Action.name, schema: ActionSchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -98,6 +116,8 @@ import { DriveModule } from './drive/drive.module';
     SmsModule,
     AdminModule,
     DriveModule,
+    RolesModule,
+    BusinessModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],

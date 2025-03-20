@@ -8,7 +8,6 @@ import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from 'src/auth/auth.service';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import {
@@ -70,7 +69,6 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
-import { AdminV2, AdminV2Schema } from 'src/admin/models/adminV2.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
@@ -79,12 +77,17 @@ import {
   FileCategory,
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Action, ActionSchema } from 'src/roles/models/actions.model';
+import { OutletCategory, OutletCategorySchema } from 'src/business/model/outletCategory.model';
+import { OutletType, OutletTypeSchema } from 'src/business/model/outletType.model';
 
 @Global()
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: AdminV2.name, schema: AdminV2Schema },
       { name: Otp.name, schema: OtpSchema },
       { name: User.name, schema: UserSchema },
       { name: Token.name, schema: TokenSchema },
@@ -113,6 +116,11 @@ import {
       { name: Drive.name, schema: DriveSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Privilege.name, schema:PrivilegeSchema},
+      { name:Resource.name, schema:ResourceSchema},
+      { name:Action.name, schema:ActionSchema},
+      { name:OutletCategory.name,schema:OutletCategorySchema},
+      { name:OutletType.name,schema:OutletTypeSchema},
     ]),
     MailerModule.forRoot({
       transport: {

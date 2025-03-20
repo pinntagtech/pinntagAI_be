@@ -1,12 +1,14 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { UserTypes } from 'src/enums/auth.enums';
 
 export const TokenDecoder = createParamDecorator(
   (data: any, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     if (request.isGuest) {
-      const user: DecodedUser = {
+      return {
         isGuest: true,
+        userType: UserTypes.USER,
         id: request.sessionId,
         role: 'GUEST',
         name: 'Guest',
@@ -17,44 +19,17 @@ export const TokenDecoder = createParamDecorator(
         isPhoneVerified: false,
         sessionId: request.sessionId,
       };
-      return user;
-    } else if (request.isBusiness) {
-      // console.log('User business......');
-      const user: DecodedUser = {
-        isGuest: false,
-        role: 'business_profile',
-        name: request.user.firstName + ' ' + request.user.lastName,
-        id: request.user._id,
-        businessProfile: request.businessProfile,
-        isBusiness: true,
-        ...request.user,
-      };
-      return user;
-    } else if (request.isAdmin){
-      const user: DecodedUser = {
-        isGuest: false,
-        role: 'admin',
-        // name: request.user.firstName + ' ' + request.user.lastName,
-        name: `${request.user?.name || ''}`,
-        id: request.user?._id,
-        businessProfile: '',
-        isBusiness: false,
-        ...request.user,
-      };
-      return user;
-    } 
-    else {
-      const user: DecodedUser = {
-        isGuest: false,
-        role: 'user',
-        // name: request.user.firstName + ' ' + request.user.lastName,
-        name: `${request.user?.name || ''}`,
-        id: request.user?._id,
-        businessProfile: '',
-        isBusiness: false,
-        ...request.user,
-      };
-      return user;
     }
+    const user: DecodedUser = {
+      isGuest: false,
+      role: request.user.role,
+      userType: request.isBusiness ? UserTypes.BUSINESS : request.isAdmin ? UserTypes.ADMIN : UserTypes.USER,
+      name: request.isBusiness ? request.user.firstName + ' ' + request.user.lastName : `${request.user?.name || ''}`,
+      id: request.user._id,
+      businessProfile: request.isBusiness ? request.businessProfile : '',
+      isBusiness: request.isBusiness,
+      ...request.user,
+    };
+    return user;
   },
 );

@@ -5,7 +5,6 @@ import {
   FollowingStatus,
   ImagePopulates,
   LocationPopulates,
-  Roles,
   TransactionPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
@@ -19,7 +18,7 @@ import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { CreateStaffDto } from './dto/createStaff.dto';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { Gallery, GalleryDocument } from './models/gallery.model';
 import { UpdateBusinessProfileDto } from './dto/updateBusinessProfile.dto';
 import { UpdateLocationDto } from './dto/updateLocation.dto';
@@ -44,6 +43,7 @@ import {
   SubscriptionServiceTypes,
   SubscriptionServices,
   TransactionStatus,
+  UserTypes,
 } from 'src/enums/auth.enums';
 import {
   Transaction,
@@ -62,6 +62,7 @@ import {
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { SeederService } from 'src/seeder/seeder.service';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class BusinessProfileService {
@@ -237,7 +238,10 @@ export class BusinessProfileService {
       //   businessProfile: createdBusinessProfile._id,
       // });
 
-      await this.seederService.createDrive(createdBusinessProfile._id,BusinessProfile.name);
+      await this.seederService.createDrive(
+        createdBusinessProfile._id,
+        BusinessProfile.name,
+      );
 
       await this.userModel.updateOne(
         { _id: new mongoose.Types.ObjectId(userId) },
@@ -733,9 +737,10 @@ export class BusinessProfileService {
       // } else {
       const payload: JwtPayload = {
         id: userId,
-        email: businessProfile.email,
-        businessProfile: businessProfile.id,
+        // email: businessProfile.email,
+        // businessProfile: businessProfile.id,
         role: Roles.BUSINESS_PROFILE,
+        userType: UserTypes.BUSINESS,
       };
       const token = await this.authService.generateJWT(payload);
       return {

@@ -4,12 +4,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
 import mongoose, { Model } from 'mongoose';
-import { Role, RoleDocument } from 'src/models/role.model';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessPopulates,
   CategoryPopulates,
   LocationPopulates,
-  Roles,
   UserPopulates,
 } from 'src/enums/user.enum';
 import { LoginDto } from './dto/login.dto';
@@ -17,7 +16,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
-import { OtpTypes, SMSType, TokenTypes } from 'src/enums/auth.enums';
+import { OtpTypes, SMSType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
 import { GuestLoginDto } from './dto/guestLogin.dto';
@@ -82,15 +81,14 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
-import { AdminV2, AdminV2Document } from 'src/admin/models/adminV2.model';
 import { roleType } from 'src/contracts/enums/RoleType.enum';
+import { Roles } from 'src/roles/enums/roles.enum';
+import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 
 @Injectable()
 export class AuthService {
   private oAuth2Client: Auth.OAuth2Client;
   constructor(
-    @InjectModel(AdminV2.name)
-    private readonly adminV2Model: Model<AdminV2Document>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(GuestSession.name)
@@ -115,6 +113,7 @@ export class AuthService {
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -200,7 +199,8 @@ export class AuthService {
         await this.tokenModel.create({
           token: createAuthDto.fcmToken,
           type: TokenTypes.FCM,
-          userId: createdUser._id,
+          userType: UserTypes.USER,
+          user: createdUser._id,
           deviceType: createAuthDto.deviceType
             ? createAuthDto.deviceType
             : 'web',
@@ -311,7 +311,8 @@ export class AuthService {
       await this.tokenModel.create({
         token: signupAuthDto.fcmToken,
         type: TokenTypes.FCM,
-        userId: createdUser._id,
+        userType: UserTypes.USER,
+        user: createdUser._id,
         deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
       });
     }
@@ -322,7 +323,7 @@ export class AuthService {
     });
     const user = await this.userService.getUserById(createdUser.id);
 
-    await this.seederService.createDrive(createdUser.id,User.name);
+    await this.seederService.createDrive(createdUser.id, User.name);
     return {
       success: true,
       message: 'User created successfully',
@@ -564,8 +565,8 @@ export class AuthService {
     }
     const jwtPayload: JwtPayload = {
       id: user.id,
-      email: user.email,
-      role: Roles.USER,
+      role: user.role.toString(),
+      userType: UserTypes.USER,
     };
     const token = await this.generateJWT(jwtPayload);
     if (data.fcmToken) {
@@ -585,7 +586,8 @@ export class AuthService {
         await this.tokenModel.create({
           token: data.fcmToken,
           type: TokenTypes.FCM,
-          userId: user._id,
+          userType: UserTypes.USER,
+          user: user._id,
           deviceType: data.deviceType ? data.deviceType : 'web',
         });
       }
@@ -644,7 +646,7 @@ export class AuthService {
       await user.save();
       const jwtPayload: JwtPayload = {
         id: user.id,
-        email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(jwtPayload);
@@ -667,8 +669,8 @@ export class AuthService {
       }
       const jwtPayload: JwtPayload = {
         id: user.id,
-        email: user.email,
-        role: Roles.USER,
+        userType: UserTypes.USER,
+        role: user.role.toString(),
       };
       const token = await this.generateJWT(jwtPayload);
       if (data.fcmToken) {
@@ -688,7 +690,8 @@ export class AuthService {
           await this.tokenModel.create({
             token: data.fcmToken,
             type: TokenTypes.FCM,
-            userId: user._id,
+            userType: UserTypes.USER,
+            user: user._id,
             deviceType: data.deviceType ? data.deviceType : 'web',
           });
         }
@@ -793,9 +796,9 @@ export class AuthService {
         }
         const payload: JwtPayload = {
           id: user.id,
-          email: businessProfile.email,
-          businessProfile: businessProfile.id,
-          role: Roles.BUSINESS_PROFILE,
+          userType: UserTypes.BUSINESS,
+          business: businessProfile.id.toString(),
+          role: user.role,
         };
         const token = await this.generateJWT(payload);
         return {
@@ -806,7 +809,8 @@ export class AuthService {
       } else {
         const payload: JwtPayload = {
           id: user.id,
-          email: user.email,
+          // email: user.email,
+          userType: UserTypes.USER,
           role: Roles.USER,
         };
         const token = await this.generateJWT(payload);
@@ -836,7 +840,8 @@ export class AuthService {
       await this.tokenModel.create({
         token: data.token,
         type: TokenTypes.FCM,
-        userId: foundUser._id,
+        userType: UserTypes.USER,
+        user: foundUser._id,
         deviceType: data.deviceType,
       });
     } else {
@@ -888,14 +893,16 @@ export class AuthService {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
-            userId: user._id,
+            userType: UserTypes.USER,
+            user: user._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
         }
       }
       const payload: JwtPayload = {
         id: user.id,
-        email: user.email,
+        // email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(payload);
@@ -1019,7 +1026,8 @@ export class AuthService {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
-            userId: foundUser._id,
+            userType: UserTypes.USER,
+            user: foundUser._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
         }
@@ -1074,7 +1082,7 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: foundAdmin.id,
-        email: foundAdmin.email,
+        userType: UserTypes.ADMIN,
         role: Roles.ADMIN,
       };
       const token = await this.generateJWT(payload);
@@ -1088,7 +1096,7 @@ export class AuthService {
   }
 
   async adminLoginV2(loginDto: LoginDto) {
-    const admin = await this.adminV2Model.findOne({
+    const admin = await this.adminModel.findOne({
       email: loginDto.email,
     });
     if (!admin) {
@@ -1109,8 +1117,8 @@ export class AuthService {
       }
       const payload: JwtPayload = {
         id: admin.id,
-        email: admin.email,
-        type: roleType.ADMIN,
+        userType: UserTypes.ADMIN,
+        role: admin.role.toString(),
       };
       const token = await this.generateJWT(payload);
       return {
@@ -1132,7 +1140,7 @@ export class AuthService {
         type: TokenTypes.FCM,
         userId: { $in: users.map((user) => user._id) },
       })
-      .populate('userId', 'email name');
+      .populate('user', 'email name');
     const workbook = new Workbook();
     const worksheet = workbook.addWorksheet('User Fcm Report');
     worksheet.columns = [
@@ -1160,9 +1168,9 @@ export class AuthService {
     for (let i = 0; i < fcmTokens.length; i++) {
       worksheet.addRow({
         sno: i + 1,
-        _id: fcmTokens[i].userId['_id'],
-        name: fcmTokens[i].userId['name'],
-        email: fcmTokens[i].userId['email'],
+        _id: fcmTokens[i].user['_id'],
+        name: fcmTokens[i].user['name'],
+        email: fcmTokens[i].user['email'],
       });
     }
     const fileBuffer = await workbook.xlsx.writeBuffer();
@@ -1354,8 +1362,8 @@ export class AuthService {
       const createdSession = new this.guestSessionModel(data);
       payload = {
         id: createdSession.id,
-        email: '',
         role: Roles.GUEST,
+        userType: UserTypes.GUEST,
       };
       token = await this.generateJWT(payload);
       const savedTokenDoc = await this.userService.saveToken(token, '', true);
@@ -1398,7 +1406,7 @@ export class AuthService {
         );
         const payload: JwtPayload = {
           id: data.user,
-          email: user.email,
+          userType: UserTypes.USER,
           role: Roles.USER,
         };
         const token = await this.generateJWT(payload);
@@ -1470,7 +1478,7 @@ export class AuthService {
     } else {
       const payload: JwtPayload = {
         id: userId,
-        email: user.email,
+        userType: UserTypes.USER,
         role: Roles.USER,
       };
       const token = await this.generateJWT(payload);
@@ -3796,19 +3804,60 @@ export class AuthService {
     return await this.generateUniqueRefferalCode();
   }
   async getPreSignedUrl(privateURL: string) {
-    try{
+    try {
       if (!privateURL) {
         return { success: false, message: 'Please Provie URL' };
       }
-      console.log("Private URL:",privateURL);
-      const fileKey = privateURL.replace(`https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,'');
-      console.log("File Key:",fileKey);
+      console.log('Private URL:', privateURL);
+      const fileKey = privateURL.replace(
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`,
+        '',
+      );
+      console.log('File Key:', fileKey);
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
-      return { success: true, url:presignedUrl };
-    } catch(error){
+      return { success: true, url: presignedUrl };
+    } catch (error) {
       return { success: false, message: error.message };
     }
-   
+  }
+  async verifyEmailviaLink(token: string) {
+    try {
+      const tokenDoc = await this.tokenModel.findOne({
+        token,
+        type: TokenTypes.VERIFY_EMAIL,
+      });
+      if (!tokenDoc) {
+        return {
+          success: false,
+          message: 'Unauthorised. Token expired.',
+        };
+      }
+
+      const linkPayload: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+      let loginToken = null;
+      if (linkPayload.userType === UserTypes.ADMIN) {
+      } else if (linkPayload.userType === UserTypes.USER) {
+      } else if (linkPayload.userType === UserTypes.BUSINESS) {
+        const payload: JwtPayload = {
+          id: linkPayload.id,
+          userType: UserTypes.BUSINESS,
+          // role: String(user.role),
+        };
+        loginToken = await this.generateJWT(payload);
+      }
+      //delete token
+      await this.tokenModel.deleteOne({})
+
+      return {
+        success: true,
+        message: 'User Verified Successfully',
+        token: loginToken,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 }
 

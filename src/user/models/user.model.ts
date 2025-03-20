@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Role } from 'src/models/role.model';
 import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { Refferal } from './refferal.model';
 import { Drive } from 'src/drive/models/drive.model';
+import { Role } from 'src/roles/models/roles.model';
 
 export const Genders = {
   MALE: 'male',

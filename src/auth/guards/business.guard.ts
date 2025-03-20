@@ -8,7 +8,6 @@ import {
 import { Request, Response } from 'express';
 import { JwtPayload } from '../interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
-import { Roles } from 'src/enums/user.enum';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { User, UserDocument } from 'src/user/models/user.model';
@@ -69,7 +68,8 @@ export class BusinessProfileGuard implements CanActivate {
         });
       } else {
         const businessProfile = await this.businessProfileModel.findById(
-          payload.businessProfile,
+          // payload.businessProfile,
+          payload.id,
         );
         if (!businessProfile) {
           return response.status(HttpStatus.UNAUTHORIZED).json({

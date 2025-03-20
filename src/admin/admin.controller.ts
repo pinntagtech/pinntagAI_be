@@ -1,5 +1,4 @@
-import { Response } from 'express';
-
+import { Request, Response } from 'express';
 import {
   Body,
   Controller,
@@ -22,10 +21,18 @@ import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
 import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
-import { Permission } from './models/permission.model';
-import { AdminRole } from './models/adminRole.model';
+import { Permission, ResourceEnums } from './models/permission.model';
 import { BusinessRole } from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { UserGuard } from 'src/auth/guards/user.guard';
+import { Privilege } from 'src/roles/privilege.decorator';
+import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
+import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
 @Controller('v1/admin')
 export class AdminController {
@@ -328,6 +335,26 @@ export class AdminController {
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
+        status: false,
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: ForgotPasswordDto,
+  ) {
+    const origin = req.headers.origin;
+    const result = await this.adminService.forgotPassword(origin, body.email);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
@@ -340,12 +367,12 @@ export class AdminController {
     return this.adminService.create(createDto);
   }
 
-  @Post('create-role')
-  async createAdminRole(
-    @Body() createDto: Partial<AdminRole>,
-  ): Promise<AdminRole> {
-    return this.adminService.createRole(createDto);
-  }
+  // @Post('create-role')
+  // async createAdminRole(
+  //   @Body() createDto: Partial<AdminRole>,
+  // ): Promise<AdminRole> {
+  //   return this.adminService.createRole(createDto);
+  // }
 
   @Post('create-business-role')
   async createBusinessRole(
@@ -412,6 +439,66 @@ export class AdminController {
         message: result.message,
         data: result.data,
       });
+    }
+  }
+
+  @Post('user')
+  @UseGuards(AdminGuard)
+  @Privilege(ResourceTypes.ADMIN, Actions.CREATE)
+  @UseGuards(PrivilegeGuard)
+  async createAdmin(
+    @Res() res: Response,
+    @Body() data: CreateAdminDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (data.role) {
+      if (!mongoose.isValidObjectId(data.role)) {
+        return {
+          success: false,
+          message: 'Please provide a valid role id',
+        };
+      }
+      const result = await this.adminService.createAdmin(user.id, data);
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+    }
+  }
+
+  @Post('assign/role')
+  @UseGuards(AdminGuard)
+  @Privilege(ResourceTypes.ADMIN, Actions.UPDATE)
+  @UseGuards(PrivilegeGuard)
+  async assignRole(
+    @Res() res: Response,
+    @Body() data: AssignRoleDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (data.roleId) {
+      if (!mongoose.isValidObjectId(data.roleId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid role id',
+        };
+      }
+      const result = await this.adminService.assignRoleToAdmin(data);
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
     }
   }
 }

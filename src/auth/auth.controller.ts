@@ -946,4 +946,18 @@ export class AuthController {
       });
     }
   }
+  @Post('verify-email')
+  async verifyEmailviaLink(@Res()res:Response, @Query('token')token:string){
+    const result = await this.authService.verifyEmailviaLink(token);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token: result.token
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

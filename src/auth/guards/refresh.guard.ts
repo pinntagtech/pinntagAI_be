@@ -8,13 +8,13 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import { Model } from 'mongoose';
-import { Roles } from 'src/enums/user.enum';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { JwtPayload } from '../interfaces/tokenPayload.interface';
 import {
   BusinessProfile,
   BusinessProfileDocument,
 } from 'src/business-profile/models/businessProfile.model';
+import { Roles } from 'src/roles/enums/roles.enum';
 
 @Injectable()
 export class RefreshGuard implements CanActivate {
@@ -57,7 +57,8 @@ export class RefreshGuard implements CanActivate {
       } else {
         if (payload.role == Roles.BUSINESS_PROFILE) {
           const businessProfile = await this.businessProfileModel.findById(
-            payload.businessProfile,
+            // payload.businessProfile,
+            payload.id,
           );
           delete user.isBusiness;
           request['user'] = user;

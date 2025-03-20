@@ -4,7 +4,7 @@ import { NotificationController } from './notification.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Notification, NotificationSchema } from './models/notification.model';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
   GuestSession,
   GuestSessionSchema,

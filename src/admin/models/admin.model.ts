@@ -1,10 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Role } from 'src/models/role.model';
-import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
-import { Event } from 'src/event/models/event.model';
-import { Subscription } from 'src/subscription/models/subscription.model';
-import { Drive } from 'src/drive/models/drive.model';
 
 export const Genders = {
   MALE: 'male',
@@ -17,99 +12,134 @@ export const SignupMethod = {
   PHONE: 'phone',
 };
 
+export const AdminCreatorType = ['System', 'Admin'];
+
 export type AdminDocument = Admin & Document;
 
 @Schema({ timestamps: true })
 export class Admin {
   @Prop({ default: false })
+  forcePasswordReset: boolean;
+
+  @Prop({ default: false })
   isDeleted: boolean;
-  @Prop({ required: true, ref: Role.name })
+
+  @Prop({ enum: Object.values(AdminCreatorType) })
+  creatorType: string;
+
+  @Prop({ ref: 'Admin' })
+  creator: mongoose.Types.ObjectId;
+
+  @Prop({ default: false })
+  isSuperAdmin: boolean;
+
+  @Prop({ required: true, ref: 'Role' })
   role: mongoose.Types.ObjectId;
+
   @Prop({ default: '' })
   firstName: string;
+
   @Prop({ default: '' })
   lastName: string;
+
   @Prop({ default: '' })
   name: string;
+
   @Prop({
     default:
       'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
   })
   profilePhoto: string;
+
   @Prop({ unique: true, sparse: true })
   email: string;
+
   @Prop({ default: false })
   isEmailVerified: boolean;
+
   @Prop()
   countryCode: string;
+
   @Prop()
   phone: string;
+
   @Prop({ unique: true, sparse: true })
   fullPhoneNumber: string;
-  @Prop({ default: false })
-  isPhoneVerified: boolean;
+
   @Prop({ default: null })
   password: string;
+
   @Prop()
   latitude: number;
+
   @Prop()
   longitude: number;
-  @Prop({ default: false })
-  isOAuth: boolean;
-  @Prop({
-    enum: [Genders.MALE, Genders.FEMALE, Genders.OTHER, Genders.RATHER_NOT_SAY],
-  })
-  gender: string;
-  @Prop()
-  age: number;
 
-  @Prop()
-  dob: Date;
-
-  @Prop()
-  oAuthProvider: string;
-  @Prop({ default: false })
-  hasSubscribedForBusiness: boolean;
-  @Prop({ ref: Subscription.name })
-  subscriptions: Array<mongoose.Types.ObjectId>;
-  @Prop({ default: false })
-  isBusiness: boolean;
-  @Prop({ ref: BusinessProfile.name })
-  businessProfiles: Array<mongoose.Types.ObjectId>;
-  @Prop({ ref: BusinessProfile.name })
-  createdBy: mongoose.Types.ObjectId;
-  @Prop({ required: true, default: 0 })
-  followersCount: number;
-  @Prop({ required: true, default: 0 })
-  followingCount: number;
-  @Prop({ default: Admin.name })
-  profileType: string;
-  @Prop({ ref: Event.name, default: [] })
-  savedEvents: Array<mongoose.Types.ObjectId>;
-  @Prop({ ref: Event.name, default: [] })
-  likedEvents: Array<mongoose.Types.ObjectId>;
-  @Prop()
-  userAgent: string;
-  @Prop()
-  ipAddress: string;
-  @Prop()
-  stripeCustomerId: string;
-  @Prop()
-  savedCards: Array<string>;
-  @Prop({ default: 1024 * 1024 })
+  @Prop({ default: 1024 * 1024 * 1024 })
   driveDefaultSpace: number;
 }
 export const AdminSchema = SchemaFactory.createForClass(Admin);
 
-// Function to crypt password (if it is present) before save
-// UserSchema.pre<User>('save', function (next) {
-//   if (!this.password) {
-//     this.password = bcrypt.hashSync(this.password, 10);
-//   }
-//   next();
-// });
-// UserSchema.pre<User>('save', async function (next) {
-//   this.name =
-//     `${this.firstName ? this.firstName : ''} ${this.lastName ? this.lastName : ''}`.trim();
-//   next();
-// });
+//Restrict that no admin can be created with isSuperAdmin set to true
+AdminSchema.pre('save', function (next) {
+  if (this.$locals?.isSeeding) {
+    return next();
+  }
+
+  if (this.isSuperAdmin) {
+    this.isSuperAdmin = false;
+  }
+  next();
+});
+
+AdminSchema.pre('save', function (next) {
+  this.fullPhoneNumber = `${this.countryCode}${this.phone}`;
+  next();
+});
+
+AdminSchema.pre('save', function (next) {
+  this.name = `${this.firstName} ${this.lastName}`;
+  next();
+});
+
+//Restrict that no admin can be deleted with isSuperAdmin set to true
+AdminSchema.pre('deleteOne', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be deleted');
+  }
+  next();
+});
+
+AdminSchema.pre('deleteMany', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be deleted');
+  }
+  next();
+});
+
+AdminSchema.pre('findOneAndDelete', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be deleted');
+  }
+  next();
+});
+
+AdminSchema.pre('updateOne', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be updated');
+  }
+  next();
+});
+
+AdminSchema.pre('updateMany', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be updated');
+  }
+  next();
+});
+AdminSchema.pre('findOneAndUpdate', function (next) {
+  if (this.getQuery().isSuperAdmin) {
+    throw new Error('Super admin cannot be updated');
+  }
+  next();
+});

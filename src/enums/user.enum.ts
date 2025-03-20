@@ -2,14 +2,7 @@ import { BusinessProfile } from 'src/business-profile/models/businessProfile.mod
 import { User } from 'src/user/models/user.model';
 import { Location } from '../business-profile/models/types.model';
 
-export const Roles = {
-  ADMIN: 'admin',
-  USER: 'user',
-  SUB_ADMIN: 'sub_admin',
-  STAFF: 'staff',
-  GUEST: 'guest',
-  BUSINESS_PROFILE: 'business_profile',
-};
+
 
 export const BusinessProfileStatus = {
   ACTIVE: 0,

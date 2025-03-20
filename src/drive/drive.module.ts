@@ -10,26 +10,43 @@ import {
   BusinessProfile,
   BusinessProfileSchema,
 } from 'src/business-profile/models/businessProfile.model';
-import { Role, RoleSchema } from 'src/models/role.model';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import { GuestSession, GuestSessionSchema } from 'src/auth/models/guestSession.model';
-import { SubscriptionProduct, SubscriptionProductSchema } from 'src/subscription/models/subscriptionProduct.model';
-import { Subscription, SubscriptionSchema } from 'src/subscription/models/subscription.model';
+import {
+  GuestSession,
+  GuestSessionSchema,
+} from 'src/auth/models/guestSession.model';
+import {
+  SubscriptionProduct,
+  SubscriptionProductSchema,
+} from 'src/subscription/models/subscriptionProduct.model';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from 'src/subscription/models/subscription.model';
 import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
-import { Notification, NotificationSchema } from 'src/notification/models/notification.model';
-import { Transaction, TransactionSchema } from 'src/user/models/transaction.model';
+import {
+  Notification,
+  NotificationSchema,
+} from 'src/notification/models/notification.model';
+import {
+  Transaction,
+  TransactionSchema,
+} from 'src/user/models/transaction.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { EventSchema } from 'src/event/models/event.model';
-import { SavedEvent, SavedEventSchema } from 'src/event/models/savedEvent.model';
+import {
+  SavedEvent,
+  SavedEventSchema,
+} from 'src/event/models/savedEvent.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { JwtService } from '@nestjs/jwt';
 import { S3Service } from 'src/s3.service';
 import { File, FileSchema } from './models/file.model';
-
 
 @Module({
   imports: [
@@ -56,10 +73,10 @@ import { File, FileSchema } from './models/file.model';
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
       { name: Admin.name, schema: AdminSchema },
-      { name: File.name,schema: FileSchema},
+      { name: File.name, schema: FileSchema },
     ]),
   ],
   controllers: [DriveController],
-  providers: [DriveService,JwtService,S3Service],
+  providers: [DriveService, JwtService, S3Service],
 })
 export class DriveModule {}
