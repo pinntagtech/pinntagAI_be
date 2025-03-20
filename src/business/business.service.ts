@@ -182,24 +182,37 @@ export class BusinessService {
 
   async updateBusiness(id: string, data: UpdateBusinessDto) {
     try {
-      let updateObj = {
-        menu: data.menu,
-          allergenInformation: data.allergenInformation,
-          openingHours: data.openingHours,
-          paymentMethods: data.paymentMethods,
-          reviews: data.reviews,
-          promotions: data.promotions,
-          covidSafetyMeasures: data.covidSafetyMeasures,
-          insuranceDetails: data.insuranceDetails,
-          healthAndSafetyPolicies:data.healthAndSafetyPolicies,
-          ...data,
-      };
-      // if(data.brand){
-      //   updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
-      // }
-      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
-        $set: updateObj,
+
+      let updateObj:any = {}
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          updateObj[key] = data[key];
+        }
       });
+
+      if (updateObj.brand) {
+        updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
+      }
+      if (updateObj.boardMembers && Array.isArray(updateObj.boardMembers) && updateObj.boardMembers.length) {
+        let convertedObjIds = [];
+        for(let boardMember of updateObj.boardMembers){
+          if(!isValidObjectId(boardMember)){
+            return {
+              success:false,
+              message:"Please Provide valid Board Member Id"
+            }
+          }
+          convertedObjIds.push(new mongoose.Types.ObjectId(boardMember));
+        }
+        updateObj["$addToSet"] = {
+          "boardMembers": { $each: convertedObjIds },
+        };
+        delete updateObj.boardMembers;
+      }
+      console.log("udpateObj:",updateObj);
+      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
+        $set: { ...data, ...updateObj },
+      },{new:true});
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -217,7 +230,7 @@ export class BusinessService {
   async updateBusinessUser(id: string, data: UpdateBusinessDto) {
     try {
       const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
-        $set: { data },
+        $set: { data }
       });
       return {
         success: true,
