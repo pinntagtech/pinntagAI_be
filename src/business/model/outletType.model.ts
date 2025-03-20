@@ -9,6 +9,6 @@ export class OutletType {
   @Prop({ required: true })
   type: string;
   @Prop({ required: true, ref: OutletCategory.name })
-  OutletCategory: mongoose.Types.ObjectId;
+  category: mongoose.Types.ObjectId;
 }
 export const OutletTypeSchema = SchemaFactory.createForClass(OutletType);

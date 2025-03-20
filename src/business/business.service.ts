@@ -20,6 +20,8 @@ import { Token, TokenDocument } from 'src/auth/models/token.model';
 import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
+import { SeederService } from 'src/seeder/seeder.service';
+import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 
 @Injectable()
 export class BusinessService {
@@ -33,6 +35,7 @@ export class BusinessService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
+    private readonly seederService: SeederService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
@@ -69,22 +72,24 @@ export class BusinessService {
       };
 
       //append creator to roles
-      const createBusinessUser = await this.businessUserModel.create(createObj);
+      const createdUser = await this.businessUserModel.create(createObj);
       for (let defaultRole of defaultBusinessRoles) {
         await this.roleModel.updateOne(
           { _id: defaultRole },
           {
             $set: {
-              creator: new mongoose.Types.ObjectId(createBusinessUser.id),
+              creator: new mongoose.Types.ObjectId(createdUser.id),
             },
           },
         );
       }
+      //create drive
+      await this.seederService.createDrive(createdUser._id, BusinessUser.name);
       //sendEmaillink verification
 
       const token = await this.generateJWT(
         {
-          id: createBusinessUser.id,
+          id: createdUser.id,
           userType: UserTypes.BUSINESS,
           // role: admin.role.toString(),
           // business:
@@ -93,15 +98,15 @@ export class BusinessService {
       );
       const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
       await this.mailService.sendEmailVerificationMail(
-        createBusinessUser.name,
-        createBusinessUser.email,
+        createdUser.name,
+        createdUser.email,
         resetLink,
       );
 
       return {
         success: true,
         message: 'Business User Created Successfully!',
-        data: createBusinessUser,
+        data: createdUser,
       };
     } catch (error) {
       console.error('Error:', error);
@@ -182,8 +187,7 @@ export class BusinessService {
 
   async updateBusiness(id: string, data: UpdateBusinessDto) {
     try {
-
-      let updateObj:any = {}
+      let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
           updateObj[key] = data[key];
@@ -193,26 +197,34 @@ export class BusinessService {
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       }
-      if (updateObj.boardMembers && Array.isArray(updateObj.boardMembers) && updateObj.boardMembers.length) {
+      if (
+        updateObj.boardMembers &&
+        Array.isArray(updateObj.boardMembers) &&
+        updateObj.boardMembers.length
+      ) {
         let convertedObjIds = [];
-        for(let boardMember of updateObj.boardMembers){
-          if(!isValidObjectId(boardMember)){
+        for (let boardMember of updateObj.boardMembers) {
+          if (!isValidObjectId(boardMember)) {
             return {
-              success:false,
-              message:"Please Provide valid Board Member Id"
-            }
+              success: false,
+              message: 'Please Provide valid Board Member Id',
+            };
           }
           convertedObjIds.push(new mongoose.Types.ObjectId(boardMember));
         }
-        updateObj["$addToSet"] = {
-          "boardMembers": { $each: convertedObjIds },
+        updateObj['$addToSet'] = {
+          boardMembers: { $each: convertedObjIds },
         };
         delete updateObj.boardMembers;
       }
-      console.log("udpateObj:",updateObj);
-      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
-        $set: { ...data, ...updateObj },
-      },{new:true});
+      console.log('udpateObj:', updateObj);
+      const updatedDetails = await this.businessModel.findByIdAndUpdate(
+        id,
+        {
+          $set: { ...data, ...updateObj },
+        },
+        { new: true },
+      );
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -227,11 +239,21 @@ export class BusinessService {
     }
   }
 
-  async updateBusinessUser(id: string, data: UpdateBusinessDto) {
+  async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
     try {
-      const updatedDetails = await this.businessModel.findByIdAndUpdate(id, {
-        $set: { data }
-      });
+      if(data.business){
+        data.business = new mongoose.Types.ObjectId(data.business)
+      }
+      console.log("id:",id);
+      console.log("data:",data);
+      const updatedDetails = await this.businessUserModel.findOneAndUpdate(
+        {_id:id},
+        {
+          $set: { ...data },
+        },
+        { new: true },
+      );
+      console.log("update details:",updatedDetails)
       return {
         success: true,
         message: 'Business Updated Successfully!',

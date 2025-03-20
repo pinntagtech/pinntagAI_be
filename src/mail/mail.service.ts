@@ -127,7 +127,7 @@ export class MailService {
   async sendEmailVerificationMail(name:string,email:string,link:string){
     await this.mailerService.sendMail({
       to: email,
-      subject: 'Reset your account password',
+      subject: 'Verify your Email',
       template:
         process.cwd() + '/src/mail/templates/emailVerificationViaLink.template.hbs',
       context: { name, link },

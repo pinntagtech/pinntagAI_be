@@ -11,7 +11,7 @@ import { MailService } from 'src/mail/mail.service';
 import { JwtService } from '@nestjs/jwt';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { User } from 'src/user/models/user.model';
-import { OutletCategorySchema } from './model/outletCategory.model';
+import { OutletCategory, OutletCategorySchema } from './model/outletCategory.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import {
@@ -46,6 +46,16 @@ import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { S3Service } from 'src/s3.service';
 import { StripeService } from 'src/stripe/stripe.service';
 import { WebhookSnapshot, WebhookSnapshotSchema } from 'src/user/models/webhook.model';
+import { SeederService } from 'src/seeder/seeder.service';
+import { Category, CategorySchema } from 'src/models/category.model';
+import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
+import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
+import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Action, ActionSchema } from 'src/roles/models/actions.model';
+import { OutletType, OutletTypeSchema } from './model/outletType.model';
 
 @Module({
   imports: [
@@ -69,10 +79,20 @@ import { WebhookSnapshot, WebhookSnapshotSchema } from 'src/user/models/webhook.
       { name: Report.name, schema: ReportSchema },
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
-      { name: WebhookSnapshot.name,schema:WebhookSnapshotSchema}
+      { name: WebhookSnapshot.name,schema:WebhookSnapshotSchema},
+      { name:Category.name,schema:CategorySchema},
+      { name: AgeGroup.name, schema:AgeGroupSchema},
+      { name:AppVersion.name, schema:AppVersionSchema},
+      { name:FileCategory.name, schema:FileCategorySchema},
+      { name: Drive.name, schema: DriveSchema},
+      { name:Privilege.name, schema: PrivilegeSchema},
+      { name:Resource.name,schema:ResourceSchema},
+      { name:Action.name,schema:ActionSchema},
+      { name: OutletCategory.name,schema:OutletCategorySchema},
+      {name:OutletType.name,schema:OutletTypeSchema}
     ]),
   ],
   controllers: [BusinessController],
-  providers: [BusinessService, MailService, JwtService, UserService, Logger,S3Service,StripeService],
+  providers: [BusinessService, MailService, JwtService, UserService, Logger,S3Service,StripeService,SeederService],
 })
 export class BusinessModule {}

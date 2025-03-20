@@ -43,7 +43,6 @@ import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
-import { Permission, PermissionDocument } from './models/permission.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import {
   BusinessRole,
@@ -66,8 +65,6 @@ export class AdminService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(BusinessRole.name)
     private readonly businessRoleModel: Model<BusinessRoleDocument>,
-    @InjectModel(Permission.name)
-    private readonly permissionModel: Model<PermissionDocument>,
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
     @InjectModel(Category.name)
@@ -588,10 +585,10 @@ export class AdminService {
     return token;
   }
 
-  async create(permissionData: Partial<Permission>): Promise<Permission> {
-    const newPermission = new this.permissionModel(permissionData);
-    return newPermission.save();
-  }
+  // async create(permissionData: Partial<Permission>): Promise<Permission> {
+  //   const newPermission = new this.permissionModel(permissionData);
+  //   return newPermission.save();
+  // }
 
   // async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
   //   try {

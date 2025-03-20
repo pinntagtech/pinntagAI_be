@@ -89,6 +89,7 @@ import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
 import { OutletCategory, OutletCategorySchema } from 'src/business/model/outletCategory.model';
 import { OutletType, OutletTypeSchema } from 'src/business/model/outletType.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 
 @Module({
   imports: [
@@ -129,6 +130,7 @@ import { OutletType, OutletTypeSchema } from 'src/business/model/outletType.mode
       { name: Action.name, schema: ActionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
+      { name:BusinessUser.name,schema:BusinessUserSchema}
     ]),
   ],
   controllers: [BusinessProfileController],
