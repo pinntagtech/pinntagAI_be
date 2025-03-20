@@ -3848,7 +3848,7 @@ export class AuthService {
         loginToken = await this.generateJWT(payload);
       }
       //delete token
-      await this.tokenModel.deleteOne({})
+      await this.tokenModel.deleteOne({});
 
       return {
         success: true,
@@ -3859,6 +3859,7 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
+
 }
 
 // Relevant-logs:--- {

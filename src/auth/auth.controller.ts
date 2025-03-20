@@ -26,7 +26,7 @@ import { GuestLoginDto } from './dto/guestLogin.dto';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { BusinessProfileGuard } from './guards/business.guard';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { GetDashboardDto } from './dto/getDashboard.dto';
 import { OAuth2Dto } from './dto/oAuth2.dto';
 import { JwtGuard } from './guards/jwt.guard';
@@ -960,4 +960,7 @@ export class AuthController {
       });
     }
   }
+  
+  
+ 
 }
