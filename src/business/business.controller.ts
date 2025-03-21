@@ -154,25 +154,7 @@ export class BusinessController {
     }
   }
 
-  @Post('resendVerificationLink/:id')
-  async resendVerificationLink(@Req()req:Request,@Res() res: Response, @Param('id') id: string) {
-    if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
-    }
-    const origin = req.headers.origin
-    const result = await this.businessService.resendVerificationLink(origin,id);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

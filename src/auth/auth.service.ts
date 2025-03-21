@@ -84,6 +84,10 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { roleType } from 'src/contracts/enums/RoleType.enum';
 import { Roles } from 'src/roles/enums/roles.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class AuthService {
@@ -114,6 +118,8 @@ export class AuthService {
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -568,7 +574,7 @@ export class AuthService {
       role: user.role.toString(),
       userType: UserTypes.USER,
     };
-    const token = await this.generateJWT(jwtPayload);
+    const token = await this.generateJWT(jwtPayload,TokenTypes.ACCESS,UserTypes.USER);
     if (data.fcmToken) {
       const foundFcmToken = await this.tokenModel.findOneAndUpdate(
         {
@@ -649,7 +655,7 @@ export class AuthService {
         userType: UserTypes.USER,
         role: Roles.USER,
       };
-      const token = await this.generateJWT(jwtPayload);
+      const token = await this.generateJWT(jwtPayload,TokenTypes.ACCESS,UserTypes.USER);
       return {
         success: true,
         message: 'User information from apple',
@@ -672,7 +678,7 @@ export class AuthService {
         userType: UserTypes.USER,
         role: user.role.toString(),
       };
-      const token = await this.generateJWT(jwtPayload);
+      const token = await this.generateJWT(jwtPayload,TokenTypes.ACCESS,UserTypes.USER);
       if (data.fcmToken) {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
@@ -800,7 +806,7 @@ export class AuthService {
           business: businessProfile.id.toString(),
           role: user.role,
         };
-        const token = await this.generateJWT(payload);
+        const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
         return {
           success: true,
           message: 'Token refreshed successfully',
@@ -813,7 +819,7 @@ export class AuthService {
           userType: UserTypes.USER,
           role: Roles.USER,
         };
-        const token = await this.generateJWT(payload);
+        const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
         return {
           success: true,
           message: 'Token refreshed successfully',
@@ -905,7 +911,7 @@ export class AuthService {
         userType: UserTypes.USER,
         role: Roles.USER,
       };
-      const token = await this.generateJWT(payload);
+      const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
       const updatedUser = await this.userModel
         .findByIdAndUpdate(user.id, {
           $set: { isDeleted: false },
@@ -1085,7 +1091,7 @@ export class AuthService {
         userType: UserTypes.ADMIN,
         role: Roles.ADMIN,
       };
-      const token = await this.generateJWT(payload);
+      const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.ADMIN);
       return {
         success: true,
         message: 'Admin logged in successfully',
@@ -1120,7 +1126,7 @@ export class AuthService {
         userType: UserTypes.ADMIN,
         role: admin.role.toString(),
       };
-      const token = await this.generateJWT(payload);
+      const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.ADMIN);
       return {
         success: true,
         message: 'Admin logged in successfully',
@@ -1365,8 +1371,8 @@ export class AuthService {
         role: Roles.GUEST,
         userType: UserTypes.GUEST,
       };
-      token = await this.generateJWT(payload);
-      const savedTokenDoc = await this.userService.saveToken(token, '', true);
+      token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.GUEST);
+      const savedTokenDoc = await this.userService.saveToken(token, '',TokenTypes.GUEST_USER,UserTypes.GUEST, true);
       createdSession.token = savedTokenDoc._id as any;
       await createdSession.save();
     } else {
@@ -1409,7 +1415,7 @@ export class AuthService {
           userType: UserTypes.USER,
           role: Roles.USER,
         };
-        const token = await this.generateJWT(payload);
+        const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
         return {
           success: true,
           message: 'Otp verified successfully',
@@ -1481,7 +1487,7 @@ export class AuthService {
         userType: UserTypes.USER,
         role: Roles.USER,
       };
-      const token = await this.generateJWT(payload);
+      const token = await this.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
       return {
         success: true,
         message: 'Switched to user profile successfully',
@@ -1491,7 +1497,7 @@ export class AuthService {
     }
   }
 
-  async generateJWT(payload: JwtPayload) {
+  async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: '365d',
@@ -1499,7 +1505,7 @@ export class AuthService {
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
     // } else {
-    await this.userService.saveToken(token, payload.id);
+    await this.userService.saveToken(token, payload.id, tokenType, userType);
     // }
     return token;
   }
@@ -3845,7 +3851,7 @@ export class AuthService {
           userType: UserTypes.BUSINESS,
           // role: String(user.role),
         };
-        loginToken = await this.generateJWT(payload);
+        loginToken = await this.generateJWT(payload, TokenTypes.VERIFY_EMAIL,linkPayload.userType);
       }
       //delete token
       await this.tokenModel.deleteOne({});
@@ -3860,6 +3866,165 @@ export class AuthService {
     }
   }
 
+  async passwordResetLink(origin:string,email: string, userType: string) {
+    try {
+      let resetLink = null;
+      if (userType === UserTypes.ADMIN) {
+        const user = await this.adminModel.findOne({ email: email });
+        if (!user) {
+          return {
+            success: false,
+            message: 'Admin User not found!',
+          };
+        }
+        const token = await this.generateJWT(
+          {
+            id: user.id,
+            userType: UserTypes.ADMIN,
+            // role: admin.role.toString(),
+            // business:
+          },
+          TokenTypes.RESET_PASSWORD,
+          userType,
+        );
+        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
+        await this.mailService.sendEmailVerificationMail(
+          user.name,
+          user.email,
+          resetLink,
+        );
+      } else if (userType === UserTypes.BUSINESS) {
+        const user = await this.businessUserModel.findOne({ email: email });
+        if (!user) {
+          return {
+            success: false,
+            message: 'Business User not found!',
+          };
+        }
+        const token = await this.generateJWT(
+          {
+            id: user.id,
+            userType: UserTypes.BUSINESS,
+            // role: admin.role.toString(),
+            // business:
+          },
+          TokenTypes.RESET_PASSWORD,
+          userType,
+        );
+        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
+        await this.mailService.sendEmailVerificationMail(
+          user.name,
+          user.email,
+          resetLink,
+        );
+      } else if (userType === UserTypes.USER) {
+        const user = await this.userModel.findOne({ email: email });
+        if (!user) {
+          return {
+            success: false,
+            message: 'User not found!',
+          };
+        }
+        const token = await this.generateJWT(
+          {
+            id: user.id,
+            userType: UserTypes.USER,
+            // role: admin.role.toString(),
+            // business:
+          },
+          TokenTypes.RESET_PASSWORD,
+          userType,
+        );
+
+        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
+        await this.mailService.sendEmailVerificationMail(
+          user.name,
+          user.email,
+          resetLink,
+        );
+      }
+      return {
+        success: true,
+        message: 'Reset Password Link Sent Successfully!',
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+  async verifyPassReset(token:string){
+    try {
+      const tokenDoc = await this.tokenModel.findOne({
+        token,
+        type: TokenTypes.RESET_PASSWORD,
+      });
+      if (!tokenDoc) {
+        return {
+          success: false,
+          message: 'Unauthorised. Token expired.',
+        };
+      }
+
+      const linkPayload: JwtPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+      let loginToken = null;
+      if (linkPayload.userType === UserTypes.ADMIN) {
+      } else if (linkPayload.userType === UserTypes.USER) {
+      } else if (linkPayload.userType === UserTypes.BUSINESS) {
+        const payload: JwtPayload = {
+          id: linkPayload.id,
+          userType: UserTypes.BUSINESS,
+          // role: String(user.role),
+        };
+        loginToken = await this.generateJWT(payload, TokenTypes.RESET_PASSWORD,linkPayload.userType);
+      }
+      //delete token
+      await this.tokenModel.deleteOne({});
+
+      return {
+        success: true,
+        message: 'User Verified Successfully',
+        token: loginToken,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async resendVerificationLink(origin:string,id: string,userType:string) {
+    try {
+      const user = await this.businessUserModel.findById(id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'No Business User found!',
+        };
+      }
+      const token = await this.generateJWT(
+        {
+          id: id,
+          userType: userType,
+          // role: admin.role.toString(),
+          // business:
+        },
+        TokenTypes.VERIFY_EMAIL,
+        userType
+      );
+
+      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
+      await this.mailService.sendEmailVerificationMail(
+        user.name,
+        user.email,
+        resetLink,
+      );
+      return {
+        success: true,
+        message: 'Link resent Successfully!',
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 // Relevant-logs:--- {

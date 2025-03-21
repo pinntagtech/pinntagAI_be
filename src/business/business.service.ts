@@ -23,6 +23,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class BusinessService {
@@ -37,6 +38,7 @@ export class BusinessService {
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
+    private readonly authService: AuthService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
@@ -88,7 +90,7 @@ export class BusinessService {
       await this.seederService.createDrive(createdUser._id, BusinessUser.name);
       //sendEmaillink verification
 
-      const token = await this.generateJWT(
+      const token = await this.authService.generateJWT(
         {
           id: createdUser.id,
           userType: UserTypes.BUSINESS,
@@ -96,6 +98,7 @@ export class BusinessService {
           // business:
         },
         TokenTypes.VERIFY_EMAIL,
+        UserTypes.BUSINESS
       );
       const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
       await this.mailService.sendEmailVerificationMail(
@@ -425,39 +428,7 @@ export class BusinessService {
       expiresAt: new Date(Date.now() + 86400000),
     });
   }
-  async resendVerificationLink(origin:string,id: string) {
-    try {
-      const user = await this.businessUserModel.findById(id);
-      if (!user) {
-        return {
-          success: false,
-          message: 'No Business User found!',
-        };
-      }
-      const token = await this.generateJWT(
-        {
-          id: id,
-          userType: UserTypes.BUSINESS,
-          // role: admin.role.toString(),
-          // business:
-        },
-        TokenTypes.VERIFY_EMAIL,
-      );
-
-      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
-      await this.mailService.sendEmailVerificationMail(
-        user.name,
-        user.email,
-        resetLink,
-      );
-      return {
-        success: true,
-        message: 'Link resent Successfully!',
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
+  
 
   remove(id: number) {
     return `This action removes a #${id} business`;
