@@ -22,6 +22,8 @@ import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
+import { FetchBusinessDto } from './dto/fetch-business.dto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class BusinessService {
@@ -36,6 +38,7 @@ export class BusinessService {
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
+    private readonly authService: AuthService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
@@ -87,7 +90,7 @@ export class BusinessService {
       await this.seederService.createDrive(createdUser._id, BusinessUser.name);
       //sendEmaillink verification
 
-      const token = await this.generateJWT(
+      const token = await this.authService.generateJWT(
         {
           id: createdUser.id,
           userType: UserTypes.BUSINESS,
@@ -95,6 +98,7 @@ export class BusinessService {
           // business:
         },
         TokenTypes.VERIFY_EMAIL,
+        UserTypes.BUSINESS
       );
       const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
       await this.mailService.sendEmailVerificationMail(
@@ -241,19 +245,19 @@ export class BusinessService {
 
   async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
     try {
-      if(data.business){
-        data.business = new mongoose.Types.ObjectId(data.business)
+      if (data.business) {
+        data.business = new mongoose.Types.ObjectId(data.business);
       }
-      console.log("id:",id);
-      console.log("data:",data);
+      console.log('id:', id);
+      console.log('data:', data);
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
-        {_id:id},
+        { _id: id },
         {
           $set: { ...data },
         },
         { new: true },
       );
-      console.log("update details:",updatedDetails)
+      console.log('update details:', updatedDetails);
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -268,23 +272,17 @@ export class BusinessService {
     }
   }
 
-  async search(
-    page: number,
-    limit: number,
-    name?: string,
-    businessCategory?: string,
-    businessIndustry?: string,
-  ) {
+  async fetch(page: number, limit: number, data: FetchBusinessDto) {
     try {
       const query: any = {};
-      if (name) {
-        query.name = { $regex: name, $options: 'i' };
+      if (data.name) {
+        query.name = { $regex: data.name, $options: 'i' };
       }
-      if (businessCategory) {
-        query.businessCategory = businessCategory;
+      if (data.businessCategory) {
+        query.businessCategory = data.businessCategory;
       }
-      if (businessIndustry) {
-        query.businessIndustry = businessIndustry;
+      if (data.businessIndustry) {
+        query.businessIndustry = data.businessIndustry;
       }
 
       const total = await this.businessModel.countDocuments(query);
@@ -356,15 +354,7 @@ export class BusinessService {
     );
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
-      if (!user.isEmailVerified) {
-        await this.mailService.sendUserVerificationMail(user.id);
-        return {
-          success: true,
-          user: user.id,
-          message:
-            'Please verify your email to login, otp has been sent to the registered mail.',
-        };
-      }
+
       if (loginDto.fcmToken) {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
@@ -438,9 +428,7 @@ export class BusinessService {
       expiresAt: new Date(Date.now() + 86400000),
     });
   }
-  update(id: number, updateBusinessDto: UpdateBusinessDto) {
-    return `This action updates a #${id} business`;
-  }
+  
 
   remove(id: number) {
     return `This action removes a #${id} business`;

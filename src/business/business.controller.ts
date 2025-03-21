@@ -19,47 +19,11 @@ import { CreateBusinessUserDto } from './dto/create-businessUser.dto';
 import { isValidObjectId } from 'mongoose';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
+import { FetchBusinessDto } from './dto/fetch-business.dto';
 
 @Controller('business')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
-
-  @Post('user')
-  async create(@Req() req:Request,@Res() res: Response, @Body() data: CreateBusinessUserDto) {
-    const origin = req.headers.origin;
-    const result = await this.businessService.createBusinessUser(data,origin);
-
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
-
-  @Post('user/update/:id')
-  async updateBusinessUser(@Req() req:Request,@Res() res: Response,@Param('id')id:string, @Body() data: UpdateBusinessUserDto) {
-    if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
-    }
-    const result = await this.businessService.updateBusinessUser(id,data);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
 
   @Post()
   async createBusiness(@Res() res: Response, @Body() data: CreateBusinessDto) {
@@ -69,6 +33,32 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get()
+  async fetch(
+    @Res() res: Response,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+    @Body() data: FetchBusinessDto,
+  ) {
+    const result = await this.businessService.fetch(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+      data,
+    );
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        pages: result.pages,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -101,17 +91,14 @@ export class BusinessController {
     }
   }
 
-
-  @Get('fetch')
-  async search(
+  @Post('user')
+  async create(
+    @Req() req: Request,
     @Res() res: Response,
-    @Query('limit') limit: string,
-    @Query('page') page: string,
+    @Body() data: CreateBusinessUserDto,
   ) {
-    const result = await this.businessService.search(
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 10,
-    );
+    const origin = req.headers.origin;
+    const result = await this.businessService.createBusinessUser(data, origin);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -125,7 +112,32 @@ export class BusinessController {
     }
   }
 
-  @Post('login')
+  @Post('user/update/:id')
+  async updateBusinessUser(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: UpdateBusinessUserDto,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.updateBusinessUser(id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('user/login')
   async login(@Res() res: Response, @Body() data: LoginBusinessDto) {
     const result = await this.businessService.login(data);
     if (result.success) {
@@ -142,9 +154,10 @@ export class BusinessController {
     }
   }
 
+
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.businessService.findOne(id);
   }
-
 }

@@ -42,6 +42,7 @@ import {
 import {
   SubscriptionServiceTypes,
   SubscriptionServices,
+  TokenTypes,
   TransactionStatus,
   UserTypes,
 } from 'src/enums/auth.enums';
@@ -742,7 +743,7 @@ export class BusinessProfileService {
         role: Roles.BUSINESS_PROFILE,
         userType: UserTypes.BUSINESS,
       };
-      const token = await this.authService.generateJWT(payload);
+      const token = await this.authService.generateJWT(payload,TokenTypes.ACCESS,UserTypes.USER);
       return {
         success: true,
         message: 'Data fetched successfully.',

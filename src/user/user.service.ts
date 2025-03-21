@@ -594,7 +594,13 @@ export class UserService {
     return otp;
   }
 
-  async saveToken(token: string, id: string, guestToken?: boolean) {
+  async saveToken(
+    token: string,
+    id: string,
+    tokenType: string,
+    userType: string,
+    guestToken?: boolean,
+  ) {
     if (guestToken) {
       return await this.tokenModel.create({
         token,
@@ -605,9 +611,9 @@ export class UserService {
     }
     return await this.tokenModel.create({
       token,
-      userType: UserTypes.USER,
+      userType: userType,
       user: new mongoose.Types.ObjectId(id),
-      type: TokenTypes.ACCESS,
+      type: tokenType,
       expiresAt: new Date(Date.now() + 86400000),
     });
   }

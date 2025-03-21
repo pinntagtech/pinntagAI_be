@@ -26,7 +26,7 @@ import { GuestLoginDto } from './dto/guestLogin.dto';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { BusinessProfileGuard } from './guards/business.guard';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { GetDashboardDto } from './dto/getDashboard.dto';
 import { OAuth2Dto } from './dto/oAuth2.dto';
 import { JwtGuard } from './guards/jwt.guard';
@@ -41,6 +41,7 @@ import { PlatformConfigDto } from './dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UserTypes } from 'src/enums/auth.enums';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -799,8 +800,6 @@ export class AuthController {
     }
   }
 
-
-
   @Post('dashboard/map-view')
   @UseGuards(JwtGuard)
   async dashboardMapView(
@@ -947,12 +946,78 @@ export class AuthController {
     }
   }
   @Post('verify-email')
-  async verifyEmailviaLink(@Res()res:Response, @Query('token')token:string){
+  async verifyEmailviaLink(
+    @Res() res: Response,
+    @Query('token') token: string,
+  ) {
     const result = await this.authService.verifyEmailviaLink(token);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        token: result.token
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('password-reset-link')
+  async passwordResetLink(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body('email') email: string,
+    @Body('userType') userType: string,
+  ) {
+    const origin = req.headers.origin;
+    const result = await this.authService.passwordResetLink(origin,email, userType);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('verify-pass-reset')
+  async verifyPassReset(@Res() res: Response, @Query('token') token: string) {
+    const result = await this.authService.verifyPassReset(token);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('resendVerificationLink/:id')
+  async resendVerificationLink(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('userType') userType: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const origin = req.headers.origin;
+    const result = await this.authService.resendVerificationLink(
+      origin,
+      id,
+      userType,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
