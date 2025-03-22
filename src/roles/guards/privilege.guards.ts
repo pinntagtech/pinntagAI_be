@@ -11,10 +11,23 @@ import { UserTypes } from 'src/enums/auth.enums';
 import { RolesService } from '../roles.service';
 import { PrivilegeService } from '../privilege.service';
 import { RoleBelonging } from '../enums/roles.enum';
+import { InjectModel } from '@nestjs/mongoose';
+import { Admin, AdminDocument } from 'src/admin/models/admin.model';
+import { Model } from 'mongoose';
+import { Role, RoleDocument } from '../models/roles.model';
+import { Business } from 'src/business/model/business.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class PrivilegeGuard implements CanActivate {
   constructor(
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private reflector: Reflector,
     private readonly roleService: RolesService,
     private readonly privilegeService: PrivilegeService,
@@ -31,32 +44,35 @@ export class PrivilegeGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as DecodedUser; // Assume user is attached by AuthGuard
     if (!user || !user.role) {
-      console.log
+      console.log;
       throw new UnauthorizedException('User role not found');
     }
-    let roleId = '';
-    // if(user.userType == UserTypes.USER){
-    //   const foundUser =
-    // }
-    // const foundRole = await this.roleService.findRole(user.role);
-
-    // if(findRole.isSuperAdmin){
-    //   return true;
-    // }
-    //   if(foundRole.belongsTo == RoleBelonging.BUSINESS){
-    //     if(user.)
-    //   } else {
-    // }
-    // if (user.userType == UserTypes.BUSINESS)
-    //   {
-    //   }
-
+    if (user.userType == UserTypes.ADMIN) {
+      const admin = await this.adminModel.findById(user.id);
+      const role = admin.role;
+      const roleModel = await this.roleModel.findById(role);
+      if (
+        roleModel.belongsTo == RoleBelonging.SYSTEM &&
+        roleModel.isSuperAdmin
+      ) {
+        return true;
+      }
+    } else if (user.userType == UserTypes.BUSINESS) {
+      const businessUser = await this.businessUserModel.findById(user.id);
+      const role = businessUser.role;
+      const roleModel = await this.roleModel.findById(role);
+      if (
+        roleModel.belongsTo == RoleBelonging.BUSINESS &&
+        roleModel.isPrimaryAdmin
+      ) {
+        return true;
+      }
+    }
     const hasPrivilege = await this.privilegeService.hasPrivilege(
       user.role,
       requiredPrivilege.resource,
       requiredPrivilege.action,
     );
-
     if (!hasPrivilege) {
       throw new UnauthorizedException('Insufficient privileges');
     }
