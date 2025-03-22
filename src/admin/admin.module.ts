@@ -112,6 +112,7 @@ import {
   BusinessIndustry,
   BusinessIndustrySchema,
 } from 'src/business/model/businessIndustry.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -153,6 +154,7 @@ import {
       { name: Privilege.name, schema: PrivilegeSchema },
       { name: Resource.name, schema: ResourceSchema },
       { name: Action.name, schema: ActionSchema },
+      { name: Business.name, schema: BusinessSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
