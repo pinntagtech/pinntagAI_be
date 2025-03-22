@@ -49,7 +49,7 @@ export class AdminGuard implements CanActivate {
       request['user'] = user;
       return true;
     } catch (error) {
-      console.log('error message:---', error.name);
+      console.log('error message:---', error);
       if (error.name == 'TokenExpiredError') {
         throw new UnauthorizedException('Token expired');
       }

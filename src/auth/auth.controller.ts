@@ -140,6 +140,7 @@ export class AuthController {
       });
     }
   }
+
   @Post('verifyContactDetails')
   async verifyContactDetails(@Res() res: Response, @Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyContactDetails(body);
@@ -695,6 +696,7 @@ export class AuthController {
       });
     }
   }
+  
   @Post('fixedCarouselEvents')
   @UseGuards(JwtGuard)
   async dashboardFixedCarouselEvents(
