@@ -201,3 +201,341 @@ export const BusinessIndustries = {
     'Environmental Conservation',
   ],
 };
+
+export enum BusinessCountries {
+  USA = 'USA',
+  Canada = 'Canada',
+  UK = 'UK',
+  Germany = 'Germany',
+  France = 'France',
+  China = 'China',
+  Japan = 'Japan',
+  Australia = 'Australia',
+  India = 'India',
+  Nigeria = 'Nigeria',
+  Mexico = 'Mexico',
+  Russia = 'Russia',
+  Argentina = 'Argentina',
+  Brazil = 'Brazil',
+  Chile = 'Chile',
+  Colombia = 'Colombia',
+  Peru = 'Peru',
+  Ecuador = 'Ecuador',
+  Bolivia = 'Bolivia',
+  Paraguay = 'Paraguay',
+  Uruguay = 'Uruguay',
+  Venezuela = 'Venezuela',
+  CostaRica = 'Costa Rica',
+  DominicanRepublic = 'Dominican Republic',
+  Panama = 'Panama',
+  SouthAfrica = 'South Africa',
+  UAE = 'United Arab Emirates',
+}
+
+
+export const BusinessDocumentTypes = {
+  USA: {
+    'Sole Proprietorship': ['EIN (if hiring employees)', 'DBA Certificate'],
+    Partnership: [
+      'Partnership Agreement',
+      'EIN',
+      'State Registration Certificate',
+    ],
+    LLC: ['Articles of Organization', 'Operating Agreement', 'EIN'],
+    'Private Corporation (Inc.)': [
+
+      'Articles of Incorporation',
+      'Corporate Bylaws',
+      'EIN',
+    ],
+    'Public Corporation': ['SEC Registration', 'Articles of Incorporation'],
+    'Non-Profit': ['501(c)(3) Certification', 'Articles of Incorporation'],
+    Cooperative: ['Cooperative Bylaws', 'State Registration'],
+    'Government-Owned Enterprise': [
+      'Federal or State Charter',
+      'Appropriate Regulatory Approval',
+    ],
+  },
+  Canada: {
+    'Sole Proprietorship': [
+      'Business Name Registration',
+      'BN (Business Number)',
+    ],
+    Partnership: ['Partnership Agreement', 'BN'],
+    Corporation: ['Articles of Incorporation', 'Corporate Bylaws', 'BN'],
+    'Non-Profit': ['CRA Non-Profit Registration', 'Articles of Incorporation'],
+  },
+  UK: {
+    'Sole Trader': ['HMRC Registration', 'UTR (Unique Taxpayer Reference)'],
+    Partnership: ['Partnership Agreement', 'HMRC Registration'],
+    'Limited Company': [
+      'Certificate of Incorporation',
+      'Companies House Registration',
+    ],
+    'Public Limited Company (PLC)': [
+      'Companies House Registration',
+      'Stock Exchange Listing (if applicable)',
+    ],
+    'Charity/Non-Profit': ['Charity Commission Registration'],
+    Cooperative: ['Financial Conduct Authority (FCA) Registration'],
+  },
+  Germany: {
+    'Sole Proprietorship': [
+      'Trade License (Gewerbeschein)',
+      'Tax Registration (Steuernummer)',
+    ],
+    Partnership: ['Partnership Agreement', 'Trade License'],
+    'GmbH (LLC)': [
+      'Handelsregister (Commercial Register) Entry',
+      'Gewerbeanmeldung (Trade Registration)',
+    ],
+    'AG (Public Corporation)': [
+      'Stock Exchange Listing',
+      'Corporate Governance Documents',
+    ],
+    'Non-Profit': ['NGO Registration', 'Tax-Exempt Status Certification'],
+    Cooperative: ['Genossenschaftsregister (Cooperative Register) Entry'],
+  },
+  France: {
+    'Auto-Entrepreneur': ['INSEE Registration', 'SIRET Number'],
+    'SARL (LLC)': ['Articles of Association', 'Kbis Extract'],
+    'SA (Corporation)': ['Statutes', 'Commercial Register Entry'],
+    'Non-Profit': ['Prefecture Registration', 'Association Charter'],
+    Cooperative: ['Cooperative Society Registration'],
+  },
+  China: {
+    'Sole Proprietorship': ['Business License', 'Tax Registration Certificate'],
+    Partnership: ['Business License', 'Partnership Agreement'],
+    LLC: ['Business License', 'Articles of Association'],
+    'State-Owned Enterprise (SOE)': [
+      'Approval from SASAC (State-owned Assets Supervision and Administration Commission)',
+    ],
+    'Non-Profit': ['Ministry of Civil Affairs Registration'],
+  },
+  Japan: {
+    'Sole Proprietorship': [
+      'Tax Office Registration',
+      'Business Registration Certificate',
+    ],
+    LLC: ['Articles of Incorporation', 'Company Seal Registration'],
+    Corporation: [
+      'Commercial Registry Registration',
+      'Articles of Incorporation',
+    ],
+    'Non-Profit': ['Public Interest Corporation Registration'],
+  },
+  'South Africa': {
+    'Sole Proprietorship': ['CIPC Registration', 'Tax Clearance Certificate'],
+    'Private Company (Pty Ltd)': [
+      'CIPC Registration',
+      'MOI (Memorandum of Incorporation)',
+    ],
+    'Public Company (Ltd)': [
+      'JSE Listing (if applicable)',
+      'CIPC Registration',
+    ],
+    'Non-Profit': [
+      'NPC Registration',
+      'Public Benefit Organization (PBO) Certificate',
+    ],
+  },
+  'United Arab Emirates': {
+    'Sole Proprietorship': [
+      'Trade License',
+      'VAT Registration (if applicable)',
+    ],
+    LLC: ['Trade License', 'Memorandum of Association'],
+    'Free Zone Company': ['Free Zone License', 'Shareholder Agreement'],
+    'Government-Owned Business': ['Royal Decree or Government Approval'],
+  },
+  Australia: {
+    'Sole Trader': [
+      'ABN (Australian Business Number)',
+      'TFN (Tax File Number)',
+    ],
+    Partnership: ['ABN', 'Partnership Agreement'],
+    Company: [
+      'ACN (Australian Company Number)',
+      'ASIC Registration',
+      'Constitution Document',
+    ],
+    Cooperative: ['State-Based Cooperative Registration'],
+    Charity: ['ACNC Registration', 'Tax-Exempt Status Certification'],
+  },
+  India: {
+    'Sole Proprietorship': [
+      'GST Registration',
+      'Shop & Establishment Certificate',
+    ],
+    Partnership: ['Partnership Deed', 'PAN', 'GST Registration'],
+    LLP: ['LLP Agreement', 'Incorporation Certificate'],
+    'Private Limited': ['Certificate of Incorporation', 'MOA & AOA'],
+    'Public Limited': ['Certificate of Incorporation', 'SEBI Registration'],
+    'Non-Profit (NGO, Trust, Society)': [
+      'Trust Deed',
+      '80G/12A Certification',
+      'FCRA Approval',
+    ],
+    Cooperative: ['Registrar of Cooperative Societies Registration'],
+  },
+  Nigeria: {
+    'Sole Proprietorship': [
+      'CAC Registration',
+      'Tax Identification Number (TIN)',
+    ],
+    Partnership: ['Partnership Agreement', 'CAC Registration'],
+    'Limited Liability Company (LLC)': [
+      'CAC Certificate',
+      'Tax Identification Number',
+    ],
+    'Public Limited Company (PLC)': [
+      'CAC Registration',
+      'Stock Exchange Listing (if applicable)',
+    ],
+    'Non-Profit': ['Incorporation with CAC', 'Tax Exemption Certificate'],
+  },
+  Mexico: {
+    'Sole Proprietorship': ['RFC Registration', 'SAT Tax Registration'],
+    Partnership: ['RFC Registration', 'Partnership Agreement'],
+    Corporation: ['Notarized Articles of Incorporation', 'RFC Registration'],
+    Cooperative: ['Cooperative Society Registration', 'RFC'],
+  },
+  Russia: {
+    'Sole Proprietorship': [
+      'OGRNIP Registration',
+      'Taxpayer Identification Number (INN)',
+    ],
+    LLC: ['OGRN Registration', 'Charter Documents'],
+    Corporation: ['Stock Exchange Listing', 'Corporate Charter'],
+    'Non-Profit': [
+      'Ministry of Justice Registration',
+      'Tax-Exempt Certification',
+    ],
+  },
+  Argentina: {
+    'Sole Proprietorship': ['CUIT Registration', 'AFIP Tax Registration'],
+    Partnership: ['Partnership Agreement', 'CUIT Registration'],
+    'SRL (LLC)': ['Articles of Incorporation', 'CUIT', 'AFIP Registration'],
+    'SA (Corporation)': ['Articles of Incorporation', 'CNV Registration'],
+    Cooperative: ['INAES Registration'],
+    'Non-Profit': ['IGJ Registration', 'Tax-Exempt Certificate'],
+  },
+  Brazil: {
+    'Sole Proprietorship': ['MEI Registration', 'CNPJ Number'],
+    Partnership: ['Partnership Agreement', 'CNPJ'],
+    'LTDA (LLC)': ['Articles of Incorporation', 'CNPJ'],
+    'S.A. (Corporation)': ['Commercial Registry Entry', 'CNPJ'],
+    Cooperative: ['OCB Registration'],
+    'Non-Profit': ['Public Utility Status', 'CNPJ'],
+  },
+  Chile: {
+    'Sole Proprietorship': ['RUT Registration', 'SII Tax Identification'],
+    Partnership: ['RUT Registration', 'Partnership Agreement'],
+    'EIRL (Single-Person LLC)': ['Company Registration', 'RUT'],
+    'SpA (Corporation)': ['Articles of Incorporation', 'CMF Registration'],
+    Cooperative: ['Cooperative Registry Entry'],
+    'Non-Profit': ['Ministry of Justice Registration'],
+  },
+  Colombia: {
+    'Sole Proprietorship': ['RUT Registration', 'DIAN Tax Identification'],
+    Partnership: ['Chamber of Commerce Registration', 'RUT'],
+    'SAS (LLC)': ['Articles of Incorporation', 'RUT'],
+    Corporation: ['Stock Market Registration', 'RUT'],
+    Cooperative: ['Confecoop Registration'],
+    'Non-Profit': [
+      'Chamber of Commerce Registration',
+      'Tax-Exempt Certificate',
+    ],
+  },
+  Peru: {
+    'Sole Proprietorship': ['RUC Registration', 'SUNAT Tax Number'],
+    Partnership: ['Public Deed of Partnership', 'RUC'],
+    'EIRL (LLC)': ['SUNARP Registration', 'RUC'],
+    'S.A. (Corporation)': [
+      'Stock Exchange Listing (if applicable)',
+      'SUNARP Registration',
+    ],
+    Cooperative: ['Superintendencia de Banca Registration'],
+    'Non-Profit': ['Municipal Registration', 'Tax-Exempt Status'],
+  },
+  Ecuador: {
+    'Sole Proprietorship': ['RUC Registration', 'SRI Tax Identification'],
+    Partnership: ['Partnership Agreement', 'RUC'],
+    LLC: ['Superintendencia de Compañías Registration', 'RUC'],
+    Corporation: [
+      'Superintendencia Registration',
+      'Stock Market Registration (if applicable)',
+    ],
+    Cooperative: ['Superintendencia de Economía Popular Registration'],
+    'Non-Profit': ['Ministry of Economic and Social Inclusion Approval'],
+  },
+  Bolivia: {
+    'Sole Proprietorship': ['NIT Registration', 'Municipal Tax License'],
+    Partnership: ['Partnership Deed', 'NIT'],
+    LLC: ['Commercial Registry Registration', 'NIT'],
+    Corporation: ['Stock Exchange Listing (if applicable)', 'NIT'],
+    Cooperative: ['Cooperative Registry Approval'],
+    'Non-Profit': ['Prefecture Registration', 'Tax-Exempt Certificate'],
+  },
+  Paraguay: {
+    'Sole Proprietorship': ['RUC Registration', 'SET Tax Number'],
+    Partnership: ['Public Deed of Partnership', 'RUC'],
+    'SA (Corporation)': [
+      'Stock Exchange Listing (if applicable)',
+      'Ministry of Industry Registration',
+    ],
+    Cooperative: ['National Cooperative Institute Registration'],
+    'Non-Profit': ['Government Registration', 'Tax Exemption Certificate'],
+  },
+  Uruguay: {
+    'Sole Proprietorship': ['DGI Registration', 'BPS Registration'],
+    Partnership: ['DGI Registration', 'Partnership Agreement'],
+    Corporation: [
+      'Articles of Incorporation',
+      'Stock Market Registration (if applicable)',
+    ],
+    Cooperative: ['Ministry of Labor Registration'],
+    'Non-Profit': ['National Registration of Associations'],
+  },
+  Venezuela: {
+    'Sole Proprietorship': ['RIF Registration', 'SENIAT Tax Number'],
+    Partnership: ['Public Deed of Partnership', 'RIF'],
+    LLC: ['SNC Registration', 'RIF'],
+    Corporation: [
+      'Stock Market Registration (if applicable)',
+      'SNC Registration',
+    ],
+    Cooperative: ['SUNACOOP Registration'],
+    'Non-Profit': ['Ministry of Economy Registration', 'Tax Exempt Status'],
+  },
+  'Costa Rica': {
+    'Sole Proprietorship': [
+      'Registro Nacional Entry',
+      'Tax Identification Number',
+    ],
+    Partnership: ['Public Deed of Partnership', 'Registro Nacional Entry'],
+    Corporation: ['Articles of Incorporation', 'Registro Nacional Entry'],
+    Cooperative: ['Cooperative National Institute Registration'],
+    'Non-Profit': ['Ministry of Finance Registration'],
+  },
+  'Dominican Republic': {
+    'Sole Proprietorship': ['RNC Registration', 'DGII Tax Registration'],
+    Partnership: ['Partnership Agreement', 'RNC'],
+    Corporation: [
+      'General Business Registry Entry',
+      'Stock Market Registration (if applicable)',
+    ],
+    Cooperative: ['Superintendencia de Bancos Registration'],
+    'Non-Profit': ['Government Registration', 'Tax Exemption Certificate'],
+  },
+  Panama: {
+    'Sole Proprietorship': ['RUC Registration', 'DGI Tax Number'],
+    Partnership: ['Commercial Registry Entry', 'RUC'],
+    Corporation: [
+      'Stock Market Registration (if applicable)',
+      'DGI Registration',
+    ],
+    Cooperative: ['Ministry of Commerce Registration'],
+    'Non-Profit': ['Government Approval', 'Tax-Exempt Status'],
+  },
+};

@@ -35,6 +35,8 @@ export class PrivilegeGuard implements CanActivate {
       throw new UnauthorizedException('User role not found');
     }
     let roleId = '';
+
+    
     // if(user.userType == UserTypes.USER){
     //   const foundUser =
     // }

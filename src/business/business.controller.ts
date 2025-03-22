@@ -116,7 +116,11 @@ export class BusinessController {
 
   //fetch self created businesses'
   @Get('users')
-  async fetchUsers(@Req()req:Request,@Res()res:Response,@TokenDecoder()user:JwtPayload){
+  async fetchUsers(
+    @Req() req: Request,
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+  ) {
     const result = await this.businessService.fetchUsers(user.id);
 
     if (result.success) {
@@ -166,7 +170,6 @@ export class BusinessController {
         token: result.token,
         fcmExists: result.fcmExists,
       });
-      
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
@@ -174,7 +177,7 @@ export class BusinessController {
     }
   }
   @Get('user/mailStatus/:id')
-  async mailVerificationStatus(@Res() res: Response,@Param('id') id:string){
+  async mailVerificationStatus(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -184,9 +187,8 @@ export class BusinessController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data
+        data: result.data,
       });
-      
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
@@ -194,14 +196,13 @@ export class BusinessController {
     }
   }
   @Get('industryList')
-  async industryList(@Res() res: Response){
+  async industryList(@Res() res: Response) {
     const result = await this.businessService.industryList();
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data
+        data: result.data,
       });
-      
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
@@ -209,7 +210,7 @@ export class BusinessController {
     }
   }
   @Get('businessCategoryList/:id')
-  async businessCategoryList(@Res() res: Response,@Param('id')id:string){
+  async businessCategoryList(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -219,9 +220,29 @@ export class BusinessController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        data: result.data
+        data: result.data,
       });
-      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('verifyRegistrationNumber')
+  async checkRegistrationNumber(
+    @Res() res: Response,
+    @Query('docNumber') docNumber: string,
+    @Query('docType') docType: string,
+  ) {
+    const result = await this.businessService.checkRegistrationNumber(
+      docType,
+      docNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // data: result.data,
+      });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
