@@ -42,7 +42,7 @@ export class PrivilegeGuard implements CanActivate {
     if (!requiredPrivilege) return true; // No privilege required
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as DecodedUser; // Assume user is attached by AuthGuard
+    const user = request.user; // Assume user is attached by AuthGuard
     if (!user || !user.role) {
       throw new UnauthorizedException('User role not found');
     }
