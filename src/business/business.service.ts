@@ -24,6 +24,9 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
 import { AuthService } from 'src/auth/auth.service';
+import { BusinessIndustry, BusinessIndustryDocument } from './model/businessIndustry.model';
+import { privateDecrypt } from 'crypto';
+import { BusinessCategory, BusinessCategoryDocument } from './model/businessCategory.model';
 
 @Injectable()
 export class BusinessService {
@@ -35,6 +38,8 @@ export class BusinessService {
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    @InjectModel(BusinessIndustry.name) private readonly businessIndModel: Model<BusinessIndustryDocument>,
+    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -517,6 +522,36 @@ export class BusinessService {
         success: true,
         message: 'Status Checked Successfully!',
         data: findBusiness,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async industryList() {
+    try {
+      const industries = await this.businessIndModel.find();
+      return {
+        success: true,
+        message: 'Industries fetched Successfully!',
+        data: industries,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async businessCategoryList(id:string) {
+    try {
+      const categories = await this.businessCategoryModel.find({industry:new mongoose.Types.ObjectId(id)});
+      return {
+        success: true,
+        message: 'Industries fetched Successfully!',
+        data: categories,
       };
     } catch (error) {
       return {

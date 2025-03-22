@@ -87,6 +87,14 @@ import {
   PlatformConfigSchema,
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import {
+  BusinessCategory,
+  BusinessCategorySchema,
+} from './model/businessCategory.model';
+import {
+  BusinessIndustry,
+  BusinessIndustrySchema,
+} from './model/businessIndustry.model';
 
 @Module({
   imports: [
@@ -126,6 +134,8 @@ import { SmsService } from 'src/sms/sms.service';
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessCategory.name, schema: BusinessCategorySchema },
     ]),
   ],
   controllers: [BusinessController],
