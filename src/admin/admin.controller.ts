@@ -13,7 +13,6 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { AdminService } from './admin.service';
 import mongoose from 'mongoose';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
@@ -34,13 +33,14 @@ import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 
 @Controller('v1/admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('list')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getUsers(@Res() res: Response) {
     const result = await this.adminService.getUsers();
     return res.status(HttpStatus.OK).json({
@@ -50,7 +50,7 @@ export class AdminController {
   }
 
   @Get('crawled')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getCrawledEvents(
     @Res() res: Response,
     @Query('page') page: string,
@@ -87,7 +87,7 @@ export class AdminController {
   }
 
   @Delete('crawled/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async removeCrawledEvent(@Res() res: Response, @Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -103,7 +103,7 @@ export class AdminController {
   }
 
   @Post('crawled/edit/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateCrawledEvent(
     @Res() res: Response,
     @Param('id') id: string,
@@ -128,7 +128,7 @@ export class AdminController {
   }
 
   @Post('crawled/publish')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async publishCrawledEvent(
     @Res() res: Response,
     @Body() body: PublishCrawledEventDto,
@@ -169,7 +169,7 @@ export class AdminController {
   }
 
   @Post('dashboard/config/add')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async configureDashboard(
     @Res() res: Response,
     @Body() body: ConfigureDashboardDto,
@@ -197,7 +197,7 @@ export class AdminController {
   }
 
   @Get('dashboard/config')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getDashboardConfig(@Res() res: Response) {
     const result = await this.adminService.getDashboardConfig();
     if (result.success) {
@@ -213,7 +213,7 @@ export class AdminController {
   }
 
   @Post('dashboard/config/update/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async editDashboardConfig(
     @Res() res: Response,
     @Body() body: UpdateConfigureDashboardDto,
@@ -250,7 +250,7 @@ export class AdminController {
   }
 
   @Delete('dashboard/config/delete/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async deleteDashboardConfig(@Res() res: Response, @Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -270,7 +270,7 @@ export class AdminController {
   }
 
   @Get('dashboard/weight')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getDashboardWeight(@Res() res: Response) {
     const result = await this.adminService.getDashboardWeight();
     if (result.success) {
@@ -286,7 +286,7 @@ export class AdminController {
   }
 
   @Post('dashboard/weight/update')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateDashboardWeight(
     @Res() res: Response,
     @Body() body: PlatformConfigDto,
@@ -343,7 +343,7 @@ export class AdminController {
   }
 
   @Get('profile')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.adminService.getProfile(user.id);
     if (result.success) {
@@ -399,7 +399,7 @@ export class AdminController {
   }
 
   @Post('dbQueries') //just to add run db queries or only for testing purpose
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async dbQueries(@Res() res: Response) {
     const result = await this.adminService.dbQueries();
     if (result.success) {
@@ -415,7 +415,7 @@ export class AdminController {
   }
 
   @Post('createCategory')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async createCategory(
     @Req() req: Request,
     @Res() res: Response,
@@ -433,9 +433,9 @@ export class AdminController {
       message: result.message,
     });
   }
-  
+
   @Get('categories')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getCategories(@Res() res: Response) {
     return res.status(HttpStatus.OK).json({
       categories: await this.adminService.getCategories(),
@@ -443,7 +443,7 @@ export class AdminController {
   }
 
   @Post('updateCategory/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateCategory(
     @Req() req: Request,
     @Res() res: Response,
@@ -465,7 +465,7 @@ export class AdminController {
   @Get('users')
   @Privilege(ResourceTypes.ADMIN, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getUsersList(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -498,7 +498,7 @@ export class AdminController {
   @Post('user')
   @Privilege(ResourceTypes.ADMIN, Actions.CREATE)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async createAdmin(
     @Res() res: Response,
     @Body() data: CreateAdminDto,
@@ -528,7 +528,7 @@ export class AdminController {
   @Get('user/:id')
   @Privilege(ResourceTypes.ADMIN, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getUser(
     @Res() res: Response,
     @Param('id') id: string,
@@ -555,7 +555,7 @@ export class AdminController {
   @Post('assign/role')
   @Privilege(ResourceTypes.ADMIN, Actions.UPDATE)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async assignRole(
     @Res() res: Response,
     @Body() data: AssignRoleDto,
@@ -585,7 +585,7 @@ export class AdminController {
   @Put('user/update/:id')
   @Privilege(ResourceTypes.ADMIN, Actions.UPDATE)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateAdmin(
     @Req() req: Request,
     @Res() res: Response,
@@ -614,7 +614,7 @@ export class AdminController {
   @Get('consumers')
   @Privilege(ResourceTypes.USERS, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getConsumers(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -646,7 +646,7 @@ export class AdminController {
   @Get('consumer/:id')
   @Privilege(ResourceTypes.USERS, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getConsumer(
     @Res() res: Response,
     @Param('id') id: string,
@@ -673,7 +673,7 @@ export class AdminController {
   @Get('business')
   @Privilege(ResourceTypes.BUSINESS, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getBusinesses(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -705,7 +705,7 @@ export class AdminController {
   @Get('business/:id')
   @Privilege(ResourceTypes.BUSINESS, Actions.READ)
   @UseGuards(PrivilegeGuard)
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getBusiness(
     @Res() res: Response,
     @Param('id') id: string,
