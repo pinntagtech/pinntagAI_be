@@ -72,10 +72,8 @@ export class BusinessService {
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
+        name:data.name,
       };
-      if (data.name) {
-        createObj['name'] = data.name;
-      }
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
