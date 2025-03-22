@@ -46,11 +46,17 @@ import {
   OutletTypeDocument,
 } from 'src/business/model/outletType.model';
 import {
+  BusinessIndustries,
   OutletCategoryList,
   OutletTypesByCategory,
 } from 'src/business/enums/business.enum';
 import e from 'express';
-import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
+import { BusinessIndustry, BusinessIndustryDocument } from 'src/business/model/businessIndustry.model';
+import { BusinessCategory, BusinessCategoryDocument } from 'src/business/model/businessCategory.model';
 
 @Injectable()
 export class SeederService {
@@ -82,7 +88,10 @@ export class SeederService {
     private readonly outletCategoryModel: Model<OutletCategoryDocument>,
     @InjectModel(OutletType.name)
     private readonly outletTypeModel: Model<OutletTypeDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel:Model<BusinessUserDocument>
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    // @InjectModel(BusinessIndustry.name) private readonly businessIndustryModel:Model<BusinessIndustryDocument>,
+    // @InjectModel(BusinessCategory.name) private readonly BusinessCategoryModel:Model<BusinessCategoryDocument>,
   ) {}
 
   async seed() {
@@ -341,7 +350,53 @@ export class SeederService {
       }
     }
   }
-  // async seedOutletCategoryTypes() {
 
+  // async seedBusinessIndustries() {
+  //   const findBusinessIndustry = await this.businessIndustryModel.find();
+  //   if (findBusinessIndustry.length < Object.keys(BusinessIndustries).length) {
+
+  //     for (const businessIndustry of Object.keys(BusinessIndustries)) {
+
+  //       const foundBusinessIndustry = await this.businessIndustryModel.findOne({
+  //         title: businessIndustry,
+  //       });
+
+  //       if (!foundBusinessIndustry) {
+  //         const createdBusinessIndustry = await this.businessIndustryModel.create({
+  //           title: businessIndustry,
+  //         });
+  //         for (const businessCategory of BusinessIndustries[businessIndustry]) {
+  //           const foundType = await this.outletTypeModel.findOne({
+  //             type: outletCategoryType,
+  //             category: new mongoose.Types.ObjectId(createdOutletCategory.id),
+  //           });
+  //           if (!foundType) {
+  //             await this.outletTypeModel.create({
+  //               type: outletCategoryType,
+  //               category: new mongoose.Types.ObjectId(
+  //                 createdOutletCategory._id,
+  //               ),
+  //             });
+  //           }
+  //         }
+  //       } else {
+  //         for (const outletCategoryType of OutletTypesByCategory[
+  //           outletCategory
+  //         ]) {
+  //           console.log('outletCategoryType:', outletCategoryType);
+  //           const foundType = await this.outletTypeModel.findOne({
+  //             type: outletCategoryType,
+  //             category: new mongoose.Types.ObjectId(foundOutletCategory._id),
+  //           });
+  //           if (!foundType) {
+  //             await this.outletTypeModel.create({
+  //               type: outletCategoryType,
+  //               category: new mongoose.Types.ObjectId(foundOutletCategory._id),
+  //             });
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
   // }
 }
