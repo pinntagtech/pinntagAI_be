@@ -521,7 +521,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'Status Checked Successfully!',
-        data: findBusiness,
+        // data: findBusiness,
       };
     } catch (error) {
       return {
