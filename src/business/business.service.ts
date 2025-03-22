@@ -73,6 +73,9 @@ export class BusinessService {
         email: data.email,
         password: hashedPassword,
       };
+      if (data.name) {
+        createObj['name'] = data.name;
+      }
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
@@ -98,7 +101,7 @@ export class BusinessService {
           // business:
         },
         TokenTypes.VERIFY_EMAIL,
-        UserTypes.BUSINESS
+        UserTypes.BUSINESS,
       );
       const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
       await this.mailService.sendEmailVerificationMail(
@@ -127,13 +130,13 @@ export class BusinessService {
       const findBusiness = await this.businessModel.findOne({
         $or: [
           { email: data.email },
-          { registrationNumber: data.registrationNumber },
+          // { registrationNumber: data.registrationNumber },
         ],
       });
       if (findBusiness) {
         return {
           success: false,
-          message: `Business already exist with given email:${data.email} or registration number:${data.registrationNumber}`,
+          message: `Business already exist with given email:${data.email}`,
         };
       }
 
@@ -144,19 +147,20 @@ export class BusinessService {
       let createObj = {
         name: data.name,
         email: data.email,
-        isRegistered: data.isRegistered,
+        // isRegistered: data.isRegistered,
         businessCategory: data.businessCategory,
         businessIndustry: data.businessIndustry,
         phone: data.phone,
         countryCode: data.countryCode,
-        registrationType: data.registrationType,
-        registrationNumber: data.registrationNumber,
-        bio: data.bio,
+        // registrationType: data.registrationType,
+        // registrationNumber: data.registrationNumber,
+        // bio: data.bio,
+        status: 1,
       };
       if (data.website) createObj['website'] = data.website;
 
-      if (data.brand && isValidObjectId(data.brand))
-        createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
+      // if (data.brand && isValidObjectId(data.brand))
+      // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       if (data.businessUser) {
         createObj['creatorType'] = BusinessCreatorType.BUSINESS_USER;
         createObj['creator'] = new mongoose.Types.ObjectId(data.businessUser);
@@ -191,13 +195,43 @@ export class BusinessService {
 
   async updateBusiness(id: string, data: UpdateBusinessDto) {
     try {
+      const findBusiness = await this.businessModel.findById(id);
+      if(!findBusiness){
+        return {
+          success:false,
+          message:"Business not found with given ID"
+        }
+      }
+
+
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
           updateObj[key] = data[key];
         }
       });
+      if (
+        updateObj.isRegistered &&
+        updateObj.constitution?.trim() &&
+        updateObj.documentNumber?.trim() &&
+        updateObj.documentType?.trim()
+      ) {
+        const alreadyRegistered = await this.businessModel.findOne({documentNumber:updateObj.documentNumber,documentType:updateObj.documentType});
+        if(alreadyRegistered){
+          return {
+            success:false,
+            message: 'Business is already Registered with the provided document number and type',
+          }
+        } 
+        updateObj['status'] = 2;
 
+      }
+      if (updateObj.isRegistered == false){
+        updateObj['status'] = 2;
+      }
+        if (updateObj.bio) {
+          updateObj['status'] = 3;
+        }
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       }
@@ -225,10 +259,11 @@ export class BusinessService {
       const updatedDetails = await this.businessModel.findByIdAndUpdate(
         id,
         {
-          $set: { ...data, ...updateObj },
+          $set: {...updateObj },
         },
         { new: true },
       );
+      console.log("udpatedDetails:",updatedDetails);
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -428,9 +463,19 @@ export class BusinessService {
       expiresAt: new Date(Date.now() + 86400000),
     });
   }
-  
 
-  remove(id: number) {
-    return `This action removes a #${id} business`;
+  async fetchUsers(id: string) {
+    try {
+      return {
+        success: true,
+        message: 'All Good!',
+        data: '',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
   }
 }
