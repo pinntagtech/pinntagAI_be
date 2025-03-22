@@ -106,27 +106,27 @@ export const Seeder = {
   roles: [
     {
       name: Roles.ADMIN,
-      creatorType:'System'
+      creatorType: 'System',
     },
     {
       name: Roles.USER,
-      creatorType:'System'
+      creatorType: 'System',
     },
     {
       name: Roles.SUB_ADMIN,
-      creatorType:'System'
+      creatorType: 'System',
     },
     {
       name: Roles.STAFF,
-      creatorType:'System'
+      creatorType: 'System',
     },
     {
       name: Roles.GUEST,
-      creatorType:'System'
+      creatorType: 'System',
     },
     {
       name: Roles.BUSINESS_PROFILE,
-      creatorType:'System'
+      creatorType: 'System',
     },
   ],
   keywords: [
@@ -324,5 +324,6 @@ export const Seeder = {
     {
       name: 'other',
     },
-  ]
+  ],
+  
 };

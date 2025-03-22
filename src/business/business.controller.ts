@@ -173,4 +173,24 @@ export class BusinessController {
       });
     }
   }
+  @Get('user/mailStatus/:id')
+  async mailVerificationStatus(@Res() res: Response,@Param('id') id:string){
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.mailVerificationStatus(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

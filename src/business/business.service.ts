@@ -72,7 +72,7 @@ export class BusinessService {
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
-        name:data.name,
+        name: data.name,
       };
 
       //append creator to roles
@@ -194,13 +194,12 @@ export class BusinessService {
   async updateBusiness(id: string, data: UpdateBusinessDto) {
     try {
       const findBusiness = await this.businessModel.findById(id);
-      if(!findBusiness){
+      if (!findBusiness) {
         return {
-          success:false,
-          message:"Business not found with given ID"
-        }
+          success: false,
+          message: 'Business not found with given ID',
+        };
       }
-
 
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
@@ -214,22 +213,25 @@ export class BusinessService {
         updateObj.documentNumber?.trim() &&
         updateObj.documentType?.trim()
       ) {
-        const alreadyRegistered = await this.businessModel.findOne({documentNumber:updateObj.documentNumber,documentType:updateObj.documentType});
-        if(alreadyRegistered){
+        const alreadyRegistered = await this.businessModel.findOne({
+          documentNumber: updateObj.documentNumber,
+          documentType: updateObj.documentType,
+        });
+        if (alreadyRegistered) {
           return {
-            success:false,
-            message: 'Business is already Registered with the provided document number and type',
-          }
-        } 
-        updateObj['status'] = 2;
-
-      }
-      if (updateObj.isRegistered == false){
-        updateObj['status'] = 2;
-      }
-        if (updateObj.bio) {
-          updateObj['status'] = 3;
+            success: false,
+            message:
+              'Business is already Registered with the provided document number and type',
+          };
         }
+        updateObj['status'] = 2;
+      }
+      if (updateObj.isRegistered == false) {
+        updateObj['status'] = 2;
+      }
+      if (updateObj.bio) {
+        updateObj['status'] = 3;
+      }
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       }
@@ -257,11 +259,11 @@ export class BusinessService {
       const updatedDetails = await this.businessModel.findByIdAndUpdate(
         id,
         {
-          $set: {...updateObj },
+          $set: { ...updateObj },
         },
         { new: true },
       );
-      console.log("udpatedDetails:",updatedDetails);
+      console.log('udpatedDetails:', updatedDetails);
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -468,6 +470,53 @@ export class BusinessService {
         success: true,
         message: 'All Good!',
         data: '',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async mailVerificationStatus(id: string) {
+    try {
+      const findUser = await this.businessUserModel.findById(id, {
+        isEmailVerified: 1,
+      });
+      if (!findUser) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Status Checked Successfully!',
+        data: findUser,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async checkRegistrationNumber(docType:string,docNumber: string) {
+    try {
+      const findBusiness = await this.businessModel.findOne({documentType:docType,documentNumber:docNumber},{_id:1,email:1});
+      if (findBusiness) {
+        return {
+          success: false,
+          message: 'Business Already Exists with given document Number!',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Status Checked Successfully!',
+        data: findBusiness,
       };
     } catch (error) {
       return {

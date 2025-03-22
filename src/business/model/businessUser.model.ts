@@ -43,7 +43,7 @@ export class BusinessUser {
   password: string;
   @Prop({ref:Business.name})
   business:mongoose.Types.ObjectId;
-
+  
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
