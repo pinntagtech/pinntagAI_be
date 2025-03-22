@@ -44,7 +44,6 @@ export class PrivilegeGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as DecodedUser; // Assume user is attached by AuthGuard
     if (!user || !user.role) {
-      console.log;
       throw new UnauthorizedException('User role not found');
     }
     console.log('user is:---', user);
