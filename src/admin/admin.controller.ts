@@ -342,6 +342,22 @@ export class AdminController {
     }
   }
 
+  @Get('profile')
+  @UseGuards(AdminGuard)
+  async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.adminService.getProfile(user.id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('forgot-password')
   async forgotPassword(
     @Req() req: Request,

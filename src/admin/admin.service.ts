@@ -512,6 +512,21 @@ export class AdminService {
     }
   }
 
+  async getProfile(id: string) {
+    const admin = await this.adminModel.findById(id).select('-password');
+    if (!admin) {
+      return {
+        success: false,
+        message: 'Admin not found with the id provided.',
+      };
+    }
+    return {
+      success: true,
+      message: 'Admin found successfully',
+      data: admin,
+    };
+  }
+
   async forgotPassword(origin: string, email: string) {
     const admin = await this.adminModel.findOne({ email });
     if (!admin) {
