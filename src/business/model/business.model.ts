@@ -19,6 +19,7 @@ export type BusinessDocument = Business & Document;
 export class Business {
   @Prop({ default: false })
   isDeleted: boolean;
+  
   // @Prop({
   //   required: true,
   //   enum: [0, 1, 2],

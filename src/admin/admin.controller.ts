@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -380,6 +381,7 @@ export class AdminController {
   ): Promise<BusinessRole> {
     return this.adminService.createBusinessRole(createDto);
   }
+
   @Post('dbQueries') //just to add run db queries or only for testing purpose
   @UseGuards(AdminGuard)
   async dbQueries(@Res() res: Response) {
@@ -422,6 +424,7 @@ export class AdminController {
       categories: await this.adminService.getCategories(),
     });
   }
+
   @Post('updateCategory/:id')
   @UseGuards(AdminGuard)
   async updateCategory(
@@ -442,10 +445,43 @@ export class AdminController {
     }
   }
 
-  @Post('user')
+  @Get('users')
+  @Privilege(ResourceTypes.ADMIN, Actions.READ)
+  @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard)
+  async getUsersList(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getAdminsList(
+      user.id,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        pages: result.pages,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('user')
   @Privilege(ResourceTypes.ADMIN, Actions.CREATE)
   @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
   async createAdmin(
     @Res() res: Response,
     @Body() data: CreateAdminDto,
@@ -472,10 +508,37 @@ export class AdminController {
     }
   }
 
-  @Post('assign/role')
+  @Get('user/:id')
+  @Privilege(ResourceTypes.ADMIN, Actions.READ)
+  @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard)
+  async getUser(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.adminService.getAdminById(user.id, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('assign/role')
   @Privilege(ResourceTypes.ADMIN, Actions.UPDATE)
   @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
   async assignRole(
     @Res() res: Response,
     @Body() data: AssignRoleDto,
@@ -499,6 +562,153 @@ export class AdminController {
           message: result.message,
         });
       }
+    }
+  }
+
+  @Put('user/update/:id')
+  @Privilege(ResourceTypes.ADMIN, Actions.UPDATE)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
+  async updateAdmin(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: CreateAdminDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.adminService.updateAdmin(user.id, id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('consumers')
+  @Privilege(ResourceTypes.USERS, Actions.READ)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
+  async getConsumers(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getConsumersList(
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        pages: result.pages,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('consumer/:id')
+  @Privilege(ResourceTypes.USERS, Actions.READ)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
+  async getConsumer(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id provided',
+      });
+    }
+    const result = await this.adminService.getConsumerById(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('business')
+  @Privilege(ResourceTypes.BUSINESS, Actions.READ)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
+  async getBusinesses(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getBusinessesList(
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        pages: result.pages,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('business/:id')
+  @Privilege(ResourceTypes.BUSINESS, Actions.READ)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard)
+  async getBusiness(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id provided',
+      });
+    }
+    const result = await this.adminService.getBusinessById(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
     }
   }
 }

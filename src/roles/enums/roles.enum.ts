@@ -29,6 +29,7 @@ export const Actions = {
 
 export const ResourceTypes = {
   ADMIN: 'Admin',
+  BUSINESS: 'Business',
   USERS: 'users',
   ROLES: 'roles',
   PERMISSIONS: 'permissions',

@@ -55,11 +55,14 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
@@ -497,8 +500,8 @@ export class AdminService {
           user: adminDoc,
         };
       }
-      console.log("Last check::")
-      const token = await this.generateJWT(payload,TokenTypes.ACCESS);
+      console.log('Last check::');
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
       return {
         success: true,
         status: true,
@@ -747,5 +750,233 @@ export class AdminService {
       message: 'Role assigned to admin successfully',
       data: updatedAdmin,
     };
+  }
+
+  async isAdminAboveInHierarchy(admin: string, target: string) {
+    const allAdminIds = await this.getAllChildAdminIds(admin);
+    if (allAdminIds.includes(target)) {
+      return true;
+    }
+    return false;
+  }
+
+  async updateAdmin(admin: string, id: string, data: CreateAdminDto) {
+    try {
+      const foundUser = await this.adminModel.findById(id);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found with the id provided.',
+        };
+      }
+      const isTargetChild = await this.isAdminAboveInHierarchy(admin, id);
+      if (!isTargetChild) {
+        return {
+          success: false,
+          message: 'You are not authorized to perform this action.',
+        };
+      }
+      if (data.password) {
+        data.password = await bcrypt.hash(data.password, 10);
+      }
+      if (data.role) {
+        const role = await this.roleModel.findOne({ name: data.role });
+        if (!role) {
+          return {
+            success: false,
+            message: 'Role not found with the name provided.',
+          };
+        }
+        data.role = role._id;
+      }
+      const updatedAdmin = await this.adminModel.findByIdAndUpdate(
+        id,
+        { $set: { ...data } },
+        { new: true },
+      );
+      return {
+        success: true,
+        message: 'Admin updated successfully',
+        data: updatedAdmin,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getAdminsList(adminId: string, page: number, limit: number) {
+    try {
+      const admin = await this.adminModel.findById(adminId);
+      if (!admin) {
+        return {
+          success: false,
+          message: 'Admin not found with the id provided.',
+        };
+      }
+      const allAdminIds = await this.getAllChildAdminIds(adminId);
+      const admins = await this.adminModel
+        .find({ creator: { $in: allAdminIds } })
+        .populate('role', '_id name')
+        .sort({ createdAt: -1 })
+        .select({ password: 0 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalAdmins = await this.adminModel.find({
+        creator: { $in: allAdminIds },
+      });
+      return {
+        success: true,
+        message: 'Admins fetched successfully',
+        data: admins,
+        page,
+        limit,
+        total: totalAdmins.length,
+        pages: Math.ceil(totalAdmins.length / limit),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getAdminById(adminId: string, id: string) {
+    try {
+      const admin = await this.adminModel.findById(adminId);
+      if (!admin) {
+        return {
+          success: false,
+          message: 'Admin not found with the id provided.',
+        };
+      }
+      const isTargetChild = await this.isAdminAboveInHierarchy(adminId, id);
+      if (!isTargetChild) {
+        return {
+          success: false,
+          message: 'You are not authorized to perform this action.',
+        };
+      }
+      const foundAdmin = await this.adminModel
+        .findById(id)
+        .populate('role', '_id name')
+        .select({ password: 0 });
+      return {
+        success: true,
+        message: 'Admin fetched successfully',
+        data: foundAdmin,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getConsumersList(page: number, limit: number) {
+    try {
+      const users = await this.userModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalUsers = await this.userModel.find();
+      return {
+        success: true,
+        message: 'Consumers fetched successfully',
+        data: users,
+        page,
+        limit,
+        total: totalUsers.length,
+        pages: Math.ceil(totalUsers.length / limit),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getConsumerById(id: string) {
+    try {
+      const foundUser = await this.userModel.findById(id);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found with the id provided.',
+        };
+      }
+      return {
+        success: true,
+        message: 'User fetched successfully',
+        data: foundUser,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getBusinessesList(page: number, limit: number) {
+    try {
+      const businesses = await this.businessModel
+        .find()
+        .select({
+          password: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        })
+        .limit(limit)
+        .skip((page - 1) * limit);
+      const totalBusinesses = await this.businessModel.find();
+      return {
+        success: true,
+        message: 'Businesses fetched successfully',
+        data: businesses,
+        page,
+        limit,
+        total: totalBusinesses.length,
+        pages: Math.ceil(totalBusinesses.length / limit),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getBusinessById(id: string) {
+    try {
+      const foundBusiness = await this.businessModel
+        .findById(id)
+        .populate('role', '_id name')
+        .populate('brand', '_id name')
+        .populate('businessRoles', '_id name');
+      if (!foundBusiness) {
+        return {
+          success: false,
+          message: 'Business not found with the id provided.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Business fetched successfully',
+        data: foundBusiness,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 }
