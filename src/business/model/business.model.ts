@@ -29,28 +29,33 @@ export class Business {
   @Prop()
   logo: string;
   @Prop()
-  isRegistered:boolean;
+  isRegistered: boolean;
 
   @Prop()
-  businessCategory:string;
+  businessCategory: string;
 
   @Prop()
-  businessIndustry:string;
+  businessIndustry: string;
 
   @Prop()
   cover: string;
 
+  
   @Prop()
-  registrationNumber:string;
+  constitution:string;
+  
+  @Prop()
+  documentNumber: string;
 
   @Prop()
-  registrationType:string;
+  documentType: string;
+
 
 
   @Prop({ ref: Brand.name })
   brand: mongoose.Types.ObjectId;
 
-  @Prop({ref: 'BusinessUser' })
+  @Prop({ ref: 'BusinessUser' })
   authorisedUser: mongoose.Types.ObjectId; //owner of the business
 
   @Prop({ ref: 'BusinessUser' })
@@ -64,7 +69,7 @@ export class Business {
 
   @Prop({ required: true })
   name: string;
-  @Prop({ required: true })
+  @Prop()
   bio: string;
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;

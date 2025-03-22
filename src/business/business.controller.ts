@@ -20,6 +20,8 @@ import { isValidObjectId } from 'mongoose';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
+import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Controller('business')
 export class BusinessController {
@@ -112,6 +114,23 @@ export class BusinessController {
     }
   }
 
+  //fetch self created businesses'
+  @Get('users')
+  async fetchUsers(@Req()req:Request,@Res()res:Response,@TokenDecoder()user:JwtPayload){
+    const result = await this.businessService.fetchUsers(user.id);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('user/update/:id')
   async updateBusinessUser(
     @Req() req: Request,
@@ -147,17 +166,66 @@ export class BusinessController {
         token: result.token,
         fcmExists: result.fcmExists,
       });
+      
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
   }
-
-
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.businessService.findOne(id);
+  @Get('user/mailStatus/:id')
+  async mailVerificationStatus(@Res() res: Response,@Param('id') id:string){
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.mailVerificationStatus(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('industryList')
+  async industryList(@Res() res: Response){
+    const result = await this.businessService.industryList();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('businessCategoryList/:id')
+  async businessCategoryList(@Res() res: Response,@Param('id')id:string){
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.businessCategoryList(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }

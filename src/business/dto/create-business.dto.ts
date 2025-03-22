@@ -18,18 +18,18 @@ export class CreateBusinessDto {
   @IsEmail()
   email: string;
 
-  @IsString()
-  registrationNumber:string;
+  // @IsString()
+  // registrationNumber:string;
   
-  @IsString()
-  registrationType:string;
+  // @IsString()
+  // registrationType:string;
   
-  @IsString()
-  bio:string;
+  // @IsString()
+  // bio:string;
 
 
-  @IsBoolean()
-  isRegistered: boolean;
+  // @IsBoolean()
+  // isRegistered: boolean;
 
   @IsString()
   businessCategory: string;
@@ -46,8 +46,8 @@ export class CreateBusinessDto {
   @IsString()
   website: string;
 
-  @IsString()
-  brand:string;
+  // @IsString()
+  // brand:string;
 
   // @IsString()
   // bio: string;

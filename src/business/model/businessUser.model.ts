@@ -14,6 +14,9 @@ export class BusinessUser {
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId[];
 
+  @Prop({default:true})
+  isActive:boolean;
+
   @Prop({ref: 'BusinessUser' })
   creator: mongoose.Types.ObjectId;
 
@@ -40,7 +43,7 @@ export class BusinessUser {
   password: string;
   @Prop({ref:Business.name})
   business:mongoose.Types.ObjectId;
-
+  
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);

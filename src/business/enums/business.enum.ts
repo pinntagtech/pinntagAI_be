@@ -1,42 +1,203 @@
 export enum OutletCategoryList {
-    FOOD_BEVERAGE = 'Food & Beverage Establishments',
-    MOBILE_TEMPORARY = 'Mobile & Temporary Outlets',
-    RETAIL_DISTRIBUTION = 'Retail & Distribution',
-    HYBRID_EXPERIMENTAL = 'Hybrid & Experimental Models',
-    ONLINE_HOME_BASED = 'Online & Home-Based Models',
-  }
-  
-  export const OutletTypesByCategory = {
-    [OutletCategoryList.FOOD_BEVERAGE]: [
-      'Restaurant', 'Fine Dining', 'Casual Dining', 'Buffet', 'Theme Restaurant',
-      'Café', 'Bakery', 'Confectionery', 'Ice Cream Parlour', 'Juice Bar',
-      'Bar', 'Pub', 'Club', 'Lounge'
-    ],
-    [OutletCategoryList.MOBILE_TEMPORARY]: [
-      'Food Truck', 'Food Stall', 'Food Cart', 'Mobile Bar', 'Event Pop-Up',
-      'Roaming Pop-Up', 'Festival Stall', 'Catering Service', 'Cloud Kitchen', 'Dark Kitchen'
-    ],
-    [OutletCategoryList.RETAIL_DISTRIBUTION]: [
-      'Supermarket', 'Convenience Store', 'Vending Machine', 'Warehouse', 'Distribution Outlet',
-      'Wholesale Outlet', 'Franchise Outlet', 'Commission Outlet'
-    ],
-    [OutletCategoryList.HYBRID_EXPERIMENTAL]: [
-      'Food Theater', 'Micro Market', 'Smart Vending', 'Hotel Restaurant', 'Canteen',
-      'Tasting Room', 'Private Dining', 'Interactive Dining'
-    ],
-    [OutletCategoryList.ONLINE_HOME_BASED]: [
-      'Online Only', 'Delivery-Based', 'Ghost Kitchen', 'Virtual Restaurant',
-      'Home-Based Business', 'Home Chef', 'Instagram-Only Business'
-    ]
-  };
-  
-  export const BusinessUserCreatorType = {
-    ADMIN: 'Admin',
-    BUSINESS: 'Business',
-    SYSTEM: 'System',
-    SELF:'Self'
-  };
-  export const BusinessCreatorType = {
-    ADMIN: 'Admin',
-    BUSINESS_USER: 'BusinessUser',
-  }
+  FOOD_BEVERAGE = 'Food & Beverage Establishments',
+  MOBILE_TEMPORARY = 'Mobile & Temporary Outlets',
+  RETAIL_DISTRIBUTION = 'Retail & Distribution',
+  HYBRID_EXPERIMENTAL = 'Hybrid & Experimental Models',
+  ONLINE_HOME_BASED = 'Online & Home-Based Models',
+}
+
+export const OutletTypesByCategory = {
+  [OutletCategoryList.FOOD_BEVERAGE]: [
+    'Restaurant',
+    'Fine Dining',
+    'Casual Dining',
+    'Buffet',
+    'Theme Restaurant',
+    'Café',
+    'Bakery',
+    'Confectionery',
+    'Ice Cream Parlour',
+    'Juice Bar',
+    'Bar',
+    'Pub',
+    'Club',
+    'Lounge',
+  ],
+  [OutletCategoryList.MOBILE_TEMPORARY]: [
+    'Food Truck',
+    'Food Stall',
+    'Food Cart',
+    'Mobile Bar',
+    'Event Pop-Up',
+    'Roaming Pop-Up',
+    'Festival Stall',
+    'Catering Service',
+    'Cloud Kitchen',
+    'Dark Kitchen',
+  ],
+  [OutletCategoryList.RETAIL_DISTRIBUTION]: [
+    'Supermarket',
+    'Convenience Store',
+    'Vending Machine',
+    'Warehouse',
+    'Distribution Outlet',
+    'Wholesale Outlet',
+    'Franchise Outlet',
+    'Commission Outlet',
+  ],
+  [OutletCategoryList.HYBRID_EXPERIMENTAL]: [
+    'Food Theater',
+    'Micro Market',
+    'Smart Vending',
+    'Hotel Restaurant',
+    'Canteen',
+    'Tasting Room',
+    'Private Dining',
+    'Interactive Dining',
+  ],
+  [OutletCategoryList.ONLINE_HOME_BASED]: [
+    'Online Only',
+    'Delivery-Based',
+    'Ghost Kitchen',
+    'Virtual Restaurant',
+    'Home-Based Business',
+    'Home Chef',
+    'Instagram-Only Business',
+  ],
+};
+
+export const BusinessUserCreatorType = {
+  ADMIN: 'Admin',
+  BUSINESS: 'Business',
+  SYSTEM: 'System',
+  SELF: 'Self',
+};
+export const BusinessCreatorType = {
+  ADMIN: 'Admin',
+  BUSINESS_USER: 'BusinessUser',
+};
+
+export const BusinessIndustries = {
+  'Retail & E-commerce': [
+    'Supermarkets & Grocery Stores',
+    'Fashion & Apparel',
+    'Electronics & Gadgets',
+    'Home & Kitchen',
+    'Beauty & Personal Care',
+    'Automotive Parts & Accessories',
+    'Books & Stationery',
+    'Furniture & Home Decor',
+    'Sports & Fitness Equipment',
+    'Online Marketplaces',
+  ],
+  'Food & Beverage': [
+    'Restaurants & Cafés',
+    'Fast Food Chains',
+    'Bakeries & Confectioneries',
+    'Catering Services',
+    'Bars & Nightclubs',
+    'Food Trucks',
+    'Organic & Health Food Stores',
+    'Beverage Production (Coffee, Tea, Soft Drinks, etc.)',
+    'Wine & Liquor Stores',
+    'Cloud Kitchens',
+  ],
+  'Health & Wellness': [
+    'Hospitals & Clinics',
+    'Pharmaceuticals & Drugstores',
+    'Medical Devices & Equipment',
+    'Health Tech & Telemedicine',
+    'Fitness Centers & Gyms',
+    'Spas & Wellness Centers',
+    'Alternative Medicine (Ayurveda, Homeopathy, etc.)',
+    'Mental Health & Counseling',
+    'Senior Care & Assisted Living',
+  ],
+  'Finance & Insurance': [
+    'Banks & Financial Institutions',
+    'Investment & Wealth Management',
+    'Insurance Companies',
+    'Accounting & Bookkeeping Services',
+    'FinTech & Payment Solutions',
+    'Tax Consulting',
+  ],
+  'Technology & Software': [
+    'Software Development',
+    'IT Services & Consulting',
+    'Cybersecurity Solutions',
+    'AI & Machine Learning',
+    'Blockchain & Cryptocurrency',
+    'Cloud Computing & Data Centers',
+    'SaaS & Enterprise Solutions',
+  ],
+  'Real Estate & Construction': [
+    'Residential & Commercial Real Estate',
+    'Property Management',
+    'Architecture & Interior Design',
+    'Construction Companies',
+    'Smart Home Solutions',
+    'Industrial Infrastructure',
+  ],
+  'Automotive & Transportation': [
+    'Car Dealerships',
+    'Auto Repair & Maintenance',
+    'Car Rentals & Leasing',
+    'Public Transportation Services',
+    'Ride-Hailing & Taxi Services',
+    'Logistics & Supply Chain',
+    'Courier & Delivery Services',
+    'EV & Automotive Innovation',
+  ],
+  'Education & Training': [
+    'Schools & Universities',
+    'E-Learning Platforms',
+    'Corporate Training & Skill Development',
+    'Coaching Centers & Tutoring',
+    'Vocational Training',
+  ],
+  'Manufacturing & Industrial': [
+    'Textile & Apparel Manufacturing',
+    'Electronics Manufacturing',
+    'Heavy Machinery',
+    'Chemical & Pharmaceuticals',
+    'Metal & Mining',
+    'Renewable Energy Manufacturing',
+  ],
+  'Media & Entertainment': [
+    'Film & Television Production',
+    'Music & Audio Production',
+    'Advertising & Marketing Agencies',
+    'Video Game Development',
+    'Publishing & News Media',
+    'Event Planning & Management',
+  ],
+  'Tourism & Hospitality': [
+    'Hotels & Resorts',
+    'Travel Agencies',
+    'Airlines & Cruise Lines',
+    'Adventure & Eco-Tourism',
+    'Theme Parks & Attractions',
+  ],
+  'Agriculture & Farming': [
+    'Crop Farming',
+    'Dairy & Livestock',
+    'Fisheries & Aquaculture',
+    'AgroTech & Precision Farming',
+  ],
+  'Legal & Consulting': [
+    'Law Firms',
+    'Business Consulting',
+    'HR & Recruitment',
+    'Market Research',
+  ],
+  'En,rgy & Utilities': [
+    'Renewable Energy Solutions',
+    'Oil & Gas',
+    'Water & Waste Management',
+  ],
+  'Non-Profit & Social Enterprises': [
+    'Charities & NGOs',
+    'Social Impact Startups',
+    'Environmental Conservation',
+  ],
+};

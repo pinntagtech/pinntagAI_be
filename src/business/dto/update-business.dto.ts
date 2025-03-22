@@ -27,11 +27,15 @@ export class UpdateBusinessDto {
 
   @IsOptional()
   @IsString()
-  registrationNumber:string;
+  constitution:string;
+
+  @IsOptional()
+  @IsString()
+  documentNumber:string;
   
   @IsOptional()
   @IsString()
-  registrationType:string;
+  documentType:string;
 
   @IsOptional()
   @IsString()
