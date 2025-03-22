@@ -47,6 +47,7 @@ export class PrivilegeGuard implements CanActivate {
       console.log;
       throw new UnauthorizedException('User role not found');
     }
+    console.log('user is:---', user);
     console.log('usertype is:---', user.userType);
     if (user.userType == UserTypes.ADMIN) {
       const admin = await this.adminModel.findById(user.id);
