@@ -61,7 +61,18 @@ import {
   OutletTypeSchema,
 } from './business/model/outletType.model';
 import { AppController } from './app.controller';
-import { BusinessUser, BusinessUserSchema } from './business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from './business/model/businessUser.model';
+import {
+  BusinessCategory,
+  BusinessCategorySchema,
+} from './business/model/businessCategory.model';
+import {
+  BusinessIndustry,
+  BusinessIndustrySchema,
+} from './business/model/businessIndustry.model';
 
 @Module({
   imports: [
@@ -100,7 +111,9 @@ import { BusinessUser, BusinessUserSchema } from './business/model/businessUser.
       { name: Action.name, schema: ActionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
-      { name: BusinessUser.name, schema: BusinessUserSchema},
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessCategory.name, schema: BusinessCategorySchema },
     ]),
     StripeeModule,
     AuthModule,

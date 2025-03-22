@@ -193,4 +193,39 @@ export class BusinessController {
       });
     }
   }
+  @Get('industryList')
+  async industryList(@Res() res: Response){
+    const result = await this.businessService.industryList();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('businessCategoryList/:id')
+  async businessCategoryList(@Res() res: Response,@Param('id')id:string){
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.businessCategoryList(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data
+      });
+      
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

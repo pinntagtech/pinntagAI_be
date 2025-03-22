@@ -104,6 +104,14 @@ import {
   BusinessUser,
   BusinessUserSchema,
 } from 'src/business/model/businessUser.model';
+import {
+  BusinessCategory,
+  BusinessCategorySchema,
+} from 'src/business/model/businessCategory.model';
+import {
+  BusinessIndustry,
+  BusinessIndustrySchema,
+} from 'src/business/model/businessIndustry.model';
 
 @Module({
   imports: [
@@ -148,6 +156,8 @@ import {
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessCategory.name, schema: BusinessCategorySchema },
     ]),
   ],
   controllers: [AdminController],

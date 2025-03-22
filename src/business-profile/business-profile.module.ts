@@ -87,9 +87,26 @@ import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
-import { OutletCategory, OutletCategorySchema } from 'src/business/model/outletCategory.model';
-import { OutletType, OutletTypeSchema } from 'src/business/model/outletType.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from 'src/business/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from 'src/business/model/outletType.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
+import {
+  BusinessCategory,
+  BusinessCategorySchema,
+} from 'src/business/model/businessCategory.model';
+import {
+  BusinessIndustry,
+  BusinessIndustrySchema,
+} from 'src/business/model/businessIndustry.model';
 
 @Module({
   imports: [
@@ -130,7 +147,9 @@ import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUse
       { name: Action.name, schema: ActionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
-      { name:BusinessUser.name,schema:BusinessUserSchema}
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessCategory.name, schema: BusinessCategorySchema },
     ]),
   ],
   controllers: [BusinessProfileController],
