@@ -74,6 +74,8 @@ export class Admin {
 
   @Prop()
   longitude: number;
+  @Prop()
+  drive:mongoose.Types.ObjectId
 
   @Prop({ default: 1024 * 1024 * 1024 })
   driveDefaultSpace: number;

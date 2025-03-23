@@ -27,6 +27,10 @@ import { AuthService } from 'src/auth/auth.service';
 import { BusinessIndustry, BusinessIndustryDocument } from './model/businessIndustry.model';
 import { privateDecrypt } from 'crypto';
 import { BusinessCategory, BusinessCategoryDocument } from './model/businessCategory.model';
+import { count } from 'console';
+import { BusinessCountry, BusinessCountryDocument } from './model/businessCountry.model';
+import { BusinessConstitution, BusinessConstitutionDocument } from './model/businessConstitution.model';
+import { BusinessDocumentType, BusinessDocumentTypeDocument } from './model/BussinessDocumentType.model';
 
 @Injectable()
 export class BusinessService {
@@ -40,6 +44,9 @@ export class BusinessService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(BusinessIndustry.name) private readonly businessIndModel: Model<BusinessIndustryDocument>,
     @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCountry.name) private readonly businessCountryModel: Model<BusinessCountryDocument>,
+    @InjectModel(BusinessConstitution.name) private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
+    @InjectModel(BusinessDocumentType.name) private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -183,7 +190,7 @@ export class BusinessService {
       const createdBusiness = await this.businessModel.create(createObj);
 
       //create folder
-      
+
 
 
       if (createdBusiness.authorisedUser) {
@@ -572,4 +579,68 @@ export class BusinessService {
       };
     }
   }
+  async getCountries(){
+    try {
+      const countries = await this.businessCountryModel.find();
+      if(!countries.length){
+        return {
+          success: false,
+          message: 'No Countries Found!',
+        };
+      }
+      return {
+        success: true,
+        message: 'Countries fetched Successfully!',
+        data: countries,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async getConstitutions(id:string){
+    try {
+      const constitutions = await this.businessConstitutionModel.find({country:new mongoose.Types.ObjectId(id)});
+      if(!constitutions.length){
+        return {
+          success: false,
+          message: 'No Constitutions Found!',
+        };
+      }
+      return {
+        success: true,
+        message: 'Constitutions fetched Successfully!',
+        data: constitutions,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async getBusinessDocumentTypes(id){
+    try {
+      const documentTypes = await this.businessDocumentTypeModel.find({constitution:new mongoose.Types.ObjectId(id)});
+      if(!documentTypes.length){
+        return {
+          success: false,
+          message: 'No Document Types Found!',
+        };
+      }
+      return {
+        success: true,
+        message: 'Document Types fetched Successfully!',
+        data: documentTypes,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
 }

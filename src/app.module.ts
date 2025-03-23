@@ -73,7 +73,18 @@ import {
   BusinessIndustry,
   BusinessIndustrySchema,
 } from './business/model/businessIndustry.model';
-import { BusinessCountry, BusinessCountrySchema } from './business/model/businessCountry.model';
+import {
+  BusinessCountry,
+  BusinessCountrySchema,
+} from './business/model/businessCountry.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeSchema,
+} from './business/model/BussinessDocumentType.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionSchema,
+} from './business/model/businessConstitution.model';
 
 @Module({
   imports: [
@@ -116,6 +127,8 @@ import { BusinessCountry, BusinessCountrySchema } from './business/model/busines
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
+      { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
+      { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
     ]),
     StripeeModule,
     AuthModule,
