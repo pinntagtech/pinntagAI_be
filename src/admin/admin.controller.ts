@@ -35,7 +35,7 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 
-@Controller('v1/admin')
+@Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 

@@ -49,5 +49,5 @@ export class CreateAdminDto {
   forcePasswordReset: boolean;
 
   @IsOptional()
-  role: string | mongoose.Types.ObjectId;
+  role: mongoose.Types.ObjectId;
 }

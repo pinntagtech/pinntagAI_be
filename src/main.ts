@@ -56,6 +56,7 @@ async function bootstrap() {
     console.log('API ENDPOINT:----', req.url);
     next();
   });
+  app.setGlobalPrefix('v1');
   const apiPath = 'api';
   const options = new DocumentBuilder()
     .setTitle('Pinntag')

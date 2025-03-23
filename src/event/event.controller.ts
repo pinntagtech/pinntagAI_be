@@ -38,7 +38,7 @@ import { SavedEventsDto } from './dto/saved-events.dto';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
 import { RespondRsvp } from './dto/rsvp-response.dto';
 
-@Controller('v1/event')
+@Controller('event')
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
