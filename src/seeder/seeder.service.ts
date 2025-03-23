@@ -154,7 +154,7 @@ export class SeederService {
   async createDrive(
     ownerId: string | mongoose.Types.ObjectId,
     ownerType: string,
-  ): Promise<Drive> {
+  ): Promise<any> {
     const admin = await this.adminModel.findOne();
     const defaultSpace = admin?.driveDefaultSpace || 100;
     if (!isValidObjectId(ownerId)) {
@@ -187,7 +187,10 @@ export class SeederService {
       TotalSpace: defaultSpace,
       AvailableSpace: defaultSpace,
     });
-    return newDrive.save();
+    await newDrive.save();
+    return await this.driveModel
+    .findById(newDrive._id)
+    .select('_id owner ownerType TotalSpace AvailableSpace');
   }
   async seedSuperAdminRole() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });

@@ -174,7 +174,7 @@ export class DriveService {
       return { success: false, message: 'Failed to upload media' };
     }
   }
-  async createFolder(folderData: Partial<Folder>) {
+  async createFolder(folderData: Partial<any>) {
     try {
       if (!isValidObjectId(folderData.parent)) {
         return {
@@ -306,4 +306,30 @@ export class DriveService {
       return { success: false, message: 'Failed to move file' };
     }
   }
+  async getDrive(id:string){
+    try{
+      if(!isValidObjectId(id)){
+        return {
+          success:false,
+          message:"Invalid ObjectId"
+        }
+      }
+      const drive = await this.driveModel.findOne({owner: new mongoose.Types.ObjectId(id)});
+      if(!drive){
+        return {
+          success:false,
+          message:"Drive not found!"
+        }
+      }
+      return {
+        success:true,
+        message:"Drive fetched successfully!",
+        data:drive
+      }
+    }catch(error){
+      console.error('Error while fetching drive:', error);
+      return { success: false, message: 'Failed to fetch drive' };
+    }
+  }
+
 }
