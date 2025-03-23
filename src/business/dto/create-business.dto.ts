@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 export class CreateBusinessDto {
   @IsOptional()
   @IsString()
-  businessUser?:string;
+  businessUser:string;
 
   @IsString()
   name: string;

@@ -112,6 +112,7 @@ import {
   BusinessIndustry,
   BusinessIndustrySchema,
 } from 'src/business/model/businessIndustry.model';
+import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/businessCountry.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
@@ -160,6 +161,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
+      { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
   ],
   controllers: [AdminController],

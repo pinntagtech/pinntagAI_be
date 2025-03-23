@@ -985,12 +985,11 @@ export class AuthController {
     }
   }
   @Post('verify-pass-reset')
-  async verifyPassReset(@Res() res: Response, @Query('token') token: string) {
-    const result = await this.authService.verifyPassReset(token);
+  async verifyPassReset(@Res() res: Response, @Query('token') token: string,@Query('password') password: string) {
+    const result = await this.authService.verifyPassReset(token,password);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        token: result.token,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -1020,6 +1019,22 @@ export class AuthController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  
+  @Get('getProfile')
+  @UseGuards(JwtGuard)
+  async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.authService.getProfile(user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
