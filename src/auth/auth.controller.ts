@@ -1026,5 +1026,21 @@ export class AuthController {
       });
     }
   }
+  
+  @Get('getProfile')
+  @UseGuards(JwtGuard)
+  async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.authService.getProfile(user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        user: result.user,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
 }

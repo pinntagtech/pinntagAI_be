@@ -4029,6 +4029,47 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
+  
+  async getProfile(user: DecodedUser) {
+    try {
+      let user = null;
+      if(user.userType === UserTypes.ADMIN){
+        user = await this.adminModel.findById(user.id);
+        if (!user) {
+          return {
+            success: false,
+            message: 'Admin not found!',
+          };
+        }
+      }else if(user.userType === UserTypes.USER){
+      user = await this.userModel.findById(user.id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+    } else if(user.userType === UserTypes.BUSINESS){ 
+      user = await this.businessUserModel.findById(user.id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+    } 
+
+
+      const userDoc = await this.businessUserModel.findById(user.id);
+      return {
+        success: true,
+        message: 'User Profile Fetched Successfully',
+        user: userDoc,
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 // Relevant-logs:--- {
