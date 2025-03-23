@@ -51,7 +51,7 @@ export class PrivilegeGuard implements CanActivate {
     console.log('user keys:--', Object.keys(userJson));
     console.log('usertype is:---', userJson.userType);
     if (user.userType == UserTypes.ADMIN) {
-      const admin = await this.adminModel.findById(user.id);
+      const admin = await this.adminModel.findById(userJson.id);
       const role = admin.role;
       const roleModel = await this.roleModel.findById(role);
       console.log('roleModel is:---', roleModel);
@@ -62,7 +62,7 @@ export class PrivilegeGuard implements CanActivate {
         return true;
       }
     } else if (user.userType == UserTypes.BUSINESS) {
-      const businessUser = await this.businessUserModel.findById(user.id);
+      const businessUser = await this.businessUserModel.findById(userJson.id);
       const role = businessUser.role;
       const roleModel = await this.roleModel.findById(role);
       if (
