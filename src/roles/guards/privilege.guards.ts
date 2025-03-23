@@ -44,7 +44,8 @@ export class PrivilegeGuard implements CanActivate {
       throw new UnauthorizedException('User role not found');
     }
     const userJson = JSON.parse(JSON.stringify(user));
-    if (userJson.userType == UserTypes.ADMIN) {
+    // console.log(userJson);
+    if (request['isAdmin']) {
       const admin = await this.adminModel.findById(userJson._id);
       const role = admin.role;
       const roleModel = await this.roleModel.findById(role);
@@ -54,7 +55,7 @@ export class PrivilegeGuard implements CanActivate {
       ) {
         return true;
       }
-    } else if (userJson.userType == UserTypes.BUSINESS) {
+    } else if (request['isBusiness']) {
       const businessUser = await this.businessUserModel.findById(userJson._id);
       const role = businessUser.role;
       const roleModel = await this.roleModel.findById(role);
