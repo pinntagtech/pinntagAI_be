@@ -161,12 +161,20 @@ export class BusinessService {
         isSuperAdmin: true,
       });
 
+      const findBusinessIndustry = await this.businessIndModel.findById(data.businessIndustry);
+      const findBusinessCategory = await this.businessCategoryModel.findById(data.businessCategory);
+      if (!findBusinessIndustry || !findBusinessCategory) {
+        return {
+          success: false,
+          message: 'Please provide valid Business Industry and Category',
+        };
+      }
       let createObj = {
         name: data.name,
         email: data.email,
         // isRegistered: data.isRegistered,
-        businessCategory: data.businessCategory,
-        businessIndustry: data.businessIndustry,
+        businessCategory: new mongoose.Types.ObjectId(data.businessCategory),
+        businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
         // registrationType: data.registrationType,
