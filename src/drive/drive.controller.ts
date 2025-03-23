@@ -21,30 +21,16 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { Folder } from './models/folder.model';
 import { isValidObjectId } from 'mongoose';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 
 @Controller('drive')
 export class DriveController {
   constructor(private readonly driveService: DriveService) {}
 
   @Post('fileUpload')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('file', {
-      // fileFilter: (req, file, cb) => {
-      //   //      if (
-      //   //        allowedMimeTypes.images.includes(file.mimetype) ||
-      //   //        allowedMimeTypes.videos.includes(file.mimetype)
-      //   //      ) {
-      //   //        cb(null, true);
-      //   //      } else {
-      //   //        cb(
-      //   //          new BadRequestException(
-      //   //            'Invalid file type. Only images and videos are allowed.',
-      //   //          ),
-      //   //          false,
-      //   //        );
-      //   //      }
-      // },
       limits: { fileSize: 100 * 1024 * 1024 }, // ✅ Set file size limit to 100MB
     }),
   )

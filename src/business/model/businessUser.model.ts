@@ -50,6 +50,8 @@ export class BusinessUser {
   password: string;
   @Prop({ref:Business.name})
   business:mongoose.Types.ObjectId;
+  @Prop()
+  drive:mongoose.Types.ObjectId;
   
 }
 

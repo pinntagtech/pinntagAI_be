@@ -182,6 +182,10 @@ export class BusinessService {
       }
       const createdBusiness = await this.businessModel.create(createObj);
 
+      //create folder
+      
+
+
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
@@ -438,11 +442,13 @@ export class BusinessService {
         userId: user._id,
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
-
+      console.log("user:",user);
+      const userDetails = await this.businessUserModel.findById(user._id).populate('business');
+      console.log('userDetails:',userDetails);
       return {
         success: true,
         message: 'User logged in successfully',
-        user: user,
+        user: userDetails,
         token,
         fcmExists: fcmExists ? true : false,
       };

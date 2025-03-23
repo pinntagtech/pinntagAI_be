@@ -12,6 +12,7 @@ import {
 } from 'src/business-profile/models/types.model';
 import { Outlet } from './outlet.model';
 import { Brand } from './brand.model';
+import { Folder } from 'src/drive/models/folder.model';
 
 export type BusinessDocument = Business & Document;
 
@@ -163,6 +164,8 @@ export class Business {
   managerEmail: string;
   @Prop()
   managerPhone: string;
+  @Prop({ref:'Folder'})
+  drivePath:mongoose.Types.ObjectId;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);
