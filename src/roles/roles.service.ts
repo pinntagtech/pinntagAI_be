@@ -44,8 +44,6 @@ export class RolesService {
         this.adminModel.findOne({ _id: user.id }),
         this.businessUserModel.findOne({ _id: user.id }),
       ]);
-      console.log('isAdmin:', isAdmin);
-      console.log('isUse:', isBusiness);
       const { name, description } = createRoleDto;
       const roleData = {
         name,
@@ -60,8 +58,6 @@ export class RolesService {
         creator: new mongoose.Types.ObjectId(user.id),
         name: createRoleDto.name,
       });
-      console.log('check 3:', existingRole);
-
       if (existingRole) {
         return {
           success: false,
@@ -300,7 +296,7 @@ export class RolesService {
       };
     }
   }
-  
+
   async assignRole(id: string, userType: string, roleId: string) {
     try {
       let assignedTo = null;

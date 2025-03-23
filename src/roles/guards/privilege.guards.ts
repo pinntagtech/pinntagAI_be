@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PRIVILEGE_KEY } from '../privilege.decorator';
 import { Reflector } from '@nestjs/core';
-import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { UserTypes } from 'src/enums/auth.enums';
 import { RolesService } from '../roles.service';
 import { PrivilegeService } from '../privilege.service';
@@ -15,7 +14,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Model } from 'mongoose';
 import { Role, RoleDocument } from '../models/roles.model';
-import { Business } from 'src/business/model/business.model';
 import {
   BusinessUser,
   BusinessUserDocument,
@@ -29,7 +27,6 @@ export class PrivilegeGuard implements CanActivate {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private reflector: Reflector,
-    private readonly roleService: RolesService,
     private readonly privilegeService: PrivilegeService,
   ) {}
 
@@ -47,14 +44,10 @@ export class PrivilegeGuard implements CanActivate {
       throw new UnauthorizedException('User role not found');
     }
     const userJson = JSON.parse(JSON.stringify(user));
-    console.log('user is:---', userJson);
-    console.log('user keys:--', Object.keys(userJson));
-    console.log('usertype is:---', userJson.userType);
     if (userJson.userType == UserTypes.ADMIN) {
-      const admin = await this.adminModel.findById(userJson.id);
+      const admin = await this.adminModel.findById(userJson._id);
       const role = admin.role;
       const roleModel = await this.roleModel.findById(role);
-      console.log('roleModel is:---', roleModel);
       if (
         roleModel.belongsTo == RoleBelonging.SYSTEM &&
         roleModel.isSuperAdmin
@@ -62,7 +55,7 @@ export class PrivilegeGuard implements CanActivate {
         return true;
       }
     } else if (userJson.userType == UserTypes.BUSINESS) {
-      const businessUser = await this.businessUserModel.findById(userJson.id);
+      const businessUser = await this.businessUserModel.findById(userJson._id);
       const role = businessUser.role;
       const roleModel = await this.roleModel.findById(role);
       if (
