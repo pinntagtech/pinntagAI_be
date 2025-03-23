@@ -100,6 +100,7 @@ import {
   BusinessIndustrySchema,
 } from 'src/business/model/businessIndustry.model';
 import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/businessCountry.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -142,6 +143,7 @@ import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/busin
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
+      { name:Business.name, schema:BusinessSchema}
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
