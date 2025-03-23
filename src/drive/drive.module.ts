@@ -47,6 +47,8 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { JwtService } from '@nestjs/jwt';
 import { S3Service } from 'src/s3.service';
 import { File, FileSchema } from './models/file.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -74,6 +76,8 @@ import { File, FileSchema } from './models/file.model';
       { name: Template.name, schema: TemplateSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: File.name, schema: FileSchema },
+      { name:BusinessUser.name, schema: BusinessUserSchema},
+      { name: Business.name, schema:BusinessSchema}
     ]),
   ],
   controllers: [DriveController],
