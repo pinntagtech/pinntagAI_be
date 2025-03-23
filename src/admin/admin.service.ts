@@ -717,11 +717,11 @@ export class AdminService {
     }
     data.password = await bcrypt.hash(data.password, 10);
     if (data.role) {
-      const role = await this.roleModel.findOne({ name: data.role });
+      const role = await this.roleModel.findById(data.role);
       if (!role) {
         return {
           success: false,
-          message: 'Role not found with the name provided.',
+          message: 'Role not found with the id provided.',
         };
       }
       data.role = role._id;
