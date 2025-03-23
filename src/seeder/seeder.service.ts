@@ -370,7 +370,6 @@ export class SeederService {
   }
 
   async seedBusinessIndustries() {
-    
     const findBusinessIndustry = await this.businessIndustryModel.find();
     if (findBusinessIndustry.length < Object.keys(BusinessIndustries).length) {
       for (const businessIndustry of Object.keys(BusinessIndustries)) {
@@ -419,33 +418,34 @@ export class SeederService {
       }
     }
   }
+
   async seedCountries() {
-    const countries = await this.businessCountryModel.find();
+    const existingCount = await this.businessCountryModel.countDocuments();
+    const totalCountries = Object.keys(BusinessCountries).length;
+  
+    if (existingCount < totalCountries) {
+      for (const country of Object.values(BusinessCountries)) {
 
-    if (countries.length < Object.keys(BusinessCountries).length) {
-      for (let country of Object.values(BusinessCountries)) {
-        console.log('country:', country);
+        console.log("type of Country:", typeof(country));
+        if (typeof country === 'object' && country !== null) {
 
-        const foundCountry = await this.businessCountryModel.findOne({
-          name: country.name,
-        });
-
-        if (!foundCountry) {
-          console.log(
-            'country:',
-            country,
-            country.name,
-            country.currency,
-            country.phoneCode,
-          );
-
-          await this.businessCountryModel.create({
-            name: country.name,
-            currency: country.currency,
-            phoneCode: country.phoneCode,
-          });
+          console.log("type of Country:", typeof(country));
+          const foundCountry = await this.businessCountryModel.findOne({ name: country.name });
+  
+          if (!foundCountry) {
+            console.log("Seeding country:", country);
+  
+            await this.businessCountryModel.create({
+              name: country.name,
+              currency: country.currency,
+              phoneCode: country.phoneCode,
+            });
+          }
         }
       }
+    } else {
+      console.log("All countries are already seeded.");
     }
   }
+  
 }
