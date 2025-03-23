@@ -46,6 +46,7 @@ import {
   OutletTypeDocument,
 } from 'src/business/model/outletType.model';
 import {
+  BusinessCountries,
   BusinessIndustries,
   OutletCategoryList,
   OutletTypesByCategory,
@@ -63,6 +64,11 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from 'src/business/model/businessCategory.model';
+import { In } from 'typeorm';
+import {
+  BusinessCountry,
+  BusinessCountryDocument,
+} from 'src/business/model/businessCountry.model';
 
 @Injectable()
 export class SeederService {
@@ -100,6 +106,8 @@ export class SeederService {
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     @InjectModel(BusinessCategory.name)
     private readonly BusinessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCountry.name)
+    private readonly businessCountryModel: Model<BusinessCountryDocument>,
   ) {}
 
   async seed() {
@@ -117,6 +125,7 @@ export class SeederService {
     await this.seedOutletCategories();
     await this.seedPrivileges();
     await this.seedBusinessIndustries();
+    await this.seedCountries();
   }
 
   public async seedRoles() {
@@ -405,6 +414,35 @@ export class SeederService {
               });
             }
           }
+        }
+      }
+    }
+  }
+  async seedCountries() {
+    const countries = await this.businessCountryModel.find();
+
+    if (countries.length < Object.keys(BusinessCountries).length) {
+      for (let country of Object.values(BusinessCountries)) {
+        console.log('country:', country);
+
+        const foundCountry = await this.businessCountryModel.findOne({
+          name: country.name,
+        });
+
+        if (!foundCountry) {
+          console.log(
+            'country:',
+            country,
+            country.name,
+            country.currency,
+            country.phoneCode,
+          );
+
+          await this.businessCountryModel.create({
+            name: country.name,
+            currency: country.currency,
+            phoneCode: country.phoneCode,
+          });
         }
       }
     }
