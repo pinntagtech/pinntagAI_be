@@ -42,6 +42,7 @@ import { SignupAuthDto } from './dto/signup-auth.dto';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UserTypes } from 'src/enums/auth.enums';
+import { JwtGuard2 } from './guards2/jwt2.guard';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -1028,7 +1029,7 @@ export class AuthController {
   }
   
   @Get('getProfile')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.authService.getProfile(user);
     if (result.success) {
