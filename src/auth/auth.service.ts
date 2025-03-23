@@ -3950,7 +3950,7 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
-  async verifyPassReset(token:string){
+  async verifyPassReset(token:string, password:string) {
     try {
       const tokenDoc = await this.tokenModel.findOne({
         token,
@@ -3975,15 +3975,20 @@ export class AuthService {
           userType: UserTypes.BUSINESS,
           // role: String(user.role),
         };
-        loginToken = await this.generateJWT(payload, TokenTypes.RESET_PASSWORD,linkPayload.userType);
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.businessUserModel.updateOne(
+          { _id: linkPayload.id },
+          { password: hashedPassword });
+        // loginToken = await this.generateJWT(payload, TokenTypes.RESET_PASSWORD,linkPayload.userType);
       }
       //delete token
-      await this.tokenModel.deleteOne({});
+      await this.tokenModel.deleteOne({token});
 
       return {
         success: true,
         message: 'User Verified Successfully',
-        token: loginToken,
+        // token: loginToken,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -4019,6 +4024,47 @@ export class AuthService {
       return {
         success: true,
         message: 'Link resent Successfully!',
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+  
+  async getProfile(user: DecodedUser) {
+    try {
+      let user = null;
+      if(user.userType === UserTypes.ADMIN){
+        user = await this.adminModel.findById(user.id);
+        if (!user) {
+          return {
+            success: false,
+            message: 'Admin not found!',
+          };
+        }
+      }else if(user.userType === UserTypes.USER){
+      user = await this.userModel.findById(user.id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+    } else if(user.userType === UserTypes.BUSINESS){ 
+      user = await this.businessUserModel.findById(user.id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+    } 
+
+
+      const userDoc = await this.businessUserModel.findById(user.id);
+      return {
+        success: true,
+        message: 'User Profile Fetched Successfully',
+        user: userDoc,
       };
     } catch (error) {
       return { success: false, message: error.message };

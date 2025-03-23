@@ -95,6 +95,7 @@ import {
   BusinessIndustry,
   BusinessIndustrySchema,
 } from './model/businessIndustry.model';
+import { BusinessCountry, BusinessCountrySchema } from './model/businessCountry.model';
 
 @Module({
   imports: [
@@ -136,6 +137,7 @@ import {
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
+      { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
   ],
   controllers: [BusinessController],

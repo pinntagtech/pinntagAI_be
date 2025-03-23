@@ -14,6 +14,13 @@ export class BusinessUser {
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId[];
 
+   @Prop({
+    required: true,
+    enum: [0, 1, 2,3],
+    default: 0,
+  })
+  status: number;
+
   @Prop({default:true})
   isActive:boolean;
 
