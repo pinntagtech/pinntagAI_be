@@ -47,6 +47,7 @@ import {
 } from 'src/business/model/outletType.model';
 import {
   BusinessCountries,
+  BusinessDocumentTypes,
   BusinessIndustries,
   OutletCategoryList,
   OutletTypesByCategory,
@@ -69,6 +70,14 @@ import {
   BusinessCountry,
   BusinessCountryDocument,
 } from 'src/business/model/businessCountry.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionDocument,
+} from 'src/business/model/businessConstitution.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeDocument,
+} from 'src/business/model/BussinessDocumentType.model';
 
 @Injectable()
 export class SeederService {
@@ -108,6 +117,10 @@ export class SeederService {
     private readonly BusinessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(BusinessCountry.name)
     private readonly businessCountryModel: Model<BusinessCountryDocument>,
+    @InjectModel(BusinessConstitution.name)
+    private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
+    @InjectModel(BusinessDocumentType.name)
+    private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
   ) {}
 
   async seed() {
@@ -125,7 +138,8 @@ export class SeederService {
     await this.seedOutletCategories();
     await this.seedPrivileges();
     await this.seedBusinessIndustries();
-    await this.seedCountries();
+    // await this.seedCountries();
+    await this.seedConstitutions();
   }
 
   public async seedRoles() {
@@ -441,6 +455,70 @@ export class SeederService {
       }
     } else {
       console.log('All countries are already seeded.');
+    }
+  }
+  // async seedConsitutions() {
+  //   const existingCount = await this.businessConstitutionModel.countDocuments();
+  //   const totalConstitutions = Object.keys(BusinessDocumentTypes).length;
+
+  //   if (existingCount < totalConstitutions) {
+  //     const countries = await this.businessCountryModel.find();
+  //     for (const country of countries) {
+  //       console.log("country:",country.name);
+  //       for (const constitution of Object.values(Object.values(country.name))) {
+  //         console.log("constitution:",constitution);
+  //         console.log("country name:",country.name);
+  //         const foundConstitution =
+  //           await this.businessConstitutionModel.findOne({
+  //             title: constitution,
+  //             country: country._id,
+  //           });
+
+  //         if (!foundConstitution) {
+  //           await this.businessConstitutionModel.create({
+  //             title: constitution,
+  //             country: country._id,
+  //           });
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  async seedConstitutions() {
+    const existingCountries = await this.businessCountryModel.find();
+    if (existingCountries.length < Object.keys(BusinessDocumentTypes).length) {
+      for (let country of Object.values(BusinessCountries)) {
+        const createdCountry = await this.businessCountryModel.create({
+          name: country.name,
+          currency: country.currency,
+          phoneCode: country.phoneCode,
+        });
+
+        for (let constitution of Object.keys(
+          BusinessDocumentTypes[country.name],
+        )) {
+          console.log('constitution:', constitution);
+
+          const createConstitution =
+            await this.businessConstitutionModel.create({
+              title: constitution,
+              country: new mongoose.Types.ObjectId(createdCountry.id),
+            });
+            console.log('createConstitution:', createConstitution);
+
+          for (let document of Object.values(
+            BusinessDocumentTypes[country.name][constitution],
+          )) {
+            console.log('document:', document);
+            const createdDocument = await this.businessDocumentTypeModel.create(
+              {
+                title: document,
+                constitution: new mongoose.Types.ObjectId(createConstitution.id),
+              },
+            );
+          }
+        }
+      }
     }
   }
 }

@@ -267,18 +267,18 @@ export const BusinessCountries = {
 
 export const BusinessDocumentTypes = {
   USA: {
-    'Sole Proprietorship': ['EIN (if hiring employees)', 'DBA Certificate'],
-    Partnership: [
-      'Partnership Agreement',
-      'EIN',
-      'State Registration Certificate',
-    ],
-    LLC: ['Articles of Organization', 'Operating Agreement', 'EIN'],
-    'Private Corporation (Inc.)': [
+      'Sole Proprietorship': ['EIN', 'DBA Certificate'],
+      Partnership: [
+        'Partnership Agreement',
+        'EIN',
+        'State Registration Certificate',
+      ],
+      LLC: ['Articles of Organization', 'Operating Agreement', 'EIN'],
+        'Private Corporation (Inc.)': [
       'Articles of Incorporation',
       'Corporate Bylaws',
       'EIN',
-    ],
+      ],
     'Public Corporation': ['SEC Registration', 'Articles of Incorporation'],
     'Non-Profit': ['501(c)(3) Certification', 'Articles of Incorporation'],
     Cooperative: ['Cooperative Bylaws', 'State Registration'],

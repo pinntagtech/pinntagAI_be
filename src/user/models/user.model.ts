@@ -99,6 +99,8 @@ export class User {
   stripeCustomerId: string;
   @Prop()
   savedCards: Array<string>;
+  @Prop()
+  drive: mongoose.Types.ObjectId;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 

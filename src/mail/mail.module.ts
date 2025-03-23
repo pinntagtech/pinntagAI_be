@@ -96,6 +96,8 @@ import {
 import { BusinessIndustry, BusinessIndustrySchema } from 'src/business/model/businessIndustry.model';
 import { BusinessCategory, BusinessCategorySchema } from 'src/business/model/businessCategory.model';
 import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/businessCountry.model';
+import { BusinessConstitution, BusinessConstitutionSchema } from 'src/business/model/businessConstitution.model';
+import { BusinessDocumentType, BusinessDocumentTypeSchema } from 'src/business/model/BussinessDocumentType.model';
 
 @Global()
 @Module({
@@ -138,6 +140,9 @@ import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/busin
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
+      { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
+      { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
     ]),
     MailerModule.forRoot({
       transport: {

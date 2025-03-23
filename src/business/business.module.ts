@@ -95,7 +95,18 @@ import {
   BusinessIndustry,
   BusinessIndustrySchema,
 } from './model/businessIndustry.model';
-import { BusinessCountry, BusinessCountrySchema } from './model/businessCountry.model';
+import {
+  BusinessCountry,
+  BusinessCountrySchema,
+} from './model/businessCountry.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeSchema,
+} from './model/BussinessDocumentType.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionSchema,
+} from './model/businessConstitution.model';
 
 @Module({
   imports: [
@@ -138,6 +149,8 @@ import { BusinessCountry, BusinessCountrySchema } from './model/businessCountry.
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
+      { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
+      { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
     ]),
   ],
   controllers: [BusinessController],
