@@ -12,6 +12,9 @@ import {
 } from 'src/business-profile/models/types.model';
 import { Outlet } from './outlet.model';
 import { Brand } from './brand.model';
+import { Folder } from 'src/drive/models/folder.model';
+import { BusinessCategory } from './businessCategory.model';
+import { BusinessIndustry } from './businessIndustry.model';
 
 export type BusinessDocument = Business & Document;
 
@@ -31,11 +34,11 @@ export class Business {
   @Prop()
   isRegistered: boolean;
 
-  @Prop()
-  businessCategory: string;
+  @Prop({ref:BusinessCategory.name})
+  businessCategory: mongoose.Types.ObjectId;
 
-  @Prop()
-  businessIndustry: string;
+  @Prop({ref:BusinessIndustry.name})
+  businessIndustry: mongoose.Types.ObjectId;
 
   @Prop()
   cover: string;
@@ -163,6 +166,8 @@ export class Business {
   managerEmail: string;
   @Prop()
   managerPhone: string;
+  @Prop({ref:'Folder'})
+  drivePath:mongoose.Types.ObjectId;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

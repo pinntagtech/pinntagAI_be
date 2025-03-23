@@ -176,14 +176,14 @@ export class DriveService {
   }
   async createFolder(folderData: Partial<Folder>) {
     try {
-      let isDrive = await this.driveModel.findOne({ _id: folderData.parent });
-      let parentType = isDrive ? Drive.name : Folder.name;
       if (!isValidObjectId(folderData.parent)) {
         return {
           success: false,
           message: 'Invalid ObjectId',
         };
       }
+      let isDrive = await this.driveModel.findOne({ _id: folderData.parent });
+      let parentType = isDrive ? Drive.name : Folder.name;
       folderData.parent = new mongoose.Types.ObjectId(folderData.parent);
       console.log('parentType:', parentType);
 

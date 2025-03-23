@@ -8,6 +8,7 @@ import { User } from 'src/user/models/user.model';
 import { Folder } from './folder.model';
 import { Drive } from './drive.model';
 import { FileCategory } from './fileCategory.model';
+import { BusinessUser } from 'src/business/model/businessUser.model';
 
 export type fileDocument = File & Document;
 class MetaData {
@@ -42,7 +43,7 @@ export class File {
   parent: mongoose.Types.ObjectId;
   @Prop({
     required: true,
-    enum: [User.name, Admin.name, Event.name, BusinessProfile.name],
+    enum: [User.name, Admin.name, Event.name, BusinessUser.name],
   })
   parentType: string;
   @Prop({ default: 'file' })
