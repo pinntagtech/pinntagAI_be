@@ -1,7 +1,8 @@
-import { Prop, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export type BusinessCountryDocument = BusinessCountry & Document;
 
+@Schema({ timestamps: true })
 export class BusinessCountry {
   @Prop({ required: true })
   name: string;
