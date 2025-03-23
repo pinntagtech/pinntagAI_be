@@ -18,7 +18,7 @@ class GPTRequestDto {
   @IsNotEmpty()
   prompt: string;
 }
-@Controller('v1')
+@Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 

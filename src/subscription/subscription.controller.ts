@@ -18,7 +18,7 @@ import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { UserGuard } from 'src/auth/guards/user.guard';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
 
-@Controller('v1/subscription')
+@Controller('subscription')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 

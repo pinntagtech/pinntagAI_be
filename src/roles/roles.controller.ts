@@ -27,6 +27,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { isValidNumber } from 'libphonenumber-js';
 import { isValidObjectId } from 'mongoose';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
+
 @Controller('role')
 export class RolesController {
   constructor(private readonly roleService: RolesService) {}

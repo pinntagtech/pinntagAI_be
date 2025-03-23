@@ -44,7 +44,7 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UserTypes } from 'src/enums/auth.enums';
 import { JwtGuard2 } from './guards2/jwt2.guard';
 
-@Controller('v1/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -697,7 +697,7 @@ export class AuthController {
       });
     }
   }
-  
+
   @Post('fixedCarouselEvents')
   @UseGuards(JwtGuard)
   async dashboardFixedCarouselEvents(
@@ -974,7 +974,11 @@ export class AuthController {
     @Body('userType') userType: string,
   ) {
     const origin = req.headers.origin;
-    const result = await this.authService.passwordResetLink(origin,email, userType);
+    const result = await this.authService.passwordResetLink(
+      origin,
+      email,
+      userType,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -986,8 +990,12 @@ export class AuthController {
     }
   }
   @Post('verify-pass-reset')
-  async verifyPassReset(@Res() res: Response, @Query('token') token: string,@Query('password') password: string) {
-    const result = await this.authService.verifyPassReset(token,password);
+  async verifyPassReset(
+    @Res() res: Response,
+    @Query('token') token: string,
+    @Query('password') password: string,
+  ) {
+    const result = await this.authService.verifyPassReset(token, password);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -1027,7 +1035,7 @@ export class AuthController {
       });
     }
   }
-  
+
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
@@ -1043,5 +1051,4 @@ export class AuthController {
       });
     }
   }
-
 }

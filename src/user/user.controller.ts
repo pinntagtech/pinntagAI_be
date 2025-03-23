@@ -30,7 +30,7 @@ import { ContactUsDto } from './dto/contact-us.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
 
-@Controller('v1/user')
+@Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

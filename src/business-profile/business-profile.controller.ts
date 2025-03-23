@@ -33,7 +33,7 @@ import { ConnectFacebookDto } from './dto/connect-facebook.dto';
 import mongoose from 'mongoose';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
 
-@Controller('v1/business-profile')
+@Controller('business-profile')
 export class BusinessProfileController {
   constructor(
     private readonly businessProfileService: BusinessProfileService,
