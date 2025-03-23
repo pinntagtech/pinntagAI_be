@@ -73,7 +73,7 @@ export class PrivilegeGuard implements CanActivate {
       }
     }
     const hasPrivilege = await this.privilegeService.hasPrivilege(
-      user.role,
+      userJson.role,
       requiredPrivilege.resource,
       requiredPrivilege.action,
     );
