@@ -176,6 +176,7 @@ export class BusinessController {
       });
     }
   }
+
   @Get('user/mailStatus/:id')
   async mailVerificationStatus(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -195,6 +196,7 @@ export class BusinessController {
       });
     }
   }
+
   @Get('industryList')
   async industryList(@Res() res: Response) {
     const result = await this.businessService.industryList();
@@ -209,6 +211,7 @@ export class BusinessController {
       });
     }
   }
+  
   @Get('businessCategoryList/:id')
   async businessCategoryList(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
