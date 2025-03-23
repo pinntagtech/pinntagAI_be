@@ -142,11 +142,18 @@ export class BusinessService {
           message: `Business already exist with given email:${data.email}`,
         };
       }
+      if(data.businessUser && !isValidObjectId(data.businessUser)){
+        return {
+          success: false,
+          message: 'Please provide valid Business User Id',
+        };
+      }
 
       //
       const adminDetails = await this.adminModel.findOne({
         isSuperAdmin: true,
       });
+
       let createObj = {
         name: data.name,
         email: data.email,
@@ -158,7 +165,6 @@ export class BusinessService {
         // registrationType: data.registrationType,
         // registrationNumber: data.registrationNumber,
         // bio: data.bio,
-        status: 1,
       };
       if (data.website) createObj['website'] = data.website;
 
@@ -179,7 +185,7 @@ export class BusinessService {
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
-          { $set: { business: createdBusiness._id } },
+          { $set: { business: createdBusiness._id,status:1 } },
         );
       }
       return {

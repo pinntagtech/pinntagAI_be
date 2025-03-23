@@ -370,6 +370,7 @@ export class SeederService {
   }
 
   async seedBusinessIndustries() {
+    
     const findBusinessIndustry = await this.businessIndustryModel.find();
     if (findBusinessIndustry.length < Object.keys(BusinessIndustries).length) {
       for (const businessIndustry of Object.keys(BusinessIndustries)) {
