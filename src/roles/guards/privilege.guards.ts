@@ -46,11 +46,12 @@ export class PrivilegeGuard implements CanActivate {
     if (!user || !user.role) {
       throw new UnauthorizedException('User role not found');
     }
-    console.log('user is:---', user);
-    console.log('user keys:--', Object.keys(user));
-    console.log('usertype is:---', user.userType);
-    if (user.userType == UserTypes.ADMIN) {
-      const admin = await this.adminModel.findById(user.id);
+    const userJson = JSON.parse(JSON.stringify(user));
+    console.log('user is:---', userJson);
+    console.log('user keys:--', Object.keys(userJson));
+    console.log('usertype is:---', userJson.userType);
+    if (userJson.userType == UserTypes.ADMIN) {
+      const admin = await this.adminModel.findById(userJson.id);
       const role = admin.role;
       const roleModel = await this.roleModel.findById(role);
       console.log('roleModel is:---', roleModel);
@@ -60,8 +61,8 @@ export class PrivilegeGuard implements CanActivate {
       ) {
         return true;
       }
-    } else if (user.userType == UserTypes.BUSINESS) {
-      const businessUser = await this.businessUserModel.findById(user.id);
+    } else if (userJson.userType == UserTypes.BUSINESS) {
+      const businessUser = await this.businessUserModel.findById(userJson.id);
       const role = businessUser.role;
       const roleModel = await this.roleModel.findById(role);
       if (
@@ -72,7 +73,7 @@ export class PrivilegeGuard implements CanActivate {
       }
     }
     const hasPrivilege = await this.privilegeService.hasPrivilege(
-      user.role,
+      userJson.role,
       requiredPrivilege.resource,
       requiredPrivilege.action,
     );

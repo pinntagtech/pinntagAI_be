@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
-
-import { Role, RoleDocument } from './models/roles.model';
+import { Model } from 'mongoose';
 import { Privilege } from './privilege.decorator';
 import { PrivilegeDocument } from './models/privilage.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
