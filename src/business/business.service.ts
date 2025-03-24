@@ -106,7 +106,7 @@ export class BusinessService {
       delete data.password;
 
       let createObj = {
-        role: [new mongoose.Types.ObjectId(ownerDetails.id)],
+        // role: [new mongoose.Types.ObjectId(ownerDetails.id)],
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
@@ -115,16 +115,17 @@ export class BusinessService {
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
-      for (let defaultRole of defaultBusinessRoles) {
-        await this.roleModel.updateOne(
-          { _id: defaultRole },
-          {
-            $set: {
-              creator: new mongoose.Types.ObjectId(createdUser.id),
-            },
-          },
-        );
-      }
+
+      // for (let defaultRole of defaultBusinessRoles) {
+      //   await this.roleModel.updateOne(
+      //     { _id: defaultRole },
+      //     {
+      //       $set: {
+      //         creator: new mongoose.Types.ObjectId(createdUser.id),
+      //       },
+      //     },
+      //   );
+      // }
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdUser._id,
