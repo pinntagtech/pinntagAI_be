@@ -299,20 +299,20 @@ export class BusinessService {
           },
         );
       }
-      for (let roleName of Object.keys(DefaultBusinessRoles)) {
-        const createdRole = await this.roleModel.create({
-          name: DefaultBusinessRoles[roleName].name,
-          creator: new mongoose.Types.ObjectId(data.businessUser),
-          creatorType: RoleCreatorType.BUSINESS,
-          belongsTo: RoleBelonging.BUSINESS,
-          business: createdBusiness._id,
-        });
-        await this.privilegeModel.create({
-          role: createdRole._id,
-          resource: DefaultBusinessRoles[roleName].resource,
-          privileges: DefaultBusinessRoles[roleName].privileges,
-        });
-      }
+      // for (let roleName of Object.keys(DefaultBusinessRoles)) {
+      //   const createdRole = await this.roleModel.create({
+      //     name: DefaultBusinessRoles[roleName].name,
+      //     creator: new mongoose.Types.ObjectId(data.businessUser),
+      //     creatorType: RoleCreatorType.BUSINESS,
+      //     belongsTo: RoleBelonging.BUSINESS,
+      //     business: createdBusiness._id,
+      //   });
+      //   await this.privilegeModel.create({
+      //     role: createdRole._id,
+      //     resource: DefaultBusinessRoles[roleName].resource,
+      //     privileges: DefaultBusinessRoles[roleName].privileges,
+      //   });
+      // }
       return {
         success: true,
         message: 'Business Created Successfully!',
