@@ -11,6 +11,7 @@ import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessCreatorType,
   BusinessUserCreatorType,
+  ProfileStatus,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from './model/business.model';
@@ -49,6 +50,8 @@ import {
 import { DriveService } from 'src/drive/drive.service';
 import { drive } from 'googleapis/build/src/apis/drive';
 import { Drive } from 'src/drive/models/drive.model';
+import { Brand, BrandDocument } from './model/brand.model';
+import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 
 @Injectable()
 export class BusinessService {
@@ -70,6 +73,7 @@ export class BusinessService {
     private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
     @InjectModel(BusinessDocumentType.name)
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
+    @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -163,7 +167,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -189,8 +193,22 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
+      const businessUser = await this.businessUserModel.findById(
+        data.businessUser,
+      );
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      if (businessUser.status > ProfileStatus.INITIATED) {
+        return {
+          success: false,
+          message: 'Business User already mapped with another Business',
+        };
+      }
 
-      //
       const adminDetails = await this.adminModel.findOne({
         isSuperAdmin: true,
       });
@@ -252,7 +270,12 @@ export class BusinessService {
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
-          { $set: { business: createdBusiness._id, status: 1 } },
+          {
+            $set: {
+              business: createdBusiness._id,
+              status: ProfileStatus.MAPPED,
+            },
+          },
         );
       }
       return {
@@ -264,7 +287,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -279,6 +302,22 @@ export class BusinessService {
         };
       }
 
+      const businessUser = await this.businessUserModel.findById(
+        findBusiness.creator,
+      );
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      if (businessUser.status < ProfileStatus.MAPPED) {
+        return {
+          success: false,
+          message: 'Business User not mapped with any Business',
+        };
+      }
+
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
@@ -286,6 +325,7 @@ export class BusinessService {
         }
       });
       if (
+        businessUser.status === ProfileStatus.MAPPED &&
         updateObj.isRegistered &&
         updateObj.constitution?.trim() &&
         updateObj.documentNumber?.trim() &&
@@ -302,13 +342,26 @@ export class BusinessService {
               'Business is already Registered with the provided document number and type',
           };
         }
-        updateObj['status'] = 2;
+        // updateObj['status'] = ProfileStatus.REGISTERED;
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.REGISTERED } },
+        );
       }
-      if (updateObj.isRegistered == false) {
-        updateObj['status'] = 2;
+      if (
+        businessUser.status === ProfileStatus.MAPPED &&
+        updateObj.isRegistered == false
+      ) {
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.REGISTERED } },
+        );
       }
-      if (updateObj.bio) {
-        updateObj['status'] = 3;
+      if (businessUser.status === ProfileStatus.REGISTERED && updateObj.bio) {
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.COMPLETED } },
+        );
       }
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
@@ -351,7 +404,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -380,7 +433,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -414,7 +467,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -433,7 +486,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -546,12 +599,19 @@ export class BusinessService {
     });
   }
 
-  async fetchUsers(id: string) {
+  async fetchUser(id: string) {
     try {
+      const user = await this.businessUserModel.findById(id);
+        if (!user) {
+          return {
+            success: false,
+            message: 'Business User not found!',
+          };
+        }
       return {
         success: true,
-        message: 'All Good!',
-        data: '',
+        message: 'Business User fetched Successfully!',
+        data: user,
       };
     } catch (error) {
       return {
@@ -706,6 +766,42 @@ export class BusinessService {
       return {
         success: false,
         message: error,
+      };
+    }
+  }
+  async createBrand(data: any) {
+    try {
+      const findBrand = await this.brandModel.findOne({
+        name: data.name,
+      });
+      if (findBrand) {
+        return {
+          success: false,
+          message: 'Brand already exist with given name',
+        };
+      }
+      if (!isValidObjectId(data.businessId)) {
+        return {
+          success: false,
+          message: 'Please provide valid Business Id',
+        };
+      }
+      if (!isValidObjectId(data.industryId)) {
+        return {
+          success: false,
+          message: 'Please provide valid Industry Id',
+        };
+      }
+      return {
+        success: true,
+        message: 'all good!',
+        data: '',
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
       };
     }
   }

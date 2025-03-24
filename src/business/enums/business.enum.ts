@@ -6,6 +6,14 @@ export enum OutletCategoryList {
   ONLINE_HOME_BASED = 'Online & Home-Based Models',
 }
 
+
+export const ProfileStatus = {
+  INITIATED: 0, //->Business User Created
+  MAPPED: 1,  //-> Business Created And Mapped to Business User
+  REGISTERED: 2, //-> Business Registration Completed
+  COMPLETED: 3,  //-> Description Added And Business Creation Complete
+};
+
 export const OutletTypesByCategory = {
   [OutletCategoryList.FOOD_BEVERAGE]: [
     'Restaurant',
@@ -267,18 +275,18 @@ export const BusinessCountries = {
 
 export const BusinessDocumentTypes = {
   USA: {
-      'Sole Proprietorship': ['EIN', 'DBA Certificate'],
-      Partnership: [
-        'Partnership Agreement',
-        'EIN',
-        'State Registration Certificate',
-      ],
-      LLC: ['Articles of Organization', 'Operating Agreement', 'EIN'],
-        'Private Corporation (Inc.)': [
+    'Sole Proprietorship': ['EIN', 'DBA Certificate'],
+    Partnership: [
+      'Partnership Agreement',
+      'EIN',
+      'State Registration Certificate',
+    ],
+    LLC: ['Articles of Organization', 'Operating Agreement', 'EIN'],
+    'Private Corporation (Inc.)': [
       'Articles of Incorporation',
       'Corporate Bylaws',
       'EIN',
-      ],
+    ],
     'Public Corporation': ['SEC Registration', 'Articles of Incorporation'],
     'Non-Profit': ['501(c)(3) Certification', 'Articles of Incorporation'],
     Cooperative: ['Cooperative Bylaws', 'State Registration'],

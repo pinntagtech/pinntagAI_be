@@ -1082,7 +1082,7 @@ export class AuthService {
     } catch (error: any) {
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -1547,9 +1547,15 @@ export class AuthService {
   }
 
   async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
+    let expireIn = '365d';
+    if(tokenType === TokenTypes.RESET_PASSWORD){
+      expireIn = '15m';
+    }else if(tokenType === TokenTypes.VERIFY_EMAIL){
+      expireIn = '1d';
+    }
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '365d',
+      expiresIn: expireIn,
     });
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
@@ -3900,6 +3906,7 @@ export class AuthService {
           userType: UserTypes.BUSINESS,
           // role: String(user.role),
         };
+
         loginToken = await this.generateJWT(
           payload,
           TokenTypes.VERIFY_EMAIL,
@@ -3919,7 +3926,7 @@ export class AuthService {
     }
   }
 
-  async passwordResetLink(origin: string, email: string, userType: string) {
+  async passwordResetLink(email: string, userType: string) {
     try {
       let resetLink = null;
       if (userType === UserTypes.ADMIN) {
@@ -3940,7 +3947,7 @@ export class AuthService {
           TokenTypes.RESET_PASSWORD,
           userType,
         );
-        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
+        resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
         await this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
@@ -3964,11 +3971,12 @@ export class AuthService {
           TokenTypes.RESET_PASSWORD,
           userType,
         );
-        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
-        await this.mailService.sendEmailVerificationMail(
+        resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
+        await this.mailService.sendForgotPasswordMail2(
           user.name,
           user.email,
           resetLink,
+          "15 Minuter"
         );
       } else if (userType === UserTypes.USER) {
         const user = await this.userModel.findOne({ email: email });
@@ -3989,7 +3997,7 @@ export class AuthService {
           userType,
         );
 
-        resetLink = `${origin}/v1/auth/verify-pass-reset?token=${token}`;
+        resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
         await this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
@@ -4004,53 +4012,62 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
-  async verifyPassReset(token: string, password: string) {
+  async verifyPassReset(user: any, password: string, tokenId: string) {
     try {
-      const tokenDoc = await this.tokenModel.findOne({
-        token,
-        type: TokenTypes.RESET_PASSWORD,
-      });
-      if (!tokenDoc) {
-        return {
-          success: false,
-          message: 'Unauthorised. Token expired.',
-        };
-      }
-
-      const linkPayload: JwtPayload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
-      });
-      let loginToken = null;
-      if (linkPayload.userType === UserTypes.ADMIN) {
-      } else if (linkPayload.userType === UserTypes.USER) {
-      } else if (linkPayload.userType === UserTypes.BUSINESS) {
-        const payload: JwtPayload = {
-          id: linkPayload.id,
-          userType: UserTypes.BUSINESS,
-          // role: String(user.role),
-        };
+      console.log("check 1:",user.userType)
+      if (user.userType === UserTypes.ADMIN) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        await this.businessUserModel.updateOne(
-          { _id: linkPayload.id },
+        await this.adminModel.updateOne(
+          { _id: user.id },
           { password: hashedPassword },
         );
-        // loginToken = await this.generateJWT(payload, TokenTypes.RESET_PASSWORD,linkPayload.userType);
-      }
       //delete token
-      await this.tokenModel.deleteOne({ token });
+      await this.tokenModel.deleteOne({ _id: tokenId });
 
       return {
         success: true,
         message: 'User Verified Successfully',
         // token: loginToken,
       };
+      } else if (user.userType === UserTypes.USER) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.userModel.updateOne(
+          { _id: user.id },
+          { password: hashedPassword },
+        );
+
+      //delete token
+      await this.tokenModel.deleteOne({ _id: tokenId });
+
+      return {
+        success: true,
+        message: 'User Verified Successfully',
+        // token: loginToken,
+      };
+      } else if (user.userType === UserTypes.BUSINESS) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("hashed Pass: in Business:", hashedPassword);
+        await this.businessUserModel.updateOne(
+          { _id: user.id },
+          { password: hashedPassword },
+        );
+      }
+      //delete token
+      await this.tokenModel.deleteOne({ _id: tokenId });
+
+      return {
+        success: true,
+        message: 'User Password Resetted Successfully!',
+        // token: loginToken,
+      };
+
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
 
-  async resendVerificationLink(origin: string, id: string, userType: string) {
+  async resendVerificationLink(id: string, userType: string) {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -4070,7 +4087,7 @@ export class AuthService {
         userType,
       );
 
-      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
+      const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
       await this.mailService.sendEmailVerificationMail(
         user.name,
         user.email,

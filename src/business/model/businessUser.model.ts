@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Business } from './business.model';
 import { OneToMany } from 'typeorm';
-import { BusinessUserCreatorType } from '../enums/business.enum';
+import { BusinessUserCreatorType, ProfileStatus } from '../enums/business.enum';
 
 export type BusinessUserDocument = BusinessUser & Document;
 
@@ -16,7 +16,7 @@ export class BusinessUser {
 
    @Prop({
     required: true,
-    enum: [0, 1, 2,3],
+    enum: Object.values(ProfileStatus),
     default: 0,
   })
   status: number;
