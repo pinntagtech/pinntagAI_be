@@ -25,6 +25,9 @@ import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { JwtPayload } from 'jsonwebtoken';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { Privilege } from 'src/roles/privilege.decorator';
+import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
+import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 
 @Controller('business')
 export class BusinessController {
@@ -118,8 +121,8 @@ export class BusinessController {
     }
   }
 
-  //fetch self created businesses'
-  @Get('user')
+  //fetch self created bussiness users'
+  @Get('users')
   @UseGuards(JwtGuard2)
   async fetchUsers(
     @Req() req: Request,
@@ -325,6 +328,36 @@ export class BusinessController {
       });
     }
   }
+  @Post('toggleStatus/:id')
+  // @Privilege(ResourceTypes.USERS, Actions.UPDATE)
+  // @UseGuards(PrivilegeGuard)
+  @UseGuards(JwtGuard2)
+  async toggleStatus(
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.toggleStatus(id, isActive);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  
+
+
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,

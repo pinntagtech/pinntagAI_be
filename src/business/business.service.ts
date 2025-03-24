@@ -602,16 +602,20 @@ export class BusinessService {
   async fetchUser(id: string) {
     try {
       const user = await this.businessUserModel.findById(id);
-        if (!user) {
-          return {
-            success: false,
-            message: 'Business User not found!',
-          };
-        }
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      const downlineUsers = await this.businessUserModel.find({
+        creator: new mongoose.Types.ObjectId(id),
+        creatorType: BusinessUserCreatorType.BUSINESS,
+      });
       return {
         success: true,
         message: 'Business User fetched Successfully!',
-        data: user,
+        data: downlineUsers,
       };
     } catch (error) {
       return {
@@ -802,6 +806,33 @@ export class BusinessService {
       return {
         success: false,
         message: 'Something went wrong.',
+      };
+    }
+  }
+  async toggleStatus(id: string, isActive: boolean) {
+    try {
+      const foundUser = await this.businessUserModel.findById(id);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      // if(foundUser.creator == creatorId){
+
+      // }
+      const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
+        $set: { isActive },
+      });
+      return {
+        success: true,
+        message: 'User Updated Successfully!',
+        data: updatedUser,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
       };
     }
   }
