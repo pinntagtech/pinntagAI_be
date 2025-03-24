@@ -53,6 +53,8 @@ import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 import { CreateBrandDto } from './dto/create-brand.dto';
+import { RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 
 @Injectable()
 export class BusinessService {
@@ -60,6 +62,7 @@ export class BusinessService {
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
@@ -98,12 +101,6 @@ export class BusinessService {
       //seed business default roles:
       let ownerDetails = null;
       let defaultBusinessRoles = [];
-      for (let defaultRole of DefaultBusinessRoles) {
-        const createDefaultRole = await this.roleModel.create(defaultRole);
-        if (defaultRole.name === 'Business Owner')
-          ownerDetails = createDefaultRole;
-        defaultBusinessRoles.push(createDefaultRole.id);
-      }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
       delete data.password;
@@ -300,6 +297,20 @@ export class BusinessService {
             },
           },
         );
+      }
+      for (let roleName of Object.keys(DefaultBusinessRoles)) {
+        const createdRole = await this.roleModel.create({
+          name: DefaultBusinessRoles[roleName].name,
+          creator: new mongoose.Types.ObjectId(data.businessUser),
+          creatorType: RoleCreatorType.BUSINESS,
+          belongsTo: RoleBelonging.BUSINESS,
+          business: createdBusiness._id,
+        });
+        await this.privilegeModel.create({
+          role: createdRole._id,
+          resource: DefaultBusinessRoles[roleName].resource,
+          privileges: DefaultBusinessRoles[roleName].privileges,
+        });
       }
       return {
         success: true,
@@ -687,15 +698,18 @@ export class BusinessService {
       );
       if (findBusiness) {
         return {
-          success: false,
+          success: true,
           message: 'Business Already Exists with given document Number!',
+          data: {
+            isUnique:false,
+          }
         };
       }
 
       return {
         success: true,
         message: 'Status Checked Successfully!',
-        // data: findBusiness,
+        data: { isUnique:true},
       };
     } catch (error) {
       return {
