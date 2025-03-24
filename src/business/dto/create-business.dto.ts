@@ -8,8 +8,6 @@ import {
 import mongoose from 'mongoose';
 
 export class CreateBusinessDto {
-  @IsString()
-  businessUser:string;
 
   @IsString()
   name: string;

@@ -3881,45 +3881,41 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
-  async verifyEmailviaLink(token: string) {
+  async verifyEmailviaLink(user: any, tokenId: string) {
     try {
-      const tokenDoc = await this.tokenModel.findOne({
-        token,
-        type: TokenTypes.VERIFY_EMAIL,
-      });
-      if (!tokenDoc) {
-        return {
-          success: false,
-          message: 'Unauthorised. Token expired.',
-        };
-      }
+      console.log('user:', user);
 
-      const linkPayload: JwtPayload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
-      });
       let loginToken = null;
-      if (linkPayload.userType === UserTypes.ADMIN) {
-      } else if (linkPayload.userType === UserTypes.USER) {
-      } else if (linkPayload.userType === UserTypes.BUSINESS) {
+      if (user.userType === UserTypes.ADMIN) {
+      } else if (user.userType === UserTypes.USER) {
+      } else if (user.userType === UserTypes.BUSINESS) {
+        console.log('inside business');
+        await this.businessUserModel.findOneAndUpdate(
+          {
+            _id: user.id,
+          },
+          { $set: { isEmailVerified: true } },
+        );
+
         const payload: JwtPayload = {
-          id: linkPayload.id,
+          id: user.id,
           userType: UserTypes.BUSINESS,
           // role: String(user.role),
         };
 
-        loginToken = await this.generateJWT(
-          payload,
-          TokenTypes.VERIFY_EMAIL,
-          linkPayload.userType,
-        );
+        // loginToken = await this.generateJWT(
+        //   payload,
+        //   TokenTypes.VERIFY_EMAIL,
+        //   user.userType,
+        // );
       }
       //delete token
-      await this.tokenModel.deleteOne({});
+      await this.tokenModel.deleteOne({ _id: tokenId });
 
       return {
         success: true,
         message: 'User Verified Successfully',
-        token: loginToken,
+        // token: loginToken,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -4120,7 +4116,7 @@ export class AuthService {
           };
         }
       } else if (user.userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel.findById(user.id);
+        userDoc = await this.businessUserModel.findById(user.id).populate('business');
         if (!userDoc) {
           return {
             success: false,

@@ -34,8 +34,13 @@ export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   @Post()
-  async createBusiness(@Res() res: Response, @Body() data: CreateBusinessDto) {
-    const result = await this.businessService.createBusiness(data);
+  @UseGuards(JwtGuard2)
+  async createBusiness(
+    @TokenDecoder() user: JwtPayload,
+    @Res() res: Response,
+    @Body() data: CreateBusinessDto,
+  ) {
+    const result = await this.businessService.createBusiness(user.id,data);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
