@@ -13,7 +13,7 @@ export class CreateBusinessUserDto {
   @IsString()
   password: string;
 
-  // @IsOptional()
+  @IsOptional()
   @IsString()
   name:string
 }

@@ -9,11 +9,11 @@ export class Brand {
   name: string;
   @Prop()
   tagline: string;
-  @Prop({ required: true, ref: 'Business' })
+  @Prop({ ref: 'Business' })
   businessId: mongoose.Types.ObjectId;
   @Prop({ ref: 'Industry' })
   industryId: mongoose.Types.ObjectId;
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true }) //DOUBT
   slug: string;
   @Prop()
   description: string;

@@ -52,6 +52,7 @@ import { drive } from 'googleapis/build/src/apis/drive';
 import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
+import { CreateBrandDto } from './dto/create-brand.dto';
 
 @Injectable()
 export class BusinessService {
@@ -150,7 +151,7 @@ export class BusinessService {
         TokenTypes.VERIFY_EMAIL,
         UserTypes.BUSINESS,
       );
-      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
+      const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
       await this.mailService.sendEmailVerificationMail(
         createdUser.name,
         createdUser.email,
@@ -599,7 +600,7 @@ export class BusinessService {
     });
   }
 
-  async getUsersList(id: string) {
+  async getUsersList(id: string, page: number, limit: number) {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -609,10 +610,15 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUsersIds(user.id);
-      const users = await this.businessUserModel.find({
-        creator: new mongoose.Types.ObjectId(id),
-        creatorType: BusinessUserCreatorType.BUSINESS,
-      });
+      const users = await this.businessUserModel
+        .find({
+          _id: { $in: allUserIds },
+        })
+        .populate('role', '_id name')
+        .sort({ createdAt: -1 })
+        .select({ password: 0 })
+        .skip((page - 1) * limit)
+        .limit(limit);
 
       return {
         success: true,
@@ -775,10 +781,10 @@ export class BusinessService {
       };
     }
   }
-  async createBrand(data: any) {
+  async createBrand(data: CreateBrandDto) {
     try {
       const findBrand = await this.brandModel.findOne({
-        name: data.name,
+        email: data.email,
       });
       if (findBrand) {
         return {
@@ -798,6 +804,9 @@ export class BusinessService {
           message: 'Please provide valid Industry Id',
         };
       }
+      
+
+
       return {
         success: true,
         message: 'all good!',
@@ -834,7 +843,7 @@ export class BusinessService {
     }
     return collectedIds;
   }
-  async toggleStatus(id: string, isActive: boolean) {
+  async toggleStatus(creatorId:string,id: string, isActive: boolean) {
     try {
       const foundUser = await this.businessUserModel.findById(id);
       if (!foundUser) {
@@ -843,15 +852,19 @@ export class BusinessService {
           message: 'User not found!',
         };
       }
-      // if(foundUser.creator == creatorId){
-
-      // }
+      const getAllChildUsersIds = await this.getAllChildUsersIds(creatorId);
+      if (!getAllChildUsersIds.includes(id)) {
+        return {
+          success: false,
+          message: 'You are not authorized to update this user.',
+        };
+      }
       const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
         $set: { isActive },
       });
       return {
         success: true,
-        message: 'User Updated Successfully!',
+        message: 'User Updated Successfully.',
         data: updatedUser,
       };
     } catch (error) {

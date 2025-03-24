@@ -127,9 +127,17 @@ export class BusinessController {
   async fetchUsers(
     @Req() req: Request,
     @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
     @TokenDecoder() user: JwtPayload,
   ) {
-    const result = await this.businessService.getUsersList(user.id);
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.getUsersList(
+      user.id,
+      pageNumber,
+      limitNumber,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -220,7 +228,7 @@ export class BusinessController {
       });
     }
   }
-  
+
   @Get('businessCategoryList/:id')
   async businessCategoryList(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
@@ -261,7 +269,7 @@ export class BusinessController {
       });
     }
   }
-  
+
   @Get('countries')
   async getCountries(@Res() res: Response) {
     const result = await this.businessService.getCountries();
@@ -277,7 +285,7 @@ export class BusinessController {
     }
   }
   @Get('constitutionList/:id')
-  async constitutionList(@Res() res: Response,@Param('id') id:string) {
+  async constitutionList(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -296,7 +304,7 @@ export class BusinessController {
     }
   }
   @Get('documentTypes/:id')
-  async documentTypes(@Res() res: Response,@Param('id') id:string) {
+  async documentTypes(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -343,7 +351,11 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.toggleStatus(id, isActive);
+    const result = await this.businessService.toggleStatus(
+      user.id,
+      id,
+      isActive,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -355,8 +367,6 @@ export class BusinessController {
       });
     }
   }
-  
-
 
   // @Get('brand')
   // async fetchBrand(

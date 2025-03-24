@@ -74,10 +74,7 @@ import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 // import { Permission, PermissionSchema } from './models/permission.model';
 // import { AdminRole, AdminRoleSchema } from './models/adminRole.model';
-import {
-  BusinessRole,
-  BusinessRoleSchema,
-} from 'src/business-profile/models/businessRole.model';
+
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import {
@@ -125,7 +122,6 @@ import { BusinessConstitution, BusinessConstitutionSchema } from 'src/business/m
     HttpModule,
     MongooseModule.forFeature([
       // { name: AdminRole.name, schema: AdminRoleSchema },
-      { name: BusinessRole.name, schema: BusinessRoleSchema },
       { name: User.name, schema: UserSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Role.name, schema: RoleSchema },
