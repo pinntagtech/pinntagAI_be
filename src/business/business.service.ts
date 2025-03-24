@@ -62,7 +62,8 @@ export class BusinessService {
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
-    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
@@ -702,15 +703,15 @@ export class BusinessService {
           success: true,
           message: 'Business Already Exists with given document Number!',
           data: {
-            isUnique:false,
-          }
+            isUnique: false,
+          },
         };
       }
 
       return {
         success: true,
         message: 'Status Checked Successfully!',
-        data: { isUnique:true},
+        data: { isUnique: true },
       };
     } catch (error) {
       return {
