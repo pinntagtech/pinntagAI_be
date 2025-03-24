@@ -559,36 +559,42 @@ export class AdminService {
   private async getAllChildAdminIds(
     adminId: string,
     collectedIds: string[] = [],
+    isFirstCall = true, // Track initial call
   ): Promise<string[]> {
-    collectedIds.push(adminId);
-    const childAdmins = await this.roleModel
-      .find({ creator: adminId, creatorType: 'Admin' })
+    if (!isFirstCall) {
+      collectedIds.push(adminId);
+    }
+    const childAdmins = await this.adminModel
+      .find({
+        creator: new mongoose.Types.ObjectId(adminId),
+        creatorType: 'Admin',
+      })
       .select('_id');
     const childAdminIds = childAdmins.map((admin) => admin._id.toString());
     if (!childAdminIds.length) {
       return collectedIds;
     }
     for (const childId of childAdminIds) {
-      await this.getAllChildAdminIds(childId, collectedIds);
+      await this.getAllChildAdminIds(childId, collectedIds, false);
     }
     return collectedIds;
   }
 
-  async fetchRoles(adminId: string) {
-    const allAdminIds = await this.getAllChildAdminIds(adminId);
-    const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
-    if (!roles.length) {
-      return {
-        success: false,
-        message: 'No roles found',
-      };
-    }
-    return {
-      success: true,
-      message: 'Roles fetched successfully',
-      roles,
-    };
-  }
+  // async fetchRoles(adminId: string) {
+  //   const allAdminIds = await this.getAllChildAdminIds(adminId);
+  //   const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
+  //   if (!roles.length) {
+  //     return {
+  //       success: false,
+  //       message: 'No roles found',
+  //     };
+  //   }
+  //   return {
+  //     success: true,
+  //     message: 'Roles fetched successfully',
+  //     roles,
+  //   };
+  // }
 
   async generateJWT(payload: JwtPayload, type?: string) {
     const token = await this.jwtService.signAsync(payload, {
@@ -833,7 +839,7 @@ export class AdminService {
       }
       const allAdminIds = await this.getAllChildAdminIds(adminId);
       const admins = await this.adminModel
-        .find({ creator: { $in: allAdminIds } })
+        .find({ _id: { $in: allAdminIds } })
         .populate('role', '_id name')
         .sort({ createdAt: -1 })
         .select({ password: 0 })

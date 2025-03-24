@@ -24,13 +24,28 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
 import { AuthService } from 'src/auth/auth.service';
-import { BusinessIndustry, BusinessIndustryDocument } from './model/businessIndustry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from './model/businessIndustry.model';
 import { privateDecrypt } from 'crypto';
-import { BusinessCategory, BusinessCategoryDocument } from './model/businessCategory.model';
+import {
+  BusinessCategory,
+  BusinessCategoryDocument,
+} from './model/businessCategory.model';
 import { count } from 'console';
-import { BusinessCountry, BusinessCountryDocument } from './model/businessCountry.model';
-import { BusinessConstitution, BusinessConstitutionDocument } from './model/businessConstitution.model';
-import { BusinessDocumentType, BusinessDocumentTypeDocument } from './model/BussinessDocumentType.model';
+import {
+  BusinessCountry,
+  BusinessCountryDocument,
+} from './model/businessCountry.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionDocument,
+} from './model/businessConstitution.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeDocument,
+} from './model/BussinessDocumentType.model';
 
 @Injectable()
 export class BusinessService {
@@ -42,11 +57,16 @@ export class BusinessService {
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
-    @InjectModel(BusinessIndustry.name) private readonly businessIndModel: Model<BusinessIndustryDocument>,
-    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
-    @InjectModel(BusinessCountry.name) private readonly businessCountryModel: Model<BusinessCountryDocument>,
-    @InjectModel(BusinessConstitution.name) private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
-    @InjectModel(BusinessDocumentType.name) private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly businessIndModel: Model<BusinessIndustryDocument>,
+    @InjectModel(BusinessCategory.name)
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCountry.name)
+    private readonly businessCountryModel: Model<BusinessCountryDocument>,
+    @InjectModel(BusinessConstitution.name)
+    private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
+    @InjectModel(BusinessDocumentType.name)
+    private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -149,7 +169,7 @@ export class BusinessService {
           message: `Business already exist with given email:${data.email}`,
         };
       }
-      if(data.businessUser && !isValidObjectId(data.businessUser)){
+      if (data.businessUser && !isValidObjectId(data.businessUser)) {
         return {
           success: false,
           message: 'Please provide valid Business User Id',
@@ -161,8 +181,12 @@ export class BusinessService {
         isSuperAdmin: true,
       });
 
-      const findBusinessIndustry = await this.businessIndModel.findById(data.businessIndustry);
-      const findBusinessCategory = await this.businessCategoryModel.findById(data.businessCategory);
+      const findBusinessIndustry = await this.businessIndModel.findById(
+        data.businessIndustry,
+      );
+      const findBusinessCategory = await this.businessCategoryModel.findById(
+        data.businessCategory,
+      );
       if (!findBusinessIndustry || !findBusinessCategory) {
         return {
           success: false,
@@ -199,12 +223,10 @@ export class BusinessService {
 
       //create folder
 
-
-
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
-          { $set: { business: createdBusiness._id,status:1 } },
+          { $set: { business: createdBusiness._id, status: 1 } },
         );
       }
       return {
@@ -457,9 +479,11 @@ export class BusinessService {
         userId: user._id,
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
-      console.log("user:",user);
-      const userDetails = await this.businessUserModel.findById(user._id).populate('business');
-      console.log('userDetails:',userDetails);
+      console.log('user:', user);
+      const userDetails = await this.businessUserModel
+        .findById(user._id)
+        .populate('business');
+      console.log('userDetails:', userDetails);
       return {
         success: true,
         message: 'User logged in successfully',
@@ -535,9 +559,12 @@ export class BusinessService {
       };
     }
   }
-  async checkRegistrationNumber(docType:string,docNumber: string) {
+  async checkRegistrationNumber(docType: string, docNumber: string) {
     try {
-      const findBusiness = await this.businessModel.findOne({documentType:docType,documentNumber:docNumber},{_id:1,email:1});
+      const findBusiness = await this.businessModel.findOne(
+        { documentType: docType, documentNumber: docNumber },
+        { _id: 1, email: 1 },
+      );
       if (findBusiness) {
         return {
           success: false,
@@ -572,9 +599,11 @@ export class BusinessService {
       };
     }
   }
-  async businessCategoryList(id:string) {
+  async businessCategoryList(id: string) {
     try {
-      const categories = await this.businessCategoryModel.find({industry:new mongoose.Types.ObjectId(id)});
+      const categories = await this.businessCategoryModel.find({
+        industry: new mongoose.Types.ObjectId(id),
+      });
       return {
         success: true,
         message: 'Industries fetched Successfully!',
@@ -587,10 +616,10 @@ export class BusinessService {
       };
     }
   }
-  async getCountries(){
+  async getCountries() {
     try {
       const countries = await this.businessCountryModel.find();
-      if(!countries.length){
+      if (!countries.length) {
         return {
           success: false,
           message: 'No Countries Found!',
@@ -608,10 +637,12 @@ export class BusinessService {
       };
     }
   }
-  async getConstitutions(id:string){
+  async getConstitutions(id: string) {
     try {
-      const constitutions = await this.businessConstitutionModel.find({country:new mongoose.Types.ObjectId(id)});
-      if(!constitutions.length){
+      const constitutions = await this.businessConstitutionModel.find({
+        country: new mongoose.Types.ObjectId(id),
+      });
+      if (!constitutions.length) {
         return {
           success: false,
           message: 'No Constitutions Found!',
@@ -629,10 +660,12 @@ export class BusinessService {
       };
     }
   }
-  async getBusinessDocumentTypes(id){
+  async getBusinessDocumentTypes(id) {
     try {
-      const documentTypes = await this.businessDocumentTypeModel.find({constitution:new mongoose.Types.ObjectId(id)});
-      if(!documentTypes.length){
+      const documentTypes = await this.businessDocumentTypeModel.find({
+        constitution: new mongoose.Types.ObjectId(id),
+      });
+      if (!documentTypes.length) {
         return {
           success: false,
           message: 'No Document Types Found!',
@@ -650,5 +683,4 @@ export class BusinessService {
       };
     }
   }
-
 }
