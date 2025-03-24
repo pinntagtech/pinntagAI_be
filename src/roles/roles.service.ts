@@ -3,10 +3,6 @@ import mongoose, { Model } from 'mongoose';
 import { Role, RoleDocument } from './models/roles.model';
 import { InjectModel } from '@nestjs/mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Resource, ResourceDocument } from './models/resource.model';
 import { Privilege, PrivilegeDocument } from './models/privilage.model';
@@ -79,44 +75,45 @@ export class RolesService {
     }
   }
 
-  async createPrivilege(mapPrivilegeDto: MapPrivilegeDto) {
+  async createPrivilege(roleId: string, mapPrivilegeDto: MapPrivilegeDto) {
     try {
-      const { roleId, actionId, resourceId } = mapPrivilegeDto;
-      const [role, action, resource] = await Promise.all([
-        this.roleModel.findById(roleId),
-        this.actionModel.findById(actionId),
-        this.resourceModel.findById(resourceId),
-      ]);
+      const role = await this.roleModel.findById(roleId);
       if (!role) {
         return { success: false, message: 'Role not found' };
       }
-      if (!action) {
-        return { success: false, message: 'Action not found' };
+      await this.privilegeModel.deleteMany({ role: role._id });
+      let failureCount = 0;
+      const failureCases = [];
+      for (const privilege of mapPrivilegeDto.data) {
+        const resource = await this.resourceModel.findById(privilege.resource);
+        if (resource) {
+          for (const action of privilege.actions) {
+            const actionObj = await this.actionModel.findById(action);
+            if (actionObj) {
+              await this.privilegeModel.create({
+                role: role._id,
+                resource: resource.title,
+                action: actionObj.title,
+              });
+            } else {
+              failureCount++;
+              failureCases.push(`Action with id ${action} not found`);
+            }
+          }
+        } else {
+          failureCount++;
+          failureCases.push(`Resource with id ${privilege.resource} not found`);
+        }
       }
-      if (!role) {
-        return { success: false, message: 'Role not found' };
-      }
-      const findPrivilege = await this.privilegeModel.findOne({
-        role: role._id,
-        action: action.title,
-        resource: resource.title,
-      });
-      if (findPrivilege) {
-        return {
-          success: false,
-          message: 'Privilege already exist with this combination!',
-        };
-      }
-
-      const createdPrivilege = await this.privilegeModel.create({
-        role: role._id,
-        action: action.title,
-        resource: resource.title,
-      });
+      const updatedRole = await this.roleModel.findById(role._id);
       return {
         success: true,
         message: 'Privileges Mapped Successfully!',
-        data: createdPrivilege,
+        data: {
+          role: updatedRole,
+          failureCount,
+          failureCases,
+        },
       };
     } catch (error) {
       console.error('Error:', error);
@@ -163,6 +160,51 @@ export class RolesService {
       return {
         success: false,
         message: 'Error while fetching roles',
+      };
+    }
+  }
+
+  async fetchRole(roleId: string) {
+    try {
+      const role = await this.roleModel.findById(roleId);
+      if (!role) {
+        return { success: false, message: 'Role not found' };
+      } 
+      const privileges = await this.privilegeModel.aggregate([
+        {
+          $match: {
+            role: new mongoose.Types.ObjectId(roleId),
+          },
+        },
+        {
+          $group: {
+            _id: '$resource',
+            actions: {
+              $push: '$action',
+            },
+          },
+        },
+        {
+          $project: {
+            name: '$_id',
+            actions: 1,
+            _id: 0,
+          },
+        },
+      ]);
+      return {
+        success: true,
+        message: 'Role Fetched Successfully!',
+        data: {
+          role,
+          privileges,
+        },
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Error while fetching role',
       };
     }
   }
