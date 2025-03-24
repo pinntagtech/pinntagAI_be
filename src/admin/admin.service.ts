@@ -44,10 +44,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
-import {
-  BusinessRole,
-  BusinessRoleDocument,
-} from 'src/business-profile/models/businessRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
@@ -66,8 +62,6 @@ export class AdminService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
-    @InjectModel(BusinessRole.name)
-    private readonly businessRoleModel: Model<BusinessRoleDocument>,
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
     @InjectModel(Category.name)
@@ -644,22 +638,84 @@ export class AdminService {
     return collectedIds;
   }
 
-  async createBusinessRole(
-    roleData: Partial<BusinessRole>,
-  ): Promise<BusinessRole> {
-    try {
-      const newRole = new this.businessRoleModel({
-        ...roleData,
-        isParent: true,
-      });
-      return await newRole.save();
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException('Role name must be unique');
-      }
-      throw error;
-    }
-  }
+  // async createBusinessRole(
+  //   roleData: Partial<BusinessRole>,
+  // ): Promise<BusinessRole> {
+  //   try {
+  //     const newRole = new this.businessRoleModel({
+  //       ...roleData,
+  //       isParent: true,
+  //     });
+  //     return await newRole.save();
+  //   } catch (error) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('Role name must be unique');
+  //     }
+  //     throw error;
+  //   }
+  // }
+  // async fetchRoles(adminId: string) {
+  //   const allAdminIds = await this.getAllChildAdminIds(adminId);
+  //   const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
+  //   if (!roles.length) {
+  //     return {
+  //       success: false,
+  //       message: 'No roles found',
+  //     };
+  //   }
+  //   return {
+  //     success: true,
+  //     message: 'Roles fetched successfully',
+  //     roles,
+  //   };
+  // }
+
+  // async generateJWT(payload: JwtPayload, type?: string) {
+  //   const token = await this.jwtService.signAsync(payload, {
+  //     secret: process.env.JWT_SECRET,
+  //     expiresIn: '365d',
+  //   });
+  //   // if (update) {
+  //   //   await this.userService.updateToken(token, payload.id);
+  //   // } else {
+  //   await this.userService.saveToken2(token, payload.id, type);
+  //   // }
+  //   return token;
+  // }
+
+  // async create(permissionData: Partial<Permission>): Promise<Permission> {
+  //   const newPermission = new this.permissionModel(permissionData);
+  //   return newPermission.save();
+  // }
+
+  // async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
+  //   try {
+  //     const newRole = new this.roleModel(roleData);
+  //     return await newRole.save();
+  //   } catch (error) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('Role name must be unique');
+  //     }
+  //     throw error;
+  //   }
+  // }
+
+  // async createBusinessRole(
+  //   roleData: Partial<BusinessRole>,
+  // ): Promise<BusinessRole> {
+  //   try {
+  //     const newRole = new this.businessRoleModel({
+  //       ...roleData,
+  //       isParent: true,
+  //     });
+  //     return await newRole.save();
+  //   } catch (error) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('Role name must be unique');
+  //     }
+  //     throw error;
+  //   }
+  // }
   async dbQueries() {
     try {
       // const images = await this.imageModel.find({url:{$regex:"s3.amazonaws.com"}},{url:1})

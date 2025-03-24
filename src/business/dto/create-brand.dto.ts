@@ -1,10 +1,12 @@
-import { IsBoolean, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateBrandDto {
+  @IsNotEmpty()
   @IsString()
   name: string;
   @IsString()
   tagline: string;
+
   @IsString()
   businessId: string;
   @IsString()

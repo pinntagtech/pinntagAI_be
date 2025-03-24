@@ -52,6 +52,9 @@ import { drive } from 'googleapis/build/src/apis/drive';
 import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
+import { CreateBrandDto } from './dto/create-brand.dto';
+import { RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 
 @Injectable()
 export class BusinessService {
@@ -59,6 +62,7 @@ export class BusinessService {
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
@@ -97,18 +101,12 @@ export class BusinessService {
       //seed business default roles:
       let ownerDetails = null;
       let defaultBusinessRoles = [];
-      for (let defaultRole of DefaultBusinessRoles) {
-        const createDefaultRole = await this.roleModel.create(defaultRole);
-        if (defaultRole.name === 'Business Owner')
-          ownerDetails = createDefaultRole;
-        defaultBusinessRoles.push(createDefaultRole.id);
-      }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
       delete data.password;
 
       let createObj = {
-        role: [new mongoose.Types.ObjectId(ownerDetails.id)],
+        // role: [new mongoose.Types.ObjectId(ownerDetails.id)],
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
@@ -117,16 +115,17 @@ export class BusinessService {
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
-      for (let defaultRole of defaultBusinessRoles) {
-        await this.roleModel.updateOne(
-          { _id: defaultRole },
-          {
-            $set: {
-              creator: new mongoose.Types.ObjectId(createdUser.id),
-            },
-          },
-        );
-      }
+
+      // for (let defaultRole of defaultBusinessRoles) {
+      //   await this.roleModel.updateOne(
+      //     { _id: defaultRole },
+      //     {
+      //       $set: {
+      //         creator: new mongoose.Types.ObjectId(createdUser.id),
+      //       },
+      //     },
+      //   );
+      // }
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdUser._id,
@@ -150,7 +149,7 @@ export class BusinessService {
         TokenTypes.VERIFY_EMAIL,
         UserTypes.BUSINESS,
       );
-      const resetLink = `${origin}/v1/auth/verify-email?token=${token}`;
+      const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
       await this.mailService.sendEmailVerificationMail(
         createdUser.name,
         createdUser.email,
@@ -216,13 +215,35 @@ export class BusinessService {
       const findBusinessIndustry = await this.businessIndModel.findById(
         data.businessIndustry,
       );
-      const findBusinessCategory = await this.businessCategoryModel.findById(
-        data.businessCategory,
-      );
-      if (!findBusinessIndustry || !findBusinessCategory) {
+      const businessCategories = data.businessCategory.split(',');
+      for (let category of businessCategories) {
+        if (!isValidObjectId(category)) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+      }
+      // const findBusinessCategory = await this.businessCategoryModel.findById(
+      //   data.businessCategory,
+      // );
+      const businessCategoriesIds = [];
+      for (let category of businessCategories) {
+        const findBusinessCategory =
+          await this.businessCategoryModel.findById(category);
+        if (!findBusinessCategory) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+        businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+      }
+      delete data.businessCategory;
+      if (!findBusinessIndustry) {
         return {
           success: false,
-          message: 'Please provide valid Business Industry and Category',
+          message: 'Please provide valid Business Industry',
         };
       }
       //create business folder in drive
@@ -240,7 +261,7 @@ export class BusinessService {
         name: data.name,
         email: data.email,
         // isRegistered: data.isRegistered,
-        businessCategory: new mongoose.Types.ObjectId(data.businessCategory),
+        businessCategory: businessCategoriesIds,
         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
@@ -277,6 +298,20 @@ export class BusinessService {
             },
           },
         );
+      }
+      for (let roleName of Object.keys(DefaultBusinessRoles)) {
+        const createdRole = await this.roleModel.create({
+          name: DefaultBusinessRoles[roleName].name,
+          creator: new mongoose.Types.ObjectId(data.businessUser),
+          creatorType: RoleCreatorType.BUSINESS,
+          belongsTo: RoleBelonging.BUSINESS,
+          business: createdBusiness._id,
+        });
+        await this.privilegeModel.create({
+          role: createdRole._id,
+          resource: DefaultBusinessRoles[roleName].resource,
+          privileges: DefaultBusinessRoles[roleName].privileges,
+        });
       }
       return {
         success: true,
@@ -599,7 +634,7 @@ export class BusinessService {
     });
   }
 
-  async getUsersList(id: string) {
+  async getUsersList(id: string, page: number, limit: number) {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -609,10 +644,15 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUsersIds(user.id);
-      const users = await this.businessUserModel.find({
-        creator: new mongoose.Types.ObjectId(id),
-        creatorType: BusinessUserCreatorType.BUSINESS,
-      });
+      const users = await this.businessUserModel
+        .find({
+          _id: { $in: allUserIds },
+        })
+        .populate('role', '_id name')
+        .sort({ createdAt: -1 })
+        .select({ password: 0 })
+        .skip((page - 1) * limit)
+        .limit(limit);
 
       return {
         success: true,
@@ -659,15 +699,18 @@ export class BusinessService {
       );
       if (findBusiness) {
         return {
-          success: false,
+          success: true,
           message: 'Business Already Exists with given document Number!',
+          data: {
+            isUnique:false,
+          }
         };
       }
 
       return {
         success: true,
         message: 'Status Checked Successfully!',
-        // data: findBusiness,
+        data: { isUnique:true},
       };
     } catch (error) {
       return {
@@ -775,10 +818,10 @@ export class BusinessService {
       };
     }
   }
-  async createBrand(data: any) {
+  async createBrand(data: CreateBrandDto) {
     try {
       const findBrand = await this.brandModel.findOne({
-        name: data.name,
+        email: data.email,
       });
       if (findBrand) {
         return {
@@ -798,6 +841,7 @@ export class BusinessService {
           message: 'Please provide valid Industry Id',
         };
       }
+
       return {
         success: true,
         message: 'all good!',
@@ -834,7 +878,7 @@ export class BusinessService {
     }
     return collectedIds;
   }
-  async toggleStatus(id: string, isActive: boolean) {
+  async toggleStatus(creatorId: string, id: string, isActive: boolean) {
     try {
       const foundUser = await this.businessUserModel.findById(id);
       if (!foundUser) {
@@ -843,15 +887,19 @@ export class BusinessService {
           message: 'User not found!',
         };
       }
-      // if(foundUser.creator == creatorId){
-
-      // }
+      const getAllChildUsersIds = await this.getAllChildUsersIds(creatorId);
+      if (!getAllChildUsersIds.includes(id)) {
+        return {
+          success: false,
+          message: 'You are not authorized to update this user.',
+        };
+      }
       const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
         $set: { isActive },
       });
       return {
         success: true,
-        message: 'User Updated Successfully!',
+        message: 'User Updated Successfully.',
         data: updatedUser,
       };
     } catch (error) {

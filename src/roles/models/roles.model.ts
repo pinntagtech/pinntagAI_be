@@ -8,7 +8,7 @@ export class Role {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
+  @Prop({default: ''})
   description: string;
 
   @Prop({ refPath: 'creatorType' })
