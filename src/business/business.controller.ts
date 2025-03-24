@@ -121,7 +121,7 @@ export class BusinessController {
     }
   }
 
-  //fetch self created bussiness users'
+  //fetch self created bussiness users and downline users'
   @Get('users')
   @UseGuards(JwtGuard2)
   async fetchUsers(
@@ -129,7 +129,7 @@ export class BusinessController {
     @Res() res: Response,
     @TokenDecoder() user: JwtPayload,
   ) {
-    const result = await this.businessService.fetchUser(user.id);
+    const result = await this.businessService.getUsersList(user.id);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

@@ -16,11 +16,7 @@ export class BusinessUser {
 
   @Prop({
     required: true,
-<<<<<<< HEAD
     enum: Object.values(ProfileStatus),
-=======
-    enum: [0, 1, 2, 3],
->>>>>>> 5c332dff6b1e7e45e1d99b0c4843a4692a171d48
     default: 0,
   })
   status: number;

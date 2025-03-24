@@ -599,7 +599,7 @@ export class BusinessService {
     });
   }
 
-  async fetchUser(id: string) {
+  async getUsersList(id: string) {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -608,14 +608,16 @@ export class BusinessService {
           message: 'Business User not found!',
         };
       }
-      const downlineUsers = await this.businessUserModel.find({
+      const allUserIds = await this.getAllChildUsersIds(user.id);
+      const users = await this.businessUserModel.find({
         creator: new mongoose.Types.ObjectId(id),
         creatorType: BusinessUserCreatorType.BUSINESS,
       });
+
       return {
         success: true,
         message: 'Business User fetched Successfully!',
-        data: downlineUsers,
+        data: users,
       };
     } catch (error) {
       return {
@@ -808,6 +810,29 @@ export class BusinessService {
         message: 'Something went wrong.',
       };
     }
+  }
+  private async getAllChildUsersIds(
+    userId: string,
+    collectedIds: string[] = [],
+    isFirstCall = true, // Track initial call
+  ): Promise<string[]> {
+    if (!isFirstCall) {
+      collectedIds.push(userId);
+    }
+    const childUsers = await this.businessUserModel
+      .find({
+        creator: new mongoose.Types.ObjectId(userId),
+        creatorType: BusinessUserCreatorType.BUSINESS,
+      })
+      .select('_id');
+    const childIds = childUsers.map((user) => user._id.toString());
+    if (!childIds.length) {
+      return collectedIds;
+    }
+    for (const childId of childIds) {
+      await this.getAllChildUsersIds(childId, collectedIds, false);
+    }
+    return collectedIds;
   }
   async toggleStatus(id: string, isActive: boolean) {
     try {
