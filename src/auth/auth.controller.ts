@@ -43,6 +43,7 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UserTypes } from 'src/enums/auth.enums';
 import { JwtGuard2 } from './guards2/jwt2.guard';
+import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -965,17 +966,16 @@ export class AuthController {
       });
     }
   }
-
+  //forgot password API
   @Post('password-reset-link')
   async passwordResetLink(
     @Req() req: Request,
     @Res() res: Response,
     @Body('email') email: string,
+
     @Body('userType') userType: string,
   ) {
-    const origin = req.headers.origin;
     const result = await this.authService.passwordResetLink(
-      origin,
       email,
       userType,
     );
@@ -989,13 +989,22 @@ export class AuthController {
       });
     }
   }
+  // forgot password Verify API
   @Post('verify-pass-reset')
+  @UseGuards(ResetPasswordGuard)
   async verifyPassReset(
+    @Req() req: Request,
     @Res() res: Response,
-    @Query('token') token: string,
-    @Query('password') password: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body('password') password: string,
   ) {
-    const result = await this.authService.verifyPassReset(token, password);
+    const tokenId = req['tokenId'];
+
+    const result = await this.authService.verifyPassReset(
+      user,
+      password,
+      tokenId,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -1019,9 +1028,7 @@ export class AuthController {
         message: 'Invalid ObjectId',
       });
     }
-    const origin = req.headers.origin;
     const result = await this.authService.resendVerificationLink(
-      origin,
       id,
       userType,
     );
