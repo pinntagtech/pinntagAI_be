@@ -329,7 +329,8 @@ export class AdminController {
   async adminLogin(@Res() res: Response, @Body() loginDto: LoginDto) {
     const result = await this.adminService.adminLogin(loginDto);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      const status = result.status ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+      return res.status(status).json({
         message: result.message,
         status: result.status,
         user: result.user,
@@ -338,6 +339,36 @@ export class AdminController {
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         status: false,
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('login/reset-password')
+  async forceResetPassword(
+    @Res() res: Response,
+    @Body() body: { password: string; token: string },
+  ) {
+    if (!body.password || !body.token) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide password and token',
+      });
+    }
+    if (typeof body.password !== 'string' || typeof body.token !== 'string') {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide valid password and token',
+      });
+    }
+    const result = await this.adminService.forceResetPassword(
+      body.password,
+      body.token,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
@@ -377,20 +408,6 @@ export class AdminController {
       });
     }
   }
-
-  // @Post('create-permission')
-  // async createPermission(
-  //   @Body() createDto: Partial<Permission>,
-  // ): Promise<Permission> {
-  //   return this.adminService.create(createDto);
-  // }
-
-  // @Post('create-role')
-  // async createAdminRole(
-  //   @Body() createDto: Partial<AdminRole>,
-  // ): Promise<AdminRole> {
-  //   return this.adminService.createRole(createDto);
-  // }
 
   @Post('create-business-role')
   async createBusinessRole(

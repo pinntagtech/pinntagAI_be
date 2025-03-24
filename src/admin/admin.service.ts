@@ -492,13 +492,26 @@ export class AdminService {
       };
       const adminDoc = JSON.parse(JSON.stringify(foundAdmin));
       delete adminDoc.password;
+      delete adminDoc.__v;
+      delete adminDoc.createdAt;
+      delete adminDoc.updatedAt;
+      delete adminDoc.isDeleted;
+      delete adminDoc.creatorType;
+      delete adminDoc.driveDefaultSpace;
+      delete adminDoc.creator;
+      delete adminDoc.creatorType;
       if (foundAdmin.forcePasswordReset) {
+        const token = await this.generateJWT(
+          payload,
+          TokenTypes.RESET_PASSWORD,
+          '5m',
+        );
         return {
           success: true,
           status: false,
           message: 'Please reset your password',
           user: adminDoc,
-          token: null,
+          token,
         };
       }
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
@@ -508,6 +521,20 @@ export class AdminService {
         message: 'Admin logged in successfully',
         user: adminDoc,
         token,
+      };
+    }
+  }
+
+  async forceResetPassword(password: string, token: string) {
+    try {
+      return {
+        success: true,
+        message: 'Password reset successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
       };
     }
   }
@@ -580,51 +607,18 @@ export class AdminService {
     return collectedIds;
   }
 
-  // async fetchRoles(adminId: string) {
-  //   const allAdminIds = await this.getAllChildAdminIds(adminId);
-  //   const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
-  //   if (!roles.length) {
-  //     return {
-  //       success: false,
-  //       message: 'No roles found',
-  //     };
-  //   }
-  //   return {
-  //     success: true,
-  //     message: 'Roles fetched successfully',
-  //     roles,
-  //   };
-  // }
-
-  async generateJWT(payload: JwtPayload, type?: string) {
+  async generateJWT(
+    payload: JwtPayload,
+    type: string,
+    expiresIn: string = '365d',
+  ) {
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: '365d',
+      expiresIn,
     });
-    // if (update) {
-    //   await this.userService.updateToken(token, payload.id);
-    // } else {
     await this.userService.saveToken2(token, payload.id, type);
-    // }
     return token;
   }
-
-  // async create(permissionData: Partial<Permission>): Promise<Permission> {
-  //   const newPermission = new this.permissionModel(permissionData);
-  //   return newPermission.save();
-  // }
-
-  // async createRole(roleData: Partial<AdminRole>): Promise<AdminRole> {
-  //   try {
-  //     const newRole = new this.roleModel(roleData);
-  //     return await newRole.save();
-  //   } catch (error) {
-  //     if (error.code === 11000) {
-  //       throw new ConflictException('Role name must be unique');
-  //     }
-  //     throw error;
-  //   }
-  // }
 
   async createBusinessRole(
     roleData: Partial<BusinessRole>,
