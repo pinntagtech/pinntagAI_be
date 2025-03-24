@@ -331,6 +331,7 @@ export class AdminController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
+        status: result.status,
         user: result.user,
         token: result.token,
       });

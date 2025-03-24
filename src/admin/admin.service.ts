@@ -498,9 +498,9 @@ export class AdminService {
           status: false,
           message: 'Please reset your password',
           user: adminDoc,
+          token: null,
         };
       }
-      console.log('Last check::');
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
       return {
         success: true,
