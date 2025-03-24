@@ -85,6 +85,42 @@ export class AdminService {
     private readonly mailService: MailService,
   ) {}
 
+  calculateExpirationDate(expiresIn: string): Date {
+    const timeUnit = expiresIn.slice(-1); // Get last character (m, h, d)
+    const timeValue = parseInt(expiresIn.slice(0, -1), 10); // Get numeric value
+
+    let multiplier = 1000; // Default to seconds
+    switch (timeUnit) {
+      case 'm': // Minutes
+        multiplier *= 60;
+        break;
+      case 'h': // Hours
+        multiplier *= 60 * 60;
+        break;
+      case 'd': // Days
+        multiplier *= 60 * 60 * 24;
+        break;
+      default:
+        throw new Error(`Invalid expiresIn format: ${expiresIn}`);
+    }
+
+    return new Date(Date.now() + timeValue * multiplier);
+  }
+
+  async generateJWT(
+    payload: JwtPayload,
+    type: string,
+    expiresIn: string = '365d',
+  ) {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn,
+    });
+    const expirationTime = this.calculateExpirationDate(expiresIn);
+    await this.userService.saveToken2(token, payload.id, type, expirationTime);
+    return token;
+  }
+
   async getUsers() {
     const users = await this.userModel
       .find()
@@ -486,13 +522,26 @@ export class AdminService {
       };
       const adminDoc = JSON.parse(JSON.stringify(foundAdmin));
       delete adminDoc.password;
+      delete adminDoc.__v;
+      delete adminDoc.createdAt;
+      delete adminDoc.updatedAt;
+      delete adminDoc.isDeleted;
+      delete adminDoc.creatorType;
+      delete adminDoc.driveDefaultSpace;
+      delete adminDoc.creator;
+      delete adminDoc.creatorType;
       if (foundAdmin.forcePasswordReset) {
+        const token = await this.generateJWT(
+          payload,
+          TokenTypes.RESET_PASSWORD,
+          '5m',
+        );
         return {
           success: true,
           status: false,
           message: 'Please reset your password',
           user: adminDoc,
-          token: null,
+          token,
         };
       }
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
@@ -502,6 +551,20 @@ export class AdminService {
         message: 'Admin logged in successfully',
         user: adminDoc,
         token,
+      };
+    }
+  }
+
+  async forceResetPassword(adminId: string, password: string, token: string) {
+    try {
+      return {
+        success: true,
+        message: 'Password reset successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
       };
     }
   }
@@ -575,6 +638,22 @@ export class AdminService {
     return collectedIds;
   }
 
+  // async createBusinessRole(
+  //   roleData: Partial<BusinessRole>,
+  // ): Promise<BusinessRole> {
+  //   try {
+  //     const newRole = new this.businessRoleModel({
+  //       ...roleData,
+  //       isParent: true,
+  //     });
+  //     return await newRole.save();
+  //   } catch (error) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('Role name must be unique');
+  //     }
+  //     throw error;
+  //   }
+  // }
   // async fetchRoles(adminId: string) {
   //   const allAdminIds = await this.getAllChildAdminIds(adminId);
   //   const roles = await this.roleModel.find({ creator: { $in: allAdminIds } });
@@ -591,18 +670,18 @@ export class AdminService {
   //   };
   // }
 
-  async generateJWT(payload: JwtPayload, type?: string) {
-    const token = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: '365d',
-    });
-    // if (update) {
-    //   await this.userService.updateToken(token, payload.id);
-    // } else {
-    await this.userService.saveToken2(token, payload.id, type);
-    // }
-    return token;
-  }
+  // async generateJWT(payload: JwtPayload, type?: string) {
+  //   const token = await this.jwtService.signAsync(payload, {
+  //     secret: process.env.JWT_SECRET,
+  //     expiresIn: '365d',
+  //   });
+  //   // if (update) {
+  //   //   await this.userService.updateToken(token, payload.id);
+  //   // } else {
+  //   await this.userService.saveToken2(token, payload.id, type);
+  //   // }
+  //   return token;
+  // }
 
   // async create(permissionData: Partial<Permission>): Promise<Permission> {
   //   const newPermission = new this.permissionModel(permissionData);

@@ -618,8 +618,8 @@ export class UserService {
     });
   }
 
-  async saveToken2(token: string, id: string, type?: string) {
-    return await this.tokenModel.create({
+  async saveToken2(token: string, id: string, type: string, expiresAt: Date) {
+    const createdToken = await this.tokenModel.create({
       token,
       userType: UserTypes.USER,
       user: new mongoose.Types.ObjectId(id),

@@ -33,6 +33,7 @@ import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
+import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
 
 @Controller('admin')
 export class AdminController {
@@ -328,7 +329,8 @@ export class AdminController {
   async adminLogin(@Res() res: Response, @Body() loginDto: LoginDto) {
     const result = await this.adminService.adminLogin(loginDto);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      const status = result.status ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+      return res.status(status).json({
         message: result.message,
         status: result.status,
         user: result.user,
@@ -337,6 +339,40 @@ export class AdminController {
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         status: false,
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('login/reset-password')
+  @UseGuards(ResetPasswordGuard)
+  async forceResetPassword(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: { password: string },
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!body.password) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide password.',
+      });
+    }
+    if (typeof body.password !== 'string') {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide valid password.',
+      });
+    }
+    const result = await this.adminService.forceResetPassword(
+      user.id,
+      body.password,
+      req['tokenId'],
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }

@@ -114,8 +114,18 @@ import {
   BusinessCountrySchema,
 } from 'src/business/model/businessCountry.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
-import { BusinessDocumentType, BusinessDocumentTypeSchema } from 'src/business/model/BussinessDocumentType.model';
-import { BusinessConstitution, BusinessConstitutionSchema } from 'src/business/model/businessConstitution.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeSchema,
+} from 'src/business/model/BussinessDocumentType.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionSchema,
+} from 'src/business/model/businessConstitution.model';
+import {
+  GuestSession,
+  GuestSessionSchema,
+} from 'src/auth/models/guestSession.model';
 
 @Module({
   imports: [
@@ -165,6 +175,7 @@ import { BusinessConstitution, BusinessConstitutionSchema } from 'src/business/m
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: GuestSession.name, schema: GuestSessionSchema },
     ]),
   ],
   controllers: [AdminController],
