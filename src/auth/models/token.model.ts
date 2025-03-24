@@ -29,4 +29,4 @@ export class Token {
 
 export const TokenSchema = SchemaFactory.createForClass(Token);
 
-// TokenSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 });
+TokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

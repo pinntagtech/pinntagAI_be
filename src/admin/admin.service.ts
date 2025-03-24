@@ -91,6 +91,42 @@ export class AdminService {
     private readonly mailService: MailService,
   ) {}
 
+  calculateExpirationDate(expiresIn: string): Date {
+    const timeUnit = expiresIn.slice(-1); // Get last character (m, h, d)
+    const timeValue = parseInt(expiresIn.slice(0, -1), 10); // Get numeric value
+
+    let multiplier = 1000; // Default to seconds
+    switch (timeUnit) {
+      case 'm': // Minutes
+        multiplier *= 60;
+        break;
+      case 'h': // Hours
+        multiplier *= 60 * 60;
+        break;
+      case 'd': // Days
+        multiplier *= 60 * 60 * 24;
+        break;
+      default:
+        throw new Error(`Invalid expiresIn format: ${expiresIn}`);
+    }
+
+    return new Date(Date.now() + timeValue * multiplier);
+  }
+
+  async generateJWT(
+    payload: JwtPayload,
+    type: string,
+    expiresIn: string = '365d',
+  ) {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn,
+    });
+    const expirationTime = this.calculateExpirationDate(expiresIn);
+    await this.userService.saveToken2(token, payload.id, type, expirationTime);
+    return token;
+  }
+
   async getUsers() {
     const users = await this.userModel
       .find()
@@ -525,7 +561,7 @@ export class AdminService {
     }
   }
 
-  async forceResetPassword(password: string, token: string) {
+  async forceResetPassword(adminId: string, password: string, token: string) {
     try {
       return {
         success: true,
@@ -606,19 +642,6 @@ export class AdminService {
       await this.getAllChildAdminIds(childId, collectedIds, false);
     }
     return collectedIds;
-  }
-
-  async generateJWT(
-    payload: JwtPayload,
-    type: string,
-    expiresIn: string = '365d',
-  ) {
-    const token = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn,
-    });
-    await this.userService.saveToken2(token, payload.id, type);
-    return token;
   }
 
   async createBusinessRole(

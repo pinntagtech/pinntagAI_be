@@ -34,6 +34,7 @@ import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
+import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
 
 @Controller('admin')
 export class AdminController {
@@ -345,23 +346,27 @@ export class AdminController {
   }
 
   @Post('login/reset-password')
+  @UseGuards(ResetPasswordGuard)
   async forceResetPassword(
+    @Req() req: Request,
     @Res() res: Response,
-    @Body() body: { password: string; token: string },
+    @Body() body: { password: string },
+    @TokenDecoder() user: DecodedUser,
   ) {
-    if (!body.password || !body.token) {
+    if (!body.password) {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide password and token',
+        message: 'Please provide password.',
       });
     }
-    if (typeof body.password !== 'string' || typeof body.token !== 'string') {
+    if (typeof body.password !== 'string') {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide valid password and token',
+        message: 'Please provide valid password.',
       });
     }
     const result = await this.adminService.forceResetPassword(
+      user.id,
       body.password,
-      body.token,
+      req['tokenId'],
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({

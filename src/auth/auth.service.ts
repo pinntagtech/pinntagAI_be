@@ -1548,9 +1548,9 @@ export class AuthService {
 
   async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
     let expireIn = '365d';
-    if(tokenType === TokenTypes.RESET_PASSWORD){
+    if (tokenType === TokenTypes.RESET_PASSWORD) {
       expireIn = '15m';
-    }else if(tokenType === TokenTypes.VERIFY_EMAIL){
+    } else if (tokenType === TokenTypes.VERIFY_EMAIL) {
       expireIn = '1d';
     }
     const token = await this.jwtService.signAsync(payload, {
@@ -3976,7 +3976,7 @@ export class AuthService {
           user.name,
           user.email,
           resetLink,
-          "15 Minuter"
+          '15 Minuter',
         );
       } else if (userType === UserTypes.USER) {
         const user = await this.userModel.findOne({ email: email });
@@ -4014,22 +4014,21 @@ export class AuthService {
   }
   async verifyPassReset(user: any, password: string, tokenId: string) {
     try {
-      console.log("check 1:",user.userType)
+      console.log('check 1:', user.userType);
       if (user.userType === UserTypes.ADMIN) {
-
         const hashedPassword = await bcrypt.hash(password, 10);
         await this.adminModel.updateOne(
           { _id: user.id },
           { password: hashedPassword },
         );
-      //delete token
-      await this.tokenModel.deleteOne({ _id: tokenId });
+        //delete token
+        await this.tokenModel.deleteOne({ _id: tokenId });
 
-      return {
-        success: true,
-        message: 'User Verified Successfully',
-        // token: loginToken,
-      };
+        return {
+          success: true,
+          message: 'User Verified Successfully',
+          // token: loginToken,
+        };
       } else if (user.userType === UserTypes.USER) {
         const hashedPassword = await bcrypt.hash(password, 10);
         await this.userModel.updateOne(
@@ -4037,17 +4036,17 @@ export class AuthService {
           { password: hashedPassword },
         );
 
-      //delete token
-      await this.tokenModel.deleteOne({ _id: tokenId });
+        //delete token
+        await this.tokenModel.deleteOne({ _id: tokenId });
 
-      return {
-        success: true,
-        message: 'User Verified Successfully',
-        // token: loginToken,
-      };
+        return {
+          success: true,
+          message: 'User Verified Successfully',
+          // token: loginToken,
+        };
       } else if (user.userType === UserTypes.BUSINESS) {
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log("hashed Pass: in Business:", hashedPassword);
+        console.log('hashed Pass: in Business:', hashedPassword);
         await this.businessUserModel.updateOne(
           { _id: user.id },
           { password: hashedPassword },
@@ -4061,7 +4060,6 @@ export class AuthService {
         message: 'User Password Resetted Successfully!',
         // token: loginToken,
       };
-
     } catch (error) {
       return { success: false, message: error.message };
     }
