@@ -14,22 +14,25 @@ export class BusinessUser {
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId[];
 
-   @Prop({
+  @Prop({
     required: true,
+<<<<<<< HEAD
     enum: Object.values(ProfileStatus),
+=======
+    enum: [0, 1, 2, 3],
+>>>>>>> 5c332dff6b1e7e45e1d99b0c4843a4692a171d48
     default: 0,
   })
   status: number;
 
-  @Prop({default:true})
-  isActive:boolean;
+  @Prop({ default: true })
+  isActive: boolean;
 
-  @Prop({ref: 'BusinessUser' })
+  @Prop({ ref: 'BusinessUser' })
   creator: mongoose.Types.ObjectId;
 
-  @Prop({required:true,enum:Object.values(BusinessUserCreatorType)})
-  creatorType:string;
-
+  @Prop({ required: true, enum: Object.values(BusinessUserCreatorType) })
+  creatorType: string;
 
   @Prop({
     default:
@@ -42,17 +45,16 @@ export class BusinessUser {
   countryCode: string;
   @Prop()
   phone: string;
-  @Prop({required: true,unique:true })
+  @Prop({ required: true, unique: true })
   email: string;
-  @Prop({default:false})
-  isEmailVerified:boolean;
+  @Prop({ default: false })
+  isEmailVerified: boolean;
   @Prop()
   password: string;
-  @Prop({ref:Business.name})
-  business:mongoose.Types.ObjectId;
+  @Prop({ ref: Business.name })
+  business: mongoose.Types.ObjectId;
   @Prop()
-  drive:mongoose.Types.ObjectId;
-  
+  drive: mongoose.Types.ObjectId;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
