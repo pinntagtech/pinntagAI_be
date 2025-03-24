@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -22,6 +23,11 @@ import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { JwtPayload } from 'jsonwebtoken';
+import { CreateBrandDto } from './dto/create-brand.dto';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { Privilege } from 'src/roles/privilege.decorator';
+import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
+import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 
 @Controller('business')
 export class BusinessController {
@@ -43,6 +49,7 @@ export class BusinessController {
     }
   }
   @Get()
+  @UseGuards(JwtGuard2)
   async fetch(
     @Res() res: Response,
     @Query('limit') limit: string,
@@ -114,14 +121,15 @@ export class BusinessController {
     }
   }
 
-  //fetch self created businesses'
+  //fetch self created bussiness users and downline users'
   @Get('users')
+  @UseGuards(JwtGuard2)
   async fetchUsers(
     @Req() req: Request,
     @Res() res: Response,
     @TokenDecoder() user: JwtPayload,
   ) {
-    const result = await this.businessService.fetchUsers(user.id);
+    const result = await this.businessService.getUsersList(user.id);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -136,6 +144,7 @@ export class BusinessController {
   }
 
   @Post('user/update/:id')
+  @UseGuards(JwtGuard2)
   async updateBusinessUser(
     @Req() req: Request,
     @Res() res: Response,
@@ -305,4 +314,72 @@ export class BusinessController {
       });
     }
   }
+  @Post('brand')
+  async createBrand(@Res() res: Response, @Body() data: CreateBrandDto) {
+    const result = await this.businessService.createBrand(data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('toggleStatus/:id')
+  // @Privilege(ResourceTypes.USERS, Actions.UPDATE)
+  // @UseGuards(PrivilegeGuard)
+  @UseGuards(JwtGuard2)
+  async toggleStatus(
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.toggleStatus(id, isActive);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  
+
+
+  // @Get('brand')
+  // async fetchBrand(
+  //   @Res() res: Response,
+  //   @Query('limit') limit: string,
+  //   @Query('page') page: string,
+  // ) {
+  //   const result = await this.businessService.fetchBrand(
+  //     page ? parseInt(page) : 1,
+  //     limit ? parseInt(limit) : 10,
+  //   );
+
+  //   if (result.success) {
+  //     return res.status(HttpStatus.OK).json({
+  //       message: result.message,
+  //       data: result.data,
+  //       total: result.total,
+  //       pages: result.pages,
+  //     });
+  //   } else {
+  //     return res.status(HttpStatus.BAD_REQUEST).json({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 }

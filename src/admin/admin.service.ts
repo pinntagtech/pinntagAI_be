@@ -548,6 +548,7 @@ export class AdminService {
         admin.name,
         admin.email,
         resetLink,
+        '15 minutes',
       );
       return {
         success: true,

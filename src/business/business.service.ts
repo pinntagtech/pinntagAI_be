@@ -11,6 +11,7 @@ import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessCreatorType,
   BusinessUserCreatorType,
+  ProfileStatus,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from './model/business.model';
@@ -46,6 +47,11 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeDocument,
 } from './model/BussinessDocumentType.model';
+import { DriveService } from 'src/drive/drive.service';
+import { drive } from 'googleapis/build/src/apis/drive';
+import { Drive } from 'src/drive/models/drive.model';
+import { Brand, BrandDocument } from './model/brand.model';
+import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 
 @Injectable()
 export class BusinessService {
@@ -67,10 +73,12 @@ export class BusinessService {
     private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
     @InjectModel(BusinessDocumentType.name)
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
+    @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
     private readonly authService: AuthService,
+    private readonly driveService: DriveService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
@@ -120,7 +128,16 @@ export class BusinessService {
         );
       }
       //create drive
-      await this.seederService.createDrive(createdUser._id, BusinessUser.name);
+      let driveDetails = await this.seederService.createDrive(
+        createdUser._id,
+        BusinessUser.name,
+      );
+      console.log('driveD:', driveDetails.id);
+
+      await this.businessUserModel.updateOne(
+        { _id: createdUser.id },
+        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      );
       //sendEmaillink verification
 
       const token = await this.authService.generateJWT(
@@ -140,16 +157,17 @@ export class BusinessService {
         resetLink,
       );
 
+      const updatedUser = await this.businessUserModel.findById(createdUser.id);
       return {
         success: true,
         message: 'Business User Created Successfully!',
-        data: createdUser,
+        data: updatedUser,
       };
     } catch (error) {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -175,8 +193,22 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
+      const businessUser = await this.businessUserModel.findById(
+        data.businessUser,
+      );
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      if (businessUser.status > ProfileStatus.INITIATED) {
+        return {
+          success: false,
+          message: 'Business User already mapped with another Business',
+        };
+      }
 
-      //
       const adminDetails = await this.adminModel.findOne({
         isSuperAdmin: true,
       });
@@ -193,6 +225,17 @@ export class BusinessService {
           message: 'Please provide valid Business Industry and Category',
         };
       }
+      //create business folder in drive
+      const userDetails = await this.businessUserModel.findById(
+        data.businessUser,
+      );
+
+      const businessFolder = await this.driveService.createFolder({
+        parent: userDetails.drive,
+        parentType: Drive.name,
+        folderName: data.name,
+      });
+
       let createObj = {
         name: data.name,
         email: data.email,
@@ -201,6 +244,7 @@ export class BusinessService {
         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         // registrationType: data.registrationType,
         // registrationNumber: data.registrationNumber,
         // bio: data.bio,
@@ -226,7 +270,12 @@ export class BusinessService {
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
-          { $set: { business: createdBusiness._id, status: 1 } },
+          {
+            $set: {
+              business: createdBusiness._id,
+              status: ProfileStatus.MAPPED,
+            },
+          },
         );
       }
       return {
@@ -238,7 +287,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -253,6 +302,22 @@ export class BusinessService {
         };
       }
 
+      const businessUser = await this.businessUserModel.findById(
+        findBusiness.creator,
+      );
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      if (businessUser.status < ProfileStatus.MAPPED) {
+        return {
+          success: false,
+          message: 'Business User not mapped with any Business',
+        };
+      }
+
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
@@ -260,6 +325,7 @@ export class BusinessService {
         }
       });
       if (
+        businessUser.status === ProfileStatus.MAPPED &&
         updateObj.isRegistered &&
         updateObj.constitution?.trim() &&
         updateObj.documentNumber?.trim() &&
@@ -276,13 +342,26 @@ export class BusinessService {
               'Business is already Registered with the provided document number and type',
           };
         }
-        updateObj['status'] = 2;
+        // updateObj['status'] = ProfileStatus.REGISTERED;
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.REGISTERED } },
+        );
       }
-      if (updateObj.isRegistered == false) {
-        updateObj['status'] = 2;
+      if (
+        businessUser.status === ProfileStatus.MAPPED &&
+        updateObj.isRegistered == false
+      ) {
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.REGISTERED } },
+        );
       }
-      if (updateObj.bio) {
-        updateObj['status'] = 3;
+      if (businessUser.status === ProfileStatus.REGISTERED && updateObj.bio) {
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.COMPLETED } },
+        );
       }
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
@@ -325,7 +404,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -354,7 +433,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -388,7 +467,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -407,7 +486,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: 'Internal Server Error!',
+        message: 'Something went wrong.',
       };
     }
   }
@@ -520,12 +599,25 @@ export class BusinessService {
     });
   }
 
-  async fetchUsers(id: string) {
+  async getUsersList(id: string) {
     try {
+      const user = await this.businessUserModel.findById(id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      const allUserIds = await this.getAllChildUsersIds(user.id);
+      const users = await this.businessUserModel.find({
+        creator: new mongoose.Types.ObjectId(id),
+        creatorType: BusinessUserCreatorType.BUSINESS,
+      });
+
       return {
         success: true,
-        message: 'All Good!',
-        data: '',
+        message: 'Business User fetched Successfully!',
+        data: users,
       };
     } catch (error) {
       return {
@@ -675,6 +767,92 @@ export class BusinessService {
         success: true,
         message: 'Document Types fetched Successfully!',
         data: documentTypes,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async createBrand(data: any) {
+    try {
+      const findBrand = await this.brandModel.findOne({
+        name: data.name,
+      });
+      if (findBrand) {
+        return {
+          success: false,
+          message: 'Brand already exist with given name',
+        };
+      }
+      if (!isValidObjectId(data.businessId)) {
+        return {
+          success: false,
+          message: 'Please provide valid Business Id',
+        };
+      }
+      if (!isValidObjectId(data.industryId)) {
+        return {
+          success: false,
+          message: 'Please provide valid Industry Id',
+        };
+      }
+      return {
+        success: true,
+        message: 'all good!',
+        data: '',
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  private async getAllChildUsersIds(
+    userId: string,
+    collectedIds: string[] = [],
+    isFirstCall = true, // Track initial call
+  ): Promise<string[]> {
+    if (!isFirstCall) {
+      collectedIds.push(userId);
+    }
+    const childUsers = await this.businessUserModel
+      .find({
+        creator: new mongoose.Types.ObjectId(userId),
+        creatorType: BusinessUserCreatorType.BUSINESS,
+      })
+      .select('_id');
+    const childIds = childUsers.map((user) => user._id.toString());
+    if (!childIds.length) {
+      return collectedIds;
+    }
+    for (const childId of childIds) {
+      await this.getAllChildUsersIds(childId, collectedIds, false);
+    }
+    return collectedIds;
+  }
+  async toggleStatus(id: string, isActive: boolean) {
+    try {
+      const foundUser = await this.businessUserModel.findById(id);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      // if(foundUser.creator == creatorId){
+
+      // }
+      const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
+        $set: { isActive },
+      });
+      return {
+        success: true,
+        message: 'User Updated Successfully!',
+        data: updatedUser,
       };
     } catch (error) {
       return {

@@ -107,6 +107,10 @@ import {
   BusinessConstitution,
   BusinessConstitutionSchema,
 } from './model/businessConstitution.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Folder, folderSchema } from 'src/drive/models/folder.model';
+import { File, FileSchema } from 'src/drive/models/file.model';
+import { Brand, BrandSchema } from './model/brand.model';
 
 @Module({
   imports: [
@@ -151,6 +155,9 @@ import {
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: Folder.name, schema: folderSchema },
+      { name: File.name, schema: FileSchema },
+      { name: Brand.name, schema: BrandSchema },
     ]),
   ],
   controllers: [BusinessController],
@@ -165,6 +172,7 @@ import {
     SeederService,
     AuthService,
     SmsService,
+    DriveService,
   ],
 })
 export class BusinessModule {}
