@@ -22,7 +22,7 @@ export type BusinessDocument = Business & Document;
 export class Business {
   @Prop({ default: false })
   isDeleted: boolean;
-  
+
   // @Prop({
   //   required: true,
   //   enum: [0, 1, 2],
@@ -34,26 +34,23 @@ export class Business {
   @Prop()
   isRegistered: boolean;
 
-  @Prop({ref:BusinessCategory.name})
-  businessCategory: mongoose.Types.ObjectId;
+  @Prop({ ref: BusinessCategory.name })
+  businessCategory: mongoose.Types.ObjectId[];
 
-  @Prop({ref:BusinessIndustry.name})
+  @Prop({ ref: BusinessIndustry.name })
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop()
   cover: string;
 
-  
   @Prop()
-  constitution:string;
-  
+  constitution: string;
+
   @Prop()
   documentNumber: string;
 
   @Prop()
   documentType: string;
-
-
 
   @Prop({ ref: Brand.name })
   brand: mongoose.Types.ObjectId;
@@ -166,8 +163,8 @@ export class Business {
   managerEmail: string;
   @Prop()
   managerPhone: string;
-  @Prop({ref:'Folder'})
-  drivePath:mongoose.Types.ObjectId;
+  @Prop({ ref: 'Folder' })
+  drivePath: mongoose.Types.ObjectId;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

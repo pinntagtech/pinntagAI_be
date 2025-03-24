@@ -217,13 +217,35 @@ export class BusinessService {
       const findBusinessIndustry = await this.businessIndModel.findById(
         data.businessIndustry,
       );
-      const findBusinessCategory = await this.businessCategoryModel.findById(
-        data.businessCategory,
-      );
-      if (!findBusinessIndustry || !findBusinessCategory) {
+      const businessCategories = data.businessCategory.split(',');
+      for (let category of businessCategories) {
+        if (!isValidObjectId(category)) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+      }
+      // const findBusinessCategory = await this.businessCategoryModel.findById(
+      //   data.businessCategory,
+      // );
+      const businessCategoriesIds = [];
+      for (let category of businessCategories) {
+        const findBusinessCategory =
+          await this.businessCategoryModel.findById(category);
+        if (!findBusinessCategory) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+        businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+      }
+      delete data.businessCategory;
+      if (!findBusinessIndustry) {
         return {
           success: false,
-          message: 'Please provide valid Business Industry and Category',
+          message: 'Please provide valid Business Industry',
         };
       }
       //create business folder in drive
@@ -241,7 +263,7 @@ export class BusinessService {
         name: data.name,
         email: data.email,
         // isRegistered: data.isRegistered,
-        businessCategory: new mongoose.Types.ObjectId(data.businessCategory),
+        businessCategory: businessCategoriesIds,
         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
@@ -804,8 +826,6 @@ export class BusinessService {
           message: 'Please provide valid Industry Id',
         };
       }
-      
-
 
       return {
         success: true,
@@ -843,7 +863,7 @@ export class BusinessService {
     }
     return collectedIds;
   }
-  async toggleStatus(creatorId:string,id: string, isActive: boolean) {
+  async toggleStatus(creatorId: string, id: string, isActive: boolean) {
     try {
       const foundUser = await this.businessUserModel.findById(id);
       if (!foundUser) {
