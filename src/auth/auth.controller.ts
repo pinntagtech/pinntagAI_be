@@ -44,6 +44,7 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UserTypes } from 'src/enums/auth.enums';
 import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
+import { VerifyMailGuard } from './guards2/mailVerify.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -950,15 +951,19 @@ export class AuthController {
     }
   }
   @Post('verify-email')
+  @UseGuards(VerifyMailGuard)
   async verifyEmailviaLink(
+    @Req() req:Request,
     @Res() res: Response,
-    @Query('token') token: string,
+    @TokenDecoder() user: DecodedUser,
+    // @Query('token') token: string,
   ) {
-    const result = await this.authService.verifyEmailviaLink(token);
+    const tokenId = req['tokenId'];
+    const result = await this.authService.verifyEmailviaLink(user,tokenId);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        token: result.token,
+        // token: result.token,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

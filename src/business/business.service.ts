@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import * as bcrypt from 'bcrypt';
@@ -55,6 +55,8 @@ import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/recor
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Resource } from 'src/roles/models/resource.model';
+import { ActionDocument } from 'src/roles/models/actions.model';
 
 @Injectable()
 export class BusinessService {
@@ -78,6 +80,8 @@ export class BusinessService {
     @InjectModel(BusinessDocumentType.name)
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
+    // @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
+    // @InjectModel(Action.name) private readonly driveModel: Model<ActionDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -171,7 +175,7 @@ export class BusinessService {
     }
   }
 
-  async createBusiness(data: CreateBusinessDto) {
+  async createBusiness(userId:string,data: CreateBusinessDto) {
     try {
       //unique business check
       const findBusiness = await this.businessModel.findOne({
@@ -186,14 +190,14 @@ export class BusinessService {
           message: `Business already exist with given email:${data.email}`,
         };
       }
-      if (data.businessUser && !isValidObjectId(data.businessUser)) {
+      if (userId && !isValidObjectId(userId)) {
         return {
           success: false,
           message: 'Please provide valid Business User Id',
         };
       }
       const businessUser = await this.businessUserModel.findById(
-        data.businessUser,
+        userId
       );
       if (!businessUser) {
         return {
@@ -248,7 +252,7 @@ export class BusinessService {
       }
       //create business folder in drive
       const userDetails = await this.businessUserModel.findById(
-        data.businessUser,
+        userId,
       );
 
       const businessFolder = await this.driveService.createFolder({
@@ -260,30 +264,21 @@ export class BusinessService {
       let createObj = {
         name: data.name,
         email: data.email,
-        // isRegistered: data.isRegistered,
         businessCategory: businessCategoriesIds,
         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
-        // registrationType: data.registrationType,
-        // registrationNumber: data.registrationNumber,
-        // bio: data.bio,
+        creatorType: BusinessCreatorType.BUSINESS_USER,
+        creator:new mongoose.Types.ObjectId(userId),
+        authorisedUser: new mongoose.Types.ObjectId(userId),
       };
       if (data.website) createObj['website'] = data.website;
 
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
-      if (data.businessUser) {
-        createObj['creatorType'] = BusinessCreatorType.BUSINESS_USER;
-        createObj['creator'] = new mongoose.Types.ObjectId(data.businessUser);
-        createObj['authorisedUser'] = new mongoose.Types.ObjectId(
-          data.businessUser,
-        );
-      } else {
-        createObj['creatorType'] = BusinessCreatorType.ADMIN;
-        createObj['creator'] = new mongoose.Types.ObjectId(adminDetails._id);
-      }
+     
+
       const createdBusiness = await this.businessModel.create(createObj);
 
       //create folder
@@ -300,6 +295,7 @@ export class BusinessService {
         );
       }
       // for (let roleName of Object.keys(DefaultBusinessRoles)) {
+      //   console.log("roleName:",roleName)
       //   const createdRole = await this.roleModel.create({
       //     name: DefaultBusinessRoles[roleName].name,
       //     creator: new mongoose.Types.ObjectId(data.businessUser),
@@ -307,6 +303,7 @@ export class BusinessService {
       //     belongsTo: RoleBelonging.BUSINESS,
       //     business: createdBusiness._id,
       //   });
+      //   const resourceId = await this.
       //   await this.privilegeModel.create({
       //     role: createdRole._id,
       //     resource: DefaultBusinessRoles[roleName].resource,
@@ -533,6 +530,9 @@ export class BusinessService {
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
+      }
+      if(!user.isEmailVerified){
+        return { success: false, message: 'Email is not verified' };
       }
       const businessUser = await this.businessUserModel
         .findById(user.id)
