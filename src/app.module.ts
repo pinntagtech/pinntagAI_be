@@ -85,6 +85,7 @@ import {
   BusinessConstitution,
   BusinessConstitutionSchema,
 } from './business/model/businessConstitution.model';
+import { RateLimiterModule } from 'nestjs-rate-limiter';
 
 @Module({
   imports: [
@@ -97,6 +98,11 @@ import {
     }),
     MulterModule.register({
       dest: './uploads',
+    }),
+    RateLimiterModule.register({
+      points: 5, // 5 requests
+      duration: 60, // per 60 seconds (1 minute)
+      keyPrefix: 'ratelimit', // Optional: Redis-based tracking
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
     MongooseModule.forFeature([
