@@ -36,7 +36,6 @@ export class BusinessController {
   @Post()
   async createBusiness(@Res() res: Response, @Body() data: CreateBusinessDto) {
     const result = await this.businessService.createBusiness(data);
-
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -48,6 +47,7 @@ export class BusinessController {
       });
     }
   }
+
   @Get()
   @UseGuards(JwtGuard2)
   async fetch(
@@ -61,7 +61,6 @@ export class BusinessController {
       limit ? parseInt(limit) : 10,
       data,
     );
-
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -75,6 +74,7 @@ export class BusinessController {
       });
     }
   }
+
   @Post('update/:id')
   async updateBusiness(
     @Res() res: Response,

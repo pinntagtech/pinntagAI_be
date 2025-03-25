@@ -835,11 +835,9 @@ export class AdminService {
         message: 'Role not found with the id provided.',
       };
     }
-    const updatedAdmin = await this.adminModel.findByIdAndUpdate(
-      adminId,
-      { $set: { role: role._id } },
-      { new: true },
-    );
+    const updatedAdmin = await this.adminModel
+      .findByIdAndUpdate(adminId, { $set: { role: role._id } }, { new: true })
+      .populate('role', '_id name');
     return {
       success: true,
       message: 'Role assigned to admin successfully',
@@ -1053,9 +1051,7 @@ export class AdminService {
     try {
       const foundBusiness = await this.businessModel
         .findById(id)
-        .populate('role', '_id name')
-        .populate('brand', '_id name')
-        .populate('businessRoles', '_id name');
+        .populate('brand', '_id name');
       if (!foundBusiness) {
         return {
           success: false,
@@ -1068,9 +1064,10 @@ export class AdminService {
         data: foundBusiness,
       };
     } catch (error) {
+      console.error(error);
       return {
         success: false,
-        message: error.message,
+        message: 'Error fetching business',
       };
     }
   }

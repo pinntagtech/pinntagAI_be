@@ -176,6 +176,7 @@ export class DriveService {
   }
   async createFolder(folderData: Partial<any>) {
     try {
+      console.log('folder data........', folderData);
       if (!isValidObjectId(folderData.parent)) {
         return {
           success: false,
@@ -260,76 +261,98 @@ export class DriveService {
       return { success: false, message: 'Failed to fetch file categories' };
     }
   }
-  async moveFile(toMove:string,dest:string) {
-    try{  
-      if(!isValidObjectId(toMove) || !isValidObjectId(dest)){
+  async moveFile(toMove: string, dest: string) {
+    try {
+      if (!isValidObjectId(toMove) || !isValidObjectId(dest)) {
         return {
-          success:false,
-          message:"Invalid ObjectID"
-        }
+          success: false,
+          message: 'Invalid ObjectID',
+        };
       }
-      const [toMoveFile,toMoveFolder,driveDest,folderDest] = await Promise.all([this.fileModel.findOne({_id:toMove}),this.folderModel.findOne({_id:toMove}),this.driveModel.findOne({_id:dest}),this.folderModel.findOne({_id:dest})])
-      if(!toMoveFile && toMoveFolder){
+      const [toMoveFile, toMoveFolder, driveDest, folderDest] =
+        await Promise.all([
+          this.fileModel.findOne({ _id: toMove }),
+          this.folderModel.findOne({ _id: toMove }),
+          this.driveModel.findOne({ _id: dest }),
+          this.folderModel.findOne({ _id: dest }),
+        ]);
+      if (!toMoveFile && toMoveFolder) {
         return {
-          success:false,
-          message:"Please Provide valid fileID or FolderID! Only File or a Folder can be moved!"
-        }
+          success: false,
+          message:
+            'Please Provide valid fileID or FolderID! Only File or a Folder can be moved!',
+        };
       }
-      if(!driveDest && !folderDest){
+      if (!driveDest && !folderDest) {
         return {
-          success:false,
-          message:"Please Provide valid driveID or folderID"
-        }
+          success: false,
+          message: 'Please Provide valid driveID or folderID',
+        };
       }
-        let parentDirectoryType = null;
-      if(driveDest) parentDirectoryType = "DRIVE";
-      if(folderDest) parentDirectoryType = "FOLDER";
-     
+      let parentDirectoryType = null;
+      if (driveDest) parentDirectoryType = 'DRIVE';
+      if (folderDest) parentDirectoryType = 'FOLDER';
+
       let result = null;
-      if(toMoveFile){
-        result = await this.fileModel.findOneAndUpdate({_id:toMove},{$set:{parentDirectory:new mongoose.Types.ObjectId(dest),ParentDirectoryType:parentDirectoryType}})
+      if (toMoveFile) {
+        result = await this.fileModel.findOneAndUpdate(
+          { _id: toMove },
+          {
+            $set: {
+              parentDirectory: new mongoose.Types.ObjectId(dest),
+              ParentDirectoryType: parentDirectoryType,
+            },
+          },
+        );
       }
-      if(toMoveFolder){
-        result = await this.folderModel.findOneAndUpdate({_id:toMove},{$set:{parent:new mongoose.Types.ObjectId(dest),parentType:parentDirectoryType}})
+      if (toMoveFolder) {
+        result = await this.folderModel.findOneAndUpdate(
+          { _id: toMove },
+          {
+            $set: {
+              parent: new mongoose.Types.ObjectId(dest),
+              parentType: parentDirectoryType,
+            },
+          },
+        );
       }
-      console.log("result:",result);
-      
+      console.log('result:', result);
 
       return {
-        sucess:true,
-        message:"File moved successfully!",
-        data:result
-      }
-
-    }catch(error){
+        sucess: true,
+        message: 'File moved successfully!',
+        data: result,
+      };
+    } catch (error) {
       console.error('Error while moving file:', error);
       return { success: false, message: 'Failed to move file' };
     }
   }
-  async getDrive(id:string){
-    try{
-      if(!isValidObjectId(id)){
+  async getDrive(id: string) {
+    try {
+      if (!isValidObjectId(id)) {
         return {
-          success:false,
-          message:"Invalid ObjectId"
-        }
+          success: false,
+          message: 'Invalid ObjectId',
+        };
       }
-      const drive = await this.driveModel.findOne({owner: new mongoose.Types.ObjectId(id)});
-      if(!drive){
+      const drive = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(id),
+      });
+      if (!drive) {
         return {
-          success:false,
-          message:"Drive not found!"
-        }
+          success: false,
+          message: 'Drive not found!',
+        };
       }
       return {
-        success:true,
-        message:"Drive fetched successfully!",
-        data:drive
-      }
-    }catch(error){
+        success: true,
+        message: 'Drive fetched successfully!',
+        data: drive,
+      };
+    } catch (error) {
       console.error('Error while fetching drive:', error);
       return { success: false, message: 'Failed to fetch drive' };
     }
   }
-
 }
