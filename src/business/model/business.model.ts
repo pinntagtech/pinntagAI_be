@@ -77,7 +77,7 @@ export class Business {
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
   @Prop()
-  countryCode: string;
+  countryCode: mongoose.Types.ObjectId;
   @Prop()
   phone: string;
   @Prop()

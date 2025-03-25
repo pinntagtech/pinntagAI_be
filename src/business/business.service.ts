@@ -254,15 +254,14 @@ export class BusinessService {
       }
       await this.mailService.sendBusinessUserVerificationMail(user.id);
       return {
-        success:true,
-        message:'Otp resent successfully!'
-      }
-
+        success: true,
+        message: 'Otp resent successfully!',
+      };
     } catch (error) {
       return {
         success: false,
-        message: "Something went wrong.",
-      }
+        message: 'Something went wrong.',
+      };
     }
   }
 
@@ -385,7 +384,6 @@ export class BusinessService {
       // for (let roleName of Object.keys(DefaultBusinessRoles)) {
       //   console.log("roleName:",roleName)
 
-
       //   // const createdRole = await this.roleModel.create({
       //   //   name: DefaultBusinessRoles[roleName].name,
       //   //   creator: new mongoose.Types.ObjectId(data.businessUser),
@@ -446,16 +444,50 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
+      console.log(
+        businessUser.status,
+        updateObj.isRegistered,
+        updateObj.country,
+        updateObj.constitution,
+        updateObj.documentNumber,
+        updateObj.documentType,
+      );
       if (
         businessUser.status === ProfileStatus.MAPPED &&
         updateObj.isRegistered &&
-        updateObj.constitution?.trim() &&
-        updateObj.documentNumber?.trim() &&
-        updateObj.documentType?.trim()
+        updateObj.country &&
+        updateObj.constitution &&
+        updateObj.documentNumber &&
+        updateObj.documentType
       ) {
+        console.log('inside registration:::::::');
+        const findCountry = await this.businessCountryModel.findById(
+          updateObj.country,
+        );
+        const findConstitution = await this.businessConstitutionModel.findById(
+          updateObj.constitution,
+        );
+        const findDocumentType = await this.businessDocumentTypeModel.findById(
+          updateObj.documentType,
+        );
+        if (!findCountry && !findConstitution && !findDocumentType) {
+          return {
+            success: false,
+            message:
+              'Please provide valid Country, Constitution and Document Type',
+          };
+        }
+        updateObj['country'] = new mongoose.Types.ObjectId(updateObj.country);
+        updateObj['constitution'] = new mongoose.Types.ObjectId(
+          updateObj.constitution,
+        );
+        updateObj['documentType'] = new mongoose.Types.ObjectId(
+          updateObj.documentType,
+        );
+
         const alreadyRegistered = await this.businessModel.findOne({
           documentNumber: updateObj.documentNumber,
-          documentType: updateObj.documentType,
+          documentType: new mongoose.Types.ObjectId(updateObj.documentType),
         });
         if (alreadyRegistered) {
           return {
@@ -464,11 +496,12 @@ export class BusinessService {
               'Business is already Registered with the provided document number and type',
           };
         }
-        // updateObj['status'] = ProfileStatus.REGISTERED;
-        await this.businessUserModel.updateOne(
+        console.log('just updating Profile status:');
+        const isUpdated = await this.businessUserModel.updateOne(
           { _id: businessUser.id },
           { $set: { status: ProfileStatus.REGISTERED } },
         );
+        console.log('isUpdated:', isUpdated);
       }
       if (
         businessUser.status === ProfileStatus.MAPPED &&
