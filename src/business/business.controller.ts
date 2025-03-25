@@ -28,6 +28,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { Privilege } from 'src/roles/privilege.decorator';
 import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -118,6 +119,37 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('user/verify')
+  async verifyUser(
+    @Res() res: Response,
+    @Body() data: VerifyEmailDto
+  ) {
+    const result = await this.businessService.verifyUser(data);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token:result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('user/resendOtp')
+  async resendOtp(@Res() res: Response, @Body('email') email: string) {
+    const result = await this.businessService.resendOtp(email);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

@@ -4096,27 +4096,27 @@ export class AuthService {
     }
   }
 
-  async getProfile(user: DecodedUser) {
+  async getProfile(userId:string,userType:string) {
     try {
       let userDoc = null;
-      if (user.userType === UserTypes.ADMIN) {
-        userDoc = await this.adminModel.findById(user.id);
+      if (userType === UserTypes.ADMIN) {
+        userDoc = await this.adminModel.findById(userId);
         if (!userDoc) {
           return {
             success: false,
             message: 'Admin not found!',
           };
         }
-      } else if (user.userType === UserTypes.USER) {
-        userDoc = await this.userModel.findById(user.id);
+      } else if (userType === UserTypes.USER) {
+        userDoc = await this.userModel.findById(userId);
         if (!userDoc) {
           return {
             success: false,
             message: 'User not found!',
           };
         }
-      } else if (user.userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel.findById(user.id).populate('business');
+      } else if (userType === UserTypes.BUSINESS) {
+        userDoc = await this.businessUserModel.findById(userId).populate('business');
         if (!userDoc) {
           return {
             success: false,

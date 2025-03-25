@@ -18,7 +18,7 @@ import { Business, BusinessDocument } from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { OtpTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
@@ -57,6 +57,8 @@ import { RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 import { Resource } from 'src/roles/models/resource.model';
 import { ActionDocument } from 'src/roles/models/actions.model';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 
 @Injectable()
 export class BusinessService {
@@ -81,6 +83,7 @@ export class BusinessService {
     @InjectModel(BusinessDocumentType.name)
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
+    @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     // @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
     // @InjectModel(Action.name) private readonly driveModel: Model<ActionDocument>,
     private readonly mailService: MailService,
@@ -103,15 +106,20 @@ export class BusinessService {
         };
       }
 
-      //seed business default roles:
-      let ownerDetails = null;
-      let defaultBusinessRoles = [];
-
       const hashedPassword = await bcrypt.hash(data.password, 10);
       delete data.password;
 
+      //seed business owner default role:
+      const ownerRole = await this.roleModel.create({
+        name: 'Owner',
+        creator: new mongoose.Types.ObjectId(),
+        creatorType: RoleCreatorType.BUSINESS,
+        belongsTo: RoleBelonging.BUSINESS,
+        isPrimaryAdmin: true,
+      });
+
       let createObj = {
-        // role: [new mongoose.Types.ObjectId(ownerDetails.id)],
+        role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
         email: data.email,
         password: hashedPassword,
@@ -120,46 +128,41 @@ export class BusinessService {
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
+      await this.roleModel.updateOne(
+        { _id: ownerRole.id },
+        { $set: { creator: createdUser._id } },
+      );
 
-      // for (let defaultRole of defaultBusinessRoles) {
-      //   await this.roleModel.updateOne(
-      //     { _id: defaultRole },
-      //     {
-      //       $set: {
-      //         creator: new mongoose.Types.ObjectId(createdUser.id),
-      //       },
-      //     },
-      //   );
-      // }
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdUser._id,
         BusinessUser.name,
       );
-      console.log('driveD:', driveDetails.id);
-
       await this.businessUserModel.updateOne(
         { _id: createdUser.id },
         { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
       );
       //sendEmaillink verification
 
-      const token = await this.authService.generateJWT(
-        {
-          id: createdUser.id,
-          userType: UserTypes.BUSINESS,
-          // role: admin.role.toString(),
-          // business:
-        },
-        TokenTypes.VERIFY_EMAIL,
-        UserTypes.BUSINESS,
-      );
-      const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-      await this.mailService.sendEmailVerificationMail(
-        createdUser.name,
-        createdUser.email,
-        resetLink,
-      );
+      // const token = await this.authService.generateJWT(
+      //   {
+      //     id: createdUser.id,
+      //     userType: UserTypes.BUSINESS,
+      //     // role: admin.role.toString(),
+      //     // business:
+      //   },
+      //   TokenTypes.VERIFY_EMAIL,
+      //   UserTypes.BUSINESS,
+      // );
+      // const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
+      // await this.mailService.sendEmailVerificationMail(
+      //   createdUser.name,
+      //   createdUser.email,
+      //   resetLink,
+      // );
+
+      //send email otp
+      await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
       const updatedUser = await this.businessUserModel.findById(createdUser.id);
       return {
@@ -176,7 +179,94 @@ export class BusinessService {
     }
   }
 
-  async createBusiness(userId:string,data: CreateBusinessDto) {
+  async verifyUser(data: VerifyEmailDto) {
+    try {
+      const user = await this.businessUserModel.findOne({ email: data.email });
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      if (user.isEmailVerified) {
+        return {
+          success: false,
+          message: 'Email already verified!',
+        };
+      }
+      const foundOtpDoc = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(user.id),
+        type: OtpTypes.EMAIL,
+      });
+      if (!foundOtpDoc) {
+        return {
+          success: false,
+          message: 'Otp Expired, Please resend.',
+        };
+      } else if (foundOtpDoc.otp !== Number(data.otp)) {
+        return {
+          success: false,
+          message: 'Invalid Otp',
+        };
+      }
+      await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+      await this.businessUserModel.updateOne(
+        { _id: user.id },
+        { $set: { isEmailVerified: true } },
+      );
+      const token = await this.authService.generateJWT(
+        {
+          id: user.id,
+          userType: UserTypes.BUSINESS,
+          role: user.role[0].toString(),
+        },
+        TokenTypes.ACCESS,
+        UserTypes.BUSINESS,
+      );
+      // const updatedUser = await this.businessUserModel.findById(user.id);
+
+      return {
+        success: true,
+        message: 'Email Verified Successfully!',
+        token: token,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async resendOtp(email: string) {
+    try {
+      const user = await this.businessUserModel.findOne({ email: email });
+      if (!user) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      if (user.isEmailVerified) {
+        return {
+          success: false,
+          message: 'Email already verified!',
+        };
+      }
+      await this.mailService.sendBusinessUserVerificationMail(user.id);
+      return {
+        success:true,
+        message:'Otp resent successfully!'
+      }
+
+    } catch (error) {
+      return {
+        success: false,
+        message: "Something went wrong.",
+      }
+    }
+  }
+
+  async createBusiness(userId: string, data: CreateBusinessDto) {
     try {
       //unique business check
       const findBusiness = await this.businessModel.findOne({
@@ -197,9 +287,7 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
-      const businessUser = await this.businessUserModel.findById(
-        userId
-      );
+      const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
         return {
           success: false,
@@ -252,9 +340,7 @@ export class BusinessService {
         };
       }
       //create business folder in drive
-      const userDetails = await this.businessUserModel.findById(
-        userId,
-      );
+      const userDetails = await this.businessUserModel.findById(userId);
 
       const businessFolder = await this.driveService.createFolder({
         parent: userDetails.drive,
@@ -271,14 +357,13 @@ export class BusinessService {
         countryCode: data.countryCode,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessCreatorType.BUSINESS_USER,
-        creator:new mongoose.Types.ObjectId(userId),
+        creator: new mongoose.Types.ObjectId(userId),
         authorisedUser: new mongoose.Types.ObjectId(userId),
       };
       if (data.website) createObj['website'] = data.website;
 
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
-     
 
       const createdBusiness = await this.businessModel.create(createObj);
 
@@ -532,7 +617,7 @@ export class BusinessService {
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
       }
-      if(!user.isEmailVerified){
+      if (!user.isEmailVerified) {
         return { success: false, message: 'Email is not verified' };
       }
       const businessUser = await this.businessUserModel

@@ -1,18 +1,18 @@
+export const DefaultBusinessOwnerRole = {
+  name: 'Business Owner',
+  creatorType: 'Business',
+  belongsTo: 'Business',
+  isSuperAdmin: false,
+  isPrimaryAdmin: true,
+  // privileges: {
+  //   BUSINESS: ['create', 'read', 'update', 'delete'],
+  //   PRODUCTS: ['create', 'read', 'update', 'delete'],
+  //   ORDERS: ['create', 'read', 'update', 'delete'],
+  //   PAYMENTS: ['create', 'read', 'update', 'delete'],
+  //   COUPONS: ['create', 'read', 'update', 'delete'],
+  // },
+}
 export const DefaultBusinessRoles = {
-  Business_Owner: {
-    name: 'Business Owner',
-    creatorType: 'Business',
-    belongsTo: 'Business',
-    isSuperAdmin: false,
-    isPrimaryAdmin: false,
-    privileges: {
-      BUSINESS: ['create', 'read', 'update', 'delete'],
-      PRODUCTS: ['create', 'read', 'update', 'delete'],
-      ORDERS: ['create', 'read', 'update', 'delete'],
-      PAYMENTS: ['create', 'read', 'update', 'delete'],
-      COUPONS: ['create', 'read', 'update', 'delete'],
-    },
-  },
   Store_Manager: {
     name: 'Store Manager',
     creatorType: 'Business',

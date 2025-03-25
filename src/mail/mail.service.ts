@@ -2,8 +2,10 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { AuthService } from 'src/auth/auth.service';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
-import { OtpTypes } from 'src/enums/auth.enums';
+import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import { OtpTypes, UserTypes } from 'src/enums/auth.enums';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
 
@@ -12,6 +14,7 @@ export class MailService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
     private readonly mailerService: MailerService,
     private readonly userService: UserService,
   ) {}
@@ -57,6 +60,28 @@ export class MailService {
       },
     });
   }
+
+  async sendBusinessUserVerificationMail(userId: string) {
+    // const user = await this.userService.getUserById(userId);
+    const profile = await this.businessUserModel.findOne({_id:userId});
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: profile.email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: {
+        name: profile.name,
+        otp,
+        otpExpiry: '5 minutes',
+      },
+    });
+  }
+
+
 
   async sendForgotPasswordMail(userId: string) {
     const user = await this.userService.getUserById(userId);
