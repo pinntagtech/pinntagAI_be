@@ -1,8 +1,8 @@
 import { IsOptional, IsString, IsPhoneNumber, IsMongoId, IsUrl } from 'class-validator';
 
 export class UpdateBusinessUserDto {
-  @IsOptional()
   // @IsUrl()
+  @IsOptional()
   profilePhoto?: string;
 
   @IsString()
@@ -12,6 +12,7 @@ export class UpdateBusinessUserDto {
   countryCode: string;
 
   // @IsPhoneNumber(null)
+  @IsString()
   phone: string;
 
 }
