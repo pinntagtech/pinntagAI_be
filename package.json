@@ -64,6 +64,7 @@
     "mongoose": "^8.0.4",
     "multer": "^1.4.5-lts.1",
     "nest-winston": "^1.9.4",
+    "nestjs-rate-limiter": "^3.1.0",
     "nestjs-stripe": "^1.0.0",
     "node-fetch": "^2.7.0",
     "node-schedule": "^2.1.1",
