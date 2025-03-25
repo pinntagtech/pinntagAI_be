@@ -14,6 +14,4 @@ export class UpdateBusinessUserDto {
   // @IsPhoneNumber(null)
   phone: string;
 
-  @IsMongoId()
-  business: any;
 }

@@ -275,12 +275,14 @@ export class BusinessService {
           // { registrationNumber: data.registrationNumber },
         ],
       });
+      //UUUUUNNNNCCCCOOOOMMMMMEEEENNNTTTT
       if (findBusiness) {
         return {
           success: false,
           message: `Business already exist with given email:${data.email}`,
         };
       }
+
       if (userId && !isValidObjectId(userId)) {
         return {
           success: false,
@@ -382,19 +384,21 @@ export class BusinessService {
       }
       // for (let roleName of Object.keys(DefaultBusinessRoles)) {
       //   console.log("roleName:",roleName)
-      //   const createdRole = await this.roleModel.create({
-      //     name: DefaultBusinessRoles[roleName].name,
-      //     creator: new mongoose.Types.ObjectId(data.businessUser),
-      //     creatorType: RoleCreatorType.BUSINESS,
-      //     belongsTo: RoleBelonging.BUSINESS,
-      //     business: createdBusiness._id,
-      //   });
-      //   const resourceId = await this.
-      //   await this.privilegeModel.create({
-      //     role: createdRole._id,
-      //     resource: DefaultBusinessRoles[roleName].resource,
-      //     privileges: DefaultBusinessRoles[roleName].privileges,
-      //   });
+
+
+      //   // const createdRole = await this.roleModel.create({
+      //   //   name: DefaultBusinessRoles[roleName].name,
+      //   //   creator: new mongoose.Types.ObjectId(data.businessUser),
+      //   //   creatorType: RoleCreatorType.BUSINESS,
+      //   //   belongsTo: RoleBelonging.BUSINESS,
+      //   //   business: createdBusiness._id,
+      //   // });
+      //   // const resourceId = await this.
+      //   // await this.privilegeModel.create({
+      //   //   role: createdRole._id,
+      //   //   resource: DefaultBusinessRoles[roleName].resource,
+      //   //   privileges: DefaultBusinessRoles[roleName].privileges,
+      //   // });
       // }
       return {
         success: true,
@@ -529,9 +533,6 @@ export class BusinessService {
 
   async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
     try {
-      if (data.business) {
-        data.business = new mongoose.Types.ObjectId(data.business);
-      }
       console.log('id:', id);
       console.log('data:', data);
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(

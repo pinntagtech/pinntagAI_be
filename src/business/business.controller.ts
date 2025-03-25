@@ -81,7 +81,9 @@ export class BusinessController {
       });
     }
   }
+
   @Post('update/:id')
+  @UseGuards(JwtGuard2)
   async updateBusiness(
     @Res() res: Response,
     @Param('id') id: string,
@@ -286,6 +288,7 @@ export class BusinessController {
     }
   }
   @Get('verifyRegistrationNumber')
+  @UseGuards(JwtGuard2)
   async checkRegistrationNumber(
     @Res() res: Response,
     @Query('docNumber') docNumber: string,
