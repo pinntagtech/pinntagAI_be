@@ -1051,7 +1051,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    const result = await this.authService.getProfile(user);
+    const result = await this.authService.getProfile(user.id,user.userType);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,

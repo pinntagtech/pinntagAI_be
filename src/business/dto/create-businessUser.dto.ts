@@ -32,7 +32,7 @@ export class CreateBusinessUserDto {
   })
   password: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   name: string;
 }
