@@ -4,15 +4,16 @@ import {
   IsOptional,
   IsBoolean,
   IsArray,
+  IsNotEmpty,
 } from 'class-validator';
 import mongoose from 'mongoose';
 
 export class CreateBusinessDto {
-  @IsString()
-  businessUser:string;
 
+  @IsNotEmpty()
   @IsString()
   name: string;
+  
   
   @IsEmail()
   email: string;

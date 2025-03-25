@@ -43,6 +43,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import {
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema}
     ]),
   ],
   controllers: [CronController],

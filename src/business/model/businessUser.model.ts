@@ -35,7 +35,7 @@ export class BusinessUser {
       'https://pinntagbucket.s3.amazonaws.com/defaults/business_avatar.png',
   })
   profilePhoto: string;
-  @Prop()
+  @Prop({required:true})
   name: string;
   @Prop()
   countryCode: string;

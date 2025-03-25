@@ -28,14 +28,22 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { Privilege } from 'src/roles/privilege.decorator';
 import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { RateLimit } from 'nestjs-rate-limiter';
 
 @Controller('business')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
   @Post()
-  async createBusiness(@Res() res: Response, @Body() data: CreateBusinessDto) {
-    const result = await this.businessService.createBusiness(data);
+  @UseGuards(JwtGuard2)
+  async createBusiness(
+    @TokenDecoder() user: JwtPayload,
+    @Res() res: Response,
+    @Body() data: CreateBusinessDto,
+  ) {
+    const result = await this.businessService.createBusiness(user.id, data);
+
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -76,6 +84,7 @@ export class BusinessController {
   }
 
   @Post('update/:id')
+  @UseGuards(JwtGuard2)
   async updateBusiness(
     @Res() res: Response,
     @Param('id') id: string,
@@ -113,6 +122,34 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('user/verify')
+  async verifyUser(@Res() res: Response, @Body() data: VerifyEmailDto) {
+    const result = await this.businessService.verifyUser(data);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('user/resendOtp')
+  async resendOtp(@Res() res: Response, @Body('email') email: string) {
+    const result = await this.businessService.resendOtp(email);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -215,6 +252,7 @@ export class BusinessController {
   }
 
   @Get('industryList')
+  @RateLimit({ points: 5, duration: 60 })
   async industryList(@Res() res: Response) {
     const result = await this.businessService.industryList();
     if (result.success) {
@@ -230,6 +268,7 @@ export class BusinessController {
   }
 
   @Get('businessCategoryList/:id')
+  @RateLimit({ points: 5, duration: 60 })
   async businessCategoryList(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -249,6 +288,7 @@ export class BusinessController {
     }
   }
   @Get('verifyRegistrationNumber')
+  @UseGuards(JwtGuard2)
   async checkRegistrationNumber(
     @Res() res: Response,
     @Query('docNumber') docNumber: string,
