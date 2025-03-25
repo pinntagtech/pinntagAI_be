@@ -15,6 +15,9 @@ import { Brand } from './brand.model';
 import { Folder } from 'src/drive/models/folder.model';
 import { BusinessCategory } from './businessCategory.model';
 import { BusinessIndustry } from './businessIndustry.model';
+import { BusinessCountry } from './businessCountry.model';
+import { BusinessConstitution } from './businessConstitution.model';
+import { BusinessDocumentType } from './BussinessDocumentType.model';
 
 export type BusinessDocument = Business & Document;
 
@@ -43,14 +46,14 @@ export class Business {
   @Prop()
   cover: string;
 
-  @Prop()
-  constitution: string;
+  @Prop({ ref: BusinessConstitution.name })
+  constitution: mongoose.Types.ObjectId;
 
   @Prop()
   documentNumber: string;
 
-  @Prop()
-  documentType: string;
+  @Prop({ref: BusinessDocumentType.name})
+  documentType: mongoose.Types.ObjectId;
 
   @Prop({ ref: Brand.name })
   brand: mongoose.Types.ObjectId;
@@ -93,8 +96,8 @@ export class Business {
   district: string;
   @Prop()
   state: string;
-  @Prop()
-  country: string;
+  @Prop({ref: BusinessCountry.name})
+  country: mongoose.Types.ObjectId;
   @Prop()
   county: string;
   @Prop()

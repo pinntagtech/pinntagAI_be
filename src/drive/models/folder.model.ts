@@ -10,6 +10,8 @@ export class Folder {
   parent: mongoose.Types.ObjectId;
   @Prop({ required: true, enum: [Folder.name, Drive.name] })
   parentType: string;
+  @Prop()
+  drive: mongoose.Types.ObjectId;
   @Prop({ default: 'untitled' })
   folderName: string;
   @Prop({ default: 'directory' })
