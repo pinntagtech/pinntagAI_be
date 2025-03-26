@@ -53,12 +53,19 @@ import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 import { CreateBrandDto } from './dto/create-brand.dto';
-import { RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
+import {
+  Actions,
+  ResourceTypes,
+  RoleBelonging,
+  RoleCreatorType,
+} from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
-import { Resource } from 'src/roles/models/resource.model';
-import { ActionDocument } from 'src/roles/models/actions.model';
+import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
+import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
+import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class BusinessService {
@@ -84,13 +91,16 @@ export class BusinessService {
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
-    // @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
-    // @InjectModel(Action.name) private readonly driveModel: Model<ActionDocument>,
+    @InjectModel(Resource.name)
+    private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Action.name)
+    private readonly actionModel: Model<ActionDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
     private readonly authService: AuthService,
     private readonly driveService: DriveService,
+    private readonly userService: UserService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
@@ -164,7 +174,9 @@ export class BusinessService {
       //send email otp
       await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
-      const updatedUser = await this.businessUserModel.findById(createdUser.id);
+      const updatedUser = await this.businessUserModel
+        .findById(createdUser.id)
+        .populate('role', '_id name');
       return {
         success: true,
         message: 'Business User Created Successfully!',
@@ -274,7 +286,6 @@ export class BusinessService {
           // { registrationNumber: data.registrationNumber },
         ],
       });
-      //UUUUUNNNNCCCCOOOOMMMMMEEEENNNTTTT
       if (findBusiness) {
         return {
           success: false,
@@ -302,10 +313,6 @@ export class BusinessService {
         };
       }
 
-      const adminDetails = await this.adminModel.findOne({
-        isSuperAdmin: true,
-      });
-
       const findBusinessIndustry = await this.businessIndModel.findById(
         data.businessIndustry,
       );
@@ -318,9 +325,6 @@ export class BusinessService {
           };
         }
       }
-      // const findBusinessCategory = await this.businessCategoryModel.findById(
-      //   data.businessCategory,
-      // );
       const businessCategoriesIds = [];
       for (let category of businessCategories) {
         const findBusinessCategory =
@@ -381,23 +385,44 @@ export class BusinessService {
           },
         );
       }
-      // for (let roleName of Object.keys(DefaultBusinessRoles)) {
-      //   console.log("roleName:",roleName)
-
-      //   // const createdRole = await this.roleModel.create({
-      //   //   name: DefaultBusinessRoles[roleName].name,
-      //   //   creator: new mongoose.Types.ObjectId(data.businessUser),
-      //   //   creatorType: RoleCreatorType.BUSINESS,
-      //   //   belongsTo: RoleBelonging.BUSINESS,
-      //   //   business: createdBusiness._id,
-      //   // });
-      //   // const resourceId = await this.
-      //   // await this.privilegeModel.create({
-      //   //   role: createdRole._id,
-      //   //   resource: DefaultBusinessRoles[roleName].resource,
-      //   //   privileges: DefaultBusinessRoles[roleName].privileges,
-      //   // });
-      // }
+      for (let roleName of Object.keys(DefaultBusinessRoles)) {
+        const createdRole = await this.roleModel.create({
+          name: DefaultBusinessRoles[roleName].name,
+          creator: new mongoose.Types.ObjectId(userId),
+          creatorType: RoleCreatorType.BUSINESS,
+          belongsTo: RoleBelonging.BUSINESS,
+          business: createdBusiness._id,
+        });
+        for (let privilege of Object.keys(
+          DefaultBusinessRoles[roleName].privileges,
+        )) {
+          let resourceDetails = await this.resourceModel.findOne({
+            title: ResourceTypes[privilege],
+          });
+          if (!resourceDetails) {
+            resourceDetails = await this.resourceModel.create({
+              title: ResourceTypes[privilege],
+            });
+          }
+          for (let action of DefaultBusinessRoles[roleName].privileges[
+            privilege
+          ]) {
+            let actionDetails = await this.actionModel.findOne({
+              title: Actions[action],
+            });
+            if (!actionDetails) {
+              actionDetails = await this.actionModel.create({
+                title: Actions[action],
+              });
+            }
+            await this.privilegeModel.create({
+              role: createdRole._id,
+              resource: resourceDetails.title,
+              action: actionDetails.title,
+            });
+          }
+        }
+      }
       return {
         success: true,
         message: 'Business Created Successfully!',
@@ -407,7 +432,7 @@ export class BusinessService {
       console.error('Error:', error);
       return {
         success: false,
-        message: `Business already exist with given email:${data.email}`,
+        message: 'Something went wrong.',
       };
     }
   }
@@ -706,6 +731,24 @@ export class BusinessService {
         role: String(user.role),
         business: String(user.business),
       };
+      if (user.forcePasswordReset) {
+        const token = await this.generateJWT(
+          payload,
+          TokenTypes.RESET_PASSWORD,
+        );
+        await this.businessUserModel.updateOne(
+          { _id: user._id },
+          { $set: { forcePasswordReset: false } },
+        );
+        return {
+          success: true,
+          status: false,
+          message: 'Please reset your password',
+          user: user,
+          token,
+        };
+      }
+
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
 
       const fcmExists = await this.tokenModel.exists({
@@ -720,6 +763,7 @@ export class BusinessService {
       console.log('userDetails:', userDetails);
       return {
         success: true,
+        status: true,
         message: 'User logged in successfully',
         user: userDetails,
         token,
@@ -732,18 +776,41 @@ export class BusinessService {
       };
     }
   }
-  async generateJWT(payload: JwtPayload, type: string) {
-    let expireIn = '365d';
-    if (type === TokenTypes.VERIFY_EMAIL) {
-      expireIn = '1d';
-    }
+  async generateJWT(
+    payload: JwtPayload,
+    type: string,
+    expiresIn: string = '365d',
+  ) {
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
-      expiresIn: expireIn,
+      expiresIn,
     });
-    await this.saveToken(token, payload.id, type);
+    const expirationTime = this.calculateExpirationDate(expiresIn);
+    await this.userService.saveToken2(token, payload.id, type, expirationTime);
     return token;
   }
+  calculateExpirationDate(expiresIn: string): Date {
+    const timeUnit = expiresIn.slice(-1); // Get last character (m, h, d)
+    const timeValue = parseInt(expiresIn.slice(0, -1), 10); // Get numeric value
+
+    let multiplier = 1000; // Default to seconds
+    switch (timeUnit) {
+      case 'm': // Minutes
+        multiplier *= 60;
+        break;
+      case 'h': // Hours
+        multiplier *= 60 * 60;
+        break;
+      case 'd': // Days
+        multiplier *= 60 * 60 * 24;
+        break;
+      default:
+        throw new Error(`Invalid expiresIn format: ${expiresIn}`);
+    }
+
+    return new Date(Date.now() + timeValue * multiplier);
+  }
+
   async saveToken(token: string, id: string, type?: string) {
     return await this.tokenModel.create({
       token,
@@ -754,7 +821,17 @@ export class BusinessService {
     });
   }
 
-  async getUsersList(id: string, page: number, limit: number) {
+  async getUsersList(
+    id: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any[];
+    total?: number;
+    pages?: number;
+  }> {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -772,12 +849,18 @@ export class BusinessService {
         .sort({ createdAt: -1 })
         .select({ password: 0 })
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit).lean();
+
+        const modifiedUsers = users.map(user => ({
+          ...user,
+          businessId: user.business, // Rename business field
+          business: undefined // Remove original business field
+      }));
 
       return {
         success: true,
         message: 'Business User fetched Successfully!',
-        data: users,
+        data: modifiedUsers,
       };
     } catch (error) {
       return {
@@ -844,7 +927,7 @@ export class BusinessService {
       const industries = await this.businessIndModel.find();
       return {
         success: true,
-        message: 'Industries fetched Successfully!',
+        message: 'Categories fetched Successfully.',
         data: industries,
       };
     } catch (error) {
@@ -1014,13 +1097,159 @@ export class BusinessService {
           message: 'You are not authorized to update this user.',
         };
       }
-      const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
-        $set: { isActive },
-      });
+      const updatedUser = await this.businessUserModel.findByIdAndUpdate(
+        id,
+        {
+          $set: { isActive },
+        },
+        { new: true },
+      );
       return {
         success: true,
         message: 'User Updated Successfully.',
         data: updatedUser,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async createDownlineUser(id: string, data: CreateDownlineBusinessUserDto) {
+    try {
+      const userDetails = await this.businessUserModel.findById(id);
+      const foundUser = await this.businessUserModel.findOne({
+        email: data.email,
+      });
+
+      if (foundUser) {
+        return {
+          success: false,
+          message: 'Business User already found with this email',
+        };
+      }
+
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+
+      let createObj = {
+        role: [new mongoose.Types.ObjectId(data.role)],
+        creatorType: BusinessUserCreatorType.BUSINESS,
+        creator: new mongoose.Types.ObjectId(id),
+        name: data.name,
+        email: data.email,
+        password: hashedPassword,
+        business: new mongoose.Types.ObjectId(userDetails.business),
+        isEmailVerified: true,
+        forcePasswordReset: data.forcePasswordReset,
+      };
+      const createdUser = await this.businessUserModel.create(createObj);
+
+      //create drive
+      let driveDetails = await this.seederService.createDrive(
+        createdUser._id,
+        BusinessUser.name,
+      );
+      await this.businessUserModel.updateOne(
+        { _id: createdUser.id },
+        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      );
+
+      // sendEmaillink verification
+
+      const token = await this.authService.generateJWT(
+        {
+          id: createdUser.id,
+          userType: UserTypes.BUSINESS,
+          // role: admin.role.toString(),
+          // business:
+        },
+        TokenTypes.VERIFY_EMAIL,
+        UserTypes.BUSINESS,
+      );
+      const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
+      await this.mailService.sendDownlineUserCredentials(
+        createdUser.name,
+        createdUser.email,
+        data.password,
+        loginLink,
+      );
+
+      const updatedUser = await this.businessUserModel.findById(createdUser.id);
+      return {
+        success: true,
+        message: 'Business User Created Successfully!',
+        data: updatedUser,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async forceResetPassword(id: string, password: string, tokenId: string) {
+    try {
+      const user = await this.businessUserModel.findById(id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'Admin not found with the id provided.',
+        };
+      }
+      await this.businessUserModel.findByIdAndUpdate(id, {
+        $set: { password: await bcrypt.hash(password, 10) },
+      });
+      await this.userService.deleteToken(tokenId);
+      const payload: JwtPayload = {
+        id: id,
+        userType: UserTypes.BUSINESS,
+        role: user.role.toString(),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+
+      return {
+        success: true,
+        message: 'Password reset successfully',
+        token: token,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async deleteUser(id: string, deleteId: string) {
+    try {
+      const userDetails = await this.businessUserModel.findById(id);
+      const foundUser = await this.businessUserModel.findById(deleteId);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      const getAllChildUsersIds = await this.getAllChildUsersIds(id);
+      if (!getAllChildUsersIds.includes(deleteId)) {
+        return {
+          success: false,
+          message: 'You are not authorized to delete this user.',
+        };
+      }
+      const updatedDetails = await this.businessUserModel.findOneAndUpdate(
+        { _id: deleteId },
+        { $set: { isDeleted: true } },
+      );
+      // logout from all places
+      await this.tokenModel.deleteMany({
+        user: new mongoose.Types.ObjectId(deleteId),
+      });
+
+      return {
+        success: true,
+        message: 'User Deleted Successfully.',
+        data: updatedDetails,
       };
     } catch (error) {
       return {

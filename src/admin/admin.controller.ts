@@ -365,11 +365,12 @@ export class AdminController {
     const result = await this.adminService.forceResetPassword(
       user.id,
       body.password,
-      req['tokenId'],
+      req['tokenId'],     
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
+        token:result.token
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

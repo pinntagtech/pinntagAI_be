@@ -20,9 +20,9 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isPrimaryAdmin: false,
     privileges: {
-      ORDERS: ['create', 'read', 'update', 'delete'],
-      PRODUCTS: ['create', 'read', 'update', 'delete'],
-      REVIEWS: ['read'],
+      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REVIEWS: ['READ'],
     },
   },
   Marketing_Manager: {
@@ -32,9 +32,9 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isPrimaryAdmin: false,
     privileges: {
-      COUPONS: ['create', 'read', 'update', 'delete'],
-      BANNERS: ['create', 'read', 'update', 'delete'],
-      BRANDS: ['create', 'read', 'update', 'delete'],
+      COUPONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      BANNERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      BRANDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
   Finance_Manager: {
@@ -44,8 +44,8 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isPrimaryAdmin: false,
     privileges: {
-      PAYMENTS: ['create', 'read', 'update', 'delete'],
-      REPORTS: ['read'],
+      PAYMENTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REPORTS: ['READ'],
     },
   },
   Support_Executive: {
@@ -55,8 +55,8 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isPrimaryAdmin: false,
     privileges: {
-      MESSAGES: ['create', 'read', 'update', 'delete'],
-      NOTIFICATIONS: ['create', 'read', 'update', 'delete'],
+      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
   Store_Supervisor: {
@@ -66,9 +66,9 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isPrimaryAdmin: false,
     privileges: {
-      ORDERS: ['read', 'update'],
-      PRODUCTS: ['create', 'read', 'update', 'delete'],
-      USERS: ['create', 'read', 'update', 'delete'],
+      ORDERS: ['READ', 'UPDATE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
 };
@@ -77,42 +77,43 @@ export const DefaultAdminRoles = {
   Managing_Director: {
     name: 'Managing Director',
     privileges: {
-      BUSINESS: ['create', 'read', 'update', 'delete'],
-      USERS: ['create', 'read', 'update', 'delete'],
-      ROLES: ['create', 'read', 'update', 'delete'],
-      privileges: ['create', 'read', 'update', 'delete'],
-      REPORTS: ['create', 'read', 'update', 'delete'],
-      SETTINGS: ['create', 'read', 'update', 'delete'],
-      MESSAGES: ['create', 'read', 'update', 'delete'],
-      NOTIFICATIONS: ['create', 'read', 'update', 'delete'],
-      ORDERS: ['create', 'read', 'update', 'delete'],
-      PRODUCTS: ['create', 'read', 'update', 'delete'],
+      BUSINESS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ROLES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      privileges: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REPORTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
   Board_Member: {
     name: 'Board Member',
     privileges: {
-      BUSINESS: ['read'],
-      USERS: ['read'],
-      ROLES: ['read'],
-      privileges: ['read'],
-      REPORTS: ['read'],
-      SETTINGS: ['read'],
+      BUSINESS: ['READ'],
+      USERS: ['READ'],
+      ROLES: ['READ'],
+      privileges: ['READ'],
+      REPORTS: ['READ'],
+      SETTINGS: ['READ'],
     },
   },
   Manager: {
     name: 'Manager',
     privileges: {
-      USERS: ['create', 'read', 'update', 'delete'],
-      PRODUCTS: ['create', 'read', 'update', 'delete'],
-      ORDERS: ['read'],
+      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ORDERS: ['READ'],
     },
   },
   Executive: {
     name: 'Executive',
     privileges: {
-      MESSAGES: ['create', 'read', 'update', 'delete'],
-      NOTIFICATIONS: ['create', 'read', 'update', 'delete'],
+      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
 };
+

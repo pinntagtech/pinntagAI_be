@@ -126,6 +126,8 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from 'src/auth/models/guestSession.model';
+import { AuthService } from 'src/auth/auth.service';
+import { SmsService } from 'src/sms/sms.service';
 
 @Module({
   imports: [
@@ -190,6 +192,8 @@ import {
     MailService,
     RolesService,
     PrivilegeService,
+    AuthService,
+    SmsService
   ],
 })
 export class AdminModule {}

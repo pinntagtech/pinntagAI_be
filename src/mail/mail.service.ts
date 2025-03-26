@@ -158,4 +158,13 @@ export class MailService {
       context: { name, link },
     });
   }
+  async sendDownlineUserCredentials(name:string,email:string,password:string,loginLink:string){
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Welcome to Pinntag',
+      template:
+        process.cwd() + '/src/mail/templates/dowlineUserMail.template.hbs',
+      context: { name, email, password, loginLink },
+    });
+  }
 }

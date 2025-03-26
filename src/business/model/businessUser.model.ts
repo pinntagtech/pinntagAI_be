@@ -9,7 +9,7 @@ export type BusinessUserDocument = BusinessUser & Document;
 @Schema({ timestamps: true })
 export class BusinessUser {
   @Prop({ default: false })
-  isDeleted: boolean;
+  isBlocked: boolean;
 
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId[];
@@ -35,7 +35,7 @@ export class BusinessUser {
       'https://pinntagbucket.s3.amazonaws.com/defaults/business_avatar.png',
   })
   profilePhoto: string;
-  @Prop({required:true})
+  @Prop({ required: true })
   name: string;
   @Prop()
   countryCode: string;
@@ -51,6 +51,8 @@ export class BusinessUser {
   business: mongoose.Types.ObjectId;
   @Prop()
   drive: mongoose.Types.ObjectId;
+  @Prop({ default: false })
+  forcePasswordReset: boolean;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);

@@ -127,9 +127,10 @@ export class RolesService {
   private async getAllChildAdminIds(
     id: string,
     creatorType: string,
+    firstTime: boolean,
     collectedIds: string[] = [],
   ): Promise<string[]> {
-    collectedIds.push(id);
+    if (!firstTime) collectedIds.push(id);
     const children = await this.roleModel
       .find({ creator: new mongoose.Types.ObjectId(id), creatorType })
       .select('_id');
@@ -138,16 +139,39 @@ export class RolesService {
       return collectedIds;
     }
     for (const childId of childrenIds) {
-      await this.getAllChildAdminIds(childId, creatorType, collectedIds);
+      await this.getAllChildAdminIds(childId, creatorType, false, collectedIds);
     }
     return collectedIds;
   }
 
   async fetchRoles(id: string, userType: string) {
     try {
-      const allAdminIds = await this.getAllChildAdminIds(id, userType);
+      let allAdminIds = await this.getAllChildAdminIds(id, userType, true, []);
+      let ownerRole = null;
+      if (userType === UserTypes.ADMIN) {
+        const findAdminUser = await this.businessUserModel.findOne({ _id: id });
+        if (!findAdminUser) {
+          return {
+            success: false,
+            message: 'User not found',
+          };
+        }
+        ownerRole = findAdminUser.role;
+      } else if (userType === UserTypes.BUSINESS) {
+        const findBusinessUser = await this.businessUserModel.findOne({
+          _id: id,
+        });
+        if (!findBusinessUser) {
+          return {
+            success: false,
+            message: 'Business User not found',
+          };
+        }
+        ownerRole = findBusinessUser.role[0];
+      }
+      console.log('allAdminIds:', allAdminIds);
       const roles = await this.roleModel.find({
-        creator: { $in: allAdminIds },
+        _id: { $in: allAdminIds, $ne: ownerRole },
         creatorType: userType,
       });
       return {
@@ -169,7 +193,7 @@ export class RolesService {
       const role = await this.roleModel.findById(roleId);
       if (!role) {
         return { success: false, message: 'Role not found' };
-      } 
+      }
       const privileges = await this.privilegeModel.aggregate([
         {
           $match: {
