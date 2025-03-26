@@ -585,12 +585,21 @@ export class UserService {
       type,
     });
     const otp = generateOtp();
-    if (!foundOtpDoc) {
-      this.saveOtpToDb(user, otp, type);
-    } else {
-      foundOtpDoc.otp = otp;
-      await foundOtpDoc.save();
-    }
+
+    // if (!foundOtpDoc) {
+    //   this.saveOtpToDb(user, otp, type);
+    // } else {
+    //   foundOtpDoc.otp = otp;
+    //   await foundOtpDoc.save();
+    // }
+    
+    await this.otpModel.deleteMany({
+      user: new mongoose.Types.ObjectId(user),
+      type: type,
+    });
+    this.saveOtpToDb(user, otp, type);
+
+
     return otp;
   }
 

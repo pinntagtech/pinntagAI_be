@@ -111,6 +111,7 @@ import { DriveService } from 'src/drive/drive.service';
 import { Folder, folderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Brand, BrandSchema } from './model/brand.model';
+import { PrivilegeService } from 'src/roles/privilege.service';
 
 @Module({
   imports: [
@@ -173,6 +174,7 @@ import { Brand, BrandSchema } from './model/brand.model';
     AuthService,
     SmsService,
     DriveService,
+    PrivilegeService,
   ],
 })
 export class BusinessModule {}

@@ -1081,7 +1081,7 @@ export class BusinessService {
       }
       const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
         $set: { isActive },
-      });
+      },{new:true});
       return {
         success: true,
         message: 'User Updated Successfully.',
@@ -1195,6 +1195,39 @@ export class BusinessService {
       return {
         success: false,
         message: error.message,
+      };
+    }
+  }
+  async deleteUser(id:string, deleteId:string){
+    try {
+      const userDetails = await this.businessUserModel.findById(id);
+      const foundUser = await this.businessUserModel.findById(deleteId);
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      const getAllChildUsersIds = await this.getAllChildUsersIds(id);
+      if (!getAllChildUsersIds.includes(deleteId)) {
+        return {
+          success: false,
+          message: 'You are not authorized to delete this user.',
+        };
+      }
+      const updatedDetails = await this.businessUserModel.findOneAndUpdate({ _id: deleteId },{$set:{isDeleted:true}});
+      // logout from all places
+      await this.tokenModel.deleteMany({ user: new mongoose.Types.ObjectId(deleteId) });
+
+      return {
+        success: true,
+        message: 'User Deleted Successfully.',
+        data: updatedDetails,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
       };
     }
   }

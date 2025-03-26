@@ -11,7 +11,6 @@ export class Otp {
     required: true,
     enum: [OtpTypes.EMAIL, OtpTypes.MOBILE],
     default: OtpTypes.EMAIL,
-    
   })
   type: string;
   @Prop({ required: true })

@@ -381,8 +381,8 @@ export class BusinessController {
     }
   }
   @Post('toggleStatus/:id')
-  // @Privilege(ResourceTypes.USERS, Actions.UPDATE)
-  // @UseGuards(PrivilegeGuard)
+  @Privilege(ResourceTypes.USERS, Actions.UPDATE)
+  @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async toggleStatus(
     @Res() res: Response,
@@ -413,6 +413,8 @@ export class BusinessController {
   }
 
   @Post('downlineUser')
+  @Privilege(ResourceTypes.USERS, Actions.CREATE)
+  @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async createDownlineUser(
     @TokenDecoder() user: JwtPayload,
@@ -431,7 +433,7 @@ export class BusinessController {
       });
     }
   }
-  @Post('login/reset-password')
+  @Post('user/login/reset-password')
     @UseGuards(ResetPasswordGuard)
     async forceResetPassword(
       @Req() req: Request,
@@ -465,6 +467,36 @@ export class BusinessController {
         });
       }
     }
+
+   @Post('deleteUser/:id')
+  @Privilege(ResourceTypes.USERS, Actions.DELETE)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(JwtGuard2)
+  async deleteUser(
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.deleteUser(
+      user.id,
+      id,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
   // @Get('brand')
   // async fetchBrand(

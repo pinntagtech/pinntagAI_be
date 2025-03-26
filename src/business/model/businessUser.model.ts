@@ -9,7 +9,7 @@ export type BusinessUserDocument = BusinessUser & Document;
 @Schema({ timestamps: true })
 export class BusinessUser {
   @Prop({ default: false })
-  isDeleted: boolean;
+  isBlocked: boolean;
 
   @Prop({ ref: 'Role' })
   role: mongoose.Types.ObjectId[];
