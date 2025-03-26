@@ -640,6 +640,10 @@ export class UserService {
     );
   }
 
+  async deleteToken(token: string) {
+    return await this.tokenModel.deleteOne({ token: token });
+  }
+
   async followUser(
     targetId: string,
     followingType: string,

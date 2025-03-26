@@ -30,6 +30,9 @@ import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
+import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
+import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Controller('business')
 export class BusinessController {
@@ -221,6 +224,7 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         user: result.user,
+        status: result.status,
         token: result.token,
         fcmExists: result.fcmExists,
       });
@@ -407,6 +411,60 @@ export class BusinessController {
       });
     }
   }
+
+  @Post('downlineUser')
+  @UseGuards(JwtGuard2)
+  async createDownlineUser(
+    @TokenDecoder() user: JwtPayload,
+    @Res() res: Response,
+    @Body() data: CreateDownlineBusinessUserDto,
+  ) {
+    const result = await this.businessService.createDownlineUser(user.id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('login/reset-password')
+    @UseGuards(ResetPasswordGuard)
+    async forceResetPassword(
+      @Req() req: Request,
+      @Res() res: Response,
+      @Body() body: { password: string },
+      @TokenDecoder() user: DecodedUser,
+    ) {
+      if (!body.password) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'Please provide password.',
+        });
+      }
+      if (typeof body.password !== 'string') {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'Please provide valid password.',
+        });
+      }
+      const result = await this.businessService.forceResetPassword(
+        user.id,
+        body.password,
+        req['tokenId'],     
+      );
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          token:result.token
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+    }
 
   // @Get('brand')
   // async fetchBrand(

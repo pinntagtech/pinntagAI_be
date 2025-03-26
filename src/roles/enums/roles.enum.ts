@@ -28,9 +28,9 @@ export const Actions = {
 };
 
 export const ResourceTypes = {
-  ADMIN: 'Admin',
-  BUSINESS: 'Business',
-  BUSINESS_USER: 'Business User',
+  ADMIN: 'admin',
+  BUSINESS: 'business',
+  BUSINESS_USER: 'business User',
   USERS: 'users',
   ROLES: 'roles',
   PERMISSIONS: 'permissions',
@@ -57,6 +57,7 @@ export const ResourceTypes = {
   LOCATIONS: 'locations',
   TAXES: 'taxes',
   ADDRESSES: 'addresses',
+  PRIVILEGES: 'privileges',
   // PAYMENT_METHODS: 'payment_methods',
   // SHIPPING_METHODS: 'shipping_methods',
   // ORDER_STATUSES: 'order_statuses',

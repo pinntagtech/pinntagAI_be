@@ -52,6 +52,7 @@ import { RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class AdminService {
@@ -83,6 +84,7 @@ export class AdminService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly authService: AuthService,
   ) {}
 
   calculateExpirationDate(expiresIn: string): Date {
@@ -536,6 +538,10 @@ export class AdminService {
           TokenTypes.RESET_PASSWORD,
           '5m',
         );
+        await this.adminModel.findByIdAndUpdate(foundAdmin.id, {
+          $set: { forcePasswordReset: false },
+        });
+
         return {
           success: true,
           status: false,
@@ -555,11 +561,30 @@ export class AdminService {
     }
   }
 
-  async forceResetPassword(adminId: string, password: string, token: string) {
+  async forceResetPassword(adminId: string, password: string, tokenId: string) {
     try {
+      const admin = await this.adminModel.findById(adminId);
+      if (!admin) {
+        return {
+          success: false,
+          message: 'Admin not found with the id provided.',
+        };
+      }
+      await this.adminModel.findByIdAndUpdate(adminId, {
+        $set: { password: await bcrypt.hash(password, 10) },
+      });
+      await this.userService.deleteToken(tokenId);
+      const payload: JwtPayload = {
+        id: admin.id,
+        userType: UserTypes.ADMIN,
+        role: admin.role.toString(),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+
       return {
         success: true,
         message: 'Password reset successfully',
+        token: token,
       };
     } catch (error) {
       return {
@@ -809,6 +834,7 @@ export class AdminService {
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(adminId),
+      isEmailVerified: true,
       ...data,
     });
     return {
