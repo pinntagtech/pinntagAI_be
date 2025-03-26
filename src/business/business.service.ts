@@ -174,7 +174,9 @@ export class BusinessService {
       //send email otp
       await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
-      const updatedUser = await this.businessUserModel.findById(createdUser.id);
+      const updatedUser = await this.businessUserModel
+        .findById(createdUser.id)
+        .populate('role', '_id name');
       return {
         success: true,
         message: 'Business User Created Successfully!',
@@ -761,7 +763,7 @@ export class BusinessService {
       console.log('userDetails:', userDetails);
       return {
         success: true,
-        status:true,
+        status: true,
         message: 'User logged in successfully',
         user: userDetails,
         token,
@@ -819,7 +821,17 @@ export class BusinessService {
     });
   }
 
-  async getUsersList(id: string, page: number, limit: number) {
+  async getUsersList(
+    id: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any[];
+    total?: number;
+    pages?: number;
+  }> {
     try {
       const user = await this.businessUserModel.findById(id);
       if (!user) {
@@ -837,12 +849,18 @@ export class BusinessService {
         .sort({ createdAt: -1 })
         .select({ password: 0 })
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit).lean();
+
+        const modifiedUsers = users.map(user => ({
+          ...user,
+          businessId: user.business, // Rename business field
+          business: undefined // Remove original business field
+      }));
 
       return {
         success: true,
         message: 'Business User fetched Successfully!',
-        data: users,
+        data: modifiedUsers,
       };
     } catch (error) {
       return {
@@ -1079,9 +1097,13 @@ export class BusinessService {
           message: 'You are not authorized to update this user.',
         };
       }
-      const updatedUser = await this.businessUserModel.findByIdAndUpdate(id, {
-        $set: { isActive },
-      },{new:true});
+      const updatedUser = await this.businessUserModel.findByIdAndUpdate(
+        id,
+        {
+          $set: { isActive },
+        },
+        { new: true },
+      );
       return {
         success: true,
         message: 'User Updated Successfully.',
@@ -1198,7 +1220,7 @@ export class BusinessService {
       };
     }
   }
-  async deleteUser(id:string, deleteId:string){
+  async deleteUser(id: string, deleteId: string) {
     try {
       const userDetails = await this.businessUserModel.findById(id);
       const foundUser = await this.businessUserModel.findById(deleteId);
@@ -1215,9 +1237,14 @@ export class BusinessService {
           message: 'You are not authorized to delete this user.',
         };
       }
-      const updatedDetails = await this.businessUserModel.findOneAndUpdate({ _id: deleteId },{$set:{isDeleted:true}});
+      const updatedDetails = await this.businessUserModel.findOneAndUpdate(
+        { _id: deleteId },
+        { $set: { isDeleted: true } },
+      );
       // logout from all places
-      await this.tokenModel.deleteMany({ user: new mongoose.Types.ObjectId(deleteId) });
+      await this.tokenModel.deleteMany({
+        user: new mongoose.Types.ObjectId(deleteId),
+      });
 
       return {
         success: true,
