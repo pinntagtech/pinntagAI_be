@@ -90,11 +90,11 @@ import { Action, ActionSchema } from 'src/roles/models/actions.model';
 import {
   OutletCategory,
   OutletCategorySchema,
-} from 'src/business/model/outletCategory.model';
+} from 'src/outlet/model/outletCategory.model';
 import {
   OutletType,
   OutletTypeSchema,
-} from 'src/business/model/outletType.model';
+} from 'src/outlet/model/outletType.model';
 import {
   BusinessUser,
   BusinessUserSchema,
@@ -111,8 +111,14 @@ import {
   BusinessCountry,
   BusinessCountrySchema,
 } from 'src/business/model/businessCountry.model';
-import { BusinessConstitution, BusinessConstitutionSchema } from 'src/business/model/businessConstitution.model';
-import { BusinessDocumentType, BusinessDocumentTypeSchema } from 'src/business/model/BussinessDocumentType.model';
+import {
+  BusinessConstitution,
+  BusinessConstitutionSchema,
+} from 'src/business/model/businessConstitution.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeSchema,
+} from 'src/business/model/BussinessDocumentType.model';
 
 @Module({
   imports: [

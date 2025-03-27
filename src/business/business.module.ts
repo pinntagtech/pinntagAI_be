@@ -14,7 +14,7 @@ import { User } from 'src/user/models/user.model';
 import {
   OutletCategory,
   OutletCategorySchema,
-} from './model/outletCategory.model';
+} from '../outlet/model/outletCategory.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import {
@@ -64,7 +64,7 @@ import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
-import { OutletType, OutletTypeSchema } from './model/outletType.model';
+import { OutletType, OutletTypeSchema } from '../outlet/model/outletType.model';
 import { AuthService } from 'src/auth/auth.service';
 import {
   GuestSession,

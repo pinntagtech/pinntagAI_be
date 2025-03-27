@@ -385,6 +385,8 @@ export class BusinessService {
           },
         );
       }
+
+      //create default business roles
       for (let roleName of Object.keys(DefaultBusinessRoles)) {
         const createdRole = await this.roleModel.create({
           name: DefaultBusinessRoles[roleName].name,

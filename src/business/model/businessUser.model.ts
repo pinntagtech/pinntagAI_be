@@ -53,6 +53,8 @@ export class BusinessUser {
   drive: mongoose.Types.ObjectId;
   @Prop({ default: false })
   forcePasswordReset: boolean;
+  @Prop()
+  outlets: mongoose.Types.ObjectId[];
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
