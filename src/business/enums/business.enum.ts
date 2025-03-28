@@ -1,11 +1,3 @@
-export enum OutletCategoryList {
-  FOOD_BEVERAGE = 'Food & Beverage Establishments',
-  MOBILE_TEMPORARY = 'Mobile & Temporary Outlets',
-  RETAIL_DISTRIBUTION = 'Retail & Distribution',
-  HYBRID_EXPERIMENTAL = 'Hybrid & Experimental Models',
-  ONLINE_HOME_BASED = 'Online & Home-Based Models',
-}
-
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   MAPPED: 1, //-> Business Created And Mapped to Business User
@@ -550,7 +542,7 @@ export const BusinessDocumentTypes = {
 };
 
 export const OutletCategories = {
-  'Physical Retail & Service Outlets': [ 
+  'Physical Retail & Service Outlets': [
     'Standalone Retail Store',
     'Mall Outlet',
     'Department Store',

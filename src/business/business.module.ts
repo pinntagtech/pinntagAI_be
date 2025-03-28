@@ -10,7 +10,7 @@ import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { MailService } from 'src/mail/mail.service';
 import { JwtService } from '@nestjs/jwt';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
-import { User } from 'src/user/models/user.model';
+import { User, UserSchema } from 'src/user/models/user.model';
 import {
   OutletCategory,
   OutletCategorySchema,
@@ -122,7 +122,7 @@ import { PrivilegeService } from 'src/roles/privilege.service';
       { name: Business.name, schema: BusinessSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
-      { name: User.name, schema: OutletCategorySchema },
+      { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: Follow.name, schema: FollowSchema },
       { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
@@ -159,6 +159,7 @@ import { PrivilegeService } from 'src/roles/privilege.service';
       { name: Folder.name, schema: folderSchema },
       { name: File.name, schema: FileSchema },
       { name: Brand.name, schema: BrandSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [BusinessController],

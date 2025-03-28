@@ -1,32 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import { BusinessUser } from 'src/business/model/businessUser.model';
+import { OutletCategoryList, VehicleType } from '../outlet.enum';
+// import { OutletCategory, VehicleType } from '../outlet.enum';
 
 export type OutletDocument = Outlet & Document;
 
-enum OutletCategory {
-  PHYSICAL = 'Physical Retail & Service Outlets',
-  MOBILE = 'Mobile & Flexible Outlets',
-  TEMPORARY = 'Temporary & Event-Based Outlets',
-  ONLINE = 'Online & Delivery-Centric Outlets',
-  SPECIALTY = 'Specialty & Unconventional Outlets',
-}
 
-enum VehicleType {
-  TRUCK = 'Truck',
-  VAN = 'Van',
-  CART = 'Cart',
-  BICYCLE = 'Bicycle',
-  SCOOTER = 'Scooter',
-}
 
 @Schema({ timestamps: true })
 export class Outlet {
-  @Prop({ required: true, enum: OutletCategory })
-  category: OutletCategory;
+  @Prop({ required: true })
+  category: mongoose.Types.ObjectId;
 
   @Prop({ required: true })
-  type: string; // Dropdown based on category
+  type: mongoose.Types.ObjectId; // Dropdown based on category
 
   @Prop({ required: true, unique: true })
   refId: string;
@@ -35,7 +23,10 @@ export class Outlet {
   name: string;
 
   @Prop({ ref: 'Businessusers' })
-  manager: string; // Dropdown reference to User entity
+  manager: mongoose.Types.ObjectId; // Dropdown reference to User entity
+
+  @Prop({ref: 'Businessusers'})
+  creator: mongoose.Types.ObjectId; // Dropdown reference to User entity
 
   // Address Information (for Physical, Online, and Specialty outlets)
   @Prop()
@@ -56,9 +47,12 @@ export class Outlet {
   @Prop()
   postalCode?: string;
 
+  @Prop()
+  countryCode?: string;
+
   // Contact Information
   @Prop({ required: true })
-  phoneNumber: string;
+  phone: string;
 
   @Prop()
   email?: string;
@@ -105,8 +99,6 @@ export class Outlet {
   @Prop()
   endDate?: Date;
 
-  @Prop()
-  eventLocation?: string;
 
   @Prop()
   boothNumber?: string;

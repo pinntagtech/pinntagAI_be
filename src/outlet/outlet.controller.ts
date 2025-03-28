@@ -18,6 +18,7 @@ import { CreateOutletDto } from './dto/create-outlet.dto';
 import { Response } from 'express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
+import { UpdateOutletDto } from './dto/update-outlet.dto';
 
 @Controller('outlet')
 export class OutletController {
@@ -88,7 +89,7 @@ export class OutletController {
     }
   }
 
-  @Post('/create')
+  @Post()
   @UseGuards(JwtGuard2)
   async createOutlet(
     @Req() req: Request,
@@ -114,12 +115,12 @@ export class OutletController {
   async updateOutlet(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() createOutletDto: CreateOutletDto,
+    @Body() updateOutletDto: UpdateOutletDto,
     @TokenDecoder() user: JwtPayload,
     @Param('id') id: string,
   ) {
     const result = await this.outletService.updateOutlet(
-      createOutletDto,
+      updateOutletDto,
       user,
       id,
     );

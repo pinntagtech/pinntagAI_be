@@ -49,7 +49,7 @@ import {
   BusinessCountries,
   BusinessDocumentTypes,
   BusinessIndustries,
-  OutletCategoryList,
+  // OutletCategoryList,
   OutletCategories,
 } from 'src/business/enums/business.enum';
 import e from 'express';
@@ -136,7 +136,7 @@ export class SeederService {
     await this.seedResources();
     await this.seedActions();
     await this.seedOutletCategories();
-    await this.seedPrivileges();
+    // await this.seedPrivileges(); super admin privileges are not needed
     await this.seedBusinessIndustries();
     // await this.seedCountries();
     await this.seedConstitutions();

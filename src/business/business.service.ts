@@ -387,44 +387,100 @@ export class BusinessService {
       }
 
       //create default business roles
-      for (let roleName of Object.keys(DefaultBusinessRoles)) {
-        const createdRole = await this.roleModel.create({
-          name: DefaultBusinessRoles[roleName].name,
-          creator: new mongoose.Types.ObjectId(userId),
-          creatorType: RoleCreatorType.BUSINESS,
-          belongsTo: RoleBelonging.BUSINESS,
-          business: createdBusiness._id,
-        });
-        for (let privilege of Object.keys(
-          DefaultBusinessRoles[roleName].privileges,
-        )) {
-          let resourceDetails = await this.resourceModel.findOne({
-            title: ResourceTypes[privilege],
+      // for (let roleName of Object.keys(DefaultBusinessRoles)) {
+      //   const createdRole = await this.roleModel.create({
+      //     name: DefaultBusinessRoles[roleName].name,
+      //     creator: new mongoose.Types.ObjectId(userId),
+      //     creatorType: RoleCreatorType.BUSINESS,
+      //     belongsTo: RoleBelonging.BUSINESS,
+      //     business: createdBusiness._id,
+      //   });
+      //   for (let privilege of Object.keys(
+      //     DefaultBusinessRoles[roleName].privileges,
+      //   )) {
+      //     let resourceDetails = await this.resourceModel.findOne({
+      //       title: ResourceTypes[privilege],
+      //     });
+      //     if (!resourceDetails) {
+      //       resourceDetails = await this.resourceModel.create({
+      //         title: ResourceTypes[privilege],
+      //       });
+      //     }
+      //     for (let action of DefaultBusinessRoles[roleName].privileges[
+      //       privilege
+      //     ]) {
+      //       let actionDetails = await this.actionModel.findOne({
+      //         title: Actions[action],
+      //       });
+      //       if (!actionDetails) {
+      //         actionDetails = await this.actionModel.create({
+      //           title: Actions[action],
+      //         });
+      //       }
+      //       await this.privilegeModel.create({
+      //         role: createdRole._id,
+      //         resource: resourceDetails.title,
+      //         action: actionDetails.title,
+      //       });
+      //     }
+      //   }
+      // }
+      // Create default business roles with parallel execution for nested operations
+      const rolePromises = Object.keys(DefaultBusinessRoles).map(
+        async (roleName) => {
+          const roleData = DefaultBusinessRoles[roleName];
+
+          // Create the role
+          const createdRole = await this.roleModel.create({
+            name: roleData.name,
+            creator: new mongoose.Types.ObjectId(userId),
+            creatorType: RoleCreatorType.BUSINESS,
+            belongsTo: RoleBelonging.BUSINESS,
+            business: createdBusiness._id,
           });
-          if (!resourceDetails) {
-            resourceDetails = await this.resourceModel.create({
-              title: ResourceTypes[privilege],
-            });
-          }
-          for (let action of DefaultBusinessRoles[roleName].privileges[
-            privilege
-          ]) {
-            let actionDetails = await this.actionModel.findOne({
-              title: Actions[action],
-            });
-            if (!actionDetails) {
-              actionDetails = await this.actionModel.create({
-                title: Actions[action],
+
+          // Create privileges for this role concurrently
+          const privilegePromises = Object.keys(roleData.privileges).map(
+            async (privilegeKey) => {
+              // Get or create the resource document
+              let resourceDetails = await this.resourceModel.findOne({
+                title: ResourceTypes[privilegeKey],
               });
-            }
-            await this.privilegeModel.create({
-              role: createdRole._id,
-              resource: resourceDetails.title,
-              action: actionDetails.title,
-            });
-          }
-        }
-      }
+              if (!resourceDetails) {
+                resourceDetails = await this.resourceModel.create({
+                  title: ResourceTypes[privilegeKey],
+                });
+              }
+
+              // For each action in the privilege, get or create the action document and create a privilege record
+              const actionPromises = roleData.privileges[privilegeKey].map(
+                async (actionKey) => {
+                  let actionDetails = await this.actionModel.findOne({
+                    title: Actions[actionKey],
+                  });
+                  if (!actionDetails) {
+                    actionDetails = await this.actionModel.create({
+                      title: Actions[actionKey],
+                    });
+                  }
+                  return this.privilegeModel.create({
+                    role: createdRole._id,
+                    resource: resourceDetails.title,
+                    action: actionDetails.title,
+                  });
+                },
+              );
+
+              return Promise.all(actionPromises);
+            },
+          );
+
+          await Promise.all(privilegePromises);
+        },
+      );
+
+      await Promise.all(rolePromises);
+
       return {
         success: true,
         message: 'Business Created Successfully!',
@@ -851,12 +907,13 @@ export class BusinessService {
         .sort({ createdAt: -1 })
         .select({ password: 0 })
         .skip((page - 1) * limit)
-        .limit(limit).lean();
+        .limit(limit)
+        .lean();
 
-        const modifiedUsers = users.map(user => ({
-          ...user,
-          businessId: user.business, // Rename business field
-          business: undefined // Remove original business field
+      const modifiedUsers = users.map((user) => ({
+        ...user,
+        businessId: user.business, // Rename business field
+        business: undefined, // Remove original business field
       }));
 
       return {

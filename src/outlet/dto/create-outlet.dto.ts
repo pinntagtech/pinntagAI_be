@@ -1,11 +1,21 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum, IsEmail, IsBoolean, IsDateString, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsEmail,
+  IsBoolean,
+  IsDateString,
+  IsArray,
+} from 'class-validator';
 import { OutletCategory } from '../model/outletCategory.model';
-import { VehicleType } from '@googlemaps/google-maps-services-js';
+import { VehicleType } from '../outlet.enum';
 
 export class CreateOutletDto {
   // Outlet Basic Information
   @IsNotEmpty()
-  category: string;;
+  @IsString()
+  category: string;
 
   @IsNotEmpty()
   @IsString()
@@ -19,43 +29,39 @@ export class CreateOutletDto {
   @IsString()
   name: string;
 
-  @IsOptional()
-  @IsString()
-  manager?: string; // Reference to a User entity
-
-  // Address Information (for Physical, Online & Specialty outlets)
-  @IsOptional()
-  @IsString()
-  addressLine1?: string;
-
-  @IsOptional()
-  @IsString()
-  addressLine2?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @IsOptional()
-  @IsString()
-  postalCode?: string;
-
-  // Contact Information
   @IsNotEmpty()
   @IsString()
-  phoneNumber: string;
+  manager: string; // Reference to a User entity
 
-  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  city: string;
+
+  @IsNotEmpty()
+  @IsString()
+  state: string;
+
+  @IsNotEmpty()
+  @IsString()
+  country: string;
+
+  @IsNotEmpty()
+  @IsString()
+  postalCode: string;
+
+  // Contact Information
+
+  @IsNotEmpty()
+  @IsString()
+  countryCode: string;
+
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
+
+  @IsNotEmpty()
   @IsEmail()
-  email?: string;
+  email: string;
 
   // Social Media & Online Presence
   @IsOptional()
@@ -82,14 +88,26 @@ export class CreateOutletDto {
   @IsString()
   googleMyBusinessId?: string;
 
+  // /FOR PHYSICAL RETAIL AND OUTLET SERVICE OUTLETS
+
+  @IsOptional()
+  @IsString()
+  addressLine1?: string;
+
+  @IsOptional()
+  @IsString()
+  addressLine2?: string;
+
   @IsOptional()
   @IsString()
   posSystemId?: string;
 
+
+
   // Mobile & Flexible Outlet Specific Fields
   @IsOptional()
   @IsEnum(VehicleType)
-  vehicleType?: VehicleType;
+  vehicleType?: string;
 
   @IsOptional()
   @IsString()
@@ -111,10 +129,6 @@ export class CreateOutletDto {
   @IsOptional()
   @IsDateString()
   endDate?: Date;
-
-  @IsOptional()
-  @IsString()
-  eventLocation?: string;
 
   @IsOptional()
   @IsString()
