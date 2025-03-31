@@ -4122,7 +4122,8 @@ export class AuthService {
       } else if (userType === UserTypes.BUSINESS) {
         userDoc = await this.businessUserModel
           .findById(userId)
-          .populate('business');
+          .populate('business')
+          .populate('role', '_id name description');
         if (!userDoc) {
           return {
             success: false,
