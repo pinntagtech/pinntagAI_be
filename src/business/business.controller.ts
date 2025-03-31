@@ -33,6 +33,7 @@ import { RateLimit } from 'nestjs-rate-limiter';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { Token } from 'src/auth/models/token.model';
 
 @Controller('business')
 export class BusinessController {
@@ -86,19 +87,19 @@ export class BusinessController {
     }
   }
 
-  @Post('update/:id')
+  @Post('update')
   @UseGuards(JwtGuard2)
   async updateBusiness(
     @Res() res: Response,
-    @Param('id') id: string,
+    @TokenDecoder() user: JwtPayload,
     @Body() data: UpdateBusinessDto,
   ) {
-    if (!isValidObjectId(id)) {
+    if (!isValidObjectId(user.id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.updateBusiness(id, data);
+    const result = await this.businessService.updateBusiness(user.id, data);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -192,20 +193,20 @@ export class BusinessController {
     }
   }
 
-  @Post('user/update/:id')
+  @Post('user/update')
   @UseGuards(JwtGuard2)
   async updateBusinessUser(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('id') id: string,
+    @TokenDecoder() user: JwtPayload,
     @Body() data: UpdateBusinessUserDto,
   ) {
-    if (!isValidObjectId(id)) {
+    if (!isValidObjectId(user.id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.updateBusinessUser(id, data);
+    const result = await this.businessService.updateBusinessUser(user.id, data);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
