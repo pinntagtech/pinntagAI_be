@@ -149,7 +149,7 @@ export class RolesService {
       let allAdminIds = await this.getAllChildAdminIds(id, userType, true, []);
       let ownerRole = null;
       if (userType === UserTypes.ADMIN) {
-        const findAdminUser = await this.businessUserModel.findOne({ _id: id });
+        const findAdminUser = await this.businessUserModel.findById(id);
         if (!findAdminUser) {
           return {
             success: false,
@@ -158,9 +158,7 @@ export class RolesService {
         }
         ownerRole = findAdminUser.role;
       } else if (userType === UserTypes.BUSINESS) {
-        const findBusinessUser = await this.businessUserModel.findOne({
-          _id: id,
-        });
+        const findBusinessUser = await this.businessUserModel.findById(id);
         if (!findBusinessUser) {
           return {
             success: false,
