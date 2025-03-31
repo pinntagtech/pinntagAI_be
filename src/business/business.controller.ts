@@ -183,6 +183,7 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -236,7 +237,14 @@ export class BusinessController {
   }
 
   @Get('user/mailStatus/:id')
-  async mailVerificationStatus(@Res() res: Response, @Param('id') id: string) {
+  async mailVerificationStatus(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -257,12 +265,22 @@ export class BusinessController {
 
   @Get('industryList')
   @RateLimit({ points: 5, duration: 60 })
-  async industryList(@Res() res: Response) {
-    const result = await this.businessService.industryList();
+  async industryList(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.industryList(
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -273,17 +291,29 @@ export class BusinessController {
 
   @Get('businessCategoryList/:id')
   @RateLimit({ points: 5, duration: 60 })
-  async businessCategoryList(@Res() res: Response, @Param('id') id: string) {
+  async businessCategoryList(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.businessCategoryList(id);
+    const result = await this.businessService.businessCategoryList(
+      id,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -315,8 +345,17 @@ export class BusinessController {
   }
 
   @Get('countries')
-  async getCountries(@Res() res: Response) {
-    const result = await this.businessService.getCountries();
+  async getCountries(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.getCountries(
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -329,17 +368,29 @@ export class BusinessController {
     }
   }
   @Get('constitutionList/:id')
-  async constitutionList(@Res() res: Response, @Param('id') id: string) {
+  async constitutionList(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.getConstitutions(id);
+    const result = await this.businessService.getConstitutions(
+      id,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -348,17 +399,29 @@ export class BusinessController {
     }
   }
   @Get('documentTypes/:id')
-  async documentTypes(@Res() res: Response, @Param('id') id: string) {
+  async documentTypes(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.getBusinessDocumentTypes(id);
+    const result = await this.businessService.getBusinessDocumentTypes(
+      id,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -434,41 +497,41 @@ export class BusinessController {
     }
   }
   @Post('user/login/reset-password')
-    @UseGuards(ResetPasswordGuard)
-    async forceResetPassword(
-      @Req() req: Request,
-      @Res() res: Response,
-      @Body() body: { password: string },
-      @TokenDecoder() user: DecodedUser,
-    ) {
-      if (!body.password) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide password.',
-        });
-      }
-      if (typeof body.password !== 'string') {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide valid password.',
-        });
-      }
-      const result = await this.businessService.forceResetPassword(
-        user.id,
-        body.password,
-        req['tokenId'],     
-      );
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          token:result.token
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+  @UseGuards(ResetPasswordGuard)
+  async forceResetPassword(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: { password: string },
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!body.password) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide password.',
+      });
     }
+    if (typeof body.password !== 'string') {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide valid password.',
+      });
+    }
+    const result = await this.businessService.forceResetPassword(
+      user.id,
+      body.password,
+      req['tokenId'],
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
-   @Post('deleteUser/:id')
+  @Post('deleteUser/:id')
   @Privilege(ResourceTypes.USERS, Actions.DELETE)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
@@ -482,10 +545,7 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.deleteUser(
-      user.id,
-      id,
-    );
+    const result = await this.businessService.deleteUser(user.id, id);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,

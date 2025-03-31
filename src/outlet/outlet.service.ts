@@ -19,7 +19,7 @@ import { Outlet, OutletDocument } from './model/outlet.model';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { SubscriptionContextImpl } from 'twilio/lib/rest/events/v1/subscription';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
-import { OutletCategoryList } from './outlet.enum';
+import { OutletCategoryList, VehicleType } from './outlet.enum';
 
 @Injectable()
 export class OutletService {
@@ -100,9 +100,11 @@ export class OutletService {
       }
       let allUserIds = await this.getAllChildUsersIds(user.id);
       let mongoUserIds = [];
-      allUserIds.map((id) => mongoUserIds.push(new mongoose.Types.ObjectId(id)));
-      console.log("allUserIds", mongoUserIds);
-      
+      allUserIds.map((id) =>
+        mongoUserIds.push(new mongoose.Types.ObjectId(id)),
+      );
+      console.log('allUserIds', mongoUserIds);
+
       const users = await this.businessUserModel.aggregate([
         {
           $match: {
@@ -143,7 +145,7 @@ export class OutletService {
               name: 1,
             },
             business: 'businessId',
-            outlets:1,
+            outlets: 1,
           },
         },
         {
@@ -294,14 +296,14 @@ export class OutletService {
         manager: foundManager._id,
         category: foundCategory._id,
         type: new mongoose.Types.ObjectId(type),
-        creator:  businessUser._id,
+        creator: businessUser._id,
       });
-      console.log("Business User Id:", businessUser.id);
+      console.log('Business User Id:', businessUser.id);
       const isUserUpdated = await this.businessUserModel.updateOne(
         { _id: foundManager.id },
         { $push: { outlets: outlet.id } },
       );
-      console.log("Is User Updated", isUserUpdated);
+      console.log('Is User Updated', isUserUpdated);
       return {
         success: true,
         message: 'Outlet created successfully.',
@@ -336,7 +338,7 @@ export class OutletService {
           updateObj[key] = data[key];
         }
       });
-      if(data.manager){
+      if (data.manager) {
         const foundManager = await this.businessUserModel.findOne({
           _id: new mongoose.Types.ObjectId(data.manager),
         });
@@ -348,10 +350,10 @@ export class OutletService {
         }
         updateObj['manager'] = new mongoose.Types.ObjectId(data.manager);
       }
-      if(data.category){
+      if (data.category) {
         updateObj['category'] = new mongoose.Types.ObjectId(data.category);
       }
-      if(data.type){
+      if (data.type) {
         updateObj['type'] = new mongoose.Types.ObjectId(data.type);
       }
       const updatedOutlet = await this.outletModel.findByIdAndUpdate(
@@ -380,30 +382,30 @@ export class OutletService {
           message: 'User not found!',
         };
       }
-      console.log("UserDetails:",userDetails)
+      console.log('UserDetails:', userDetails);
       let outletIds = [];
       outletIds = outletIds.concat(userDetails.outlets);
       const userRole = await this.roleModel.findById(userDetails.role);
-      console.log("outlet IDS 1:",outletIds)
+      console.log('outlet IDS 1:', outletIds);
       if (userRole.isPrimaryAdmin) {
         const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
-        console.log("getAllManagers", getAllManagers);
+        console.log('getAllManagers', getAllManagers);
         if (getAllManagers.success) {
           getAllManagers.data.forEach((manager) => {
             outletIds = outletIds.concat(manager.outlets);
           });
         }
       }
-      console.log("outletsIds", outletIds);
+      console.log('outletsIds', outletIds);
       let mongoUserIds = [];
       outletIds.map((id) => mongoUserIds.push(new mongoose.Types.ObjectId(id)));
-      console.log("allUserIds", mongoUserIds);
+      console.log('allUserIds', mongoUserIds);
 
       const outlets = await this.outletModel
         .find({ _id: { $in: mongoUserIds } })
         .skip((page - 1) * limit)
         .limit(limit);
-      console.log("outlets:",outlets);
+      console.log('outlets:', outlets);
       return {
         success: true,
         message: 'Outlets fetched successfully.',
@@ -413,6 +415,21 @@ export class OutletService {
       return {
         success: false,
         message: error,
+      };
+    }
+  }
+  async getVehicleTypes() {
+    try {
+      const vehicleTypes: string[] = Object.values(VehicleType);
+      return {
+        success: true,
+        message: 'Vehicle Types fetched successfully',
+        data: vehicleTypes,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
       };
     }
   }
