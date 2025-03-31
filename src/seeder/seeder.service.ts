@@ -40,17 +40,17 @@ import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import {
   OutletCategory,
   OutletCategoryDocument,
-} from 'src/business/model/outletCategory.model';
+} from 'src/outlet/model/outletCategory.model';
 import {
   OutletType,
   OutletTypeDocument,
-} from 'src/business/model/outletType.model';
+} from 'src/outlet/model/outletType.model';
 import {
   BusinessCountries,
   BusinessDocumentTypes,
   BusinessIndustries,
-  OutletCategoryList,
-  OutletTypesByCategory,
+  // OutletCategoryList,
+  OutletCategories,
 } from 'src/business/enums/business.enum';
 import e from 'express';
 import {
@@ -136,7 +136,7 @@ export class SeederService {
     await this.seedResources();
     await this.seedActions();
     await this.seedOutletCategories();
-    await this.seedPrivileges();
+    // await this.seedPrivileges(); super admin privileges are not needed
     await this.seedBusinessIndustries();
     // await this.seedCountries();
     await this.seedConstitutions();
@@ -189,8 +189,8 @@ export class SeederService {
     });
     await newDrive.save();
     return await this.driveModel
-    .findById(newDrive._id)
-    .select('_id owner ownerType TotalSpace AvailableSpace');
+      .findById(newDrive._id)
+      .select('_id owner ownerType TotalSpace AvailableSpace');
   }
   async seedSuperAdminRole() {
     const role = await this.roleModel.findOne({ isSuperAdmin: true });
@@ -338,9 +338,9 @@ export class SeederService {
   async seedOutletCategories() {
     const findOutletCategories = await this.outletCategoryModel.find();
     if (
-      findOutletCategories.length < Object.values(OutletCategoryList).length
+      findOutletCategories.length < Object.values(OutletCategories).length
     ) {
-      for (const outletCategory of Object.values(OutletCategoryList)) {
+      for (const outletCategory of Object.keys(OutletCategories)) {
         const foundOutletCategory = await this.outletCategoryModel.findOne({
           title: outletCategory,
         });
@@ -349,9 +349,7 @@ export class SeederService {
           const createdOutletCategory = await this.outletCategoryModel.create({
             title: outletCategory,
           });
-          for (const outletCategoryType of OutletTypesByCategory[
-            outletCategory
-          ]) {
+          for (const outletCategoryType of Object.values(OutletCategories[outletCategory])) {
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
               category: new mongoose.Types.ObjectId(createdOutletCategory.id),
@@ -366,18 +364,17 @@ export class SeederService {
             }
           }
         } else {
-          for (const outletCategoryType of OutletTypesByCategory[
-            outletCategory
-          ]) {
-            console.log('outletCategoryType:', outletCategoryType);
+          for (const outletCategoryType of Object.values(OutletCategories[outletCategory])) {
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
-              category: new mongoose.Types.ObjectId(foundOutletCategory._id),
+              category: new mongoose.Types.ObjectId(foundOutletCategory.id),
             });
             if (!foundType) {
               await this.outletTypeModel.create({
                 type: outletCategoryType,
-                category: new mongoose.Types.ObjectId(foundOutletCategory._id),
+                category: new mongoose.Types.ObjectId(
+                  foundOutletCategory._id,
+                ),
               });
             }
           }
@@ -460,33 +457,6 @@ export class SeederService {
       console.log('All countries are already seeded.');
     }
   }
-  // async seedConsitutions() {
-  //   const existingCount = await this.businessConstitutionModel.countDocuments();
-  //   const totalConstitutions = Object.keys(BusinessDocumentTypes).length;
-
-  //   if (existingCount < totalConstitutions) {
-  //     const countries = await this.businessCountryModel.find();
-  //     for (const country of countries) {
-  //       console.log("country:",country.name);
-  //       for (const constitution of Object.values(Object.values(country.name))) {
-  //         console.log("constitution:",constitution);
-  //         console.log("country name:",country.name);
-  //         const foundConstitution =
-  //           await this.businessConstitutionModel.findOne({
-  //             title: constitution,
-  //             country: country._id,
-  //           });
-
-  //         if (!foundConstitution) {
-  //           await this.businessConstitutionModel.create({
-  //             title: constitution,
-  //             country: country._id,
-  //           });
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
   async seedConstitutions() {
     const existingCountries = await this.businessCountryModel.find();
     if (existingCountries.length < Object.keys(BusinessDocumentTypes).length) {
@@ -507,7 +477,7 @@ export class SeederService {
               title: constitution,
               country: new mongoose.Types.ObjectId(createdCountry.id),
             });
-            console.log('createConstitution:', createConstitution);
+          console.log('createConstitution:', createConstitution);
 
           for (let document of Object.values(
             BusinessDocumentTypes[country.name][constitution],
@@ -516,7 +486,9 @@ export class SeederService {
             const createdDocument = await this.businessDocumentTypeModel.create(
               {
                 title: document,
-                constitution: new mongoose.Types.ObjectId(createConstitution.id),
+                constitution: new mongoose.Types.ObjectId(
+                  createConstitution.id,
+                ),
               },
             );
           }

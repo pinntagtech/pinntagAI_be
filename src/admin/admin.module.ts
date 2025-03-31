@@ -92,11 +92,11 @@ import { PrivilegeService } from 'src/roles/privilege.service';
 import {
   OutletCategory,
   OutletCategorySchema,
-} from 'src/business/model/outletCategory.model';
+} from 'src/outlet/model/outletCategory.model';
 import {
   OutletType,
   OutletTypeSchema,
-} from 'src/business/model/outletType.model';
+} from 'src/outlet/model/outletType.model';
 import {
   BusinessUser,
   BusinessUserSchema,
@@ -193,7 +193,7 @@ import { SmsService } from 'src/sms/sms.service';
     RolesService,
     PrivilegeService,
     AuthService,
-    SmsService
+    SmsService,
   ],
 })
 export class AdminModule {}

@@ -10,7 +10,7 @@ import {
   Insurance,
   TaxDetails,
 } from 'src/business-profile/models/types.model';
-import { Outlet } from './outlet.model';
+import { Outlet } from '../../outlet/model/outlet.model';
 import { Brand } from './brand.model';
 import { Folder } from 'src/drive/models/folder.model';
 import { BusinessCategory } from './businessCategory.model';

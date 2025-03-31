@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { OutletCategory } from './outletCategory.model';
+import { OutletCategory } from '../../outlet/model/outletCategory.model';
 import mongoose from 'mongoose';
 import { BusinessIndustry } from './businessIndustry.model';
 
@@ -12,4 +12,5 @@ export class BusinessCategory {
   @Prop({ required: true, ref: BusinessIndustry.name })
   industry: mongoose.Types.ObjectId;
 }
-export const BusinessCategorySchema = SchemaFactory.createForClass(BusinessCategory);
+export const BusinessCategorySchema =
+  SchemaFactory.createForClass(BusinessCategory);

@@ -55,11 +55,8 @@ import { BusinessModule } from './business/business.module';
 import {
   OutletCategory,
   OutletCategorySchema,
-} from './business/model/outletCategory.model';
-import {
-  OutletType,
-  OutletTypeSchema,
-} from './business/model/outletType.model';
+} from './outlet/model/outletCategory.model';
+import { OutletType, OutletTypeSchema } from './outlet/model/outletType.model';
 import { AppController } from './app.controller';
 import {
   BusinessUser,
@@ -86,6 +83,7 @@ import {
   BusinessConstitutionSchema,
 } from './business/model/businessConstitution.model';
 import { RateLimiterModule } from 'nestjs-rate-limiter';
+import { OutletModule } from './outlet/outlet.module';
 
 @Module({
   imports: [
@@ -154,6 +152,7 @@ import { RateLimiterModule } from 'nestjs-rate-limiter';
     DriveModule,
     RolesModule,
     BusinessModule,
+    OutletModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],
