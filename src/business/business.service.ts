@@ -817,6 +817,7 @@ export class BusinessService {
       console.log('user:', user);
       const userDetails = await this.businessUserModel
         .findById(user._id)
+        .populate('role', '_id name')
         .populate('business');
       console.log('userDetails:', userDetails);
       return {
