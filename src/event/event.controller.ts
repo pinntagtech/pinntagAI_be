@@ -37,13 +37,19 @@ import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { SavedEventsDto } from './dto/saved-events.dto';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
 import { RespondRsvp } from './dto/rsvp-response.dto';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { EventService2 } from './event.service2';
 
 @Controller('event')
 export class EventController {
-  constructor(private readonly eventService: EventService) {}
+  constructor(
+    private readonly eventService: EventService2,
+    // private readonly eventService: EventService
+
+  ) {}
 
   @Post()
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(
     FilesInterceptor(
       'images',
