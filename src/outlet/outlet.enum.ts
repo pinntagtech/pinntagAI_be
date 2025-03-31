@@ -11,5 +11,5 @@ export enum VehicleType {
   VAN = 'Van',
   CART = 'Cart',
 //   BICYCLE = 'Bicycle',
-//   SCOOTER = 'Scooter',
+  SCOOTER = 'Scooter',
 }

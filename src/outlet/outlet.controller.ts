@@ -159,4 +159,22 @@ export class OutletController {
         });
       }
   }
+  @Get('vehicleTypes')
+  // @UseGuards(JwtGuard2)
+  async fetchVehicleTypes(
+    @Req() req:Request,
+    @Res() res: Response,
+  ){
+    const result = await this.outletService.getVehicleTypes();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

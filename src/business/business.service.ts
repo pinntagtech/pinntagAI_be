@@ -66,6 +66,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { UserService } from 'src/user/user.service';
+import { isEmail } from 'class-validator';
 
 @Injectable()
 export class BusinessService {
@@ -900,27 +901,80 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUsersIds(user.id);
-      const users = await this.businessUserModel
-        .find({
-          _id: { $in: allUserIds },
-        })
-        .populate('role', '_id name')
-        .sort({ createdAt: -1 })
-        .select({ password: 0 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean();
+      // const users = await this.businessUserModel
+      //   .find({
+      //     $match: {
+      //       _id: {
+      //         $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
+      //       },
+      //     },
+      //   })
+      //   .populate('role', '_id name')
+      //   .sort({ createdAt: -1 })
+      //   .select({ password: 0 })
+      //   .skip((page - 1) * limit)
+      //   .limit(limit)
+      //   .lean();
 
-      const modifiedUsers = users.map((user) => ({
-        ...user,
-        businessId: user.business, // Rename business field
-        business: undefined, // Remove original business field
-      }));
+      const users = await this.businessUserModel.aggregate([
+        {
+          $match: {
+            _id: {
+              $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'roles',
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            isBlocked: 1,
+            role: {
+              _id: 1,
+              name: 1,
+            },
+            status: 1,
+            creator: 1,
+            creatorType: 1,
+            profilePhoto: 1,
+            name: 1,
+            email: 1,
+            phone: 1,
+            countryCode: 1,
+            isEmailVerified: 1,
+            businessId: '$business',
+            drive: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            outlets: 1,
+          },
+        },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ]);
 
+      // const modifiedUsers = users.map((user) => ({
+      //   ...user,
+      //   businessId: user.business, // Rename business field
+      //   business: undefined, // Remove original business field
+      // }));
+      const countDocs = await this.businessUserModel.countDocuments({
+        _id: {
+          $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
+        },
+      });
       return {
         success: true,
         message: 'Business User fetched Successfully!',
-        data: modifiedUsers,
+        data: users,
+        total: countDocs,
       };
     } catch (error) {
       return {
@@ -982,13 +1036,18 @@ export class BusinessService {
       };
     }
   }
-  async industryList() {
+  async industryList(page: number, limit: number) {
     try {
-      const industries = await this.businessIndModel.find();
+      const industries = await this.businessIndModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalDocs = await this.businessIndModel.countDocuments();
       return {
         success: true,
         message: 'Categories fetched Successfully.',
         data: industries,
+        total: totalDocs,
       };
     } catch (error) {
       return {
@@ -997,15 +1056,22 @@ export class BusinessService {
       };
     }
   }
-  async businessCategoryList(id: string) {
+  async businessCategoryList(id: string, page: number, limit: number) {
     try {
-      const categories = await this.businessCategoryModel.find({
+      const categories = await this.businessCategoryModel
+        .find({
+          industry: new mongoose.Types.ObjectId(id),
+        })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
       return {
         success: true,
         message: 'Industries fetched Successfully!',
         data: categories,
+        total: totalDocs,
       };
     } catch (error) {
       return {
@@ -1014,19 +1080,23 @@ export class BusinessService {
       };
     }
   }
-  async getCountries() {
+  async getCountries(page: number, limit: number) {
     try {
-      const countries = await this.businessCountryModel.find();
+      const countries = await this.businessCountryModel
+        .find()
+        .skip((page - 1) * limit);
       if (!countries.length) {
         return {
           success: false,
           message: 'No Countries Found!',
         };
       }
+      const countDocs = this.businessCountryModel.countDocuments();
       return {
         success: true,
         message: 'Countries fetched Successfully!',
         data: countries,
+        total: countDocs,
       };
     } catch (error) {
       return {
@@ -1035,7 +1105,7 @@ export class BusinessService {
       };
     }
   }
-  async getConstitutions(id: string) {
+  async getConstitutions(id: string, page: number, limit: number) {
     try {
       const constitutions = await this.businessConstitutionModel.find({
         country: new mongoose.Types.ObjectId(id),
@@ -1046,10 +1116,14 @@ export class BusinessService {
           message: 'No Constitutions Found!',
         };
       }
+      const countDocs = await this.businessConstitutionModel.countDocuments({
+        country: new mongoose.Types.ObjectId(id),
+      });
       return {
         success: true,
         message: 'Constitutions fetched Successfully!',
         data: constitutions,
+        total: countDocs,
       };
     } catch (error) {
       return {
@@ -1058,21 +1132,28 @@ export class BusinessService {
       };
     }
   }
-  async getBusinessDocumentTypes(id) {
+  async getBusinessDocumentTypes(id: string, page: number, limit: number) {
     try {
-      const documentTypes = await this.businessDocumentTypeModel.find({
-        constitution: new mongoose.Types.ObjectId(id),
-      });
+      const documentTypes = await this.businessDocumentTypeModel
+        .find({
+          constitution: new mongoose.Types.ObjectId(id),
+        })
+        .skip((page - 1) * limit)
+        .limit(limit);
       if (!documentTypes.length) {
         return {
           success: false,
           message: 'No Document Types Found!',
         };
       }
+      const countDocs = await this.businessDocumentTypeModel.countDocuments({
+        constitution: new mongoose.Types.ObjectId(id),
+      });
       return {
         success: true,
         message: 'Document Types fetched Successfully!',
         data: documentTypes,
+        total: countDocs,
       };
     } catch (error) {
       return {
@@ -1235,7 +1316,44 @@ export class BusinessService {
         loginLink,
       );
 
-      const updatedUser = await this.businessUserModel.findById(createdUser.id);
+      // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
+      const updatedUser = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(id) },
+        },
+        {
+          $lookup: {
+            from: 'roles',
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            isBlocked: 1,
+            role: {
+              _id: 1,
+              name: 1,
+            },
+            status: 1,
+            creator: 1,
+            creatorType: 1,
+            profilePhoto: 1,
+            name: 1,
+            email: 1,
+            phone: 1,
+            countryCode: 1,
+            isEmailVerified: 1,
+            businessId: '$business',
+            drive: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            outlets: 1,
+          },
+        },
+      ]);
       return {
         success: true,
         message: 'Business User Created Successfully!',
