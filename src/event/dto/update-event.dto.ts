@@ -20,10 +20,14 @@ class ScheduleRequestData {
   date: String;
   durations: Array<Duration>;
 }
+class RecurringSchedule {
+  dayOfWeek: Array<string>;
+  durations: Array<Duration>;
+}
 
 class Duration {
-  startTime: String;
-  endTime: String;
+  startTime: Date;
+  endTime: Date;
 }
 export class UpdateEventDto {
   // @IsOptional()
@@ -51,8 +55,14 @@ export class UpdateEventDto {
   description: string;
 
   @IsOptional()
+  scheduleType: string; //fixed or recurring
+
+  @IsOptional()
   @IsArray()
   schedule: Array<ScheduleRequestData> | Array<Schedule>;
+
+  @IsOptional()
+  recurringSchedule: RecurringSchedule;
 
   @IsOptional()
   @IsArray()

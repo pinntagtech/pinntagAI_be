@@ -73,6 +73,7 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { EventService2 } from './event.service2';
+import { EventSchedule, ScheduleSchema } from './models/event-schedule.model';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { EventService2 } from './event.service2';
       { name: Admin.name, schema: AdminSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: EventSchedule.name, schema: ScheduleSchema },
     ]),
   ],
   controllers: [EventController],

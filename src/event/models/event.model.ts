@@ -10,6 +10,7 @@ import { EventResponse } from './event-response.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { Business } from 'src/business/model/business.model';
+import { EventSchedule, ScheduleSchema } from './event-schedule.model';
 
 export type EventDocument = Event & Document;
 
@@ -31,11 +32,12 @@ export class Event {
   @Prop({ required: true, enum: ['User', BusinessUser.name] })
   creatorType: string;
 
-  @Prop({ ref: 'User' })
+  @Prop({ refPath: 'creatorType' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({ ref: BusinessProfile.name })
+  @Prop({ ref: Business.name })
   businessProfile: mongoose.Types.ObjectId;
+
   @Prop({
     enum: [
       EventStatus.DRAFTED,
@@ -57,8 +59,12 @@ export class Event {
   keywords: Array<string>;
   @Prop()
   description: string;
+
   @Prop()
   schedule: Array<Schedule>;
+
+  @Prop({ ref: EventSchedule.name })
+  eventSchedule: Array<mongoose.Types.ObjectId>;
 
   @Prop({ ref: Outlet.name })
   locations: Array<mongoose.Types.ObjectId>; //Outlet Ids
@@ -103,7 +109,7 @@ export class Event {
   eventUrl?: string;
   @Prop({ default: [], ref: EventResponse.name })
   responses: Array<mongoose.Types.ObjectId>;
-  @Prop({ref:Business.name})
+  @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;
 }
 

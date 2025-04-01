@@ -698,14 +698,17 @@ export class EventService {
             j++
           ) {
             updateEventDto.schedule[i].durations[j].startTime = new Date(
-              updateEventDto.schedule[i].durations[j].startTime as string,
+              updateEventDto.schedule[i].durations[j].startTime,
             );
             updateEventDto.schedule[i].durations[j].endTime = new Date(
-              updateEventDto.schedule[i].durations[j].endTime as string,
+              updateEventDto.schedule[i].durations[j].endTime,
             );
           }
           updateEventDto.schedule[i].durations.sort((a, b) => {
-            return a.startTime - b.startTime;
+            return (
+              new Date(a.startTime).getTime() -
+              new Date(b.startTime).getTime()
+            );
           });
         }
       }

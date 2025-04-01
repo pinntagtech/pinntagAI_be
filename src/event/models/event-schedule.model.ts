@@ -23,14 +23,14 @@ export class RecurringSchedule {
   durations: Array<Duration>;
 }
 
-export type ScheduleDocument = Schedule & mongoose.Document;
+export type EventScheduleDocument = EventSchedule & mongoose.Document;
 
 @Schema({ timestamps: true })
-export class Schedule {
+export class EventSchedule {
   @Prop({ required: true, enum: Object.values(ScheduleTypes) })
   type: string;
 
-  @Prop({ ref: Event.name })
+  @Prop()
   event: mongoose.Types.ObjectId;
 
   @Prop()
@@ -41,4 +41,4 @@ export class Schedule {
 }
 
 
-export const ScheduleSchema = SchemaFactory.createForClass(Schedule);
+export const ScheduleSchema = SchemaFactory.createForClass(EventSchedule);

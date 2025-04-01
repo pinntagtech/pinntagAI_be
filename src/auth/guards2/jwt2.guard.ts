@@ -112,7 +112,8 @@ export class JwtGuard2 implements CanActivate {
         request['isAdmin'] = false;
         request['user'] = businessUser;
         request['business'] = business;
-        request['businessProfile'] = businessUser.id;
+        request['businessProfile'] = business.id;
+        request['businessUser'] = businessUser.id;
         return true;
       } else if (payload.userType === UserTypes.USER) {
         const user = await this.userModel.findById(payload.id);

@@ -103,7 +103,7 @@ export class EventController {
   }
 
   @Post('update/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async update(
     @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
