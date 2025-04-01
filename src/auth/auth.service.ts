@@ -4096,11 +4096,13 @@ export class AuthService {
     }
   }
 
-  async getProfile(userId:string,userType:string) {
+  async getProfile(userId: string, userType: string) {
     try {
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
-        userDoc = await this.adminModel.findById(userId);
+        userDoc = await this.adminModel
+          .findById(userId)
+          .populate('role', '_id name description');
         if (!userDoc) {
           return {
             success: false,
@@ -4108,7 +4110,9 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.USER) {
-        userDoc = await this.userModel.findById(userId);
+        userDoc = await this.userModel
+          .findById(userId)
+          .populate('role', '_id name description');
         if (!userDoc) {
           return {
             success: false,
@@ -4116,7 +4120,10 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel.findById(userId).populate('business');
+        userDoc = await this.businessUserModel
+          .findById(userId)
+          .populate('business')
+          .populate('role', '_id name description');
         if (!userDoc) {
           return {
             success: false,
