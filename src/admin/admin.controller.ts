@@ -765,4 +765,25 @@ export class AdminController {
       });
     }
   }
+
+  @Post('create/industry')
+  @UseGuards(AdminGuard2)
+  async createIndustry(
+    @Res() res: Response,
+    @Body('title') title: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.createBusinessIndustry(user.id,title);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
 }
