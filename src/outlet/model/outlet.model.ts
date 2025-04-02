@@ -30,10 +30,10 @@ export class Outlet {
 
   // Address Information (for Physical, Online, and Specialty outlets)
   @Prop()
-  addressLine1?: string;
+  address1?: string;
 
   @Prop()
-  addressLine2?: string;
+  address2?: string;
 
   @Prop()
   city?: string;
@@ -45,7 +45,7 @@ export class Outlet {
   country?: string;
 
   @Prop()
-  postalCode?: string;
+  zip?: string;
 
   @Prop()
   countryCode?: string;
@@ -113,6 +113,13 @@ export class Outlet {
 
   @Prop()
   premiseName?: string; // Name of Hotel, Airport, University, etc.
+
+  @Prop()
+  latitude: number;
+  @Prop()
+  longitude: number;
+  @Prop()
+  accuracy: number;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);

@@ -13,14 +13,134 @@ export class FixedSchedule {
   durations: Array<Duration>;
 }
 class Duration {
-  startTime: Date;
-  endTime: Date;
+  startTime: String;
+  endTime: String;
 }
 
+const sampleData = {
+  startDate: new Date(),
+  endDate: new Date('2025-05-31'),
+  data: {
+    sunday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    monday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    tuesday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    wednesday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    thursday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    friday: {
+      included: true,
+      durations: [
+        {
+          startTime: '10:00',
+          endTime: '11:00',
+        },
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+        },
+      ],
+    },
+    saturday: {
+      included: false,
+      durations: [],
+    },
+  },
+};
 
-export class RecurringSchedule {
-  dayOfWeek: Array<WeekDays>;
+export class DaySchedule {
+  @Prop()
+  included: boolean;
+
+  @Prop()
   durations: Array<Duration>;
+}
+const weekDaysType = {
+  sunday: { type: DaySchedule },
+  monday: { type: DaySchedule },
+  tuesday: { type: DaySchedule },
+  wednesday: { type: DaySchedule },
+  thursday: { type: DaySchedule },
+  friday: { type: DaySchedule },
+  saturday: { type: DaySchedule },
+};
+export class RecurringSchedule {
+  @Prop()
+  startDate: Date;
+
+  @Prop()
+  endDate: Date;
+
+  @Prop({
+    type: weekDaysType,
+  })
+  weekDays: {
+    sunday: DaySchedule;
+    monday: DaySchedule;
+    tuesday: DaySchedule;
+    wednesday: DaySchedule;
+    thursday: DaySchedule;
+    friday: DaySchedule;
+    saturday: DaySchedule;
+  };
 }
 
 export type EventScheduleDocument = EventSchedule & mongoose.Document;
@@ -39,6 +159,5 @@ export class EventSchedule {
   @Prop()
   recurringSchedule: RecurringSchedule;
 }
-
 
 export const ScheduleSchema = SchemaFactory.createForClass(EventSchedule);
