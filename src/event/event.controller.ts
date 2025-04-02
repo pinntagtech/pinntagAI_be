@@ -39,6 +39,7 @@ import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
 import { RespondRsvp } from './dto/rsvp-response.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { EventService2 } from './event.service2';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
 
 @Controller('event')
 export class EventController {
@@ -835,6 +836,26 @@ export class EventController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         reports: result.reports,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('schedule/:id')
+  @UseGuards(JwtGuard2)
+  async createSchedule(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: CreateScheduleDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.createSchedule(id,data, user);
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
