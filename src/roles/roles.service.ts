@@ -44,7 +44,7 @@ export class RolesService {
       const roleData = {
         name,
         description,
-        creator: user.id,
+        creator: new mongoose.Types.ObjectId(user.id),
         creatorType: isAdmin ? RoleCreatorType.ADMIN : RoleCreatorType.BUSINESS,
         belongsTo: isAdmin ? RoleBelonging.SYSTEM : RoleBelonging.BUSINESS,
         // business:
