@@ -406,12 +406,12 @@ export class EventService2 {
   }
 
   private async isValidTimeRange(
-    startTime: string,
-    endTime: string,
+    startHour: number,
+    startMinute: number,
+    endHour: number,
+    endMinute: number,
   ): Promise<boolean> {
     // Convert HH:mm strings into minutes since midnight
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
     const startTotal = startHour * 60 + startMinute;
     const endTotal = endHour * 60 + endMinute;
     return startTotal < endTotal;
@@ -457,192 +457,192 @@ export class EventService2 {
       updateEventDto.categories = categoriesInObjectId;
     }
 
-    let scheduleList = [];
-    if (updateEventDto.scheduleType) {
-      if (
-        updateEventDto.scheduleType == ScheduleTypes.FIXED &&
-        updateEventDto.schedule &&
-        updateEventDto.schedule.length
-      ) {
-        //Parse dates into date objects and also sort the dates and their respective durations in ascending order
-        for (let i = 0; i < updateEventDto.schedule.length; i++) {
-          if (updateEventDto.schedule[i].date) {
-            updateEventDto.schedule[i].date = new Date(
-              updateEventDto.schedule[i].date.toString(),
-            );
-            // for (
-            //   let j = 0;
-            //   j < updateEventDto.schedule[i].durations.length;
-            //   j++
-            // ) {
-            //   updateEventDto.schedule[i].durations[j].startTime = new Date(
-            //     updateEventDto.schedule[i].durations[j].startTime,
-            //   );
-            //   updateEventDto.schedule[i].durations[j].endTime = new Date(
-            //     updateEventDto.schedule[i].durations[j].endTime,
-            //   );
-            // }
-            updateEventDto.schedule[i].durations.sort((a, b) => {
-              // return (
-              //   new Date(a.startTime).getTime() -
-              //   new Date(b.startTime).getTime()
-              // );
+    // let scheduleList = [];
+    // if (updateEventDto.scheduleType) {
+    //   if (
+    //     updateEventDto.scheduleType == ScheduleTypes.FIXED &&
+    //     updateEventDto.schedule &&
+    //     updateEventDto.schedule.length
+    //   ) {
+    //     //Parse dates into date objects and also sort the dates and their respective durations in ascending order
+    //     for (let i = 0; i < updateEventDto.schedule.length; i++) {
+    //       if (updateEventDto.schedule[i].date) {
+    //         updateEventDto.schedule[i].date = new Date(
+    //           updateEventDto.schedule[i].date.toString(),
+    //         );
+    //         // for (
+    //         //   let j = 0;
+    //         //   j < updateEventDto.schedule[i].durations.length;
+    //         //   j++
+    //         // ) {
+    //         //   updateEventDto.schedule[i].durations[j].startTime = new Date(
+    //         //     updateEventDto.schedule[i].durations[j].startTime,
+    //         //   );
+    //         //   updateEventDto.schedule[i].durations[j].endTime = new Date(
+    //         //     updateEventDto.schedule[i].durations[j].endTime,
+    //         //   );
+    //         // }
+    //         updateEventDto.schedule[i].durations.sort((a, b) => {
+    //           // return (
+    //           //   new Date(a.startTime).getTime() -
+    //           //   new Date(b.startTime).getTime()
+    //           // );
 
-              return (
-                this.timeToMinutes(a.startTime) -
-                this.timeToMinutes(b.startTime)
-              );
-            });
+    //           return (
+    //             this.timeToMinutes(a.startTime) -
+    //             this.timeToMinutes(b.startTime)
+    //           );
+    //         });
 
-            updateEventDto.schedule.sort((a, b) => {
-              return a.date - b.date;
-            });
-          }
-        }
+    //         updateEventDto.schedule.sort((a, b) => {
+    //           return a.date - b.date;
+    //         });
+    //       }
+    //     }
 
-        for (let i = 0; i < updateEventDto.schedule.length; i++) {
-          if (updateEventDto.schedule[i].date) {
-            // const date = getStringDateTz(
-            //   new Date(updateEventDto.schedule[i].date.toString()),
-            // );
-            const date = new Date(updateEventDto.schedule[i].date.toString());
-            for (
-              let j = 0;
-              j < updateEventDto.schedule[i].durations.length;
-              j++
-            ) {
-              const duration = updateEventDto.schedule[i].durations[j];
-              if (duration) {
-                if (
-                  new Date(duration.startTime.toString()) >
-                  new Date(duration.endTime.toString())
-                ) {
-                  return {
-                    success: false,
-                    message: `Start date cannot be greater than end date for the schedule at index ${i} and duration at index ${j}`,
-                  };
-                }
-              }
-            }
-            let scheduleObj = {
-              type: updateEventDto.scheduleType,
-              event: new mongoose.Types.ObjectId(id),
-              fixedSchedule: {
-                date: new Date(date),
-                durations: updateEventDto.schedule[i].durations,
-              },
-            };
-            const createdSchedule =
-              await this.scheduleModel.create(scheduleObj);
-            scheduleList.push(createdSchedule._id);
-          }
-        }
-      } else if (
-        updateEventDto.scheduleType == ScheduleTypes.RECURRING &&
-        updateEventDto.recurringSchedule
-      ) {
-        console.log('Check:1');
-        let startDate = new Date(updateEventDto.recurringSchedule.startDate);
-        let endDate = new Date(updateEventDto.recurringSchedule.endDate);
-        updateEventDto.recurringSchedule.startDate = startDate;
-        updateEventDto.recurringSchedule.endDate = endDate;
-        console.log('Check:2', startDate, endDate);
-        if (startDate > endDate) {
-          return {
-            success: false,
-            message: `Start date cannot be greater than end date for this schedule`,
-          };
-        }
-        let week = updateEventDto.recurringSchedule.weekDays;
-        for (let i = 0; i < Object.keys(week).length; i++) {
-          let day = Object.keys(updateEventDto.recurringSchedule.weekDays)[i];
-          let dayObj = week[Object.keys(week)[i]];
-          console.log('day:', day);
-          console.log('Day Data:', dayObj);
-          if (dayObj.included) {
-            if (dayObj.durations.length == 0) {
-              return {
-                success: false,
-                message: `Please provide the duration for the ${day}`,
-              };
-            }
-            //durations array
-            for (let j = 0; j < dayObj.durations.length; j++) {
-              console.log('Duration:', dayObj.durations[j]);
-              let duration = dayObj.durations[j];
-              let startTime = duration.startTime;
-              let endTime = duration.endTime;
-              const isValid = this.isValidTimeRange(startTime, endTime);
-              if (!isValid) {
-                return {
-                  success: false,
-                  message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
-                };
-              }
-            }
-            dayObj.durations.sort((a, b) => {
-              return (
-                this.timeToMinutes(a.startTime) -
-                this.timeToMinutes(b.startTime)
-              );
-            });
-            updateEventDto.recurringSchedule.weekDays[day] = dayObj;
-          }
-        }
+    //     for (let i = 0; i < updateEventDto.schedule.length; i++) {
+    //       if (updateEventDto.schedule[i].date) {
+    //         // const date = getStringDateTz(
+    //         //   new Date(updateEventDto.schedule[i].date.toString()),
+    //         // );
+    //         const date = new Date(updateEventDto.schedule[i].date.toString());
+    //         for (
+    //           let j = 0;
+    //           j < updateEventDto.schedule[i].durations.length;
+    //           j++
+    //         ) {
+    //           const duration = updateEventDto.schedule[i].durations[j];
+    //           if (duration) {
+    //             if (
+    //               new Date(duration.startTime.toString()) >
+    //               new Date(duration.endTime.toString())
+    //             ) {
+    //               return {
+    //                 success: false,
+    //                 message: `Start date cannot be greater than end date for the schedule at index ${i} and duration at index ${j}`,
+    //               };
+    //             }
+    //           }
+    //         }
+    //         let scheduleObj = {
+    //           type: updateEventDto.scheduleType,
+    //           event: new mongoose.Types.ObjectId(id),
+    //           fixedSchedule: {
+    //             date: new Date(date),
+    //             durations: updateEventDto.schedule[i].durations,
+    //           },
+    //         };
+    //         const createdSchedule =
+    //           await this.scheduleModel.create(scheduleObj);
+    //         scheduleList.push(createdSchedule._id);
+    //       }
+    //     }
+    //   } else if (
+    //     updateEventDto.scheduleType == ScheduleTypes.RECURRING &&
+    //     updateEventDto.recurringSchedule
+    //   ) {
+    //     console.log('Check:1');
+    //     let startDate = new Date(updateEventDto.recurringSchedule.startDate);
+    //     let endDate = new Date(updateEventDto.recurringSchedule.endDate);
+    //     updateEventDto.recurringSchedule.startDate = startDate;
+    //     updateEventDto.recurringSchedule.endDate = endDate;
+    //     console.log('Check:2', startDate, endDate);
+    //     if (startDate > endDate) {
+    //       return {
+    //         success: false,
+    //         message: `Start date cannot be greater than end date for this schedule`,
+    //       };
+    //     }
+    //     let week = updateEventDto.recurringSchedule.weekDays;
+    //     for (let i = 0; i < Object.keys(week).length; i++) {
+    //       let day = Object.keys(updateEventDto.recurringSchedule.weekDays)[i];
+    //       let dayObj = week[Object.keys(week)[i]];
+    //       console.log('day:', day);
+    //       console.log('Day Data:', dayObj);
+    //       if (dayObj.included) {
+    //         if (dayObj.durations.length == 0) {
+    //           return {
+    //             success: false,
+    //             message: `Please provide the duration for the ${day}`,
+    //           };
+    //         }
+    //         //durations array
+    //         for (let j = 0; j < dayObj.durations.length; j++) {
+    //           console.log('Duration:', dayObj.durations[j]);
+    //           let duration = dayObj.durations[j];
+    //           let startTime = duration.startTime;
+    //           let endTime = duration.endTime;
+    //           const isValid = this.isValidTimeRange(startHour, startMinute, endHour, endMinute);
+    //           if (!isValid) {
+    //             return {
+    //               success: false,
+    //               message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
+    //             };
+    //           }
+    //         }
+    //         dayObj.durations.sort((a, b) => {
+    //           return (
+    //             this.timeToMinutes(a.startTime) -
+    //             this.timeToMinutes(b.startTime)
+    //           );
+    //         });
+    //         updateEventDto.recurringSchedule.weekDays[day] = dayObj;
+    //       }
+    //     }
 
-        let scheduleObj = {
-          type: updateEventDto.scheduleType,
-          event: new mongoose.Types.ObjectId(id),
-          recurringSchedule: {
-            startDate: updateEventDto.recurringSchedule.startDate,
-            endDate: updateEventDto.recurringSchedule.endDate,
-            weekDays: updateEventDto.recurringSchedule.weekDays,
-          },
-        };
-        const createdSchedule = await this.scheduleModel.create(scheduleObj);
-        scheduleList.push(createdSchedule._id);
+    //     let scheduleObj = {
+    //       type: updateEventDto.scheduleType,
+    //       event: new mongoose.Types.ObjectId(id),
+    //       recurringSchedule: {
+    //         startDate: updateEventDto.recurringSchedule.startDate,
+    //         endDate: updateEventDto.recurringSchedule.endDate,
+    //         weekDays: updateEventDto.recurringSchedule.weekDays,
+    //       },
+    //     };
+    //     const createdSchedule = await this.scheduleModel.create(scheduleObj);
+    //     scheduleList.push(createdSchedule._id);
 
-        // if (updateEventDto.recurringSchedule.dayOfWeek.length > 0) {
-        //   for (
-        //     let j = 0;
-        //     j < updateEventDto.recurringSchedule.durations.length;
-        //     j++
-        //   ) {
-        //     updateEventDto.recurringSchedule.durations[j].startTime = new Date(
-        //       updateEventDto.recurringSchedule.durations[j].startTime,
-        //     );
-        //     updateEventDto.recurringSchedule.durations[j].endTime = new Date(
-        //       updateEventDto.recurringSchedule.durations[j].endTime,
-        //     );
-        //   }
-        //   updateEventDto.recurringSchedule.durations.sort((a, b) => {
-        //     return (
-        //       new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-        //     );
-        //   });
-        //   for (
-        //     let j = 0;
-        //     j < updateEventDto.recurringSchedule.durations.length;
-        //     j++
-        //   ) {
-        //     let duration = updateEventDto.recurringSchedule.durations[j];
-        //     if (duration) {
-        //       if (
-        //         new Date(duration.startTime.toString()) >
-        //         new Date(duration.endTime.toString())
-        //       ) {
-        //         return {
-        //           success: false,
-        //           message: `Start date cannot be greater than end date for this schedule  and duration at index ${j}`,
-        //         };
-        //       }
-        //     }
-        //   }
+    //     // if (updateEventDto.recurringSchedule.dayOfWeek.length > 0) {
+    //     //   for (
+    //     //     let j = 0;
+    //     //     j < updateEventDto.recurringSchedule.durations.length;
+    //     //     j++
+    //     //   ) {
+    //     //     updateEventDto.recurringSchedule.durations[j].startTime = new Date(
+    //     //       updateEventDto.recurringSchedule.durations[j].startTime,
+    //     //     );
+    //     //     updateEventDto.recurringSchedule.durations[j].endTime = new Date(
+    //     //       updateEventDto.recurringSchedule.durations[j].endTime,
+    //     //     );
+    //     //   }
+    //     //   updateEventDto.recurringSchedule.durations.sort((a, b) => {
+    //     //     return (
+    //     //       new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    //     //     );
+    //     //   });
+    //     //   for (
+    //     //     let j = 0;
+    //     //     j < updateEventDto.recurringSchedule.durations.length;
+    //     //     j++
+    //     //   ) {
+    //     //     let duration = updateEventDto.recurringSchedule.durations[j];
+    //     //     if (duration) {
+    //     //       if (
+    //     //         new Date(duration.startTime.toString()) >
+    //     //         new Date(duration.endTime.toString())
+    //     //       ) {
+    //     //         return {
+    //     //           success: false,
+    //     //           message: `Start date cannot be greater than end date for this schedule  and duration at index ${j}`,
+    //     //         };
+    //     //       }
+    //     //     }
+    //     //   }
 
-        // }
-      }
-    }
-    console.log('Check:3', scheduleList);
+    //     // }
+    //   }
+    // }
+    // console.log('Check:3', scheduleList);
     if (
       event.creatorType === BusinessUser.name &&
       (event.businessProfile.toString() !== user.businessProfile ||
@@ -865,7 +865,7 @@ export class EventService2 {
         {
           $set: {
             ...updateEventDto,
-            eventSchedule: scheduleList,
+            // eventSchedule: scheduleList,
           },
         },
         { new: true },
@@ -3871,7 +3871,7 @@ export class EventService2 {
         };
       }
       if (
-        event.user.toString() !== user.id &&
+        event.user.toString() !== user.id ||
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -3886,46 +3886,55 @@ export class EventService2 {
           data.fixedSchedule &&
           data.fixedSchedule.length
         ) {
-
           //Parse dates into date objects and also sort the dates and their respective durations in ascending order
           for (let i = 0; i < data.fixedSchedule.length; i++) {
             if (data.fixedSchedule[i].date) {
               data.fixedSchedule[i].date = new Date(
                 data.fixedSchedule[i].date.toString(),
               );
-              data.fixedSchedule[i].durations.sort((a, b) => {
-                return (
-                  this.timeToMinutes(a.startTime) -
-                  this.timeToMinutes(b.startTime)
-                );
-              });
 
-              data.fixedSchedule.sort((a, b) => {
-                return a.date - b.date;
-              });
-            }
-          }
-          console.log("Fix 1:")
-          for (let i = 0; i < data.fixedSchedule.length; i++) {
-            if (data.fixedSchedule[i].date) {
-              // const date = getStringDateTz(
-              //   new Date(data.fixedSchedule[i].date.toString()),
-              // );
-              const date = new Date(data.fixedSchedule[i].date.toString());
+              if (data.fixedSchedule[i].date < new Date(Date.now())) {
+                return {
+                  success: false,
+                  message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
+                };
+              }
+
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
                 const duration = data.fixedSchedule[i].durations[j];
                 if (duration) {
-                  if (
-                    new Date(duration.startTime.toString()) >
-                    new Date(duration.endTime.toString())
-                  ) {
+                  const isValid = this.isValidTimeRange(
+                    duration.startHour,
+                    duration.startMinute,
+                    duration.endHour,
+                    duration.endMinute,
+                  );
+                  if (!isValid) {
                     return {
                       success: false,
-                      message: `Start date cannot be greater than end date for the schedule at index ${i} and duration at index ${j}`,
+                      message: `Start time cannot be greater than end time for the date ${data.fixedSchedule[i].date} and duration at index ${j}`,
                     };
                   }
                 }
               }
+
+              data.fixedSchedule[i].durations.sort((a, b) => {
+                return (
+                  a.startHour * 60 +
+                  a.startMinute -
+                  (b.startHour * 60 + b.startMinute)
+                );
+              });
+            }
+            data.fixedSchedule.sort((a, b) => {
+              return a.date - b.date;
+            });
+          }
+          console.log('Fix 1:');
+
+          for (let i = 0; i < data.fixedSchedule.length; i++) {
+            if (data.fixedSchedule[i].date) {
+              const date = new Date(data.fixedSchedule[i].date.toString());
               let scheduleObj = {
                 type: data.scheduleType,
                 event: new mongoose.Types.ObjectId(eventId),
@@ -3946,6 +3955,20 @@ export class EventService2 {
           console.log('Check:1');
           let startDate = new Date(data.recurringSchedule.startDate);
           let endDate = new Date(data.recurringSchedule.endDate);
+
+          if (startDate < new Date(Date.now())) {
+            return {
+              success: false,
+              message: `Start date cannot be in past`,
+            };
+          }
+          if (endDate < new Date(Date.now())) {
+            return {
+              success: false,
+              message: `End date cannot be in past`,
+            };
+          }
+
           data.recurringSchedule.startDate = startDate;
           data.recurringSchedule.endDate = endDate;
           console.log('Check:2', startDate, endDate);
@@ -3972,9 +3995,19 @@ export class EventService2 {
               for (let j = 0; j < dayObj.durations.length; j++) {
                 console.log('Duration:', dayObj.durations[j]);
                 let duration = dayObj.durations[j];
-                let startTime = duration.startTime;
-                let endTime = duration.endTime;
-                const isValid = this.isValidTimeRange(startTime, endTime);
+                // let startTime = duration.startTime;
+                // let endTime = duration.endTime;
+
+                let startHour = duration.startHour;
+                let startMinute = duration.startMinute;
+                let endHour = duration.endHour;
+                let endMinute = duration.endMinute;
+                const isValid = this.isValidTimeRange(
+                  startHour,
+                  startMinute,
+                  endHour,
+                  endMinute,
+                );
                 if (!isValid) {
                   return {
                     success: false,
@@ -3984,8 +4017,9 @@ export class EventService2 {
               }
               dayObj.durations.sort((a, b) => {
                 return (
-                  this.timeToMinutes(a.startTime) -
-                  this.timeToMinutes(b.startTime)
+                  a.startHour * 60 +
+                  a.startMinute -
+                  (b.startHour * 60 + b.startMinute)
                 );
               });
               data.recurringSchedule.weekDays[day] = dayObj;
@@ -4024,7 +4058,7 @@ export class EventService2 {
       return {
         success: false,
         message: error.message,
-      }
+      };
     }
   }
 }

@@ -13,8 +13,13 @@ export class FixedSchedule {
   durations: Array<Duration>;
 }
 class Duration {
-  startTime: String;
-  endTime: String;
+  // startTime: String;
+  // endTime: String;
+
+    startHour: number;
+    startMinute: number;
+    endHour: number;
+    endMinute: number;
 }
 
 const sampleData = {
