@@ -48,8 +48,10 @@ async function bootstrap() {
         });
         return new BadRequestException(error.trim());
       },
+      whitelist: true,
       forbidUnknownValues: true,
       forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
   app.use((req: Request, res: Response, next: NextFunction) => {
