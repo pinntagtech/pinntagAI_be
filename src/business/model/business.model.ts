@@ -26,7 +26,7 @@ export class Business {
   @Prop({ default: false })
   isDeleted: boolean;
 
-  // @Prop({
+  // @Prop({crea
   //   required: true,
   //   enum: [0, 1, 2],
   //   default: 0,
