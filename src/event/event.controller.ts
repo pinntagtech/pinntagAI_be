@@ -193,7 +193,7 @@ export class EventController {
   }
 
   @Get('created/v2')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getCreatedEventsV2(
     @Query('page') pageNo: string,
     @Query('limit') limitCount: string,

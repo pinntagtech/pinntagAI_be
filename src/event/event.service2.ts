@@ -1275,7 +1275,7 @@ export class EventService2 {
     let query = {};
     if (user.isBusiness) {
       query = {
-        creatorType: BusinessProfile.name,
+        creatorType: BusinessUser.name,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       };
     } else {
@@ -3893,7 +3893,7 @@ export class EventService2 {
                 data.fixedSchedule[i].date.toString(),
               );
 
-              if (data.fixedSchedule[i].date < new Date(Date.now())) {
+              if (data.fixedSchedule[i].date < new Date()) {
                 return {
                   success: false,
                   message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
@@ -3980,8 +3980,8 @@ export class EventService2 {
           }
           let week = data.recurringSchedule.weekDays;
           for (let i = 0; i < Object.keys(week).length; i++) {
-            let day = Object.keys(data.recurringSchedule.weekDays)[i];
-            let dayObj = week[Object.keys(week)[i]];
+            let day = Object.keys(week)[i];
+            let dayObj = week[day];
             console.log('day:', day);
             console.log('Day Data:', dayObj);
             if (dayObj.included) {

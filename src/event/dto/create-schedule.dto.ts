@@ -106,5 +106,5 @@ export class CreateScheduleDto {
   @ValidateNested()
   @Type(() => RecurringScheduleDataDto)
   recurringSchedule: RecurringScheduleDataDto;
-  data: any;
+  // data: any; 
 }
