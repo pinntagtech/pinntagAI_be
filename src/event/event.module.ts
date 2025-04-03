@@ -70,6 +70,11 @@ import {
   EventResponseSchema,
 } from './models/event-response.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { EventService2 } from './event.service2';
+import { EventSchedule, ScheduleSchema } from './models/event-schedule.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -102,11 +107,16 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: Business.name, schema: BusinessSchema },
+      { name: EventSchedule.name, schema: ScheduleSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
   ],
   controllers: [EventController],
   providers: [
-    EventService,
+    // EventService,
+    EventService2,
     JwtService,
     S3Service,
     FacebookService,

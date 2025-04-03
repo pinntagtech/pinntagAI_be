@@ -7,6 +7,10 @@ import { Category } from 'src/models/category.model';
 import { Image } from './image.model';
 import { EventLocation } from './eventLocation.model';
 import { EventResponse } from './event-response.model';
+import { BusinessUser } from 'src/business/model/businessUser.model';
+import { Outlet } from 'src/outlet/model/outlet.model';
+import { Business } from 'src/business/model/business.model';
+import { EventSchedule, ScheduleSchema } from './event-schedule.model';
 
 export type EventDocument = Event & Document;
 
@@ -25,12 +29,15 @@ export class Event {
     ],
   })
   type: string;
-  @Prop({ required: true, enum: ['User', 'Admin', BusinessProfile.name] })
+  @Prop({ required: true, enum: ['User', BusinessUser.name] })
   creatorType: string;
-  @Prop({ ref: 'User' })
+
+  @Prop({ refPath: 'creatorType' })
   user: mongoose.Types.ObjectId;
-  @Prop({ ref: BusinessProfile.name })
+
+  @Prop({ ref: Business.name })
   businessProfile: mongoose.Types.ObjectId;
+
   @Prop({
     enum: [
       EventStatus.DRAFTED,
@@ -43,6 +50,7 @@ export class Event {
   status: string;
   @Prop({ required: true, ref: Category.name })
   categories: Array<mongoose.Types.ObjectId>;
+
   @Prop({ ref: Image.name })
   images: Array<mongoose.Types.ObjectId>;
   @Prop()
@@ -51,12 +59,19 @@ export class Event {
   keywords: Array<string>;
   @Prop()
   description: string;
+
   @Prop()
   schedule: Array<Schedule>;
-  @Prop({ ref: EventLocation.name })
-  locations: Array<mongoose.Types.ObjectId>;
+
+  @Prop({ ref: EventSchedule.name })
+  eventSchedule: Array<mongoose.Types.ObjectId>;
+
+  @Prop({ ref: Outlet.name })
+  locations: Array<mongoose.Types.ObjectId>; //Outlet Ids
+
   @Prop({ ref: AgeGroup.name })
   ageGroupsAllowed: Array<mongoose.Types.ObjectId>;
+
   @Prop()
   targetGenders: Array<string>;
   @Prop()
@@ -66,15 +81,20 @@ export class Event {
   @Prop()
   participationCost: string;
   @Prop()
-  bookingUrl: string;
+  bookingUrl: string[];
+
   @Prop({ default: false })
   notifyFollowers: boolean;
+
   @Prop({ default: '' })
   RSVP: string;
+
   @Prop({ default: false })
   termsApplied: boolean;
+
   @Prop()
   termsAndConditions: string;
+
   @Prop()
   isPostedOnFacebook: boolean;
   @Prop()
@@ -89,6 +109,8 @@ export class Event {
   eventUrl?: string;
   @Prop({ default: [], ref: EventResponse.name })
   responses: Array<mongoose.Types.ObjectId>;
+  @Prop({ ref: Business.name })
+  business: mongoose.Types.ObjectId;
 }
 
 export class Schedule {

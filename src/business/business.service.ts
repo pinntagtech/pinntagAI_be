@@ -496,18 +496,10 @@ export class BusinessService {
     }
   }
 
-  async updateBusiness(id: string, data: UpdateBusinessDto) {
+  async updateBusiness(userId: string, data: UpdateBusinessDto) {
     try {
-      const findBusiness = await this.businessModel.findById(id);
-      if (!findBusiness) {
-        return {
-          success: false,
-          message: 'Business not found with given ID',
-        };
-      }
-
       const businessUser = await this.businessUserModel.findById(
-        findBusiness.creator,
+        userId
       );
       if (!businessUser) {
         return {
@@ -515,6 +507,15 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
+      const businessId = businessUser.business;
+      const findBusiness = await this.businessModel.findById(businessId);
+      if (!findBusiness) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
       if (businessUser.status < ProfileStatus.MAPPED) {
         return {
           success: false,
@@ -627,7 +628,7 @@ export class BusinessService {
       }
       console.log('udpateObj:', updateObj);
       const updatedDetails = await this.businessModel.findByIdAndUpdate(
-        id,
+        businessId,
         {
           $set: { ...updateObj },
         },
@@ -736,7 +737,12 @@ export class BusinessService {
         return { success: false, message: 'Incorrect password' };
       }
       if (!user.isEmailVerified) {
-        return { success: false, message: 'Email is not verified' };
+        return { success: false, message: 'Email is not verified',data:{
+          _id:user._id,
+          email:user.email,
+          isEmailVerified:user.isEmailVerified,
+          status:user.status,
+        } };
       }
       const businessUser = await this.businessUserModel
         .findById(user.id)
@@ -757,6 +763,7 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
+    console.log("Validated Business User:",validatedBusinessUser);
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -833,6 +840,7 @@ export class BusinessService {
       return {
         success: false,
         message: validatedBusinessUser.message,
+        user:validatedBusinessUser.data?validatedBusinessUser.data:{},
       };
     }
   }

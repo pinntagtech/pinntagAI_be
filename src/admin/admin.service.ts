@@ -53,6 +53,10 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { AuthService } from 'src/auth/auth.service';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from 'src/business/model/businessIndustry.model';
 
 @Injectable()
 export class AdminService {
@@ -63,6 +67,8 @@ export class AdminService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly industryModel: Model<BusinessIndustryDocument>,
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
     @InjectModel(Category.name)
@@ -1094,6 +1100,32 @@ export class AdminService {
       return {
         success: false,
         message: 'Error fetching business',
+      };
+    }
+  }
+
+  async createBusinessIndustry(id: string, title: string) {
+    try {
+      const industry = await this.industryModel.findOne({ title: title });
+      if (industry) {
+        return {
+          success: false,
+          message: 'Industry already exist with given Title.',
+        };
+      }
+      const createdIndustry = await this.industryModel.create({
+        title: title,
+        createdBy: new mongoose.Types.ObjectId(id),
+      });
+      return {
+        success: true,
+        message: 'Industry Created Successfully.',
+        data: createdIndustry,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
       };
     }
   }

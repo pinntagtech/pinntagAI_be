@@ -1,15 +1,22 @@
 import {
   IsArray,
   IsBoolean,
+  IsDate,
+  IsDefined,
   IsIn,
+  IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { EventTypes } from 'src/enums/event.enums';
 import { Location } from '../../business-profile/models/types.model';
 import { Schedule } from '../models/event.model';
 import mongoose from 'mongoose';
+import { Type } from 'class-transformer';
+import { Prop } from '@nestjs/mongoose';
 class LocationRequestData {
   @IsString()
   location: string;
@@ -18,12 +25,77 @@ class LocationRequestData {
 }
 class ScheduleRequestData {
   date: String;
-  durations: Array<Duration>;
+  durations: Array<DurationDto>;
+}
+
+export class DurationDto {
+  @IsString()
+  @IsNotEmpty()
+  startTime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
+}
+
+export class DayScheduleDto {
+  @IsBoolean()
+  included: boolean;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DurationDto)
+  durations: DurationDto[];
+}
+
+export class WeekDaysDto {
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  sunday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  monday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  tuesday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  wednesday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  thursday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  friday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  saturday: DayScheduleDto;
+}
+
+export class RecurringScheduleDataDto {
+  @IsDate()
+  @Type(() => Date)
+  startDate: Date;
+
+  @IsDate()
+  @Type(() => Date)
+  endDate: Date;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => WeekDaysDto)
+  weekDays: WeekDaysDto;
 }
 
 class Duration {
-  startTime: String;
-  endTime: String;
+  startTime: Date;
+  endTime: Date;
 }
 export class UpdateEventDto {
   // @IsOptional()
@@ -51,8 +123,16 @@ export class UpdateEventDto {
   description: string;
 
   @IsOptional()
+  scheduleType: string; //fixed or recurring
+
+  @IsOptional()
   @IsArray()
   schedule: Array<ScheduleRequestData> | Array<Schedule>;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RecurringScheduleDataDto)
+  recurringSchedule: RecurringScheduleDataDto;
 
   @IsOptional()
   @IsArray()

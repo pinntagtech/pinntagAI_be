@@ -87,6 +87,7 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class AuthService {
@@ -99,8 +100,8 @@ export class AuthService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Refferal.name)
     private readonly refferalModel: Model<RefferalDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name) private readonly businessProfileModel: Model<BusinessDocument>,
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Category.name)
@@ -3793,7 +3794,7 @@ export class AuthService {
       eventObj['creatorDetails'] = {
         _id: businessProfile._id,
         name: businessProfile.name,
-        profilePhoto: businessProfile.profilePhoto,
+        profilePhoto: businessProfile.logo,
         email: businessProfile.email,
         bio: businessProfile.bio,
         phone: businessProfile.phone,
@@ -4096,13 +4097,11 @@ export class AuthService {
     }
   }
 
-  async getProfile(userId: string, userType: string) {
+  async getProfile(userId:string,userType:string) {
     try {
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
-        userDoc = await this.adminModel
-          .findById(userId)
-          .populate('role', '_id name description');
+        userDoc = await this.adminModel.findById(userId);
         if (!userDoc) {
           return {
             success: false,
@@ -4110,9 +4109,7 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.USER) {
-        userDoc = await this.userModel
-          .findById(userId)
-          .populate('role', '_id name description');
+        userDoc = await this.userModel.findById(userId);
         if (!userDoc) {
           return {
             success: false,
@@ -4120,10 +4117,7 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel
-          .findById(userId)
-          .populate('business')
-          .populate('role', '_id name description');
+        userDoc = await this.businessUserModel.findById(userId).populate('business');
         if (!userDoc) {
           return {
             success: false,

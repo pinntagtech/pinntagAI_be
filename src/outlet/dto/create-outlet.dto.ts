@@ -47,7 +47,7 @@ export class CreateOutletDto {
 
   @IsNotEmpty()
   @IsString()
-  postalCode: string;
+  zip: string;
 
   // Contact Information
 
@@ -92,11 +92,11 @@ export class CreateOutletDto {
 
   @IsOptional()
   @IsString()
-  addressLine1?: string;
+  address1?: string;
 
   @IsOptional()
   @IsString()
-  addressLine2?: string;
+  address2?: string;
 
   @IsOptional()
   @IsString()
