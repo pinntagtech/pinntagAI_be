@@ -496,18 +496,10 @@ export class BusinessService {
     }
   }
 
-  async updateBusiness(id: string, data: UpdateBusinessDto) {
+  async updateBusiness(userId: string, data: UpdateBusinessDto) {
     try {
-      const findBusiness = await this.businessModel.findById(id);
-      if (!findBusiness) {
-        return {
-          success: false,
-          message: 'Business not found with given ID',
-        };
-      }
-
       const businessUser = await this.businessUserModel.findById(
-        findBusiness.creator,
+        userId
       );
       if (!businessUser) {
         return {
@@ -515,6 +507,15 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
+      const businessId = businessUser.business;
+      const findBusiness = await this.businessModel.findById(businessId);
+      if (!findBusiness) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
       if (businessUser.status < ProfileStatus.MAPPED) {
         return {
           success: false,
@@ -627,7 +628,7 @@ export class BusinessService {
       }
       console.log('udpateObj:', updateObj);
       const updatedDetails = await this.businessModel.findByIdAndUpdate(
-        id,
+        businessId,
         {
           $set: { ...updateObj },
         },
@@ -837,7 +838,7 @@ export class BusinessService {
       };
     } else {
       return {
-        success: true,
+        success: false,
         message: validatedBusinessUser.message,
         user:validatedBusinessUser.data?validatedBusinessUser.data:{},
       };
