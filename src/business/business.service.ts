@@ -1357,7 +1357,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'Business User Created Successfully!',
-        data: updatedUser,
+        data: updatedUser[0],
       };
     } catch (error) {
       return {
