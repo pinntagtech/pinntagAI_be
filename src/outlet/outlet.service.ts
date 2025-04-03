@@ -203,7 +203,7 @@ export class OutletService {
         city,
         state,
         country,
-        postalCode,
+        zip,
         countryCode,
         phone,
         email,
@@ -213,8 +213,8 @@ export class OutletService {
         instagram,
         twitter,
         googleMyBusinessId,
-        addressLine1,
-        addressLine2,
+        address1,
+        address2,
         posSystemId,
         vehicleRegistrationNumber,
         vehicleType,
@@ -245,9 +245,9 @@ export class OutletService {
         };
       }
       if (foundCategory.title === OutletCategoryList.PHYSICAL) {
-        console.log('addressLine1:', addressLine1);
+        console.log('address1:', address1);
         console.log('posSystemId:', posSystemId, typeof posSystemId);
-        if (!addressLine1 || !posSystemId) {
+        if (!address1 || !posSystemId) {
           console.log('it should enter this block');
           return {
             success: false,

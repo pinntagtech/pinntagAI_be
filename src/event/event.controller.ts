@@ -37,13 +37,20 @@ import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { SavedEventsDto } from './dto/saved-events.dto';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
 import { RespondRsvp } from './dto/rsvp-response.dto';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { EventService2 } from './event.service2';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
 
 @Controller('event')
 export class EventController {
-  constructor(private readonly eventService: EventService) {}
+  constructor(
+    private readonly eventService: EventService2,
+    // private readonly eventService: EventService
+
+  ) {}
 
   @Post()
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(
     FilesInterceptor(
       'images',
@@ -97,7 +104,7 @@ export class EventController {
   }
 
   @Post('update/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async update(
     @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
@@ -186,7 +193,7 @@ export class EventController {
   }
 
   @Get('created/v2')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getCreatedEventsV2(
     @Query('page') pageNo: string,
     @Query('limit') limitCount: string,
@@ -829,6 +836,26 @@ export class EventController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         reports: result.reports,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('schedule/:id')
+  @UseGuards(JwtGuard2)
+  async createSchedule(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: CreateScheduleDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.createSchedule(id,data, user);
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
