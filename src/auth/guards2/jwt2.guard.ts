@@ -112,7 +112,9 @@ export class JwtGuard2 implements CanActivate {
         request['isAdmin'] = false;
         request['user'] = businessUser;
         request['business'] = business;
-        request['businessProfile'] = business.id;
+        if(business && business.id){
+          request['businessProfile'] = business.id;
+        }
         request['businessUser'] = businessUser.id;
         return true;
       } else if (payload.userType === UserTypes.USER) {
