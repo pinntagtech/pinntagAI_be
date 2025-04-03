@@ -3941,6 +3941,7 @@ export class EventService2 {
                   date: new Date(date),
                   durations: data.fixedSchedule[i].durations,
                 },
+                businessId: new mongoose.Types.ObjectId(user.businessProfile)
               };
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
@@ -4033,6 +4034,7 @@ export class EventService2 {
               endDate: data.recurringSchedule.endDate,
               weekDays: data.recurringSchedule.weekDays,
             },
+            businessId: new mongoose.Types.ObjectId(user.businessProfile)
           };
           const createdSchedule = await this.scheduleModel.create(scheduleObj);
           scheduleList.push(createdSchedule._id);
@@ -4139,12 +4141,14 @@ export class EventService2 {
   
     // Fetch event schedules first
     const currentDate = currentDateTz();
-    let scheduleQuery: any = {};
+    let scheduleQuery: any = {
+      businessId: new mongoose.Types.ObjectId(user.businessProfile),
+    };
   
     if (isExpired) {
       scheduleQuery = {
         $or: [
-          { 
+          {
             'fixedSchedule.date': { $lt: currentDate } 
           },
           {
@@ -4168,6 +4172,7 @@ export class EventService2 {
   
     // Find schedules matching the filter
     const eventSchedules = await this.eventScheduleModel.find(scheduleQuery).select('event');
+    console.log("eventSchedule:",eventSchedules);
   
     // Extract event IDs
     const eventIds = eventSchedules.map((schedule) => schedule.event);

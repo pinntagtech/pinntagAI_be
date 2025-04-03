@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Event } from './event.model';
 import mongoose from 'mongoose';
 import { WeekDays } from 'src/enums/event.enums';
+import { Business } from 'src/business/model/business.model';
 
 export const ScheduleTypes = {
   FIXED: 'fixed',
@@ -163,6 +164,9 @@ export class EventSchedule {
 
   @Prop()
   recurringSchedule: RecurringSchedule;
+
+  @Prop({ref: Business.name})
+  businessId: mongoose.Types.ObjectId;
 }
 
 export const ScheduleSchema = SchemaFactory.createForClass(EventSchedule);

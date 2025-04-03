@@ -220,7 +220,7 @@ export class EventController {
     }
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
-    const result = await this.eventService.getCreatedEventsV2(
+    const result = await this.eventService.getCreatedEventsV3(
       user,
       expired,
       page,
