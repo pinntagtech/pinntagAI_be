@@ -3892,8 +3892,7 @@ export class EventService2 {
               data.fixedSchedule[i].date = new Date(
                 data.fixedSchedule[i].date.toString(),
               );
-
-              if (data.fixedSchedule[i].date < new Date()) {
+              if (new Date(data.fixedSchedule[i].date.toString()).setHours(0,0,0,0) < new Date().setHours(0,0,0,0)) {
                 return {
                   success: false,
                   message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
@@ -4037,16 +4036,17 @@ export class EventService2 {
           };
           const createdSchedule = await this.scheduleModel.create(scheduleObj);
           scheduleList.push(createdSchedule._id);
-          const updatedEvent = await this.eventModel.findByIdAndUpdate(
-            eventId,
-            {
-              $set: {
-                eventSchedule: scheduleList,
-              },
-            },
-            { new: true },
-          );
+         
         }
+        const updatedEvent = await this.eventModel.findByIdAndUpdate(
+          eventId,
+          {
+            $push: {
+              eventSchedule: { $each: scheduleList },
+            },
+          },
+          { new: true },
+        );
       }
       console.log('Check:3', scheduleList);
       return {
