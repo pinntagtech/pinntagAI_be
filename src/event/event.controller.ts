@@ -201,6 +201,7 @@ export class EventController {
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
   ) {
+    
     let expired = false;
     if (!isExpired) {
       return res.status(HttpStatus.BAD_REQUEST).json({

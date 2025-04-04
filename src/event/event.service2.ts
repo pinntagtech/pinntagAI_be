@@ -4125,6 +4125,7 @@ export class EventService2 {
     limit: number,
   ) {
     let query = {};
+    console.log("USER:",user);
   
     if (user.isBusiness) {
       query = {
@@ -4141,6 +4142,7 @@ export class EventService2 {
   
     // Fetch event schedules first
     const currentDate = currentDateTz();
+    console.log("currentDate:",currentDate);
     let scheduleQuery: any = {
       businessId: new mongoose.Types.ObjectId(user.businessProfile),
     };
@@ -4158,17 +4160,19 @@ export class EventService2 {
       };
     } else {
       scheduleQuery = {
-        $or: [
-          { 
+        // $or: [
+          // { 
             'fixedSchedule.date': { $gte: currentDate } 
-          },
-          {
-            'recurringSchedule.startDate': { $lte: currentDate },
-            'recurringSchedule.endDate': { $gte: currentDate },
-          },
-        ],
+          // },
+          // {
+          //   'recurringSchedule.startDate': { $lte: currentDate },
+          //   'recurringSchedule.endDate': { $lte: currentDate },
+          // },
+        // ],
       };
     }
+    console.log("scheduleQuery:",scheduleQuery);
+
   
     // Find schedules matching the filter
     const eventSchedules = await this.eventScheduleModel.find(scheduleQuery).select('event');

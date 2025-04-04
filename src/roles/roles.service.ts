@@ -425,7 +425,7 @@ export class RolesService {
       }
       return {
         success: true,
-        message: 'Resources Fetched Successfully!',
+        message: ' Successfully!',
         data: assignedTo,
       };
     } catch (error) {
