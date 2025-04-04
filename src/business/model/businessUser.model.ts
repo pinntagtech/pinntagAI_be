@@ -58,3 +58,4 @@ export class BusinessUser {
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
+

@@ -1,6 +1,8 @@
+import { BusinessUser } from "src/business/model/businessUser.model";
+
 export const UserTypes = {
   USER: 'Consumer',
-  BUSINESS: 'Business',
+  BUSINESS: 'BusinessUser',
   ADMIN: 'Admin',
   GUEST: 'Guest',
 };
