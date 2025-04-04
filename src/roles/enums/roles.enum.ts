@@ -1,6 +1,8 @@
+import { BusinessUser } from "src/business/model/businessUser.model";
+
 export const RoleCreatorType = {
   ADMIN: 'Admin',
-  BUSINESS: 'Business',
+  BUSINESS: BusinessUser.name,
   SYSTEM: 'System',
 };
 
