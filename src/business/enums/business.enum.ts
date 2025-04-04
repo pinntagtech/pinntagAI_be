@@ -1,8 +1,9 @@
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
-  MAPPED: 1, //-> Business Created And Mapped to Business User
-  REGISTERED: 2, //-> Business Registration Completed
-  COMPLETED: 3, //-> Description Added And Business Creation Complete
+  EMAIL_VERIFIED: 1,
+  MAPPED: 2, //-> Business Created And Mapped to Business User
+  REGISTERED: 3, //-> Business Registration Completed
+  COMPLETED: 4, //-> Description Added And Business Creation Complete
 };
 
 // export const OutletTypesByCategory = {
