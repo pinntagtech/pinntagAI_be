@@ -158,7 +158,6 @@ export class RolesService {
         }
         ownerRole = findAdminUser.role;
       } else if (userType === UserTypes.BUSINESS) {
-        userType = BusinessUser.name;
         const findBusinessUser = await this.businessUserModel.findById(id);
         if (!findBusinessUser) {
           return {
@@ -168,47 +167,50 @@ export class RolesService {
         }
         ownerRole = findBusinessUser.role[0];
       }
+      console.log("businessUser:",userType)
       console.log('allAdminIds:', allAdminIds);
       const allAdminObjectIds = allAdminIds.map(id => new mongoose.Types.ObjectId(id));
-      // const roles = await this.roleModel.find({
-      // //   _id: { $in: allAdminObjectIds, $ne: ownerRole },
-      // //   creatorType: userType,
-      // // })
-      // // .populate({
-      // //   path: 'creator',
-      // //   select: 'name',
-      // //   model: userType,
-      // // });
-      const roles = await this.roleModel.aggregate([
-        {
-          $match: {
-            _id: { $in: allAdminObjectIds, $ne: ownerRole },
-            creatorType: userType,
-          },
-        },
-        {
-          $lookup: {
-            from: userType, 
-            localField: "creator",
-            foreignField: "_id",
-            as: "creator",
-          },
-        },
-        {
-          $unwind: {
-            path: "$creator",
-            preserveNullAndEmptyArrays: true, // Keeps roles even if no creator is found
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            creatorType: 1,
-            "creator._id": 1,
-            "creator.name": 1, // Selecting only the "name" field from the referenced document
-          },
-        },
-      ]);
+      const roles = await this.roleModel.find({
+        _id: { $in: allAdminObjectIds, $ne: ownerRole },
+        creatorType: userType,
+      })
+      .populate({
+        path: 'creator',
+        select: 'name',
+        model: userType,
+      });
+
+      // const roles = await this.roleModel.aggregate([
+      //   {
+      //     $match: {
+      //       _id: { $in: allAdminObjectIds, $ne: ownerRole },
+      //       creatorType: userType,
+      //     }, 
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: 'businessusers', 
+      //       localField: "creator",
+      //       foreignField: "_id",
+      //       as: "creator",
+      //     },
+      //   },
+      //   // {
+      //   //   $unwind: {
+      //   //     path: "$creator",
+      //   //     preserveNullAndEmptyArrays: true, // Keeps roles even if no creator is found
+      //   //   },
+      //   // },
+      //   // {
+      //   //   $project: {
+      //   //     _id: 1,
+      //   //     creatorType: 1,
+      //   //     creator:1,
+      //   //     // "creator._id": 1,
+      //   //     // "creator.name": 1, // Selecting only the "name" field from the referenced document
+      //   //   },
+      //   // },
+      // ]);
 
 
       console.log("'roles:", roles);
