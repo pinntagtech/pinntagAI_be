@@ -302,14 +302,21 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
-      const businessUser = await this.businessUserModel.findById(userId);
+      const businessUser = await this.businessUserModel.findById(userId).select({password:0});
       if (!businessUser) {
         return {
           success: false,
           message: 'Business User not found with given ID',
         };
       }
-      if (businessUser.status > ProfileStatus.INITIATED) {
+      if(businessUser.status < ProfileStatus.EMAIL_VERIFIED) {
+        return {
+          success: false,
+          message: 'Business User email not verified',
+          data: businessUser
+        };
+      }
+      if (businessUser.status >= ProfileStatus.MAPPED) {
         return {
           success: false,
           message: 'Business User already mapped with another Business',
