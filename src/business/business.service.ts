@@ -228,7 +228,9 @@ export class BusinessService {
       await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
       await this.businessUserModel.updateOne(
         { _id: user.id },
-        { $set: { isEmailVerified: true } },
+        {
+          $set: { isEmailVerified: true, status: ProfileStatus.EMAIL_VERIFIED },
+        },
       );
       const token = await this.authService.generateJWT(
         {
@@ -303,14 +305,21 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
-      const businessUser = await this.businessUserModel.findById(userId);
+      const businessUser = await this.businessUserModel.findById(userId).select({password:0});
       if (!businessUser) {
         return {
           success: false,
           message: 'Business User not found with given ID',
         };
       }
-      if (businessUser.status > ProfileStatus.INITIATED) {
+      if(businessUser.status < ProfileStatus.EMAIL_VERIFIED) {
+        return {
+          success: false,
+          message: 'Business User email not verified',
+          data: businessUser
+        };
+      }
+      if (businessUser.status >= ProfileStatus.MAPPED) {
         return {
           success: false,
           message: 'Business User already mapped with another Business',
@@ -501,9 +510,7 @@ export class BusinessService {
 
   async updateBusiness(userId: string, data: UpdateBusinessDto) {
     try {
-      const businessUser = await this.businessUserModel.findById(
-        userId
-      );
+      const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
         return {
           success: false,
@@ -740,12 +747,16 @@ export class BusinessService {
         return { success: false, message: 'Incorrect password' };
       }
       if (!user.isEmailVerified) {
-        return { success: false, message: 'Email is not verified',data:{
-          _id:user._id,
-          email:user.email,
-          isEmailVerified:user.isEmailVerified,
-          status:user.status,
-        } };
+        return {
+          success: false,
+          message: 'Email is not verified',
+          data: {
+            _id: user._id,
+            email: user.email,
+            isEmailVerified: user.isEmailVerified,
+            status: user.status,
+          },
+        };
       }
       const businessUser = await this.businessUserModel
         .findById(user.id)
@@ -766,7 +777,7 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    console.log("Validated Business User:",validatedBusinessUser);
+    console.log('Validated Business User:', validatedBusinessUser);
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -843,7 +854,7 @@ export class BusinessService {
       return {
         success: false,
         message: validatedBusinessUser.message,
-        user:validatedBusinessUser.data?validatedBusinessUser.data:{},
+        user: validatedBusinessUser.data ? validatedBusinessUser.data : {},
       };
     }
   }
@@ -1368,7 +1379,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'Business User Created Successfully!',
-        data: updatedUser,
+        data: updatedUser[0],
       };
     } catch (error) {
       return {
