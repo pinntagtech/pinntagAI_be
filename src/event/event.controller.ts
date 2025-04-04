@@ -201,6 +201,7 @@ export class EventController {
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
   ) {
+    
     let expired = false;
     if (!isExpired) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -220,7 +221,7 @@ export class EventController {
     }
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
-    const result = await this.eventService.getCreatedEventsV2(
+    const result = await this.eventService.getCreatedEventsV3(
       user,
       expired,
       page,

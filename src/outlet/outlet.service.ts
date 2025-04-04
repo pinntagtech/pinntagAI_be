@@ -194,7 +194,7 @@ export class OutletService {
           message: 'Type not found!',
         };
       }
-      const {
+      let {
         category,
         type,
         refId,
@@ -235,15 +235,26 @@ export class OutletService {
           message: 'Outlet already exists with given reference Id!',
         };
       }
-      const foundManager = await this.businessUserModel.findOne({
-        _id: new mongoose.Types.ObjectId(manager),
+
+      let createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
       });
-      if (!foundManager) {
-        return {
-          success: false,
-          message: 'Manager not found in the database!',
-        };
+      if(manager){
+        const foundManager = await this.businessUserModel.findOne({
+          _id: new mongoose.Types.ObjectId(manager),
+        });
+        if (!foundManager) {
+          return {
+            success: false,
+            message: 'Manager not found in the database!',
+          };
+        }
+        createObj['manager'] = new mongoose.Types.ObjectId(manager);
       }
+      
       if (foundCategory.title === OutletCategoryList.PHYSICAL) {
         console.log('address1:', address1);
         console.log('posSystemId:', posSystemId, typeof posSystemId);
@@ -285,25 +296,21 @@ export class OutletService {
         };
       }
 
-      let updateObj: any = {};
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== undefined) {
-          updateObj[key] = data[key];
-        }
-      });
-      const outlet = await this.outletModel.create({
-        ...data,
-        manager: foundManager._id,
-        category: foundCategory._id,
-        type: new mongoose.Types.ObjectId(type),
-        creator: businessUser._id,
-      });
+      createObj['category'] = new mongoose.Types.ObjectId(category);
+      createObj['type'] = new mongoose.Types.ObjectId(type);
+      createObj['creator'] = new mongoose.Types.ObjectId(user.id);
+
+      
+      const outlet = await this.outletModel.create(createObj);
       console.log('Business User Id:', businessUser.id);
-      const isUserUpdated = await this.businessUserModel.updateOne(
-        { _id: foundManager.id },
-        { $push: { outlets: outlet.id } },
-      );
-      console.log('Is User Updated', isUserUpdated);
+
+      if(createObj.manager){
+        const isUserUpdated = await this.businessUserModel.updateOne(
+          { _id: createObj.manager },
+          { $push: { outlets: outlet.id } },
+        );
+      }
+      
       return {
         success: true,
         message: 'Outlet created successfully.',

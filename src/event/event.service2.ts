@@ -146,8 +146,8 @@ export class EventService2 {
     private readonly scheduleModel: Model<EventScheduleDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
-    @InjectModel(BusinessUser.name)
-    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly facebookService: FacebookService,
@@ -3941,6 +3941,7 @@ export class EventService2 {
                   date: new Date(date),
                   durations: data.fixedSchedule[i].durations,
                 },
+                businessId: new mongoose.Types.ObjectId(user.businessProfile)
               };
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
@@ -4033,6 +4034,7 @@ export class EventService2 {
               endDate: data.recurringSchedule.endDate,
               weekDays: data.recurringSchedule.weekDays,
             },
+            businessId: new mongoose.Types.ObjectId(user.businessProfile)
           };
           const createdSchedule = await this.scheduleModel.create(scheduleObj);
           scheduleList.push(createdSchedule._id);
@@ -4061,4 +4063,185 @@ export class EventService2 {
       };
     }
   }
+
+  private async getUserCreatorDetails(userId: string, currentUserId: string) {
+    const creator = await this.userModel.findById(userId);
+    if (!creator) return null;
+  
+    const isFollowedByMe = await this.followModel.findOne({
+      followerType: User.name,
+      follower: new mongoose.Types.ObjectId(currentUserId),
+      followingType: User.name,
+      following: creator._id,
+      isBlocked: false,
+    });
+  
+    return {
+      _id: creator._id,
+      name: creator.name,
+      profilePhoto: creator.profilePhoto,
+      email: creator.email,
+      phone: creator.phone,
+      website: '',
+      bio: '',
+      followersCount: creator.followersCount,
+      profileType: 'User',
+      following: !!isFollowedByMe,
+      isMe: creator.id === currentUserId,
+    };
+  }
+  
+  private async getBusinessCreatorDetails(businessProfileId: string, currentUserId: string) {
+    const businessProfile = await this.businessModel.findById(businessProfileId);
+    if (!businessProfile) return null;
+  
+    const isFollowedByMe = await this.followModel.findOne({
+      followerType: User.name,
+      follower: new mongoose.Types.ObjectId(currentUserId),
+      followingType: BusinessProfile.name,
+      following: businessProfile._id,
+      isBlocked: false,
+    });
+  
+    return {
+      _id: businessProfile._id,
+      name: businessProfile.name,
+      profilePhoto: businessProfile.logo,
+      email: businessProfile.email,
+      bio: businessProfile.bio,
+      phone: businessProfile.phone,
+      website: businessProfile.website,
+      followersCount: businessProfile.followersCount,
+      profileType: 'BusinessProfile',
+      following: !!isFollowedByMe,
+      isMe: businessProfile.id === currentUserId,
+    };
+  }
+  
+  async getCreatedEventsV3(
+    user: DecodedUser,
+    isExpired: boolean,
+    page: number,
+    limit: number,
+  ) {
+    let query = {};
+    console.log("USER:",user);
+  
+    if (user.isBusiness) {
+      query = {
+        creatorType: BusinessUser.name,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+    } else {
+      query = {
+        creatorType: User.name,
+        user: new mongoose.Types.ObjectId(user.id),
+        type: EventTypes.PRIVATE,
+      };
+    }
+  
+    // Fetch event schedules first
+    const currentDate = currentDateTz();
+    console.log("currentDate:",currentDate);
+    let scheduleQuery: any = {
+      businessId: new mongoose.Types.ObjectId(user.businessProfile),
+    };
+  
+    if (isExpired) {
+      scheduleQuery = {
+        $or: [
+          {
+            'fixedSchedule.date': { $lt: currentDate } 
+          },
+          {
+            'recurringSchedule.endDate': { $lt: currentDate },
+          },
+        ],
+      };
+    } else {
+      scheduleQuery = {
+        // $or: [
+          // { 
+            'fixedSchedule.date': { $gte: currentDate } 
+          // },
+          // {
+          //   'recurringSchedule.startDate': { $lte: currentDate },
+          //   'recurringSchedule.endDate': { $lte: currentDate },
+          // },
+        // ],
+      };
+    }
+    console.log("scheduleQuery:",scheduleQuery);
+
+  
+    // Find schedules matching the filter
+    const eventSchedules = await this.eventScheduleModel.find(scheduleQuery).select('event');
+    console.log("eventSchedule:",eventSchedules);
+  
+    // Extract event IDs
+    const eventIds = eventSchedules.map((schedule) => schedule.event);
+  
+    // Fetch events with matching IDs
+    query['_id'] = { $in: eventIds };
+  
+    console.log('Query when in content management', query);
+    const events = await this.eventModel
+      .find(query)
+      .populate('images', ImagePopulates.FOREIGN)
+      .populate('locations', LocationPopulates.FOREIGN)
+      .populate('ageGroupsAllowed', 'name')
+      .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
+      .populate({
+        path: 'user',
+        select: UserPopulates.FOREIGN,
+      })
+      .populate({
+        path: 'businessProfile',
+        select: BusinessPopulates.FOREIGN,
+      })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+  
+    let resData = [];
+  
+    for (const event of events) {
+      const eventObj = JSON.parse(JSON.stringify(event));
+      const creatorDetails = event.creatorType === 'User'
+        ? await this.getUserCreatorDetails((event.user).toString(), user.id)
+        : await this.getBusinessCreatorDetails((event.businessProfile).toString(), user.id);
+  
+      eventObj['creatorDetails'] = creatorDetails;
+  
+      // Fetch event's schedule data
+      const eventSchedule = eventSchedules.find((s) => s.event.equals(event._id));
+  
+      eventObj['schedule'] = eventSchedule ? eventSchedule.toObject() : null;
+      resData.push(eventObj);
+    }
+  
+    // Sorting based on schedule dates
+    resData = resData.sort((a, b) => {
+      const aDate = a.schedule?.fixedSchedule?.date || a.schedule?.recurringSchedule?.startDate;
+      const bDate = b.schedule?.fixedSchedule?.date || b.schedule?.recurringSchedule?.startDate;
+  
+      if (!aDate || !bDate) return 0;
+  
+      return isExpired ? new Date(bDate).getTime() - new Date(aDate).getTime()
+                       : new Date(aDate).getTime() - new Date(bDate).getTime();
+    });
+  
+    const totalDocs = await this.eventModel.countDocuments(query);
+  
+    return {
+      success: true,
+      message: 'Events fetched successfully',
+      events: resData,
+      total: totalDocs,
+      page,
+      limit,
+      pages: Math.ceil(totalDocs / limit),
+    };
+  }
+  
 }

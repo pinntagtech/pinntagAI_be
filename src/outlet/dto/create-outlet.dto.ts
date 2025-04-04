@@ -29,8 +29,7 @@ export class CreateOutletDto {
   @IsString()
   name: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsOptional()
   manager: string; // Reference to a User entity
 
   @IsNotEmpty()

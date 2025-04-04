@@ -119,11 +119,14 @@ export class BusinessService {
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
       delete data.password;
+      const superAdmin = await this.adminModel.findOne({
+        isSuperAdmin: true,
+      });
 
       //seed business owner default role:
       const ownerRole = await this.roleModel.create({
         name: 'Owner',
-        creator: new mongoose.Types.ObjectId(),
+        creator: new mongoose.Types.ObjectId(superAdmin.id),
         creatorType: RoleCreatorType.BUSINESS,
         belongsTo: RoleBelonging.BUSINESS,
         isPrimaryAdmin: true,
