@@ -314,13 +314,13 @@ export class OutletService {
           };
         }
       } else if (foundCategory.title === OutletCategoryList.ONLINE) {
+      } else if (foundCategory.title === OutletCategoryList.SPECIALTY) {
         if (!insidePremise || !premiseName) {
           return {
             success: false,
             message: 'Inside Premise or Premise Name is required.',
           };
         }
-      } else if (foundCategory.title === OutletCategoryList.SPECIALTY) {
       } else {
         return {
           success: false,
