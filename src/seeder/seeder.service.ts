@@ -384,6 +384,7 @@ export class SeederService {
   }
 
   async seedBusinessIndustries() {
+    const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
     const findBusinessIndustry = await this.businessIndustryModel.find();
     if (findBusinessIndustry.length < Object.keys(BusinessIndustries).length) {
       for (const businessIndustry of Object.keys(BusinessIndustries)) {
@@ -395,6 +396,7 @@ export class SeederService {
           const createdBusinessIndustry =
             await this.businessIndustryModel.create({
               title: businessIndustry,
+              createdBy: superAdmin._id,
             });
 
           for (const businessCategory of BusinessIndustries[businessIndustry]) {
@@ -411,6 +413,7 @@ export class SeederService {
                 industry: new mongoose.Types.ObjectId(
                   createdBusinessIndustry.id,
                 ),
+                createdBy: superAdmin._id,
               });
             }
           }
@@ -425,6 +428,7 @@ export class SeederService {
               await this.BusinessCategoryModel.create({
                 type: businessCategory,
                 industry: new mongoose.Types.ObjectId(foundBusinessIndustry.id),
+                createdBy: superAdmin._id,
               });
             }
           }

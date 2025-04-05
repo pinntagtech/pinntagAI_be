@@ -305,18 +305,20 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
-      const businessUser = await this.businessUserModel.findById(userId).select({password:0});
+      const businessUser = await this.businessUserModel
+        .findById(userId)
+        .select({ password: 0 });
       if (!businessUser) {
         return {
           success: false,
           message: 'Business User not found with given ID',
         };
       }
-      if(businessUser.status < ProfileStatus.EMAIL_VERIFIED) {
+      if (businessUser.status < ProfileStatus.EMAIL_VERIFIED) {
         return {
           success: false,
           message: 'Business User email not verified',
-          data: businessUser
+          data: businessUser,
         };
       }
       if (businessUser.status >= ProfileStatus.MAPPED) {
@@ -1063,11 +1065,12 @@ export class BusinessService {
       const industries = await this.businessIndModel
         .find()
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .populate('createdBy', '_id name');
       const totalDocs = await this.businessIndModel.countDocuments();
       return {
         success: true,
-        message: 'Categories fetched Successfully.',
+        message: 'Business Industries fetched Successfully.',
         data: industries,
         total: totalDocs,
       };
@@ -1085,13 +1088,14 @@ export class BusinessService {
           industry: new mongoose.Types.ObjectId(id),
         })
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .populate('createdBy', '_id name');
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
       return {
         success: true,
-        message: 'Industries fetched Successfully!',
+        message: 'Categories fetched Successfully!',
         data: categories,
         total: totalDocs,
       };
@@ -1106,14 +1110,19 @@ export class BusinessService {
     try {
       const countries = await this.businessCountryModel
         .find()
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
+        .limit(limit);
       if (!countries.length) {
         return {
           success: false,
           message: 'No Countries Found!',
         };
       }
-      const countDocs = this.businessCountryModel.countDocuments();
+      console.log('page,limit', page, limit);
+      console.log('countries:', countries);
+
+      const countDocs = await this.businessCountryModel.countDocuments();
+      console.log('countDocs:', countDocs);
       return {
         success: true,
         message: 'Countries fetched Successfully!',
@@ -1129,9 +1138,12 @@ export class BusinessService {
   }
   async getConstitutions(id: string, page: number, limit: number) {
     try {
-      const constitutions = await this.businessConstitutionModel.find({
-        country: new mongoose.Types.ObjectId(id),
-      });
+      const constitutions = await this.businessConstitutionModel
+        .find({
+          country: new mongoose.Types.ObjectId(id),
+        })
+        .skip((page - 1) * limit)
+        .limit(limit);
       if (!constitutions.length) {
         return {
           success: false,

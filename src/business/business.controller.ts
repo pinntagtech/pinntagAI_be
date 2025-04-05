@@ -361,6 +361,7 @@ export class BusinessController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

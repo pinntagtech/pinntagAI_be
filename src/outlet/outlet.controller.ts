@@ -29,12 +29,15 @@ export class OutletController {
     points: 10,
     duration: 60,
   })
-  async getCategories(@Res() res: Response) {
-    const result = await this.outletService.getCategories();
+  async getCategories(@Res() res: Response,@Query('page') page: string,@Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.outletService.getCategories(pageNumber,limitNumber);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -47,12 +50,15 @@ export class OutletController {
     points: 10,
     duration: 60,
   })
-  async getTypes(@Res() res: Response, @Param('id') id: string) {
-    const result = await this.outletService.getTypes(id);
+  async getTypes(@Res() res: Response, @Param('id') id: string,@Query('page') page: string,@Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.outletService.getTypes(id,pageNumber,limitNumber);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total:result.total
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -81,6 +87,7 @@ export class OutletController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -145,13 +152,16 @@ export class OutletController {
     @Query('page') page: string,
     @Query('limit') limit: string,
   ){
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.outletService.getOutlets(
-        user,page,limit
+        user,pageNumber,limitNumber
       );
       if (result.success) {
         return res.status(HttpStatus.OK).json({
           message: result.message,
           data: result.data,
+          total: result.total,
         });
       } else {
         return res.status(HttpStatus.BAD_REQUEST).json({
@@ -164,12 +174,17 @@ export class OutletController {
   async fetchVehicleTypes(
     @Req() req:Request,
     @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
   ){
-    const result = await this.outletService.getVehicleTypes();
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.outletService.getVehicleTypes(pageNumber,limitNumber);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
