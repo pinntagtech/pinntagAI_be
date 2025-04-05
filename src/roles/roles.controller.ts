@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -120,12 +121,15 @@ export class RolesController {
   @Privilege(ResourceTypes.ROLES, Actions.READ)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
-  async fetchRoles(@Res() res: Response, @TokenDecoder() user: any) {
-    const result = await this.roleService.fetchRoles(user.id, user.userType);
+  async fetchRoles(@Res() res: Response, @TokenDecoder() user: any,@Query('page') page: string, @Query('limit') limit: string) {
+    const pageNumber = parseInt(page) || 1;
+    const limitNumber = parseInt(limit) || 10;
+    const result = await this.roleService.fetchRoles(user.id, user.userType,pageNumber,limitNumber);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

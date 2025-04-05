@@ -144,9 +144,10 @@ export class RolesService {
     return collectedIds;
   }
 
-  async fetchRoles(id: string, userType: string) {
+  async fetchRoles(id: string, userType: string,page:number,limit:number) {
     try {
       let allAdminIds = await this.getAllChildAdminIds(id, userType, true, []);
+      console.log("allAdminIds111:", allAdminIds);
       let ownerRole = null;
       if (userType === UserTypes.ADMIN) {
         const findAdminUser = await this.adminModel.findById(id);
@@ -178,6 +179,10 @@ export class RolesService {
         path: 'creator',
         select: 'name',
         model: userType,
+      }).skip((page-1)*limit).limit(limit);
+      const total = await this.roleModel.countDocuments({
+        _id: { $in: allAdminObjectIds, $ne: ownerRole },
+        creatorType: userType,
       });
 
       // const roles = await this.roleModel.aggregate([
@@ -218,6 +223,7 @@ export class RolesService {
         success: true,
         message: 'Roles Fetched Successfully!',
         data: roles,
+        total: total,
       };
     } catch (error) {
       console.error('Error:', error);

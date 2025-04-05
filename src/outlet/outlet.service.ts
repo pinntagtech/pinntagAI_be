@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
 import { Category } from 'src/models/category.model';
@@ -34,7 +34,8 @@ export class OutletService {
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
   ) {}
   private async getAllChildUsersIds(
     userId: string,
@@ -59,16 +60,18 @@ export class OutletService {
     }
     return collectedIds;
   }
-  async getCategories(page:number,limit:number) {
+  async getCategories(page: number, limit: number) {
     try {
-      const categories = await this.outletCategoryModel.find().skip((page - 1) * limit).limit(limit);
+      const categories = await this.outletCategoryModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit);
       const total = await this.outletCategoryModel.countDocuments();
       return {
         success: true,
         message: 'Categories fetched successfully',
         data: categories,
         total: total,
-
       };
     } catch (error) {
       return {
@@ -77,11 +80,14 @@ export class OutletService {
       };
     }
   }
-  async getTypes(id: string,page:number,limit:number) {
+  async getTypes(id: string, page: number, limit: number) {
     try {
-      const types = await this.outletTypeModel.find({
-        category: new mongoose.Types.ObjectId(id),
-      }).skip((page - 1) * limit).limit(limit);
+      const types = await this.outletTypeModel
+        .find({
+          category: new mongoose.Types.ObjectId(id),
+        })
+        .skip((page - 1) * limit)
+        .limit(limit);
       const total = await this.outletTypeModel.countDocuments();
       return {
         success: true,
@@ -160,14 +166,15 @@ export class OutletService {
               { $skip: (page - 1) * limit },
               { $limit: limit },
             ],
-            totalCount: [
-              { $count: 'count' },
-            ],
+            totalCount: [{ $count: 'count' }],
           },
         },
       ]);
       const users = usersResult[0].data;
-      const totalCount = usersResult[0].totalCount.length > 0 ? usersResult[0].totalCount[0].count : 0;      
+      const totalCount =
+        usersResult[0].totalCount.length > 0
+          ? usersResult[0].totalCount[0].count
+          : 0;
 
       return {
         success: true,
@@ -243,13 +250,16 @@ export class OutletService {
       } = data;
 
       const business = await this.businessModel.findById(businessUser.business);
-      if(!business) {
+      if (!business) {
         return {
           success: false,
           message: 'Business not found!',
         };
       }
-      const foundOutlet = await this.outletModel.findOne({ refId: refId,business: business._id });
+      const foundOutlet = await this.outletModel.findOne({
+        refId: refId,
+        business: business._id,
+      });
       console.log('foundOutlet', foundOutlet);
       if (foundOutlet) {
         return {
@@ -264,7 +274,7 @@ export class OutletService {
           createObj[key] = data[key];
         }
       });
-      if(manager){
+      if (manager) {
         const foundManager = await this.businessUserModel.findOne({
           _id: new mongoose.Types.ObjectId(manager),
         });
@@ -276,7 +286,7 @@ export class OutletService {
         }
         createObj['manager'] = new mongoose.Types.ObjectId(manager);
       }
-      
+
       if (foundCategory.title === OutletCategoryList.PHYSICAL) {
         console.log('address1:', address1);
         console.log('posSystemId:', posSystemId, typeof posSystemId);
@@ -321,18 +331,18 @@ export class OutletService {
       createObj['category'] = new mongoose.Types.ObjectId(category);
       createObj['type'] = new mongoose.Types.ObjectId(type);
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      createObj['business'] = new mongoose.Types.ObjectId(business.id);
 
-      
       const outlet = await this.outletModel.create(createObj);
       console.log('Business User Id:', businessUser.id);
 
-      if(createObj.manager){
+      if (createObj.manager) {
         const isUserUpdated = await this.businessUserModel.updateOne(
           { _id: createObj.manager },
           { $push: { outlets: outlet.id } },
         );
       }
-      
+
       return {
         success: true,
         message: 'Outlet created successfully.',
@@ -378,6 +388,10 @@ export class OutletService {
           };
         }
         updateObj['manager'] = new mongoose.Types.ObjectId(data.manager);
+        await this.businessUserModel.updateOne(
+          { _id: updateObj.manager },
+          { $addToSet: { outlets: new mongoose.Types.ObjectId(id) } },
+        );
       }
       if (data.category) {
         updateObj['category'] = new mongoose.Types.ObjectId(data.category);
@@ -402,7 +416,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any, page:number, limit:number) {
+  async getOutlets(user: any, page: number, limit: number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -414,33 +428,41 @@ export class OutletService {
       console.log('UserDetails:', userDetails);
       let outletIds = [];
       outletIds = outletIds.concat(userDetails.outlets);
-      const userRole = await this.roleModel.findById(userDetails.role);
-      console.log('outlet IDS 1:', outletIds);
-      if (userRole.isPrimaryAdmin) {
-        const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
-        console.log('getAllManagers', getAllManagers);
-        if (getAllManagers.success) {
-          getAllManagers.data.forEach((manager) => {
-            outletIds = outletIds.concat(manager.outlets);
-          });
-        }
-      }
-      console.log('outletsIds', outletIds);
+
       let mongoUserIds = [];
       outletIds.map((id) => mongoUserIds.push(new mongoose.Types.ObjectId(id)));
       console.log('allUserIds', mongoUserIds);
 
+      const userRole = await this.roleModel.findById(userDetails.role);
+      console.log('outlet IDS 1:', outletIds);
+      let getOutletObj = {};
+      if (userRole.isPrimaryAdmin) {
+        // const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
+        // console.log('getAllManagers', getAllManagers);
+        // if (getAllManagers.success) {
+        //   getAllManagers.data.forEach((manager) => {
+        //     outletIds = outletIds.concat(manager.outlets);
+        //   });
+        // }
+        getOutletObj['business'] = userDetails.business;
+      } else {
+        getOutletObj['_id'] = { $in: mongoUserIds };
+      }
+      console.log('getOutletObj', getOutletObj);
+
       const outlets = await this.outletModel
-        .find({ _id: { $in: mongoUserIds } })
+        .find(getOutletObj)
         .skip((page - 1) * limit)
         .limit(limit);
-      const total = await this.outletModel.countDocuments({_id: { $in: mongoUserIds }});
+      const total = await this.outletModel.countDocuments({
+        ...getOutletObj,
+      });
       console.log('outlets:', outlets);
       return {
         success: true,
         message: 'Outlets fetched successfully.',
         data: outlets,
-        total: total
+        total: total,
       };
     } catch (error) {
       return {
@@ -449,10 +471,10 @@ export class OutletService {
       };
     }
   }
-  async getVehicleTypes(page:number,limit:number) {
+  async getVehicleTypes(page: number, limit: number) {
     try {
       const vehicleTypes: string[] = Object.values(VehicleType);
-      const paginated = vehicleTypes.slice((page - 1) * limit, page * limit)
+      const paginated = vehicleTypes.slice((page - 1) * limit, page * limit);
       const total = Object.keys(VehicleType).length;
       return {
         success: true,

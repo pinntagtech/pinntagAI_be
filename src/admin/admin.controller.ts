@@ -41,12 +41,23 @@ export class AdminController {
 
   @Get('list')
   @UseGuards(AdminGuard2)
-  async getUsers(@Res() res: Response) {
-    const result = await this.adminService.getUsers();
-    return res.status(HttpStatus.OK).json({
-      message: 'Users fetched successfully',
-      users: result,
-    });
+  async getUsers(@Res() res: Response,@Query('page') page: string,@Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getUsers(pageNumber,limitNumber);
+
+    if (result.success) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+        data:result.data,
+        total: result.total,
+      });
+    }else{
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+   
   }
 
   @Get('crawled')

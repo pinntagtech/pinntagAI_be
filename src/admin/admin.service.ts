@@ -129,15 +129,30 @@ export class AdminService {
     return token;
   }
 
-  async getUsers() {
-    const users = await this.userModel
-      .find()
-      .populate(
-        'businessProfiles',
-        'id _id profilePhoto name bio brandColor countryCode phone email website',
-      )
-      .exec();
-    return users;
+  async getUsers(page: number, limit: number) {
+    try {
+      const users = await this.userModel
+        .find()
+        .populate(
+          'businessProfiles',
+          'id _id profilePhoto name bio brandColor countryCode phone email website',
+        )
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalUsers = await this.userModel.countDocuments();
+      return {
+        sucess: true,
+        message: 'Users fetched successfully',
+        data: users,
+        total: totalUsers,
+      };
+    } catch (error) {
+      console.log('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong',
+      };
+    }
   }
 
   async getCrawledEvents(page: number, limit: number, status: string) {
@@ -942,24 +957,26 @@ export class AdminService {
         };
       }
       const allAdminIds = await this.getAllChildAdminIds(adminId);
+      const allMongooseIds = allAdminIds.map((id) => new mongoose.Types.ObjectId(id));
       const admins = await this.adminModel
-        .find({ _id: { $in: allAdminIds } })
+        .find({ _id: { $in: allMongooseIds } })
         .populate('role', '_id name')
         .sort({ createdAt: -1 })
         .select({ password: 0 })
         .skip((page - 1) * limit)
         .limit(limit);
-      const totalAdmins = await this.adminModel.find({
-        creator: { $in: allAdminIds },
+      const totalAdmins = await this.adminModel.countDocuments({
+        _id: { $in: allMongooseIds },
       });
+      console.log("totalAdmins:", totalAdmins);
       return {
         success: true,
         message: 'Admins fetched successfully',
         data: admins,
         page,
         limit,
-        total: totalAdmins.length,
-        pages: Math.ceil(totalAdmins.length / limit),
+        total: totalAdmins,
+        pages: Math.ceil(totalAdmins / limit),
       };
     } catch (error) {
       return {
@@ -1060,7 +1077,7 @@ export class AdminService {
         })
         .limit(limit)
         .skip((page - 1) * limit)
-        .populate('creator', '_id name')
+        .populate('creator', '_id name');
       const totalBusinesses = await this.businessModel.find();
       return {
         success: true,
