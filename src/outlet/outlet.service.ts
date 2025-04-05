@@ -20,6 +20,7 @@ import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { SubscriptionContextImpl } from 'twilio/lib/rest/events/v1/subscription';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { OutletCategoryList, VehicleType } from './outlet.enum';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class OutletService {
@@ -33,6 +34,7 @@ export class OutletService {
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
   ) {}
   private async getAllChildUsersIds(
     userId: string,
@@ -57,13 +59,16 @@ export class OutletService {
     }
     return collectedIds;
   }
-  async getCategories() {
+  async getCategories(page:number,limit:number) {
     try {
-      const categories = await this.outletCategoryModel.find();
+      const categories = await this.outletCategoryModel.find().skip((page - 1) * limit).limit(limit);
+      const total = await this.outletCategoryModel.countDocuments();
       return {
         success: true,
         message: 'Categories fetched successfully',
         data: categories,
+        total: total,
+
       };
     } catch (error) {
       return {
@@ -72,15 +77,17 @@ export class OutletService {
       };
     }
   }
-  async getTypes(id: string) {
+  async getTypes(id: string,page:number,limit:number) {
     try {
       const types = await this.outletTypeModel.find({
         category: new mongoose.Types.ObjectId(id),
-      });
+      }).skip((page - 1) * limit).limit(limit);
+      const total = await this.outletTypeModel.countDocuments();
       return {
         success: true,
         message: 'Types fetched successfully',
         data: types,
+        total: total,
       };
     } catch (error) {
       return {
@@ -104,8 +111,7 @@ export class OutletService {
         mongoUserIds.push(new mongoose.Types.ObjectId(id)),
       );
       console.log('allUserIds', mongoUserIds);
-
-      const users = await this.businessUserModel.aggregate([
+      const usersResult = await this.businessUserModel.aggregate([
         {
           $match: {
             _id: { $in: mongoUserIds },
@@ -131,35 +137,43 @@ export class OutletService {
           $sort: { createdAt: -1 },
         },
         {
-          $project: {
-            _id: 1,
-            name: 1,
-            isActive: 1,
-            email: 1,
-            phone: 1,
-            countryCode: 1,
-            profilePhoto: 1,
-            isEmailVerified: 1,
-            role: {
-              _id: 1,
-              name: 1,
-            },
-            business: 'businessId',
-            outlets: 1,
+          $facet: {
+            data: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  isActive: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                  isEmailVerified: 1,
+                  role: {
+                    _id: '$role._id',
+                    name: '$role.name',
+                  },
+                  business: '$businessId',
+                  outlets: 1,
+                },
+              },
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+            ],
+            totalCount: [
+              { $count: 'count' },
+            ],
           },
         },
-        {
-          $skip: (page - 1) * limit,
-        },
-        {
-          $limit: limit,
-        },
       ]);
+      const users = usersResult[0].data;
+      const totalCount = usersResult[0].totalCount.length > 0 ? usersResult[0].totalCount[0].count : 0;      
 
       return {
         success: true,
         message: 'Business User fetched Successfully!',
         data: users,
+        total: totalCount,
       };
     } catch (error) {
       return {
@@ -227,7 +241,15 @@ export class OutletService {
         insidePremise,
         premiseName,
       } = data;
-      const foundOutlet = await this.outletModel.findOne({ refId: refId });
+
+      const business = await this.businessModel.findById(businessUser.business);
+      if(!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      const foundOutlet = await this.outletModel.findOne({ refId: refId,business: business._id });
       console.log('foundOutlet', foundOutlet);
       if (foundOutlet) {
         return {
@@ -380,7 +402,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any, page, limit) {
+  async getOutlets(user: any, page:number, limit:number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -412,11 +434,13 @@ export class OutletService {
         .find({ _id: { $in: mongoUserIds } })
         .skip((page - 1) * limit)
         .limit(limit);
+      const total = await this.outletModel.countDocuments({_id: { $in: mongoUserIds }});
       console.log('outlets:', outlets);
       return {
         success: true,
         message: 'Outlets fetched successfully.',
         data: outlets,
+        total: total
       };
     } catch (error) {
       return {
@@ -425,13 +449,16 @@ export class OutletService {
       };
     }
   }
-  async getVehicleTypes() {
+  async getVehicleTypes(page:number,limit:number) {
     try {
       const vehicleTypes: string[] = Object.values(VehicleType);
+      const paginated = vehicleTypes.slice((page - 1) * limit, page * limit)
+      const total = Object.keys(VehicleType).length;
       return {
         success: true,
         message: 'Vehicle Types fetched successfully',
-        data: vehicleTypes,
+        data: paginated,
+        total: total,
       };
     } catch (error) {
       return {

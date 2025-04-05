@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { OutletCategoryList, VehicleType } from '../outlet.enum';
+import { Business } from 'src/business/model/business.model';
 // import { OutletCategory, VehicleType } from '../outlet.enum';
 
 export type OutletDocument = Outlet & Document;
@@ -27,6 +28,9 @@ export class Outlet {
 
   @Prop({ref: 'Businessusers'})
   creator: mongoose.Types.ObjectId; // Dropdown reference to User entity
+
+  @Prop({ref: 'Business'})
+  business:mongoose.Types.ObjectId; // Dropdown reference to Business entity
 
   // Address Information (for Physical, Online, and Specialty outlets)
   @Prop()

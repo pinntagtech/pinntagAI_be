@@ -1055,12 +1055,12 @@ export class AdminService {
         .find()
         .select({
           password: 0,
-          createdAt: 0,
           updatedAt: 0,
           __v: 0,
         })
         .limit(limit)
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
+        .populate('creator', '_id name')
       const totalBusinesses = await this.businessModel.find();
       return {
         success: true,

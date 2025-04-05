@@ -4,7 +4,7 @@ import { Admin } from 'src/admin/models/admin.model';
 
 export type BusinessIndustryDocument = BusinessIndustry & Document;
 
-@Schema()
+@Schema({timestamps:true})
 export class BusinessIndustry {
   @Prop({ required: true })
   title: string;
