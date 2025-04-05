@@ -6,7 +6,7 @@ import { Admin } from 'src/admin/models/admin.model';
 
 export type BusinessCategoryDocument = BusinessCategory & Document;
 
-@Schema()
+@Schema({timestamps: true})
 export class BusinessCategory {
   @Prop({ required: true })
   type: string;
