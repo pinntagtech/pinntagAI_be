@@ -453,7 +453,12 @@ export class OutletService {
       const outlets = await this.outletModel
         .find(getOutletObj)
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .populate('category')
+        .populate('type')
+        .populate('manager', 'name email phone countryCode profilePhoto')
+        .populate('business', 'name email phone countryCode profilePhoto')
+        .populate('creator', 'name email phone countryCode profilePhoto')
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
       });
