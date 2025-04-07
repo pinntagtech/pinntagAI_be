@@ -5,7 +5,7 @@ import { UserTypes } from 'src/enums/auth.enums';
 export const TokenDecoder = createParamDecorator(
   (data: any, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    if (request.isGuest) {
+    if (request.isGuest) { 
       return {
         isGuest: true,
         userType: UserTypes.USER,
@@ -22,7 +22,7 @@ export const TokenDecoder = createParamDecorator(
     }
     const user: DecodedUser = {
       isGuest: false,
-      role: request.user?.role,
+      role: request.user?.role[0],
       userType: request.isBusiness ? UserTypes.BUSINESS : request.isAdmin ? UserTypes.ADMIN : UserTypes.USER,
       name: request.isBusiness ? request.user.name:'',
       id: request.user.id,

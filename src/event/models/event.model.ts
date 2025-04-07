@@ -109,8 +109,8 @@ export class Event {
   eventUrl?: string;
   @Prop({ default: [], ref: EventResponse.name })
   responses: Array<mongoose.Types.ObjectId>;
-  @Prop({ ref: Business.name })
-  business: mongoose.Types.ObjectId;
+  // @Prop({ ref: Business.name })
+  // business: mongoose.Types.ObjectId;
 }
 
 export class Schedule {
