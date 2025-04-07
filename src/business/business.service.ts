@@ -1233,7 +1233,7 @@ export class BusinessService {
       };
     }
   }
-  private async getAllChildUsersIds(
+  async getAllChildUsersIds(
     userId: string,
     collectedIds: string[] = [],
     isFirstCall = true, // Track initial call

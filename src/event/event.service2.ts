@@ -103,6 +103,8 @@ import {
 } from './models/event-schedule.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
+import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 
 @Injectable()
 export class EventService2 {
@@ -146,8 +148,11 @@ export class EventService2 {
     private readonly scheduleModel: Model<EventScheduleDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
-    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly facebookService: FacebookService,
@@ -3892,7 +3897,14 @@ export class EventService2 {
               data.fixedSchedule[i].date = new Date(
                 data.fixedSchedule[i].date.toString(),
               );
-              if (new Date(data.fixedSchedule[i].date.toString()).setHours(0,0,0,0) < new Date().setHours(0,0,0,0)) {
+              if (
+                new Date(data.fixedSchedule[i].date.toString()).setHours(
+                  0,
+                  0,
+                  0,
+                  0,
+                ) < new Date().setHours(0, 0, 0, 0)
+              ) {
                 return {
                   success: false,
                   message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
@@ -3941,7 +3953,7 @@ export class EventService2 {
                   date: new Date(date),
                   durations: data.fixedSchedule[i].durations,
                 },
-                businessId: new mongoose.Types.ObjectId(user.businessProfile)
+                businessId: new mongoose.Types.ObjectId(user.businessProfile),
               };
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
@@ -4034,11 +4046,10 @@ export class EventService2 {
               endDate: data.recurringSchedule.endDate,
               weekDays: data.recurringSchedule.weekDays,
             },
-            businessId: new mongoose.Types.ObjectId(user.businessProfile)
+            businessId: new mongoose.Types.ObjectId(user.businessProfile),
           };
           const createdSchedule = await this.scheduleModel.create(scheduleObj);
           scheduleList.push(createdSchedule._id);
-         
         }
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
           eventId,
@@ -4067,7 +4078,7 @@ export class EventService2 {
   private async getUserCreatorDetails(userId: string, currentUserId: string) {
     const creator = await this.userModel.findById(userId);
     if (!creator) return null;
-  
+
     const isFollowedByMe = await this.followModel.findOne({
       followerType: User.name,
       follower: new mongoose.Types.ObjectId(currentUserId),
@@ -4075,7 +4086,7 @@ export class EventService2 {
       following: creator._id,
       isBlocked: false,
     });
-  
+
     return {
       _id: creator._id,
       name: creator.name,
@@ -4090,11 +4101,15 @@ export class EventService2 {
       isMe: creator.id === currentUserId,
     };
   }
-  
-  private async getBusinessCreatorDetails(businessProfileId: string, currentUserId: string) {
-    const businessProfile = await this.businessModel.findById(businessProfileId);
+
+  private async getBusinessCreatorDetails(
+    businessProfileId: string,
+    currentUserId: string,
+  ) {
+    const businessProfile =
+      await this.businessModel.findById(businessProfileId);
     if (!businessProfile) return null;
-  
+
     const isFollowedByMe = await this.followModel.findOne({
       followerType: User.name,
       follower: new mongoose.Types.ObjectId(currentUserId),
@@ -4102,7 +4117,7 @@ export class EventService2 {
       following: businessProfile._id,
       isBlocked: false,
     });
-  
+
     return {
       _id: businessProfile._id,
       name: businessProfile.name,
@@ -4117,7 +4132,7 @@ export class EventService2 {
       isMe: businessProfile.id === currentUserId,
     };
   }
-  
+
   async getCreatedEventsV3(
     user: DecodedUser,
     isExpired: boolean,
@@ -4125,8 +4140,8 @@ export class EventService2 {
     limit: number,
   ) {
     let query = {};
-    console.log("USER:",user);
-  
+    console.log('USER:', user);
+
     if (user.isBusiness) {
       query = {
         creatorType: BusinessUser.name,
@@ -4139,19 +4154,19 @@ export class EventService2 {
         type: EventTypes.PRIVATE,
       };
     }
-  
+
     // Fetch event schedules first
     const currentDate = currentDateTz();
-    console.log("currentDate:",currentDate);
+    console.log('currentDate:', currentDate);
     let scheduleQuery: any = {
       businessId: new mongoose.Types.ObjectId(user.businessProfile),
     };
-  
+
     if (isExpired) {
       scheduleQuery = {
         $or: [
           {
-            'fixedSchedule.date': { $lt: currentDate } 
+            'fixedSchedule.date': { $lt: currentDate },
           },
           {
             'recurringSchedule.endDate': { $lt: currentDate },
@@ -4161,29 +4176,30 @@ export class EventService2 {
     } else {
       scheduleQuery = {
         // $or: [
-          // { 
-            'fixedSchedule.date': { $gte: currentDate } 
-          // },
-          // {
-          //   'recurringSchedule.startDate': { $lte: currentDate },
-          //   'recurringSchedule.endDate': { $lte: currentDate },
-          // },
+        // {
+        'fixedSchedule.date': { $gte: currentDate },
+        // },
+        // {
+        //   'recurringSchedule.startDate': { $lte: currentDate },
+        //   'recurringSchedule.endDate': { $lte: currentDate },
+        // },
         // ],
       };
     }
-    console.log("scheduleQuery:",scheduleQuery);
+    console.log('scheduleQuery:', scheduleQuery);
 
-  
     // Find schedules matching the filter
-    const eventSchedules = await this.eventScheduleModel.find(scheduleQuery).select('event');
-    console.log("eventSchedule:",eventSchedules);
-  
+    const eventSchedules = await this.eventScheduleModel
+      .find(scheduleQuery)
+      .select('event');
+    console.log('eventSchedule:', eventSchedules);
+
     // Extract event IDs
     const eventIds = eventSchedules.map((schedule) => schedule.event);
-  
+
     // Fetch events with matching IDs
     query['_id'] = { $in: eventIds };
-  
+
     console.log('Query when in content management', query);
     const events = await this.eventModel
       .find(query)
@@ -4202,37 +4218,48 @@ export class EventService2 {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-  
+
     let resData = [];
-  
+
     for (const event of events) {
       const eventObj = JSON.parse(JSON.stringify(event));
-      const creatorDetails = event.creatorType === 'User'
-        ? await this.getUserCreatorDetails((event.user).toString(), user.id)
-        : await this.getBusinessCreatorDetails((event.businessProfile).toString(), user.id);
-  
+      const creatorDetails =
+        event.creatorType === 'User'
+          ? await this.getUserCreatorDetails(event.user.toString(), user.id)
+          : await this.getBusinessCreatorDetails(
+              event.businessProfile.toString(),
+              user.id,
+            );
+
       eventObj['creatorDetails'] = creatorDetails;
-  
+
       // Fetch event's schedule data
-      const eventSchedule = eventSchedules.find((s) => s.event.equals(event._id));
-  
+      const eventSchedule = eventSchedules.find((s) =>
+        s.event.equals(event._id),
+      );
+
       eventObj['schedule'] = eventSchedule ? eventSchedule.toObject() : null;
       resData.push(eventObj);
     }
-  
+
     // Sorting based on schedule dates
     resData = resData.sort((a, b) => {
-      const aDate = a.schedule?.fixedSchedule?.date || a.schedule?.recurringSchedule?.startDate;
-      const bDate = b.schedule?.fixedSchedule?.date || b.schedule?.recurringSchedule?.startDate;
-  
+      const aDate =
+        a.schedule?.fixedSchedule?.date ||
+        a.schedule?.recurringSchedule?.startDate;
+      const bDate =
+        b.schedule?.fixedSchedule?.date ||
+        b.schedule?.recurringSchedule?.startDate;
+
       if (!aDate || !bDate) return 0;
-  
-      return isExpired ? new Date(bDate).getTime() - new Date(aDate).getTime()
-                       : new Date(aDate).getTime() - new Date(bDate).getTime();
+
+      return isExpired
+        ? new Date(bDate).getTime() - new Date(aDate).getTime()
+        : new Date(aDate).getTime() - new Date(bDate).getTime();
     });
-  
+
     const totalDocs = await this.eventModel.countDocuments(query);
-  
+
     return {
       success: true,
       message: 'Events fetched successfully',
@@ -4243,5 +4270,143 @@ export class EventService2 {
       pages: Math.ceil(totalDocs / limit),
     };
   }
-  
+
+  async getAllChildUsersIds(
+    userId: string,
+    collectedIds: string[] = [],
+    isFirstCall = true, // Track initial call
+  ): Promise<string[]> {
+    if (!isFirstCall) {
+      collectedIds.push(userId);
+    }
+    const childUsers = await this.businessUserModel
+      .find({
+        creator: new mongoose.Types.ObjectId(userId),
+        creatorType: BusinessUserCreatorType.BUSINESS,
+      })
+      .select('_id');
+    const childIds = childUsers.map((user) => user._id.toString());
+    if (!childIds.length) {
+      return collectedIds;
+    }
+    for (const childId of childIds) {
+      await this.getAllChildUsersIds(childId, collectedIds, false);
+    }
+    return collectedIds;
+  }
+
+  async contentManagement(
+    user: DecodedUser,
+    isExpired: boolean,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      let query = {};
+      console.log('USER:', user);
+      const businessUser = await this.businessUserModel.findById(user.id);
+      if (!businessUser) {
+        return {
+          sucess: false,
+          message: 'User not found',
+        };
+      }
+
+      if (user.isBusiness) {
+        console.log("Business User.role[0]",businessUser.role[0]);
+        const userRole = await this.roleModel.findById(businessUser.role[0]);
+        console.log("userRole:",userRole);
+        if (userRole.isBusinessOwner) {
+          query = {
+            creatorType: BusinessUser.name,
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+          };
+        } else {
+          let outletIds = [];
+          outletIds = outletIds.concat(businessUser.outlets); //doubt
+          const childUsers = await this.getAllChildUsersIds(user.id);
+          console.log('childUsers:', childUsers);
+          for (let child of childUsers) {
+            const childUser = await this.businessUserModel.findOne(
+              { _id: new mongoose.Types.ObjectId(child) },
+              { outlets: 1 },
+            );
+            if (childUser) {
+              outletIds = outletIds.concat(childUser.outlets);
+            }
+          }
+          const outletObjectIds = outletIds.map(
+            (outletId) => new mongoose.Types.ObjectId(outletId),
+          );
+          query = {
+            outlets: { $in: outletIds },
+          };
+        }
+
+        query = {
+          creatorType: BusinessUser.name,
+          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        };
+      } else {
+        query = {
+          creatorType: User.name,
+          user: new mongoose.Types.ObjectId(user.id),
+          type: EventTypes.PRIVATE,
+        };
+      }
+      console.log('query:', query);
+
+      const currentDate = currentDateTz();
+      const pipeline: any[] = [
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'eventschedules', // Ensure this matches your actual collection name
+            localField: 'eventSchedule', // Field in event model storing EventSchedule ObjectIds
+            foreignField: '_id',
+            as: 'schedules',
+          },
+        },
+        {
+          $unwind: '$schedules',
+        },
+      ];
+      if (!isExpired) {
+        pipeline.push({
+          $match: {
+            $or: [
+              // For fixed schedules: date is greater than or equal to current date (allowing today)
+              { 'schedules.fixedSchedule.date': { $gte: currentDate } },
+              // For recurring schedules: current date falls between startDate and endDate
+              {
+                'schedules.recurringSchedule.startDate': { $lte: currentDate },
+                'schedules.recurringSchedule.endDate': { $gte: currentDate },
+              },
+            ],
+          },
+        });
+      }
+
+      console.log("pipeline:",pipeline)
+      pipeline.push(
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      );
+      const events = await this.eventModel.aggregate(pipeline);
+      return {
+        success: true,
+        message: 'Events fetched successfully',
+        data: events,
+      };
+    } catch (error) {
+      console.error('Error in contentManagement:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.'
+      }
+    }
+  }
 }

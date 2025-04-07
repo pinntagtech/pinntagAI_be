@@ -75,6 +75,11 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { EventService2 } from './event.service2';
 import { EventSchedule, ScheduleSchema } from './models/event-schedule.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { BusinessService } from 'src/business/business.service';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { BusinessIndustry, BusinessIndustrySchema } from 'src/business/model/businessIndustry.model';
+import { BusinessCategory, BusinessCategorySchema } from 'src/business/model/businessCategory.model';
+import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/businessCountry.model';
 
 @Module({
   imports: [
@@ -111,6 +116,11 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: Business.name, schema: BusinessSchema },
       { name: EventSchedule.name, schema: ScheduleSchema },
       { name: Outlet.name, schema: OutletSchema },
+      // { name: Privilege.name, schema: PrivilegeSchema },
+      // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      // { name: BusinessCategory.name, schema: BusinessCategorySchema },
+      // { name: BusinessCountry.name, schema: BusinessCountrySchema },
+
     ]),
   ],
   controllers: [EventController],
@@ -125,6 +135,7 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
     StripeService,
     FirebaseService,
     DynamicLinkService,
+    // BusinessService,
   ],
 })
 export class EventModule {}

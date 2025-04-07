@@ -221,7 +221,7 @@ export class EventController {
     }
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
-    const result = await this.eventService.getCreatedEventsV3(
+    const result = await this.eventService.contentManagement(
       user,
       expired,
       page,
@@ -230,12 +230,12 @@ export class EventController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        count: result.events.length,
-        events: result.events,
-        pages: result.pages,
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
+        // count: result.events.length,
+        events: result.data,
+        // pages: result.pages,
+        // total: result.total,
+        // page: result.page,
+        // limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
