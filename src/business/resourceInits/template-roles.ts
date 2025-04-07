@@ -3,7 +3,7 @@ export const DefaultBusinessOwnerRole = {
   creatorType: 'Business',
   belongsTo: 'Business',
   isSuperAdmin: false,
-  isPrimaryAdmin: true,
+  isBusinessOwner: true,
   // privileges: {
   //   BUSINESS: ['create', 'read', 'update', 'delete'],
   //   PRODUCTS: ['create', 'read', 'update', 'delete'],
@@ -11,14 +11,14 @@ export const DefaultBusinessOwnerRole = {
   //   PAYMENTS: ['create', 'read', 'update', 'delete'],
   //   COUPONS: ['create', 'read', 'update', 'delete'],
   // },
-}
+};
 export const DefaultBusinessRoles = {
   Store_Manager: {
     name: 'Store Manager',
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,
-    isPrimaryAdmin: false,
+    isBusinessOwner: false,
     privileges: {
       ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
@@ -30,7 +30,7 @@ export const DefaultBusinessRoles = {
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,
-    isPrimaryAdmin: false,
+    isBusinessOwner: false,
     privileges: {
       COUPONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
       BANNERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
@@ -42,7 +42,7 @@ export const DefaultBusinessRoles = {
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,
-    isPrimaryAdmin: false,
+    isBusinessOwner: false,
     privileges: {
       PAYMENTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
       REPORTS: ['READ'],
@@ -53,7 +53,7 @@ export const DefaultBusinessRoles = {
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,
-    isPrimaryAdmin: false,
+    isBusinessOwner: false,
     privileges: {
       MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
@@ -64,7 +64,7 @@ export const DefaultBusinessRoles = {
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,
-    isPrimaryAdmin: false,
+    isBusinessOwner: false,
     privileges: {
       ORDERS: ['READ', 'UPDATE'],
       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
@@ -116,4 +116,3 @@ export const DefaultAdminRoles = {
     },
   },
 };
-

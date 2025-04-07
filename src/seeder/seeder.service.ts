@@ -201,7 +201,7 @@ export class SeederService {
         creatorType: 'System',
         belongsTo: RoleBelonging.SYSTEM,
         isSuperAdmin: true,
-        isPrimaryAdmin: true,
+        isBusinessOwner: true,
         belongsToSystem: true,
       });
       superAdminRole.$locals.isSeeding = true;
@@ -337,9 +337,7 @@ export class SeederService {
   }
   async seedOutletCategories() {
     const findOutletCategories = await this.outletCategoryModel.find();
-    if (
-      findOutletCategories.length < Object.values(OutletCategories).length
-    ) {
+    if (findOutletCategories.length < Object.values(OutletCategories).length) {
       for (const outletCategory of Object.keys(OutletCategories)) {
         const foundOutletCategory = await this.outletCategoryModel.findOne({
           title: outletCategory,
@@ -349,7 +347,9 @@ export class SeederService {
           const createdOutletCategory = await this.outletCategoryModel.create({
             title: outletCategory,
           });
-          for (const outletCategoryType of Object.values(OutletCategories[outletCategory])) {
+          for (const outletCategoryType of Object.values(
+            OutletCategories[outletCategory],
+          )) {
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
               category: new mongoose.Types.ObjectId(createdOutletCategory.id),
@@ -364,7 +364,9 @@ export class SeederService {
             }
           }
         } else {
-          for (const outletCategoryType of Object.values(OutletCategories[outletCategory])) {
+          for (const outletCategoryType of Object.values(
+            OutletCategories[outletCategory],
+          )) {
             const foundType = await this.outletTypeModel.findOne({
               type: outletCategoryType,
               category: new mongoose.Types.ObjectId(foundOutletCategory.id),
@@ -372,9 +374,7 @@ export class SeederService {
             if (!foundType) {
               await this.outletTypeModel.create({
                 type: outletCategoryType,
-                category: new mongoose.Types.ObjectId(
-                  foundOutletCategory._id,
-                ),
+                category: new mongoose.Types.ObjectId(foundOutletCategory._id),
               });
             }
           }

@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 
 export type OutletTypeDocument = OutletType & Document;
 
-@Schema()
+@Schema({timestamps: true})
 export class OutletType {
   @Prop({ required: true })
   type: string;

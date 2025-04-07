@@ -8,7 +8,7 @@ export class Role {
   @Prop({ required: true })
   name: string;
 
-  @Prop({default: ''})
+  @Prop({ default: '' })
   description: string;
 
   @Prop({ refPath: 'creatorType' })
@@ -16,7 +16,7 @@ export class Role {
 
   @Prop({ required: true, enum: Object.values(RoleCreatorType) })
   creatorType: string;
-  
+
   @Prop({ required: true, enum: Object.values(RoleBelonging) })
   belongsTo: string;
 
@@ -27,7 +27,7 @@ export class Role {
   isSuperAdmin: boolean;
 
   @Prop({ default: false })
-  isPrimaryAdmin: boolean;
+  isBusinessOwner: boolean;
 }
 
 export const RoleSchema = SchemaFactory.createForClass(Role);

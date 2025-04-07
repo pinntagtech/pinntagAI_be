@@ -3,6 +3,8 @@ import mongoose, { Document } from 'mongoose';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { OutletCategoryList, VehicleType } from '../outlet.enum';
 import { Business } from 'src/business/model/business.model';
+import { OutletCategory } from './outletCategory.model';
+import { OutletType } from './outletType.model';
 // import { OutletCategory, VehicleType } from '../outlet.enum';
 
 export type OutletDocument = Outlet & Document;
@@ -11,10 +13,10 @@ export type OutletDocument = Outlet & Document;
 
 @Schema({ timestamps: true })
 export class Outlet {
-  @Prop({ required: true })
+  @Prop({ required: true, ref: OutletCategory.name })
   category: mongoose.Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: true , ref: OutletType.name})
   type: mongoose.Types.ObjectId; // Dropdown based on category
 
   @Prop({ required: true, unique: true })
@@ -23,10 +25,10 @@ export class Outlet {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ ref: 'Businessusers' })
+  @Prop({ ref: 'BusinessUser' })
   manager: mongoose.Types.ObjectId; // Dropdown reference to User entity
 
-  @Prop({ref: 'Businessusers'})
+  @Prop({ref: 'BusinessUser'})
   creator: mongoose.Types.ObjectId; // Dropdown reference to User entity
 
   @Prop({ref: 'Business'})

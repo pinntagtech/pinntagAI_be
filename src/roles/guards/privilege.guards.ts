@@ -61,7 +61,7 @@ export class PrivilegeGuard implements CanActivate {
       const roleModel = await this.roleModel.findById(role);
       if (
         roleModel.belongsTo == RoleBelonging.BUSINESS &&
-        roleModel.isPrimaryAdmin
+        roleModel.isBusinessOwner
       ) {
         return true;
       }

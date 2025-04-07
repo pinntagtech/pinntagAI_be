@@ -436,7 +436,7 @@ export class OutletService {
       const userRole = await this.roleModel.findById(userDetails.role);
       console.log('outlet IDS 1:', outletIds);
       let getOutletObj = {};
-      if (userRole.isPrimaryAdmin) {
+      if (userRole.isBusinessOwner) {
         // const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
         // console.log('getAllManagers', getAllManagers);
         // if (getAllManagers.success) {
@@ -452,13 +452,16 @@ export class OutletService {
 
       const outlets = await this.outletModel
         .find(getOutletObj)
-        .skip((page - 1) * limit)
-        .limit(limit)
         .populate('category')
         .populate('type')
         .populate('manager', 'name email phone countryCode profilePhoto')
-        .populate('business', 'name email phone countryCode profilePhoto')
         .populate('creator', 'name email phone countryCode profilePhoto')
+        .populate('business', 'name email phone countryCode logo')
+        .skip((page - 1) * limit)
+        .limit(limit)
+
+        console.log('outlets:', outlets); 
+
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
       });

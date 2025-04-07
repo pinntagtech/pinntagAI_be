@@ -129,7 +129,7 @@ export class BusinessService {
         creator: new mongoose.Types.ObjectId(superAdmin.id),
         creatorType: RoleCreatorType.BUSINESS,
         belongsTo: RoleBelonging.BUSINESS,
-        isPrimaryAdmin: true,
+        isBusinessOwner: true,
       });
 
       let createObj = {
