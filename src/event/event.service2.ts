@@ -4294,6 +4294,40 @@ export class EventService2 {
     }
     return collectedIds;
   }
+  // Utility function to get the next occurrence date from a recurring schedule.
+  // (This is a simplified version. In production, you might use a date library such as date-fns or moment.js to handle date arithmetic reliably.)
+  async getNextOccurrence(recurringSchedule, currentDate) {
+    const { startDate, endDate, weekDays } = recurringSchedule;
+    // Convert dates to Date objects.
+    const now = new Date(currentDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+  
+    // If the current date is before the schedule even starts, start checking from start date.
+    let checkDate = now < start ? start : now;
+    console.log("FRESH CHECKDATE:",checkDate);
+  
+    // We'll look at the next 7 days to see if there's an occurrence. Adjust this window as needed.
+    for (let i = 0; i < 7; i++) {
+      // Get the day of week as a lowercase string ('sunday', 'monday', etc.).
+      let dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+      // If this day is included in our schedule and we are still within the schedule period…
+      if (weekDays[dayName] && weekDays[dayName].included && checkDate <= end) {
+        // Optionally, check if the event’s time (duration.startHour / startMinute) is still upcoming on that day.
+        // For example, if the duration started earlier today, you might want to ignore that occurrence.
+        // You could loop through each duration entry if there are multiple.
+  
+        // For simplicity, here we just return the date:
+        console.log("CHECKDATE:",checkDate);
+        return checkDate;
+      }
+      // Move to the next day.
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    // If no occurrence is found within the next 7 days (or before schedule end), return null.
+    return null;
+  }
 
   async contentManagement(
     user: DecodedUser,
@@ -4303,7 +4337,7 @@ export class EventService2 {
   ) {
     try {
       let query = {};
-      console.log('USER:', user);
+      // console.log('USER:', user);
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
         return {
@@ -4313,9 +4347,9 @@ export class EventService2 {
       }
 
       if (user.isBusiness) {
-        console.log("Business User.role[0]",businessUser.role[0]);
+        console.log('Business User.role[0]', businessUser.role[0]);
         const userRole = await this.roleModel.findById(businessUser.role[0]);
-        console.log("userRole:",userRole);
+        console.log('userRole:', userRole);
         if (userRole.isBusinessOwner) {
           query = {
             creatorType: BusinessUser.name,
@@ -4356,7 +4390,11 @@ export class EventService2 {
       }
       console.log('query:', query);
 
-      const currentDate = currentDateTz();
+      const currentDate = new Date();
+      console.log('currentDate:', currentDate);
+      const currentMinutes =
+        currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
+        console.log('currentMinutes:', currentMinutes);
       const pipeline: any[] = [
         {
           $match: query,
@@ -4379,34 +4417,145 @@ export class EventService2 {
             $or: [
               // For fixed schedules: date is greater than or equal to current date (allowing today)
               { 'schedules.fixedSchedule.date': { $gte: currentDate } },
-              // For recurring schedules: current date falls between startDate and endDate
-              {
-                'schedules.recurringSchedule.startDate': { $lte: currentDate },
-                'schedules.recurringSchedule.endDate': { $gte: currentDate },
-              },
+              { 'schedules.recurringSchedule.endDate': { $gte: currentDate } },
             ],
           },
         });
       }
 
-      console.log("pipeline:",pipeline)
       pipeline.push(
-        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$_id',
+            event: { $first: '$$ROOT' }, // get the full event doc once
+            filteredSchedules: { $push: '$schedules' }, // push only matched schedules
+          },
+        },
+        {
+          $addFields: {
+            'event.schedules': '$filteredSchedules', // overwrite event.schedules with filtered ones
+          },
+        },
+        {
+          $replaceRoot: { newRoot: '$event' }, // flatten it back to event structure
+        },
+      );
+      if (!isExpired) {
+        pipeline.push({
+          $set: {
+            schedules: {
+              $map: {
+                input: "$schedules",
+                as: "sch",
+                in: {
+                  $cond: [
+                    { $eq: ["$$sch.type", "fixed"] },
+                    {
+                      $mergeObjects: [
+                        "$$sch",
+                        {
+                          fixedSchedule: {
+                            $mergeObjects: [
+                              "$$sch.fixedSchedule",
+                              {
+                                durations: {
+                                  $filter: {
+                                    input: "$$sch.fixedSchedule.durations",
+                                    as: "duration",
+                                    // Use a nested $cond to check if the fixedSchedule.date equals today.
+                                    cond: {
+                                      $cond: [
+                                        {
+                                          // Compare only the date parts using $dateToString.
+                                          $eq: [
+                                            {
+                                              $dateToString: {
+                                                date: "$$sch.fixedSchedule.date",
+                                                format: "%Y-%m-%d"
+                                              }
+                                            },
+                                            {
+                                              $dateToString: {
+                                                date: currentDate,
+                                                format: "%Y-%m-%d"
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        // If the schedule is for today, only include durations that haven't expired (end time in minutes >= currentMinutes).
+                                        {
+                                          $gte: [
+                                            {
+                                              $add: [
+                                                { $multiply: ["$$duration.endHour", 60] },
+                                                "$$duration.endMinute"
+                                              ]
+                                            },
+                                            currentMinutes
+                                          ]
+                                        },
+                                        // Otherwise, if the schedule is not for today (a future day), include all durations.
+                                        true
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    // For schedules that are not fixed, leave them unchanged.
+                    "$$sch"
+                  ]
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      
+      pipeline.push(
+        { $sort: { createdAt: -1 } }, 
         { $skip: (page - 1) * limit },
         { $limit: limit },
       );
+      let testingDate = new Date('2025-05-10T00:00:00.000Z');
       const events = await this.eventModel.aggregate(pipeline);
+      let updatedEvents = events;
+      if (!isExpired) {
+        updatedEvents = events.map((event) => {
+          // For each event, filter its schedules.
+          event.schedules = event.schedules.filter(async (schedule) => {
+            if (schedule.type === ScheduleTypes.RECURRING) {
+              // Calculate the next occurrence for the recurring schedule.
+              const nextOccurrence = await this.getNextOccurrence(schedule.recurringSchedule, testingDate);
+              console.log('Next Occurrence:',nextOccurrence)
+              console.log('Next Occurrence Boolean:', Boolean(nextOccurrence));
+              // Only keep the schedule if there is a next occurrence.
+              return Boolean(nextOccurrence);
+            } else {
+              // For non-recurring schedules, keep them as usual.
+              return true;
+            }
+          });
+          return event;
+        });
+      }
+
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: events,
+        data: updatedEvents,
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
       return {
         success: false,
-        message: 'Something went wrong.'
-      }
+        message: 'Something went wrong.',
+      };
     }
   }
 }
