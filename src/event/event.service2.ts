@@ -105,6 +105,7 @@ import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
+import { Code } from 'mongodb';
 
 @Injectable()
 export class EventService2 {
@@ -4296,37 +4297,41 @@ export class EventService2 {
   }
   // Utility function to get the next occurrence date from a recurring schedule.
   // (This is a simplified version. In production, you might use a date library such as date-fns or moment.js to handle date arithmetic reliably.)
-  async getNextOccurrence(recurringSchedule, currentDate) {
+  private getNextOccurrence(recurringSchedule, currentDate) {
     const { startDate, endDate, weekDays } = recurringSchedule;
     // Convert dates to Date objects.
     const now = new Date(currentDate);
     const start = new Date(startDate);
     const end = new Date(endDate);
-  
+
     // If the current date is before the schedule even starts, start checking from start date.
     let checkDate = now < start ? start : now;
-    console.log("FRESH CHECKDATE:",checkDate);
-  
+    console.log('FRESH CHECKDATE:', checkDate);
+
     // We'll look at the next 7 days to see if there's an occurrence. Adjust this window as needed.
     for (let i = 0; i < 7; i++) {
       // Get the day of week as a lowercase string ('sunday', 'monday', etc.).
-      let dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  
+      let dayName = checkDate
+        .toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+        .toLowerCase();
+      console.log('CheckDate', checkDate);
+      console.log('DayName', dayName);
+      console.log('EndDate:', end);
       // If this day is included in our schedule and we are still within the schedule period…
       if (weekDays[dayName] && weekDays[dayName].included && checkDate <= end) {
         // Optionally, check if the event’s time (duration.startHour / startMinute) is still upcoming on that day.
         // For example, if the duration started earlier today, you might want to ignore that occurrence.
         // You could loop through each duration entry if there are multiple.
-  
+
         // For simplicity, here we just return the date:
-        console.log("CHECKDATE:",checkDate);
-        return checkDate;
+        console.log('Inside True means there is an event::::', checkDate);
+        return true;
       }
       // Move to the next day.
       checkDate.setDate(checkDate.getDate() + 1);
     }
     // If no occurrence is found within the next 7 days (or before schedule end), return null.
-    return null;
+    return false;
   }
 
   async contentManagement(
@@ -4391,10 +4396,13 @@ export class EventService2 {
       console.log('query:', query);
 
       const currentDate = new Date();
-      console.log('currentDate:', currentDate);
+      const currentDateString = currentDate.toISOString();
+      const curDate = currentDateString.replace('Z', '+00:00');
+      console.log('currentDate:', curDate);
+      const testingDate = new Date('2025-05-10T23:00:00.000+00:00');
       const currentMinutes =
         currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
-        console.log('currentMinutes:', currentMinutes);
+      console.log('currentMinutes:', currentMinutes);
       const pipeline: any[] = [
         {
           $match: query,
@@ -4444,111 +4452,158 @@ export class EventService2 {
         pipeline.push({
           $set: {
             schedules: {
-              $map: {
-                input: "$schedules",
-                as: "sch",
-                in: {
-                  $cond: [
-                    { $eq: ["$$sch.type", "fixed"] },
-                    {
-                      $mergeObjects: [
-                        "$$sch",
+              $filter: {
+                input: {
+                  $map: {
+                    input: '$schedules',
+                    as: 'sch',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$sch.type', 'fixed'] },
                         {
-                          fixedSchedule: {
-                            $mergeObjects: [
-                              "$$sch.fixedSchedule",
-                              {
-                                durations: {
-                                  $filter: {
-                                    input: "$$sch.fixedSchedule.durations",
-                                    as: "duration",
-                                    // Use a nested $cond to check if the fixedSchedule.date equals today.
-                                    cond: {
-                                      $cond: [
-                                        {
-                                          // Compare only the date parts using $dateToString.
-                                          $eq: [
+                          $mergeObjects: [
+                            '$$sch',
+                            {
+                              fixedSchedule: {
+                                $mergeObjects: [
+                                  '$$sch.fixedSchedule',
+                                  {
+                                    durations: {
+                                      $filter: {
+                                        input: '$$sch.fixedSchedule.durations',
+                                        as: 'duration',
+                                        cond: {
+                                          $cond: [
                                             {
-                                              $dateToString: {
-                                                date: "$$sch.fixedSchedule.date",
-                                                format: "%Y-%m-%d"
-                                              }
+                                              $eq: [
+                                                {
+                                                  $dateToString: {
+                                                    date: '$$sch.fixedSchedule.date',
+                                                    format: '%Y-%m-%d',
+                                                  },
+                                                },
+                                                {
+                                                  $dateToString: {
+                                                    date: currentDate,
+                                                    format: '%Y-%m-%d',
+                                                  },
+                                                },
+                                              ],
                                             },
                                             {
-                                              $dateToString: {
-                                                date: currentDate,
-                                                format: "%Y-%m-%d"
-                                              }
-                                            }
-                                          ]
-                                        },
-                                        // If the schedule is for today, only include durations that haven't expired (end time in minutes >= currentMinutes).
-                                        {
-                                          $gte: [
-                                            {
-                                              $add: [
-                                                { $multiply: ["$$duration.endHour", 60] },
-                                                "$$duration.endMinute"
-                                              ]
+                                              $gte: [
+                                                {
+                                                  $add: [
+                                                    {
+                                                      $multiply: [
+                                                        '$$duration.endHour',
+                                                        60,
+                                                      ],
+                                                    },
+                                                    '$$duration.endMinute',
+                                                  ],
+                                                },
+                                                currentMinutes,
+                                              ],
                                             },
-                                            currentMinutes
-                                          ]
+                                            true,
+                                          ],
                                         },
-                                        // Otherwise, if the schedule is not for today (a future day), include all durations.
-                                        true
-                                      ]
-                                    }
+                                      },
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                        // Else: schedule is recurring. Call $function to compute if there is a future occurrence.
+                        {
+                          $cond: [
+                            {
+                              $function: {
+                                body: new Code(`
+                                  function(recurringSchedule, currentDate) {
+                                    let start = new Date(recurringSchedule.startDate);
+                                    let end = new Date(recurringSchedule.endDate);
+                                    let weekDays = recurringSchedule.weekDays;
+                                    let now = new Date(currentDate);
+                                    let checkDate = now < start ? start : now;
+                                    
+                                      for (var i = 0; i < 7; i++) {
+                                        var dayName = checkDate.toLocaleDateString("en-US", { 
+                                          weekday: "long", 
+                                          timeZone: "UTC" 
+                                        }).toLowerCase();
+                                        if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
+                                          return true;
+                                        }
+                                        checkDate.setDate(checkDate.getDate() + 1);
+                                      }
+                                    return false;
+
+                                  //   if(currentDate.getTime() == new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
+                                  //   return true;
+                                  //   }else{
+                                  //   return false;
+                                  // }
+
                                   }
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
+                                `),
+                                args: ['$$sch.recurringSchedule', curDate],
+                                lang: 'js',
+                              },
+                            },
+                            '$$sch', // If function returns true, keep the schedule as is.
+                            null, // Otherwise, mark it as null (to be removed later).
+                          ],
+                        },
+                        // '$$sch'
+                      ],
                     },
-                    // For schedules that are not fixed, leave them unchanged.
-                    "$$sch"
-                  ]
-                }
-              }
-            }
-          }
+                  },
+                },
+                as: 'sch',
+                cond: { $ne: ['$$sch', null] }, // Remove null entries.
+              },
+            },
+          },
         });
       }
-      
-      
+
       pipeline.push(
-        { $sort: { createdAt: -1 } }, 
+        { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
       );
-      let testingDate = new Date('2025-05-10T00:00:00.000Z');
+
+      console.log('Pipeline:', JSON.stringify(pipeline));
       const events = await this.eventModel.aggregate(pipeline);
-      let updatedEvents = events;
-      if (!isExpired) {
-        updatedEvents = events.map((event) => {
-          // For each event, filter its schedules.
-          event.schedules = event.schedules.filter(async (schedule) => {
-            if (schedule.type === ScheduleTypes.RECURRING) {
-              // Calculate the next occurrence for the recurring schedule.
-              const nextOccurrence = await this.getNextOccurrence(schedule.recurringSchedule, testingDate);
-              console.log('Next Occurrence:',nextOccurrence)
-              console.log('Next Occurrence Boolean:', Boolean(nextOccurrence));
-              // Only keep the schedule if there is a next occurrence.
-              return Boolean(nextOccurrence);
-            } else {
-              // For non-recurring schedules, keep them as usual.
-              return true;
-            }
-          });
-          return event;
-        });
-      }
+
+      // let updatedEvents = JSON.parse(JSON.stringify(events));
+      // if (!isExpired) {
+      //   updatedEvents = updatedEvents.map((event) => {
+      //     event.schedules = event.schedules.filter((schedule) => {
+      //       if (schedule.type === ScheduleTypes.RECURRING) {
+      //         return this.getNextOccurrence(
+      //           schedule.recurringSchedule,
+      //           // currentDate,
+      //           testingDate,
+      //         );
+      //       } else {
+      //         return true;
+      //       }
+      //     });
+      //     return event;
+      //   });
+      //   console.log('EVENT.SCHEDULESSSSS:', updatedEvents);
+      // }
 
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: updatedEvents,
+        // data: updatedEvents,
+        data: events,
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
