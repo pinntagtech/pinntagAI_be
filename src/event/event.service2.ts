@@ -105,6 +105,7 @@ import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
+import { Code } from 'mongodb';
 
 @Injectable()
 export class EventService2 {
@@ -4294,6 +4295,44 @@ export class EventService2 {
     }
     return collectedIds;
   }
+  // Utility function to get the next occurrence date from a recurring schedule.
+  // (This is a simplified version. In production, you might use a date library such as date-fns or moment.js to handle date arithmetic reliably.)
+  private getNextOccurrence(recurringSchedule, currentDate) {
+    const { startDate, endDate, weekDays } = recurringSchedule;
+    // Convert dates to Date objects.
+    const now = new Date(currentDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // If the current date is before the schedule even starts, start checking from start date.
+    let checkDate = now < start ? start : now;
+    console.log('FRESH CHECKDATE:', checkDate);
+
+    // We'll look at the next 7 days to see if there's an occurrence. Adjust this window as needed.
+    for (let i = 0; i < 7; i++) {
+      // Get the day of week as a lowercase string ('sunday', 'monday', etc.).
+      let dayName = checkDate
+        .toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+        .toLowerCase();
+      console.log('CheckDate', checkDate);
+      console.log('DayName', dayName);
+      console.log('EndDate:', end);
+      // If this day is included in our schedule and we are still within the schedule period…
+      if (weekDays[dayName] && weekDays[dayName].included && checkDate <= end) {
+        // Optionally, check if the event’s time (duration.startHour / startMinute) is still upcoming on that day.
+        // For example, if the duration started earlier today, you might want to ignore that occurrence.
+        // You could loop through each duration entry if there are multiple.
+
+        // For simplicity, here we just return the date:
+        console.log('Inside True means there is an event::::', checkDate);
+        return true;
+      }
+      // Move to the next day.
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    // If no occurrence is found within the next 7 days (or before schedule end), return null.
+    return false;
+  }
 
   async contentManagement(
     user: DecodedUser,
@@ -4303,7 +4342,7 @@ export class EventService2 {
   ) {
     try {
       let query = {};
-      console.log('USER:', user);
+      // console.log('USER:', user);
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
         return {
@@ -4313,9 +4352,9 @@ export class EventService2 {
       }
 
       if (user.isBusiness) {
-        console.log("Business User.role[0]",businessUser.role[0]);
+        console.log('Business User.role[0]', businessUser.role[0]);
         const userRole = await this.roleModel.findById(businessUser.role[0]);
-        console.log("userRole:",userRole);
+        console.log('userRole:', userRole);
         if (userRole.isBusinessOwner) {
           query = {
             creatorType: BusinessUser.name,
@@ -4356,7 +4395,16 @@ export class EventService2 {
       }
       console.log('query:', query);
 
-      const currentDate = currentDateTz();
+      const currentDate = new Date();
+      console.log("currentDate:", currentDate);
+      const currentUnix = currentDate.getTime();
+      const testingDate = new Date('2025-05-10T23:00:00.000Z').getTime();
+      console.log('TestingDate:', testingDate);
+
+
+      const currentMinutes =
+        currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
+      console.log('currentMinutes:', currentMinutes);
       const pipeline: any[] = [
         {
           $match: query,
@@ -4379,34 +4427,192 @@ export class EventService2 {
             $or: [
               // For fixed schedules: date is greater than or equal to current date (allowing today)
               { 'schedules.fixedSchedule.date': { $gte: currentDate } },
-              // For recurring schedules: current date falls between startDate and endDate
-              {
-                'schedules.recurringSchedule.startDate': { $lte: currentDate },
-                'schedules.recurringSchedule.endDate': { $gte: currentDate },
-              },
+              { 'schedules.recurringSchedule.endDate': { $gte: currentDate } },
             ],
           },
         });
       }
 
-      console.log("pipeline:",pipeline)
+      pipeline.push(
+        {
+          $group: {
+            _id: '$_id',
+            event: { $first: '$$ROOT' }, // get the full event doc once
+            filteredSchedules: { $push: '$schedules' }, // push only matched schedules
+          },
+        },
+        {
+          $addFields: {
+            'event.schedules': '$filteredSchedules', // overwrite event.schedules with filtered ones
+          },
+        },
+        {
+          $replaceRoot: { newRoot: '$event' }, // flatten it back to event structure
+        },
+      );
+      if (!isExpired) {
+        pipeline.push({
+          $set: {
+            schedules: {
+              $filter: {
+                input: {
+                  $map: {
+                    input: '$schedules',
+                    as: 'sch',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$sch.type', 'fixed'] },
+                        {
+                          $mergeObjects: [
+                            '$$sch',
+                            {
+                              fixedSchedule: {
+                                $mergeObjects: [
+                                  '$$sch.fixedSchedule',
+                                  {
+                                    durations: {
+                                      $filter: {
+                                        input: '$$sch.fixedSchedule.durations',
+                                        as: 'duration',
+                                        cond: {
+                                          $cond: [
+                                            {
+                                              $eq: [
+                                                {
+                                                  $dateToString: {
+                                                    date: '$$sch.fixedSchedule.date',
+                                                    format: '%Y-%m-%d',
+                                                  },
+                                                },
+                                                {
+                                                  $dateToString: {
+                                                    date: currentDate,
+                                                    format: '%Y-%m-%d',
+                                                  },
+                                                },
+                                              ],
+                                            },
+                                            {
+                                              $gte: [
+                                                {
+                                                  $add: [
+                                                    {
+                                                      $multiply: [
+                                                        '$$duration.endHour',
+                                                        60,
+                                                      ],
+                                                    },
+                                                    '$$duration.endMinute',
+                                                  ],
+                                                },
+                                                currentMinutes,
+                                              ],
+                                            },
+                                            true,
+                                          ],
+                                        },
+                                      },
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                        // Else: schedule is recurring. Call $function to compute if there is a future occurrence.
+                        {
+                          $cond: [
+                            {
+                              $function: {
+                                body: new Code(`
+                                  function(recurringSchedule, currentDate) {
+                                    let start = new Date(recurringSchedule.startDate);
+                                    let end = new Date(recurringSchedule.endDate);
+                                    let weekDays = recurringSchedule.weekDays;
+                                    let now = new Date(currentDate);
+                                    let checkDate = now < start ? start : now;
+                                    
+                                      for (var i = 0; i < 7; i++) {
+                                        var dayName = checkDate.toLocaleDateString("en-US", { 
+                                          weekday: "long", 
+                                          timeZone: "UTC" 
+                                        }).toLowerCase();
+                                        if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
+                                          return true;
+                                        }
+                                        checkDate.setDate(checkDate.getDate() + 1);
+                                      }
+                                    return false;
+
+                                  //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
+                                  //   return true;
+                                  //   }else{
+                                  //   return false;
+                                  // }
+
+                                  }
+                                `),
+                                args: ['$$sch.recurringSchedule', currentUnix],
+                                lang: 'js',
+                              },
+                            },
+                            '$$sch', // If function returns true, keep the schedule as is.
+                            null, // Otherwise, mark it as null (to be removed later).
+                          ],
+                        },
+                        // '$$sch'
+                      ],
+                    },
+                  },
+                },
+                as: 'sch',
+                cond: { $ne: ['$$sch', null] }, // Remove null entries.
+              },
+            },
+          },
+        });
+      }
+
       pipeline.push(
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
       );
+
+      console.log('Pipeline:', JSON.stringify(pipeline));
       const events = await this.eventModel.aggregate(pipeline);
+
+      // let updatedEvents = JSON.parse(JSON.stringify(events));
+      // if (!isExpired) {
+      //   updatedEvents = updatedEvents.map((event) => {
+      //     event.schedules = event.schedules.filter((schedule) => {
+      //       if (schedule.type === ScheduleTypes.RECURRING) {
+      //         return this.getNextOccurrence(
+      //           schedule.recurringSchedule,
+      //           // currentDate,
+      //           testingDate,
+      //         );
+      //       } else {
+      //         return true;
+      //       }
+      //     });
+      //     return event;
+      //   });
+      //   console.log('EVENT.SCHEDULESSSSS:', updatedEvents);
+      // }
+
       return {
         success: true,
         message: 'Events fetched successfully',
+        // data: updatedEvents,
         data: events,
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
       return {
         success: false,
-        message: 'Something went wrong.'
-      }
+        message: 'Something went wrong.',
+      };
     }
   }
 }
