@@ -274,7 +274,7 @@ export class OutletService {
           createObj[key] = data[key];
         }
       });
-      if (manager) {
+      if (createObj.manager && createObj.manager !== '') {
         const foundManager = await this.businessUserModel.findOne({
           _id: new mongoose.Types.ObjectId(manager),
         });
@@ -454,8 +454,16 @@ export class OutletService {
         .find(getOutletObj)
         .populate('category')
         .populate('type')
-        .populate('manager', 'name email phone countryCode profilePhoto')
-        .populate('creator', 'name email phone countryCode profilePhoto')
+        .populate({
+          path: 'manager',
+          select: 'name email phone countryCode profilePhoto',
+          match: { manager: { $ne: '' } }
+        })
+        // .populate({
+        //   path: 'creator',
+        //   select: 'name email phone countryCode profilePhoto',
+        //   match: { _id: { $ne: '' } } 
+        // })
         .populate('business', 'name email phone countryCode logo')
         .skip((page - 1) * limit)
         .limit(limit)

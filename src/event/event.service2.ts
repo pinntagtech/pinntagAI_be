@@ -4396,10 +4396,12 @@ export class EventService2 {
       console.log('query:', query);
 
       const currentDate = new Date();
-      const currentDateString = currentDate.toISOString();
-      const curDate = currentDateString.replace('Z', '+00:00');
-      console.log('currentDate:', curDate);
-      const testingDate = new Date('2025-05-10T23:00:00.000+00:00');
+      console.log("currentDate:", currentDate);
+      const currentUnix = currentDate.getTime();
+      const testingDate = new Date('2025-05-10T23:00:00.000Z').getTime();
+      console.log('TestingDate:', testingDate);
+
+
       const currentMinutes =
         currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
       console.log('currentMinutes:', currentMinutes);
@@ -4542,7 +4544,7 @@ export class EventService2 {
                                       }
                                     return false;
 
-                                  //   if(currentDate.getTime() == new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
+                                  //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
                                   //   return true;
                                   //   }else{
                                   //   return false;
@@ -4550,7 +4552,7 @@ export class EventService2 {
 
                                   }
                                 `),
-                                args: ['$$sch.recurringSchedule', curDate],
+                                args: ['$$sch.recurringSchedule', currentUnix],
                                 lang: 'js',
                               },
                             },
