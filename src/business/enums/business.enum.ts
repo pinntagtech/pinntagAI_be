@@ -5,6 +5,11 @@ export const ProfileStatus = {
   REGISTERED: 3, //-> Business Registration Completed
   COMPLETED: 4, //-> Description Added And Business Creation Complete
 };
+export const ScalabilityFactor = {
+  SINGLE: 0,
+  MULTIPLE: 1,
+  ORGANISATION: 2,
+};
 
 // export const OutletTypesByCategory = {
 //   [OutletCategoryList.FOOD_BEVERAGE]: [

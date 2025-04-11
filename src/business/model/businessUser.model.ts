@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Business } from './business.model';
 import { OneToMany } from 'typeorm';
-import { BusinessUserCreatorType, ProfileStatus } from '../enums/business.enum';
+import { BusinessUserCreatorType, ProfileStatus, ScalabilityFactor } from '../enums/business.enum';
 
 export type BusinessUserDocument = BusinessUser & Document;
 
@@ -49,13 +49,15 @@ export class BusinessUser {
   password: string;
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;
+
   @Prop()
   drive: mongoose.Types.ObjectId;
   @Prop({ default: false })
   forcePasswordReset: boolean;
   @Prop()
   outlets: mongoose.Types.ObjectId[];
+  @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
+  scalabilityFactor: number;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
-
