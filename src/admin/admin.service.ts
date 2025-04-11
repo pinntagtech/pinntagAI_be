@@ -854,14 +854,25 @@ export class AdminService {
     }
     let fullPhoneNumber = data.countryCode + data.phone;
     const existingAdmin = await this.adminModel.findOne({
-      fullPhoneNumber: fullPhoneNumber,
+      $or: [
+        { email: data.email },
+        { fullPhoneNumber: fullPhoneNumber },
+      ],
     });
     if (existingAdmin) {
       return {
         success: false,
-        message: 'Admin with this phone number already exists.',
+        message: 'Admin with this email or phone number already exists.',
       };
     }
+    console.log("data:",data);
+    console.log("data 1:",data.profilePhoto)
+    if(data.profilePhoto === ""){
+      console.log("Is this coming here:")
+      delete data.profilePhoto
+    }
+    console.log("data 2:",data)
+
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(adminId),
