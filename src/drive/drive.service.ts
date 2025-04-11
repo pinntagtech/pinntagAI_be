@@ -143,10 +143,18 @@ export class DriveService {
         file.mimetype,
       );
       //create file doc
+      const splitIndex = uploadResult.Location.indexOf('amazonaws');
+      const part1 = uploadResult.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
+      const part2 = uploadResult.Location.slice(splitIndex);
+      console.log("part1", part1);
+      console.log("part2", part2);
+      const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+      console.log("updatedUrl", updatedUrl);
+
       let createdFile = await this.fileModel.create({
         metaData: {
           mimeType: file.mimetype,
-          url: uploadResult.Location,
+          url: updatedUrl,
           size: file.size,
           originalName: file.originalname,
         },

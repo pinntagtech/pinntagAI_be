@@ -52,7 +52,7 @@ export class Business {
   @Prop()
   documentNumber: string;
 
-  @Prop({ref: BusinessDocumentType.name})
+  @Prop({ ref: BusinessDocumentType.name })
   documentType: mongoose.Types.ObjectId;
 
   @Prop({ ref: Brand.name })
@@ -96,7 +96,7 @@ export class Business {
   district: string;
   @Prop()
   state: string;
-  @Prop({ref: BusinessCountry.name})
+  @Prop({ ref: BusinessCountry.name })
   country: mongoose.Types.ObjectId;
   @Prop()
   county: string;
@@ -168,6 +168,13 @@ export class Business {
   managerPhone: string;
   @Prop({ ref: 'Folder' })
   drivePath: mongoose.Types.ObjectId;
+
+  @Prop({ default: false })
+  isPhysicalType: boolean;
+  @Prop({ default: false })
+  isMobileType: boolean;
+  @Prop({ default: false })
+  isOnlineType: boolean;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

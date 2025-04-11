@@ -9,6 +9,7 @@ export class S3Service {
   s3 = new AWS.S3({
     accessKeyId: process.env.AWS_S3_ACCESS_KEY,
     secretAccessKey: process.env.AWS_S3_KEY_SECRET,
+    region: process.env.AWS_REGION
   });
 
   s3Client = new S3Client({
@@ -19,6 +20,7 @@ export class S3Service {
     },
   });
   async getPresignedUrl(fileKey: string, expiresIn = 3600): Promise<string> {
+    console.log("fileKey", fileKey);
     const command = new GetObjectCommand({
       Bucket: this.AWS_S3_BUCKET,
       Key: fileKey, // Example: "uploads/user123/profile.jpg"
