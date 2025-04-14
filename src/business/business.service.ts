@@ -1470,4 +1470,55 @@ export class BusinessService {
       };
     }
   }
+  async fetchBusinessList(userId:string,page:number,limit:number){
+    try {
+      const businessUserDetails = await this.businessUserModel.findOne({_id:userId}).select({ email: 1,business:1,selectedBusiness:1 });
+      return {
+        success: true,
+        message: 'Business fetched Successfully!',
+        data: businessUserDetails,
+      };
+    }
+    catch(error){
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateSelectedBusiness(userId:string,businessId:string){
+    try{
+      const businessUser = await this.businessUserModel.findById(userId);
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      if(!businessUser.business.includes(new mongoose.Types.ObjectId(businessId))){
+        return {
+          success: false,
+          message: 'Business is not mapped with Logged in User.',
+        };
+      }
+      await this.businessUserModel.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            selectedBusiness: new mongoose.Types.ObjectId(businessId),
+          },
+        },
+      );
+    }catch(error){
+
+    }
+  }
+
 }

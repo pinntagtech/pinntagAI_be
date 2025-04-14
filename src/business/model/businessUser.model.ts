@@ -48,7 +48,10 @@ export class BusinessUser {
   @Prop()
   password: string;
   @Prop({ ref: Business.name })
-  business: mongoose.Types.ObjectId;
+  business: mongoose.Types.ObjectId[];
+
+  @Prop({ref: Business.name})
+  selectedBusiness: mongoose.Types.ObjectId;
 
   @Prop()
   drive: mongoose.Types.ObjectId;

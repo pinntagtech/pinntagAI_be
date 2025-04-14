@@ -560,6 +560,34 @@ export class BusinessController {
     }
   }
 
+  @Get('list')
+  @UseGuards(JwtGuard2)
+  async fetchBusinessList(
+    @Res() res: Response,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+    @TokenDecoder() user: JwtPayload,
+  ) {
+    const result = await this.businessService.fetchBusinessList(
+      user.id,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        // total: result.total,
+        // pages: result.pages,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,
