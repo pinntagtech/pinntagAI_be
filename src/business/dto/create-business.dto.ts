@@ -9,33 +9,25 @@ import {
 import mongoose from 'mongoose';
 
 export class CreateBusinessDto {
-
   @IsNotEmpty()
   @IsString()
   name: string;
-  
-  
+
   @IsEmail()
   email: string;
 
   // @IsString()
   // registrationNumber:string;
-  
+
   // @IsString()
   // registrationType:string;
-  
+
   // @IsString()
   // bio:string;
-
 
   // @IsBoolean()
   // isRegistered: boolean;
 
-  @IsString()
-  businessCategory: string;
-
-  @IsString()
-  businessIndustry: string;
 
   @IsString()
   phone: string;

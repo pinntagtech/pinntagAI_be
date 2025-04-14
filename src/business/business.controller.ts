@@ -34,10 +34,31 @@ import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUse
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { Token } from 'src/auth/models/token.model';
+import { TypeDataDto } from './dto/business-type.dto';
 
 @Controller('business')
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
+
+  @Post('type')
+  @UseGuards(JwtGuard2)
+  async addBusinessType(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: TypeDataDto,
+  ) {
+    const result = await this.businessService.addBusinessType(user.id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
   @Post()
   @UseGuards(JwtGuard2)
@@ -482,11 +503,16 @@ export class BusinessController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async createDownlineUser(
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Res() res: Response,
     @Body() data: CreateDownlineBusinessUserDto,
   ) {
-    const result = await this.businessService.createDownlineUser(user.id, data);
+    if(user.businessProfile || (user.businessProfile && !isValidObjectId(user.businessProfile)) ){
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'BusinessId not Found.',
+      });
+    }
+    const result = await this.businessService.createDownlineUser(user.id,user.businessProfile,data);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,

@@ -21,29 +21,29 @@ export class UpdateBusinessDto {
   @IsString()
   logo?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  isRegistered?: boolean;
+  // @IsOptional()
+  // @IsBoolean()
+  // isRegistered?: boolean;
 
-  @IsOptional()
-  @IsString()
-  constitution: string;
+  // @IsOptional()
+  // @IsString()
+  // constitution: string;
 
-  @IsOptional()
-  @IsString()
-  documentNumber: string;
+  // @IsOptional()
+  // @IsString()
+  // documentNumber: string;
 
-  @IsOptional()
-  @IsString()
-  documentType: string;
+  // @IsOptional()
+  // @IsString()
+  // documentType: string;
 
-  @IsOptional()
-  @IsString()
-  businessCategory?: string;
+  // @IsOptional()
+  // @IsString()
+  // businessCategory?: string;
 
-  @IsOptional()
-  @IsString()
-  businessIndustry?: string;
+  // @IsOptional()
+  // @IsString()
+  // businessIndustry?: string;
 
   @IsOptional()
   @IsString()
