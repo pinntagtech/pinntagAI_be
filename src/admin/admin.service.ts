@@ -57,6 +57,12 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
+import { CreateIndustryDto } from './dto/business-industry.dto';
+import { BusinessCategoryDto } from './dto/business-category.dto';
+import {
+  BusinessCategory,
+  BusinessCategoryDocument,
+} from 'src/business/model/businessCategory.model';
 
 @Injectable()
 export class AdminService {
@@ -85,6 +91,8 @@ export class AdminService {
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
+    @InjectModel(BusinessCategory.name)
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -418,7 +426,7 @@ export class AdminService {
         message: 'Dashboard configuration not found with the id provided.',
       };
     } else {
-      if (data.categories && data.categories.length>0) {
+      if (data.categories && data.categories.length > 0) {
         data.categories = data.categories.map(
           (category) => new mongoose.Types.ObjectId(category),
         );
@@ -854,10 +862,7 @@ export class AdminService {
     }
     let fullPhoneNumber = data.countryCode + data.phone;
     const existingAdmin = await this.adminModel.findOne({
-      $or: [
-        { email: data.email },
-        { fullPhoneNumber: fullPhoneNumber },
-      ],
+      $or: [{ email: data.email }, { fullPhoneNumber: fullPhoneNumber }],
     });
     if (existingAdmin) {
       return {
@@ -865,13 +870,13 @@ export class AdminService {
         message: 'Admin with this email or phone number already exists.',
       };
     }
-    console.log("data:",data);
-    console.log("data 1:",data.profilePhoto)
-    if(data.profilePhoto === ""){
-      console.log("Is this coming here:")
-      delete data.profilePhoto
+    console.log('data:', data);
+    console.log('data 1:', data.profilePhoto);
+    if (data.profilePhoto === '') {
+      console.log('Is this coming here:');
+      delete data.profilePhoto;
     }
-    console.log("data 2:",data)
+    console.log('data 2:', data);
 
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
@@ -978,7 +983,9 @@ export class AdminService {
         };
       }
       const allAdminIds = await this.getAllChildAdminIds(adminId);
-      const allMongooseIds = allAdminIds.map((id) => new mongoose.Types.ObjectId(id));
+      const allMongooseIds = allAdminIds.map(
+        (id) => new mongoose.Types.ObjectId(id),
+      );
       const admins = await this.adminModel
         .find({ _id: { $in: allMongooseIds } })
         .populate('role', '_id name')
@@ -989,7 +996,7 @@ export class AdminService {
       const totalAdmins = await this.adminModel.countDocuments({
         _id: { $in: allMongooseIds },
       });
-      console.log("totalAdmins:", totalAdmins);
+      console.log('totalAdmins:', totalAdmins);
       return {
         success: true,
         message: 'Admins fetched successfully',
@@ -1142,9 +1149,9 @@ export class AdminService {
     }
   }
 
-  async createBusinessIndustry(id: string, title: string) {
+  async createBusinessIndustry(id: string, data: CreateIndustryDto) {
     try {
-      const industry = await this.industryModel.findOne({ title: title });
+      const industry = await this.industryModel.findOne({ title: data.title });
       if (industry) {
         return {
           success: false,
@@ -1152,13 +1159,48 @@ export class AdminService {
         };
       }
       const createdIndustry = await this.industryModel.create({
-        title: title,
+        ...data,
         createdBy: new mongoose.Types.ObjectId(id),
       });
       return {
         success: true,
         message: 'Industry Created Successfully.',
         data: createdIndustry,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async createBusinessCategory(id: string, data: BusinessCategoryDto) {
+    try {
+      const industry = await this.industryModel.findById(data.industry);
+      if (!industry) {
+        return {
+          success: false,
+          message: 'Industry Not Found.',
+        };
+      }
+      const category = await this.businessCategoryModel.findOne({
+        title: data.title,
+        industry: data.industry,
+      });
+      if (category) {
+        return {
+          success: false,
+          message: 'Category already exist with given Title.',
+        };
+      }
+      const createdCategory = await this.businessCategoryModel.create({
+        ...data,
+        createdBy: new mongoose.Types.ObjectId(id),
+      });
+      return {
+        success: true,
+        message: 'Industry Created Successfully.',
+        data: createdCategory,
       };
     } catch (error) {
       return {

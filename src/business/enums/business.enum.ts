@@ -1,9 +1,11 @@
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
-  MAPPED: 2, //-> Business Created And Mapped to Business User
-  REGISTERED: 3, //-> Business Registration Completed
-  COMPLETED: 4, //-> Description Added And Business Creation Complete
+  MULTIPLE_BUSINESS_STATUS:2,
+  INDUSTRY_ADDED: 3, //-> Business Industry Added
+  CATEGORY_ADDED: 4, //-> Business Category Added
+  BUSINESS_CREATED: 5, //-> Business Created
+
 };
 export const ScalabilityFactor = {
   SINGLE: 0,
@@ -195,7 +197,7 @@ export const BusinessIndustries = {
     'HR & Recruitment',
     'Market Research',
   ],
-  'En,rgy & Utilities': [
+  'Energy & Utilities': [
     'Renewable Energy Solutions',
     'Oil & Gas',
     'Water & Waste Management',

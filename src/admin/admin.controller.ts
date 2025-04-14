@@ -34,6 +34,10 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
+import { CreateIndustryDto } from './dto/business-industry.dto';
+import { database } from 'firebase-admin';
+import { BusinessCategory } from 'src/business/model/businessCategory.model';
+import { BusinessCategoryDto } from './dto/business-category.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -781,10 +785,10 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async createIndustry(
     @Res() res: Response,
-    @Body('title') title: string,
+    @Body() data: CreateIndustryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.createBusinessIndustry(user.id,title);
+    const result = await this.adminService.createBusinessIndustry(user.id,data);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -796,5 +800,23 @@ export class AdminController {
       });
     }
   }
+  @Post('create/business/category')
+  @UseGuards(AdminGuard2)
+  async createBusinessCategory(
+    @Res() res: Response,
+    @Body() data: BusinessCategoryDto,
+    @TokenDecoder() user: DecodedUser){
+      const result = await this.adminService.createBusinessIndustry(user.id,data);
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+    }
 
 }

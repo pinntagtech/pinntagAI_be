@@ -6,14 +6,21 @@ import { Admin } from 'src/admin/models/admin.model';
 
 export type BusinessCategoryDocument = BusinessCategory & Document;
 
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class BusinessCategory {
   @Prop({ required: true })
   type: string;
   @Prop({ required: true, ref: BusinessIndustry.name })
   industry: mongoose.Types.ObjectId;
 
-  @Prop({ref:Admin.name})
+  @Prop()
+  lightIcon: string;
+  @Prop()
+  darkIcon: string;
+  @Prop()
+  activeColor: string;
+
+  @Prop({ ref: Admin.name })
   createdBy: mongoose.Types.ObjectId;
 }
 export const BusinessCategorySchema =

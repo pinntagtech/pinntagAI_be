@@ -70,7 +70,7 @@ export class Business {
   @Prop({ required: true, refPath: 'creatorType' })
   creator: mongoose.Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop()
   name: string;
   @Prop()
   bio: string;

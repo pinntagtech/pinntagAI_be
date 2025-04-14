@@ -66,7 +66,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { UserService } from 'src/user/user.service';
-import { isEmail } from 'class-validator';
+import { TypeDataDto } from './dto/business-type.dto';
 
 @Injectable()
 export class BusinessService {
@@ -282,6 +282,104 @@ export class BusinessService {
       };
     }
   }
+  async addBusinessType(userId: string, data: TypeDataDto) {
+    try {
+      const findUser = await this.businessUserModel.findById(userId);
+      if (!findUser) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      let findBusinessIndustry = null;
+      let startBusiness = null;
+      if (data.businessIndustry) {
+        if (!isValidObjectId(data.businessIndustry)) {
+          return {
+            success: false,
+            message: `Please provide valid Business Industry Id:${data.businessIndustry}`,
+          };
+        }
+        findBusinessIndustry = await this.businessIndModel.findById(
+          data.businessIndustry,
+        );
+        if (!findBusinessIndustry) {
+          return {
+            success: false,
+            message: 'Please provide valid Business Industry',
+          };
+        }
+        startBusiness = await this.businessModel.create({
+          creatorType: BusinessUser.name,
+          creator: new mongoose.Types.ObjectId(userId),
+          businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
+        });
+        await this.businessUserModel.updateOne(
+          { _id: userId },
+          {
+            $set: {
+              selectedBusiness: startBusiness._id,
+              status: ProfileStatus.INDUSTRY_ADDED,
+            },
+            $addToSet: {
+              business: startBusiness._id,
+            },
+          },
+        );
+      }
+
+      if (data.businessCategories.length > 0) {
+        const businessCategoriesIds = [];
+        for (let i = 0; i < data.businessCategories.length; i++) {
+          let category = data.businessCategories[i];
+          if (!isValidObjectId(category)) {
+            return {
+              success: false,
+              message: `Please provide valid Business Category Id:${category}`,
+            };
+          }
+          const foundCategory =
+            await this.businessCategoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              message: `Category not found with the id provided: ${category}`,
+            };
+          } else {
+            businessCategoriesIds.push(foundCategory._id);
+          }
+        }
+        await this.businessModel.updateOne(
+          { _id: startBusiness },
+          {
+            $set: {
+              businessCategory: businessCategoriesIds,
+            },
+          },
+        );
+        await this.businessUserModel.updateOne(
+          { _id: userId },
+          {
+            $set: {
+              status: ProfileStatus.CATEGORY_ADDED,
+            },
+          },
+        );
+      }
+      const updatedBusiness = await this.businessModel.findOne({
+        _id: startBusiness})
+      return {
+        success:true,
+        message: 'Business Type Added Successfully.',
+        data:updatedBusiness
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 
   async createBusiness(userId: string, data: CreateBusinessDto) {
     try {
@@ -292,6 +390,7 @@ export class BusinessService {
           // { registrationNumber: data.registrationNumber },
         ],
       });
+
       if (findBusiness) {
         return {
           success: false,
@@ -321,44 +420,16 @@ export class BusinessService {
           data: businessUser,
         };
       }
-      if (businessUser.status >= ProfileStatus.MAPPED) {
+      if (
+        businessUser.status >= ProfileStatus.EMAIL_VERIFIED &&
+        businessUser.status < ProfileStatus.CATEGORY_ADDED
+      ) {
         return {
           success: false,
-          message: 'Business User already mapped with another Business',
+          message: 'Business User Industry and Categories are Mandatory.',
         };
       }
 
-      const findBusinessIndustry = await this.businessIndModel.findById(
-        data.businessIndustry,
-      );
-      const businessCategories = data.businessCategory.split(',');
-      for (let category of businessCategories) {
-        if (!isValidObjectId(category)) {
-          return {
-            success: false,
-            message: `Please provide valid Business Category Id:${category}`,
-          };
-        }
-      }
-      const businessCategoriesIds = [];
-      for (let category of businessCategories) {
-        const findBusinessCategory =
-          await this.businessCategoryModel.findById(category);
-        if (!findBusinessCategory) {
-          return {
-            success: false,
-            message: `Please provide valid Business Category Id:${category}`,
-          };
-        }
-        businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
-      }
-      delete data.businessCategory;
-      if (!findBusinessIndustry) {
-        return {
-          success: false,
-          message: 'Please provide valid Business Industry',
-        };
-      }
       //create business folder in drive
       const userDetails = await this.businessUserModel.findById(userId);
 
@@ -371,35 +442,44 @@ export class BusinessService {
       let createObj = {
         name: data.name,
         email: data.email,
-        businessCategory: businessCategoriesIds,
-        businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
-        creatorType: BusinessCreatorType.BUSINESS_USER,
-        creator: new mongoose.Types.ObjectId(userId),
-        authorisedUser: new mongoose.Types.ObjectId(userId),
       };
       if (data.website) createObj['website'] = data.website;
 
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
 
-      const createdBusiness = await this.businessModel.create(createObj);
+      const createdBusiness = await this.businessModel.findOneAndUpdate(
+        { creator: new mongoose.Types.ObjectId(userId) },
+        { $set: { createObj } },
+      );
 
       //create folder
 
-      if (createdBusiness.authorisedUser) {
-        await this.businessUserModel.updateOne(
-          { _id: createdBusiness.authorisedUser },
-          {
-            $set: {
-              business: createdBusiness._id,
-              status: ProfileStatus.MAPPED,
-            },
+      // if (createdBusiness.authorisedUser) {
+      //   await this.businessUserModel.updateOne(
+      //     { _id: createdBusiness.authorisedUser },
+      //     {
+      //       $set: {
+      //         status: ProfileStatus.MAPPED,
+      //       },
+      //       $addToSet: {
+      //         business: createdBusiness._id,
+      //       },
+      //     },
+      //   );
+      // }
+
+      await this.businessUserModel.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            status: ProfileStatus.BUSINESS_CREATED,
           },
-        );
-      }
+        },
+      );
 
       //create default business roles
       // for (let roleName of Object.keys(DefaultBusinessRoles)) {
@@ -441,6 +521,7 @@ export class BusinessService {
       //   }
       // }
       // Create default business roles with parallel execution for nested operations
+
       const rolePromises = Object.keys(DefaultBusinessRoles).map(
         async (roleName) => {
           const roleData = DefaultBusinessRoles[roleName];
@@ -498,7 +579,7 @@ export class BusinessService {
 
       return {
         success: true,
-        message: 'Business Created Successfully!',
+        message: 'Business Created Successfully.',
         data: createdBusiness,
       };
     } catch (error) {
@@ -528,12 +609,12 @@ export class BusinessService {
         };
       }
 
-      if (businessUser.status < ProfileStatus.MAPPED) {
-        return {
-          success: false,
-          message: 'Business User not mapped with any Business',
-        };
-      }
+      // if (businessUser.status < ProfileStatus.MAPPED) {
+      //   return {
+      //     success: false,
+      //     message: 'Business User not mapped with any Business',
+      //   };
+      // }
 
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
@@ -541,80 +622,72 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
-      console.log(
-        businessUser.status,
-        updateObj.isRegistered,
-        updateObj.country,
-        updateObj.constitution,
-        updateObj.documentNumber,
-        updateObj.documentType,
-      );
-      if (
-        businessUser.status === ProfileStatus.MAPPED &&
-        updateObj.isRegistered &&
-        updateObj.country &&
-        updateObj.constitution &&
-        updateObj.documentNumber &&
-        updateObj.documentType
-      ) {
-        console.log('inside registration:::::::');
-        const findCountry = await this.businessCountryModel.findById(
-          updateObj.country,
-        );
-        const findConstitution = await this.businessConstitutionModel.findById(
-          updateObj.constitution,
-        );
-        const findDocumentType = await this.businessDocumentTypeModel.findById(
-          updateObj.documentType,
-        );
-        if (!findCountry && !findConstitution && !findDocumentType) {
-          return {
-            success: false,
-            message:
-              'Please provide valid Country, Constitution and Document Type',
-          };
-        }
-        updateObj['country'] = new mongoose.Types.ObjectId(updateObj.country);
-        updateObj['constitution'] = new mongoose.Types.ObjectId(
-          updateObj.constitution,
-        );
-        updateObj['documentType'] = new mongoose.Types.ObjectId(
-          updateObj.documentType,
-        );
+      // if (
+      //   businessUser.status === ProfileStatus.MAPPED &&
+      //   updateObj.isRegistered &&
+      //   updateObj.country &&
+      //   updateObj.constitution &&
+      //   updateObj.documentNumber &&
+      //   updateObj.documentType
+      // ) {
+      //   console.log('inside registration:::::::');
+      //   const findCountry = await this.businessCountryModel.findById(
+      //     updateObj.country,
+      //   );
+      //   const findConstitution = await this.businessConstitutionModel.findById(
+      //     updateObj.constitution,
+      //   );
+      //   const findDocumentType = await this.businessDocumentTypeModel.findById(
+      //     updateObj.documentType,
+      //   );
+      //   if (!findCountry && !findConstitution && !findDocumentType) {
+      //     return {
+      //       success: false,
+      //       message:
+      //         'Please provide valid Country, Constitution and Document Type',
+      //     };
+      //   }
+      //   updateObj['country'] = new mongoose.Types.ObjectId(updateObj.country);
+      //   updateObj['constitution'] = new mongoose.Types.ObjectId(
+      //     updateObj.constitution,
+      //   );
+      //   updateObj['documentType'] = new mongoose.Types.ObjectId(
+      //     updateObj.documentType,
+      //   );
 
-        const alreadyRegistered = await this.businessModel.findOne({
-          documentNumber: updateObj.documentNumber,
-          documentType: new mongoose.Types.ObjectId(updateObj.documentType),
-        });
-        if (alreadyRegistered) {
-          return {
-            success: false,
-            message:
-              'Business is already Registered with the provided document number and type',
-          };
-        }
-        console.log('just updating Profile status:');
-        const isUpdated = await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.REGISTERED } },
-        );
-        console.log('isUpdated:', isUpdated);
-      }
-      if (
-        businessUser.status === ProfileStatus.MAPPED &&
-        updateObj.isRegistered == false
-      ) {
-        await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.REGISTERED } },
-        );
-      }
-      if (businessUser.status === ProfileStatus.REGISTERED && updateObj.bio) {
-        await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.COMPLETED } },
-        );
-      }
+      //   const alreadyRegistered = await this.businessModel.findOne({
+      //     documentNumber: updateObj.documentNumber,
+      //     documentType: new mongoose.Types.ObjectId(updateObj.documentType),
+      //   });
+      //   if (alreadyRegistered) {
+      //     return {
+      //       success: false,
+      //       message:
+      //         'Business is already Registered with the provided document number and type',
+      //     };
+      //   }
+      //   console.log('just updating Profile status:');
+      //   const isUpdated = await this.businessUserModel.updateOne(
+      //     { _id: businessUser.id },
+      //     { $set: { status: ProfileStatus.REGISTERED } },
+      //   );
+      //   console.log('isUpdated:', isUpdated);
+      // }
+      // if (
+      //   businessUser.status === ProfileStatus.MAPPED &&
+      //   updateObj.isRegistered == false
+      // ) {
+      //   await this.businessUserModel.updateOne(
+      //     { _id: businessUser.id },
+      //     { $set: { status: ProfileStatus.REGISTERED } },
+      //   );
+      // }
+      // if (businessUser.status === ProfileStatus.REGISTERED && updateObj.bio) {
+      //   await this.businessUserModel.updateOne(
+      //     { _id: businessUser.id },
+      //     { $set: { status: ProfileStatus.COMPLETED } },
+      //   );
+      // }
       if (updateObj.brand) {
         updateObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       }
@@ -1291,7 +1364,11 @@ export class BusinessService {
       };
     }
   }
-  async createDownlineUser(id: string, data: CreateDownlineBusinessUserDto) {
+  async createDownlineUser(
+    id: string,
+    businessId: string,
+    data: CreateDownlineBusinessUserDto,
+  ) {
     try {
       const userDetails = await this.businessUserModel.findById(id);
       const foundUser = await this.businessUserModel.findOne({
@@ -1314,7 +1391,7 @@ export class BusinessService {
         name: data.name,
         email: data.email,
         password: hashedPassword,
-        business: new mongoose.Types.ObjectId(userDetails.business),
+        business: new mongoose.Types.ObjectId(businessId),
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
       };
@@ -1469,5 +1546,56 @@ export class BusinessService {
         message: error,
       };
     }
+  }
+  async fetchBusinessList(userId: string, page: number, limit: number) {
+    try {
+      const businessUserDetails = await this.businessUserModel
+        .findOne({ _id: userId })
+        .select({ email: 1, business: 1, selectedBusiness: 1 });
+      return {
+        success: true,
+        message: 'Business fetched Successfully!',
+        data: businessUserDetails,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateSelectedBusiness(userId: string, businessId: string) {
+    try {
+      const businessUser = await this.businessUserModel.findById(userId);
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      if (
+        !businessUser.business.includes(new mongoose.Types.ObjectId(businessId))
+      ) {
+        return {
+          success: false,
+          message: 'Business is not mapped with Logged in User.',
+        };
+      }
+      await this.businessUserModel.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            selectedBusiness: new mongoose.Types.ObjectId(businessId),
+          },
+        },
+      );
+    } catch (error) {}
   }
 }
