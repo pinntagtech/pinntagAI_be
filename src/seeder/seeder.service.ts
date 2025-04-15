@@ -137,7 +137,7 @@ export class SeederService {
     await this.seedActions();
     await this.seedOutletCategories();
     // await this.seedPrivileges(); super admin privileges are not needed
-    await this.seedBusinessIndustries();
+    // await this.seedBusinessIndustries();
     // await this.seedCountries();
     await this.seedConstitutions();
   }
