@@ -25,6 +25,42 @@ export const DefaultBusinessRoles = {
       REVIEWS: ['READ'],
     },
   },
+  General_Manager: {
+    name: 'General Manager',
+    creatorType: 'Business',
+    belongsTo: 'Business',
+    isSuperAdmin: false,
+    isBusinessOwner: false,
+    privileges: {
+      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REVIEWS: ['READ'],
+    },
+  },
+  Regional_Manager: {
+    name: 'Regional Manager',
+    creatorType: 'Business',
+    belongsTo: 'Business',
+    isSuperAdmin: false,
+    isBusinessOwner: false,
+    privileges: {
+      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REVIEWS: ['READ'],
+    },
+  },
+  Operational_Manager: {
+    name: 'Operations Manager',
+    creatorType: 'Business',
+    belongsTo: 'Business',
+    isSuperAdmin: false,
+    isBusinessOwner: false,
+    privileges: {
+      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REVIEWS: ['READ'],
+    },
+  },
   Marketing_Manager: {
     name: 'Marketing Manager',
     creatorType: 'Business',
@@ -59,8 +95,8 @@ export const DefaultBusinessRoles = {
       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
-  Store_Supervisor: {
-    name: 'Store Supervisor',
+  Franchise_Owner: {
+    name: 'Franchise Owner',
     creatorType: 'Business',
     belongsTo: 'Business',
     isSuperAdmin: false,

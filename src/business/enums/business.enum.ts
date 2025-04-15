@@ -634,3 +634,47 @@ export const OutletCategories = {
     'College Campus Store',
   ],
 };
+
+
+export const TEAM_SIZE_OPTIONS = [
+  {
+    label: 'Solo Operator',
+    min: 1,
+    max: 1,
+  },
+  {
+    label: '2-5 People',
+    min: 2,
+    max: 5,
+  },
+  {
+    label: '5-10 People',
+    min: 5,
+    max: 10,
+  },
+  {
+    label: '10-20 People',
+    min: 10,
+    max: 20,
+  },
+  {
+    label: '20-50 People',
+    min: 20,
+    max: 50,
+  },
+  {
+    label: '50+ People',
+    min: 50,
+    max: null, // Open-ended upper limit
+  },
+];
+export const ROLES_IN_ORGANISATION = [
+  'Owner / Founder',
+  'General Manager',
+  'Regional Manager',
+  'Operations Manager',
+  'Marketing Manager',
+  'Sales Manager',
+  'Store Manager',
+  'Franchise Owner',
+  'HR Manager' ]
