@@ -12,6 +12,8 @@ import {
   BusinessCreatorType,
   BusinessUserCreatorType,
   ProfileStatus,
+  ROLES_IN_ORGANISATION,
+  TEAM_SIZE_OPTIONS,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from './model/business.model';
@@ -366,12 +368,13 @@ export class BusinessService {
         );
       }
       const updatedBusiness = await this.businessModel.findOne({
-        _id: startBusiness})
+        _id: startBusiness,
+      });
       return {
-        success:true,
+        success: true,
         message: 'Business Type Added Successfully.',
-        data:updatedBusiness
-      }
+        data: updatedBusiness,
+      };
     } catch (error) {
       console.error('Error:', error);
       return {
@@ -1597,5 +1600,43 @@ export class BusinessService {
         },
       );
     } catch (error) {}
+  }
+
+  async fetchTeamSizeDropdown() {
+    try {
+      const teamSize = TEAM_SIZE_OPTIONS;
+      return {
+        success: true,
+        message: 'Team Size fetched Successfully!',
+        data: teamSize,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async fetchOrganisationRolesList(page:number, limit:number) {
+    try {
+      const organisationRoles = ROLES_IN_ORGANISATION;
+      const paginated = organisationRoles.slice(
+        (page - 1) * limit,
+        page * limit,
+      );
+      const total = organisationRoles.length;
+      return {
+        success: true,
+        message: 'Organisation Roles fetched Successfully.',
+        data: paginated,
+        total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
   }
 }

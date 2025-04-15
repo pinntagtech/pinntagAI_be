@@ -10,8 +10,18 @@ import {
   IsUrl,
   IsObject,
   IsPhoneNumber,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
+class TeamSizeDto {
+  @IsNumber()
+  min: number;
+
+  @IsOptional()
+  @IsNumber()
+  max: number | null;
+}
 export class UpdateBusinessDto {
   @IsOptional()
   @IsBoolean()
@@ -44,6 +54,11 @@ export class UpdateBusinessDto {
   // @IsOptional()
   // @IsString()
   // businessIndustry?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TeamSizeDto)
+  teamSize?: TeamSizeDto;
 
   @IsOptional()
   @IsString()

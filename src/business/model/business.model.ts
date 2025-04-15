@@ -175,6 +175,18 @@ export class Business {
   isMobileType: boolean;
   @Prop({ default: false })
   isOnlineType: boolean;
+
+  @Prop({
+    type: {
+      min: { type: Number },
+      max: { type: Number, default: null },
+    },
+    _id: false,
+  })
+  teamSize: {
+    min: number;
+    max: number | null;
+  };
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

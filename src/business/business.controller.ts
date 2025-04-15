@@ -507,12 +507,19 @@ export class BusinessController {
     @Res() res: Response,
     @Body() data: CreateDownlineBusinessUserDto,
   ) {
-    if(user.businessProfile || (user.businessProfile && !isValidObjectId(user.businessProfile)) ){
+    if (
+      user.businessProfile ||
+      (user.businessProfile && !isValidObjectId(user.businessProfile))
+    ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'BusinessId not Found.',
       });
     }
-    const result = await this.businessService.createDownlineUser(user.id,user.businessProfile,data);
+    const result = await this.businessService.createDownlineUser(
+      user.id,
+      user.businessProfile,
+      data,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -606,6 +613,47 @@ export class BusinessController {
         data: result.data,
         // total: result.total,
         // pages: result.pages,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('teamSize')
+  async fetchTeamSizeDropdown(
+    @Res() res: Response,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const result = await this.businessService.fetchTeamSizeDropdown();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        // total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('organisation-roles-list')
+  async fetchOrganisationRolesList(
+    @Res() res: Response,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.fetchOrganisationRolesList(pageNumber, limitNumber);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({ 
+        message: result.message,
+        data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
