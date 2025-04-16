@@ -806,7 +806,7 @@ export class AdminController {
     @Res() res: Response,
     @Body() data: BusinessCategoryDto,
     @TokenDecoder() user: DecodedUser){
-      const result = await this.adminService.createBusinessIndustry(user.id,data);
+      const result = await this.adminService.createBusinessCategory(user.id,data);
       if (result.success) {
         return res.status(HttpStatus.OK).json({
           message: result.message,

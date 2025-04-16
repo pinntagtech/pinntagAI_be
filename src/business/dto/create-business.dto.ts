@@ -16,6 +16,12 @@ export class CreateBusinessDto {
   @IsEmail()
   email: string;
 
+  @IsString()
+  businessIndustry: string;
+
+  @IsArray()
+  businessCategories: Array<string | mongoose.Types.ObjectId>;
+
   // @IsString()
   // registrationNumber:string;
 
@@ -27,7 +33,6 @@ export class CreateBusinessDto {
 
   // @IsBoolean()
   // isRegistered: boolean;
-
 
   @IsString()
   phone: string;
@@ -43,31 +48,4 @@ export class CreateBusinessDto {
 
   // @IsString()
   // bio: string;
-
-  // @IsString()
-  // addressLine1: string;
-
-  // @IsOptional()
-  // @IsString()
-  // addressLine2?: string;
-
-  // @IsString()
-  // city: string;
-
-  // @IsString()
-  // state: string;
-
-  // @IsString()
-  // country: string;
-
-  // @IsOptional()
-  // @IsBoolean()
-  // acceptsReservations?: boolean;
-
-  // @IsOptional()
-  // @IsArray()
-  // paymentMethods?: string[];
-
-  // @IsOptional()
-  // authorisedUser?: mongoose.Types.ObjectId;
 }

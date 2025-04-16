@@ -284,105 +284,115 @@ export class BusinessService {
       };
     }
   }
-  async addBusinessType(userId: string, data: TypeDataDto) {
-    try {
-      const findUser = await this.businessUserModel.findById(userId);
-      if (!findUser) {
-        return {
-          success: false,
-          message: 'Business not found with given ID',
-        };
-      }
-      let findBusinessIndustry = null;
-      let startBusiness = null;
-      if (data.businessIndustry) {
-        if (!isValidObjectId(data.businessIndustry)) {
-          return {
-            success: false,
-            message: `Please provide valid Business Industry Id:${data.businessIndustry}`,
-          };
-        }
-        findBusinessIndustry = await this.businessIndModel.findById(
-          data.businessIndustry,
-        );
-        if (!findBusinessIndustry) {
-          return {
-            success: false,
-            message: 'Please provide valid Business Industry',
-          };
-        }
-        startBusiness = await this.businessModel.create({
-          creatorType: BusinessUser.name,
-          creator: new mongoose.Types.ObjectId(userId),
-          businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
-        });
-        await this.businessUserModel.updateOne(
-          { _id: userId },
-          {
-            $set: {
-              selectedBusiness: startBusiness._id,
-              status: ProfileStatus.INDUSTRY_ADDED,
-            },
-            $addToSet: {
-              business: startBusiness._id,
-            },
-          },
-        );
-      }
+  // async addBusinessType(userId: string, data: TypeDataDto) {
+  //   try {
+  //     const findUser = await this.businessUserModel.findById(userId);
+  //     if (!findUser) {
+  //       return {
+  //         success: false,
+  //         message: 'Business not found with given ID',
+  //       };
+  //     }
+  //     let findBusinessIndustry = null;
+  //     let startBusiness = null;
+  //     if (data.businessIndustry) {
+  //       if (!isValidObjectId(data.businessIndustry)) {
+  //         return {
+  //           success: false,
+  //           message: `Please provide valid Business Industry Id:${data.businessIndustry}`,
+  //         };
+  //       }
+  //       findBusinessIndustry = await this.businessIndModel.findById(
+  //         data.businessIndustry,
+  //       );
+  //       if (!findBusinessIndustry) {
+  //         return {
+  //           success: false,
+  //           message: 'Please provide valid Business Industry',
+  //         };
+  //       }
+  //       startBusiness = await this.businessModel.create({
+  //         creatorType: BusinessUser.name,
+  //         creator: new mongoose.Types.ObjectId(userId),
+  //         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
+  //       });
+  //       await this.businessUserModel.updateOne(
+  //         { _id: userId },
+  //         {
+  //           $set: {
+  //             selectedBusiness: startBusiness._id,
+  //             status: ProfileStatus.INDUSTRY_ADDED,
+  //           },
+  //           $addToSet: {
+  //             business: startBusiness._id,
+  //           },
+  //         },
+  //       );
+  //     }
 
-      if (data.businessCategories.length > 0) {
-        const businessCategoriesIds = [];
-        for (let i = 0; i < data.businessCategories.length; i++) {
-          let category = data.businessCategories[i];
-          if (!isValidObjectId(category)) {
-            return {
-              success: false,
-              message: `Please provide valid Business Category Id:${category}`,
-            };
-          }
-          const foundCategory =
-            await this.businessCategoryModel.findById(category);
-          if (!foundCategory) {
-            return {
-              message: `Category not found with the id provided: ${category}`,
-            };
-          } else {
-            businessCategoriesIds.push(foundCategory._id);
-          }
-        }
-        await this.businessModel.updateOne(
-          { _id: startBusiness },
-          {
-            $set: {
-              businessCategory: businessCategoriesIds,
-            },
-          },
-        );
-        await this.businessUserModel.updateOne(
-          { _id: userId },
-          {
-            $set: {
-              status: ProfileStatus.CATEGORY_ADDED,
-            },
-          },
-        );
-      }
-      const updatedBusiness = await this.businessModel.findOne({
-        _id: startBusiness,
-      });
-      return {
-        success: true,
-        message: 'Business Type Added Successfully.',
-        data: updatedBusiness,
-      };
-    } catch (error) {
-      console.error('Error:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
-    }
-  }
+  //     if (data.businessCategories && data.businessCategories.length > 0) {
+  //       const businessCategoriesIds = [];
+  //       for (let i = 0; i < data.businessCategories.length; i++) {
+  //         let category = data.businessCategories[i];
+  //         if (!isValidObjectId(category)) {
+  //           return {
+  //             success: false,
+  //             message: `Please provide valid Business Category Id:${category}`,
+  //           };
+  //         }
+  //         const foundCategory =
+  //           await this.businessCategoryModel.findById(category);
+  //         if (!foundCategory) {
+  //           return {
+  //             message: `Category not found with the id provided: ${category}`,
+  //           };
+  //         } else {
+  //           businessCategoriesIds.push(foundCategory._id);
+  //         }
+  //       }
+  //       if (!startBusiness) {
+  //         startBusiness = await this.businessModel.create({
+  //           creatorType: BusinessUser.name,
+  //           creator: new mongoose.Types.ObjectId(userId),
+  //           businessCategory: businessCategoriesIds,
+  //         });
+
+  //         startBusiness = await this.businessModel.findOne({
+  //           creator: new mongoose.Types.ObjectId(userId),
+  //         });
+  //       }
+  //       await this.businessModel.updateOne(
+  //         { _id: startBusiness },
+  //         {
+  //           $set: {},
+  //         },
+  //       );
+  //       await this.businessUserModel.updateOne(
+  //         { _id: userId },
+  //         {
+  //           $set: {
+  //             status: ProfileStatus.CATEGORY_ADDED,
+  //           },
+  //         },
+  //       );
+  //     }
+
+  //     const updatedBusiness = await this.businessModel.findOne({
+  //       _id: startBusiness,
+  //     });
+  //     return {
+  //       success: true,
+  //       message: 'Business Type Added Successfully.',
+  //       data: updatedBusiness,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  // }
 
   async createBusiness(userId: string, data: CreateBusinessDto) {
     try {
@@ -393,14 +403,12 @@ export class BusinessService {
           // { registrationNumber: data.registrationNumber },
         ],
       });
-
       if (findBusiness) {
         return {
           success: false,
           message: `Business already exist with given email:${data.email}`,
         };
       }
-
       if (userId && !isValidObjectId(userId)) {
         return {
           success: false,
@@ -423,67 +431,76 @@ export class BusinessService {
           data: businessUser,
         };
       }
-      if (
-        businessUser.status >= ProfileStatus.EMAIL_VERIFIED &&
-        businessUser.status < ProfileStatus.CATEGORY_ADDED
-      ) {
+      // if (businessUser.status >= ProfileStatus.MAPPED) {
+      //   return {
+      //     success: false,
+      //     message: 'Business User already mapped with another Business',
+      //   };
+      // }
+      const findBusinessIndustry = await this.businessIndModel.findById(
+        data.businessIndustry,
+      );
+      if (!findBusinessIndustry) {
         return {
           success: false,
-          message: 'Business User Industry and Categories are Mandatory.',
+          message: 'Please provide valid Business Industry',
         };
       }
+      const businessCategoriesIds = [];
+      for (let category of data.businessCategories) {
+        if (!isValidObjectId(category)) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+        const findBusinessCategory =
+          await this.businessCategoryModel.findById(category);
+        if (!findBusinessCategory) {
+          return {
+            success: false,
+            message: `Please provide valid Business Category Id:${category}`,
+          };
+        }
+        businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+      }
+      delete data.businessCategories;
 
       //create business folder in drive
       const userDetails = await this.businessUserModel.findById(userId);
-
-      const businessFolder = await this.driveService.createFolder({
+      const businessFolder = await this.driveService.createFolder(userId,{
         parent: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,
       });
-
       let createObj = {
         name: data.name,
         email: data.email,
+        businessCategory: businessCategoriesIds,
+        businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        creatorType: BusinessCreatorType.BUSINESS_USER,
+        creator: new mongoose.Types.ObjectId(userId),
+        authorisedUser: new mongoose.Types.ObjectId(userId),
       };
       if (data.website) createObj['website'] = data.website;
-
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
-
-      const createdBusiness = await this.businessModel.findOneAndUpdate(
-        { creator: new mongoose.Types.ObjectId(userId) },
-        { $set: { createObj } },
-      );
-
+      const createdBusiness = await this.businessModel.create(createObj);
       //create folder
-
-      // if (createdBusiness.authorisedUser) {
-      //   await this.businessUserModel.updateOne(
-      //     { _id: createdBusiness.authorisedUser },
-      //     {
-      //       $set: {
-      //         status: ProfileStatus.MAPPED,
-      //       },
-      //       $addToSet: {
-      //         business: createdBusiness._id,
-      //       },
-      //     },
-      //   );
-      // }
-
-      await this.businessUserModel.updateOne(
-        { _id: userId },
-        {
-          $set: {
-            status: ProfileStatus.BUSINESS_CREATED,
+      if (createdBusiness.authorisedUser) {
+        await this.businessUserModel.updateOne(
+          { _id: createdBusiness.authorisedUser },
+          {
+            $set: {
+              business: createdBusiness._id,
+              status: ProfileStatus.BUSINESS_CREATED,
+            },
           },
-        },
-      );
-
+        );
+      }
       //create default business roles
       // for (let roleName of Object.keys(DefaultBusinessRoles)) {
       //   const createdRole = await this.roleModel.create({
@@ -524,11 +541,9 @@ export class BusinessService {
       //   }
       // }
       // Create default business roles with parallel execution for nested operations
-
       const rolePromises = Object.keys(DefaultBusinessRoles).map(
         async (roleName) => {
           const roleData = DefaultBusinessRoles[roleName];
-
           // Create the role
           const createdRole = await this.roleModel.create({
             name: roleData.name,
@@ -537,7 +552,6 @@ export class BusinessService {
             belongsTo: RoleBelonging.BUSINESS,
             business: createdBusiness._id,
           });
-
           // Create privileges for this role concurrently
           const privilegePromises = Object.keys(roleData.privileges).map(
             async (privilegeKey) => {
@@ -550,7 +564,6 @@ export class BusinessService {
                   title: ResourceTypes[privilegeKey],
                 });
               }
-
               // For each action in the privilege, get or create the action document and create a privilege record
               const actionPromises = roleData.privileges[privilegeKey].map(
                 async (actionKey) => {
@@ -569,20 +582,16 @@ export class BusinessService {
                   });
                 },
               );
-
               return Promise.all(actionPromises);
             },
           );
-
           await Promise.all(privilegePromises);
         },
       );
-
       await Promise.all(rolePromises);
-
       return {
         success: true,
-        message: 'Business Created Successfully.',
+        message: 'Business Created Successfully!',
         data: createdBusiness,
       };
     } catch (error) {
@@ -722,6 +731,18 @@ export class BusinessService {
         },
         { new: true },
       );
+      if(updatedDetails.addressLine1){
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.BUSINESS_ADDRESS_ADDED } },
+        );
+      }
+      if(updatedDetails.teamSize){
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.BUSINESS_TEAM_SIZE_ADDED } },
+        );
+      }
       console.log('udpatedDetails:', updatedDetails);
       return {
         success: true,
@@ -741,10 +762,19 @@ export class BusinessService {
     try {
       console.log('id:', id);
       console.log('data:', data);
+      let updateObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          updateObj[key] = data[key];
+        }
+      });
+      if(updateObj.scalabilityFactor){
+        updateObj['status'] = ProfileStatus.MULTIPLE_BUSINESS_STATUS;
+      }
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
         { _id: id },
         {
-          $set: { ...data },
+          $set: { ...updateObj },
         },
         { new: true },
       );
@@ -1618,7 +1648,7 @@ export class BusinessService {
     }
   }
 
-  async fetchOrganisationRolesList(page:number, limit:number) {
+  async fetchOrganisationRolesList(page: number, limit: number) {
     try {
       const organisationRoles = ROLES_IN_ORGANISATION;
       const paginated = organisationRoles.slice(

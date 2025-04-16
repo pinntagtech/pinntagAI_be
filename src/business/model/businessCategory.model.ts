@@ -9,7 +9,7 @@ export type BusinessCategoryDocument = BusinessCategory & Document;
 @Schema({ timestamps: true })
 export class BusinessCategory {
   @Prop({ required: true })
-  type: string;
+  title: string;
   @Prop({ required: true, ref: BusinessIndustry.name })
   industry: mongoose.Types.ObjectId;
 

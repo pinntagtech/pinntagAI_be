@@ -101,7 +101,7 @@ export class Business {
   @Prop()
   county: string;
   @Prop()
-  postCode: number;
+  postalCode: number;
   @Prop({ default: 0 })
   followersCount: number;
   @Prop({ default: 0 })
@@ -187,6 +187,8 @@ export class Business {
     min: number;
     max: number | null;
   };
+  @Prop()
+  roleOfCreator: string;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

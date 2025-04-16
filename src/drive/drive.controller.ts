@@ -22,6 +22,7 @@ import { Request, Response } from 'express';
 import { Folder } from './models/folder.model';
 import { isValidObjectId } from 'mongoose';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 
 @Controller('drive')
 export class DriveController {
@@ -62,8 +63,9 @@ export class DriveController {
   }
 
   @Post('createFolder')
-  async createFolder(@Res() res: Response, @Body() createDto: Partial<Folder>) {
-    const result = await this.driveService.createFolder(createDto);
+  @UseGuards(JwtGuard2)
+  async createFolder(@Res() res: Response,@TokenDecoder() user:JwtPayload, @Body() createDto: Partial<Folder>) {
+    const result = await this.driveService.createFolder(user.id,createDto);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

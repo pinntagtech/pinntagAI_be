@@ -40,25 +40,25 @@ import { TypeDataDto } from './dto/business-type.dto';
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
-  @Post('type')
-  @UseGuards(JwtGuard2)
-  async addBusinessType(
-    @Res() res: Response,
-    @TokenDecoder() user: DecodedUser,
-    @Body() data: TypeDataDto,
-  ) {
-    const result = await this.businessService.addBusinessType(user.id, data);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('type')
+  // @UseGuards(JwtGuard2)
+  // async addBusinessType(
+  //   @Res() res: Response,
+  //   @TokenDecoder() user: DecodedUser,
+  //   @Body() data: TypeDataDto,
+  // ) {
+  //   const result = await this.businessService.addBusinessType(user.id, data);
+  //   if (result.success) {
+  //     return res.status(HttpStatus.OK).json({
+  //       message: result.message,
+  //       data: result.data,
+  //     });
+  //   } else {
+  //     return res.status(HttpStatus.BAD_REQUEST).json({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   @Post()
   @UseGuards(JwtGuard2)

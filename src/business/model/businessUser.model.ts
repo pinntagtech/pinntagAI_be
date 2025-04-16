@@ -61,8 +61,6 @@ export class BusinessUser {
   outlets: mongoose.Types.ObjectId[];
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
-  @Prop()
-  roleInOrganisation: string;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);

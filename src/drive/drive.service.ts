@@ -99,13 +99,13 @@ export class DriveService {
       }
       if (folder) {
         parentDirectoryType = folder.parentType;
-        let subParentType = parentDirectoryType;
-        let subFolder = folder;
-        while (subParentType != Drive.name) {
-          subFolder = await this.folderModel.findOne({ _id: subFolder.parent });
-          subParentType = subFolder.parentType;
-        }
-        parentDriveId = subFolder.parent;
+        // let subParentType = parentDirectoryType;
+        // let subFolder = folder;
+        // while (subParentType != Drive.name) {
+        //   subFolder = await this.folderModel.findOne({ _id: subFolder.parent });
+        //   subParentType = subFolder.parentType;
+        // }
+        parentDriveId = folder.drive;
       }
 
       console.log(driveDetails);
@@ -146,8 +146,6 @@ export class DriveService {
       const splitIndex = uploadResult.Location.indexOf('amazonaws');
       const part1 = uploadResult.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
       const part2 = uploadResult.Location.slice(splitIndex);
-      console.log("part1", part1);
-      console.log("part2", part2);
       const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
       console.log("updatedUrl", updatedUrl);
 
@@ -182,7 +180,7 @@ export class DriveService {
       return { success: false, message: 'Failed to upload media' };
     }
   }
-  async createFolder(folderData: Partial<any>) {
+  async createFolder(id:string,folderData: Partial<any>) {
     try {
       console.log('folder data........', folderData);
       if (!isValidObjectId(folderData.parent)) {
@@ -195,9 +193,13 @@ export class DriveService {
       let parentType = isDrive ? Drive.name : Folder.name;
       folderData.parent = new mongoose.Types.ObjectId(folderData.parent);
       console.log('parentType:', parentType);
+      let driveDetails = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(id),
+      });
 
       const createdFolder = await this.folderModel.create({
         ...folderData,
+        drive:driveDetails._id,
         parentType,
       });
       console.log('createdFolder:', createdFolder);
@@ -245,7 +247,7 @@ export class DriveService {
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
-      ]);
+      ]); 
       return {
         success: true,
         message: 'files fetched successfully',
