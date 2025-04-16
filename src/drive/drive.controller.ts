@@ -23,6 +23,7 @@ import { Folder } from './models/folder.model';
 import { isValidObjectId } from 'mongoose';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
+import { Token } from 'src/auth/models/token.model';
 
 @Controller('drive')
 export class DriveController {
@@ -64,8 +65,12 @@ export class DriveController {
 
   @Post('createFolder')
   @UseGuards(JwtGuard2)
-  async createFolder(@Res() res: Response,@TokenDecoder() user:JwtPayload, @Body() createDto: Partial<Folder>) {
-    const result = await this.driveService.createFolder(user.id,createDto);
+  async createFolder(
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+    @Body() createDto: Partial<Folder>,
+  ) {
+    const result = await this.driveService.createFolder(user.id, createDto);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -78,15 +83,24 @@ export class DriveController {
       });
     }
   }
-  @Get('getFiles/:id') // This id will be of drive or a folder
+  @Get('getFiles')
+  @UseGuards(JwtGuard2)
   async getFiles(
     @Res() res: Response,
-    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
     @Query('fileCategory') fileCategory?: string,
+    @Query('fileType') fileType?: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
-    const result = await this.driveService.getFiles(id,fileCategory,page,limit);
+    const result = await this.driveService.getFiles(
+      user.id,
+      user.userType,
+      fileCategory,
+      fileType,
+      page,
+      limit,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -115,8 +129,55 @@ export class DriveController {
     }
   }
   @Post('moveFile')
-  async moveFile(@Res() res: Response,@Body('toMove') toMove:string,@Body('dest') dest:string) {
-    const result = await this.driveService.moveFile(toMove,dest);
+  async moveFile(
+    @Res() res: Response,
+    @Body('toMove') toMove: string,
+    @Body('dest') dest: string,
+  ) {
+    const result = await this.driveService.moveFile(toMove, dest);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('fileType')
+  async fileType(@Res() res: Response) {
+    const result = await this.driveService.fileType();
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('recentFiles')
+  @UseGuards(JwtGuard2)
+  async recentFiles(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const result = await this.driveService.recentlyUploadedFiles(
+      user.id,
+      user.userType,
+      page,
+      limit,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

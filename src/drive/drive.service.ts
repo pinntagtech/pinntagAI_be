@@ -19,6 +19,7 @@ import {
   allowedVideoMimeTypes,
   FileCategoryTypes,
   FileType,
+  UserTypes,
 } from 'src/enums/auth.enums';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { S3Service } from 'src/s3.service';
@@ -28,6 +29,10 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from './models/fileCategory.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class DriveService {
@@ -41,6 +46,8 @@ export class DriveService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<fileDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly s3Service: S3Service,
@@ -147,7 +154,7 @@ export class DriveService {
       const part1 = uploadResult.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
       const part2 = uploadResult.Location.slice(splitIndex);
       const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-      console.log("updatedUrl", updatedUrl);
+      console.log('updatedUrl', updatedUrl);
 
       let createdFile = await this.fileModel.create({
         metaData: {
@@ -180,7 +187,7 @@ export class DriveService {
       return { success: false, message: 'Failed to upload media' };
     }
   }
-  async createFolder(id:string,folderData: Partial<any>) {
+  async createFolder(id: string, folderData: Partial<any>) {
     try {
       console.log('folder data........', folderData);
       if (!isValidObjectId(folderData.parent)) {
@@ -199,7 +206,7 @@ export class DriveService {
 
       const createdFolder = await this.folderModel.create({
         ...folderData,
-        drive:driveDetails._id,
+        drive: driveDetails._id,
         parentType,
       });
       console.log('createdFolder:', createdFolder);
@@ -215,25 +222,54 @@ export class DriveService {
   }
 
   async getFiles(
-    id: string,
+    userId: string,
+    userType: string,
     fileCategory?: string,
+    fileType?: string,
     page: number = 1,
     limit: number = 10,
   ) {
     try {
       const skip = (page - 1) * limit;
-      if (!isValidObjectId(id))
+      if (!isValidObjectId(userId))
         return {
           success: false,
           message: 'Please Provide valid ObjectId!',
         };
+
+      let user = null;
+      if (userType == UserTypes.ADMIN) {
+        user = await this.adminModel.findById(userId);
+      }
+      if (userType == UserTypes.USER) {
+        user = await this.userModel.findById(userId);
+      }
+      if (userType == UserTypes.BUSINESS) {
+        user = await this.businessUserModel.findById(userId);
+      }
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+
+      console.log('user:', userId, userType, fileType, user);
       let fileFilter: any = {
-        parentDirectory: new mongoose.Types.ObjectId(id),
+        parentDirectory: new mongoose.Types.ObjectId(user.drive),
       };
+      if (fileType) {
+        if (!Object.values(FileType).includes(fileType)) {
+          return {
+            success: false,
+            message: 'Please provide valid file type',
+          };
+        }
+        fileFilter.fileType = fileType;
+      }
       if (fileCategory) {
         fileFilter.fileCategory = new mongoose.Types.ObjectId(fileCategory);
       }
-
       const [files, folders] = await Promise.all([
         await this.fileModel
           .find(fileFilter)
@@ -242,12 +278,12 @@ export class DriveService {
           .limit(limit),
         await this.folderModel
           .find({
-            parent: new mongoose.Types.ObjectId(id),
+            parent: new mongoose.Types.ObjectId(user.drive),
           })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
-      ]); 
+      ]);
       return {
         success: true,
         message: 'files fetched successfully',
@@ -363,6 +399,72 @@ export class DriveService {
     } catch (error) {
       console.error('Error while fetching drive:', error);
       return { success: false, message: 'Failed to fetch drive' };
+    }
+  }
+
+  async fileType() {
+    try {
+      const fileType = Object.values(FileType);
+      return {
+        success: true,
+        message: 'File type fetched successfully!',
+        data: fileType,
+      };
+    } catch (error) {
+      console.error('Error while fetching file type:', error);
+      return { success: false, message: 'Failed to fetch file type' };
+    }
+  }
+  async recentlyUploadedFiles(
+    userId: string,
+    userType: string,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+      if (!isValidObjectId(userId))
+        return {
+          success: false,
+          message: 'Please Provide valid ObjectId!',
+        };
+
+      let user = null;
+      if (userType == UserTypes.ADMIN) {
+        user = await this.adminModel.findById(userId);
+      }
+      if (userType == UserTypes.USER) {
+        user = await this.userModel.findById(userId);
+      }
+      if (userType == UserTypes.BUSINESS) {
+        user = await this.businessUserModel.findById(userId);
+      }
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      let fileFilter: any = {
+        parentDirectory: new mongoose.Types.ObjectId(user.drive),
+      };
+      const files = await this.fileModel
+      .find(fileFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+      const totalFiles = await this.fileModel.countDocuments(fileFilter);
+
+      return {
+        success: true,
+        message: 'Files fetched successfully',
+        data: files,
+        total: totalFiles
+      }
+    } catch (error) {
+      console.error('Error in fetching files:', error);
+      return { success: false, message: 'Failed to fetched files' };
     }
   }
 }
