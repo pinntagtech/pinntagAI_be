@@ -187,6 +187,8 @@ export class Business {
     min: number;
     max: number | null;
   };
+  @Prop()
+  roleOfCreator: string;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

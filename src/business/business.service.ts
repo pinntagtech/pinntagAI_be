@@ -330,7 +330,7 @@ export class BusinessService {
         );
       }
 
-      if (data.businessCategories.length > 0) {
+      if (data.businessCategories && data.businessCategories.length > 0) {
         const businessCategoriesIds = [];
         for (let i = 0; i < data.businessCategories.length; i++) {
           let category = data.businessCategories[i];
@@ -350,11 +350,20 @@ export class BusinessService {
             businessCategoriesIds.push(foundCategory._id);
           }
         }
+        if (!startBusiness) {
+          startBusiness = await this.businessModel.create({
+            creatorType: BusinessUser.name,
+            creator: new mongoose.Types.ObjectId(userId),
+            businessCategory: businessCategoriesIds,
+          });
+
+          startBusiness = await this.businessModel.findOne({creator: new mongoose.Types.ObjectId(userId)});
+        }
         await this.businessModel.updateOne(
           { _id: startBusiness },
           {
             $set: {
-              businessCategory: businessCategoriesIds,
+             
             },
           },
         );
@@ -367,6 +376,8 @@ export class BusinessService {
           },
         );
       }
+
+
       const updatedBusiness = await this.businessModel.findOne({
         _id: startBusiness,
       });
@@ -436,7 +447,7 @@ export class BusinessService {
       //create business folder in drive
       const userDetails = await this.businessUserModel.findById(userId);
 
-      const businessFolder = await this.driveService.createFolder({
+      const businessFolder = await this.driveService.createFolder(userDetails.id,{
         parent: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,

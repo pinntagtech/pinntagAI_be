@@ -1,11 +1,13 @@
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import mongoose from 'mongoose';
 
 export class TypeDataDto {
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  businessIndustry: string;
+  
+  @IsOptional()
   @IsArray()
   businessCategories: Array<string | mongoose.Types.ObjectId>;
 
-  @IsString()
-  businessIndustry: string;
 }
