@@ -101,7 +101,7 @@ export class Business {
   @Prop()
   county: string;
   @Prop()
-  postCode: number;
+  postalCode: number;
   @Prop({ default: 0 })
   followersCount: number;
   @Prop({ default: 0 })

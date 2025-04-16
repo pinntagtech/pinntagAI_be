@@ -2,16 +2,48 @@ export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
   MULTIPLE_BUSINESS_STATUS: 2,
-  INDUSTRY_ADDED: 3, //-> Business Industry Added
-  CATEGORY_ADDED: 4, //-> Business Category Added
-  BUSINESS_CREATED: 5, //-> Business Created
+  // INDUSTRY_ADDED: 3, //-> Business Industry Added
+  // CATEGORY_ADDED: 4, //-> Business Category Added
+  BUSINESS_CREATED: 3, //-> Business Created
+  BUSINESS_ADDRESS_ADDED: 4, //-> Business Address Added
+  BUSINESS_TEAM_SIZE_ADDED: 5, //-> Business Team Size Added
 };
 export const ScalabilityFactor = {
   SINGLE: 0,
   MULTIPLE: 1,
   ORGANISATION: 2,
 };
-
+export const OutletTypes = {
+  RESTAURANT: 'RESTAURANT',
+  KIOSK: 'KIOSK',
+  CAFE: 'CAFE',
+  BAR: 'BAR',
+  PUB: 'PUB',
+  CLUB: 'CLUB',
+  LOUNGE: 'LOUNGE',
+  BAKERY: 'BAKERY',
+  CONFECTIONERY: 'CONFECTIONERY',
+  ICE_CREAM_PARLOUR: 'ICE_CREAM_PARLOUR',
+  JUICE_BAR: 'JUICE_BAR',
+  FOOD_TRUCK: 'FOOD_TRUCK',
+  FOOD_STALL: 'FOOD_STALL',
+  FOOD_CART: 'FOOD_CART',
+  FOOD_COURT: 'FOOD_COURT',
+  VENDING_MACHINE: 'VENDING_MACHINE',
+  CUSTOMER_SERVICE: 'CUSTOMER_SERVICE',
+  ONLINE: 'ONLINE',
+  PHYSICAL_STORE: 'PHYSICAL_STORE',
+  HOME_BASED: 'HOME_BASED',
+  MOBILE: 'MOBILE',
+  POP_UP: 'POP_UP',
+  CLOUD_KITCHEN: 'CLOUD_KITCHEN',
+  DARK_KITCHEN: 'DARK_KITCHEN',
+  COMMISSION_OUTLET: 'COMMISSION_OUTLET',
+  DISTRIBUTION_OUTLET: 'DISTRIBUTION_OUTLET',
+  FRANCHISE_OUTLET: 'FRANCHISE_OUTLET',
+  WAREHOUSE: 'WAREHOUSE',
+  OTHER: 'OTHER',
+};
 // export const OutletTypesByCategory = {
 //   [OutletCategoryList.FOOD_BEVERAGE]: [
 //     'Restaurant',
