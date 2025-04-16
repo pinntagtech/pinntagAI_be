@@ -22,7 +22,6 @@ import { LoginBusinessDto } from './dto/login-business.dto';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
-import { JwtPayload } from 'jsonwebtoken';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { Privilege } from 'src/roles/privilege.decorator';
@@ -63,7 +62,7 @@ export class BusinessController {
   @Post()
   @UseGuards(JwtGuard2)
   async createBusiness(
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Res() res: Response,
     @Body() data: CreateBusinessDto,
   ) {
@@ -112,7 +111,7 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   async updateBusiness(
     @Res() res: Response,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessDto,
   ) {
     if (!isValidObjectId(user.id)) {
@@ -191,7 +190,7 @@ export class BusinessController {
     @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -219,7 +218,7 @@ export class BusinessController {
   async updateBusinessUser(
     @Req() req: Request,
     @Res() res: Response,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessUserDto,
   ) {
     if (!isValidObjectId(user.id)) {
@@ -472,7 +471,7 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   async toggleStatus(
     @Res() res: Response,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
     @Body('isActive') isActive: boolean,
   ) {
@@ -572,7 +571,7 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   async deleteUser(
     @Res() res: Response,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
@@ -599,7 +598,7 @@ export class BusinessController {
     @Res() res: Response,
     @Query('limit') limit: string,
     @Query('page') page: string,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.businessService.fetchBusinessList(
       user.id,
