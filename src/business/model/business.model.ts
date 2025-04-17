@@ -171,10 +171,23 @@ export class Business {
 
   @Prop({ default: false })
   isPhysicalType: boolean;
+  @Prop({default:0})
+  physicalLocations: number;
+
   @Prop({ default: false })
   isMobileType: boolean;
+  @Prop({ default: 0 })
+  mobileUnits: number;
+
   @Prop({ default: false })
   isOnlineType: boolean;
+
+  @Prop({default:false})
+  continueJourney: boolean
+
+  @Prop({})
+  journeyStatus:number;
+
 
   @Prop({
     type: {

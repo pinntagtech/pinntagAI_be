@@ -124,7 +124,7 @@ export class SeederService {
   ) {}
 
   async seed() {
-    // await this.seedRoles();
+    await this.seedRoles();
     await this.seedCategories();
     await this.seedAgeGroups();
     await this.seedSubscriptionProducts();
@@ -143,11 +143,19 @@ export class SeederService {
   }
 
   public async seedRoles() {
-    const roles = await this.roleModel.find().exec();
-    if (!roles.length) {
-      await this.roleModel
-        .insertMany(Seeder.roles)
-        .then(() => console.log('Roles created.'));
+    // const roles = await this.roleModel.find().exec();
+    // if (!roles.length) {
+    //   await this.roleModel
+    //     .insertMany(Seeder.roles)
+    //     .then(() => console.log('Roles created.'));
+    // }
+    for(let role of Seeder.roles){
+      const foundRole = await this.roleModel.findOne({ name: role.name });
+      if (!foundRole) {
+        const newRole = new this.roleModel(role);
+        newRole.$locals.isSeeding = true;
+        await newRole.save();
+      }
     }
   }
 
