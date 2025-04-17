@@ -1,5 +1,5 @@
 import { DeviceTypes } from 'src/enums/auth.enums';
-import { Roles } from 'src/roles/enums/roles.enum';
+import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
 import { DurationType } from 'src/subscription/models/subscriptionProduct.model';
 
 export const Seeder = {
@@ -104,30 +104,33 @@ export const Seeder = {
     },
   ],
   roles: [
-    {
-      name: Roles.ADMIN,
-      creatorType: 'System',
-    },
+    // {
+    //   name: Roles.ADMIN,
+    //   creatorType: 'System',
+    //   belongsTo: RoleBelonging.SYSTEM,
+    // },
     {
       name: Roles.USER,
       creatorType: 'System',
+      belongsTo: RoleBelonging.SYSTEM,
     },
-    {
-      name: Roles.SUB_ADMIN,
-      creatorType: 'System',
-    },
-    {
-      name: Roles.STAFF,
-      creatorType: 'System',
-    },
+    // {
+    //   name: Roles.SUB_ADMIN,
+    //   creatorType: 'System',
+    // },
+    // {
+    //   name: Roles.STAFF,
+    //   creatorType: 'System',
+    // },
     {
       name: Roles.GUEST,
       creatorType: 'System',
+      belongsTo: RoleBelonging.SYSTEM,
     },
-    {
-      name: Roles.BUSINESS_PROFILE,
-      creatorType: 'System',
-    },
+    // {
+    //   name: Roles.BUSINESS_PROFILE,
+    //   creatorType: 'System',
+    // },
   ],
   keywords: [
     {

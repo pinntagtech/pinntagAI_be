@@ -225,6 +225,7 @@ export class DriveService {
     userId: string,
     userType: string,
     fileCategory?: string,
+    folderId?: string,
     fileType?: string,
     page: number = 1,
     limit: number = 10,
@@ -255,8 +256,12 @@ export class DriveService {
       }
 
       console.log('user:', userId, userType, fileType, user);
+      let locationId = user.drive;
+      if (folderId) {
+        locationId = folderId;
+      }
       let fileFilter: any = {
-        parentDirectory: new mongoose.Types.ObjectId(user.drive),
+        parentDirectory: new mongoose.Types.ObjectId(locationId),
       };
       if (fileType) {
         if (!Object.values(FileType).includes(fileType)) {
@@ -271,23 +276,46 @@ export class DriveService {
         fileFilter.fileCategory = new mongoose.Types.ObjectId(fileCategory);
       }
       const [files, folders] = await Promise.all([
-        await this.fileModel
-          .find(fileFilter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit),
+        await this.fileModel.find(fileFilter).sort({ createdAt: -1 }),
         await this.folderModel
           .find({
-            parent: new mongoose.Types.ObjectId(user.drive),
+            parentDirectory: new mongoose.Types.ObjectId(locationId),
           })
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit),
+          .sort({ createdAt: -1 }),
       ]);
+      const pipeline: any[] = [
+        { $match: fileFilter },
+        {
+          $unionWith: {
+            coll: 'folders',
+            pipeline: [
+              {
+                $match: {
+                  parentDirectory: new mongoose.Types.ObjectId(locationId),
+                },
+              },
+            ],
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            results: [{ $skip: skip }, { $limit: limit }],
+          },
+        },
+      ];
+      const [{ metadata, results }] = await this.fileModel.aggregate(pipeline);
+      const total = metadata.length ? metadata[0].total : 0;
+
       return {
         success: true,
         message: 'files fetched successfully',
-        data: [...folders, ...files],
+        data: results,
+        total: total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
       };
     } catch (error) {
       console.error('Error in fetching files:', error);
@@ -449,10 +477,10 @@ export class DriveService {
         parentDirectory: new mongoose.Types.ObjectId(user.drive),
       };
       const files = await this.fileModel
-      .find(fileFilter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+        .find(fileFilter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
       const totalFiles = await this.fileModel.countDocuments(fileFilter);
 
@@ -460,8 +488,8 @@ export class DriveService {
         success: true,
         message: 'Files fetched successfully',
         data: files,
-        total: totalFiles
-      }
+        total: totalFiles,
+      };
     } catch (error) {
       console.error('Error in fetching files:', error);
       return { success: false, message: 'Failed to fetched files' };

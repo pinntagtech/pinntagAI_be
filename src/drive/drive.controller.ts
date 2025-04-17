@@ -90,22 +90,30 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @Query('fileCategory') fileCategory?: string,
     @Query('fileType') fileType?: string,
+    @Query('folderId') folderId?: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
+    let pageNumber = Number(page);
+    let limitNumber = Number(limit);
     const result = await this.driveService.getFiles(
       user.id,
       user.userType,
       fileCategory,
+      folderId,
       fileType,
-      page,
-      limit,
+      pageNumber,
+      limitNumber,
     );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -183,6 +191,7 @@ export class DriveController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
