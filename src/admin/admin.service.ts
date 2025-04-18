@@ -909,7 +909,7 @@ export class AdminService {
       };
     }
     const updatedAdmin = await this.adminModel
-      .findByIdAndUpdate(adminId, { $set: { role: role._id } }, { new: true })
+      .findByIdAndUpdate(adminId, { $addToSet: { role: role._id } }, { new: true })
       .populate('role', '_id name');
     return {
       success: true,

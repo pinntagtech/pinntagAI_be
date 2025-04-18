@@ -189,6 +189,9 @@ export class DriveService {
   }
   async createFolder(id: string, folderData: Partial<any>) {
     try {
+      let driveDetails = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(id),
+      });
       console.log('folder data........', folderData);
       if (!isValidObjectId(folderData.parentDirectory)) {
         return {
@@ -196,13 +199,32 @@ export class DriveService {
           message: 'Invalid ObjectId',
         };
       }
-      let isDrive = await this.driveModel.findOne({ _id: folderData.parentDirectory });
-      let parentType = isDrive ? Drive.name : Folder.name;
-      folderData.parentDirectory = new mongoose.Types.ObjectId(folderData.parentDirectory);
-      console.log('parentType:', parentType);
-      let driveDetails = await this.driveModel.findOne({
-        owner: new mongoose.Types.ObjectId(id),
+      let isDrive = await this.driveModel.findOne({
+        _id: folderData.parentDirectory,
       });
+      let parentType = isDrive ? Drive.name : Folder.name;
+      folderData.parentDirectory = new mongoose.Types.ObjectId(
+        folderData.parentDirectory,
+      );
+
+      if (parentType == Folder.name) {
+        let folderDetails = await this.folderModel.findOne({
+          _id: folderData.parentDirectory,
+        });
+        if (!folderDetails) {
+          return {
+            success: false,
+            message: 'Folder not found',
+          };
+        }
+        if (folderDetails.drive != driveDetails.id) {
+          return {
+            success: false,
+            message: 'Folder not found in this drive',
+          };
+        }
+      }
+      console.log('parentType:', parentType);
 
       const createdFolder = await this.folderModel.create({
         ...folderData,
