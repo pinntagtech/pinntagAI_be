@@ -989,6 +989,7 @@ export class AdminService {
       const admins = await this.adminModel
         .find({ _id: { $in: allMongooseIds } })
         .populate('role', '_id name')
+        .populate('creator', '_id name')
         .sort({ createdAt: -1 })
         .select({ password: 0 })
         .skip((page - 1) * limit)

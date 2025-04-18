@@ -34,7 +34,7 @@ export class Admin {
   isSuperAdmin: boolean;
 
   @Prop({ required: true, ref: 'Role' })
-  role: mongoose.Types.ObjectId;
+  role: mongoose.Types.ObjectId[];
 
   @Prop({ default: '' })
   firstName: string;

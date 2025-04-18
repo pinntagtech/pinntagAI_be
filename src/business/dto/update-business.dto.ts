@@ -11,8 +11,10 @@ import {
   IsObject,
   IsPhoneNumber,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import mongoose from 'mongoose';
 
 class TeamSizeDto {
   @IsNumber()
@@ -30,6 +32,34 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsString()
   logo?: string;
+
+  @IsOptional()
+  @IsString()
+  businessIndustry: string;
+
+  @IsOptional()
+  @IsArray()
+  businessCategories: Array<string | mongoose.Types.ObjectId>;
+
+  @IsOptional()
+  @IsBoolean()
+  isPhysicalType: boolean;
+
+  @ValidateIf((o) => o.isPhysicalType === true)
+  @IsNumber()
+  physicalUnits:number;
+
+  @IsOptional()
+  @IsBoolean()
+  isMobileType: boolean;
+
+  @ValidateIf((o) => o.isMobileType === true)
+  @IsNumber()
+  mobileUnits:number;
+
+  @IsOptional()
+  @IsBoolean()
+  isOnlineType: boolean;
 
   // @IsOptional()
   // @IsBoolean()

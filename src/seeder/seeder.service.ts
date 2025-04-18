@@ -315,7 +315,7 @@ export class SeederService {
       for (let [key, action] of Object.entries(Actions)) {
         for (let [resKey, resource] of Object.entries(ResourceTypes)) {
           await this.privilegeModel.create({
-            role: new mongoose.Types.ObjectId(superAdmin.role),
+            role: new mongoose.Types.ObjectId(superAdmin.role[0]),
             resource: resource,
             action: action,
           });
