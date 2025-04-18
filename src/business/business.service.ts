@@ -13,6 +13,7 @@ import {
   BusinessUserCreatorType,
   ProfileStatus,
   ROLES_IN_ORGANISATION,
+  ScalabilityFactor,
   TEAM_SIZE_OPTIONS,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
@@ -437,47 +438,21 @@ export class BusinessService {
       //     message: 'Business User already mapped with another Business',
       //   };
       // }
-      const findBusinessIndustry = await this.businessIndModel.findById(
-        data.businessIndustry,
-      );
-      if (!findBusinessIndustry) {
-        return {
-          success: false,
-          message: 'Please provide valid Business Industry',
-        };
-      }
-      const businessCategoriesIds = [];
-      for (let category of data.businessCategories) {
-        if (!isValidObjectId(category)) {
-          return {
-            success: false,
-            message: `Please provide valid Business Category Id:${category}`,
-          };
-        }
-        const findBusinessCategory =
-          await this.businessCategoryModel.findById(category);
-        if (!findBusinessCategory) {
-          return {
-            success: false,
-            message: `Please provide valid Business Category Id:${category}`,
-          };
-        }
-        businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
-      }
-      delete data.businessCategories;
 
       //create business folder in drive
       const userDetails = await this.businessUserModel.findById(userId);
-      const businessFolder = await this.driveService.createFolder(userId,{
-        parent: userDetails.drive,
+      console.log('userDetails:', userDetails);
+      const businessFolder = await this.driveService.createFolder(userId, {
+        parentDirectory: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,
       });
+      console.log('Business Folder:', businessFolder);
       let createObj = {
         name: data.name,
         email: data.email,
-        businessCategory: businessCategoriesIds,
-        businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
+        // businessCategory: businessCategoriesIds,
+        // businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
@@ -489,7 +464,7 @@ export class BusinessService {
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       const createdBusiness = await this.businessModel.create(createObj);
-      //create folder
+
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
@@ -621,19 +596,48 @@ export class BusinessService {
         };
       }
 
-      // if (businessUser.status < ProfileStatus.MAPPED) {
-      //   return {
-      //     success: false,
-      //     message: 'Business User not mapped with any Business',
-      //   };
-      // }
-
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
           updateObj[key] = data[key];
         }
       });
+
+      if (updateObj.businessIndustry && updateObj.businessCategories) {
+        const findBusinessIndustry = await this.businessIndModel.findById(
+          updateObj.businessIndustry,
+        );
+        if (!findBusinessIndustry) {
+          return {
+            success: false,
+            message: 'Please provide valid Business Industry',
+          };
+        }
+        let businessCategoriesIds = [];
+        for (let category of data.businessCategories) {
+          if (!isValidObjectId(category)) {
+            return {
+              success: false,
+              message: `Please provide valid Business Category Id:${category}`,
+            };
+          }
+          const findBusinessCategory =
+            await this.businessCategoryModel.findById(category);
+          if (!findBusinessCategory) {
+            return {
+              success: false,
+              message: `Please provide valid Business Category Id:${category}`,
+            };
+          }
+          businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+        }
+
+        updateObj['businessIndustry'] = new mongoose.Types.ObjectId(
+          updateObj.businessIndustry,
+        );
+        updateObj['businessCategories'] = businessCategoriesIds;
+      }
+
       // if (
       //   businessUser.status === ProfileStatus.MAPPED &&
       //   updateObj.isRegistered &&
@@ -731,18 +735,33 @@ export class BusinessService {
         },
         { new: true },
       );
-      if(updatedDetails.addressLine1){
+      if (updateObj.addressLine1) {
         await this.businessUserModel.updateOne(
           { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_ADDRESS_ADDED } },
+          { $set: { status: ProfileStatus.BUSINESS_ADDRESS } },
         );
       }
-      if(updatedDetails.teamSize){
+
+      if (updateObj.businessIndustry && updateObj.businessCategories) {
         await this.businessUserModel.updateOne(
           { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_TEAM_SIZE_ADDED } },
+          { $set: { status: ProfileStatus.BUSINESS_TYPE } },
         );
       }
+
+      if(updateObj.logo){
+        await this.businessUserModel.updateOne(
+          { _id: businessUser.id },
+          { $set: { status: ProfileStatus.BUSINESS_LOGO } },
+        );
+      }
+
+      // if(updatedDetails.teamSize){
+      //   await this.businessUserModel.updateOne(
+      //     { _id: businessUser.id },
+      //     { $set: { status: ProfileStatus.BUSINESS_TEAM_SIZE_ADDED } },
+      //   );
+      // }
       console.log('udpatedDetails:', updatedDetails);
       return {
         success: true,
@@ -768,7 +787,14 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
-      if(updateObj.scalabilityFactor){
+      if (updateObj.scalabilityFactor) {
+        if (updateObj.scalabilityFactor > ScalabilityFactor.ORGANISATION) {
+          return {
+            success: false,
+            message: 'Scalability Factor is not valid',
+          };
+        }
+
         updateObj['status'] = ProfileStatus.MULTIPLE_BUSINESS_STATUS;
       }
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(

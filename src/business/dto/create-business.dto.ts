@@ -16,12 +16,6 @@ export class CreateBusinessDto {
   @IsEmail()
   email: string;
 
-  @IsString()
-  businessIndustry: string;
-
-  @IsArray()
-  businessCategories: Array<string | mongoose.Types.ObjectId>;
-
   // @IsString()
   // registrationNumber:string;
 
@@ -42,6 +36,10 @@ export class CreateBusinessDto {
 
   @IsString()
   website: string;
+
+  @IsOptional()
+  @IsString()
+  roleOfCreator: string;
 
   // @IsString()
   // brand:string;

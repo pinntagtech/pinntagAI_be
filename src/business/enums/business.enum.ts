@@ -2,11 +2,11 @@ export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
   MULTIPLE_BUSINESS_STATUS: 2,
-  // INDUSTRY_ADDED: 3, //-> Business Industry Added
-  // CATEGORY_ADDED: 4, //-> Business Category Added
   BUSINESS_CREATED: 3, //-> Business Created
-  BUSINESS_ADDRESS_ADDED: 4, //-> Business Address Added
-  BUSINESS_TEAM_SIZE_ADDED: 5, //-> Business Team Size Added
+  BUSINESS_ADDRESS: 4, //-> Business Address Added
+  BUSINESS_TYPE: 5, //-> Business Type Added
+  BUSINESS_LOGO:6,
+
 };
 export const ScalabilityFactor = {
   SINGLE: 0,

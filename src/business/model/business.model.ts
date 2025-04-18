@@ -38,7 +38,7 @@ export class Business {
   isRegistered: boolean;
 
   @Prop({ ref: BusinessCategory.name })
-  businessCategory: mongoose.Types.ObjectId[];
+  businessCategories: mongoose.Types.ObjectId[];
 
   @Prop({ ref: BusinessIndustry.name })
   businessIndustry: mongoose.Types.ObjectId;
@@ -172,7 +172,7 @@ export class Business {
   @Prop({ default: false })
   isPhysicalType: boolean;
   @Prop({default:0})
-  physicalLocations: number;
+  physicalUnits: number;
 
   @Prop({ default: false })
   isMobileType: boolean;

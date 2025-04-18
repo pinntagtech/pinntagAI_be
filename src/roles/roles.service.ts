@@ -414,17 +414,17 @@ export class RolesService {
       let assignedTo = null;
       if (userType === UserTypes.ADMIN) {
         assignedTo = await this.adminModel
-          .findByIdAndUpdate(
+          .findOneAndUpdate(
             { _id: id },
-            { $set: { role: new mongoose.Types.ObjectId(roleId) } },
+            { $addToSet: { role: new mongoose.Types.ObjectId(roleId) } },
             { new: true },
           )
           .populate('role', 'name');
       } else if (userType === UserTypes.BUSINESS) {
         assignedTo = await this.businessUserModel
-          .findByIdAndUpdate(
+          .findOneAndUpdate(
             { _id: id },
-            { $set: { role: new mongoose.Types.ObjectId(roleId) } },
+            { $addToSet: { role: new mongoose.Types.ObjectId(roleId) } },
             { new: true },
           )
           .populate('role', 'name');
