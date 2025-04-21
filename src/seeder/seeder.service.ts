@@ -114,7 +114,7 @@ export class SeederService {
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     @InjectModel(BusinessCategory.name)
-    private readonly BusinessCategoryModel: Model<BusinessCategoryDocument>,
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(BusinessCountry.name)
     private readonly businessCountryModel: Model<BusinessCountryDocument>,
     @InjectModel(BusinessConstitution.name)
@@ -137,7 +137,7 @@ export class SeederService {
     await this.seedActions();
     await this.seedOutletCategories();
     // await this.seedPrivileges(); super admin privileges are not needed
-    await this.seedBusinessIndustries();
+    // await this.seedBusinessIndustries();
     // await this.seedCountries();
     await this.seedConstitutions();
   }
@@ -409,15 +409,15 @@ export class SeederService {
 
           for (const businessCategory of BusinessIndustries[businessIndustry]) {
             const foundBusinessCategory =
-              await this.BusinessCategoryModel.findOne({
-                type: businessCategory,
+              await this.businessCategoryModel.findOne({
+                title: businessCategory,
                 industry: new mongoose.Types.ObjectId(
                   createdBusinessIndustry.id,
                 ),
               });
             if (!foundBusinessCategory) {
-              await this.BusinessCategoryModel.create({
-                type: businessCategory,
+              await this.businessCategoryModel.create({
+                title: businessCategory,
                 industry: new mongoose.Types.ObjectId(
                   createdBusinessIndustry.id,
                 ),
@@ -428,13 +428,13 @@ export class SeederService {
         } else {
           for (const businessCategory of BusinessIndustries[businessIndustry]) {
             const foundBusinessCategory =
-              await this.BusinessCategoryModel.findOne({
-                type: businessCategory,
+              await this.businessCategoryModel.findOne({
+                title: businessCategory,
                 industry: new mongoose.Types.ObjectId(foundBusinessIndustry.id),
               });
             if (!foundBusinessCategory) {
-              await this.BusinessCategoryModel.create({
-                type: businessCategory,
+              await this.businessCategoryModel.create({
+                title: businessCategory,
                 industry: new mongoose.Types.ObjectId(foundBusinessIndustry.id),
                 createdBy: superAdmin._id,
               });

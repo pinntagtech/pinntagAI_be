@@ -84,6 +84,7 @@ import {
 } from './business/model/businessConstitution.model';
 import { RateLimiterModule } from 'nestjs-rate-limiter';
 import { OutletModule } from './outlet/outlet.module';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -153,6 +154,7 @@ import { OutletModule } from './outlet/outlet.module';
     RolesModule,
     BusinessModule,
     OutletModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],
