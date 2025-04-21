@@ -82,6 +82,7 @@
     "swagger-ui-express": "^5.0.0",
     "twilio": "^5.4.4",
     "typeorm": "^0.3.19",
+    "uuid": "^11.1.0",
     "winston": "^3.11.0"
   },
   "devDependencies": {
