@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import { CommandSucceededEvent } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -50,28 +51,27 @@ export class GoogleService {
         };
       }
 
-      const placeId = predictions[0].placePrediction.placeId;
-
       // 2. Place Details (v1) with the same sessionToken
-      const params = {
-        key: this.GOOGLE_API_KEY,
-        sessionToken, // same UUID you used on autocomplete
-        fields: 'addressComponents,formattedAddress',
-      };
-      const url = `https://places.googleapis.com/v1/places/${placeId}`;
-      const dtRes = await axios.get(url, { params });
+      // const params = {
+      //   key: this.GOOGLE_API_KEY,
+      //   sessionToken, // same UUID you used on autocomplete
+      //   fields: 'addressComponents,formattedAddress',
+      // };
+      // const url = `https://places.googleapis.com/v1/places/${placeId}`;
+      // const dtRes = await axios.get(url, { params });
 
-      // 3. Extract postal_code
-      const comps: any[] = dtRes.data.addressComponents || [];
-      const postalComp = comps.find((c) => c.types.includes('postal_code'));
-      const postalCode = postalComp?.longText || null;
-      console.log('Postal Code:', postalCode);
+      // // 3. Extract postal_code
+      // const comps: any[] = dtRes.data.addressComponents || [];
+      // const postalComp = comps.find((c) => c.types.includes('postal_code'));
+      // const postalCode = postalComp?.longText || null;
+      // console.log('Postal Code:', postalCode);
 
       return {
         success: true,
         message: 'Recommendations fetched successfully',
         data: response.data.suggestions,
-        postalCode: postalCode,
+        // postalCode: postalCode,
+        sessionToken: sessionToken,
       };
     } catch (error) {
       console.error('Error fetching recommendations:', error);
@@ -81,4 +81,29 @@ export class GoogleService {
       };
     }
   }
+
+  async getPlaceDetails(placeId: string, sessionToken: string){
+    try {
+      const params = {
+        key: this.GOOGLE_API_KEY,
+        sessionToken,
+        fields: 'addressComponents,formattedAddress',
+      };
+      const url = `https://places.googleapis.com/v1/places/${placeId}`;
+      const response = await axios.get(url, { params });
+
+      return {
+        success: true,
+        message: 'Place details fetched successfully',
+        data: response.data,
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching place details:', error);
+      throw error;
+    }
+  }
+
+
 }
