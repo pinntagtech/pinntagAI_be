@@ -297,14 +297,20 @@ export class DriveService {
       if (fileCategory) {
         fileFilter.fileCategory = new mongoose.Types.ObjectId(fileCategory);
       }
-      const [files, folders] = await Promise.all([
-        await this.fileModel.find(fileFilter).sort({ createdAt: -1 }),
-        await this.folderModel
-          .find({
-            parentDirectory: new mongoose.Types.ObjectId(locationId),
-          })
-          .sort({ createdAt: -1 }),
-      ]);
+      // const [files, folders] = await Promise.all([
+      //   await this.fileModel.find(fileFilter).sort({ createdAt: -1 }),
+      //   await this.folderModel
+      //     .find({
+      //       parentDirectory: new mongoose.Types.ObjectId(locationId),
+      //     })
+      //     .sort({ createdAt: -1 }),
+      // ]);
+
+      let directoryDetails = null;
+      if(folderId){
+        directoryDetails = await this.folderModel.findById(folderId);
+      }
+
       const pipeline: any[] = [
         { $match: fileFilter },
         {
@@ -334,6 +340,7 @@ export class DriveService {
         success: true,
         message: 'files fetched successfully',
         data: results,
+        directoryDetails: directoryDetails,
         total: total,
         page,
         limit,

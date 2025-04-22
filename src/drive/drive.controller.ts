@@ -24,6 +24,7 @@ import { isValidObjectId } from 'mongoose';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { Token } from 'src/auth/models/token.model';
+import { DirectoryService } from 'aws-sdk';
 
 @Controller('drive')
 export class DriveController {
@@ -110,6 +111,7 @@ export class DriveController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        directoryDetails: result.directoryDetails,
         total: result.total,
         page: result.page,
         limit: result.limit,
