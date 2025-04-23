@@ -66,12 +66,17 @@ export class BusinessController {
     @Res() res: Response,
     @Body() data: CreateBusinessDto,
   ) {
-    const result = await this.businessService.createBusiness(user.id, data);
+    const result = await this.businessService.createBusiness(
+      user.id,
+      user.token,
+      data,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        token: result.token,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -647,9 +652,12 @@ export class BusinessController {
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.businessService.fetchOrganisationRolesList(pageNumber, limitNumber);
+    const result = await this.businessService.fetchOrganisationRolesList(
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({ 
+      return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
         total: result.total,
@@ -660,7 +668,31 @@ export class BusinessController {
       });
     }
   }
-
+  
+  @Post('switch/:id')
+  @UseGuards(JwtGuard2)
+  async switchBusiness(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.switchBusiness(user.id,user.token, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        token: result.token,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,

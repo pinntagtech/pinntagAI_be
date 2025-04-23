@@ -100,7 +100,7 @@ export class Business {
   country: mongoose.Types.ObjectId;
   @Prop()
   county: string;
-  @Prop({default: true})
+  @Prop({ default: true })
   isActive: boolean;
   @Prop()
   postalCode: number;
@@ -173,7 +173,7 @@ export class Business {
 
   @Prop({ default: false })
   isPhysicalType: boolean;
-  @Prop({default:0})
+  @Prop({ default: 0 })
   physicalUnits: number;
 
   @Prop({ default: false })
@@ -184,12 +184,11 @@ export class Business {
   @Prop({ default: false })
   isOnlineType: boolean;
 
-  @Prop({default:false})
-  continueJourney: boolean
+  @Prop({ default: false })
+  continueJourney: boolean;
 
   @Prop({})
-  journeyStatus:number;
-
+  journeyStatus: number;
 
   @Prop({
     type: {

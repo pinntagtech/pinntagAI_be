@@ -395,7 +395,7 @@ export class BusinessService {
   //   }
   // }
 
-  async createBusiness(userId: string, data: CreateBusinessDto) {
+  async createBusiness(userId: string, token: string, data: CreateBusinessDto) {
     try {
       //unique business check
       const findBusiness = await this.businessModel.findOne({
@@ -469,7 +469,7 @@ export class BusinessService {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
           {
-            $addToSet:{
+            $addToSet: {
               business: createdBusiness._id,
             },
             $set: {
@@ -567,10 +567,36 @@ export class BusinessService {
         },
       );
       await Promise.all(rolePromises);
+      console.log('businessId:', createdBusiness.id);
+
+      const updatedToken = await this.jwtService.signAsync(
+        {
+          id: userId,
+          userType: UserTypes.BUSINESS,
+          role: userDetails.role[0].toString(),
+          businessProfile: createdBusiness.id,
+        },
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '1d',
+        },
+      );
+      console.log('udpatedToken:', updatedToken);
+
+      await this.tokenModel.findOneAndUpdate(
+        { token },
+        {
+          $set: {
+            token: updatedToken,
+          },
+        },
+      );
+
       return {
         success: true,
         message: 'Business Created Successfully!',
         data: createdBusiness,
+        token: updatedToken,
       };
     } catch (error) {
       console.error('Error:', error);
@@ -752,7 +778,7 @@ export class BusinessService {
         );
       }
 
-      if(updateObj.logo){
+      if (updateObj.logo) {
         await this.businessUserModel.updateOne(
           { _id: businessUser.id },
           { $set: { status: ProfileStatus.BUSINESS_LOGO } },
@@ -790,8 +816,13 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
-      if (updateObj.scalabilityFactor == 0 || updateObj.scalabilityFactor == 1 || updateObj.scalabilityFactor == 2) {
-        if (updateObj.scalabilityFactor > ScalabilityFactor.ORGANISATION) {
+      if (
+        updateObj.scalabilityFactor == ScalabilityFactor.SINGLE ||
+        updateObj.scalabilityFactor == ScalabilityFactor.MULTIBRAND ||
+        updateObj.scalabilityFactor == ScalabilityFactor.MULTIPLE ||
+        updateObj.scalabilityFactor == ScalabilityFactor.FRANCHISE 
+      ) {
+        if (updateObj.scalabilityFactor > ScalabilityFactor.FRANCHISE) {
           return {
             success: false,
             message: 'Scalability Factor is not valid',
@@ -1690,6 +1721,51 @@ export class BusinessService {
         message: 'Organisation Roles fetched Successfully.',
         data: paginated,
         total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async switchBusiness(userId: string, token: string, businessId: string) {
+    try {
+      if (!isValidObjectId(businessId)) {
+        return {
+          success: false,
+          message: 'Please provide valid Business Id',
+        };
+      }
+      const userDetails = await this.businessUserModel.findById(userId);
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const updatedToken = await this.authService.generateJWT(
+        {
+          id: userId,
+          userType: UserTypes.BUSINESS,
+          role: userDetails.role[0].toString(),
+          businessProfile: businessId,
+        },
+        TokenTypes.ACCESS,
+        UserTypes.BUSINESS,
+      );
+      console.log('updated Token##########', updatedToken);
+
+      await this.tokenModel.findOneAndUpdate(
+        { token: token },
+        { $set: { token: updatedToken } },
+      );
+      return {
+        success: true,
+        message: 'Business Profile Switched Successfully.',
+        token: token,
       };
     } catch (error) {
       return {

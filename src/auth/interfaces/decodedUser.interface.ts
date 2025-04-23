@@ -5,6 +5,7 @@ export interface DecodedUser {
   email: string;
   role: string;
   name: string;
+  token: string;
   profilePhoto: string;
   isBusiness: boolean;
   businessProfile?: string;
