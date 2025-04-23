@@ -63,6 +63,7 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from 'src/business/model/businessCategory.model';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Injectable()
 export class AdminService {
@@ -691,6 +692,39 @@ export class AdminService {
     }
     return collectedIds;
   }
+  async getAllChildAdminIds2(adminId) {
+    const objectId = new mongoose.Types.ObjectId(adminId);
+  console.log("objectIdque",objectId);
+    const result = await this.adminModel.aggregate([
+      {
+        $match: { _id: objectId }
+      },
+      {
+        $graphLookup: {
+          from: this.adminModel.collection.name,
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'creator',
+          as: 'descendants',
+          restrictSearchWithMatch: { creatorType: 'Admin' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          descendantIds: {
+            $map: {
+              input: '$descendants',
+              as: 'd',
+              in: { $toString: '$$d._id' }
+            }
+          }
+        }
+      }
+    ]).exec();
+  
+    return result[0]?.descendantIds || [];
+  }
 
   // async createBusinessRole(
   //   roleData: Partial<BusinessRole>,
@@ -919,14 +953,15 @@ export class AdminService {
   }
 
   async isAdminAboveInHierarchy(admin: string, target: string) {
-    const allAdminIds = await this.getAllChildAdminIds(admin);
+    const allAdminIds = await this.getAllChildAdminIds2(admin);
+    console.log("AllAdminIds:",allAdminIds);
     if (allAdminIds.includes(target)) {
       return true;
     }
     return false;
   }
 
-  async updateAdmin(admin: string, id: string, data: CreateAdminDto) {
+  async updateAdmin(admin: string, id: string, data: UpdateAdminDto) {
     try {
       const foundUser = await this.adminModel.findById(id);
       if (!foundUser) {
@@ -982,7 +1017,7 @@ export class AdminService {
           message: 'Admin not found with the id provided.',
         };
       }
-      const allAdminIds = await this.getAllChildAdminIds(adminId);
+      const allAdminIds = await this.getAllChildAdminIds2(adminId);
       const allMongooseIds = allAdminIds.map(
         (id) => new mongoose.Types.ObjectId(id),
       );

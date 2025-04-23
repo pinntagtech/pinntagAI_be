@@ -100,6 +100,8 @@ export class Business {
   country: mongoose.Types.ObjectId;
   @Prop()
   county: string;
+  @Prop({default: true})
+  isActive: boolean;
   @Prop()
   postalCode: number;
   @Prop({ default: 0 })

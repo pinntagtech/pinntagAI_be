@@ -38,6 +38,7 @@ import { CreateIndustryDto } from './dto/business-industry.dto';
 import { database } from 'firebase-admin';
 import { BusinessCategory } from 'src/business/model/businessCategory.model';
 import { BusinessCategoryDto } from './dto/business-category.dto';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -642,7 +643,7 @@ export class AdminController {
     @Req() req: Request,
     @Res() res: Response,
     @Param('id') id: string,
-    @Body() data: CreateAdminDto,
+    @Body() data: UpdateAdminDto,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {

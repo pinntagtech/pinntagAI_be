@@ -17,11 +17,7 @@ export class CreateOutletDto {
   @IsString()
   category: string;
 
-  @IsNotEmpty()
-  @IsString()
-  type: string; // Dropdown based on category
-
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   refId: string;
 
