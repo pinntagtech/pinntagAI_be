@@ -11,7 +11,8 @@ export const ProfileStatus = {
 export const ScalabilityFactor = {
   SINGLE: 0,
   MULTIPLE: 1,
-  ORGANISATION: 2,
+  MULTIBRAND: 2,
+  FRANCHISE:3,
 };
 export const OutletTypes = {
   RESTAURANT: 'RESTAURANT',

@@ -1547,6 +1547,7 @@ export class AuthService {
   }
 
   async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
+    console.log("Payload::::",payload);
     let expireIn = '365d';
     if (tokenType === TokenTypes.RESET_PASSWORD) {
       expireIn = '15m';
@@ -1557,6 +1558,7 @@ export class AuthService {
       secret: process.env.JWT_SECRET,
       expiresIn: expireIn,
     });
+    console.log("Token::::",token);
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
     // } else {
