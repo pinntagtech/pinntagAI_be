@@ -143,10 +143,48 @@ export class RolesService {
     }
     return collectedIds;
   }
+  async getAllChildAdminIds2(
+    id: string,
+    creatorType: string
+  ) {
+    console.log("id:,creatorType:",id,creatorType)
+    const objectId = new mongoose.Types.ObjectId(id);
+  
+    const result = await this.roleModel.aggregate([
+      { $match: { creator: objectId } },
+      {
+        $graphLookup: {
+          from: this.roleModel.collection.name,
+          startWith: '$creator',
+          connectFromField: '_id',
+          connectToField: 'creator',
+          as: 'descendants',
+          restrictSearchWithMatch: { creatorType }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          descendantIds: {
+            $map: {
+              input: '$descendants',
+              as: 'd',
+              in: { $toString: '$$d._id' }
+            }
+          }
+        }
+      }
+    ]);
+  
+    // Return only descendants, excluding the root
+    return result[0]?.descendantIds || [];
+  }
 
   async fetchRoles(id: string, userType: string,page:number,limit:number) {
     try {
-      let allAdminIds = await this.getAllChildAdminIds(id, userType, true, []);
+      // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
+      let allAdminIds = await this.getAllChildAdminIds2(id,userType);
+      console.log("allAdminIds:", allAdminIds);
       console.log("allAdminIds111:", allAdminIds);
       let ownerRole = null;
       if (userType === UserTypes.ADMIN) {

@@ -469,9 +469,12 @@ export class BusinessService {
         await this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
           {
-            $set: {
+            $addToSet:{
               business: createdBusiness._id,
+            },
+            $set: {
               status: ProfileStatus.BUSINESS_CREATED,
+              selectedBusiness: createdBusiness._id,
             },
           },
         );
@@ -787,7 +790,7 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
-      if (updateObj.scalabilityFactor) {
+      if (updateObj.scalabilityFactor == 0 || updateObj.scalabilityFactor == 1 || updateObj.scalabilityFactor == 2) {
         if (updateObj.scalabilityFactor > ScalabilityFactor.ORGANISATION) {
           return {
             success: false,

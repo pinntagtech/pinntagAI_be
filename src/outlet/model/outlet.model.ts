@@ -13,16 +13,19 @@ export type OutletDocument = Outlet & Document;
 
 @Schema({ timestamps: true })
 export class Outlet {
-  @Prop({ required: true, ref: OutletCategory.name })
-  category: mongoose.Types.ObjectId;
+  // @Prop({ required: true, ref: OutletCategory.name })
+  // category: mongoose.Types.ObjectId;
 
-  @Prop({ required: true , ref: OutletType.name})
-  type: mongoose.Types.ObjectId; // Dropdown based on category
+  // @Prop({ required: true , ref: OutletType.name})
+  // type: mongoose.Types.ObjectId; // Dropdown based on category
 
-  @Prop({ required: true, unique: true })
+  @Prop({enum: Object.values(OutletCategoryList)})
+  category: string;
+
+  @Prop()
   refId: string;
 
-  @Prop({ required: true })
+  @Prop()
   name: string;
 
   @Prop({ ref: 'BusinessUser' })
@@ -53,15 +56,15 @@ export class Outlet {
   @Prop()
   zip?: string;
 
-  @Prop()
+  @Prop({ required: true })
   countryCode?: string;
 
   // Contact Information
   @Prop({ required: true })
   phone: string;
 
-  @Prop()
-  email?: string;
+  @Prop({ required: true })
+  email: string;
 
   // Social Media & Online Presence
   @Prop()

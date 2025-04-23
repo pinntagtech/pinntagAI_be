@@ -199,25 +199,25 @@ export class OutletService {
           message: 'Business User not found!',
         };
       }
-      const foundCategory = await this.outletCategoryModel.findById(
-        data.category,
-      );
-      if (!foundCategory) {
-        return {
-          success: false,
-          message: 'Category not found!',
-        };
-      }
-      const foundType = await this.outletTypeModel.findById(data.type);
-      if (!foundType) {
-        return {
-          success: false,
-          message: 'Type not found!',
-        };
-      }
+      // const foundCategory = await this.outletCategoryModel.findById(
+      //   data.category,
+      // );
+      // if (!foundCategory) {
+      //   return {
+      //     success: false,
+      //     message: 'Category not found!',
+      //   };
+      // }
+      // const foundType = await this.outletTypeModel.findById(data.type);
+      // if (!foundType) {
+      //   return {
+      //     success: false,
+      //     message: 'Type not found!',
+      //   };
+      // }
       let {
         category,
-        type,
+        // type,
         refId,
         name,
         manager,
@@ -274,20 +274,20 @@ export class OutletService {
           createObj[key] = data[key];
         }
       });
-      if (createObj.manager && createObj.manager !== '') {
-        const foundManager = await this.businessUserModel.findOne({
-          _id: new mongoose.Types.ObjectId(manager),
-        });
-        if (!foundManager) {
-          return {
-            success: false,
-            message: 'Manager not found in the database!',
-          };
-        }
-        createObj['manager'] = new mongoose.Types.ObjectId(manager);
-      }
+      // if (createObj.manager && createObj.manager !== '') {
+      //   const foundManager = await this.businessUserModel.findOne({
+      //     _id: new mongoose.Types.ObjectId(manager),
+      //   });
+      //   if (!foundManager) {
+      //     return {
+      //       success: false,
+      //       message: 'Manager not found in the database!',
+      //     };
+      //   }
+      //   createObj['manager'] = new mongoose.Types.ObjectId(manager);
+      // }
 
-      if (foundCategory.title === OutletCategoryList.PHYSICAL) {
+      if (createObj.category === OutletCategoryList.PHYSICAL) {
         console.log('address1:', address1);
         console.log('posSystemId:', posSystemId, typeof posSystemId);
         if (!address1 || !posSystemId) {
@@ -297,7 +297,7 @@ export class OutletService {
             message: 'Address Line 1 or POS System ID is required.',
           };
         }
-      } else if (foundCategory.title === OutletCategoryList.MOBILE) {
+      } else if (createObj.category === OutletCategoryList.MOBILE) {
         if (!vehicleRegistrationNumber || !vehicleType || !gpsTrackerEnabled) {
           return {
             success: false,
@@ -305,31 +305,33 @@ export class OutletService {
               'Vehicle Registration Number or Vehicle Type or GPS Status is required.',
           };
         }
-      } else if (foundCategory.title === OutletCategoryList.TEMPORARY) {
-        if (!eventName || !startDate || !endDate || !boothNumber) {
-          return {
-            success: false,
-            message:
-              'Event Name or Start Date or End Date or Booth Number is required.',
-          };
-        }
-      } else if (foundCategory.title === OutletCategoryList.ONLINE) {
-      } else if (foundCategory.title === OutletCategoryList.SPECIALTY) {
-        if (!insidePremise || !premiseName) {
-          return {
-            success: false,
-            message: 'Inside Premise or Premise Name is required.',
-          };
-        }
-      } else {
+      } 
+      // else if (foundCategory.title === OutletCategoryList.TEMPORARY) {
+      //   if (!eventName || !startDate || !endDate || !boothNumber) {
+      //     return {
+      //       success: false,
+      //       message:
+      //         'Event Name or Start Date or End Date or Booth Number is required.',
+      //     };
+      //   }
+      // } else if (foundCategory.title === OutletCategoryList.ONLINE) {
+      // } else if (foundCategory.title === OutletCategoryList.SPECIALTY) {
+      //   if (!insidePremise || !premiseName) {
+      //     return {
+      //       success: false,
+      //       message: 'Inside Premise or Premise Name is required.',
+      //     };
+      //   }
+      // } 
+      else {
         return {
           success: false,
           message: 'Invalid category.',
         };
       }
 
-      createObj['category'] = new mongoose.Types.ObjectId(category);
-      createObj['type'] = new mongoose.Types.ObjectId(type);
+      // createObj['category'] = new mongoose.Types.ObjectId(category);
+      // createObj['type'] = new mongoose.Types.ObjectId(type);
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
 
