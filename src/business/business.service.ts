@@ -85,8 +85,7 @@ export class BusinessService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndModel: Model<BusinessIndustryDocument>,
-    @InjectModel(BusinessCategory.name)
-    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(BusinessCountry.name)
     private readonly businessCountryModel: Model<BusinessCountryDocument>,
     @InjectModel(BusinessConstitution.name)
@@ -1249,6 +1248,7 @@ export class BusinessService {
   }
   async businessCategoryList(id: string, page: number, limit: number) {
     try {
+      console.log("ID:",id);
       const categories = await this.businessCategoryModel
         .find({
           industry: new mongoose.Types.ObjectId(id),
@@ -1256,6 +1256,7 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
+          console.log("categories:",categories);
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });

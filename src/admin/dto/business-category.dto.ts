@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class BusinessCategoryDto {
   @IsNotEmpty()
   @IsString()
-  industry: string;
+  industry: any;
   @IsNotEmpty()
   @IsString()
   title: string;
