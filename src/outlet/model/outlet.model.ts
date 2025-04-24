@@ -54,7 +54,7 @@ export class Outlet {
   country?: string;
 
   @Prop()
-  zip?: string;
+  postalCode?: string;
 
   @Prop({ required: true })
   countryCode?: string;
@@ -82,46 +82,46 @@ export class Outlet {
   @Prop()
   twitter?: string;
 
-  @Prop()
-  googleMyBusinessId?: string;
+  // @Prop()
+  // googleMyBusinessId?: string;
 
-  @Prop()
-  posSystemId?: string;
+  // @Prop()
+  // posSystemId?: string;
 
   // Mobile & Flexible Outlet Specific Fields
   @Prop()
-  vehicleType?: VehicleType;
+  vehicleType?: string;
 
   @Prop()
   vehicleRegistrationNumber?: string;
 
-  @Prop({ default: false })
-  gpsTrackerEnabled?: boolean;
+  // @Prop({ default: false })
+  // gpsTrackerEnabled?: boolean;
 
-  // Temporary & Event-Based Outlets
-  @Prop()
-  eventName?: string;
+  // // Temporary & Event-Based Outlets
+  // @Prop()
+  // eventName?: string;
 
-  @Prop()
-  startDate?: Date;
+  // @Prop()
+  // startDate?: Date;
 
-  @Prop()
-  endDate?: Date;
+  // @Prop()
+  // endDate?: Date;
 
 
-  @Prop()
-  boothNumber?: string;
+  // @Prop()
+  // boothNumber?: string;
 
-  // Online & Delivery-Centric Outlets
-  @Prop({ type: [String] })
-  partneredDeliveryServices?: string[];
+  // // Online & Delivery-Centric Outlets
+  // @Prop({ type: [String] })
+  // partneredDeliveryServices?: string[];
 
-  // Specialty & Unconventional Outlets
-  @Prop({ default: false })
-  insidePremise?: boolean;
+  // // Specialty & Unconventional Outlets
+  // @Prop({ default: false })
+  // insidePremise?: boolean;
 
-  @Prop()
-  premiseName?: string; // Name of Hotel, Airport, University, etc.
+  // @Prop()
+  // premiseName?: string; // Name of Hotel, Airport, University, etc.
 
   @Prop()
   latitude: number;

@@ -1746,15 +1746,17 @@ export class BusinessService {
         };
       }
 
-      const updatedToken = await this.authService.generateJWT(
+      const updatedToken = await this.jwtService.signAsync(
         {
           id: userId,
           userType: UserTypes.BUSINESS,
           role: userDetails.role[0].toString(),
           businessProfile: businessId,
         },
-        TokenTypes.ACCESS,
-        UserTypes.BUSINESS,
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '1d',
+        },
       );
       console.log('updated Token##########', updatedToken);
 
@@ -1765,7 +1767,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'Business Profile Switched Successfully.',
-        token: token,
+        token: updatedToken,
       };
     } catch (error) {
       return {

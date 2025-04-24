@@ -9,7 +9,6 @@ export enum OutletCategoryList {
 export enum VehicleType {
   TRUCK = 'Truck',
   VAN = 'Van',
-  CART = 'Cart',
-//   BICYCLE = 'Bicycle',
-  SCOOTER = 'Scooter',
+  POPUP = 'Pop-up',
+  KIOSK = 'Kiosk',
 }
