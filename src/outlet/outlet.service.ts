@@ -199,7 +199,7 @@ export class OutletService {
           message: 'Business User not found!',
         };
       }
-      if(!user.businessProfile){
+      if (!user.businessProfile) {
         return {
           success: false,
           message: 'Business Profile not found!',
@@ -257,13 +257,17 @@ export class OutletService {
         // gpsTrackerEnabled,
       } = data;
 
-      if(!Object.values(OutletCategoryList).includes(category as OutletCategoryList)){
+      if (
+        !Object.values(OutletCategoryList).includes(
+          category as OutletCategoryList,
+        )
+      ) {
         return {
           success: false,
           message: 'Invalid category',
         };
       }
-    
+
       const foundOutlet = await this.outletModel.findOne({
         email: email,
         business: business._id,
@@ -313,7 +317,7 @@ export class OutletService {
       //         'Vehicle Registration Number or Vehicle Type or GPS Status is required.',
       //     };
       //   }
-      // } 
+      // }
       // else if (foundCategory.title === OutletCategoryList.TEMPORARY) {
       //   if (!eventName || !startDate || !endDate || !boothNumber) {
       //     return {
@@ -330,7 +334,7 @@ export class OutletService {
       //       message: 'Inside Premise or Premise Name is required.',
       //     };
       //   }
-      // } 
+      // }
       // else {
       //   return {
       //     success: false,
@@ -454,7 +458,7 @@ export class OutletService {
         //     outletIds = outletIds.concat(manager.outlets);
         //   });
         // }
-        getOutletObj['business'] = userDetails.business;
+        getOutletObj['business'] = user.businessProfile;
       } else {
         getOutletObj['_id'] = { $in: mongoUserIds };
       }
@@ -467,18 +471,18 @@ export class OutletService {
         .populate({
           path: 'manager',
           select: 'name email phone countryCode profilePhoto',
-          match: { manager: { $ne: '' } }
+          match: { manager: { $ne: '' } },
         })
         // .populate({
         //   path: 'creator',
         //   select: 'name email phone countryCode profilePhoto',
-        //   match: { _id: { $ne: '' } } 
+        //   match: { _id: { $ne: '' } }
         // })
         .populate('business', 'name email phone countryCode logo')
         .skip((page - 1) * limit)
-        .limit(limit)
+        .limit(limit);
 
-        console.log('outlets:', outlets); 
+      console.log('outlets:', outlets);
 
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
@@ -497,6 +501,82 @@ export class OutletService {
       };
     }
   }
+  async fetchCreatedOutlets(user: any, page: number, limit: number) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      console.log('UserDetails:', userDetails);
+
+      if(!userDetails){
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+
+      // const userRole = await this.roleModel.findById(userDetails.role);
+      // let getOutletObj = {};
+      // if (userRole.isBusinessOwner) {
+      //   // const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
+      //   // console.log('getAllManagers', getAllManagers);
+      //   // if (getAllManagers.success) {
+      //   //   getAllManagers.data.forEach((manager) => {
+      //   //     outletIds = outletIds.concat(manager.outlets);
+      //   //   });
+      //   // }
+      //   getOutletObj['business'] = user.businessProfile;
+      // } else {
+      //   getOutletObj['_id'] = { $in: mongoUserIds };
+      // }
+      // console.log('getOutletObj', getOutletObj);
+      console.log("Creator:",userDetails._id);
+      console.log("Business:",user.businessProfile)
+      const outlets = await this.outletModel
+        .find({
+          creator: new mongoose.Types.ObjectId(userDetails._id),
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+        })
+        .populate({
+          path: 'manager',
+          select: 'name email phone countryCode profilePhoto',
+          match: { manager: { $ne: '' } },
+        })
+        .populate('creator', 'name email phone countryCode profilePhoto')
+        // .populate({
+        //   path: 'creator',
+        //   select: 'name email phone countryCode profilePhoto',
+        //   match: { _id: { $ne: '' } },
+        // })
+        .populate('business', 'name email phone countryCode logo')
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      console.log('outlets:', outlets);
+
+      const total = await this.outletModel.countDocuments({
+        creator: new mongoose.Types.ObjectId(userDetails._id),
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      });
+      console.log('outlets:', outlets);
+      return {
+        success: true,
+        message: 'Outlets fetched successfully.',
+        data: outlets,
+        total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
   async getVehicleTypes(page: number, limit: number) {
     try {
       const vehicleTypes = VehicleType;
