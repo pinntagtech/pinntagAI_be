@@ -1221,7 +1221,7 @@ export class AdminService {
       }
       const category = await this.businessCategoryModel.findOne({
         title: data.title,
-        industry: data.industry,
+        industry: new mongoose.Types.ObjectId(data.industry),
       });
       if (category) {
         return {
@@ -1229,6 +1229,7 @@ export class AdminService {
           message: 'Category already exist with given Title.',
         };
       }
+      data.industry = industry._id;
       const createdCategory = await this.businessCategoryModel.create({
         ...data,
         createdBy: new mongoose.Types.ObjectId(id),

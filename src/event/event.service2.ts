@@ -789,7 +789,7 @@ export class EventService2 {
                 address2: outletDoc.address2 ? outletDoc.address2 : '',
                 city: outletDoc.city,
                 state: outletDoc.state,
-                zip: outletDoc.zip,
+                zip: outletDoc.postalCode,
                 website: outletDoc.website,
                 email: outletDoc.email,
                 phone: outletDoc.phone,

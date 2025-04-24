@@ -85,8 +85,7 @@ export class BusinessService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndModel: Model<BusinessIndustryDocument>,
-    @InjectModel(BusinessCategory.name)
-    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(BusinessCountry.name)
     private readonly businessCountryModel: Model<BusinessCountryDocument>,
     @InjectModel(BusinessConstitution.name)
@@ -1249,6 +1248,7 @@ export class BusinessService {
   }
   async businessCategoryList(id: string, page: number, limit: number) {
     try {
+      console.log("ID:",id);
       const categories = await this.businessCategoryModel
         .find({
           industry: new mongoose.Types.ObjectId(id),
@@ -1256,6 +1256,7 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
+          console.log("categories:",categories);
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
@@ -1746,15 +1747,17 @@ export class BusinessService {
         };
       }
 
-      const updatedToken = await this.authService.generateJWT(
+      const updatedToken = await this.jwtService.signAsync(
         {
           id: userId,
           userType: UserTypes.BUSINESS,
           role: userDetails.role[0].toString(),
           businessProfile: businessId,
         },
-        TokenTypes.ACCESS,
-        UserTypes.BUSINESS,
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '1d',
+        },
       );
       console.log('updated Token##########', updatedToken);
 
@@ -1765,7 +1768,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'Business Profile Switched Successfully.',
-        token: token,
+        token: updatedToken,
       };
     } catch (error) {
       return {

@@ -169,6 +169,33 @@ export class OutletController {
         });
       }
   }
+  @Get('created')
+  @UseGuards(JwtGuard2)
+  async fetchCreatedOutlets(
+    @Req() req:Request,
+    @Res() res: Response,
+    @TokenDecoder() user: JwtPayload,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ){
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.outletService.fetchCreatedOutlets(
+        user,pageNumber,limitNumber
+      );
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+          total: result.total,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+  }
+
   @Get('vehicleTypes')
   // @UseGuards(JwtGuard2)
   async fetchVehicleTypes(
@@ -184,7 +211,7 @@ export class OutletController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
-        total: result.total,
+        // total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

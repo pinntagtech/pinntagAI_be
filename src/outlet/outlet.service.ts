@@ -199,6 +199,21 @@ export class OutletService {
           message: 'Business User not found!',
         };
       }
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business Profile not found!',
+        };
+      }
+
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+
       // const foundCategory = await this.outletCategoryModel.findById(
       //   data.category,
       // );
@@ -218,46 +233,43 @@ export class OutletService {
       let {
         category,
         // type,
-        refId,
+        // refId,
         name,
-        manager,
+        // manager,
         city,
         state,
         country,
-        zip,
+        postalCode,
         countryCode,
         phone,
         email,
-        whatsappNumber,
+        // whatsappNumber,
         website,
-        facebook,
-        instagram,
-        twitter,
-        googleMyBusinessId,
+        // facebook,
+        // instagram,
+        // twitter,
+        // googleMyBusinessId,
         address1,
         address2,
-        posSystemId,
-        vehicleRegistrationNumber,
+        // posSystemId,
+        // vehicleRegistrationNumber,
         vehicleType,
-        gpsTrackerEnabled,
-        eventName,
-        startDate,
-        endDate,
-        boothNumber,
-        partneredDeliveryServices,
-        insidePremise,
-        premiseName,
+        // gpsTrackerEnabled,
       } = data;
 
-      const business = await this.businessModel.findById(businessUser.business);
-      if (!business) {
+      if (
+        !Object.values(OutletCategoryList).includes(
+          category as OutletCategoryList,
+        )
+      ) {
         return {
           success: false,
-          message: 'Business not found!',
+          message: 'Invalid category',
         };
       }
+
       const foundOutlet = await this.outletModel.findOne({
-        refId: refId,
+        email: email,
         business: business._id,
       });
       console.log('foundOutlet', foundOutlet);
@@ -287,25 +299,25 @@ export class OutletService {
       //   createObj['manager'] = new mongoose.Types.ObjectId(manager);
       // }
 
-      if (createObj.category === OutletCategoryList.PHYSICAL) {
-        console.log('address1:', address1);
-        console.log('posSystemId:', posSystemId, typeof posSystemId);
-        if (!address1 || !posSystemId) {
-          console.log('it should enter this block');
-          return {
-            success: false,
-            message: 'Address Line 1 or POS System ID is required.',
-          };
-        }
-      } else if (createObj.category === OutletCategoryList.MOBILE) {
-        if (!vehicleRegistrationNumber || !vehicleType || !gpsTrackerEnabled) {
-          return {
-            success: false,
-            message:
-              'Vehicle Registration Number or Vehicle Type or GPS Status is required.',
-          };
-        }
-      } 
+      // if (createObj.category === OutletCategoryList.PHYSICAL) {
+      //   console.log('address1:', address1);
+      //   console.log('posSystemId:', posSystemId, typeof posSystemId);
+      //   if (!address1 || !posSystemId) {
+      //     console.log('it should enter this block');
+      //     return {
+      //       success: false,
+      //       message: 'Address Line 1 or POS System ID is required.',
+      //     };
+      //   }
+      // } else if (createObj.category === OutletCategoryList.MOBILE) {
+      //   if (!vehicleRegistrationNumber || !vehicleType || !gpsTrackerEnabled) {
+      //     return {
+      //       success: false,
+      //       message:
+      //         'Vehicle Registration Number or Vehicle Type or GPS Status is required.',
+      //     };
+      //   }
+      // }
       // else if (foundCategory.title === OutletCategoryList.TEMPORARY) {
       //   if (!eventName || !startDate || !endDate || !boothNumber) {
       //     return {
@@ -322,13 +334,13 @@ export class OutletService {
       //       message: 'Inside Premise or Premise Name is required.',
       //     };
       //   }
-      // } 
-      else {
-        return {
-          success: false,
-          message: 'Invalid category.',
-        };
-      }
+      // }
+      // else {
+      //   return {
+      //     success: false,
+      //     message: 'Invalid category.',
+      //   };
+      // }
 
       // createObj['category'] = new mongoose.Types.ObjectId(category);
       // createObj['type'] = new mongoose.Types.ObjectId(type);
@@ -446,7 +458,7 @@ export class OutletService {
         //     outletIds = outletIds.concat(manager.outlets);
         //   });
         // }
-        getOutletObj['business'] = userDetails.business;
+        getOutletObj['business'] = user.businessProfile;
       } else {
         getOutletObj['_id'] = { $in: mongoUserIds };
       }
@@ -459,18 +471,18 @@ export class OutletService {
         .populate({
           path: 'manager',
           select: 'name email phone countryCode profilePhoto',
-          match: { manager: { $ne: '' } }
+          match: { manager: { $ne: '' } },
         })
         // .populate({
         //   path: 'creator',
         //   select: 'name email phone countryCode profilePhoto',
-        //   match: { _id: { $ne: '' } } 
+        //   match: { _id: { $ne: '' } }
         // })
         .populate('business', 'name email phone countryCode logo')
         .skip((page - 1) * limit)
-        .limit(limit)
+        .limit(limit);
 
-        console.log('outlets:', outlets); 
+      console.log('outlets:', outlets);
 
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
@@ -489,16 +501,90 @@ export class OutletService {
       };
     }
   }
+  async fetchCreatedOutlets(user: any, page: number, limit: number) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+      console.log('UserDetails:', userDetails);
+
+      if(!userDetails){
+        return {
+          success: false,
+          message: 'User not found!',
+        };
+      }
+
+      // const userRole = await this.roleModel.findById(userDetails.role);
+      // let getOutletObj = {};
+      // if (userRole.isBusinessOwner) {
+      //   // const getAllManagers = await this.managerList(userDetails.id, 1, 1000);
+      //   // console.log('getAllManagers', getAllManagers);
+      //   // if (getAllManagers.success) {
+      //   //   getAllManagers.data.forEach((manager) => {
+      //   //     outletIds = outletIds.concat(manager.outlets);
+      //   //   });
+      //   // }
+      //   getOutletObj['business'] = user.businessProfile;
+      // } else {
+      //   getOutletObj['_id'] = { $in: mongoUserIds };
+      // }
+      // console.log('getOutletObj', getOutletObj);
+      console.log("Creator:",userDetails._id);
+      console.log("Business:",user.businessProfile)
+      const outlets = await this.outletModel
+        .find({
+          creator: new mongoose.Types.ObjectId(userDetails._id),
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+        })
+        .populate({
+          path: 'manager',
+          select: 'name email phone countryCode profilePhoto',
+          match: { manager: { $ne: '' } },
+        })
+        .populate('creator', 'name email phone countryCode profilePhoto')
+        // .populate({
+        //   path: 'creator',
+        //   select: 'name email phone countryCode profilePhoto',
+        //   match: { _id: { $ne: '' } },
+        // })
+        .populate('business', 'name email phone countryCode logo')
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      console.log('outlets:', outlets);
+
+      const total = await this.outletModel.countDocuments({
+        creator: new mongoose.Types.ObjectId(userDetails._id),
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      });
+      console.log('outlets:', outlets);
+      return {
+        success: true,
+        message: 'Outlets fetched successfully.',
+        data: outlets,
+        total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
   async getVehicleTypes(page: number, limit: number) {
     try {
-      const vehicleTypes: string[] = Object.values(VehicleType);
-      const paginated = vehicleTypes.slice((page - 1) * limit, page * limit);
-      const total = Object.keys(VehicleType).length;
+      const vehicleTypes = VehicleType;
+      // const total = Object.keys(VehicleType).length;
       return {
         success: true,
         message: 'Vehicle Types fetched successfully',
-        data: paginated,
-        total: total,
+        data: vehicleTypes,
       };
     } catch (error) {
       return {

@@ -17,16 +17,17 @@ export class CreateOutletDto {
   @IsString()
   category: string;
 
-  @IsOptional()
-  @IsString()
-  refId: string;
+  // @IsOptional()
+  // @IsString()
+  // refId: string;
 
   @IsNotEmpty()
   @IsString()
   name: string;
 
-  @IsOptional()
-  manager: string; // Reference to a User entity
+  // @IsOptional()
+  // @IsString()
+  // manager: string; // Reference to a User entity
 
   @IsNotEmpty()
   @IsString()
@@ -42,7 +43,7 @@ export class CreateOutletDto {
 
   @IsNotEmpty()
   @IsString()
-  zip: string;
+  postalCode: string;
 
   // Contact Information
 
@@ -59,33 +60,32 @@ export class CreateOutletDto {
   email: string;
 
   // Social Media & Online Presence
-  @IsOptional()
-  @IsString()
-  whatsappNumber?: string;
+  // @IsOptional()
+  // @IsString()
+  // whatsappNumber?: string;
 
   @IsOptional()
   @IsString()
   website?: string;
 
-  @IsOptional()
-  @IsString()
-  facebook?: string;
+  // @IsOptional()
+  // @IsString()
+  // facebook?: string;
 
-  @IsOptional()
-  @IsString()
-  instagram?: string;
+  // @IsOptional()
+  // @IsString()
+  // instagram?: string;
 
-  @IsOptional()
-  @IsString()
-  twitter?: string;
+  // @IsOptional()
+  // @IsString()
+  // twitter?: string;
 
-  @IsOptional()
-  @IsString()
-  googleMyBusinessId?: string;
+  // @IsOptional()
+  // @IsString()
+  // googleMyBusinessId?: string;
 
   // /FOR PHYSICAL RETAIL AND OUTLET SERVICE OUTLETS
 
-  @IsOptional()
   @IsString()
   address1?: string;
 
@@ -93,54 +93,17 @@ export class CreateOutletDto {
   @IsString()
   address2?: string;
 
-  @IsOptional()
-  @IsString()
-  posSystemId?: string;
-
-
-
   // Mobile & Flexible Outlet Specific Fields
   @IsOptional()
   @IsEnum(VehicleType)
   vehicleType?: string;
 
-  @IsOptional()
-  @IsString()
-  vehicleRegistrationNumber?: string;
+  // @IsOptional()
+  // @IsString()
+  // vehicleRegistrationNumber?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  gpsTrackerEnabled?: boolean;
+  // @IsOptional()
+  // @IsBoolean()
+  // gpsTrackerEnabled?: boolean;
 
-  // Temporary & Event-Based Outlet Specific Fields
-  @IsOptional()
-  @IsString()
-  eventName?: string;
-
-  @IsOptional()
-  @IsDateString()
-  startDate?: Date;
-
-  @IsOptional()
-  @IsDateString()
-  endDate?: Date;
-
-  @IsOptional()
-  @IsString()
-  boothNumber?: string;
-
-  // Online & Delivery-Centric Outlet Specific Fields
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  partneredDeliveryServices?: string[];
-
-  // Specialty & Unconventional Outlet Specific Fields
-  @IsOptional()
-  @IsBoolean()
-  insidePremise?: boolean;
-
-  @IsOptional()
-  @IsString()
-  premiseName?: string; // Name of Hotel, Airport, University, etc.
 }
