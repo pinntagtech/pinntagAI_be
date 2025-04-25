@@ -15,7 +15,6 @@ export class BusinessIndustry {
   darkIcon: string;
   @Prop()
   activeColor: string;
-  @Prop()
   @Prop({ ref: Admin.name })
   createdBy: mongoose.Types.ObjectId;
 }
