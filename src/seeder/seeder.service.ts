@@ -137,7 +137,8 @@ export class SeederService {
     await this.seedActions();
     await this.seedOutletCategories();
     // await this.seedPrivileges(); super admin privileges are not needed
-    // await this.seedBusinessIndustries();
+    await this.seedBusinessIndustries();
+    await this.seedBusinessCategories();
     // await this.seedCountries();
     await this.seedConstitutions();
   }
@@ -149,7 +150,7 @@ export class SeederService {
     //     .insertMany(Seeder.roles)
     //     .then(() => console.log('Roles created.'));
     // }
-    for(let role of Seeder.roles){
+    for (let role of Seeder.roles) {
       const foundRole = await this.roleModel.findOne({ name: role.name });
       if (!foundRole) {
         const newRole = new this.roleModel(role);
@@ -391,59 +392,138 @@ export class SeederService {
     }
   }
 
+  // async seedBusinessIndustries() {
+  //   const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+  //   const findBusinessIndustry = await this.businessIndustryModel.find();
+  //   if (findBusinessIndustry.length < Seeder.BusinessIndustries.length) {
+  //     for (let industry of Seeder.BusinessIndustries) {
+  //       const foundIndustry = await this.businessIndustryModel.findOne({
+  //         title: industry.title,
+  //       });
+  //       if (!foundIndustry) {
+  //         const createdBusinessIndustry =
+  //           await this.businessIndustryModel.create({
+  //             title: industry.title,
+  //             lightIcon: industry.lightIcon,
+  //             darkIcon: industry.darkIcon,
+  //             activeColor: industry.activeColor,
+  //             createdBy: new mongoose.Types.ObjectId(superAdmin.id),
+  //           });
+  //       }
+  //     }
+  //   }
+  // }
   async seedBusinessIndustries() {
-    const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-    const findBusinessIndustry = await this.businessIndustryModel.find();
-    if (findBusinessIndustry.length < Object.keys(BusinessIndustries).length) {
-      for (const businessIndustry of Object.keys(BusinessIndustries)) {
-        const foundBusinessIndustry = await this.businessIndustryModel.findOne({
-          title: businessIndustry,
-        });
-
-        if (!foundBusinessIndustry) {
-          const createdBusinessIndustry =
-            await this.businessIndustryModel.create({
-              title: businessIndustry,
-              createdBy: superAdmin._id,
-            });
-
-          for (const businessCategory of BusinessIndustries[businessIndustry]) {
-            const foundBusinessCategory =
-              await this.businessCategoryModel.findOne({
-                title: businessCategory,
-                industry: new mongoose.Types.ObjectId(
-                  createdBusinessIndustry.id,
-                ),
-              });
-            if (!foundBusinessCategory) {
-              await this.businessCategoryModel.create({
-                title: businessCategory,
-                industry: new mongoose.Types.ObjectId(
-                  createdBusinessIndustry.id,
-                ),
-                createdBy: superAdmin._id,
-              });
-            }
-          }
-        } else {
-          for (const businessCategory of BusinessIndustries[businessIndustry]) {
-            const foundBusinessCategory =
-              await this.businessCategoryModel.findOne({
-                title: businessCategory,
-                industry: new mongoose.Types.ObjectId(foundBusinessIndustry.id),
-              });
-            if (!foundBusinessCategory) {
-              await this.businessCategoryModel.create({
-                title: businessCategory,
-                industry: new mongoose.Types.ObjectId(foundBusinessIndustry.id),
-                createdBy: superAdmin._id,
-              });
-            }
-          }
-        }
-      }
+    // 1. Fetch super-admin once
+    const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true }).lean();
+  
+    if (!superAdmin) {
+      throw new Error("Super-admin user not found");
     }
+  
+    // 2. Prepare upsert operations for all industries
+    const ops = Seeder.BusinessIndustries.map((industry) => ({
+      updateOne: {
+        filter: { title: industry.title },
+        update: {
+          $setOnInsert: {
+            title: industry.title,
+            lightIcon: industry.lightIcon,
+            darkIcon: industry.darkIcon,
+            activeColor: industry.activeColor,
+            createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+          },
+        },
+        upsert: true,
+      },
+    }));
+  
+    // 3. Execute all in one bulkWrite
+    const result = await this.businessIndustryModel.bulkWrite(ops);
+  
+    // 4. (Optional) Log how many were inserted vs. already existed
+    const inserted = result.upsertedCount;
+    const matched = result.matchedCount - inserted;
+    console.log(
+      `Business‐Industries: ${inserted} created, ${matched} already existed`
+    );
   }
+  // async seedBusinessCategories() {
+  //   const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+  //   const findBusinessCategory = await this.businessCategoryModel.find();
+  //   if (findBusinessCategory.length < Seeder.BusinessCategories.length) {
+  //     for (let category of Seeder.BusinessCategories) {
+  //       const industry = await this.businessIndustryModel.findOne({
+  //         title: category.industry,
+  //       });
+  //       if (industry) {
+  //         const foundCategory = await this.businessCategoryModel.findOne({
+  //           title: category.title,
+  //           industry: industry._id,
+  //         });
+  //         if (!foundCategory) {
+  //           const createdCategory = await this.businessCategoryModel.create({
+  //             title: category.title,
+  //             industry: industry._id,
+  //             lightIcon: category.lightIcon,
+  //             darkIcon: category.darkIcon,
+  //             activeColor: category.activeColor,
+  //             createdBy: superAdmin._id,
+  //           });
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
+// Optimized seeding of BusinessCategories using bulkWrite
+async seedBusinessCategories() {
+  // 1. Fetch super-admin once
+  const superAdmin = await this.adminModel
+    .findOne({ isSuperAdmin: true })
+    .lean();
+  if (!superAdmin) throw new Error('Super-admin user not found');
+
+  // 2. Lookup industries for mapping title to _id
+  const industries = await this.businessIndustryModel
+    .find({ title: { $in: Seeder.BusinessCategories.map(c => c.industry) } })
+    .lean();
+  const industryMap = industries.reduce((map, ind) => {
+    map[ind.title] = ind._id;
+    return map;
+  }, {} as Record<string, mongoose.Types.ObjectId>);
+
+  // 3. Prepare bulk operations for categories
+  // Cast to mongoose.AnyBulkWriteOperation[] to satisfy TS typings
+  const ops = Seeder.BusinessCategories.flatMap(category => {
+    const indId = industryMap[category.industry];
+    if (!indId) return [];
+    return [{
+      updateOne: {
+        filter: { title: category.title, industry: indId },
+        update: { $setOnInsert: {
+            title: category.title,
+            industry: indId,
+            lightIcon: category.lightIcon,
+            darkIcon: category.darkIcon,
+            activeColor: category.activeColor,
+            createdBy: new mongoose.Types.ObjectId(superAdmin._id)
+        }},
+        upsert: true
+      }
+    }];
+  }) as mongoose.AnyBulkWriteOperation[];
+
+  // 4. Execute bulkWrite if there are operations
+  if (ops.length) {
+    const result = await this.businessCategoryModel.bulkWrite(ops);
+    console.log(
+      `BusinessCategories: ${result.upsertedCount} created, ${result.matchedCount - result.upsertedCount} existed`
+    );
+  }
+}
+
+  
 
   async seedCountries() {
     const existingCount = await this.businessCountryModel.countDocuments();
