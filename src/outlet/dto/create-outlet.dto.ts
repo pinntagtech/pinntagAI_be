@@ -7,6 +7,9 @@ import {
   IsBoolean,
   IsDateString,
   IsArray,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 import { OutletCategory } from '../model/outletCategory.model';
 import { VehicleType } from '../outlet.enum';
@@ -58,6 +61,14 @@ export class CreateOutletDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(10)
+  @Max(90)
+  servingRadius:number;
+  
+
 
   // Social Media & Online Presence
   // @IsOptional()

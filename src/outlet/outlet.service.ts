@@ -357,6 +357,12 @@ export class OutletService {
         );
       }
 
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        { $push: { outlets: outlet.id } },
+      );
+
+
       return {
         success: true,
         message: 'Outlet created successfully.',

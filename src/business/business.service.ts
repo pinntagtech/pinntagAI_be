@@ -85,7 +85,8 @@ export class BusinessService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndModel: Model<BusinessIndustryDocument>,
-    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCategory.name)
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(BusinessCountry.name)
     private readonly businessCountryModel: Model<BusinessCountryDocument>,
     @InjectModel(BusinessConstitution.name)
@@ -819,7 +820,7 @@ export class BusinessService {
         updateObj.scalabilityFactor == ScalabilityFactor.SINGLE ||
         updateObj.scalabilityFactor == ScalabilityFactor.MULTIBRAND ||
         updateObj.scalabilityFactor == ScalabilityFactor.MULTIPLE ||
-        updateObj.scalabilityFactor == ScalabilityFactor.FRANCHISE 
+        updateObj.scalabilityFactor == ScalabilityFactor.FRANCHISE
       ) {
         if (updateObj.scalabilityFactor > ScalabilityFactor.FRANCHISE) {
           return {
@@ -907,7 +908,9 @@ export class BusinessService {
 
   //helper
   async validateBusinessUser(email: string, password: string) {
+    console.log('email password:', email, password);
     const user = await this.businessUserModel.findOne({ email });
+    console.log('User::', user);
     if (user) {
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
@@ -1007,7 +1010,8 @@ export class BusinessService {
       const userDetails = await this.businessUserModel
         .findById(user._id)
         .populate('role', '_id name')
-        .populate('business');
+        .populate('business')
+        .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
       console.log('userDetails:', userDetails);
       return {
         success: true,
@@ -1227,17 +1231,76 @@ export class BusinessService {
   }
   async industryList(page: number, limit: number) {
     try {
-      const industries = await this.businessIndModel
-        .find()
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .populate('createdBy', '_id name');
-      const totalDocs = await this.businessIndModel.countDocuments();
+      // const industries = await this.businessIndModel
+      //   .find()
+      //   .skip((page - 1) * limit)
+      //   .limit(limit)
+      //   .populate('createdBy', '_id name');
+      // const totalDocs = await this.businessIndModel.countDocuments();
+
+      const industries = await this.businessCategoryModel.aggregate([
+        {
+          $group: {
+            _id: '$industry',
+          },
+        },
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'result',
+          },
+        },
+        {
+          $unwind: {
+            path: '$result',
+          },
+        },
+        {
+          $lookup: {
+            from: 'admins',
+            localField: 'result.createdBy',
+            foreignField: '_id',
+            as: 'createdBy',
+          },
+        },
+        {
+          $unwind: {
+            path: '$createdBy',
+          },
+        },
+        {
+          $project: {
+            title: '$result.title',
+            activeColor: '$result.activeColor',
+            createdAt: '$result.createdAt',
+            createdBy: {
+              _id: '$createdBy._id',
+              name: '$createdBy.name',
+            },
+            darkIcon: '$result.darkIcon',
+            lightIcon: '$result.lightIcon',
+            updatedAt: '$result.updatedAt',
+          },
+        },
+        { 
+          $facet: {
+            data: [
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+            ],
+            totalCount: [
+              { $count: 'count' },
+            ],
+          },
+        },
+      ]);
       return {
         success: true,
         message: 'Business Industries fetched Successfully.',
-        data: industries,
-        total: totalDocs,
+        data: industries[0].data,
+        total: industries[0].totalCount[0].count,
       };
     } catch (error) {
       return {
@@ -1248,7 +1311,7 @@ export class BusinessService {
   }
   async businessCategoryList(id: string, page: number, limit: number) {
     try {
-      console.log("ID:",id);
+      console.log('ID:', id);
       const categories = await this.businessCategoryModel
         .find({
           industry: new mongoose.Types.ObjectId(id),
@@ -1256,7 +1319,7 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-          console.log("categories:",categories);
+      console.log('categories:', categories);
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
