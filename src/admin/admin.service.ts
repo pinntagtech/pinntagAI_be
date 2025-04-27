@@ -922,7 +922,7 @@ export class AdminService {
     return {
       success: true,
       message: 'Admin created successfully',
-      data: createdAdmin,
+      data: adminDoc,
     };
   }
 

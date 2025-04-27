@@ -109,46 +109,179 @@ export const DefaultBusinessRoles = {
   },
 };
 
+// export const DefaultAdminRoles = {
+//   Managing_Director: {
+//     name: 'Managing Director',
+//     privileges: {
+//       BUSINESS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       ROLES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       privileges: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       REPORTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//     },
+//   },
+//   Board_Member: {
+//     name: 'Board Member',
+//     privileges: {
+//       BUSINESS: ['READ'],
+//       USERS: ['READ'],
+//       ROLES: ['READ'],
+//       privileges: ['READ'],
+//       REPORTS: ['READ'],
+//       SETTINGS: ['READ'],
+//     },
+//   },
+//   Manager: {
+//     name: 'Manager',
+//     privileges: {
+//       USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       ORDERS: ['READ'],
+//     },
+//   },
+//   Executive: {
+//     name: 'Executive',
+//     privileges: {
+//       MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+//     },
+//   },
+// };
+
 export const DefaultAdminRoles = {
-  Managing_Director: {
-    name: 'Managing Director',
+  Sales_User: {
+    name: 'Sales User',
     privileges: {
-      BUSINESS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ROLES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      privileges: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REPORTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Business: ['READ'],
+      Referrals: ['CREATE', 'READ'],
+      Orders: ['CREATE', 'READ'],
+      Products: ['READ'],
+      Categories: ['READ'],
+      Brands: ['READ'],
+      Locations: ['READ'],
+      Messages: ['READ'],
+      Notifications: ['READ'],
     },
   },
-  Board_Member: {
-    name: 'Board Member',
+  Sales_Manager: {
+    name: 'Sales Manager',
     privileges: {
-      BUSINESS: ['READ'],
-      USERS: ['READ'],
-      ROLES: ['READ'],
-      privileges: ['READ'],
-      REPORTS: ['READ'],
-      SETTINGS: ['READ'],
+      Business: ['READ'],
+      Referrals: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Orders: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Products: ['READ'],
+      Categories: ['READ'],
+      Brands: ['READ'],
+      Reports: ['READ'],
+      Locations: ['READ'],
     },
   },
-  Manager: {
-    name: 'Manager',
+  Support_Executive: {
+    name: 'Support Executive',
     privileges: {
-      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ORDERS: ['READ'],
+      Orders: ['READ', 'UPDATE'],
+      Messages: ['READ', 'CREATE', 'UPDATE'],
+      Notifications: ['READ', 'UPDATE'],
+      Reports: ['READ'],
+      Users: ['READ'],
     },
   },
-  Executive: {
-    name: 'Executive',
+  Support_Manager: {
+    name: 'Support Manager',
     privileges: {
-      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Orders: ['CREATE', 'READ', 'UPDATE'],
+      Messages: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Notifications: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Reports: ['READ'],
+      Users: ['READ'],
+    },
+  },
+  Finance_User: {
+    name: 'Finance User',
+    privileges: {
+      Payments: ['READ'],
+      Orders: ['READ'],
+      Reports: ['READ'],
+    },
+  },
+  Finance_Manager: {
+    name: 'Finance Manager',
+    privileges: {
+      Payments: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Reports: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Orders: ['READ'],
+    },
+  },
+  Marketing_User: {
+    name: 'Marketing User',
+    privileges: {
+      Products: ['CREATE', 'READ'],
+      Brands: ['CREATE', 'READ'],
+      Referrals: ['CREATE', 'READ'],
+      Categories: ['READ'],
+    },
+  },
+  Marketing_Manager: {
+    name: 'Marketing Manager',
+    privileges: {
+      Products: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Brands: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Referrals: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Categories: ['READ'],
+    },
+  },
+  Product_Admin: {
+    name: 'Product Admin',
+    privileges: {
+      Products: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Categories: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Brands: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+    },
+  },
+  Operations_User: {
+    name: 'Operations User',
+    privileges: {
+      Orders: ['READ', 'UPDATE'],
+      Outlets: ['READ', 'UPDATE'],
+      Locations: ['READ'],
+    },
+  },
+  Operations_Manager: {
+    name: 'Operations Manager',
+    privileges: {
+      Orders: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Outlets: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Locations: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Reports: ['READ'],
+    },
+  },
+  IT_Support: {
+    name: 'IT Support',
+    privileges: {
+      Settings: ['READ', 'UPDATE'],
+      Permissions: ['READ'],
+      Roles: ['READ'],
+    },
+  },
+  IT_Manager: {
+    name: 'IT Manager',
+    privileges: {
+      Settings: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Permissions: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Roles: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Privileges: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+    },
+  },
+  Outlet_Manager: {
+    name: 'Outlet Manager',
+    privileges: {
+      Outlets: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      Locations: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
 };
