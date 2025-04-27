@@ -567,7 +567,7 @@ export class AdminController {
           message: 'Please provide a valid role id',
         };
       }
-      console.log("inside create admin");
+      console.log('inside create admin');
       const result = await this.adminService.createAdmin(user.id, data);
       if (result.success) {
         return res.status(HttpStatus.OK).json({
@@ -829,5 +829,70 @@ export class AdminController {
         message: result.message,
       });
     }
+  }
+
+  // @Get('business/industry')
+  // async getBusinessIndustry(
+  //   @Res() res: Response,
+  //   @Query('page') page: string,
+  //   @Query('limit') limit: string,
+  // ) {
+  //   const pageNumber = page ? parseInt(page) : 1;
+  //   const limitNumber = limit ? parseInt(limit) : 10;
+  //   console.log('pageNumber', pageNumber);
+  //   console.log('limitNumber', limitNumber);
+  //   // const result = await this.adminService.getBusinessIndustry(
+  //   //   pageNumber,
+  //   //   limitNumber,
+  //   // );
+  //   // if (result.success) {
+  //   //   return res.status(HttpStatus.OK).json({
+  //   //     message: result.message,
+  //   //     data: result.data,
+  //   //     // limit: result.limit,
+  //   //     total: result.total,
+  //   //     // pages: result.pages,
+  //   //   });
+  //   // } else {
+  //   //   return res.status(HttpStatus.BAD_REQUEST).json({
+  //   //     message: result.message,
+  //   //   });
+  //   // }
+
+  //   return res.status(HttpStatus.OK).json({
+  //     message: 'testing',
+  //   });
+  // }
+
+  @Get('testing')
+  async getBusinessIndustry(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    console.log('pageNumber', pageNumber);
+    console.log('limitNumber', limitNumber);
+    const result = await this.adminService.getBusinessIndustry(
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+
+    // console.log('testing here');
+    // return res.status(HttpStatus.OK).json({
+    //   message: 'testing',
+    // });
   }
 }
