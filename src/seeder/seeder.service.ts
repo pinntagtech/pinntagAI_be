@@ -32,6 +32,7 @@ import {
   Actions,
   ResourceTypes,
   RoleBelonging,
+  RoleCreatorType,
   Roles,
 } from 'src/roles/enums/roles.enum';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
@@ -78,6 +79,7 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeDocument,
 } from 'src/business/model/BussinessDocumentType.model';
+import { DefaultAdminRoles } from 'src/business/resourceInits/template-roles';
 
 @Injectable()
 export class SeederService {
@@ -139,8 +141,8 @@ export class SeederService {
     // await this.seedPrivileges(); super admin privileges are not needed
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
-    // await this.seedCountries();
-    await this.seedConstitutions();
+    await this.seedCountries();
+    // await this.seedConstitutions();
   }
 
   public async seedRoles() {
@@ -246,13 +248,60 @@ export class SeederService {
       });
       await this.roleModel.updateOne(
         { _id: role.id },
-        { $set: { creator: new mongoose.Types.ObjectId(adminDetails.id) } },
+        { $set: { creator: new mongoose.Types.ObjectId(adminDetails._id) } },
       );
       let driveDetails = await this.createDrive(adminDetails._id, Admin.name);
       await this.adminModel.updateOne(
         { _id: adminDetails._id },
         { $set: { drive: driveDetails._id } },
       );
+      const rolePromises = Object.keys(DefaultAdminRoles).map(
+              async (roleName) => {
+                const roleData = DefaultAdminRoles[roleName];
+                // Create the role
+                const createdRole = await this.roleModel.create({
+                  name: roleData.name,
+                  creator: new mongoose.Types.ObjectId(adminDetails._id),
+                  creatorType: RoleCreatorType.ADMIN,
+                  belongsTo: RoleBelonging.SYSTEM,
+                });
+                // Create privileges for this role concurrently
+                const privilegePromises = Object.keys(roleData.privileges).map(
+                  async (privilegeKey) => {
+                    // Get or create the resource document
+                    let resourceDetails = await this.resourceModel.findOne({
+                      title: ResourceTypes[privilegeKey],
+                    });
+                    if (!resourceDetails) {
+                      resourceDetails = await this.resourceModel.create({
+                        title: ResourceTypes[privilegeKey],
+                      });
+                    }
+                    // For each action in the privilege, get or create the action document and create a privilege record
+                    const actionPromises = roleData.privileges[privilegeKey].map(
+                      async (actionKey) => {
+                        let actionDetails = await this.actionModel.findOne({
+                          title: Actions[actionKey],
+                        });
+                        if (!actionDetails) {
+                          actionDetails = await this.actionModel.create({
+                            title: Actions[actionKey],
+                          });
+                        }
+                        return this.privilegeModel.create({
+                          role: createdRole._id,
+                          resource: resourceDetails.title,
+                          action: actionDetails.title,
+                        });
+                      },
+                    );
+                    return Promise.all(actionPromises);
+                  },
+                );
+                await Promise.all(privilegePromises);
+              },
+            );
+            await Promise.all(rolePromises);
     }
   }
 
