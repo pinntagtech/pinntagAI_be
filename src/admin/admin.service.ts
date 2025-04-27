@@ -920,11 +920,10 @@ export class AdminService {
       isEmailVerified: true,
       ...data,
     });
-    const adminDoc = (
-      await this.adminModel
-        .findById(createdAdmin._id)
-        .populate('creator', '_id name')
-    ).populate('role', '_id name');
+    const adminDoc = await this.adminModel
+      .findById(createdAdmin._id)
+      .populate('creator', '_id name')
+      .populate('role', '_id name');
     return {
       success: true,
       message: 'Admin created successfully',
