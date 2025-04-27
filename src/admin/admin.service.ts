@@ -995,7 +995,8 @@ export class AdminService {
         id,
         { $set: { ...data } },
         { new: true },
-      );
+      ).populate('role', '_id name')
+      .populate('creator', '_id name');
       return {
         success: true,
         message: 'Admin updated successfully',
@@ -1241,6 +1242,29 @@ export class AdminService {
         data: createdCategory,
       };
     } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async getBusinessIndustry(page:number,limit:number){
+    try{
+       const industries = await this.industryModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('createdBy', '_id name');
+        console.log("Industries:",industries);
+      const totalDocs = await this.industryModel.countDocuments();
+      return {
+        success: true,
+        message: 'Business Industries fetched Successfully.',
+        data: industries,
+        total: totalDocs,
+      };
+
+    }catch(error){
       return {
         success: false,
         message: error.message,
