@@ -47,7 +47,7 @@ export class Admin {
 
   @Prop({
     default:
-      'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultimage.jpeg',
+      'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/defaultUser.svg',
   })
   profilePhoto: string;
 

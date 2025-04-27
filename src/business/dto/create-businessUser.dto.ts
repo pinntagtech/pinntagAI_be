@@ -34,5 +34,6 @@ export class CreateBusinessUserDto {
 
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => value.trim())
   name: string;
 }

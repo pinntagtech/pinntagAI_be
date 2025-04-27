@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsEmail,
@@ -11,6 +12,7 @@ import mongoose from 'mongoose';
 export class CreateBusinessDto {
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => value.trim())
   name: string;
 
   @IsEmail()

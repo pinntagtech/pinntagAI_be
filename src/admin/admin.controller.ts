@@ -46,23 +46,26 @@ export class AdminController {
 
   @Get('list')
   @UseGuards(AdminGuard2)
-  async getUsers(@Res() res: Response,@Query('page') page: string,@Query('limit') limit: string) {
+  async getUsers(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.adminService.getUsers(pageNumber,limitNumber);
+    const result = await this.adminService.getUsers(pageNumber, limitNumber);
 
     if (result.success) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
-        data:result.data,
+        data: result.data,
         total: result.total,
       });
-    }else{
+    } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
-   
   }
 
   @Get('crawled')
@@ -381,12 +384,12 @@ export class AdminController {
     const result = await this.adminService.forceResetPassword(
       user.id,
       body.password,
-      req['tokenId'],     
+      req['tokenId'],
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        token:result.token
+        token: result.token,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -564,6 +567,7 @@ export class AdminController {
           message: 'Please provide a valid role id',
         };
       }
+      console.log("inside create admin");
       const result = await this.adminService.createAdmin(user.id, data);
       if (result.success) {
         return res.status(HttpStatus.OK).json({
@@ -789,7 +793,10 @@ export class AdminController {
     @Body() data: CreateIndustryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.createBusinessIndustry(user.id,data);
+    const result = await this.adminService.createBusinessIndustry(
+      user.id,
+      data,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -806,18 +813,21 @@ export class AdminController {
   async createBusinessCategory(
     @Res() res: Response,
     @Body() data: BusinessCategoryDto,
-    @TokenDecoder() user: DecodedUser){
-      const result = await this.adminService.createBusinessCategory(user.id,data);
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.createBusinessCategory(
+      user.id,
+      data,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
     }
-
+  }
 }

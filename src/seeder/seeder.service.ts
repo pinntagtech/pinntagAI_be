@@ -248,7 +248,11 @@ export class SeederService {
         { _id: role.id },
         { $set: { creator: new mongoose.Types.ObjectId(adminDetails.id) } },
       );
-      await this.createDrive(adminDetails._id, Admin.name);
+      let driveDetails = await this.createDrive(adminDetails._id, Admin.name);
+      await this.adminModel.updateOne(
+        { _id: adminDetails._id },
+        { $set: { drive: driveDetails._id } },
+      );
     }
   }
 

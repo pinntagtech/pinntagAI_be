@@ -66,6 +66,9 @@ export class Outlet {
   @Prop({ required: true })
   email: string;
 
+  @Prop({default: 60})
+  servingRadius: number;
+
   // Social Media & Online Presence
   @Prop()
   whatsappNumber?: string;
