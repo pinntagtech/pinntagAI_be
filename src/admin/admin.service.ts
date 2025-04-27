@@ -694,35 +694,37 @@ export class AdminService {
   }
   async getAllChildAdminIds2(adminId) {
     const objectId = new mongoose.Types.ObjectId(adminId);
-  console.log("objectIdque",objectId);
-    const result = await this.adminModel.aggregate([
-      {
-        $match: { _id: objectId }
-      },
-      {
-        $graphLookup: {
-          from: this.adminModel.collection.name,
-          startWith: '$_id',
-          connectFromField: '_id',
-          connectToField: 'creator',
-          as: 'descendants',
-          restrictSearchWithMatch: { creatorType: 'Admin' }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          descendantIds: {
-            $map: {
-              input: '$descendants',
-              as: 'd',
-              in: { $toString: '$$d._id' }
-            }
-          }
-        }
-      }
-    ]).exec();
-  
+    console.log('objectIdque', objectId);
+    const result = await this.adminModel
+      .aggregate([
+        {
+          $match: { _id: objectId },
+        },
+        {
+          $graphLookup: {
+            from: this.adminModel.collection.name,
+            startWith: '$_id',
+            connectFromField: '_id',
+            connectToField: 'creator',
+            as: 'descendants',
+            restrictSearchWithMatch: { creatorType: 'Admin' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            descendantIds: {
+              $map: {
+                input: '$descendants',
+                as: 'd',
+                in: { $toString: '$$d._id' },
+              },
+            },
+          },
+        },
+      ])
+      .exec();
+
     return result[0]?.descendantIds || [];
   }
 
@@ -918,7 +920,11 @@ export class AdminService {
       isEmailVerified: true,
       ...data,
     });
-    const adminDoc = await this.adminModel.findById(createdAdmin._id).populate('creator', '_id name');
+    const adminDoc = (
+      await this.adminModel
+        .findById(createdAdmin._id)
+        .populate('creator', '_id name')
+    ).populate('role', '_id name');
     return {
       success: true,
       message: 'Admin created successfully',
@@ -944,7 +950,11 @@ export class AdminService {
       };
     }
     const updatedAdmin = await this.adminModel
-      .findByIdAndUpdate(adminId, { $addToSet: { role: role._id } }, { new: true })
+      .findByIdAndUpdate(
+        adminId,
+        { $addToSet: { role: role._id } },
+        { new: true },
+      )
       .populate('role', '_id name');
     return {
       success: true,
@@ -955,7 +965,7 @@ export class AdminService {
 
   async isAdminAboveInHierarchy(admin: string, target: string) {
     const allAdminIds = await this.getAllChildAdminIds2(admin);
-    console.log("AllAdminIds:",allAdminIds);
+    console.log('AllAdminIds:', allAdminIds);
     if (allAdminIds.includes(target)) {
       return true;
     }
@@ -991,12 +1001,10 @@ export class AdminService {
         }
         data.role = role._id;
       }
-      const updatedAdmin = await this.adminModel.findByIdAndUpdate(
-        id,
-        { $set: { ...data } },
-        { new: true },
-      ).populate('role', '_id name')
-      .populate('creator', '_id name');
+      const updatedAdmin = await this.adminModel
+        .findByIdAndUpdate(id, { $set: { ...data } }, { new: true })
+        .populate('role', '_id name')
+        .populate('creator', '_id name');
       return {
         success: true,
         message: 'Admin updated successfully',
@@ -1248,14 +1256,14 @@ export class AdminService {
       };
     }
   }
-  async getBusinessIndustry(page:number,limit:number){
-    try{
-       const industries = await this.industryModel
+  async getBusinessIndustry(page: number, limit: number) {
+    try {
+      const industries = await this.industryModel
         .find()
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-        console.log("Industries:",industries);
+      console.log('Industries:', industries);
       const totalDocs = await this.industryModel.countDocuments();
       return {
         success: true,
@@ -1263,8 +1271,7 @@ export class AdminService {
         data: industries,
         total: totalDocs,
       };
-
-    }catch(error){
+    } catch (error) {
       return {
         success: false,
         message: error.message,
