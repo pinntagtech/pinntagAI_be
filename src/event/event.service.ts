@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Event, EventDocument } from './models/event.model';
 import mongoose, { Model } from 'mongoose';
 import axios from '@nestjs/axios';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Image, ImageDocument } from './models/image.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
@@ -171,30 +171,27 @@ export class EventService {
     //       'You have already created an event. Please subscribe to create more events.',
     //   };
     // }
-    //  createEventDto.category.forEach((category) => 
-    if(createEventDto.categories){
+    //  createEventDto.category.forEach((category) =>
+    if (createEventDto.categories) {
       let categoriesInObjectId = [];
       createEventDto.categories = createEventDto.categories.split(',');
-      for(let category of createEventDto.categories)
-      {
-      if(!mongoose.isValidObjectId(category)){
-        return {
-          success: false,
-          message: 'Please provide a valid category id',
+      for (let category of createEventDto.categories) {
+        if (!mongoose.isValidObjectId(category)) {
+          return {
+            success: false,
+            message: 'Please provide a valid category id',
+          };
         }
+        const foundCategory = await this.categoryModel.findById(category);
+        if (!foundCategory) {
+          return {
+            success: false,
+            message: 'Category not found',
+          };
+        }
+        categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
       }
-      const foundCategory = await this.categoryModel.findById(
-        category
-      );
-      if (!foundCategory) {
-        return {
-          success: false,
-          message: 'Category not found',
-        };
-      }
-      categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
-     }
-     createEventDto.categories = categoriesInObjectId;
+      createEventDto.categories = categoriesInObjectId;
     }
     let createQuery = {
       ...createEventDto,
@@ -234,7 +231,7 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate({
         path: 'categories',
-        select: '_id name image color'
+        select: '_id name image color',
       });
     // if (event.type == EventTypes.PRIVATE) {
     //   await this.eventModel.findByIdAndUpdate(event._id, {
@@ -398,20 +395,16 @@ export class EventService {
       };
     }
 
-      let categoriesInObjectId = [];
-      if(updateEventDto.categories){
-
-        for(let category of updateEventDto.categories)
-        {
-        if(!mongoose.isValidObjectId(category)){
+    let categoriesInObjectId = [];
+    if (updateEventDto.categories) {
+      for (let category of updateEventDto.categories) {
+        if (!mongoose.isValidObjectId(category)) {
           return {
             success: false,
             message: 'Please provide a valid category id',
-          }
+          };
         }
-        const foundCategory = await this.categoryModel.findById(
-          category
-        );
+        const foundCategory = await this.categoryModel.findById(category);
         if (!foundCategory) {
           return {
             success: false,
@@ -419,10 +412,10 @@ export class EventService {
           };
         }
         categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
-       }
-       
-       updateEventDto.categories = categoriesInObjectId;
       }
+
+      updateEventDto.categories = categoriesInObjectId;
+    }
 
     if (updateEventDto.schedule && updateEventDto.schedule.length) {
       for (let i = 0; i < updateEventDto.schedule.length; i++) {
@@ -464,7 +457,6 @@ export class EventService {
       }
     }
 
-    
     if (
       event.creatorType === BusinessProfile.name &&
       event.businessProfile.toString() !== user.businessProfile
@@ -706,8 +698,7 @@ export class EventService {
           }
           updateEventDto.schedule[i].durations.sort((a, b) => {
             return (
-              new Date(a.startTime).getTime() -
-              new Date(b.startTime).getTime()
+              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
             );
           });
         }
@@ -1185,7 +1176,7 @@ export class EventService {
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
       .populate('ageGroupsAllowed', 'name')
-      .populate({path:'categories',select: CategoryPopulates.FOREIGN})
+      .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
       .populate({
         path: 'user',
         select: UserPopulates.FOREIGN,
@@ -1288,7 +1279,7 @@ export class EventService {
         .populate('images', ImagePopulates.FOREIGN)
         .populate('locations', LocationPopulates.FOREIGN)
         .populate('ageGroupsAllowed', 'name')
-        .populate({ path:'categories',select: CategoryPopulates.FOREIGN})
+        .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN);
       if (!event) {
@@ -2116,7 +2107,10 @@ export class EventService {
                   { new: true },
                 )
                 .populate('images', ImagePopulates.FOREIGN)
-                .populate({path:'categories', select:CategoryPopulates.FOREIGN})
+                .populate({
+                  path: 'categories',
+                  select: CategoryPopulates.FOREIGN,
+                })
                 .populate('user', UserPopulates.FOREIGN)
                 .populate('businessProfile', BusinessPopulates.FOREIGN);
               return {

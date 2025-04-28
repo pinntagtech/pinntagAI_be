@@ -184,6 +184,12 @@ export class Business {
   @Prop({ default: false })
   isOnlineType: boolean;
 
+  @Prop({ default: 0 })
+  mobileUnitsCreated: number;
+
+  @Prop({ default: 0 })
+  physicalUnitsCreated: number;
+
   @Prop({ default: false })
   continueJourney: boolean;
 

@@ -53,7 +53,7 @@ import {
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Category, CategorySchema } from 'src/models/category.model';
+import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import {

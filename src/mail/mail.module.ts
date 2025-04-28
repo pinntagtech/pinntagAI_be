@@ -33,7 +33,7 @@ import {
   EventLocation,
   EventLocationSchema,
 } from 'src/event/models/eventLocation.model';
-import { Category, CategorySchema } from 'src/models/category.model';
+import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import {
   Notification,
   NotificationSchema,

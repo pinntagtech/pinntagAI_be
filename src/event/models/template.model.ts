@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { Event, Schedule } from './event.model';
 import { AgeGroup } from 'src/models/ageGroup.model';
-import { Category } from 'src/models/category.model';
+import { Category } from 'src/models/contentCategory.model';
 
 export type TemplateDocument = Template & mongoose.Document;
 

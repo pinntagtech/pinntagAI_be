@@ -35,7 +35,7 @@ import {
 import { Image, ImageDocument } from 'src/event/models/image.model';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { S3Service } from 'src/s3.service';
 import { User, UserDocument } from 'src/user/models/user.model';
@@ -64,6 +64,8 @@ import {
   BusinessCategoryDocument,
 } from 'src/business/model/businessCategory.model';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { ConnectableObservable } from 'rxjs';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class AdminService {
@@ -79,7 +81,7 @@ export class AdminService {
     @InjectModel(CrawledEvent.name)
     private readonly crawledEventModel: Model<CrawledEventDocument>,
     @InjectModel(Category.name)
-    private readonly categoryModel: Model<CategoryDocument>,
+    private readonly contentCategoryModel: Model<CategoryDocument>,
     @InjectModel(Image.name)
     private readonly imageModel: Model<ImageDocument>,
     @InjectModel(BusinessLocation.name)
@@ -260,7 +262,7 @@ export class AdminService {
         } else {
           findQuery = { name: foundDoc.category };
         }
-        const category = await this.categoryModel.findOne(findQuery);
+        const category = await this.contentCategoryModel.findOne(findQuery);
         if (!category) {
           return {
             success: false,
@@ -375,7 +377,7 @@ export class AdminService {
   async addDashboardConfiguration(data: ConfigureDashboardDto) {
     if (data.categories.length) {
       for (let i = 0; i < data.categories.length; i++) {
-        const foundCategory = await this.categoryModel
+        const foundCategory = await this.contentCategoryModel
           .findById(data.categories[i])
           .exec();
         if (!foundCategory) {
@@ -828,31 +830,46 @@ export class AdminService {
       return { success: false, message: error.message };
     }
   }
-  async createCategory(createCategoryDto: CreateCategoryDto) {
+  async createCategory(userId: string, data: CreateCategoryDto) {
     try {
-      const createdCategory = await this.categoryModel.create({
-        ...createCategoryDto,
+      let category = await this.contentCategoryModel.findOne({
+        title: data.title,
+      });
+      if (category) {
+        return {
+          success: false,
+          message: 'Category with this name already exists.',
+        };
+      }
+      const createdCategory = await this.contentCategoryModel.create({
+        ...data,
+        createdBy: new mongoose.Types.ObjectId(userId),
       });
       console.log('CreatedCategory:', createdCategory);
+      category = await this.contentCategoryModel
+        .findById(createdCategory._id)
+        .populate('createdBy', '_id name');
       return {
         success: true,
         message: 'New Category Created Successfully!',
-        data: createdCategory,
+        data: category,
       };
     } catch (error) {
       console.error(error);
       return { success: false, message: error.message };
     }
   }
-  async getCategories() {
-    return await this.categoryModel
+  async getCategories(page: number, limit: number) {
+    return await this.contentCategoryModel
       .find()
       .sort({ sortOrder: 1 })
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
-      .exec();
+      .populate('createdBy', '_id name')
+      .skip((page - 1) * limit)
+      .limit(limit);
   }
 
-  async updateCategory(catId: string, updateCategoryDto: CreateCategoryDto) {
+  async updateCategory(catId: string, updateCategoryDto: UpdateCategoryDto) {
     try {
       if (!mongoose.isValidObjectId(catId)) {
         return {
@@ -860,7 +877,7 @@ export class AdminService {
           message: 'Please provide a valid id',
         };
       }
-      const updatedCategory = await this.categoryModel.findOneAndUpdate(
+      const updatedCategory = await this.contentCategoryModel.findOneAndUpdate(
         { _id: catId },
         { $set: { ...updateCategoryDto } },
       );
@@ -876,6 +893,32 @@ export class AdminService {
       return { success: false, message: error.message };
     }
   }
+  async deleteContentCategory(catId:string){
+    try {
+      if (!mongoose.isValidObjectId(catId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid id',
+        };
+      }
+      const findCategory = await this.contentCategoryModel.findById(catId);
+      if (!findCategory) {
+        return {
+          success: false,
+          message: 'Category not found with the id provided.',
+        };
+      }
+      await this.contentCategoryModel.findByIdAndDelete(catId);
+
+      return {
+        success: true,
+        message: 'Category with given ID is Deleted Successfully.',
+      };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: error.message };
+    }
+  }
 
   async createAdmin(adminId: string, data: CreateAdminDto) {
     const admin = await this.adminModel.findById(adminId);
@@ -885,6 +928,7 @@ export class AdminService {
         message: 'Admin not found with the id provided.',
       };
     }
+    let password = data.password;
     data.password = await bcrypt.hash(data.password, 10);
     if (data.role) {
       const role = await this.roleModel.findById(data.role);
@@ -906,20 +950,27 @@ export class AdminService {
         message: 'Admin with this email or phone number already exists.',
       };
     }
-    console.log('data:', data);
-    console.log('data 1:', data.profilePhoto);
     if (data.profilePhoto === '') {
       console.log('Is this coming here:');
       delete data.profilePhoto;
     }
-    console.log('data 2:', data);
 
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(adminId),
-      isEmailVerified: true,
+      // isEmailVerified: true,
       ...data,
     });
+
+    console.log('created Admin:', createdAdmin.id);
+    const loginLink = process.env.PORTAL_URL + 'v1/admin/login';
+    await this.mailService.sendDownlineUserCredentials(
+      createdAdmin.name,
+      createdAdmin.email,
+      password,
+      loginLink,
+    );
+
     const adminDoc = await this.adminModel
       .findById(createdAdmin._id)
       .populate('creator', '_id name')
@@ -1275,6 +1326,32 @@ export class AdminService {
         success: false,
         message: error.message,
       };
+    }
+  }
+  async deleteBusinessCategory(catId:string){
+    try {
+      if (!mongoose.isValidObjectId(catId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid id',
+        };
+      }
+      const findCategory = await this.businessCategoryModel.findById(catId);
+      if (!findCategory) {
+        return {
+          success: false,
+          message: 'Category not found with the id provided.',
+        };
+      }
+      await this.businessCategoryModel.findByIdAndDelete(catId);
+
+      return {
+        success: true,
+        message: 'Category with given ID is Updated Successfully!',
+      };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: error.message };
     }
   }
 }

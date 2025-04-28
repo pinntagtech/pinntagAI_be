@@ -37,7 +37,7 @@ import {
   EventLocationDocument,
 } from 'src/event/models/eventLocation.model';
 import { EventStatus, EventTypes } from 'src/enums/event.enums';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Auth, google } from 'googleapis';
 import { OAuth2Dto } from './dto/oAuth2.dto';
 import { Otp, OtpDocument } from './models/otp.model';
@@ -101,7 +101,8 @@ export class AuthService {
     @InjectModel(Refferal.name)
     private readonly refferalModel: Model<RefferalDocument>,
     // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
-    @InjectModel(Business.name) private readonly businessProfileModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessProfileModel: Model<BusinessDocument>,
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Category.name)
@@ -4097,7 +4098,7 @@ export class AuthService {
     }
   }
 
-  async getProfile(userId:string,userType:string) {
+  async getProfile(userId: string, userType: string) {
     try {
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
@@ -4117,7 +4118,9 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel.findById(userId).populate('business');
+        userDoc = await this.businessUserModel
+          .findById(userId)
+          .populate('business');
         if (!userDoc) {
           return {
             success: false,

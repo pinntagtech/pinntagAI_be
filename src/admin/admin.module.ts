@@ -8,7 +8,7 @@ import {
   CrawledEventSchema,
 } from 'src/event/models/crawled-event.model';
 import { EventSchema } from 'src/event/models/event.model';
-import { Category, CategorySchema } from 'src/models/category.model';
+import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
 import {
   BusinessLocation,

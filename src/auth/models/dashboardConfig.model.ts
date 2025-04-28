@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { Category } from 'src/models/category.model';
+import { Category } from 'src/models/contentCategory.model';
 
 export type DashboardConfigDocument = DashboardConfig & mongoose.Document;
 

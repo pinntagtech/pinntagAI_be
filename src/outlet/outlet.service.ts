@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
-import { Category } from 'src/models/category.model';
+import { Category } from 'src/models/contentCategory.model';
 import { CreateOutletDto } from './dto/create-outlet.dto';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { InjectModel } from '@nestjs/mongoose';
@@ -268,6 +268,12 @@ export class OutletService {
         };
       }
 
+      if (category === OutletCategoryList.MOBILE && !vehicleType) {
+        return {
+          success: false,
+          message: 'Vehicle Type is required',
+        };
+      }
       const foundOutlet = await this.outletModel.findOne({
         email: email,
         business: business._id,
@@ -276,7 +282,7 @@ export class OutletService {
       if (foundOutlet) {
         return {
           success: false,
-          message: 'Outlet already exists with given reference Id!',
+          message: 'Outlet already exists with given email.',
         };
       }
 
@@ -348,6 +354,14 @@ export class OutletService {
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
 
       const outlet = await this.outletModel.create(createObj);
+
+      let updateObj: any = {};
+      if (outlet.category === OutletCategoryList.PHYSICAL) {
+        updateObj['physicalUnitsCreated'] = business.physicalUnitsCreated + 1;
+      }
+      if (outlet.category === OutletCategoryList.MOBILE) {
+        updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
+      }
       console.log('Business User Id:', businessUser.id);
 
       if (createObj.manager) {
@@ -359,9 +373,8 @@ export class OutletService {
 
       await this.businessModel.updateOne(
         { _id: business._id },
-        { $push: { outlets: outlet.id } },
+        { $push: { outlets: outlet.id }, $set: { ...updateObj } },
       );
-
 
       return {
         success: true,
@@ -518,7 +531,7 @@ export class OutletService {
       }
       console.log('UserDetails:', userDetails);
 
-      if(!userDetails){
+      if (!userDetails) {
         return {
           success: false,
           message: 'User not found!',
@@ -540,8 +553,8 @@ export class OutletService {
       //   getOutletObj['_id'] = { $in: mongoUserIds };
       // }
       // console.log('getOutletObj', getOutletObj);
-      console.log("Creator:",userDetails._id);
-      console.log("Business:",user.businessProfile)
+      console.log('Creator:', userDetails._id);
+      console.log('Business:', user.businessProfile);
       const outlets = await this.outletModel
         .find({
           creator: new mongoose.Types.ObjectId(userDetails._id),
