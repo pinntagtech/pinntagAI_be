@@ -1284,6 +1284,9 @@ export class BusinessService {
             updatedAt: '$result.updatedAt',
           },
         },
+        {
+          $sort: { title: 1 },
+        },
         { 
           $facet: {
             data: [
@@ -1316,6 +1319,7 @@ export class BusinessService {
         .find({
           industry: new mongoose.Types.ObjectId(id),
         })
+        .sort({ title: 1 }) 
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
@@ -1566,16 +1570,16 @@ export class BusinessService {
 
       // sendEmaillink verification
 
-      const token = await this.authService.generateJWT(
-        {
-          id: createdUser.id,
-          userType: UserTypes.BUSINESS,
-          // role: admin.role.toString(),
-          // business:
-        },
-        TokenTypes.VERIFY_EMAIL,
-        UserTypes.BUSINESS,
-      );
+      // const token = await this.authService.generateJWT(
+      //   {
+      //     id: createdUser.id,
+      //     userType: UserTypes.BUSINESS,
+      //     // role: admin.role.toString(),
+      //     // business:
+      //   },
+      //   TokenTypes.VERIFY_EMAIL,
+      //   UserTypes.BUSINESS,
+      // );
       const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
       await this.mailService.sendDownlineUserCredentials(
         createdUser.name,

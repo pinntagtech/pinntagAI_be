@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Event, EventDocument } from './models/event.model';
 import mongoose, { Model } from 'mongoose';
 import axios from '@nestjs/axios';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Image, ImageDocument } from './models/image.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
@@ -4396,11 +4396,10 @@ export class EventService2 {
       console.log('query:', query);
 
       const currentDate = new Date();
-      console.log("currentDate:", currentDate);
+      console.log('currentDate:', currentDate);
       const currentUnix = currentDate.getTime();
       const testingDate = new Date('2025-05-10T23:00:00.000Z').getTime();
       console.log('TestingDate:', testingDate);
-
 
       const currentMinutes =
         currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();

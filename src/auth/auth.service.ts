@@ -37,7 +37,7 @@ import {
   EventLocationDocument,
 } from 'src/event/models/eventLocation.model';
 import { EventStatus, EventTypes } from 'src/enums/event.enums';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Auth, google } from 'googleapis';
 import { OAuth2Dto } from './dto/oAuth2.dto';
 import { Otp, OtpDocument } from './models/otp.model';
@@ -1547,7 +1547,7 @@ export class AuthService {
   }
 
   async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
-    console.log("Payload::::",payload);
+    console.log('Payload::::', payload);
     let expireIn = '365d';
     if (tokenType === TokenTypes.RESET_PASSWORD) {
       expireIn = '15m';
@@ -1558,7 +1558,7 @@ export class AuthService {
       secret: process.env.JWT_SECRET,
       expiresIn: expireIn,
     });
-    console.log("Token::::",token);
+    console.log('Token::::', token);
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
     // } else {
@@ -3878,7 +3878,7 @@ export class AuthService {
       );
       console.log('File Key:', fileKey);
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
-      console.log("Presigned URL:", presignedUrl);
+      console.log('Presigned URL:', presignedUrl);
       return { success: true, url: presignedUrl };
     } catch (error) {
       return { success: false, message: error.message };

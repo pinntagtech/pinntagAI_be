@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
-import { Category, CategoryDocument } from 'src/models/category.model';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Seeder } from './data';
@@ -256,52 +256,52 @@ export class SeederService {
         { $set: { drive: driveDetails._id } },
       );
       const rolePromises = Object.keys(DefaultAdminRoles).map(
-              async (roleName) => {
-                const roleData = DefaultAdminRoles[roleName];
-                // Create the role
-                const createdRole = await this.roleModel.create({
-                  name: roleData.name,
-                  creator: new mongoose.Types.ObjectId(adminDetails._id),
-                  creatorType: RoleCreatorType.ADMIN,
-                  belongsTo: RoleBelonging.SYSTEM,
+        async (roleName) => {
+          const roleData = DefaultAdminRoles[roleName];
+          // Create the role
+          const createdRole = await this.roleModel.create({
+            name: roleData.name,
+            creator: new mongoose.Types.ObjectId(adminDetails._id),
+            creatorType: RoleCreatorType.ADMIN,
+            belongsTo: RoleBelonging.SYSTEM,
+          });
+          // Create privileges for this role concurrently
+          const privilegePromises = Object.keys(roleData.privileges).map(
+            async (privilegeKey) => {
+              // Get or create the resource document
+              let resourceDetails = await this.resourceModel.findOne({
+                title: ResourceTypes[privilegeKey],
+              });
+              if (!resourceDetails) {
+                resourceDetails = await this.resourceModel.create({
+                  title: ResourceTypes[privilegeKey],
                 });
-                // Create privileges for this role concurrently
-                const privilegePromises = Object.keys(roleData.privileges).map(
-                  async (privilegeKey) => {
-                    // Get or create the resource document
-                    let resourceDetails = await this.resourceModel.findOne({
-                      title: ResourceTypes[privilegeKey],
+              }
+              // For each action in the privilege, get or create the action document and create a privilege record
+              const actionPromises = roleData.privileges[privilegeKey].map(
+                async (actionKey) => {
+                  let actionDetails = await this.actionModel.findOne({
+                    title: Actions[actionKey],
+                  });
+                  if (!actionDetails) {
+                    actionDetails = await this.actionModel.create({
+                      title: Actions[actionKey],
                     });
-                    if (!resourceDetails) {
-                      resourceDetails = await this.resourceModel.create({
-                        title: ResourceTypes[privilegeKey],
-                      });
-                    }
-                    // For each action in the privilege, get or create the action document and create a privilege record
-                    const actionPromises = roleData.privileges[privilegeKey].map(
-                      async (actionKey) => {
-                        let actionDetails = await this.actionModel.findOne({
-                          title: Actions[actionKey],
-                        });
-                        if (!actionDetails) {
-                          actionDetails = await this.actionModel.create({
-                            title: Actions[actionKey],
-                          });
-                        }
-                        return this.privilegeModel.create({
-                          role: createdRole._id,
-                          resource: resourceDetails.title,
-                          action: actionDetails.title,
-                        });
-                      },
-                    );
-                    return Promise.all(actionPromises);
-                  },
-                );
-                await Promise.all(privilegePromises);
-              },
-            );
-            await Promise.all(rolePromises);
+                  }
+                  return this.privilegeModel.create({
+                    role: createdRole._id,
+                    resource: resourceDetails.title,
+                    action: actionDetails.title,
+                  });
+                },
+              );
+              return Promise.all(actionPromises);
+            },
+          );
+          await Promise.all(privilegePromises);
+        },
+      );
+      await Promise.all(rolePromises);
     }
   }
 
@@ -468,12 +468,14 @@ export class SeederService {
   // }
   async seedBusinessIndustries() {
     // 1. Fetch super-admin once
-    const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true }).lean();
-  
+    const superAdmin = await this.adminModel
+      .findOne({ isSuperAdmin: true })
+      .lean();
+
     if (!superAdmin) {
-      throw new Error("Super-admin user not found");
+      throw new Error('Super-admin user not found');
     }
-  
+
     // 2. Prepare upsert operations for all industries
     const ops = Seeder.BusinessIndustries.map((industry) => ({
       updateOne: {
@@ -490,15 +492,15 @@ export class SeederService {
         upsert: true,
       },
     }));
-  
+
     // 3. Execute all in one bulkWrite
     const result = await this.businessIndustryModel.bulkWrite(ops);
-  
+
     // 4. (Optional) Log how many were inserted vs. already existed
     const inserted = result.upsertedCount;
     const matched = result.matchedCount - inserted;
     console.log(
-      `Business‐Industries: ${inserted} created, ${matched} already existed`
+      `Business‐Industries: ${inserted} created, ${matched} already existed`,
     );
   }
   // async seedBusinessCategories() {
@@ -529,54 +531,61 @@ export class SeederService {
   //   }
   // }
 
-// Optimized seeding of BusinessCategories using bulkWrite
-async seedBusinessCategories() {
-  // 1. Fetch super-admin once
-  const superAdmin = await this.adminModel
-    .findOne({ isSuperAdmin: true })
-    .lean();
-  if (!superAdmin) throw new Error('Super-admin user not found');
+  // Optimized seeding of BusinessCategories using bulkWrite
+  async seedBusinessCategories() {
+    // 1. Fetch super-admin once
+    const superAdmin = await this.adminModel
+      .findOne({ isSuperAdmin: true })
+      .lean();
+    if (!superAdmin) throw new Error('Super-admin user not found');
 
-  // 2. Lookup industries for mapping title to _id
-  const industries = await this.businessIndustryModel
-    .find({ title: { $in: Seeder.BusinessCategories.map(c => c.industry) } })
-    .lean();
-  const industryMap = industries.reduce((map, ind) => {
-    map[ind.title] = ind._id;
-    return map;
-  }, {} as Record<string, mongoose.Types.ObjectId>);
-
-  // 3. Prepare bulk operations for categories
-  // Cast to mongoose.AnyBulkWriteOperation[] to satisfy TS typings
-  const ops = Seeder.BusinessCategories.flatMap(category => {
-    const indId = industryMap[category.industry];
-    if (!indId) return [];
-    return [{
-      updateOne: {
-        filter: { title: category.title, industry: indId },
-        update: { $setOnInsert: {
-            title: category.title,
-            industry: indId,
-            lightIcon: category.lightIcon,
-            darkIcon: category.darkIcon,
-            activeColor: category.activeColor,
-            createdBy: new mongoose.Types.ObjectId(superAdmin._id)
-        }},
-        upsert: true
-      }
-    }];
-  }) as mongoose.AnyBulkWriteOperation[];
-
-  // 4. Execute bulkWrite if there are operations
-  if (ops.length) {
-    const result = await this.businessCategoryModel.bulkWrite(ops);
-    console.log(
-      `BusinessCategories: ${result.upsertedCount} created, ${result.matchedCount - result.upsertedCount} existed`
+    // 2. Lookup industries for mapping title to _id
+    const industries = await this.businessIndustryModel
+      .find({
+        title: { $in: Seeder.BusinessCategories.map((c) => c.industry) },
+      })
+      .lean();
+    const industryMap = industries.reduce(
+      (map, ind) => {
+        map[ind.title] = ind._id;
+        return map;
+      },
+      {} as Record<string, mongoose.Types.ObjectId>,
     );
-  }
-}
 
-  
+    // 3. Prepare bulk operations for categories
+    // Cast to mongoose.AnyBulkWriteOperation[] to satisfy TS typings
+    const ops = Seeder.BusinessCategories.flatMap((category) => {
+      const indId = industryMap[category.industry];
+      if (!indId) return [];
+      return [
+        {
+          updateOne: {
+            filter: { title: category.title, industry: indId },
+            update: {
+              $setOnInsert: {
+                title: category.title,
+                industry: indId,
+                lightIcon: category.lightIcon,
+                darkIcon: category.darkIcon,
+                activeColor: category.activeColor,
+                createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+              },
+            },
+            upsert: true,
+          },
+        },
+      ];
+    }) as mongoose.AnyBulkWriteOperation[];
+
+    // 4. Execute bulkWrite if there are operations
+    if (ops.length) {
+      const result = await this.businessCategoryModel.bulkWrite(ops);
+      console.log(
+        `BusinessCategories: ${result.upsertedCount} created, ${result.matchedCount - result.upsertedCount} existed`,
+      );
+    }
+  }
 
   async seedCountries() {
     const existingCount = await this.businessCountryModel.countDocuments();

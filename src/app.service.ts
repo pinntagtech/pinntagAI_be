@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
-import { Category, CategoryDocument } from './models/category.model';
+import { Category, CategoryDocument } from './models/contentCategory.model';
 import { AgeGroup, AgeGroupDocument } from './models/ageGroup.model';
 import { SeederService } from './seeder/seeder.service';
 import { SubscriptionProduct } from './subscription/models/subscriptionProduct.model';

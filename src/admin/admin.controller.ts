@@ -470,14 +470,15 @@ export class AdminController {
     });
   }
 
-  @Post('createCategory')
+  @Post('content/category')
   @UseGuards(AdminGuard2)
   async createCategory(
     @Req() req: Request,
     @Res() res: Response,
     @Body() createCategoryDto: CreateCategoryDto,
+    @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.createCategory(createCategoryDto);
+    const result = await this.adminService.createCategory(user.id,createCategoryDto);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -490,15 +491,17 @@ export class AdminController {
     });
   }
 
-  @Get('categories')
+  @Get('content/categories')
   @UseGuards(AdminGuard2)
-  async getCategories(@Res() res: Response) {
+  async getCategories(@Res() res: Response,@Query('page') page:string, @Query('limit') limit:string) {
+    let pageNumber = page ? parseInt(page) : 1;
+    let limitNumber = limit ? parseInt(limit) : 10;
     return res.status(HttpStatus.OK).json({
-      categories: await this.adminService.getCategories(),
+      categories: await this.adminService.getCategories(pageNumber,limitNumber),
     });
   }
-
-  @Post('updateCategory/:id')
+  
+  @Put('content/updateCategory/:id')
   @UseGuards(AdminGuard2)
   async updateCategory(
     @Req() req: Request,
@@ -514,6 +517,22 @@ export class AdminController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    }
+  }
+  @Delete('content/deleteCategory/:id')
+  @UseGuards(AdminGuard2)
+  async deleteContentCategory(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id') id: string,
+  ) {
+    const result = await this.adminService.deleteContentCategory(
+      id,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
       });
     }
   }

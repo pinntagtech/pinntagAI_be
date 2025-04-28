@@ -3,7 +3,7 @@ import { EventService } from './event.service';
 import { EventController } from './event.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Event, EventSchema } from './models/event.model';
-import { Category, CategorySchema } from 'src/models/category.model';
+import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
@@ -70,16 +70,28 @@ import {
   EventResponseSchema,
 } from './models/event-response.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { EventService2 } from './event.service2';
 import { EventSchedule, ScheduleSchema } from './models/event-schedule.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { BusinessService } from 'src/business/business.service';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
-import { BusinessIndustry, BusinessIndustrySchema } from 'src/business/model/businessIndustry.model';
-import { BusinessCategory, BusinessCategorySchema } from 'src/business/model/businessCategory.model';
-import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/businessCountry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustrySchema,
+} from 'src/business/model/businessIndustry.model';
+import {
+  BusinessCategory,
+  BusinessCategorySchema,
+} from 'src/business/model/businessCategory.model';
+import {
+  BusinessCountry,
+  BusinessCountrySchema,
+} from 'src/business/model/businessCountry.model';
 
 @Module({
   imports: [
@@ -120,7 +132,6 @@ import { BusinessCountry, BusinessCountrySchema } from 'src/business/model/busin
       // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
-
     ]),
   ],
   controllers: [EventController],

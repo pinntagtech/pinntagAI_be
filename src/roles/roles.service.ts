@@ -40,6 +40,40 @@ export class RolesService {
         this.adminModel.findOne({ _id: user.id }),
         this.businessUserModel.findOne({ _id: user.id }),
       ]);
+
+      if (isAdmin && !admin) {
+        return {
+          success: false,
+          message: 'Admin not found',
+        };
+      }
+      if (isBusiness && !business) {
+        return {
+          success: false,
+          message: 'Business User not found',
+        };  
+      }
+      let findQuery:any = {};
+      if(isAdmin){
+        findQuery = {
+          name: createRoleDto.name,
+          // belongsTo: RoleBelonging.SYSTEM,
+        };
+      }
+      if(isBusiness){
+        findQuery = {
+          name: createRoleDto.name,
+          creatorType: RoleCreatorType.BUSINESS,
+          creator: new mongoose.Types.ObjectId(user.id),
+        };
+      }
+      const findRole = await this.roleModel.findOne(findQuery);
+      if (findRole) {
+        return {
+          success: false,
+          message: 'Role with this name already exists',
+        };
+      }
       const { name, description } = createRoleDto;
       const roleData = {
         name,

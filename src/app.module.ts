@@ -6,7 +6,7 @@ import { UserModule } from './user/user.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule } from '@nestjs/config';
 import { User, UserSchema } from './user/models/user.model';
-import { Category, CategorySchema } from './models/category.model';
+import { Category, CategorySchema } from './models/contentCategory.model';
 import { MailModule } from './mail/mail.module';
 import { Logger } from 'winston';
 import { EventModule } from './event/event.module';

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { AgeGroup } from 'src/models/ageGroup.model';
-import { Category } from 'src/models/category.model';
+import { Category } from 'src/models/contentCategory.model';
 import { Image } from './image.model';
 import { EventLocation } from './eventLocation.model';
 
