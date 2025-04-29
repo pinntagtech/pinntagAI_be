@@ -30,6 +30,10 @@ export class UpdateBusinessDto {
   isDeleted?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  continueJourney?: boolean;
+
+  @IsOptional()
   @IsString()
   logo?: string;
 
@@ -47,7 +51,7 @@ export class UpdateBusinessDto {
 
   @ValidateIf((o) => o.isPhysicalType === true)
   @IsNumber()
-  physicalUnits:number;
+  physicalUnits: number;
 
   @IsOptional()
   @IsBoolean()
@@ -55,7 +59,7 @@ export class UpdateBusinessDto {
 
   @ValidateIf((o) => o.isMobileType === true)
   @IsNumber()
-  mobileUnits:number;
+  mobileUnits: number;
 
   @IsOptional()
   @IsBoolean()

@@ -124,7 +124,8 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.updateBusiness(user.id, data);
+    console.log("USER: in CONTROLLER:",user);
+    const result = await this.businessService.updateBusiness(user.id,user.businessProfile, data);
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({

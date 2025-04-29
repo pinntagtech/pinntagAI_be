@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Post,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -14,7 +15,7 @@ import { GoogleService } from './google.service';
 export class GoogleController {
   constructor(private readonly googleService: GoogleService) {}
 
-  @Get()
+  @Post()
   @UseGuards(JwtGuard2)
   async googleRecommendation(
     @Res() res: any,
@@ -35,7 +36,7 @@ export class GoogleController {
     }
   }
 
-  @Get('placeDetails')
+  @Post('placeDetails')
   @UseGuards(JwtGuard2)
   async getPlaceDetails(
     @Res() res: any,
@@ -48,7 +49,7 @@ export class GoogleController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
-        sessionToken: result.sessionToken,
+        // sessionToken: result.sessionToken,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -56,4 +57,28 @@ export class GoogleController {
       });
     }
   }
+
+  @Post('reverseGeocode')
+  @UseGuards(JwtGuard2)
+  async getAddressFromCoordinates(
+    @Res() res: any,
+    @Body('latitude') latitude: number,
+    @Body('longitude') longitude: number,
+  ) {
+    const result = await this.googleService.getAddressFromCoordinates(latitude, longitude);
+
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        postalCode: result.postalCode,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+
 }

@@ -104,7 +104,7 @@ export class JwtGuard2 implements CanActivate {
         //   _id: new mongoose.Types.ObjectId(payload.role),
         // });
         const business = await this.businessModel.findById(
-          businessUser.business,
+          payload.businessProfile,
         );
 
         request['isGuest'] = false;
@@ -113,7 +113,7 @@ export class JwtGuard2 implements CanActivate {
         request['user'] = businessUser;
         request['business'] = business;
         if(business && business.id){
-          request['businessProfile'] = business.id;
+          request['businessProfile'] = payload.businessProfile;
         }
         request['businessUser'] = businessUser.id;
         request['token'] = token;

@@ -79,6 +79,7 @@ export class Admin {
 
   @Prop({ default: 1024 * 1024 * 1024 })
   driveDefaultSpace: number;
+
 }
 export const AdminSchema = SchemaFactory.createForClass(Admin);
 
