@@ -804,7 +804,7 @@ export class AdminService {
   //   } catch (error) {
   //     if (error.code === 11000) {
   //       throw new ConflictException('Role name must be unique');
-  //     }
+  //     }  
   //     throw error;
   //   }
   // }

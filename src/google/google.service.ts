@@ -43,7 +43,8 @@ export class GoogleService {
         config,
       );
 
-      const predictions = response.data.suggestions;
+      const predictions = response.data;
+      // console.log("predictions:", JSON.stringify(predictions));
       if (!predictions || predictions.length === 0) {
         return {
           success: false,
@@ -82,7 +83,7 @@ export class GoogleService {
     }
   }
 
-  async getPlaceDetails(placeId: string, sessionToken: string){
+  async getPlaceDetails(placeId: string, sessionToken: string) {
     try {
       const params = {
         key: this.GOOGLE_API_KEY,
@@ -96,14 +97,53 @@ export class GoogleService {
         success: true,
         message: 'Place details fetched successfully',
         data: response.data,
-      }
+      };
 
-      return response.data;
+      // return response.data;
     } catch (error) {
       console.error('Error fetching place details:', error);
       throw error;
     }
   }
 
+  async getAddressFromCoordinates(lat: number, lng: number): Promise<any> {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json`,
+        {
+          params: {
+            latlng: `${lat},${lng}`,
+            key: this.GOOGLE_API_KEY,
+          },
+        },
+      );
+      const results = response.data.results;
+      if (!results.length) {
+        return { success: false, message: 'No address found for coordinates' };
+      }
+      let addressObj =
+        results.find((r) =>
+          r.address_components.some((c) => c.types.includes('postal_code')),
+        ) ?? null;
+        if(!addressObj){
+          addressObj = results[0];
+        }
+      const fullAddress = addressObj.formatted_address;
 
+      const postalCodeComponent = addressObj.address_components.find((comp) =>
+        comp.types.includes('postal_code'),
+      );
+      const postalCode = postalCodeComponent?.long_name || null;
+
+      return {
+        success: true,
+        message: 'Address fetched successfully.',
+        data: fullAddress,
+        postalCode,
+      };
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return { success: false, message: 'Reverse geocoding failed' };
+    }
+  }
 }

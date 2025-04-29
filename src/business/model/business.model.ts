@@ -190,7 +190,7 @@ export class Business {
   @Prop({ default: 0 })
   physicalUnitsCreated: number;
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   continueJourney: boolean;
 
   @Prop({})
@@ -209,6 +209,9 @@ export class Business {
   };
   @Prop()
   roleOfCreator: string;
+
+  // @Prop({default:false})
+  // skipToDashboard: boolean;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

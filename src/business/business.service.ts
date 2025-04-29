@@ -607,7 +607,7 @@ export class BusinessService {
     }
   }
 
-  async updateBusiness(userId: string, data: UpdateBusinessDto) {
+  async updateBusiness(userId: string,businessId:string, data: UpdateBusinessDto) {
     try {
       const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
@@ -616,7 +616,7 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
-      const businessId = businessUser.business;
+      console.log("Business ID:", businessId);
       const findBusiness = await this.businessModel.findById(businessId);
       if (!findBusiness) {
         return {
@@ -1813,7 +1813,12 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
-
+      if(!userDetails.business.includes(new mongoose.Types.ObjectId(businessId))){
+        return {
+          success: false,
+          message: 'Business is not mapped with Logged in User.',
+        };
+      }
       const updatedToken = await this.jwtService.signAsync(
         {
           id: userId,
