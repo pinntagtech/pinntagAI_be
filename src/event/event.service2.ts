@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -109,7 +109,10 @@ import { Code } from 'mongodb';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { File, FileDocument } from 'src/drive/models/file.model';
 import { Folder } from 'src/drive/models/folder.model';
-import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class EventService2 {
@@ -157,10 +160,9 @@ export class EventService2 {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(EventSchedule.name)
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
-    @InjectModel(File.name)private readonly fileModel: Model<FileDocument>,
-    @InjectModel(FileCategory.name)private readonly fileCategoryModel: Model<FileCategoryDocument>,
-
-
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
 
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly s3Service: S3Service,
@@ -4743,7 +4745,9 @@ export class EventService2 {
         event._id,
         {
           $push: {
-            images: eventImages,
+            images: {
+              $each: eventImages
+            },
           },
         },
         { new: true },
@@ -4762,4 +4766,161 @@ export class EventService2 {
       };
     }
   }
+
+  // async createOffer(
+  //   data: CreateOfferDto,
+  //   user: DecodedUser,
+  //   images: Express.Multer.File[],
+  // ) {
+  //   try {
+  //     const userId = user.id;
+  //     const businessProfileId = user.businessProfile;
+  //     if (!businessProfileId)
+  //       throw new BadRequestException('Business profile not found.');
+
+  //     const [businessUser, business] = await Promise.all([
+  //       this.businessUserModel.findById(userId),
+  //       this.businessModel.findById(businessProfileId),
+  //     ]);
+  //     if (!businessUser) throw new BadRequestException('User not found.');
+  //     if (!business) throw new BadRequestException('Business not found.');
+
+  //     // 2. Normalize DTO fields
+  //     this.normalizeFreeAndCost(data);
+  //     const categoryObjectIds = await this.parseAndValidateObjectIds(
+  //       data.categories,
+  //       this.categoryModel,
+  //       'Category',
+  //     );
+  //     data.categories = categoryObjectIds;
+
+  //     if (data.minTargetAge && data.maxTargetAge) {
+  //       this.validateAges(data.minTargetAge, data.maxTargetAge);
+  //       data.minTargetAge = Number(data.minTargetAge);
+  //       data.maxTargetAge = Number(data.maxTargetAge);
+  //     }
+
+  //     // 3. Create event skeleton
+  //     const eventObj = {
+  //       ...data,
+  //       type: EventTypes.OFFER,
+  //       businessProfile: new mongoose.Types.ObjectId(businessProfileId),
+  //       creatorType: BusinessUser.name,
+  //       user: new mongoose.Types.ObjectId(userId),
+  //     };
+  //     const event = await this.eventModel.create(eventObj);
+
+  //     // 4. Upload images & create File docs
+  //     const imageIds = await Promise.all(
+  //       images.map((file) =>
+  //         this.uploadAndSaveFile(file, business.drivePath, event._id),
+  //       ),
+  //     );
+
+  //     // 5. Push images into event
+  //     const updatedEvent = await this.eventModel
+  //       .findByIdAndUpdate(
+  //         event._id,
+  //         { $push: { images: { $each: imageIds } } },
+  //         { new: true },
+  //       )
+  //       .lean();
+
+  //     return {
+  //       success: true,
+  //       message: 'Offer created successfully',
+  //       data: updatedEvent,
+  //     };
+  //   } catch (error) {
+  //     console.log('Error in createOffer:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  //   // 1. Normalize and validate user & business
+  // }
+
+  // // ─── Helpers ─────────────────────────────────────────────────────────
+
+  // private normalizeFreeAndCost(dto: CreateOfferDto) {
+  //   if (typeof dto.isFree === 'string') {
+  //     dto.isFree = dto.isFree === 'true';
+  //   }
+  //   // participationCost only required if isFree=false,
+  //   // validated in DTO with @ValidateIf()
+  // }
+
+  // private async parseAndValidateObjectIds(
+  //   input: string | string[],
+  //   model: mongoose.Model<any>,
+  //   name: string,
+  // ): Promise<mongoose.Types.ObjectId[]> {
+  //   if (!input) return [];
+
+  //   const ids = Array.isArray(input)
+  //     ? input
+  //     : String(input)
+  //         .split(',')
+  //         .map((s) => s.trim());
+
+  //   const objectIds: mongoose.Types.ObjectId[] = [];
+  //   for (const id of ids) {
+  //     if (!mongoose.isValidObjectId(id)) {
+  //       throw new BadRequestException(`Invalid ${name} id: ${id}`);
+  //     }
+  //     const exists = await model.exists({ _id: id });
+  //     if (!exists) {
+  //       throw new BadRequestException(`${name} not found: ${id}`);
+  //     }
+  //     objectIds.push(new mongoose.Types.ObjectId(id));
+  //   }
+  //   return objectIds;
+  // }
+
+  // private validateAges(min: number, max: number) {
+  //   if (Number(min) > Number(max)) {
+  //     throw new BadRequestException(
+  //       'Minimum target age cannot be greater than maximum target age',
+  //     );
+  //   }
+  // }
+
+  // private async uploadAndSaveFile(
+  //   file: Express.Multer.File,
+  //   drivePath: any,
+  //   parentId: mongoose.Types.ObjectId,
+  // ): Promise<mongoose.Types.ObjectId> {
+  //   // upload to S3
+  //   const upload = await this.s3Service.s3_upload(
+  //     file.buffer,
+  //     process.env.AWS_S3_BUCKET_NAME,
+  //     manipulateImageName(file.originalname),
+  //     'image/jpeg',
+  //   );
+
+  //   // fix URL for region
+  //   const [base, rest] = upload.Location.split('amazonaws');
+  //   const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+
+  //   // create File document
+  //   const category = await this.fileCategoryModel.findOne({
+  //     name: 'gallery image',
+  //   });
+  //   const doc = await this.fileModel.create({
+  //     metaData: {
+  //       mimeType: file.mimetype,
+  //       url,
+  //       size: file.size,
+  //       originalName: file.originalname,
+  //     },
+  //     parentDirectory: new mongoose.Types.ObjectId(drivePath),
+  //     ParentDirectoryType: Folder.name,
+  //     fileType: FileType.IMAGE,
+  //     category: category._id,
+  //     parent: parentId,
+  //     parentType: Event.name,
+  //   });
+  //   return doc._id;
+  // }
 }
