@@ -80,7 +80,7 @@ import { UpdateCrawledEventDto } from './dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { FileType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { firstValueFrom, from } from 'rxjs';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
@@ -106,6 +106,10 @@ import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { Code } from 'mongodb';
+import { CreateOfferDto } from './dto/create-offer.dto';
+import { File, FileDocument } from 'src/drive/models/file.model';
+import { Folder } from 'src/drive/models/folder.model';
+import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class EventService2 {
@@ -153,6 +157,11 @@ export class EventService2 {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(EventSchedule.name)
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(File.name)private readonly fileModel: Model<FileDocument>,
+    @InjectModel(FileCategory.name)private readonly fileCategoryModel: Model<FileCategoryDocument>,
+
+
+
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -4608,6 +4617,145 @@ export class EventService2 {
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async createOffer(
+    data: CreateOfferDto,
+    user: any,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      const userId = user.id;
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+
+      const userDetails = await this.businessUserModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+
+      if (data.categories) {
+        let categoriesInObjectId = [];
+        data.categories = data.categories.split(',');
+        for (let category of data.categories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
+        data.categories = categoriesInObjectId;
+      }
+
+      if (data.minTargetAge && data.maxTargetAge) {
+        if (data.minTargetAge > data.maxTargetAge) {
+          return {
+            success: false,
+            message:
+              'Minimum target age cannot be greater than maximum target age',
+          };
+        }
+        data.minTargetAge = Number(data.minTargetAge);
+        data.maxTargetAge = Number(data.maxTargetAge);
+      }
+      if (data.isFree) {
+        if (data.isFree === 'false') {
+          data.isFree = false;
+        } else if (data.isFree === 'true') {
+          data.isFree = true;
+        }
+      }
+
+      let createObj = {
+        ...data,
+        type: EventTypes.OFFER,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        creatorType: BusinessUser.name,
+        user: new mongoose.Types.ObjectId(userId),
+      };
+
+      console.log('eventObj:', createObj);
+
+      const event = await this.eventModel.create(createObj);
+      console.log('event:', event);
+
+      const eventImages = [];
+      for (let i = 0; i < images.length; i++) {
+        const result = await this.s3Service.s3_upload(
+          images[i].buffer,
+          process.env.AWS_S3_BUCKET_NAME,
+          manipulateImageName(images[i].originalname),
+          'image/jpeg',
+        );
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: 'gallery image',
+        });
+        const splitIndex = result.Location.indexOf('amazonaws');
+        const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
+        const part2 = result.Location.slice(splitIndex);
+        const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+        console.log('updatedUrl', updatedUrl);
+        let image = await this.fileModel.create({
+          metaData: {
+            mimeType: images[i].mimetype,
+            url: updatedUrl,
+            size: images[i].size,
+            originalName: images[i].originalname,
+          },
+          parentDirectory: new mongoose.Types.ObjectId(business.drivePath),
+          ParentDirectoryType: Folder.name,
+          fileType: FileType.IMAGE,
+          category: fileCategory._id,
+          parent: new mongoose.Types.ObjectId(event._id),
+          parentType: Event.name,
+        });
+        eventImages.push(image._id);
+      }
+      const updatedEvent = await this.eventModel.findByIdAndUpdate(
+        event._id,
+        {
+          $push: {
+            images: eventImages,
+          },
+        },
+        { new: true },
+      );
+
+      return {
+        success: true,
+        message: 'Offer created successfully',
+        data: updatedEvent,
+      };
+    } catch (error) {
+      console.log('Error in createOffer:', error);
       return {
         success: false,
         message: 'Something went wrong.',

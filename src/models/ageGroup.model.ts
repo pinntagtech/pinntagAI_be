@@ -5,6 +5,13 @@ export type AgeGroupDocument = AgeGroup & Document;
 export class AgeGroup {
   @Prop({ required: true })
   name: String;
+
+  @Prop()
+  minAge: Number;
+
+  @Prop()
+  maxAge: Number;
+
   @Prop()
   image: String;
   @Prop()

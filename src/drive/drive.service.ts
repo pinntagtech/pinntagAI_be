@@ -24,7 +24,7 @@ import {
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { S3Service } from 'src/s3.service';
 import { In } from 'typeorm';
-import { File, fileDocument } from './models/file.model';
+import { File, FileDocument } from './models/file.model';
 import {
   FileCategory,
   FileCategoryDocument,
@@ -45,7 +45,7 @@ export class DriveService {
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
-    @InjectModel(File.name) private readonly fileModel: Model<fileDocument>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(FileCategory.name)

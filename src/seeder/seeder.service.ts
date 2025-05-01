@@ -128,7 +128,7 @@ export class SeederService {
   async seed() {
     await this.seedRoles();
     await this.seedCategories();
-    await this.seedAgeGroups();
+    // await this.seedAgeGroups();
     await this.seedSubscriptionProducts();
     await this.seedAppVersion();
     await this.setPrivateEvents();
