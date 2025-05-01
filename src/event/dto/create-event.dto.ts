@@ -17,6 +17,7 @@ export class CreateEventDto {
     EventTypes.OFFER,
     EventTypes.PRIVATE,
     EventTypes.LISTING,
+    EventTypes.FLASHDEAL,
   ])
   type: string;
 

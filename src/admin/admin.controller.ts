@@ -492,7 +492,7 @@ export class AdminController {
   }
 
   @Get('content/categories')
-  @UseGuards(AdminGuard2)
+  // @UseGuards(AdminGuard2)
   async getCategories(@Res() res: Response,@Query('page') page:string, @Query('limit') limit:string) {
     let pageNumber = page ? parseInt(page) : 1;
     let limitNumber = limit ? parseInt(limit) : 10;

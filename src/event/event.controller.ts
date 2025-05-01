@@ -40,6 +40,7 @@ import { RespondRsvp } from './dto/rsvp-response.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { EventService2 } from './event.service2';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { CreateOfferDto } from './dto/create-offer.dto';
 
 @Controller('event')
 export class EventController {
@@ -864,4 +865,43 @@ export class EventController {
       });
     }
   }
+
+  @Post('offer')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor(
+      'images',
+      5,
+      {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+        limits: { fileSize: 1000000 },
+      }
+    ),
+  )
+  async createOffer(
+    @Res() res: Response,
+    @Body() data: CreateOfferDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    const result = await this.eventService.createOffer(data, user,images);
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+
 }

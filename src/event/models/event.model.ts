@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
-import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import { DiscountType, EventStatus, EventTypes } from 'src/enums/event.enums';
 import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
 import { Image } from './image.model';
@@ -11,6 +11,7 @@ import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { Business } from 'src/business/model/business.model';
 import { EventSchedule, ScheduleSchema } from './event-schedule.model';
+import { IsEnum } from 'class-validator';
 
 export type EventDocument = Event & Document;
 
@@ -29,6 +30,13 @@ export class Event {
     ],
   })
   type: string;
+
+  @IsEnum(DiscountType, { message: 'Invalid discount type' })
+  discountType: string;
+
+  @Prop()
+  discountValue: string;
+
   @Prop({ required: true, enum: ['User', BusinessUser.name] })
   creatorType: string;
 
@@ -51,6 +59,9 @@ export class Event {
   @Prop({ required: true, ref: Category.name })
   categories: Array<mongoose.Types.ObjectId>;
 
+  @Prop({ ref: 'Folder' })
+  drivePath: mongoose.Types.ObjectId;
+
   @Prop({ ref: Image.name })
   images: Array<mongoose.Types.ObjectId>;
   @Prop()
@@ -69,8 +80,14 @@ export class Event {
   @Prop({ ref: Outlet.name })
   locations: Array<mongoose.Types.ObjectId>; //Outlet Ids
 
-  @Prop({ ref: AgeGroup.name })
-  ageGroupsAllowed: Array<mongoose.Types.ObjectId>;
+  // @Prop({ ref: AgeGroup.name })
+  // ageGroupsAllowed: Array<mongoose.Types.ObjectId>;
+
+  @Prop()
+  minTargetAge: number;
+
+  @Prop()
+  maxTargetAge: number;
 
   @Prop()
   targetGenders: Array<string>;

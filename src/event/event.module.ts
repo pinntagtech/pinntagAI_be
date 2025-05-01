@@ -92,6 +92,8 @@ import {
   BusinessCountry,
   BusinessCountrySchema,
 } from 'src/business/model/businessCountry.model';
+import { File, FileSchema } from 'src/drive/models/file.model';
+import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
 
 @Module({
   imports: [
@@ -128,6 +130,9 @@ import {
       { name: Business.name, schema: BusinessSchema },
       { name: EventSchedule.name, schema: ScheduleSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: File.name, schema: FileSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
+
       // { name: Privilege.name, schema: PrivilegeSchema },
       // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },

@@ -6,7 +6,7 @@ export type folderDocument = Folder & Document;
 
 @Schema({ timestamps: true })
 export class Folder {
-  @Prop({ required: true })
+  @Prop({ required: true, refPath: 'parentType' })
   parentDirectory: mongoose.Types.ObjectId;
   @Prop({ required: true, enum: [Folder.name, Drive.name] })
   parentType: string;
