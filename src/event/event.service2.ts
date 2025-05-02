@@ -104,7 +104,10 @@ import {
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
-import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
+import {
+  BusinessUserCreatorType,
+  OfferStatus,
+} from 'src/business/enums/business.enum';
 import { Code } from 'mongodb';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { File, FileDocument } from 'src/drive/models/file.model';
@@ -844,6 +847,15 @@ export class EventService2 {
           }
         }
         delete updateEventDto.locations;
+
+        await this.businessModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(),
+          },
+          {
+            $set: { onboardingOfferStatus: OfferStatus.LOCATIONS },
+          },
+        );
       }
     }
     if (updateEventDto.promotionCode) {
@@ -907,7 +919,7 @@ export class EventService2 {
       .populate('user', UserPopulates.FOREIGN)
       .populate('businessProfile', BusinessPopulates.FOREIGN);
 
-      console.log('eventLatestDetails:', eventLatestDetails);
+    console.log('eventLatestDetails:', eventLatestDetails);
     const eventObj = JSON.parse(JSON.stringify(eventLatestDetails));
     if (updatedEvent.creatorType === 'User') {
       const creator = await this.userModel.findById(updatedEvent.user);
@@ -4762,6 +4774,12 @@ export class EventService2 {
       //   { new: true },
       // );
 
+      await this.businessModel.updateOne(
+        { _id: user.businessProfile },
+        {
+          $set: { onboardingOfferStatus: OfferStatus.CREATED },
+        },
+      );
       return {
         success: true,
         message: 'Offer created successfully',

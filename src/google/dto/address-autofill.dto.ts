@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 
 
@@ -8,11 +8,11 @@ export class AddressAutofillDto {
     @IsString()
     address: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
     latitude: number;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
     longitude: number;
 }
