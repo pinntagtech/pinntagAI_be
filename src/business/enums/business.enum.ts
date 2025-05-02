@@ -5,14 +5,21 @@ export const ProfileStatus = {
   BUSINESS_CREATED: 3, //-> Business Created
   BUSINESS_ADDRESS: 4, //-> Business Address Added
   BUSINESS_TYPE: 5, //-> Business Type Added
-  BUSINESS_LOGO:6,
-
+  BUSINESS_LOGO: 6,
 };
+
+export const OfferStatus = {
+  CREATED: 1,
+  GALLERY: 2,
+  LOCATIONS: 3,
+  SCHEDULE: 4,
+};
+
 export const ScalabilityFactor = {
   SINGLE: 0,
   MULTIPLE: 1,
   MULTIBRAND: 2,
-  FRANCHISE:3,
+  FRANCHISE: 3,
 };
 export const OutletTypes = {
   RESTAURANT: 'RESTAURANT',
@@ -668,7 +675,6 @@ export const OutletCategories = {
   ],
 };
 
-
 export const TEAM_SIZE_OPTIONS = [
   {
     label: 'Solo Operator',
@@ -710,4 +716,5 @@ export const ROLES_IN_ORGANISATION = [
   'Sales Manager',
   'Store Manager',
   'Franchise Owner',
-  'HR Manager' ]
+  'HR Manager',
+];

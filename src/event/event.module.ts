@@ -93,7 +93,13 @@ import {
   BusinessCountrySchema,
 } from 'src/business/model/businessCountry.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
-import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 
 @Module({
   imports: [
@@ -132,8 +138,9 @@ import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.
       { name: Outlet.name, schema: OutletSchema },
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Drive.name, schema: DriveSchema },
 
-      // { name: Privilege.name, schema: PrivilegeSchema },
+      { name: Folder.name, schema: FolderSchema },
       // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
@@ -151,6 +158,7 @@ import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.
     StripeService,
     FirebaseService,
     DynamicLinkService,
+    DriveService,
     // BusinessService,
   ],
 })

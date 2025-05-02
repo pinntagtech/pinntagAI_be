@@ -18,6 +18,7 @@ import { BusinessIndustry } from './businessIndustry.model';
 import { BusinessCountry } from './businessCountry.model';
 import { BusinessConstitution } from './businessConstitution.model';
 import { BusinessDocumentType } from './BussinessDocumentType.model';
+import { OfferStatus } from '../enums/business.enum';
 
 export type BusinessDocument = Business & Document;
 
@@ -209,6 +210,13 @@ export class Business {
   };
   @Prop()
   roleOfCreator: string;
+
+  @Prop({
+      required: true,
+      enum: Object.values(OfferStatus),
+      default: 0,
+    })
+    onboardingOfferStatus: number;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

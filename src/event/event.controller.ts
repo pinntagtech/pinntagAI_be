@@ -47,7 +47,6 @@ export class EventController {
   constructor(
     private readonly eventService: EventService2,
     // private readonly eventService: EventService
-
   ) {}
 
   @Post()
@@ -166,7 +165,7 @@ export class EventController {
   }
 
   @Get('created')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getCreatedEvents(
     @Query('page') pageNo: string,
     @Query('limit') limitCount: string,
@@ -202,7 +201,6 @@ export class EventController {
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
   ) {
-    
     let expired = false;
     if (!isExpired) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -246,7 +244,7 @@ export class EventController {
   }
 
   @Get('created/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getCreatedEvent(
     @Res() res: Response,
     @Param('id') id: string,
@@ -853,7 +851,7 @@ export class EventController {
     @Body() data: CreateScheduleDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.eventService.createSchedule(id,data, user);
+    const result = await this.eventService.createSchedule(id, data, user);
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
         message: result.message,
@@ -869,10 +867,7 @@ export class EventController {
   @Post('offer')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FilesInterceptor(
-      'images',
-      5,
-      {
+    FileInterceptor('image', {
       //   dest: './uploads',
       //   fileFilter: imageFileFilter,
       //   storage: diskStorage({
@@ -880,17 +875,22 @@ export class EventController {
       //     filename: editFileName,
       //   }),
       //   //Setting file size limit to 1 MB
-        limits: { fileSize: 1000000 },
-      }
-    ),
+      limits: { fileSize: 1000000 },
+    }),
   )
   async createOffer(
     @Res() res: Response,
     @Body() data: CreateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFiles() images: Express.Multer.File[],
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.eventService.createOffer(data, user,images);
+    console.log("controller image:",image);
+    if(!image){
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide an image',
+      });
+    }
+    const result = await this.eventService.createOffer(data, user, image);
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
         message: result.message,
@@ -902,6 +902,4 @@ export class EventController {
       });
     }
   }
-
-
 }

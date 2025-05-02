@@ -113,6 +113,7 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { DriveService } from 'src/drive/drive.service';
 
 @Injectable()
 export class EventService2 {
@@ -171,6 +172,7 @@ export class EventService2 {
     private readonly httpService: HttpService,
     private readonly firebaseService: FirebaseService,
     private readonly dynamicLinkService: DynamicLinkService,
+    private readonly driveService: DriveService,
   ) {}
   async create(
     createEventDto: CreateEventDto,
@@ -724,31 +726,31 @@ export class EventService2 {
       }
     }
 
-    if (updateEventDto.ageGroupsAllowed) {
-      if (updateEventDto.ageGroupsAllowed.length) {
-        await this.eventModel.findByIdAndUpdate(id, {
-          $set: { ageGroupsAllowed: [] },
-        });
-        for (let i = 0; i < updateEventDto.ageGroupsAllowed.length; i++) {
-          if (!mongoose.isValidObjectId(updateEventDto.ageGroupsAllowed[i])) {
-            return {
-              success: false,
-              message: `Please provide a valid age group id, ${updateEventDto.ageGroupsAllowed[i]} is not valid`,
-            };
-          }
-          const ageGroup = await this.ageGroupModel.findById(
-            updateEventDto.ageGroupsAllowed[i],
-          );
-          if (!ageGroup) {
-            return {
-              success: false,
-              message: `Age group with id ${updateEventDto.ageGroupsAllowed[i]} not found`,
-            };
-          }
-          updateEventDto.ageGroupsAllowed[i] = ageGroup._id;
-        }
-      }
-    }
+    // if (updateEventDto.ageGroupsAllowed) {
+    //   if (updateEventDto.ageGroupsAllowed.length) {
+    //     await this.eventModel.findByIdAndUpdate(id, {
+    //       $set: { ageGroupsAllowed: [] },
+    //     });
+    //     for (let i = 0; i < updateEventDto.ageGroupsAllowed.length; i++) {
+    //       if (!mongoose.isValidObjectId(updateEventDto.ageGroupsAllowed[i])) {
+    //         return {
+    //           success: false,
+    //           message: `Please provide a valid age group id, ${updateEventDto.ageGroupsAllowed[i]} is not valid`,
+    //         };
+    //       }
+    //       const ageGroup = await this.ageGroupModel.findById(
+    //         updateEventDto.ageGroupsAllowed[i],
+    //       );
+    //       if (!ageGroup) {
+    //         return {
+    //           success: false,
+    //           message: `Age group with id ${updateEventDto.ageGroupsAllowed[i]} not found`,
+    //         };
+    //       }
+    //       updateEventDto.ageGroupsAllowed[i] = ageGroup._id;
+    //     }
+    //   }
+    // }
 
     if (updateEventDto.locations) {
       if (updateEventDto.locations.length) {
@@ -787,34 +789,33 @@ export class EventService2 {
                 success: false,
                 message: `Outlet with id ${location} not found`,
               };
-            } else {
-              const createdlocation = await this.eventLocationModel.create({
-                event: new mongoose.Types.ObjectId(id),
-                businessLocationId: outletDoc._id,
-                location: {
-                  type: 'Point',
-                  coordinates: [outletDoc.longitude, outletDoc.latitude],
-                },
-                accuracy: outletDoc.accuracy,
-                address1: outletDoc.address1,
-                address2: outletDoc.address2 ? outletDoc.address2 : '',
-                city: outletDoc.city,
-                state: outletDoc.state,
-                zip: outletDoc.postalCode,
-                website: outletDoc.website,
-                email: outletDoc.email,
-                phone: outletDoc.phone,
-              });
-              // console.log('created-location---->', createdlocation);
-              await this.eventModel.updateOne(
-                {
-                  _id: new mongoose.Types.ObjectId(id),
-                },
-                {
-                  $addToSet: { locations: createdlocation._id },
-                },
-              );
             }
+            const createdlocation = await this.eventLocationModel.create({
+              event: new mongoose.Types.ObjectId(id),
+              businessLocationId: outletDoc._id,
+              location: {
+                type: 'Point',
+                coordinates: [outletDoc.longitude, outletDoc.latitude],
+              },
+              accuracy: outletDoc.accuracy,
+              address1: outletDoc.address1,
+              address2: outletDoc.address2 ? outletDoc.address2 : '',
+              city: outletDoc.city,
+              state: outletDoc.state,
+              zip: outletDoc.postalCode,
+              website: outletDoc.website,
+              email: outletDoc.email,
+              phone: outletDoc.phone,
+            });
+            console.log('created-location---->', createdlocation);
+            await this.eventModel.updateOne(
+              {
+                _id: new mongoose.Types.ObjectId(id),
+              },
+              {
+                $addToSet: { locations: createdlocation._id },
+              },
+            );
           } else {
             const locationData: Location = location as Location;
             const latitude = locationData.latitude;
@@ -876,36 +877,37 @@ export class EventService2 {
     //   }
     // }
 
-    const updatedEvent = await this.eventModel
-      .findByIdAndUpdate(
-        id,
-        {
-          $set: {
-            ...updateEventDto,
-            // eventSchedule: scheduleList,
-          },
+    const updatedEvent = await this.eventModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          ...updateEventDto,
+          // eventSchedule: scheduleList,
         },
-        { new: true },
-      )
-      .populate('images', ImagePopulates.FOREIGN)
-      .populate('locations', LocationPopulates.FOREIGN)
-      .populate('ageGroupsAllowed', 'name')
-      .populate({
-        path: 'categories',
-        select: '_id name image color',
-      });
+      },
+      { new: true },
+    );
+    // .populate('images', ImagePopulates.FOREIGN)
+    // .populate('locations', LocationPopulates.FOREIGN)
+    // // .populate('ageGroupsAllowed', 'name')
+    // .populate({
+    //   path: 'categories',
+    //   select: '_id name image color',
+    // });
 
     const eventLatestDetails = await this.eventModel
       .findById(id)
       .populate('images', ImagePopulates.FOREIGN)
       .populate('locations', LocationPopulates.FOREIGN)
-      .populate('ageGroupsAllowed', 'name')
+      // .populate('ageGroupsAllowed', 'name')
       .populate({
         path: 'categories',
         select: '_id name image color',
       })
       .populate('user', UserPopulates.FOREIGN)
       .populate('businessProfile', BusinessPopulates.FOREIGN);
+
+      console.log('eventLatestDetails:', eventLatestDetails);
     const eventObj = JSON.parse(JSON.stringify(eventLatestDetails));
     if (updatedEvent.creatorType === 'User') {
       const creator = await this.userModel.findById(updatedEvent.user);
@@ -1148,7 +1150,7 @@ export class EventService2 {
     let query = {};
     if (user.isBusiness) {
       query = {
-        creatorType: BusinessProfile.name,
+        creatorType: BusinessUser.name,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       };
     } else {
@@ -1448,8 +1450,9 @@ export class EventService2 {
         .findById(id)
         .populate('images', ImagePopulates.FOREIGN)
         .populate('locations', LocationPopulates.FOREIGN)
-        .populate('ageGroupsAllowed', 'name')
+        // .populate('ageGroupsAllowed', 'name')
         .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
+        .populate('eventSchedule')
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN);
       if (!event) {
@@ -4628,7 +4631,7 @@ export class EventService2 {
   async createOffer(
     data: CreateOfferDto,
     user: any,
-    images: Express.Multer.File[],
+    image: Express.Multer.File,
   ) {
     try {
       const userId = user.id;
@@ -4688,18 +4691,26 @@ export class EventService2 {
         data.minTargetAge = Number(data.minTargetAge);
         data.maxTargetAge = Number(data.maxTargetAge);
       }
-      if (data.isFree) {
-        if (data.isFree === 'false') {
-          data.isFree = false;
-        } else if (data.isFree === 'true') {
-          data.isFree = true;
-        }
-      }
+      // if (data.isFree) {
+      //   if (data.isFree === 'false') {
+      //     data.isFree = false;
+      //   } else if (data.isFree === 'true') {
+      //     data.isFree = true;
+      //   }
+      // }
+      data.isFree = data.isFree === 'true';
+
+      const businessFolder = await this.driveService.createFolder(userId, {
+        parentDirectory: business.drivePath,
+        parentType: Folder.name,
+        folderName: data.title,
+      });
 
       let createObj = {
         ...data,
         type: EventTypes.OFFER,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,
         user: new mongoose.Types.ObjectId(userId),
       };
@@ -4709,54 +4720,52 @@ export class EventService2 {
       const event = await this.eventModel.create(createObj);
       console.log('event:', event);
 
-      const eventImages = [];
-      for (let i = 0; i < images.length; i++) {
-        const result = await this.s3Service.s3_upload(
-          images[i].buffer,
-          process.env.AWS_S3_BUCKET_NAME,
-          manipulateImageName(images[i].originalname),
-          'image/jpeg',
-        );
-        const fileCategory = await this.fileCategoryModel.findOne({
-          name: 'gallery image',
-        });
-        const splitIndex = result.Location.indexOf('amazonaws');
-        const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
-        const part2 = result.Location.slice(splitIndex);
-        const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-        console.log('updatedUrl', updatedUrl);
-        let image = await this.fileModel.create({
-          metaData: {
-            mimeType: images[i].mimetype,
-            url: updatedUrl,
-            size: images[i].size,
-            originalName: images[i].originalname,
-          },
-          parentDirectory: new mongoose.Types.ObjectId(business.drivePath),
-          ParentDirectoryType: Folder.name,
-          fileType: FileType.IMAGE,
-          category: fileCategory._id,
-          parent: new mongoose.Types.ObjectId(event._id),
-          parentType: Event.name,
-        });
-        eventImages.push(image._id);
-      }
-      const updatedEvent = await this.eventModel.findByIdAndUpdate(
-        event._id,
-        {
-          $push: {
-            images: {
-              $each: eventImages
-            },
-          },
-        },
-        { new: true },
+      console.log('Image:', image);
+      const result = await this.s3Service.s3_upload(
+        image.buffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        manipulateImageName(image.originalname),
+        'image/jpeg',
       );
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: 'gallery image',
+      });
+      const splitIndex = result.Location.indexOf('amazonaws');
+      const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
+      const part2 = result.Location.slice(splitIndex);
+      const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+      console.log('updatedUrl', updatedUrl);
+      let file = await this.fileModel.create({
+        metaData: {
+          mimeType: image.mimetype,
+          url: updatedUrl,
+          size: image.size,
+          originalName: image.originalname,
+        },
+        parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
+        ParentDirectoryType: Folder.name,
+        fileType: FileType.IMAGE,
+        category: fileCategory._id,
+        parent: new mongoose.Types.ObjectId(event._id),
+        parentType: Event.name,
+      });
+
+      // const updatedEvent = await this.eventModel.findByIdAndUpdate(
+      //   event._id,
+      //   {
+      //     $push: {
+      //       images: {
+      //         $each: eventImages
+      //       },
+      //     },
+      //   },
+      //   { new: true },
+      // );
 
       return {
         success: true,
         message: 'Offer created successfully',
-        data: updatedEvent,
+        data: event,
       };
     } catch (error) {
       console.log('Error in createOffer:', error);

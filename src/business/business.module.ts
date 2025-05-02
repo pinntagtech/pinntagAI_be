@@ -108,7 +108,7 @@ import {
   BusinessConstitutionSchema,
 } from './model/businessConstitution.model';
 import { DriveService } from 'src/drive/drive.service';
-import { Folder, folderSchema } from 'src/drive/models/folder.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Brand, BrandSchema } from './model/brand.model';
 import { PrivilegeService } from 'src/roles/privilege.service';
@@ -156,7 +156,7 @@ import { PrivilegeService } from 'src/roles/privilege.service';
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
-      { name: Folder.name, schema: folderSchema },
+      { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Brand.name, schema: BrandSchema },
       { name: User.name, schema: UserSchema },

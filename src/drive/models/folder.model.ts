@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Drive } from './drive.model';
 
-export type folderDocument = Folder & Document;
+export type FolderDocument = Folder & Document;
 
 @Schema({ timestamps: true })
 export class Folder {
@@ -17,4 +17,4 @@ export class Folder {
   @Prop({ default: 'directory' })
   entity: string;
 }
-export const folderSchema = SchemaFactory.createForClass(Folder);
+export const FolderSchema = SchemaFactory.createForClass(Folder);
