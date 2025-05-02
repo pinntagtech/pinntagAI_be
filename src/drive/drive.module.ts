@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { FileCategory, FileCategorySchema } from './models/fileCategory.model';
 import { Drive, DriveSchema } from './models/drive.model';
 import { DriveService } from './drive.service';
-import { Folder, folderSchema } from './models/folder.model';
+import { Folder, FolderSchema } from './models/folder.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import {
   BusinessProfile,
@@ -47,7 +47,10 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { JwtService } from '@nestjs/jwt';
 import { S3Service } from 'src/s3.service';
 import { File, FileSchema } from './models/file.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
@@ -55,7 +58,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
     MongooseModule.forFeature([
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
-      { name: Folder.name, schema: folderSchema },
+      { name: Folder.name, schema: FolderSchema },
       { name: User.name, schema: UserSchema },
       { name: User.name, schema: UserSchema },
       { name: Role.name, schema: RoleSchema },
@@ -76,8 +79,8 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Template.name, schema: TemplateSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: File.name, schema: FileSchema },
-      { name:BusinessUser.name, schema: BusinessUserSchema},
-      { name: Business.name, schema:BusinessSchema}
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: Business.name, schema: BusinessSchema },
     ]),
   ],
   controllers: [DriveController],

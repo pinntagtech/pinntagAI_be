@@ -77,8 +77,8 @@ export class Event {
   @Prop({ ref: EventSchedule.name })
   eventSchedule: Array<mongoose.Types.ObjectId>;
 
-  @Prop({ ref: Outlet.name })
-  locations: Array<mongoose.Types.ObjectId>; //Outlet Ids
+  @Prop({ ref: EventLocation.name })
+  locations: Array<mongoose.Types.ObjectId>; //Event Locations Ids
 
   // @Prop({ ref: AgeGroup.name })
   // ageGroupsAllowed: Array<mongoose.Types.ObjectId>;

@@ -18,12 +18,12 @@ export class CreateOfferDto {
   @IsNotEmpty()
   categories: any;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Transform(({ value }) => value.trim())
   discountType: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Transform(({ value }) => value.trim())
   discountValue: string;
@@ -45,13 +45,15 @@ export class CreateOfferDto {
 //   @Transform(({ value }) => value.map((v) => v.trim()))
   targetGenders: Array<string>;
 
+  @IsOptional()
   @IsString()
   minTargetAge: any;
 
+  @IsOptional()
   @IsString()
   maxTargetAge: any;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @Transform(({ value }) => value.trim())
   description: string;

@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Drive, DriveDocument } from './models/drive.model';
 import { isValidObjectId, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { Folder, folderDocument } from './models/folder.model';
+import { Folder, FolderDocument } from './models/folder.model';
 import { Exception } from 'handlebars';
 import { User, UserDocument } from 'src/user/models/user.model';
 import {
@@ -39,7 +39,7 @@ export class DriveService {
   constructor(
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(Folder.name)
-    private readonly folderModel: Model<folderDocument>,
+    private readonly folderModel: Model<FolderDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(BusinessProfile.name)
     private readonly businessProfileModel: Model<BusinessProfileDocument>,
@@ -307,7 +307,7 @@ export class DriveService {
       // ]);
 
       let directoryDetails = null;
-      if(folderId){
+      if (folderId) {
         directoryDetails = await this.folderModel.findById(folderId);
       }
 
@@ -522,6 +522,224 @@ export class DriveService {
     } catch (error) {
       console.error('Error in fetching files:', error);
       return { success: false, message: 'Failed to fetched files' };
+    }
+  }
+
+  // async multiImageUpload(
+  //   parentId: string,
+  //   locationId: string,
+  //   images: Express.Multer.File[],
+  // ) {
+  //   try {
+  //     if (!isValidObjectId(parentId)) {
+  //       return {
+  //         success: false,
+  //         message: 'Invalid ObjectId',
+  //       };
+  //     }
+  //     let driveDetails = await this.driveModel.findOne({
+  //       owner: new mongoose.Types.ObjectId(parentId),
+  //     });
+  //     if (!driveDetails) {
+  //       return {
+  //         success: false,
+  //         message: 'Drive not found!',
+  //       };
+  //     }
+  //     if (!locationId) locationId = driveDetails.id;
+  //     let parentType = null;
+
+  //     let fileIds: any = [];
+
+  //     const drive = await this.driveModel.findOne({ _id: locationId });
+  //     const folder = await this.folderModel.findOne({ _id: locationId });
+  //     let parentDirectoryType = null;
+  //     let parentDriveId = null;
+  //     if (drive) {
+  //       parentDirectoryType = Drive.name;
+  //       parentDriveId = drive._id;
+  //     }
+  //     if (folder) {
+  //       parentDirectoryType = folder.parentType;
+  //       parentDriveId = folder.drive;
+  //     }
+
+  //     let totalSize = 0;
+
+  //     for (let image of images) {
+  //       if (!allowedImageMimeTypes.includes(image.mimetype)) {
+  //         console.error('Onlu image files are allowed');
+  //         continue;
+  //       }
+  //       if (image.size > driveDetails.AvailableSpace) {
+  //         return {
+  //           success: false,
+  //           message: 'You have been consumed your available free space',
+  //           data: driveDetails,
+  //         };
+  //       }
+
+  //       const result = await this.s3Service.s3_upload(
+  //         image.buffer,
+  //         process.env.AWS_S3_BUCKET_NAME,
+  //         manipulateImageName(image.originalname),
+  //         'image/jpeg',
+  //       );
+  //       const fileCategory = await this.fileCategoryModel.findOne({
+  //         name: 'gallery image',
+  //       });
+  //       const splitIndex = result.Location.indexOf('amazonaws');
+  //       const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
+  //       const part2 = result.Location.slice(splitIndex);
+  //       const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+  //       console.log('updatedUrl', updatedUrl);
+  //       let file = await this.fileModel.create({
+  //         metaData: {
+  //           mimeType: image.mimetype,
+  //           url: updatedUrl,
+  //           size: image.size,
+  //           originalName: image.originalname,
+  //         },
+  //         parentDirectory: new mongoose.Types.ObjectId(locationId),
+  //         ParentDirectoryType: Folder.name,
+  //         fileType: FileType.IMAGE,
+  //         category: fileCategory._id,
+  //         parent: new mongoose.Types.ObjectId(parentId), //Doubt
+  //         parentType: Event.name,
+  //       });
+  //       fileIds.push(file._id);
+  //       totalSize += image.size;
+  //     }
+
+  //     await this.driveModel.updateOne(
+  //       { _id: parentDriveId },
+  //       { $set: { AvailableSpace: driveDetails.AvailableSpace - totalSize } },
+  //     );
+
+  //     const createdFiles = await this.fileModel.find({ _id: { $in: fileIds } });
+
+  //     return {
+  //       success: true,
+  //       message: 'File uploaded successfully',
+  //       data: createdFiles,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error uploading media:', error);
+  //     return { success: false, message: 'Failed to upload media' };
+  //   }
+  // }
+
+  // optimised
+
+  private async uploadAndCreateFile(
+    file: Express.Multer.File,
+    parentDirectoryId: string,
+    parentDirectoryType: string,
+    parentId: string,
+    categoryId: any,
+  ): Promise<FileDocument> {
+    // 1. Upload
+    const s3 = await this.s3Service.s3_upload(
+      file.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      manipulateImageName(file.originalname),
+      file.mimetype,
+    );
+    const [base, rest] = s3.Location.split('amazonaws');
+    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+
+    // 2. Persist File doc
+    return this.fileModel.create({
+      metaData: {
+        mimeType: file.mimetype,
+        url,
+        size: file.size,
+        originalName: file.originalname,
+      },
+      parentDirectory: parentDirectoryId,
+      ParentDirectoryType: parentDirectoryType,
+      fileType: FileType.IMAGE,
+      category: categoryId,
+      parent: new mongoose.Types.ObjectId(parentId),
+      parentType: Event.name, // or drive/folder parentType as needed
+    });
+  }
+
+  async multiImageUpload(
+    parentId: string,
+    locationId: string,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      if (!isValidObjectId(parentId)) {
+        return { success: false, message: 'Invalid parentId' };
+      }
+      console.log("parentId:",parentId);
+      // Fetch driveDetails, drive/folder location, and fileCategory in parallel
+      const [driveDetails, fileCategory] = await Promise.all([
+        this.driveModel.findOne({ owner: new mongoose.Types.ObjectId(parentId) }).lean(),
+        this.fileCategoryModel.findOne({ name: 'gallery image' }).lean(),
+      ]);
+      if (!driveDetails) {
+        return { success: false, message: 'Drive not found' };
+      }
+      if (!fileCategory) {
+        return { success: false, message: 'File category not found' };
+      }
+
+      // Determine target directory type/id
+      const locId = locationId || driveDetails._id.toString();
+      const [driveLoc, folderLoc] = await Promise.all([
+        this.driveModel.findById(locId).lean(),
+        this.folderModel.findById(locId).lean(),
+      ]);
+      if (!driveLoc && !folderLoc) {
+        return { success: false, message: 'Location not found' };
+      }
+      const parentDirectoryType = driveLoc ? Drive.name : folderLoc.parentType;
+      const parentDirectoryId = driveLoc ? driveLoc._id : folderLoc.drive;
+
+      // Filter valid images and prepare upload/create tasks
+      let totalSize = 0;
+      const tasks = images
+        .filter((img) => {
+          const ok = img.mimetype.startsWith('image/');
+          if (!ok) console.warn(`Skipped non-image: ${img.originalname}`);
+          else if (img.size > driveDetails.AvailableSpace) {
+            throw new BadRequestException(
+              `Insufficient space for ${img.originalname}`,
+            );
+          }
+          return ok;
+        })
+        .map((img) => {
+          totalSize += img.size;
+          return this.uploadAndCreateFile(
+            img,
+            locId,
+            parentDirectoryType,
+            parentId,
+            fileCategory._id,
+          );
+        });
+
+      // Run uploads/creates in parallel
+      const createdFiles = await Promise.all(tasks);
+
+      // Deduct used space
+      await this.driveModel.updateOne(
+        { _id: parentDirectoryId },
+        { $inc: { AvailableSpace: -totalSize } },
+      );
+
+      return {
+        success: true,
+        message: 'Files uploaded successfully',
+        data: createdFiles,
+      };
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return { success: false, message: 'Failed to upload media' };
     }
   }
 }

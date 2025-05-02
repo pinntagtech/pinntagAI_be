@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,7 +18,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DriveService } from './drive.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { Folder } from './models/folder.model';
 import { isValidObjectId } from 'mongoose';
@@ -34,7 +35,7 @@ export class DriveController {
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 100 * 1024 * 1024 }, // ✅ Set file size limit to 100MB
+      limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
     }),
   )
   async uploadFile(
@@ -194,6 +195,40 @@ export class DriveController {
         message: result.message,
         data: result.data,
         total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+
+  @Post('multiImageUpload')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images',10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async multiImageUpload(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body('locationId') locationId: string,
+    // @Body('fileCategoryId') fileCategoryId: string,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    console.log('user:', user);
+    const result = await this.driveService.multiImageUpload(
+      user.id,
+      locationId,
+      images,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
