@@ -9,6 +9,7 @@ export const ProfileStatus = {
 };
 
 export const OfferStatus = {
+  DEFAULT: 0,
   CREATED: 1,
   GALLERY: 2,
   LOCATIONS: 3,

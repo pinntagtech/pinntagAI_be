@@ -33,6 +33,8 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
+import { OfferStatus } from 'src/business/enums/business.enum';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class DriveService {
@@ -46,6 +48,7 @@ export class DriveService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(FileCategory.name)
@@ -666,11 +669,12 @@ export class DriveService {
   }
 
   async multiImageUpload(
-    parentId: string,
+    user: any,
     locationId: string,
     images: Express.Multer.File[],
   ) {
     try {
+      let parentId = user._id;
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
@@ -725,6 +729,14 @@ export class DriveService {
 
       // Run uploads/creates in parallel
       const createdFiles = await Promise.all(tasks);
+
+      const isInEvent = await this.eventModel.findOne({drivePath:new mongoose.Types.ObjectId(locationId)});
+      if(isInEvent){
+        await this.businessModel.updateOne(
+          { _id: isInEvent.businessProfile },
+          { $set: {  onboardingOfferStatus:OfferStatus.GALLERY} },
+        )
+      }
 
       // Deduct used space
       await this.driveModel.updateOne(

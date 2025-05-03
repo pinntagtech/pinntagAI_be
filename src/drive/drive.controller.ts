@@ -221,7 +221,7 @@ export class DriveController {
   ) {
     console.log('user:', user);
     const result = await this.driveService.multiImageUpload(
-      user.id,
+      user,
       locationId,
       images,
     );

@@ -15,9 +15,30 @@ export class GoogleService {
     try {
       const sessionToken = uuidv4();
       console.log('sessionToken:', sessionToken);
-      const requestBody = {
+
+
+
+
+
+
+      const requestBody:Record<string,any> = {
         input: data.address,
-        locationBias: {
+        // locationBias: {
+        //   circle: {
+        //     center: {
+        //       latitude: data.latitude,
+        //       longitude: data.longitude,
+        //     },
+        //     radius: 500,
+        //   },
+        // },
+        sessionToken,
+      };
+      if (
+        typeof data.latitude === 'number' &&
+        typeof data.longitude === 'number'
+      ) {
+        requestBody.locationBias = {
           circle: {
             center: {
               latitude: data.latitude,
@@ -25,9 +46,8 @@ export class GoogleService {
             },
             radius: 500,
           },
-        },
-        sessionToken,
-      };
+        };
+      }
 
       const config = {
         headers: {
@@ -98,8 +118,6 @@ export class GoogleService {
         message: 'Place details fetched successfully',
         data: response.data,
       };
-
-      // return response.data;
     } catch (error) {
       console.error('Error fetching place details:', error);
       throw error;
