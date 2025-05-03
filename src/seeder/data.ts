@@ -363,7 +363,7 @@ export const Seeder = {
       activeColor: '#1ABC9C',
     },
     {
-      title: 'Entertainment & Experiences',
+      title: 'Entertainment',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Entertainment+%26+Experiences.svg',
       darkIcon:
@@ -413,7 +413,7 @@ export const Seeder = {
   ],
   BusinessCategories: [
     {
-      title: 'Restaurant / Dine-In',
+      title: 'Restaurant',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Restaurant-Dine.svg',
       darkIcon:
@@ -422,7 +422,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Cafe / Coffee Shop',
+      title: 'Cafe/Coffee Shop',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Cafe-Coffee+Shop.svg',
       darkIcon:
@@ -431,7 +431,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Bakery / Dessert Shop',
+      title: 'Bakery',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Bakery-Desert+Shop.svg',
       darkIcon:
@@ -440,7 +440,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Bar / Lounge / Pub',
+      title: 'Bar',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Bar-Lounge-Pub.svg',
       darkIcon:
@@ -449,7 +449,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Juice / Smoothie Bar',
+      title: 'Juice Bar',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Juice-Smoothie+Bar.svg',
       darkIcon:
@@ -458,7 +458,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Food Truck / Mobile Vendor',
+      title: 'Food Truck',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Food+Truck-Mobile+Vendor.svg',
       darkIcon:
@@ -476,7 +476,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Cloud Kitchen / Delivery Only',
+      title: 'Cloud Kitchen',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Cloud+Kitchen+-+Delivery+Only.svg',
       darkIcon:
@@ -485,7 +485,7 @@ export const Seeder = {
       industry: 'Food & Drink',
     },
     {
-      title: 'Ice Cream / Frozen Desserts',
+      title: 'Frozen Desserts',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Ice+Cream+-+Frozen+Desserts.svg',
       darkIcon:
@@ -512,7 +512,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Grocery & Convenience Store',
+      title: 'Convenience Store',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Grocery+%26+Convenience+Store.svg',
       darkIcon:
@@ -521,7 +521,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Home Decor / Furniture',
+      title: 'Home Decor',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Home+Decor+-+Furniture.svg',
       darkIcon:
@@ -548,7 +548,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Bookstore / Stationery',
+      title: 'Stationery',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Bookstore+-+Stationery.svg',
       darkIcon:
@@ -575,7 +575,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Vape / Smoke Shop',
+      title: 'Smoke Shop',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Vape+-+Smoke+Shop.svg',
       darkIcon:
@@ -584,7 +584,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Gift & Souvenir Shop',
+      title: 'Gift Shop',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Gift+%26+Souvenir+Shop.svg',
       darkIcon:
@@ -593,7 +593,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Thrift / Second Hand Store',
+      title: 'Thrift Store',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Retails/Light/Thrift+-+Second+Hand+Store.svg',
       darkIcon:
@@ -602,7 +602,7 @@ export const Seeder = {
       industry: 'Retail',
     },
     {
-      title: 'Salon / Hairdresser',
+      title: 'Salon',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Health+%26+Beauty/Light/Salon+-+Hairdresser.svg',
       darkIcon:
@@ -620,7 +620,7 @@ export const Seeder = {
       industry: 'Health & Beauty',
     },
     {
-      title: 'Skincare / Aesthetics',
+      title: 'Skincare/ Aesthetics',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Health+%26+Beauty/Light/Skincare+-+Aesthetics.svg',
       darkIcon:
@@ -647,7 +647,7 @@ export const Seeder = {
       industry: 'Health & Beauty',
     },
     {
-      title: 'Dermatology / Skin Clinic',
+      title: 'Dermatology Clinic',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Health+%26+Beauty/Light/Dermatology+-+Skin+Clinic.svg',
       darkIcon:
@@ -665,7 +665,7 @@ export const Seeder = {
       industry: 'Health & Beauty',
     },
     {
-      title: 'Gym / Fitness Center',
+      title: 'Fitness Center',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Fitness+%26+Wellness/Light/Gym+-+Fitness+Center.svg',
       darkIcon:
@@ -674,7 +674,7 @@ export const Seeder = {
       industry: 'Fitness & Wellness',
     },
     {
-      title: 'Yoga / Pilates Studio',
+      title: 'Yoga Studio',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Fitness+%26+Wellness/Light/Yoga+-+Pilates+Studio.svg',
       darkIcon:
@@ -683,7 +683,7 @@ export const Seeder = {
       industry: 'Fitness & Wellness',
     },
     {
-      title: 'Martial Arts / Boxing Studio',
+      title: 'Martial Arts',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Fitness+%26+Wellness/Light/Martial+Arts+-+Boxing+Studio.svg',
       darkIcon:
@@ -710,7 +710,7 @@ export const Seeder = {
       industry: 'Fitness & Wellness',
     },
     {
-      title: 'Physiotherapy / Rehabilitation',
+      title: 'Physiotherapy',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Fitness+%26+Wellness/Light/Physiotherapy+-+Rehabilitation.svg',
       darkIcon:
@@ -743,7 +743,7 @@ export const Seeder = {
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Event+Planning.svg',
       activeColor: '#F5B041',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
       title: 'Party Rentals',
@@ -752,43 +752,43 @@ export const Seeder = {
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Party+Rentals.svg',
       activeColor: '#DC7633',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
-      title: 'Amusement Center / Arcade',
+      title: 'Amusement Center',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/Amusement+Center+-+Arcade.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Amusement+Center+-+Arcade.svg',
       activeColor: '#E74C3C',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
-      title: 'Escape Room / VR Experience',
+      title: 'Escape Room',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/Escape+Room+-+VR+Experience.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Escape+Room+-+VR+Experience.svg',
       activeColor: '#5D6D7E',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
-      title: 'Tours & Local Experiences',
+      title: 'Local Experiences',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/Tours+%26+Local+Experiences.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Tours+%26+Local+Experiences.svg',
       activeColor: '#58D68D',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
-      title: 'DJ / Performer Services',
+      title: 'Performer Services',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/DJ+-+Performer+Services.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/DJ+-+Performer+Services.svg',
       activeColor: '#AF601A',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
       title: 'Kids Entertainment',
@@ -797,16 +797,16 @@ export const Seeder = {
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Kids+Entertainment.svg',
       activeColor: '#F7DC6F',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
-      title: 'Photography / Videography',
+      title: 'Photography',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/Photography+-+Videography.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Dark/Photography+-+Videography.svg',
       activeColor: '#7FB3D5',
-      industry: 'Entertainment & Experiences',
+      industry: 'Entertainment',
     },
     {
       title: 'Garage',
@@ -827,7 +827,7 @@ export const Seeder = {
       industry: 'Automotive Services',
     },
     {
-      title: 'Auto Parts & Accessories',
+      title: 'Auto Accessories',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Entertainment+%26+Experiences/Light/Photography+-+Videography.svg',
       darkIcon:
@@ -836,7 +836,7 @@ export const Seeder = {
       industry: 'Automotive Services',
     },
     {
-      title: 'Rental / Leasing',
+      title: 'Rental',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Automotive+Services/Light/Rental+-+Leasing.svg',
       darkIcon:
@@ -845,7 +845,7 @@ export const Seeder = {
       industry: 'Automotive Services',
     },
     {
-      title: 'Customization / Wrapping',
+      title: 'Customization',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Automotive+Services/Light/Customization+-+Wrapping.svg',
       darkIcon:
@@ -908,7 +908,7 @@ export const Seeder = {
       industry: 'Home Services',
     },
     {
-      title: 'Landscaping / Gardening',
+      title: 'Gardening',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Home+Services/Light/Landscaping+-+Gardening.svg',
       darkIcon:
@@ -917,7 +917,7 @@ export const Seeder = {
       industry: 'Home Services',
     },
     {
-      title: 'Interior Design / Renovation',
+      title: 'Interior Design',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Home+Services/Light/Interior+Design+-+Renovation.svg',
       darkIcon:
@@ -962,7 +962,7 @@ export const Seeder = {
       industry: 'Pet Services',
     },
     {
-      title: 'Pet Boarding / Daycare',
+      title: 'Pet Boarding',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Pet+Services/Light/Pet+Boarding+-+Daycare.svg',
       darkIcon:
@@ -998,7 +998,7 @@ export const Seeder = {
       industry: 'Pet Services',
     },
     {
-      title: 'Hotel / Resort',
+      title: 'Hotel',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Hospitality/Light/Hotel+-+Resort.svg',
       darkIcon:
@@ -1016,7 +1016,7 @@ export const Seeder = {
       industry: 'Hospitality',
     },
     {
-      title: 'Guest House / Homestay',
+      title: 'Homestay',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Hospitality/Light/Guest+House+-+Homestay.svg',
       darkIcon:
@@ -1025,7 +1025,7 @@ export const Seeder = {
       industry: 'Hospitality',
     },
     {
-      title: 'Hostel / Backpacker Lodging',
+      title: 'Hostel',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Hospitality/Light/Hostel+-+Backpacker+Lodging.svg',
       darkIcon:
@@ -1043,7 +1043,7 @@ export const Seeder = {
       industry: 'Hospitality',
     },
     {
-      title: 'Campgrounds / Glamping',
+      title: 'Campgrounds',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Hospitality/Light/Campgrounds+-+Glamping.svg',
       darkIcon:
@@ -1052,7 +1052,7 @@ export const Seeder = {
       industry: 'Hospitality',
     },
     {
-      title: 'Accounting / Tax Consultant',
+      title: 'Accounting Consultant',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Professional+Services/Light/Accounting+-+Tax+Consultant.svg',
       darkIcon:
@@ -1061,7 +1061,7 @@ export const Seeder = {
       industry: 'Professional Services',
     },
     {
-      title: 'Legal Services / Law Firm',
+      title: 'Legal Services',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Professional+Services/Light/Legal+Services+-+Law+Firm.svg',
       darkIcon:
@@ -1079,7 +1079,7 @@ export const Seeder = {
       industry: 'Professional Services',
     },
     {
-      title: 'Education / Tutoring',
+      title: 'Education',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Professional+Services/Light/Education+-+Tutoring.svg',
       darkIcon:
@@ -1088,7 +1088,7 @@ export const Seeder = {
       industry: 'Professional Services',
     },
     {
-      title: 'Translation / Language Services',
+      title: 'Translation',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Professional+Services/Light/Translation+-+Language+Services.svg',
       darkIcon:
