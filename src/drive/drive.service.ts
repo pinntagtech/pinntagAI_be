@@ -674,7 +674,7 @@ export class DriveService {
     images: Express.Multer.File[],
   ) {
     try {
-      let parentId = user._id;
+      let parentId = user.id;
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
