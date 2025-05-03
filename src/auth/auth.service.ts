@@ -87,6 +87,7 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
+import { Outlet } from 'src/outlet/model/outlet.model';
 
 @Injectable()
 export class AuthService {
@@ -4125,7 +4126,14 @@ export class AuthService {
       } else if (userType === UserTypes.BUSINESS) {
         userDoc = await this.businessUserModel
           .findById(userId)
-          .populate('business')
+          // .populate('business')
+          .populate({
+            path: 'business',
+            populate: {
+              path: 'outlets',
+              model: Outlet.name,
+            },
+          })
           .populate('role', '_id name description');
         if (!userDoc) {
           return {
