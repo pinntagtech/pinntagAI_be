@@ -58,7 +58,7 @@ export class BusinessUser {
   @Prop({ default: false })
   forcePasswordReset: boolean;
   @Prop()
-  outlets: mongoose.Types.ObjectId[];
+  assignedOutlets: mongoose.Types.ObjectId[];
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
 }

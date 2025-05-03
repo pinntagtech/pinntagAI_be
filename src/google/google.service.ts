@@ -102,6 +102,24 @@ export class GoogleService {
       };
     }
   }
+  mapGoogleAddressToSchema(addressComponents: any[] = []) {
+    const getComponentValue = (type: string) => {
+      const component = addressComponents.find((c) => c.types?.includes(type));
+      return component?.longText || component?.long_name || '';
+    };
+  
+    return {
+      address1: `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(),
+      address2: `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(), // You can optionally include floor/unit if available
+      city: getComponentValue('locality') || getComponentValue('sublocality') || '',
+      state:
+        getComponentValue('administrative_area_level_1') ||
+        getComponentValue('administrative_area_level_2') ||
+        '',
+      country: getComponentValue('country'),
+      postalCode: getComponentValue('postal_code'),
+    };
+  }
 
   async getPlaceDetails(placeId: string, sessionToken: string) {
     try {
@@ -112,11 +130,13 @@ export class GoogleService {
       };
       const url = `https://places.googleapis.com/v1/places/${placeId}`;
       const response = await axios.get(url, { params });
+      const address = this.mapGoogleAddressToSchema(response.data.addressComponents);
+      console.log("address:",address);
 
       return {
         success: true,
         message: 'Place details fetched successfully',
-        data: response.data,
+        data: address,
       };
     } catch (error) {
       console.error('Error fetching place details:', error);
@@ -146,18 +166,21 @@ export class GoogleService {
         if(!addressObj){
           addressObj = results[0];
         }
-      const fullAddress = addressObj.formatted_address;
+      // const fullAddress = addressObj.formatted_address;
 
-      const postalCodeComponent = addressObj.address_components.find((comp) =>
-        comp.types.includes('postal_code'),
-      );
-      const postalCode = postalCodeComponent?.long_name || null;
+      // const postalCodeComponent = addressObj.address_components.find((comp) =>
+      //   comp.types.includes('postal_code'),
+      // );
+      // const postalCode = postalCodeComponent?.long_name || null;
+
+      console.log('Address Object:', addressObj.address_components);
+      const address = this.mapGoogleAddressToSchema(addressObj.address_components);
 
       return {
         success: true,
         message: 'Address fetched successfully.',
-        data: fullAddress,
-        postalCode,
+        data: address,
+        // postalCode,
       };
     } catch (error) {
       console.error('Error reverse geocoding:', error);

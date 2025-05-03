@@ -4388,7 +4388,7 @@ export class EventService2 {
           };
         } else {
           let outletIds = [];
-          outletIds = outletIds.concat(businessUser.outlets); //doubt
+          outletIds = outletIds.concat(businessUser.assignedOutlets); //doubt
           const childUsers = await this.getAllChildUsersIds(user.id);
           console.log('childUsers:', childUsers);
           for (let child of childUsers) {
@@ -4397,7 +4397,7 @@ export class EventService2 {
               { outlets: 1 },
             );
             if (childUser) {
-              outletIds = outletIds.concat(childUser.outlets);
+              outletIds = outletIds.concat(childUser.assignedOutlets);
             }
           }
           const outletObjectIds = outletIds.map(
