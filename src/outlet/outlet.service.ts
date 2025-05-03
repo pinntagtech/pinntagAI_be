@@ -367,13 +367,17 @@ export class OutletService {
       if (createObj.manager) {
         const isUserUpdated = await this.businessUserModel.updateOne(
           { _id: createObj.manager },
-          { $push: { outlets: outlet.id } },
+          { $addToSet: { assignedOutlets: outlet.id } },
         );
       }
 
       await this.businessModel.updateOne(
         { _id: business._id },
         { $push: { outlets: outlet.id }, $set: { ...updateObj } },
+      );
+      await this.businessUserModel.updateOne(
+        { _id: businessUser.id },
+        { $addToSet: { assignedOutlets: outlet.id } },
       );
 
       return {
@@ -460,7 +464,7 @@ export class OutletService {
       }
       console.log('UserDetails:', userDetails);
       let outletIds = [];
-      outletIds = outletIds.concat(userDetails.outlets);
+      outletIds = outletIds.concat(userDetails.assignedOutlets);
 
       let mongoUserIds = [];
       outletIds.map((id) => mongoUserIds.push(new mongoose.Types.ObjectId(id)));
