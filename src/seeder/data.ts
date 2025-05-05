@@ -4,104 +4,132 @@ import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
 import { DurationType } from 'src/subscription/models/subscriptionProduct.model';
 
 export const Seeder = {
-  categories: [
+  ContentCategories: [
     {
-      name: 'all',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/all.svg',
+      title: 'all',
+      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/all.svg',
+      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/all.svg',
+      activeColor: '#012426',
       description: 'All',
-      color: '#012426',
     },
     {
-      name: 'Arts & Crafts',
-      image:
+      title: 'Arts & Crafts',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
+      activeColor: '#FFEB3B',
       description: 'Arts & Crafts',
-      color: '#FFEB3B',
     },
     {
-      name: 'Beauty & Spa',
-      image:
+      title: 'Beauty & Spa',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
+      activeColor: '#EE536E',
       description: 'Beauty & Spa',
-      color: '#EE536E',
     },
     {
-      name: 'Charity',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
+      title: 'Charity',
+      lightIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
+      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
+      activeColor: '#ADD243',
       description: 'Charity',
-      color: '#ADD243',
     },
     {
-      name: 'Clubs & Classes',
-      image:
+      title: 'Clubs & Classes',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
+      activeColor: '#5AB1E2',
       description: 'Clubs & Classes',
-      color: '#5AB1E2',
     },
     {
-      name: 'Days Out',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
+      title: 'Days Out',
+      lightIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
+      activeColor: '#E5D59B',
       description: 'Days Out',
-      color: '#E5D59B',
     },
     {
-      name: 'Entertainment',
-      image:
+      title: 'Entertainment',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
+      activeColor: '#ACDCD9',
       description: 'Entertainment',
-      color: '#ACDCD9',
     },
     {
-      name: 'Foods & Drink',
-      image:
+      title: 'Foods & Drink',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
+      activeColor: '#F59438',
       description: 'Foods & Drink',
-      color: '#F59438',
     },
     {
-      name: 'Happy Hour',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
+      title: 'Happy Hour',
+      lightIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
+      activeColor: '#E77A6B',
       description: 'Happy Hour',
-      color: '#E77A6B',
     },
     {
-      name: 'Health & Fitness',
-      image:
+      title: 'Health & Fitness',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
+      activeColor: '#71E2AC',
       description: 'Health & Fitness',
-      color: '#71E2AC',
     },
     {
-      name: 'Local Attractions',
-      image:
+      title: 'Local Attractions',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
+      activeColor: '#FCBBBB',
       description: 'Local Attractions',
-      color: '#FCBBBB',
     },
     {
-      name: 'Music & Nightlife',
-      image:
+      title: 'Music & Nightlife',
+      lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
+      darkIcon:
+        'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
+      activeColor: '#7B88FB',
       description: 'Music & Nightlife',
-      color: '#7B88FB',
     },
     {
-      name: 'Pets',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
+      title: 'Pets',
+      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
+      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
+      activeColor: '#54BDF9',
       description: 'Pets',
-      color: '#54BDF9',
     },
     {
-      name: 'Retail',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
+      title: 'Retail',
+      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
+      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
+      activeColor: '#C9DD91',
       description: 'Retail',
-      color: '#C9DD91',
     },
     {
-      name: 'Sports',
-      image: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
+      title: 'Sports',
+      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
+      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
+      activeColor: '#F05A39',
       description: 'Sports',
-      color: '#F05A39',
     },
   ],
   roles: [

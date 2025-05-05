@@ -127,7 +127,6 @@ export class SeederService {
 
   async seed() {
     await this.seedRoles();
-    await this.seedCategories();
     // await this.seedAgeGroups();
     await this.seedSubscriptionProducts();
     await this.seedAppVersion();
@@ -139,6 +138,8 @@ export class SeederService {
     await this.seedActions();
     await this.seedOutletCategories();
     // await this.seedPrivileges(); super admin privileges are not needed
+    
+    await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
@@ -306,12 +307,51 @@ export class SeederService {
   }
 
   public async seedCategories() {
-    const categories = await this.categoryModel.find().exec();
+    const categories = await this.categoryModel.find();
     if (!categories.length) {
       await this.categoryModel
-        .insertMany(Seeder.categories)
+        .insertMany(Seeder.ContentCategories)
         .then(() => console.log('Categories created.'));
     }
+
+     // 1. Fetch super-admin once
+     const superAdmin = await this.adminModel
+     .findOne({ isSuperAdmin: true })
+     .lean();
+
+   if (!superAdmin) {
+     throw new Error('Super-admin user not found');
+   }
+
+   // 2. Prepare upsert operations for all industries
+   const ops = Seeder.ContentCategories.map((category) => ({
+     updateOne: {
+       filter: { title: category.title },
+       update: {
+         $setOnInsert: {
+           title: category.title,
+           lightIcon: category.lightIcon,
+           darkIcon: category.darkIcon,
+           activeColor: category.activeColor,
+           description: category.description,
+           createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+         },
+       },
+       upsert: true,
+     },
+   }));
+
+   // 3. Execute all in one bulkWrite
+   const result = await this.categoryModel.bulkWrite(ops);
+
+   // 4. (Optional) Log how many were inserted vs. already existed
+   const inserted = result.upsertedCount;
+   const matched = result.matchedCount - inserted;
+   console.log(
+     `Content-Category: ${inserted} created, ${matched} already existed`,
+   );
+
+
   }
 
   public async seedAgeGroups() {
