@@ -117,6 +117,7 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
+import { Admin } from 'src/admin/models/admin.model';
 
 @Injectable()
 export class EventService2 {
@@ -1825,13 +1826,14 @@ export class EventService2 {
       };
     } else {
       const event = await this.eventModel.findById(id);
+      const business = await this.businessModel.findById(user.businessProfile);
       if (!event) {
         return {
           success: false,
           message: 'Event not found',
         };
       } else if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === BusinessUser.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -1921,17 +1923,20 @@ export class EventService2 {
           }
           if (data.saveAsTemplate) {
             let createQuery = { ...event.toObject() };
-            if (event.creatorType === BusinessProfile.name) {
+            if (event.creatorType === BusinessUser.name) {
               createQuery['businessProfile'] = new mongoose.Types.ObjectId(
                 user.businessProfile,
               );
             } else {
               createQuery['user'] = new mongoose.Types.ObjectId(user.id);
             }
+
             const createdTemplate = await this.templateModel.create({
               ...createQuery,
-              user: user.id,
-              creatorType: user.isBusiness ? BusinessProfile.name : User.name,
+              user: new mongoose.Types.ObjectId(user.id),
+              businessIndustry: business.businessIndustry,
+              businessCategories: business.businessCategories,
+              // creatorType: user.isBusiness ? BusinessUser.name : User.name,
             });
           }
           return {
@@ -4703,6 +4708,11 @@ export class EventService2 {
         data.minTargetAge = Number(data.minTargetAge);
         data.maxTargetAge = Number(data.maxTargetAge);
       }
+      if (data.targetGenders) {
+        let gendersArray = data.targetGenders.split(',');
+        data.targetGenders = gendersArray;
+      }
+
       // if (data.isFree) {
       //   if (data.isFree === 'false') {
       //     data.isFree = false;
@@ -4950,4 +4960,40 @@ export class EventService2 {
   //   });
   //   return doc._id;
   // }
+
+  async getDefaultTemplates(user: DecodedUser, page: number, limit: number) {
+    const business = await this.businessModel.findById(user.businessProfile);
+    let templates = null;
+    let totalDocs = 0;
+    if (user.isBusiness) {
+      templates = await this.templateModel
+        .find({
+          creatorType:Admin.name,
+          businessIndustry: new mongoose.Types.ObjectId(
+            business.businessIndustry,
+          ),
+        })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      totalDocs = await this.templateModel.countDocuments({
+        businessIndustry: new mongoose.Types.ObjectId(
+          business.businessIndustry,
+        ),
+      });
+    } else {
+      templates = await this.templateModel.find({
+        type: EventTypes.PRIVATE,
+      });
+      totalDocs = await this.templateModel.countDocuments({
+        type: EventTypes.PRIVATE,
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Templates fetched successfully',
+      data: templates,
+      total: totalDocs,
+    };
+  }
 }

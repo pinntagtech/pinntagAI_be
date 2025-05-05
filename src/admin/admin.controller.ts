@@ -39,6 +39,9 @@ import { database } from 'firebase-admin';
 import { BusinessCategory } from 'src/business/model/businessCategory.model';
 import { BusinessCategoryDto } from './dto/business-category.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { AdminGuard } from 'src/auth/guards/admin.guard';
+import { CreateTemplateDto } from './dto/create-template.dto';
+import { UpdateTemplateDto } from './dto/update-template.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -478,7 +481,10 @@ export class AdminController {
     @Body() createCategoryDto: CreateCategoryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.createCategory(user.id,createCategoryDto);
+    const result = await this.adminService.createCategory(
+      user.id,
+      createCategoryDto,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -493,14 +499,21 @@ export class AdminController {
 
   @Get('content/categories')
   // @UseGuards(AdminGuard2)
-  async getCategories(@Res() res: Response,@Query('page') page:string, @Query('limit') limit:string) {
+  async getCategories(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     let pageNumber = page ? parseInt(page) : 1;
     let limitNumber = limit ? parseInt(limit) : 10;
     return res.status(HttpStatus.OK).json({
-      categories: await this.adminService.getCategories(pageNumber,limitNumber),
+      categories: await this.adminService.getCategories(
+        pageNumber,
+        limitNumber,
+      ),
     });
   }
-  
+
   @Put('content/updateCategory/:id')
   @UseGuards(AdminGuard2)
   async updateCategory(
@@ -527,9 +540,7 @@ export class AdminController {
     @Res() res: Response,
     @Param('id') id: string,
   ) {
-    const result = await this.adminService.deleteContentCategory(
-      id,
-    );
+    const result = await this.adminService.deleteContentCategory(id);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -913,5 +924,111 @@ export class AdminController {
     // return res.status(HttpStatus.OK).json({
     //   message: 'testing',
     // });
+  }
+
+  @Post('create/template')
+  @UseGuards(AdminGuard2)
+  async createTemplate(
+    @Res() res: Response,
+    @Body() data: CreateTemplateDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.createTemplate(user.id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('update/template/:id')
+  @UseGuards(AdminGuard2)
+  async updateTemplate(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: UpdateTemplateDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.updateTemplate(user.id, id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('templates')
+  @UseGuards(AdminGuard2)
+  async getTemplates(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('businessIndustry') businessIndustry: string,
+    @Query('type') type: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getTemplates(
+      pageNumber,
+      limitNumber,
+      businessIndustry,
+      type,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('template/:id')
+  @UseGuards(AdminGuard2)
+  async getTemplate(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.getTemplate(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        event: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Delete('template/:id')
+  @UseGuards(AdminGuard2)
+  async removeTemplate(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.deleteTemplate(id);
+    return res
+      .status(result.success ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
+      .json({
+        message: result.message,
+      });
   }
 }

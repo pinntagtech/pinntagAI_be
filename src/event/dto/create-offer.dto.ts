@@ -43,7 +43,7 @@ export class CreateOfferDto {
   @IsOptional()
   @IsString()
 //   @Transform(({ value }) => value.map((v) => v.trim()))
-  targetGenders: Array<string>;
+  targetGenders: any;
 
   @IsOptional()
   @IsString()

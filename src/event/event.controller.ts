@@ -419,7 +419,7 @@ export class EventController {
   }
 
   @Post('publish/toggle')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async togglePublishEvent(
     @Res() res: Response,
     @Body() body: PublishEventDto,
@@ -582,13 +582,31 @@ export class EventController {
   }
 
   @Get('templates')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getTemplates(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.eventService.getTemplates(user);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         events: result.templates,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('templates/seeded')
+  @UseGuards(JwtGuard2)
+  async getDefaultTemplates(@Res() res: Response, @TokenDecoder() user: DecodedUser, @Query('page') page: string, @Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.eventService.getDefaultTemplates(user,pageNumber, limitNumber);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

@@ -66,6 +66,9 @@ import {
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { ConnectableObservable } from 'rxjs';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateTemplateDto } from './dto/create-template.dto';
+import { Template, TemplateDocument } from 'src/event/models/template.model';
+import { UpdateTemplateDto } from './dto/update-template.dto';
 
 @Injectable()
 export class AdminService {
@@ -96,6 +99,8 @@ export class AdminService {
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
     @InjectModel(BusinessCategory.name)
     private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -804,7 +809,7 @@ export class AdminService {
   //   } catch (error) {
   //     if (error.code === 11000) {
   //       throw new ConflictException('Role name must be unique');
-  //     }  
+  //     }
   //     throw error;
   //   }
   // }
@@ -893,7 +898,7 @@ export class AdminService {
       return { success: false, message: error.message };
     }
   }
-  async deleteContentCategory(catId:string){
+  async deleteContentCategory(catId: string) {
     try {
       if (!mongoose.isValidObjectId(catId)) {
         return {
@@ -1328,7 +1333,7 @@ export class AdminService {
       };
     }
   }
-  async deleteBusinessCategory(catId:string){
+  async deleteBusinessCategory(catId: string) {
     try {
       if (!mongoose.isValidObjectId(catId)) {
         return {
@@ -1352,6 +1357,258 @@ export class AdminService {
     } catch (error) {
       console.error(error);
       return { success: false, message: error.message };
+    }
+  }
+
+  async createTemplate(adminId: string, data: CreateTemplateDto) {
+    try {
+      const template = await this.templateModel.findOne({ title: data.title });
+      if (template) {
+        return {
+          success: false,
+          message: 'Template with this title already exists.',
+        };
+      }
+
+      let categoryObjectIds = [];
+      if (data.contentCategories) {
+        console.log('date.contentCategories:', data.contentCategories);
+        for (let i = 0; i < data.contentCategories.length; i++) {
+          console.log('data.categories[i]:', data.contentCategories[i]);
+          const foundCategory = await this.contentCategoryModel.findById(
+            data.contentCategories[i],
+          );
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+            };
+          } else {
+            categoryObjectIds.push(foundCategory._id);
+          }
+        }
+        data.contentCategories = categoryObjectIds;
+      }
+      let busCategoryObjectIds = [];
+      if (data.businessCategories) {
+        for (let i = 0; i < data.businessCategories.length; i++) {
+          const foundCategory = await this.businessCategoryModel
+            .findById(data.businessCategories[i])
+            .exec();
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: `Category not found with the id provided: ${data.businessCategories[i]}`,
+            };
+          } else {
+            busCategoryObjectIds.push(foundCategory._id);
+          }
+        }
+        data.businessCategories = categoryObjectIds;
+      }
+      data.businessIndustry = new mongoose.Types.ObjectId(
+        data.businessIndustry,
+      );
+
+      const createdTemplate = await this.templateModel.create({
+        ...data,
+        creatorType: Admin.name,
+        categories: data.contentCategories,
+        user: new mongoose.Types.ObjectId(adminId),
+      });
+      console.log('CreatedTemplate:', createdTemplate);
+      return {
+        success: true,
+        message: 'New Template Created Successfully!',
+        data: createdTemplate,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async updateTemplate(adminId: string, id: string, data: UpdateTemplateDto) {
+    try {
+      const template = await this.templateModel.findById(id);
+      if (!template) {
+        return {
+          success: false,
+          message: 'Template not found.',
+        };
+      }
+
+      let categoryObjectIds = [];
+      if (data.contentCategories) {
+        console.log('date.contentCategories:', data.contentCategories);
+        for (let i = 0; i < data.contentCategories.length; i++) {
+          console.log('data.categories[i]:', data.contentCategories[i]);
+          const foundCategory = await this.contentCategoryModel.findById(
+            data.contentCategories[i],
+          );
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+            };
+          } else {
+            categoryObjectIds.push(foundCategory._id);
+          }
+        }
+        data.contentCategories = categoryObjectIds;
+      }
+      let busCategoryObjectIds = [];
+      if (data.businessCategories) {
+        for (let i = 0; i < data.businessCategories.length; i++) {
+          const foundCategory = await this.businessCategoryModel
+            .findById(data.businessCategories[i])
+            .exec();
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: `Category not found with the id provided: ${data.businessCategories[i]}`,
+            };
+          } else {
+            busCategoryObjectIds.push(foundCategory._id);
+          }
+        }
+        data.businessCategories = categoryObjectIds;
+      }
+      if (data.businessIndustry) {
+        data.businessIndustry = new mongoose.Types.ObjectId(
+          data.businessIndustry,
+        );
+      }
+      let updateObj: any = {};
+
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          updateObj[key] = data[key];
+        }
+      });
+
+      if (data.contentCategories) {
+        updateObj.categories = data.contentCategories;
+      }
+
+      const updatedTemplate = await this.templateModel.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        {
+          $set: {
+            ...updateObj,
+          },
+        },
+        { new: true },
+      );
+      console.log('UpdatedTemplate:', updatedTemplate);
+      return {
+        success: true,
+        message: 'Template Updated Successfully.',
+        data: updatedTemplate,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getTemplates(
+    page: number,
+    limit: number,
+    businessIndustry: string,
+    type: string,
+  ) {
+    try {
+      let searchQuery = {};
+      if (businessIndustry) {
+        searchQuery['businessIndustry'] = new mongoose.Types.ObjectId(
+          businessIndustry,
+        );
+      }
+      if (type) {
+        searchQuery['type'] = type;
+      }
+      searchQuery['creatorType'] = Admin.name;
+
+      const templates = await this.templateModel
+        .find(searchQuery)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('categories', '_id title')
+        .populate('businessCategories', '_id title')
+        .populate('businessIndustry', '_id title');
+      const totalTemplates =
+        await this.templateModel.countDocuments(searchQuery);
+      return {
+        success: true,
+        message: 'Templates fetched successfully',
+        data: templates,
+        page,
+        limit,
+        total: totalTemplates,
+        pages: Math.ceil(totalTemplates / limit),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getTemplate(id: string) {
+    try {
+      if (!mongoose.isValidObjectId(id)) {
+        return {
+          success: false,
+          message: 'Please provide a valid template id',
+        };
+      }
+      const foundTemplate = await this.templateModel
+        .findById(id)
+        .populate('categories', '_id title')
+        .populate('businessCategories', '_id title')
+        .populate('businessIndustry', '_id title');
+      if (!foundTemplate) {
+        return {
+          success: false,
+          message: 'Template not found with the id provided.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Template fetched successfully',
+        data: foundTemplate,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async deleteTemplate(id: string) {
+    try {
+      if (!mongoose.isValidObjectId(id)) {
+        return {
+          success: false,
+          message: 'Please provide a valid template id',
+        };
+      }
+      await this.templateModel.findByIdAndDelete(id);
+      return {
+        success: true,
+        message: 'Template deleted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
   }
 }
