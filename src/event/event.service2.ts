@@ -2460,6 +2460,10 @@ export class EventService2 {
           };
         } else {
           const saved = user.savedEvents.includes(event._id);
+          await this.eventModel.updateOne(
+            { _id: new mongoose.Types.ObjectId(eventId) },
+            { $inc: { engagementCount: 1 } },
+          );
           if (saved) {
             await this.userModel.findByIdAndUpdate(userId, {
               $pull: { savedEvents: event._id },
@@ -3363,6 +3367,12 @@ export class EventService2 {
           };
         } else {
           const liked = user.likedEvents.includes(event._id);
+          //Increase the engagement count of the event
+          await this.eventModel.updateOne(
+            { _id: new mongoose.Types.ObjectId(eventId) },
+            { $inc: { engagementCount: 1 } },
+          );
+
           if (liked) {
             await this.userModel.findByIdAndUpdate(userId, {
               $pull: { likedEvents: event._id },
@@ -4968,7 +4978,7 @@ export class EventService2 {
     if (user.isBusiness) {
       templates = await this.templateModel
         .find({
-          creatorType:Admin.name,
+          creatorType: Admin.name,
           businessIndustry: new mongoose.Types.ObjectId(
             business.businessIndustry,
           ),

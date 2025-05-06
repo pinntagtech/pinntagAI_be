@@ -113,6 +113,7 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Global()
 @Module({
@@ -158,6 +159,7 @@ import {
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
+      { name: Business.name, schema: BusinessSchema },
     ]),
     MailerModule.forRoot({
       transport: {

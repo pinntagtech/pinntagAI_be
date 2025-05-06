@@ -126,6 +126,14 @@ export class Event {
   eventUrl?: string;
   @Prop({ default: [], ref: EventResponse.name })
   responses: Array<mongoose.Types.ObjectId>;
+
+  @Prop({default: 0})
+  viewsCount: number;
+
+  @Prop({default: 0})
+  engagementCount:number;
+
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }

@@ -88,6 +88,7 @@ import {
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class AuthService {
@@ -118,8 +119,8 @@ export class AuthService {
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(BusinessUser.name)
-    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -3712,7 +3713,7 @@ export class AuthService {
       .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
       .populate('images', '_id url')
       .populate('locations', LocationPopulates.FOREIGN)
-      .populate('ageGroupsAllowed', '_id name')
+      // .populate('ageGroupsAllowed', '_id name')
       .populate('user', UserPopulates.FOREIGN)
       .populate('businessProfile', BusinessPopulates.FOREIGN)
       .exec();
@@ -3734,6 +3735,11 @@ export class AuthService {
     const isLiked = await this.userService.isEventLiked(event.id, user.id);
     const eventObj = JSON.parse(JSON.stringify(event));
     delete eventObj.locations;
+
+
+    //Increase the view count of the event
+    await this.eventModel.updateOne({_id:new mongoose.Types.ObjectId(id)}, {$inc:{viewsCount:1}});
+
     const eventLocs = event.locations as any;
     eventObj['isSaved'] = isSaved;
     eventObj['isLiked'] = isLiked;
@@ -3783,7 +3789,7 @@ export class AuthService {
         isMe: creator.id == user.id,
       };
     } else {
-      const businessProfile = await this.businessProfileModel.findById(
+      const businessProfile = await this.businessModel.findById(
         event.businessProfile,
       );
       const isFollowedByMe = await this.followModel.findOne({
@@ -3796,7 +3802,7 @@ export class AuthService {
       eventObj['creatorDetails'] = {
         _id: businessProfile._id,
         name: businessProfile.name,
-        profilePhoto: businessProfile.profilePhoto,
+        profilePhoto: businessProfile.logo,
         email: businessProfile.email,
         bio: businessProfile.bio,
         phone: businessProfile.phone,

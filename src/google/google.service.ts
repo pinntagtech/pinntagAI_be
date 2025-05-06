@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import { length } from 'class-validator';
 import { CommandSucceededEvent } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,12 +17,7 @@ export class GoogleService {
       const sessionToken = uuidv4();
       console.log('sessionToken:', sessionToken);
 
-
-
-
-
-
-      const requestBody:Record<string,any> = {
+      const requestBody: Record<string, any> = {
         input: data.address,
         // locationBias: {
         //   circle: {
@@ -107,11 +103,14 @@ export class GoogleService {
       const component = addressComponents.find((c) => c.types?.includes(type));
       return component?.longText || component?.long_name || '';
     };
-  
+
     return {
-      address1: `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(),
-      address2: `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(), // You can optionally include floor/unit if available
-      city: getComponentValue('locality') || getComponentValue('sublocality') || '',
+      address1:
+        `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(),
+      address2:
+        `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(), // You can optionally include floor/unit if available
+      city:
+        getComponentValue('locality') || getComponentValue('sublocality') || '',
       state:
         getComponentValue('administrative_area_level_1') ||
         getComponentValue('administrative_area_level_2') ||
@@ -126,12 +125,17 @@ export class GoogleService {
       const params = {
         key: this.GOOGLE_API_KEY,
         sessionToken,
-        fields: 'addressComponents,formattedAddress',
+        fields: 'addressComponents,formattedAddress,location',
       };
       const url = `https://places.googleapis.com/v1/places/${placeId}`;
       const response = await axios.get(url, { params });
-      const address = this.mapGoogleAddressToSchema(response.data.addressComponents);
-      console.log("address:",address);
+      console.log('response:', response.data);
+      let address = this.mapGoogleAddressToSchema(
+        response.data.addressComponents,
+      );
+      address['latitude'] = response.data.location.latitude;
+      address['longitude'] = response.data.location.longitude;
+      console.log('address:', address);
 
       return {
         success: true,
@@ -163,9 +167,9 @@ export class GoogleService {
         results.find((r) =>
           r.address_components.some((c) => c.types.includes('postal_code')),
         ) ?? null;
-        if(!addressObj){
-          addressObj = results[0];
-        }
+      if (!addressObj) {
+        addressObj = results[0];
+      }
       // const fullAddress = addressObj.formatted_address;
 
       // const postalCodeComponent = addressObj.address_components.find((comp) =>
@@ -174,7 +178,9 @@ export class GoogleService {
       // const postalCode = postalCodeComponent?.long_name || null;
 
       console.log('Address Object:', addressObj.address_components);
-      const address = this.mapGoogleAddressToSchema(addressObj.address_components);
+      const address = this.mapGoogleAddressToSchema(
+        addressObj.address_components,
+      );
 
       return {
         success: true,

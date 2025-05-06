@@ -77,7 +77,7 @@ export class AuthController {
     @Res() res: Response,
     @Body() createAuthDto: CreateAuthDto,
   ) {
-    const userAgent = req.headers['user-agent'];
+    const userAgent = req.headers['user-agent']; 
     const ip = req.ip;
     const result = await this.authService.create(createAuthDto, userAgent, ip);
     if (result.success) {
@@ -855,7 +855,7 @@ export class AuthController {
   }
 
   @Get('dashboard/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getEventDetails(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,

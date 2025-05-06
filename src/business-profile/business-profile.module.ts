@@ -119,6 +119,7 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -165,6 +166,7 @@ import {
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: Business.name, schema: BusinessSchema },
     ]),
   ],
   controllers: [BusinessProfileController],
