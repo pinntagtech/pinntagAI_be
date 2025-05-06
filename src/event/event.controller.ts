@@ -696,7 +696,7 @@ export class EventController {
   }
 
   @Post('save/toggle')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async toggleSaveEvent(
     @Res() res: Response,
     @Body() body: { eventId: string },
@@ -719,7 +719,7 @@ export class EventController {
   }
 
   @Patch('like/toggle/:id')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async likeEvent(
     @Res() res: Response,
     @Param('id') eventId: string,
