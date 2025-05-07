@@ -219,7 +219,7 @@ export class Business {
     })
     onboardingOfferStatus: number;
 
-  @Prop({ref: Event.name})
+  @Prop({ref: 'Event'})
   initialOfferId: mongoose.Types.ObjectId;
 
   // @Prop({default:false})
