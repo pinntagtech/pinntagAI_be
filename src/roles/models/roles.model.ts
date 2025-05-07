@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { RoleBelonging, RoleCreatorType } from '../enums/roles.enum';
+import { Department } from 'src/business/model/department.model';
 
 export type RoleDocument = Role & Document;
 @Schema({ timestamps: true })
@@ -28,6 +29,9 @@ export class Role {
 
   @Prop({ default: false })
   isBusinessOwner: boolean;
+
+  @Prop({ref: 'Department'})
+  department: mongoose.Types.ObjectId;
 }
 
 export const RoleSchema = SchemaFactory.createForClass(Role);

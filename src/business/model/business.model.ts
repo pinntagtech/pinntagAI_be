@@ -19,6 +19,7 @@ import { BusinessCountry } from './businessCountry.model';
 import { BusinessConstitution } from './businessConstitution.model';
 import { BusinessDocumentType } from './BussinessDocumentType.model';
 import { OfferStatus } from '../enums/business.enum';
+import { Event } from 'src/event/models/event.model';
 
 export type BusinessDocument = Business & Document;
 
@@ -217,6 +218,9 @@ export class Business {
       default: 0,
     })
     onboardingOfferStatus: number;
+
+  @Prop({ref: Event.name})
+  initialOfferId: mongoose.Types.ObjectId;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

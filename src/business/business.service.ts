@@ -70,6 +70,15 @@ import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { UserService } from 'src/user/user.service';
 import { TypeDataDto } from './dto/business-type.dto';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
+import { Department, DepartmentDocument } from './model/department.model';
+import { Types } from 'aws-sdk/clients/acm';
+import { Follow, FollowDocument } from 'src/user/models/follow.model';
+import { User } from 'src/user/models/user.model';
 
 @Injectable()
 export class BusinessService {
@@ -97,6 +106,10 @@ export class BusinessService {
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(Resource.name)
     private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Department.name)
+    private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Follow.name)
+    private readonly followModel: Model<FollowDocument>,
     @InjectModel(Action.name)
     private readonly actionModel: Model<ActionDocument>,
     private readonly mailService: MailService,
@@ -607,7 +620,11 @@ export class BusinessService {
     }
   }
 
-  async updateBusiness(userId: string,businessId:string, data: UpdateBusinessDto) {
+  async updateBusiness(
+    userId: string,
+    businessId: string,
+    data: UpdateBusinessDto,
+  ) {
     try {
       const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
@@ -616,7 +633,7 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
-      console.log("Business ID:", businessId);
+      console.log('Business ID:', businessId);
       const findBusiness = await this.businessModel.findById(businessId);
       if (!findBusiness) {
         return {
@@ -1287,15 +1304,10 @@ export class BusinessService {
         {
           $sort: { title: 1 },
         },
-        { 
+        {
           $facet: {
-            data: [
-              { $skip: (page - 1) * limit },
-              { $limit: limit },
-            ],
-            totalCount: [
-              { $count: 'count' },
-            ],
+            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
           },
         },
       ]);
@@ -1319,7 +1331,7 @@ export class BusinessService {
         .find({
           industry: new mongoose.Types.ObjectId(id),
         })
-        .sort({ title: 1 }) 
+        .sort({ title: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
@@ -1813,7 +1825,9 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
-      if(!userDetails.business.includes(new mongoose.Types.ObjectId(businessId))){
+      if (
+        !userDetails.business.includes(new mongoose.Types.ObjectId(businessId))
+      ) {
         return {
           success: false,
           message: 'Business is not mapped with Logged in User.',
@@ -1841,6 +1855,219 @@ export class BusinessService {
         success: true,
         message: 'Business Profile Switched Successfully.',
         token: updatedToken,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async createDepartment(user: DecodedUser, data: CreateDepartmentDto) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const foundDepartment = await this.departmentModel.findOne({
+        name: data.name,
+        business: user.businessProfile,
+      });
+      if (foundDepartment) {
+        return {
+          success: false,
+          message: 'Department already exists with the same name',
+        };
+      }
+      let rolesObjectId = [];
+      if (data.roles) {
+        for (let role of data.roles) {
+          if (!isValidObjectId(role)) {
+            return {
+              success: false,
+              message: 'Please provide valid Role Id',
+            };
+          }
+          const foundRole = await this.roleModel.findById(role);
+          if (!foundRole) {
+            return {
+              success: false,
+              message: 'Please provide valid Role Id',
+            };
+          }
+          rolesObjectId.push(new mongoose.Types.ObjectId(role));
+        }
+        data.roles = rolesObjectId;
+      }
+
+      const createdDepartment = await this.departmentModel.create({
+        ...data,
+        createdBy: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      });
+      return {
+        success: true,
+        message: 'Department Created Successfully!',
+        data: createdDepartment,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateDepartment(
+    user: DecodedUser,
+    deptId: string,
+    data: UpdateDepartmentDto,
+  ) {
+    const dept = await this.departmentModel.findById(deptId);
+    if (!dept || dept.business.toString() !== user.businessProfile) {
+      return {
+        success: false,
+        message: 'Department not found or access denied',
+      };
+    }
+    if (data.name && data.name !== dept.name) {
+      const conflict = await this.departmentModel.findOne({
+        name: data.name,
+        business: user.businessProfile,
+      });
+      if (conflict) {
+        return {
+          success: false,
+          message: 'Another department with that name exists',
+        };
+      }
+    }
+
+    // Validate any new roles
+    if (data.roles) {
+      const roleIds = [];
+      for (const id of data.roles) {
+        if (!isValidObjectId(id)) {
+          return { success: false, message: `Invalid role ID: ${id}` };
+        }
+        const found = await this.roleModel.findById(id);
+        if (!found) {
+          return { success: false, message: `Role not found: ${id}` };
+        }
+        roleIds.push(new mongoose.Types.ObjectId(id));
+      }
+      dept.roles = roleIds;
+    }
+
+    if (data.description !== undefined) {
+      dept.description = data.description;
+    }
+
+    await dept.save();
+    return { success: true, message: 'Department updated', data: dept };
+  }
+
+  async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {
+    try {
+      const query = { business: user.businessProfile };
+      const [items, total] = await Promise.all([
+        this.departmentModel
+          .find(query)
+          .populate('roles', '_id name')
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        this.departmentModel.countDocuments(query),
+      ]);
+
+      return {
+        success: true,
+        message: 'Departments fetched successfully.',
+        data: items,
+        total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async deleteDepartment(user: DecodedUser, deptId: string) {
+    const dept = await this.departmentModel.findById(deptId);
+    if (!dept || dept.business.toString() !== user.businessProfile) {
+      return {
+        success: false,
+        message: 'Department not found or access denied',
+      };
+    }
+
+    await this.departmentModel.deleteOne({ _id: deptId });
+    return { success: true, message: 'Department deleted' };
+  }
+
+  async fetchDepartmentById(user: DecodedUser, deptId: string) {
+    try {
+      const dept = await this.departmentModel.findById(deptId);
+      if (!dept || dept.business.toString() !== user.businessProfile) {
+        return {
+          success: false,
+          message: 'Department not found or access denied',
+        };
+      }
+      const populatedDept = await this.departmentModel
+        .findById(deptId)
+        .populate('roles', '_id name')
+        .lean();
+      return {
+        success: true,
+        message: 'Department fetched successfully',
+        data: populatedDept,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async fetchFollowers(user: DecodedUser, page: number, limit: number) {
+    try {
+      const followers = await this.followModel
+        .find({
+          following: new mongoose.Types.ObjectId(user.businessProfile),
+          followerType: User.name,
+        })
+        .populate(
+          'follower',
+          '_id firstName lastName profilePhoto name profileType image',
+        )
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const total = await this.businessUserModel.countDocuments({
+        business: user.businessProfile,
+      });
+
+      return {
+        success: true,
+        message: 'Followers fetched Successfully!',
+        data: followers,
+        total,
       };
     } catch (error) {
       return {

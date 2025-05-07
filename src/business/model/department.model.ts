@@ -3,6 +3,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Role } from 'src/roles/models/roles.model';
+import { Business } from './business.model';
 
 @Schema({ timestamps: true })
 export class Department {
@@ -18,9 +19,11 @@ export class Department {
   })
   roles: Types.ObjectId[];
 
-  // if your departments are scoped to a particular business
-  @Prop({ type: Types.ObjectId, ref: 'Business', required: true })
+  @Prop({ type: Types.ObjectId, ref: Business.name, required: true })
   business: Types.ObjectId;
+
+  @Prop()
+  createdBy: Types.ObjectId;
 }
 
 export type DepartmentDocument = Department & Document;

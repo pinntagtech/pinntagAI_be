@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -34,6 +35,10 @@ import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { Token } from 'src/auth/models/token.model';
 import { TypeDataDto } from './dto/business-type.dto';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -124,8 +129,12 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    console.log("USER: in CONTROLLER:",user);
-    const result = await this.businessService.updateBusiness(user.id,user.businessProfile, data);
+    console.log('USER: in CONTROLLER:', user);
+    const result = await this.businessService.updateBusiness(
+      user.id,
+      user.businessProfile,
+      data,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -669,7 +678,7 @@ export class BusinessController {
       });
     }
   }
-  
+
   @Post('switch/:id')
   @UseGuards(JwtGuard2)
   async switchBusiness(
@@ -682,7 +691,11 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.businessService.switchBusiness(user.id,user.token, id);
+    const result = await this.businessService.switchBusiness(
+      user.id,
+      user.token,
+      id,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -694,6 +707,155 @@ export class BusinessController {
       });
     }
   }
+
+  @Post('department')
+  @UseGuards(JwtGuard2)
+  async createDepartment(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: CreateDepartmentDto,
+  ) {
+    const result = await this.businessService.createDepartment(user, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Put('department/:id')
+  @UseGuards(JwtGuard2)
+  async updateDepartment(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: UpdateDepartmentDto,
+    @Param('id') id: string,
+    @Query() page: string,
+    @Query() limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.updateDepartment(user, id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('departments')
+  @UseGuards(JwtGuard2)
+  async fetchDepartments(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.fetchDepartment(
+      user,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('department/:id')
+  @UseGuards(JwtGuard2)
+  async fetchDepartmentById(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.fetchDepartmentById(user, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Delete('department/:id')
+  @UseGuards(JwtGuard2)
+  async deleteDepartment(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+
+    const result = await this.businessService.deleteDepartment(user, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('followers')
+  @UseGuards(JwtGuard2)
+  async fetchFollowers(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.fetchFollowers(
+      user,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,
