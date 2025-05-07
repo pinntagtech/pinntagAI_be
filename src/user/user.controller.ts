@@ -29,6 +29,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { ContactUsDto } from './dto/contact-us.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 
 @Controller('user')
 export class UserController {
@@ -306,7 +307,7 @@ export class UserController {
   }
 
   @Patch('follow')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async follow(
     @Req() req: Request,
     @Res() res: Response,

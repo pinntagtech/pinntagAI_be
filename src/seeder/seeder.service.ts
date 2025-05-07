@@ -17,7 +17,7 @@ import {
 import { AppVersion, AppVersionDocument } from 'src/models/appVersion.model';
 import * as bcrypt from 'bcrypt';
 import { Event, EventDocument } from 'src/event/models/event.model';
-import { EventTypes } from 'src/enums/event.enums';
+import { DiscountType, EventTypes } from 'src/enums/event.enums';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import {
   FileCategory,
@@ -49,7 +49,7 @@ import {
 import {
   BusinessCountries,
   BusinessDocumentTypes,
-  BusinessIndustries,
+  // BusinessIndustries,
   // OutletCategoryList,
   OutletCategories,
 } from 'src/business/enums/business.enum';
@@ -138,7 +138,7 @@ export class SeederService {
     await this.seedActions();
     await this.seedOutletCategories();
     // await this.seedPrivileges(); super admin privileges are not needed
-    
+
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
@@ -314,44 +314,42 @@ export class SeederService {
         .then(() => console.log('Categories created.'));
     }
 
-     // 1. Fetch super-admin once
-     const superAdmin = await this.adminModel
-     .findOne({ isSuperAdmin: true })
-     .lean();
+    // 1. Fetch super-admin once
+    const superAdmin = await this.adminModel
+      .findOne({ isSuperAdmin: true })
+      .lean();
 
-   if (!superAdmin) {
-     throw new Error('Super-admin user not found');
-   }
+    if (!superAdmin) {
+      throw new Error('Super-admin user not found');
+    }
 
-   // 2. Prepare upsert operations for all industries
-   const ops = Seeder.ContentCategories.map((category) => ({
-     updateOne: {
-       filter: { title: category.title },
-       update: {
-         $setOnInsert: {
-           title: category.title,
-           lightIcon: category.lightIcon,
-           darkIcon: category.darkIcon,
-           activeColor: category.activeColor,
-           description: category.description,
-           createdBy: new mongoose.Types.ObjectId(superAdmin._id),
-         },
-       },
-       upsert: true,
-     },
-   }));
+    // 2. Prepare upsert operations for all industries
+    const ops = Seeder.ContentCategories.map((category) => ({
+      updateOne: {
+        filter: { title: category.title },
+        update: {
+          $setOnInsert: {
+            title: category.title,
+            lightIcon: category.lightIcon,
+            darkIcon: category.darkIcon,
+            activeColor: category.activeColor,
+            description: category.description,
+            createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+          },
+        },
+        upsert: true,
+      },
+    }));
 
-   // 3. Execute all in one bulkWrite
-   const result = await this.categoryModel.bulkWrite(ops);
+    // 3. Execute all in one bulkWrite
+    const result = await this.categoryModel.bulkWrite(ops);
 
-   // 4. (Optional) Log how many were inserted vs. already existed
-   const inserted = result.upsertedCount;
-   const matched = result.matchedCount - inserted;
-   console.log(
-     `Content-Category: ${inserted} created, ${matched} already existed`,
-   );
-
-
+    // 4. (Optional) Log how many were inserted vs. already existed
+    const inserted = result.upsertedCount;
+    const matched = result.matchedCount - inserted;
+    console.log(
+      `Content-Category: ${inserted} created, ${matched} already existed`,
+    );
   }
 
   public async seedAgeGroups() {
@@ -688,6 +686,51 @@ export class SeederService {
           }
         }
       }
+    }
+  }
+
+  async seedEventTemplates() {
+    for (let template of Seeder.EventTemplates) {
+      let eventCategoriesId = [];
+      for (let category of template.categories) {
+        let foundCategory = await this.categoryModel.findOne({
+          title: category,
+        });
+        if (foundCategory) {
+          eventCategoriesId.push(foundCategory._id);
+        }
+      }
+      let businessCategoriesId = [];
+      for(let bCat of template.businessCategories) {
+        let foundCategory = await this.businessCategoryModel.findOne({
+          title: bCat,
+        })
+        if(foundCategory){
+          businessCategoriesId.push(foundCategory._id);
+        }
+      }
+      let businessIndustry = await this.businessIndustryModel.findOne({
+        title: template.businessIndustry,
+      });
+      let createObj = {
+        type: template.type,
+        discountType: template.discountType,
+        discountValue: template.discountValue,
+        title: template.title,
+        keywords: template.keywords,
+        description: template.description,
+        minTargetAge: template.minTargetAge,
+        maxTargetAge: template.maxTargetAge,
+        targetGenders: template.targetGenders,
+        promotionCode: template.promotionCode,
+        isFree: template.isFree,
+        participationCost: template.participationCost,
+        termsApplied: template.termsApplied,
+        termsAndConditions: template.termsAndConditions,
+        categories: eventCategoriesId,
+        businessIndustry: businessIndustry._id,
+        businessCategories: businessCategoriesId,
+      };
     }
   }
 }

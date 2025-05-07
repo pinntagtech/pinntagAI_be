@@ -112,6 +112,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Brand, BrandSchema } from './model/brand.model';
 import { PrivilegeService } from 'src/roles/privilege.service';
+import { Department, DepartmentSchema } from './model/department.model';
 
 @Module({
   imports: [
@@ -160,6 +161,7 @@ import { PrivilegeService } from 'src/roles/privilege.service';
       { name: File.name, schema: FileSchema },
       { name: Brand.name, schema: BrandSchema },
       { name: User.name, schema: UserSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
   ],
   controllers: [BusinessController],

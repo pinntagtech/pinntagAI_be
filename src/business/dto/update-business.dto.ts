@@ -145,7 +145,6 @@ export class UpdateBusinessDto {
   email?: string;
 
   @IsOptional()
-  @IsUrl()
   website?: string;
 
   @IsOptional()
@@ -276,7 +275,6 @@ export class UpdateBusinessDto {
   facebookToken?: any;
 
   @IsOptional()
-  @IsUrl()
   facebookPageUrl?: string;
 
   @IsOptional()
@@ -288,7 +286,6 @@ export class UpdateBusinessDto {
   instagramToken?: any;
 
   @IsOptional()
-  @IsUrl()
   instagramPageUrl?: string;
 
   @IsOptional()
@@ -300,7 +297,6 @@ export class UpdateBusinessDto {
   XToken?: any;
 
   @IsOptional()
-  @IsUrl()
   XPageUrl?: string;
 
   @IsOptional()
