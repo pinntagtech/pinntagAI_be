@@ -53,6 +53,7 @@ import { NotificationTypes } from 'src/enums/event.enums';
 import dayjs from 'dayjs';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { MailService } from 'src/mail/mail.service';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class UserService {
@@ -81,8 +82,8 @@ export class UserService {
     private readonly reportModel: Model<ReportDocument>,
     @InjectModel(SavedEvent.name)
     private readonly savedEventModel: Model<SavedEventDocument>,
-    @InjectModel(Template.name)
-    private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
@@ -669,7 +670,7 @@ export class UserService {
       }
     } else {
       const businessProfile =
-        await this.businessProfileModel.findById(targetId);
+        await this.businessModel.findById(targetId);
       if (!businessProfile) {
         return {
           success: false,
@@ -699,13 +700,13 @@ export class UserService {
       });
       //Update following count of user
       await this.updateFollowingCount(
-        followerType == User.name ? this.userModel : this.businessProfileModel,
+        followerType == User.name ? this.userModel : this.businessModel,
         userId,
         1,
       );
       //Update followers count of target user
       await this.updateFollowerCount(
-        followingType == User.name ? this.userModel : this.businessProfileModel,
+        followingType == User.name ? this.userModel : this.businessModel,
         targetId,
         1,
       );
@@ -717,10 +718,10 @@ export class UserService {
           const follower = await this.userModel.findById(userId);
           message = `${follower.firstName} ${follower.lastName} has started following you`;
           targetType = User.name;
-        } else if (followerType == BusinessProfile.name) {
-          const follower = await this.businessProfileModel.findById(userId);
+        } else if (followerType == Business.name) {
+          const follower = await this.businessModel.findById(userId);
           message = `${follower.name} has started following you`;
-          targetType = BusinessProfile.name;
+          targetType = Business.name;
         }
         if (user) {
           await this.notificationModel.create({
@@ -733,7 +734,7 @@ export class UserService {
           });
         }
       } else if (followingType == BusinessProfile.name) {
-        const businessProfile = await this.businessProfileModel
+        const businessProfile = await this.businessModel
           .findById(targetId)
           .select({ _id: 0, name: 1, createdBy: 1 });
         let message = '';
@@ -742,12 +743,12 @@ export class UserService {
           const follower = await this.userModel.findById(userId);
           message = `${follower.firstName} ${follower.lastName} has started following your business ${businessProfile.name}`;
           targetType = User.name;
-        } else if (followerType == BusinessProfile.name) {
-          const follower = await this.businessProfileModel.findById(userId);
+        } else if (followerType == Business.name) {
+          const follower = await this.businessModel.findById(userId);
           message = `${follower.name} has started following your business ${businessProfile.name}`;
-          targetType = BusinessProfile.name;
+          targetType = Business.name;
         }
-        const user = await this.userModel.findById(businessProfile.createdBy);
+        const user = await this.userModel.findById(businessProfile.creator);
         if (user) {
           await this.notificationModel.create({
             user: user._id,

@@ -1467,7 +1467,8 @@ export class EventService2 {
         .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
         .populate('eventSchedule')
         .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN);
+        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate('files');
       if (!event) {
         return {
           success: false,
@@ -4657,7 +4658,7 @@ export class EventService2 {
   }
   async createOffer(
     data: CreateOfferDto,
-    user: any,
+    user: DecodedUser,
     image: Express.Multer.File,
   ) {
     try {
@@ -4797,7 +4798,10 @@ export class EventService2 {
       await this.businessModel.updateOne(
         { _id: user.businessProfile },
         {
-          $set: { onboardingOfferStatus: OfferStatus.CREATED },
+          $set: {
+            onboardingOfferStatus: OfferStatus.CREATED,
+            initialOfferId: event._id,
+          },
         },
       );
       return {
