@@ -127,12 +127,11 @@ export class Event {
   @Prop({ default: [], ref: EventResponse.name })
   responses: Array<mongoose.Types.ObjectId>;
 
-  @Prop({default: 0})
+  @Prop({ default: 0 })
   viewsCount: number;
 
-  @Prop({default: 0})
-  engagementCount:number;
-
+  @Prop({ default: 0 })
+  engagementCount: number;
 
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
@@ -149,3 +148,12 @@ class Duration {
 
 export const EventSchema = SchemaFactory.createForClass(Event);
 EventSchema.index({ schedule: 1 });
+EventSchema.set('toObject', { virtuals: true }).set('toJSON', {
+  virtuals: true,
+});
+EventSchema.virtual('files', {
+  ref: 'File', // the name of your File model
+  localField: 'drivePath', // the field in Event
+  foreignField: 'parentDirectory', // the field in File
+  justOne: false,
+});

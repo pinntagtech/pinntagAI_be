@@ -62,6 +62,7 @@ import {
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { S3Service } from 'src/s3.service';
 import { StripeService } from 'src/stripe/stripe.service';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { StripeService } from 'src/stripe/stripe.service';
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: Business.name, schema: BusinessSchema}
     ]),
   ],
   providers: [SmsService, UserService, Logger, S3Service, StripeService],

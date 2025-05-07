@@ -2046,6 +2046,8 @@ export class BusinessService {
 
   async fetchFollowers(user: DecodedUser, page: number, limit: number) {
     try {
+      console.log('user:', user.businessProfile);
+      console.log('User name:', User.name);
       const followers = await this.followModel
         .find({
           following: new mongoose.Types.ObjectId(user.businessProfile),

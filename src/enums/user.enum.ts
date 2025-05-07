@@ -1,6 +1,7 @@
 import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { User } from 'src/user/models/user.model';
 import { Location } from '../business-profile/models/types.model';
+import { Business } from 'src/business/model/business.model';
 
 
 
@@ -56,7 +57,7 @@ const Loc: Location = {
 
 export const ExmpLocKeys = Object.keys(Loc);
 
-export const ProfileTypes = [User.name, BusinessProfile.name];
+export const ProfileTypes = [User.name, Business.name];
 
 export const SubscriptionStatus = {
   ACTIVE: 0,
