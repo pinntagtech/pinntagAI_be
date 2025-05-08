@@ -22,7 +22,7 @@ export const UserPopulates = {
 
 export const BusinessPopulates = {
   FOREIGN:
-    'id _id name bio brandColor profilePhoto followersCount phone email website isDeleted instagramPageUrl twitterPageUrl facebookPageUrl',
+    'id _id name bio brandColor profilePhoto logo followersCount countryCode phone email website isDeleted instagramPageUrl twitterPageUrl facebookPageUrl',
 };
 
 export const LocationPopulates = {
@@ -35,7 +35,7 @@ export const ImagePopulates = {
 };
 
 export const CategoryPopulates = {
-  FOREIGN: 'id _id name image color',
+  FOREIGN: 'id _id title lightIcon darkIcon activeColor',
 };
 
 export const TransactionPopulates = {

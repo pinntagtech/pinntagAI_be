@@ -2,18 +2,26 @@ import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   ValidateIf,
 } from 'class-validator';
 import mongoose from 'mongoose';
+import { EventTypes } from 'src/enums/event.enums';
 
 export class CreateOfferDto {
   @IsNotEmpty()
   @IsString()
   @Transform(({ value }) => value.trim())
   title: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  @IsIn(Object.values(EventTypes))
+  eventType: string;
 
   @IsNotEmpty()
   categories: any;
