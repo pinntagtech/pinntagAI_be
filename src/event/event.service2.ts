@@ -4781,7 +4781,7 @@ export class EventService2 {
 
       let createObj = {
         ...data,
-        type: EventTypes.OFFER,
+        type: data.eventType,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,

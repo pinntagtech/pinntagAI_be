@@ -1027,7 +1027,13 @@ export class BusinessService {
       const userDetails = await this.businessUserModel
         .findById(user._id)
         .populate('role', '_id name')
-        .populate('business')
+        .populate({
+          path: 'business',
+          populate: {
+            path: 'initialOfferId',
+            model: Event.name,
+          },
+        })
         .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
       console.log('userDetails:', userDetails);
       return {
