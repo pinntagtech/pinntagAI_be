@@ -456,6 +456,35 @@ export class EventService2 {
         success: false,
         message: 'Event not found',
       };
+    } else if (
+      event.creatorType === BusinessUser.name &&
+      event.businessProfile.toString() !== user.businessProfile
+    ) {
+      return {
+        success: false,
+        message: 'You are not authorized to update this event',
+      };
+    } else if (
+      event.creatorType === User.name &&
+      event.user.toString() !== user.id
+    ) {
+      return {
+        success: false,
+        message: 'You are not authorized to update this event',
+      };
+    } else {
+      if (event.status == EventStatus.CLOSED) {
+        return {
+          success: false,
+          message: 'Cannot update the status as the event is closed',
+        };
+      } else if (event.status == EventStatus.BLOCKED) {
+        return {
+          success: false,
+          message:
+            'Cannot update the status as the admin has blocked the event.',
+        };
+      }
     }
 
     let categoriesInObjectId = [];
@@ -851,7 +880,7 @@ export class EventService2 {
 
         await this.businessModel.updateOne(
           {
-            _id: new mongoose.Types.ObjectId(),
+            _id: new mongoose.Types.ObjectId(event.businessProfile),
           },
           {
             $set: { onboardingOfferStatus: OfferStatus.LOCATIONS },
@@ -1874,6 +1903,7 @@ export class EventService2 {
           await this.eventModel.findByIdAndUpdate(id, {
             status: EventStatus.PUBLISHED,
           });
+          await this.businessModel.updateOne({_id: business._id},{$set:{onboardingOfferStatus: OfferStatus.PUBLISHED}})
           if (event.notifyFollowers) {
             const business = await this.businessProfileModel.findById(
               user.businessProfile,
@@ -1924,6 +1954,8 @@ export class EventService2 {
           }
           if (data.saveAsTemplate) {
             let createQuery = { ...event.toObject() };
+            delete createQuery._id;
+            delete createQuery.__v;
             if (event.creatorType === BusinessUser.name) {
               createQuery['businessProfile'] = new mongoose.Types.ObjectId(
                 user.businessProfile,
@@ -4102,6 +4134,14 @@ export class EventService2 {
             },
           },
           { new: true },
+        );
+        await this.businessModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(event.businessProfile),
+          },
+          {
+            $set: { onboardingOfferStatus: OfferStatus.SCHEDULE },
+          },
         );
       }
       console.log('Check:3', scheduleList);

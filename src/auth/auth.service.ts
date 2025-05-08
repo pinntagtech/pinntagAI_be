@@ -4140,6 +4140,13 @@ export class AuthService {
               model: Outlet.name,
             },
           })
+          .populate({
+            path: 'business',
+            populate: {
+              path: 'initialOfferId',
+              model: Event.name
+            }
+          })
           .populate('role', '_id name description');
         if (!userDoc) {
           return {
