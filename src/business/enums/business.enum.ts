@@ -14,6 +14,7 @@ export const OfferStatus = {
   GALLERY: 2,
   LOCATIONS: 3,
   SCHEDULE: 4,
+  PUBLISHED: 5,
 };
 
 export const ScalabilityFactor = {
