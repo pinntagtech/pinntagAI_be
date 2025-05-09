@@ -5061,14 +5061,83 @@ export class EventService2 {
     limit: number,
   ) {
     try {
-      // const events = await this.eventModel.aggregate([
+      const result = await this.eventModel.aggregate([
+        // 1) Filter down to your business’s events
+        {
+          $match: {
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+          }
+        },
+      
+        // 2) In parallel: paginated docs, status grouping, and sums
+        {
+          $facet: {
+            // (a) paginated events
+            events: [
+              { $skip: (page - 1) * limit },
+              { $limit: limit }
+            ],
+      
+            // (b) count per status via a simple $group
+            statusCounts: [
+              {
+                $group: {
+                  _id: "$status",
+                  count: { $sum: 1 }
+                }
+              },
+              {
+                $project: {
+                  status: "$_id",
+                  count: 1,
+                  _id: 0
+                }
+              }
+            ],
+      
+            // (c) sums of views & engagements
+            sums: [
+              {
+                $group: {
+                  _id: null,
+                  totalViews: { $sum: "$viewsCount" },
+                  totalEngagements: { $sum: "$engagementCount" }
+                }
+              },
+              {
+                $project: {
+                  _id: 0,
+                  totalViews: 1,
+                  totalEngagements: 1
+                }
+              }
+            ]
+          }
+        },
+      
+        // 3) Unpack the single-element `sums` array and rename
+        {
+          $project: {
+            events: 1,
+            statusCounts: 1,
+            totalViews:       { $arrayElemAt: ["$sums.totalViews", 0] },
+            totalEngagements: { $arrayElemAt: ["$sums.totalEngagements", 0] }
+          }
+        }
+      ]);
 
-      // ])
+
+      const totalDocs = await this.eventModel.countDocuments({
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile)});
 
       return {
         success: true,
         message: 'Event fetched successfully',
-        event: '',
+        event: result[0].events,
+        totalViews: result[0].totalViews,
+        totalEngagements: result[0].totalEngagements,
+        statusCount: result[0].statusCounts,
+        total: totalDocs,
       };
     } catch (error) {
       console.error('Error in businessDownlineEventsList:', error);
