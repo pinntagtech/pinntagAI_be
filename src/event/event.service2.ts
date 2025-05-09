@@ -5068,6 +5068,14 @@ export class EventService2 {
             businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
           }
         },
+        {
+          $lookup:{
+            from: 'files',
+            localField: 'drivePath',
+            foreignField: 'parentDirectory',
+            as: 'drivePath',
+          }
+        },
       
         // 2) In parallel: paginated docs, status grouping, and sums
         {
