@@ -1985,7 +1985,8 @@ export class BusinessService {
 
   async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {
     try {
-      const query = { business: user.businessProfile };
+      console.log("Business:", user.businessProfile);
+      const query = { business: new mongoose.Types.ObjectId(user.businessProfile) };
       const [items, total] = await Promise.all([
         this.departmentModel
           .find(query)
@@ -1996,6 +1997,8 @@ export class BusinessService {
           .lean(),
         this.departmentModel.countDocuments(query),
       ]);
+      console.log("items:", items);
+      console.log("total:", total);
 
       return {
         success: true,
