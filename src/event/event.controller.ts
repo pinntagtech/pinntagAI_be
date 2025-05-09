@@ -935,7 +935,12 @@ export class EventController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        event: result.event,
+        data: result.event,
+        totalViews: result.totalViews,
+        totalEngagements: result.totalEngagements,
+        statusCount: result.statusCount,
+        total: result.total,
+
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
