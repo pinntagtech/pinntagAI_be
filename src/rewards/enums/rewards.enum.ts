@@ -1,0 +1,19 @@
+export const RewardType = {
+  DISCOUNT: 'Discount',
+  FREEITEM: 'Free Item',
+  EXCLUSIVE_ACCESS: 'Exclusive Access',
+};
+export const ActivityType = {
+  CHECK_IN: 'Check Ins',
+  ENGAGEMENTS: 'Engagements',
+};
+export const RedemptionMode = {
+  IN_STORE: 'In Store',
+  ONLINE: 'Online',
+};
+export enum RewardStatus {
+    DRAFTED = 'drafted',
+    PUBLISHED = 'published',
+    CLOSED = 'closed',
+    BLOCKED = 'blocked',
+  }

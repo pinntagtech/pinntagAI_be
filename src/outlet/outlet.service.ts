@@ -496,16 +496,13 @@ export class OutletService {
           select: 'name email phone countryCode profilePhoto',
           match: { manager: { $ne: '' } },
         })
-        // .populate({
-        //   path: 'creator',
-        //   select: 'name email phone countryCode profilePhoto',
-        //   match: { _id: { $ne: '' } }
-        // })
         .populate('business', 'name email phone countryCode logo')
         .skip((page - 1) * limit)
         .limit(limit);
 
       console.log('outlets:', outlets);
+     
+
 
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
@@ -579,18 +576,42 @@ export class OutletService {
         .skip((page - 1) * limit)
         .limit(limit);
 
-      console.log('outlets:', outlets);
+
+
 
       const total = await this.outletModel.countDocuments({
         creator: new mongoose.Types.ObjectId(userDetails._id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
       });
-      console.log('outlets:', outlets);
+
+      const numerics = await this.outletModel.aggregate([
+        {
+          $match: {
+            creator: new mongoose.Types.ObjectId(userDetails._id),
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            category: "$_id",
+            count: 1,
+            _id: 0
+          }
+        }
+      ]);
+      console.log('numerics:', numerics);
       return {
         success: true,
         message: 'Outlets fetched successfully.',
         data: outlets,
         total: total,
+        categoryCount: numerics,
       };
     } catch (error) {
       return {

@@ -116,6 +116,26 @@ export class BusinessController {
       });
     }
   }
+  @Get('active')
+  @UseGuards(JwtGuard2)
+  async tokenBusinessData(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.tokenBusinessData(
+      user.businessProfile
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
   @Post('update')
   @UseGuards(JwtGuard2)
