@@ -85,6 +85,7 @@ import {
 import { RateLimiterModule } from 'nestjs-rate-limiter';
 import { OutletModule } from './outlet/outlet.module';
 import { GoogleModule } from './google/google.module';
+import { RewardsModule } from './rewards/rewards.module';
 
 @Module({
   imports: [
@@ -155,6 +156,7 @@ import { GoogleModule } from './google/google.module';
     BusinessModule,
     OutletModule,
     GoogleModule,
+    RewardsModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService],

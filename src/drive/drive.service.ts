@@ -659,7 +659,7 @@ export class DriveService {
         size: file.size,
         originalName: file.originalname,
       },
-      parentDirectory: parentDirectoryId,
+      parentDirectory: new mongoose.Types.ObjectId(parentDirectoryId),
       ParentDirectoryType: parentDirectoryType,
       fileType: FileType.IMAGE,
       category: categoryId,

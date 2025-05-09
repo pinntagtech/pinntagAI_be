@@ -1498,6 +1498,7 @@ export class EventService2 {
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN)
         .populate('files');
+      // .lean({virtuals: true});
       if (!event) {
         return {
           success: false,
@@ -1903,7 +1904,10 @@ export class EventService2 {
           await this.eventModel.findByIdAndUpdate(id, {
             status: EventStatus.PUBLISHED,
           });
-          await this.businessModel.updateOne({_id: business._id},{$set:{onboardingOfferStatus: OfferStatus.PUBLISHED}})
+          await this.businessModel.updateOne(
+            { _id: business._id },
+            { $set: { onboardingOfferStatus: OfferStatus.PUBLISHED } },
+          );
           if (event.notifyFollowers) {
             const business = await this.businessProfileModel.findById(
               user.businessProfile,
@@ -5049,5 +5053,29 @@ export class EventService2 {
       data: templates,
       total: totalDocs,
     };
+  }
+
+  async businessDownlineEventsList(
+    user: DecodedUser,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      // const events = await this.eventModel.aggregate([
+
+      // ])
+
+      return {
+        success: true,
+        message: 'Event fetched successfully',
+        event: '',
+      };
+    } catch (error) {
+      console.error('Error in businessDownlineEventsList:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
   }
 }

@@ -920,4 +920,28 @@ export class EventController {
       });
     }
   }
+
+  @Get('business/created')
+  @UseGuards(JwtGuard2)
+  async businessDownlineEventsList(
+    @Query('page') pageNo: string,
+    @Query('limit') limitCount: string,
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const page = pageNo ? parseInt(pageNo) : 1;
+    const limit = limitCount ? parseInt(limitCount) : 100;
+    const result = await this.eventService.businessDownlineEventsList(user,page,limit);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        event: result.event,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
 }

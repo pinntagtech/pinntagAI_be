@@ -162,6 +162,7 @@ export class OutletController {
           message: result.message,
           data: result.data,
           total: result.total,
+
         });
       } else {
         return res.status(HttpStatus.BAD_REQUEST).json({
@@ -188,6 +189,7 @@ export class OutletController {
           message: result.message,
           data: result.data,
           total: result.total,
+          categoryCount: result.categoryCount,
         });
       } else {
         return res.status(HttpStatus.BAD_REQUEST).json({

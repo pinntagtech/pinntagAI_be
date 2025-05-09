@@ -4,6 +4,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Role } from 'src/roles/models/roles.model';
 import { Business } from './business.model';
+import { BusinessUser } from './businessUser.model';
 
 @Schema({ timestamps: true })
 export class Department {
@@ -22,7 +23,7 @@ export class Department {
   @Prop({ type: Types.ObjectId, ref: Business.name, required: true })
   business: Types.ObjectId;
 
-  @Prop()
+  @Prop({ref: BusinessUser.name})
   createdBy: Types.ObjectId;
 }
 

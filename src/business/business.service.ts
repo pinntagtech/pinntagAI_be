@@ -904,7 +904,7 @@ export class BusinessService {
     }
   }
 
-  async findOne(id: string) {
+  async tokenBusinessData(id: string) {
     try {
       const business = await this.businessModel.findOne({
         _id: new mongoose.Types.ObjectId(id),
@@ -1991,6 +1991,7 @@ export class BusinessService {
         this.departmentModel
           .find(query)
           .populate('roles', '_id name')
+          .populate('createdBy', '_id name email profilePhoto')
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)
           .limit(limit)
