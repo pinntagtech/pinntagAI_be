@@ -118,6 +118,7 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Admin } from 'src/admin/models/admin.model';
+import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 
 @Injectable()
 export class EventService2 {
@@ -1482,6 +1483,8 @@ export class EventService2 {
   }
 
   async getCreatedEvent(id: string, user: DecodedUser) {
+
+    let eventStartsIn = 0;
     if (!mongoose.isValidObjectId(id)) {
       return {
         success: false,
@@ -1496,9 +1499,16 @@ export class EventService2 {
         .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
         .populate('eventSchedule')
         .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        // .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate({
+          path: 'businessProfile',
+          populate: {
+            path: 'businessIndustry',
+            model: BusinessIndustry.name,
+          },
+          select: BusinessPopulates.FOREIGN,
+        })
         .populate('files');
-      // .lean({virtuals: true});
       if (!event) {
         return {
           success: false,
@@ -1567,12 +1577,28 @@ export class EventService2 {
           following: isFollowedByMe ? true : false,
           isMe: businessProfile.id == user.id,
         };
+        
+        if (eventObj.eventSchedule.length) {
+          let startDate = null;
+          let firstSchedule = eventObj.eventSchedule[0];
+          if (firstSchedule.type == ScheduleTypes.FIXED) {
+            startDate = firstSchedule.fixedSchedule.date;
+          } else if (firstSchedule.type == ScheduleTypes.RECURRING) {
+            startDate = firstSchedule.recurringSchedule.startDate;
+          }
+          const today = new Date();
+          const start = new Date(startDate);
+          const diffInMs = start.getTime() - today.getTime();
+          eventStartsIn = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+          console.log('Starttt Date: and Today:', startDate, today);
+        }
       }
 
       return {
         success: true,
         message: 'Event fetched successfully',
         event: eventObj,
+        eventStartsIn,
       };
     }
   }
@@ -1906,7 +1932,7 @@ export class EventService2 {
           });
           await this.businessModel.updateOne(
             { _id: business._id },
-            { $set: { onboardingOfferStatus: OfferStatus.PUBLISHED } },
+            { $set: { onboardingOfferStatus: OfferStatus.PUBLISHED,continueJourney:false } },
           );
           if (event.notifyFollowers) {
             const business = await this.businessProfileModel.findById(
@@ -5034,6 +5060,7 @@ export class EventService2 {
         .skip((page - 1) * limit)
         .limit(limit);
       totalDocs = await this.templateModel.countDocuments({
+        creatorType: Admin.name,
         businessIndustry: new mongoose.Types.ObjectId(
           business.businessIndustry,
         ),
@@ -5066,77 +5093,74 @@ export class EventService2 {
         {
           $match: {
             businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-          }
+          },
         },
         {
-          $lookup:{
+          $lookup: {
             from: 'files',
             localField: 'drivePath',
             foreignField: 'parentDirectory',
             as: 'drivePath',
-          }
+          },
         },
-      
+
         // 2) In parallel: paginated docs, status grouping, and sums
         {
           $facet: {
             // (a) paginated events
-            events: [
-              { $skip: (page - 1) * limit },
-              { $limit: limit }
-            ],
-      
+            events: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+
             // (b) count per status via a simple $group
             statusCounts: [
               {
                 $group: {
-                  _id: "$status",
-                  count: { $sum: 1 }
-                }
+                  _id: '$status',
+                  count: { $sum: 1 },
+                },
               },
               {
                 $project: {
-                  status: "$_id",
+                  status: '$_id',
                   count: 1,
-                  _id: 0
-                }
-              }
+                  _id: 0,
+                },
+              },
             ],
-      
+
             // (c) sums of views & engagements
             sums: [
               {
                 $group: {
                   _id: null,
-                  totalViews: { $sum: "$viewsCount" },
-                  totalEngagements: { $sum: "$engagementCount" }
-                }
+                  totalViews: { $sum: '$viewsCount' },
+                  totalEngagements: { $sum: '$engagementCount' },
+                },
               },
               {
                 $project: {
                   _id: 0,
                   totalViews: 1,
-                  totalEngagements: 1
-                }
-              }
-            ]
-          }
+                  totalEngagements: 1,
+                },
+              },
+            ],
+          },
         },
-      
+
         // 3) Unpack the single-element `sums` array and rename
         {
           $project: {
             events: 1,
             statusCounts: 1,
-            totalViews:       { $arrayElemAt: ["$sums.totalViews", 0] },
-            totalEngagements: { $arrayElemAt: ["$sums.totalEngagements", 0] }
-          }
-        }
+            totalViews: { $arrayElemAt: ['$sums.totalViews', 0] },
+            totalEngagements: { $arrayElemAt: ['$sums.totalEngagements', 0] },
+          },
+        },
       ]);
 
-
       const totalDocs = await this.eventModel.countDocuments({
-        businessProfile: new mongoose.Types.ObjectId(user.businessProfile)});
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+      });
 
       return {
         success: true,

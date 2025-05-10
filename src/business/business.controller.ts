@@ -39,6 +39,7 @@ import {
   CreateDepartmentDto,
   UpdateDepartmentDto,
 } from './dto/create-department.dto';
+import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -123,7 +124,7 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.businessService.tokenBusinessData(
-      user.businessProfile
+      user.businessProfile,
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -542,7 +543,7 @@ export class BusinessController {
     @Body() data: CreateDownlineBusinessUserDto,
   ) {
     if (
-      user.businessProfile ||
+      !user.businessProfile ||
       (user.businessProfile && !isValidObjectId(user.businessProfile))
     ) {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -565,6 +566,42 @@ export class BusinessController {
       });
     }
   }
+  @Patch('downlineUser/:id')
+  @Privilege(ResourceTypes.USERS, Actions.UPDATE)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(JwtGuard2)
+  async updateDownlineUser(
+    @TokenDecoder() user: DecodedUser,
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: UpdateDownlineBusinessUserDto,
+  ) {
+    if (
+      !user.businessProfile ||
+      (user.businessProfile && !isValidObjectId(user.businessProfile))
+    ) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'BusinessId not Found.',
+      });
+    }
+    const result = await this.businessService.updateDownlineUser(
+      id,
+      data,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+
+
   @Post('user/login/reset-password')
   @UseGuards(ResetPasswordGuard)
   async forceResetPassword(
@@ -600,15 +637,16 @@ export class BusinessController {
     }
   }
 
-  @Post('deleteUser/:id')
-  @Privilege(ResourceTypes.USERS, Actions.DELETE)
-  @UseGuards(PrivilegeGuard)
+  @Delete('deleteUser/:id')
+  // @Privilege(ResourceTypes.USERS, Actions.DELETE)
+  // @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async deleteUser(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
+    console.log("Is comiing in controller?")
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',

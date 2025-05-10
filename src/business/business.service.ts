@@ -79,6 +79,7 @@ import { Department, DepartmentDocument } from './model/department.model';
 import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { User } from 'src/user/models/user.model';
+import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 
 @Injectable()
 export class BusinessService {
@@ -1138,6 +1139,7 @@ export class BusinessService {
             _id: {
               $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
             },
+            isDeleted: false,
           },
         },
         {
@@ -1508,6 +1510,43 @@ export class BusinessService {
     }
     return collectedIds;
   }
+   async getAllChildUserIds2(userId) {
+      const objectId = new mongoose.Types.ObjectId(userId);
+      console.log('objectIdque', objectId);
+      const result = await this.businessUserModel
+        .aggregate([
+          {
+            $match: { _id: objectId },
+          },
+          {
+            $graphLookup: {
+              from: this.businessUserModel.collection.name,
+              startWith: '$_id',
+              connectFromField: '_id',
+              connectToField: 'creator',
+              as: 'descendants',
+              restrictSearchWithMatch: { creatorType: BusinessUserCreatorType.BUSINESS },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              descendantIds: {
+                $map: {
+                  input: '$descendants',
+                  as: 'd',
+                  in: { $toString: '$$d._id' },
+                },
+              },
+            },
+          },
+        ])
+        .exec();
+  
+      return result[0]?.descendantIds || [];
+    }
+
+
   async toggleStatus(creatorId: string, id: string, isActive: boolean) {
     try {
       const foundUser = await this.businessUserModel.findById(id);
@@ -1609,7 +1648,7 @@ export class BusinessService {
       // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
       const updatedUser = await this.businessUserModel.aggregate([
         {
-          $match: { _id: new mongoose.Types.ObjectId(id) },
+          $match: { _id: new mongoose.Types.ObjectId(createdUser._id) },
         },
         {
           $lookup: {
@@ -1648,6 +1687,77 @@ export class BusinessService {
         success: true,
         message: 'Business User Created Successfully!',
         data: updatedUser[0],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateDownlineUser(id: string, data: UpdateDownlineBusinessUserDto) {
+    try {
+      const foundUser = await this.businessUserModel.findById(id);
+
+      if (!foundUser) {
+        return {
+          success: false,
+          message: 'Business User not found.',
+        };
+      }
+
+      let updateObj: {} = { ...data };
+      if (data.role) {
+        updateObj['role'] = new mongoose.Types.ObjectId(data.role);
+      }
+      const updatedUser = await this.businessUserModel.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        updateObj,
+        { new: true },
+      );
+
+      // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
+      const updatedUserDetails = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(updatedUser._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles',
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            isBlocked: 1,
+            role: {
+              _id: 1,
+              name: 1,
+            },
+            status: 1,
+            creator: 1,
+            creatorType: 1,
+            profilePhoto: 1,
+            name: 1,
+            email: 1,
+            phone: 1,
+            countryCode: 1,
+            isEmailVerified: 1,
+            businessId: '$business',
+            drive: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            outlets: 1,
+          },
+        },
+      ]);
+      return {
+        success: true,
+        message: 'Business User Created Successfully!',
+        data: updatedUserDetails[0],
       };
     } catch (error) {
       return {
@@ -1698,7 +1808,8 @@ export class BusinessService {
           message: 'User not found!',
         };
       }
-      const getAllChildUsersIds = await this.getAllChildUsersIds(id);
+      const getAllChildUsersIds = await this.getAllChildUserIds2(id);
+      console.log('getAllChildUsersIds:', getAllChildUsersIds);
       if (!getAllChildUsersIds.includes(deleteId)) {
         return {
           success: false,
@@ -1985,8 +2096,10 @@ export class BusinessService {
 
   async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {
     try {
-      console.log("Business:", user.businessProfile);
-      const query = { business: new mongoose.Types.ObjectId(user.businessProfile) };
+      console.log('Business:', user.businessProfile);
+      const query = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      };
       const [items, total] = await Promise.all([
         this.departmentModel
           .find(query)
@@ -1998,8 +2111,8 @@ export class BusinessService {
           .lean(),
         this.departmentModel.countDocuments(query),
       ]);
-      console.log("items:", items);
-      console.log("total:", total);
+      console.log('items:', items);
+      console.log('total:', total);
 
       return {
         success: true,
