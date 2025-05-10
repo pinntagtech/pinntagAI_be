@@ -86,6 +86,7 @@ import { RateLimiterModule } from 'nestjs-rate-limiter';
 import { OutletModule } from './outlet/outlet.module';
 import { GoogleModule } from './google/google.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { Template, TemplateSchema } from './event/models/template.model';
 
 @Module({
   imports: [
@@ -135,6 +136,7 @@ import { RewardsModule } from './rewards/rewards.module';
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: Template.name, schema: TemplateSchema },
     ]),
     StripeeModule,
     AuthModule,
