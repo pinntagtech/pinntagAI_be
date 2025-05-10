@@ -44,4 +44,16 @@ export class CreateDownlineBusinessUserDto {
   @IsNotEmpty()
   @IsBoolean()
   forcePasswordReset: boolean;
+
+  @IsOptional()
+  profilePhoto?: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode: string;
+
+  // @IsPhoneNumber(null)
+  @IsOptional()
+  @IsString()
+  phone: string;
 }

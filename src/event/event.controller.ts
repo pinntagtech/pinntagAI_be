@@ -255,6 +255,7 @@ export class EventController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         event: result.event,
+        eventStartsIn: result.eventStartsIn,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
