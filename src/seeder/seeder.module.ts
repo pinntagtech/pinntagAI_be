@@ -57,6 +57,7 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
+import { Template, TemplateSchema } from 'src/event/models/template.model';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import {
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: Template.name, schema: TemplateSchema },
     ]),
   ],
   controllers: [],

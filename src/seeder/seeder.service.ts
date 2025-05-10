@@ -80,6 +80,7 @@ import {
   BusinessDocumentTypeDocument,
 } from 'src/business/model/BussinessDocumentType.model';
 import { DefaultAdminRoles } from 'src/business/resourceInits/template-roles';
+import { Template, TemplateDocument } from 'src/event/models/template.model';
 
 @Injectable()
 export class SeederService {
@@ -109,8 +110,8 @@ export class SeederService {
     private readonly actionModel: Model<ActionDocument>,
     @InjectModel(OutletCategory.name)
     private readonly outletCategoryModel: Model<OutletCategoryDocument>,
-    @InjectModel(OutletType.name)
-    private readonly outletTypeModel: Model<OutletTypeDocument>,
+    @InjectModel(OutletType.name) private readonly outletTypeModel: Model<OutletTypeDocument>,
+    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(BusinessIndustry.name)
@@ -143,6 +144,7 @@ export class SeederService {
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
+    await this.seedEventTemplates();
     // await this.seedConstitutions();
   }
 
@@ -713,6 +715,7 @@ export class SeederService {
         title: template.businessIndustry,
       });
       let createObj = {
+        creatorType: Admin.name,
         type: template.type,
         discountType: template.discountType,
         discountValue: template.discountValue,
@@ -731,6 +734,7 @@ export class SeederService {
         businessIndustry: businessIndustry._id,
         businessCategories: businessCategoriesId,
       };
+      await this.templateModel.create(createObj);
     }
   }
 }
