@@ -1186,6 +1186,7 @@ export class BusinessService {
       const countDocs = await this.businessUserModel.countDocuments({
         _id: {
           $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
+          isDeleted: false,
         },
       });
       return {
@@ -1601,7 +1602,14 @@ export class BusinessService {
       }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
-
+      if(data.role){
+        if(!isValidObjectId(data.role)){
+          return {
+            success: false,
+            message: 'Please provide valid Role Id',
+          };
+        }
+      }
       let createObj = {
         role: [new mongoose.Types.ObjectId(data.role)],
         creatorType: BusinessUserCreatorType.BUSINESS,
@@ -1706,9 +1714,15 @@ export class BusinessService {
         };
       }
 
-      let updateObj: {} = { ...data };
-      if (data.role) {
-        updateObj['role'] = new mongoose.Types.ObjectId(data.role);
+      let updateObj: {} = { };
+      if(data.role && data.role.length>0){
+        if(!isValidObjectId(data.role)){
+          return {
+            success: false,
+            message: 'Please provide valid Role Id',
+          };
+        }
+        updateObj['role'] = [new mongoose.Types.ObjectId(data.role)];
       }
       const updatedUser = await this.businessUserModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
