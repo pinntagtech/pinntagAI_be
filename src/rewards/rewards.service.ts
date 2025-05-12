@@ -76,6 +76,18 @@ export class RewardsService {
         parentType: Folder.name,
         folderName: data.title,
       });
+      let createObj = {
+        ...data,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        creatorType: BusinessUser.name,
+        user: new mongoose.Types.ObjectId(userId),
+      };
+
+      console.log('rewardObj:', createObj);
+
+      const reward = await this.rewardModel.create(createObj);
+      console.log('reward:', reward);
 
       if (data.activityType === ActivityType.CHECK_IN) {
         if (data.locations && data.locations.length <= 0) {
@@ -121,19 +133,6 @@ export class RewardsService {
           console.log('created-location---->', createdlocation);
         }
       }
-
-      let createObj = {
-        ...data,
-        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
-        creatorType: BusinessUser.name,
-        user: new mongoose.Types.ObjectId(userId),
-      };
-
-      console.log('rewardObj:', createObj);
-
-      const reward = await this.rewardModel.create(createObj);
-      console.log('event:', reward);
 
       //   console.log('Image:', image);
       //   const result = await this.s3Service.s3_upload(
