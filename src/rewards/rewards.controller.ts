@@ -17,7 +17,7 @@ export class RewardsController {
      @Post()
       @UseGuards(JwtGuard2)
       @UseInterceptors(
-        FilesInterceptor('images', 4, {
+        FilesInterceptor('images', 1, {
           //   dest: './uploads',
           //   fileFilter: imageFileFilter,
           //   storage: diskStorage({
@@ -45,6 +45,7 @@ export class RewardsController {
         @UploadedFiles() images: Express.Multer.File[],
         @UploadedFile() qrCode: Express.Multer.File,
       ) {
+
         console.log("controller image:",images);
         if(!qrCode){
           return res.status(HttpStatus.BAD_REQUEST).json({

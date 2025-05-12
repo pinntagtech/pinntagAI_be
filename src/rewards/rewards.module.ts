@@ -32,6 +32,8 @@ import {
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
 import { JwtService } from '@nestjs/jwt';
+import { EventLocation, EventLocationSchema } from 'src/event/models/eventLocation.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { JwtService } from '@nestjs/jwt';
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Image.name, schema: ImageSchema },
+       { name: Outlet.name, schema: OutletSchema },
+       { name: EventLocation.name, schema: EventLocationSchema },
     ]),
   ],
   controllers: [RewardsController],

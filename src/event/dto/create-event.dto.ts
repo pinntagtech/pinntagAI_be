@@ -34,7 +34,7 @@ export class CreateEventDto {
   @IsOptional()
   keywords: any;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   description: string;
 
