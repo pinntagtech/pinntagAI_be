@@ -41,9 +41,11 @@ export class CreateOfferDto {
   @Transform(({ value }) => value.trim())
   promotionCode: string;
 
+  @IsOptional()
   @IsString()
   isFree: any;
 
+  @IsOptional()
   @ValidateIf((o) => o.isFree === false)
   @IsString()
   participationCost: string;

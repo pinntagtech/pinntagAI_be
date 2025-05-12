@@ -279,12 +279,12 @@ export class OutletService {
         business: business._id,
       });
       console.log('foundOutlet', foundOutlet);
-      if (foundOutlet) {
-        return {
-          success: false,
-          message: 'Outlet already exists with given email.',
-        };
-      }
+      // if (foundOutlet) {
+      //   return {
+      //     success: false,
+      //     message: 'Outlet already exists with given email.',
+      //   };
+      // }
 
       let createObj: any = {};
       Object.keys(data).forEach((key) => {

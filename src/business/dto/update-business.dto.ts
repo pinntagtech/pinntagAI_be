@@ -180,8 +180,8 @@ export class UpdateBusinessDto {
   county?: string;
 
   @IsOptional()
-  @IsNumber()
-  postalCode?: number;
+  @IsString()
+  postalCode?: string;
 
   @IsOptional()
   @IsNumber()
