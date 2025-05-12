@@ -181,7 +181,7 @@ export class UpdateBusinessDto {
 
   @IsOptional()
   @IsString()
-  postalCode?: string;
+  postalCode?: number;
 
   @IsOptional()
   @IsNumber()
