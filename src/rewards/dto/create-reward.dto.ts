@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsDateString,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -38,14 +39,14 @@ export class CreateRewardDto {
   activityType: string;
 
   @IsOptional()
-  @IsArray()
-  locations: Array<string> | Array<Location>;
+  @IsString()
+  locations: string;
 
   @IsNotEmpty()
-  targetCount: number;
+  targetCount: string;
 
   @IsNotEmpty()
-  rewardExpiration: number;
+  rewardExpiration: string;
 
   @IsOptional()
   @IsString()
@@ -56,4 +57,12 @@ export class CreateRewardDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   description: string;
+
+  @IsNotEmpty()
+  @IsDateString({}, { message: 'startDate must be a valid ISO 8601 date string' })
+  startDate: string;
+
+  @IsNotEmpty()
+  @IsDateString({}, { message: 'endDate must be a valid ISO 8601 date string' })
+  endDate: string;
 }

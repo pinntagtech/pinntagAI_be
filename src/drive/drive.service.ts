@@ -56,6 +56,58 @@ export class DriveService {
     private readonly s3Service: S3Service,
   ) {}
 
+  private rewriteS3Url(originalUrl: string): string {
+    console.log('originalUrl', originalUrl);
+    // e.g. https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/13a1747119776098.jpg
+    const url = new URL(originalUrl);
+    url.host = `${url.host.replace(/^s3\./, '')}`; // remove any existing s3.<region>.
+    url.host = `${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
+    return url.toString();
+  }
+  async saveFileInDB(
+    file: Express.Multer.File,
+    parentId: string,
+    locationId: string,
+    fileCategoryId: string,
+    parentDirectoryType: string,
+    fileType: string,
+    parentType: string,
+  ){
+    let driveDetails = await this.driveModel.findOne({
+      owner: new mongoose.Types.ObjectId(parentId)});
+
+    const uploadFileName = manipulateImageName(file.originalname);
+    console.log('uploadFileName', uploadFileName);
+    const uploadResult = await this.s3Service.s3_upload(
+      file.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      uploadFileName,
+      file.mimetype,
+    );
+    const updatedUrl = this.rewriteS3Url(uploadResult.Location);
+    let createdFile = await this.fileModel.create({
+      metaData: {
+        mimeType: file.mimetype,
+        url: updatedUrl,
+        size: file.size,
+        originalName: file.originalname,
+      },
+      parentDirectory: new mongoose.Types.ObjectId(locationId),
+      ParentDirectoryType: parentDirectoryType,
+      fileType: fileType,
+      category: new mongoose.Types.ObjectId(fileCategoryId),
+      parent: new mongoose.Types.ObjectId(parentId),
+      parentType: parentType,
+    });
+    console.log('Created File:::', createdFile);
+    //
+    await this.driveModel.updateOne(
+      { _id: driveDetails._id },
+      { $set: { AvailableSpace: driveDetails.AvailableSpace - file.size } },
+    );
+    return createdFile;
+  }
+
   async uploadFile(
     parentId: string,
     locationId: string,
@@ -77,12 +129,6 @@ export class DriveService {
       }
       let parentType = null;
       let fileType = null;
-      // let [isUser, isAdmin, isBusinessProfile, isEvent] = await Promise.all([
-      //   this.userModel.findById(parentId),
-      //   this.adminModel.findById(parentId),
-      //   this.businessProfileModel.findById(parentId),
-      //   this.eventModel.findById(parentId),
-      // ]);
       console.log('parentId:', parentId);
       let driveDetails = await this.driveModel.findOne({
         owner: new mongoose.Types.ObjectId(parentId),
@@ -99,25 +145,16 @@ export class DriveService {
 
       console.log('ParentType:', parentType);
       console.log('FILE:', file);
-      const drive = await this.driveModel.findOne({ _id: locationId });
-      const folder = await this.folderModel.findOne({ _id: locationId });
-      let parentDirectoryType = null;
-      let parentDriveId = null;
-      if (drive) {
-        parentDirectoryType = Drive.name;
-        parentDriveId = drive._id;
+      const [drive, folder] = await Promise.all([
+        this.driveModel.findById(locationId),
+        this.folderModel.findById(locationId),
+      ]);
+      if (!drive && !folder) {
+        return { success: false, message: 'Invalid locationId' };
       }
-      if (folder) {
-        parentDirectoryType = folder.parentType;
-        // let subParentType = parentDirectoryType;
-        // let subFolder = folder;
-        // while (subParentType != Drive.name) {
-        //   subFolder = await this.folderModel.findOne({ _id: subFolder.parent });
-        //   subParentType = subFolder.parentType;
-        // }
-        parentDriveId = folder.drive;
-      }
-
+      const parentDirectoryType = drive
+      ? Drive.name
+      : folder.parentType;
       console.log(driveDetails);
       if (file.size > driveDetails.AvailableSpace) {
         return {
@@ -144,40 +181,14 @@ export class DriveService {
           message: 'Drive not found',
         };
       }
-      const uploadFileName = manipulateImageName(file.originalname);
-      console.log('uploadFileName', uploadFileName);
-      const uploadResult = await this.s3Service.s3_upload(
-        file.buffer,
-        process.env.AWS_S3_BUCKET_NAME,
-        uploadFileName,
-        file.mimetype,
-      );
-      //create file doc
-      const splitIndex = uploadResult.Location.indexOf('amazonaws');
-      const part1 = uploadResult.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
-      const part2 = uploadResult.Location.slice(splitIndex);
-      const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-      console.log('updatedUrl', updatedUrl);
 
-      let createdFile = await this.fileModel.create({
-        metaData: {
-          mimeType: file.mimetype,
-          url: updatedUrl,
-          size: file.size,
-          originalName: file.originalname,
-        },
-        parentDirectory: new mongoose.Types.ObjectId(locationId),
-        ParentDirectoryType: parentDirectoryType,
-        fileType: fileType,
-        category: new mongoose.Types.ObjectId(fileCategoryId),
-        parent: new mongoose.Types.ObjectId(parentId),
-        parentType: parentType,
-      });
-      console.log('Created File:::', createdFile);
-      //
-      await this.driveModel.updateOne(
-        { _id: parentDriveId },
-        { $set: { AvailableSpace: driveDetails.AvailableSpace - file.size } },
+      // let createdFile = await this.saveFileInDB(file,parentId,locationId,fileCategoryId,parentDirectoryType,fileType,parentType);
+      let createdFile = await this.uploadAndCreateFile(
+        file,
+        locationId,
+        parentDirectoryType,
+        parentId,
+        fileCategoryId,
       );
 
       return {
@@ -634,7 +645,7 @@ export class DriveService {
 
   // optimised
 
-  private async uploadAndCreateFile(
+  async uploadAndCreateFile(
     file: Express.Multer.File,
     parentDirectoryId: string,
     parentDirectoryType: string,

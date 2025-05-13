@@ -474,6 +474,9 @@ export const Seeder = {
       name: 'Audio Note',
     },
     {
+      name: 'Content QR',
+    },
+    {
       name: 'other',
     },
   ],
