@@ -4,7 +4,7 @@ export const RewardType = {
   EXCLUSIVE_ACCESS: 'Exclusive Access',
 };
 export const ActivityType = {
-  CHECK_IN: 'Check Ins',
+  CHECK_IN: 'Check-in',
   ENGAGEMENTS: 'Engagements',
 };
 export const RedemptionMode = {

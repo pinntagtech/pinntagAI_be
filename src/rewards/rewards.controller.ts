@@ -1,5 +1,16 @@
-import { Body, Controller, HttpStatus, Post, Res, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Post,
+  Res,
+  UploadedFile,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
@@ -9,62 +20,47 @@ import { RewardsService } from './rewards.service';
 
 @Controller('rewards')
 export class RewardsController {
+  constructor(private readonly rewardService: RewardsService) {}
 
-    constructor(
-        private readonly rewardService: RewardsService
-    ) {}
-
-     @Post()
-      @UseGuards(JwtGuard2)
-      @UseInterceptors(
-        FilesInterceptor('images', 1, {
-          //   dest: './uploads',
-          //   fileFilter: imageFileFilter,
-          //   storage: diskStorage({
-          //     destination: './uploads',
-          //     filename: editFileName,
-          //   }),
-          //   //Setting file size limit to 1 MB
-          limits: { fileSize: 1000000 },
-        }),
-        FileInterceptor('qrCode', {
-            //   dest: './uploads',
-            //   fileFilter: imageFileFilter,
-            //   storage: diskStorage({
-            //     destination: './uploads',
-            //     filename: editFileName,
-            //   }),
-            //   //Setting file size limit to 1 MB
-            limits: { fileSize: 1000000 },
-          }),
-      )
-      async createReward(
-        @Res() res: Response,
-        @Body() data: CreateRewardDto,
-        @TokenDecoder() user: DecodedUser,
-        @UploadedFiles() images: Express.Multer.File[],
-        @UploadedFile() qrCode: Express.Multer.File,
-      ) {
-
-        console.log("controller image:",images);
-        if(!qrCode){
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: 'Please provide an image',
-          });
-        }
-        const result = await this.rewardService.createReward(data, user, images,qrCode);
-        if (result.success) {
-          return res.status(HttpStatus.CREATED).json({
-            message: result.message,
-            data: result.data,
-          });
-        } else {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: result.message,
-          });
-        }
-      }
-
-
-
+  @Get('checking')
+  async checking() {
+    console.log('checking');
+    return {
+      message: 'Checking',
+    };
+  }
+  @Post()
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 1 },
+      { name: 'qrCode', maxCount: 1 },
+    ]),
+  )
+  async createReward(
+    @Res() res: Response,
+    @Body() data: CreateRewardDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles()
+    files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },  
+  ) {
+    console.log("qrCode:", files.qrCode);
+    console.log('images:', files.images);
+    const result = await this.rewardService.createReward(
+      data,
+      user,
+      files.images,
+      files.qrCode,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }

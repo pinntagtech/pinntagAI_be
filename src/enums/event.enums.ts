@@ -249,15 +249,10 @@ export enum WeekDays {
 
 export enum DiscountType {
   Percentage = "PERCENTAGE",
-  Flat = "Flat",
+  Flat = "FLAT",
   BOGO = "BUY_ONE_GET_ONE",
-  Tiered = "TIERED",
-  Bundle = "BUNDLE",
-  FlashSale = "FLASH_SALE",
-  Seasonal = "SEASONAL",
-  Loyalty = "LOYALTY",
-  CouponCode = "COUPON_CODE",
-  FreeShipping = "FREE_SHIPPING",
-  EarlyBird = "EARLY_BIRD",
-  Clearance = "CLEARANCE"
+  FREE_ITEM = "FREE_ITEM",
+  BUNDLE= 'BUNDLE',
+  HAPPY_HOUR = 'HAPPY_HOUR',
+  CUSTOM = 'CUSTOM',
 }

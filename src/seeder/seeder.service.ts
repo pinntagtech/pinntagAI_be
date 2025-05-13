@@ -692,6 +692,11 @@ export class SeederService {
   }
 
   async seedEventTemplates() {
+    const eventTemplates = await this.templateModel.find();
+    if(eventTemplates.length) {
+      return;
+    }
+    
     for (let template of Seeder.EventTemplates) {
       let eventCategoriesId = [];
       for (let category of template.categories) {

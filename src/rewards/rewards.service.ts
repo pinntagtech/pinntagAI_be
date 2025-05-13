@@ -14,8 +14,15 @@ import { Reward, RewardDocument } from './model/reward.model';
 import { S3Service } from 'src/s3.service';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { ActivityType } from './enums/rewards.enum';
-import { EventLocation, EventLocationDocument } from 'src/event/models/eventLocation.model';
+import {
+  EventLocation,
+  EventLocationDocument,
+} from 'src/event/models/eventLocation.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class RewardsService {
@@ -32,6 +39,8 @@ export class RewardsService {
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
@@ -48,6 +57,7 @@ export class RewardsService {
     qrCode: Express.Multer.File,
   ) {
     try {
+      console.log('createReward data:', data);
       const userId = user.id;
       if (!user.businessProfile) {
         return {
@@ -89,106 +99,83 @@ export class RewardsService {
       const reward = await this.rewardModel.create(createObj);
       console.log('reward:', reward);
 
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      console.log('qrCode:', qrCode);
+      this.driveService.uploadAndCreateFile(
+        qrCode[0],
+        businessFolder.data.id,
+        Folder.name,
+        userDetails.drive.toString(),
+        QR_ImageCategory._id,
+      );
+      console.log('images:', images);
+      this.driveService.multiImageUpload(
+        userDetails._id,
+        businessFolder.data.id,
+        images,
+      );
+      let providedLocations= [];
+      const locationIds = [];
+      if(data.activityType === ActivityType.CHECK_IN && data.locations && data.locations.length > 0) {
+        if (typeof data.locations === 'string') {
+          providedLocations = data.locations
+            .split(',')
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0);
+        } else if (Array.isArray(data.locations)) {
+          providedLocations = data.locations;
+        }
+
+
+
+      }
+
+      // 2) If check-in activity, validate each one
+  
       if (data.activityType === ActivityType.CHECK_IN) {
-        if (data.locations && data.locations.length <= 0) {
+        if (providedLocations.length === 0) {
           return {
             success: false,
             message: 'Please provide locations.',
           };
         }
-        for (let i = 0; i < data.locations.length; i++) {
-          if (typeof data.locations[i] == 'string') {
-            if (!mongoose.isValidObjectId(data.locations[i])) {
-              return {
-                success: false,
-                message: `Please provide a valid location id, ${data.locations[i]} is not valid`,
-              };
-            }
+        for (const loc of providedLocations) {
+          if (!mongoose.isValidObjectId(loc)) {
+            return {
+              success: false,
+              message: `Please provide a valid location id, "${loc}" is not valid`,
+            };
           }
-          const location = data.locations[i];
-          const outletDoc = await this.outletModel.findById(location);
+          const outletDoc = await this.outletModel.findById(loc);
           if (!outletDoc) {
             return {
               success: false,
-              message: `Outlet with id ${location} not found`,
+              message: `Outlet with id "${loc}" not found`,
             };
           }
-          const createdlocation = await this.eventLocationModel.create({
-            event: new mongoose.Types.ObjectId(''),
-            businessLocationId: outletDoc._id,
-            location: {
-              type: 'Point',
-              coordinates: [outletDoc.longitude, outletDoc.latitude],
-            },
-            accuracy: outletDoc.accuracy,
-            address1: outletDoc.address1,
-            address2: outletDoc.address2 ? outletDoc.address2 : '',
-            city: outletDoc.city,
-            state: outletDoc.state,
-            zip: outletDoc.postalCode,
-            website: outletDoc.website,
-            email: outletDoc.email,
-            phone: outletDoc.phone,
-          });
-          console.log('created-location---->', createdlocation);
+          locationIds.push(outletDoc._id);
         }
       }
-
-      //   console.log('Image:', image);
-      //   const result = await this.s3Service.s3_upload(
-      //     image.buffer,
-      //     process.env.AWS_S3_BUCKET_NAME,
-      //     manipulateImageName(image.originalname),
-      //     'image/jpeg',
-      //   );
-      //   const fileCategory = await this.fileCategoryModel.findOne({
-      //     name: 'gallery image',
-      //   });
-      //   const splitIndex = result.Location.indexOf('amazonaws');
-      //   const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
-      //   const part2 = result.Location.slice(splitIndex);
-      //   const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-      //   console.log('updatedUrl', updatedUrl);
-      //   let file = await this.fileModel.create({
-      //     metaData: {
-      //       mimeType: image.mimetype,
-      //       url: updatedUrl,
-      //       size: image.size,
-      //       originalName: image.originalname,
-      //     },
-      //     parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
-      //     ParentDirectoryType: Folder.name,
-      //     fileType: FileType.IMAGE,
-      //     category: fileCategory._id,
-      //     parent: new mongoose.Types.ObjectId(event._id),
-      //     parentType: Event.name,
-      //   });
-
-      //   // const updatedEvent = await this.eventModel.findByIdAndUpdate(
-      //   //   event._id,
-      //   //   {
-      //   //     $push: {
-      //   //       images: {
-      //   //         $each: eventImages
-      //   //       },
-      //   //     },
-      //   //   },
-      //   //   { new: true },
-      //   // );
-
-      //   await this.businessModel.updateOne(
-      //     { _id: user.businessProfile },
-      //     {
-      //       $set: {
-      //         onboardingOfferStatus: OfferStatus.CREATED,
-      //         initialOfferId: event._id,
-      //       },
-      //     },
-      //   );
+      let startDate = new Date(data.startDate);
+      let endDate = new Date(data.endDate);
+      const updatedReward = await this.rewardModel.findOneAndUpdate(
+        { _id: reward._id },
+        {
+          $set: {
+            locations: locationIds,
+            rewardSchedule: {
+              startDate: startDate,
+              endDate: endDate,
+            },
+          },
+        },
+      );
       return {
         success: true,
         message: 'Offer created successfully',
-        data: event,
+        data: updatedReward,
       };
     } catch (error) {
       console.log('Error in createOffer:', error);
