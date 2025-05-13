@@ -1110,6 +1110,7 @@ export class BusinessService {
     pages?: number;
   }> {
     try {
+      console.log("check 1:", id);
       const user = await this.businessUserModel.findById(id);
       if (!user) {
         return {
@@ -1117,21 +1118,9 @@ export class BusinessService {
           message: 'Business User not found!',
         };
       }
-      const allUserIds = await this.getAllChildUsersIds(user.id);
-      // const users = await this.businessUserModel
-      //   .find({
-      //     $match: {
-      //       _id: {
-      //         $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
-      //       },
-      //     },
-      //   })
-      //   .populate('role', '_id name')
-      //   .sort({ createdAt: -1 })
-      //   .select({ password: 0 })
-      //   .skip((page - 1) * limit)
-      //   .limit(limit)
-      //   .lean();
+      const allUserIds = await this.getAllChildUserIds2(user.id);
+      console.log("ALL USERE IDS:", allUserIds);
+
 
       const users = await this.businessUserModel.aggregate([
         {
@@ -1139,7 +1128,7 @@ export class BusinessService {
             _id: {
               $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
             },
-            isDeleted: false,
+            // isDeleted: false,
           },
         },
         {
@@ -1177,6 +1166,7 @@ export class BusinessService {
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ]);
+      console.log('users:', users);
 
       // const modifiedUsers = users.map((user) => ({
       //   ...user,
@@ -1186,7 +1176,7 @@ export class BusinessService {
       const countDocs = await this.businessUserModel.countDocuments({
         _id: {
           $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
-          isDeleted: false,
+          // isDeleted: false,
         },
       });
       return {
