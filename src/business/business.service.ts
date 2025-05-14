@@ -1110,7 +1110,7 @@ export class BusinessService {
     pages?: number;
   }> {
     try {
-      console.log("check 1:", id);
+      console.log('check 1:', id);
       const user = await this.businessUserModel.findById(id);
       if (!user) {
         return {
@@ -1119,8 +1119,7 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
-      console.log("ALL USERE IDS:", allUserIds);
-
+      console.log('ALL USERE IDS:', allUserIds);
 
       const users = await this.businessUserModel.aggregate([
         {
@@ -1128,7 +1127,7 @@ export class BusinessService {
             _id: {
               $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
             },
-            // isDeleted: false,
+            isDeleted: false,
           },
         },
         {
@@ -1145,7 +1144,7 @@ export class BusinessService {
             localField: 'creator',
             foreignField: '_id',
             as: 'creator',
-          }
+          },
         },
         {
           $unwind: '$creator',
@@ -1160,13 +1159,14 @@ export class BusinessService {
             },
             status: 1,
             creator: {
-              _id:1,
+              _id: 1,
               name: 1,
               email: 1,
               profilePhoto: 1,
             },
             creatorType: 1,
             profilePhoto: 1,
+            forcePasswordReset: 1,
             name: 1,
             email: 1,
             phone: 1,
@@ -1517,42 +1517,43 @@ export class BusinessService {
     }
     return collectedIds;
   }
-   async getAllChildUserIds2(userId) {
-      const objectId = new mongoose.Types.ObjectId(userId);
-      console.log('objectIdque', objectId);
-      const result = await this.businessUserModel
-        .aggregate([
-          {
-            $match: { _id: objectId },
-          },
-          {
-            $graphLookup: {
-              from: this.businessUserModel.collection.name,
-              startWith: '$_id',
-              connectFromField: '_id',
-              connectToField: 'creator',
-              as: 'descendants',
-              restrictSearchWithMatch: { creatorType: BusinessUserCreatorType.BUSINESS },
+  async getAllChildUserIds2(userId) {
+    const objectId = new mongoose.Types.ObjectId(userId);
+    console.log('objectIdque', objectId);
+    const result = await this.businessUserModel
+      .aggregate([
+        {
+          $match: { _id: objectId },
+        },
+        {
+          $graphLookup: {
+            from: this.businessUserModel.collection.name,
+            startWith: '$_id',
+            connectFromField: '_id',
+            connectToField: 'creator',
+            as: 'descendants',
+            restrictSearchWithMatch: {
+              creatorType: BusinessUserCreatorType.BUSINESS,
             },
           },
-          {
-            $project: {
-              _id: 0,
-              descendantIds: {
-                $map: {
-                  input: '$descendants',
-                  as: 'd',
-                  in: { $toString: '$$d._id' },
-                },
+        },
+        {
+          $project: {
+            _id: 0,
+            descendantIds: {
+              $map: {
+                input: '$descendants',
+                as: 'd',
+                in: { $toString: '$$d._id' },
               },
             },
           },
-        ])
-        .exec();
-  
-      return result[0]?.descendantIds || [];
-    }
+        },
+      ])
+      .exec();
 
+    return result[0]?.descendantIds || [];
+  }
 
   async toggleStatus(creatorId: string, id: string, isActive: boolean) {
     try {
@@ -1600,7 +1601,6 @@ export class BusinessService {
         email: data.email,
       });
 
-
       if (foundUser) {
         return {
           success: false,
@@ -1609,8 +1609,8 @@ export class BusinessService {
       }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      if(data.role){
-        if(!isValidObjectId(data.role)){
+      if (data.role) {
+        if (!isValidObjectId(data.role)) {
           return {
             success: false,
             message: 'Please provide valid Role Id',
@@ -1628,14 +1628,13 @@ export class BusinessService {
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
       };
-      if(data.profilePhoto){
+      if (data.profilePhoto) {
         createObj['profilePhoto'] = data.profilePhoto;
       }
-      if(data.phone && data.countryCode){
+      if (data.phone && data.countryCode) {
         createObj['phone'] = data.phone;
         createObj['countryCode'] = data.countryCode;
       }
-
 
       const createdUser = await this.businessUserModel.create(createObj);
 
@@ -1729,10 +1728,17 @@ export class BusinessService {
           message: 'Business User not found.',
         };
       }
-
-      let updateObj: {} = { };
-      if(data.role && data.role.length>0){
-        if(!isValidObjectId(data.role)){
+      console.log("check 1;")
+      let updateObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          updateObj[key] = data[key];
+        }
+      });
+      delete updateObj.role;
+      console.log('updateObj: check 2', updateObj);
+      if (data.role && data.role.trim() !== '') {
+        if (!isValidObjectId(data.role)) {
           return {
             success: false,
             message: 'Please provide valid Role Id',
@@ -1740,12 +1746,13 @@ export class BusinessService {
         }
         updateObj['role'] = [new mongoose.Types.ObjectId(data.role)];
       }
+      console.log("updateObj:",updateObj);
       const updatedUser = await this.businessUserModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
-        updateObj,
+        { $set: updateObj },
         { new: true },
       );
-
+      console.log('updatedUser:', updatedUser);
       // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
       const updatedUserDetails = await this.businessUserModel.aggregate([
         {
@@ -1760,6 +1767,12 @@ export class BusinessService {
           },
         },
         {
+          $unwind: {
+            path: '$role',
+            preserveNullAndEmptyArrays: true, // Optional, keeps result even if no role is found
+          },
+        },
+        {
           $project: {
             _id: 1,
             isBlocked: 1,
@@ -1767,6 +1780,7 @@ export class BusinessService {
               _id: 1,
               name: 1,
             },
+            //ddd
             status: 1,
             creator: 1,
             creatorType: 1,
@@ -1784,9 +1798,10 @@ export class BusinessService {
           },
         },
       ]);
+      console.log("updatedUserDetails:", updatedUserDetails);
       return {
         success: true,
-        message: 'Business User Created Successfully!',
+        message: 'Business User Updated Successfully!',
         data: updatedUserDetails[0],
       };
     } catch (error) {
@@ -1846,9 +1861,16 @@ export class BusinessService {
           message: 'You are not authorized to delete this user.',
         };
       }
+      if (foundUser.isDeleted) {
+        return {
+          success: false,
+          message: 'User already deleted!',
+        };
+      }
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
         { _id: deleteId },
         { $set: { isDeleted: true } },
+        { new: true },
       );
       // logout from all places
       await this.tokenModel.deleteMany({
@@ -1858,7 +1880,7 @@ export class BusinessService {
       return {
         success: true,
         message: 'User Deleted Successfully.',
-        data: updatedDetails,
+        // data: updatedDetails,
       };
     } catch (error) {
       return {
