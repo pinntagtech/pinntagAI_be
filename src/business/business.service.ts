@@ -37,7 +37,7 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from './model/businessCategory.model';
-import { count } from 'console';
+import { count, profile } from 'console';
 import {
   BusinessCountry,
   BusinessCountryDocument,
@@ -1140,6 +1140,17 @@ export class BusinessService {
           },
         },
         {
+          $lookup: {
+            from: 'businessusers',
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creator',
+          }
+        },
+        {
+          $unwind: '$creator',
+        },
+        {
           $project: {
             _id: 1,
             isBlocked: 1,
@@ -1148,7 +1159,12 @@ export class BusinessService {
               name: 1,
             },
             status: 1,
-            creator: 1,
+            creator: {
+              _id:1,
+              name: 1,
+              email: 1,
+              profilePhoto: 1,
+            },
             creatorType: 1,
             profilePhoto: 1,
             name: 1,
@@ -1584,6 +1600,7 @@ export class BusinessService {
         email: data.email,
       });
 
+
       if (foundUser) {
         return {
           success: false,
@@ -1611,6 +1628,15 @@ export class BusinessService {
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
       };
+      if(data.profilePhoto){
+        createObj['profilePhoto'] = data.profilePhoto;
+      }
+      if(data.phone && data.countryCode){
+        createObj['phone'] = data.phone;
+        createObj['countryCode'] = data.countryCode;
+      }
+
+
       const createdUser = await this.businessUserModel.create(createObj);
 
       //create drive

@@ -2,12 +2,18 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Business } from './business.model';
 import { OneToMany } from 'typeorm';
-import { BusinessUserCreatorType, ProfileStatus, ScalabilityFactor } from '../enums/business.enum';
+import {
+  BusinessUserCreatorType,
+  ProfileStatus,
+  ScalabilityFactor,
+} from '../enums/business.enum';
 
 export type BusinessUserDocument = BusinessUser & Document;
 
 @Schema({ timestamps: true })
 export class BusinessUser {
+  @Prop({ default: false })
+  isDeleted: boolean;
   @Prop({ default: false })
   isBlocked: boolean;
 
@@ -50,7 +56,7 @@ export class BusinessUser {
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId[];
 
-  @Prop({ref: Business.name})
+  @Prop({ ref: Business.name })
   selectedBusiness: mongoose.Types.ObjectId;
 
   @Prop()
