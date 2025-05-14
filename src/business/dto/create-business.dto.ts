@@ -15,7 +15,7 @@ export class CreateBusinessDto {
   @Transform(({ value }) => value.trim())
   name: string;
 
-  @IsEmail()
+  @IsEmail({},{message: 'Invalid email address'})
   email: string;
 
   // @IsString()

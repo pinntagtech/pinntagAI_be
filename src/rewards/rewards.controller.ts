@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
   Post,
   Res,
   UploadedFile,
@@ -10,13 +11,18 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { Response } from 'express';
 import { RewardsService } from './rewards.service';
+import { isValidObjectId } from 'mongoose';
 
 @Controller('rewards')
 export class RewardsController {
@@ -42,9 +48,9 @@ export class RewardsController {
     @Body() data: CreateRewardDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles()
-    files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },  
+    files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },
   ) {
-    console.log("qrCode:", files.qrCode);
+    console.log('qrCode:', files.qrCode);
     console.log('images:', files.images);
     const result = await this.rewardService.createReward(
       data,
@@ -54,6 +60,41 @@ export class RewardsController {
     );
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get(':id')
+  @UseGuards(JwtGuard2)
+  async getRewardById(@Res() res: Response, @TokenDecoder() user: DecodedUser,@Param('id') id: string) {
+    if(!isValidObjectId(id)){
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Object ID',
+      });
+    }
+    const result = await this.rewardService.getRewardById(id,user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get()
+  @UseGuards(JwtGuard2)
+  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.rewardService.getAllRewards(user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
       });

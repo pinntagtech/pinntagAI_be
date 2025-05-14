@@ -62,7 +62,7 @@ export class CreateOutletDto {
   @IsEmail()
   email: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(10)
   @Max(90)

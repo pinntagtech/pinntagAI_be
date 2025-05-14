@@ -13,7 +13,7 @@ import { Folder } from 'src/drive/models/folder.model';
 import { Reward, RewardDocument } from './model/reward.model';
 import { S3Service } from 'src/s3.service';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
-import { ActivityType } from './enums/rewards.enum';
+import { ActivityType, RewardStatus } from './enums/rewards.enum';
 import {
   EventLocation,
   EventLocationDocument,
@@ -23,6 +23,7 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { BusinessPopulates, LocationPopulates, UserPopulates } from 'src/enums/user.enum';
 
 @Injectable()
 export class RewardsService {
@@ -94,31 +95,35 @@ export class RewardsService {
         user: new mongoose.Types.ObjectId(userId),
       };
 
-      console.log('rewardObj:', createObj);
 
       const reward = await this.rewardModel.create(createObj);
-      console.log('reward:', reward);
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
       console.log('qrCode:', qrCode);
-      this.driveService.uploadAndCreateFile(
+      let QRCodeDetails = await this.driveService.uploadAndCreateFile(
         qrCode[0],
         businessFolder.data.id,
         Folder.name,
         userDetails.drive.toString(),
         QR_ImageCategory._id,
       );
-      console.log('images:', images);
+      console.log("QRCODE DETAILS:",QRCodeDetails);
+      console.log("QR ID:",QRCodeDetails._id);
+      // console.log('images:', images);
       this.driveService.multiImageUpload(
         userDetails._id,
         businessFolder.data.id,
         images,
       );
-      let providedLocations= [];
+      let providedLocations = [];
       const locationIds = [];
-      if(data.activityType === ActivityType.CHECK_IN && data.locations && data.locations.length > 0) {
+      if (
+        data.activityType === ActivityType.CHECK_IN &&
+        data.locations &&
+        data.locations.length > 0
+      ) {
         if (typeof data.locations === 'string') {
           providedLocations = data.locations
             .split(',')
@@ -127,13 +132,10 @@ export class RewardsService {
         } else if (Array.isArray(data.locations)) {
           providedLocations = data.locations;
         }
-
-
-
       }
 
       // 2) If check-in activity, validate each one
-  
+
       if (data.activityType === ActivityType.CHECK_IN) {
         if (providedLocations.length === 0) {
           return {
@@ -169,8 +171,11 @@ export class RewardsService {
               startDate: startDate,
               endDate: endDate,
             },
+            status: RewardStatus.PUBLISHED,
+            QR_CODE: QRCodeDetails._id,
           },
         },
+        {new:true}
       );
       return {
         success: true,
@@ -179,6 +184,80 @@ export class RewardsService {
       };
     } catch (error) {
       console.log('Error in createOffer:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getRewardById(id: string, user: DecodedUser) {
+    try {
+      const foundReward = await this.rewardModel
+        .findById(id)
+        .populate('locations',LocationPopulates.FOREIGN)
+        .populate('QR_CODE','metaData')
+        // .populate('drivePath')
+        .populate('user', UserPopulates.FOREIGN)
+        .populate('businessProfile', BusinessPopulates.FOREIGN);
+      if (!foundReward) {
+        return {
+          success: false,
+          message: 'Reward not found.',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Reward found.',
+        data: foundReward,
+      };
+    } catch (error) {
+      console.log('Error in getRewardById:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getAllRewards(user: DecodedUser) {
+    try {
+      const userId = user.id;
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      console.log("Business details:",business);
+      const rewards = await this.rewardModel
+        .find({ businessProfile: business._id })
+        .populate('locations',LocationPopulates.FOREIGN)
+        .populate('QR_CODE','metaData')
+        // .populate('drivePath')
+        .populate('user', UserPopulates.FOREIGN)
+        .populate('businessProfile', BusinessPopulates.FOREIGN);
+      if (!rewards || rewards.length === 0) {
+        return {
+          success: false,
+          message: 'No rewards found.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Rewards found successfully.',
+        data: rewards,
+      };
+    } catch (error) {
+      console.log('Error in getAllRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',
