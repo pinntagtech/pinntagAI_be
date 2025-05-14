@@ -105,7 +105,7 @@ export class Business {
   @Prop({ default: true })
   isActive: boolean;
   @Prop()
-  postalCode: number;
+  postalCode: string;
   @Prop({ default: 0 })
   followersCount: number;
   @Prop({ default: 0 })
