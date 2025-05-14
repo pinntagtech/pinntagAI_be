@@ -48,7 +48,8 @@ export class DriveService {
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(FileCategory.name)
@@ -72,9 +73,10 @@ export class DriveService {
     parentDirectoryType: string,
     fileType: string,
     parentType: string,
-  ){
+  ) {
     let driveDetails = await this.driveModel.findOne({
-      owner: new mongoose.Types.ObjectId(parentId)});
+      owner: new mongoose.Types.ObjectId(parentId),
+    });
 
     const uploadFileName = manipulateImageName(file.originalname);
     console.log('uploadFileName', uploadFileName);
@@ -152,9 +154,7 @@ export class DriveService {
       if (!drive && !folder) {
         return { success: false, message: 'Invalid locationId' };
       }
-      const parentDirectoryType = drive
-      ? Drive.name
-      : folder.parentType;
+      const parentDirectoryType = drive ? Drive.name : folder.parentType;
       console.log(driveDetails);
       if (file.size > driveDetails.AvailableSpace) {
         return {
@@ -651,7 +651,7 @@ export class DriveService {
     parentDirectoryType: string,
     parentId: string,
     categoryId: any,
-  ): Promise<FileDocument> {
+  ) {
     // 1. Upload
     const s3 = await this.s3Service.s3_upload(
       file.buffer,
@@ -663,7 +663,7 @@ export class DriveService {
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
 
     // 2. Persist File doc
-    return this.fileModel.create({
+    return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
         url,
@@ -689,10 +689,12 @@ export class DriveService {
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
-      console.log("parentId:",parentId);
+      console.log('parentId:', parentId);
       // Fetch driveDetails, drive/folder location, and fileCategory in parallel
       const [driveDetails, fileCategory] = await Promise.all([
-        this.driveModel.findOne({ owner: new mongoose.Types.ObjectId(parentId) }).lean(),
+        this.driveModel
+          .findOne({ owner: new mongoose.Types.ObjectId(parentId) })
+          .lean(),
         this.fileCategoryModel.findOne({ name: 'gallery image' }).lean(),
       ]);
       if (!driveDetails) {
@@ -741,12 +743,14 @@ export class DriveService {
       // Run uploads/creates in parallel
       const createdFiles = await Promise.all(tasks);
 
-      const isInEvent = await this.eventModel.findOne({drivePath:new mongoose.Types.ObjectId(locationId)});
-      if(isInEvent){
+      const isInEvent = await this.eventModel.findOne({
+        drivePath: new mongoose.Types.ObjectId(locationId),
+      });
+      if (isInEvent) {
         await this.businessModel.updateOne(
           { _id: isInEvent.businessProfile },
-          { $set: {  onboardingOfferStatus:OfferStatus.GALLERY} },
-        )
+          { $set: { onboardingOfferStatus: OfferStatus.GALLERY } },
+        );
       }
 
       // Deduct used space
