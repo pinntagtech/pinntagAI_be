@@ -226,7 +226,8 @@ export class RewardsService {
         .populate('QR_CODE', 'metaData')
         // .populate('drivePath')
         .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN);
+        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate('files');
       if (!foundReward) {
         return {
           success: false,

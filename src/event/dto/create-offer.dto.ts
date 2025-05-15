@@ -72,4 +72,7 @@ export class CreateOfferDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   termsAndConditions: string;
+
+  @IsOptional()
+  bookingSite: string;
 }
