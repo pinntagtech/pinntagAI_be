@@ -352,7 +352,7 @@ export class AuthController {
     }
   }
   @Get('dashboard/getAllConfigs')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getDashboardAllConfigs(@Res() res: Response) {
     const result = await this.authService.getDashboardAllConfigs();
     if (result.success) {
@@ -701,7 +701,7 @@ export class AuthController {
   }
 
   @Post('fixedCarouselEvents')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async dashboardFixedCarouselEvents(
     @Res() res: Response,
     @Body() body: GetDashboardDto,
