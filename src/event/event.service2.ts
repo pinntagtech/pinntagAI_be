@@ -1882,7 +1882,7 @@ export class EventService2 {
         message: 'Please provide a valid event id',
       };
     } else {
-      const event = await this.eventModel.findById(id);
+      const event = await this.eventModel.findById(id).populate('files');
       const business = await this.businessModel.findById(user.businessProfile);
       if (!event) {
         return {
@@ -1993,6 +1993,8 @@ export class EventService2 {
             } else {
               createQuery['user'] = new mongoose.Types.ObjectId(user.id);
             }
+            console.log("event:",event);
+            // let thumbnailURL = event.files[0].metaData.url;
 
             const createdTemplate = await this.templateModel.create({
               ...createQuery,
@@ -4809,8 +4811,10 @@ export class EventService2 {
         folderName: data.title,
       });
 
+      let bookingUrls = data.bookingSite.split(',');
       let createObj = {
         ...data,
+        bookingUrl: bookingUrls,
         type: data.eventType,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),

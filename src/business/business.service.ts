@@ -1192,8 +1192,8 @@ export class BusinessService {
       const countDocs = await this.businessUserModel.countDocuments({
         _id: {
           $in: allUserIds.map((id) => new mongoose.Types.ObjectId(id)),
-          isDeleted: false,
         },
+        isDeleted: false,
       });
       return {
         success: true,

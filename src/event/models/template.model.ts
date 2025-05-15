@@ -83,6 +83,9 @@ export class Template {
 
   @Prop({ref: BusinessCategory.name})
   businessCategories: Array<mongoose.Types.ObjectId>;
+
+  @Prop()
+  thumbnail: string;
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template);
