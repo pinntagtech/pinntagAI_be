@@ -60,7 +60,7 @@ export const ResourceTypes = {
   TAXES: 'taxes',
   ADDRESSES: 'addresses',
   PRIVILEGES: 'privileges',
-  OUTLETS: 'outlets',
+  OUTLETS: 'outlets'
   // PAYMENT_METHODS: 'payment_methods',
   // SHIPPING_METHODS: 'shipping_methods',
   // ORDER_STATUSES: 'order_statuses',
