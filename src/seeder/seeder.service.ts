@@ -81,6 +81,7 @@ import {
 } from 'src/business/model/BussinessDocumentType.model';
 import { DefaultAdminRoles } from 'src/business/resourceInits/template-roles';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
+import { $Command } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class SeederService {
@@ -133,19 +134,19 @@ export class SeederService {
     await this.seedAppVersion();
     await this.setPrivateEvents();
     await this.seedFileCategories();
-    await this.seedSuperAdminRole();
-    await this.seedSuperAdmin();
     await this.seedResources();
     await this.seedActions();
+    await this.seedSuperAdminRole();
+    await this.seedSuperAdmin();
     await this.seedOutletCategories();
-    // await this.seedPrivileges(); super admin privileges are not needed
+    await this.seedPrivileges(); //super admin privileges are not needed
 
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
     await this.seedEventTemplates();
-    // await this.seedConstitutions();
+    await this.seedConstitutions();
   }
 
   public async seedRoles() {
@@ -258,55 +259,214 @@ export class SeederService {
         { _id: adminDetails._id },
         { $set: { drive: driveDetails._id } },
       );
-      const rolePromises = Object.keys(DefaultAdminRoles).map(
-        async (roleName) => {
-          const roleData = DefaultAdminRoles[roleName];
-          // Create the role
-          const createdRole = await this.roleModel.create({
-            name: roleData.name,
-            creator: new mongoose.Types.ObjectId(adminDetails._id),
-            creatorType: RoleCreatorType.ADMIN,
-            belongsTo: RoleBelonging.SYSTEM,
-          });
-          // Create privileges for this role concurrently
-          const privilegePromises = Object.keys(roleData.privileges).map(
-            async (privilegeKey) => {
-              // Get or create the resource document
-              let resourceDetails = await this.resourceModel.findOne({
-                title: ResourceTypes[privilegeKey],
-              });
-              if (!resourceDetails) {
-                resourceDetails = await this.resourceModel.create({
-                  title: ResourceTypes[privilegeKey],
-                });
-              }
-              // For each action in the privilege, get or create the action document and create a privilege record
-              const actionPromises = roleData.privileges[privilegeKey].map(
-                async (actionKey) => {
-                  let actionDetails = await this.actionModel.findOne({
-                    title: Actions[actionKey],
-                  });
-                  if (!actionDetails) {
-                    actionDetails = await this.actionModel.create({
-                      title: Actions[actionKey],
-                    });
-                  }
-                  return this.privilegeModel.create({
-                    role: createdRole._id,
-                    resource: resourceDetails.title,
-                    action: actionDetails.title,
-                  });
-                },
-              );
-              return Promise.all(actionPromises);
-            },
-          );
-          await Promise.all(privilegePromises);
-        },
-      );
-      await Promise.all(rolePromises);
+
+
+      // const rolePromises = Object.keys(DefaultAdminRoles).map(
+      //   async (roleName) => {
+      //     const roleData = DefaultAdminRoles[roleName];
+      //     // Create the role
+      //     const createdRole = await this.roleModel.create({
+      //       name: roleData.name,
+      //       creator: new mongoose.Types.ObjectId(adminDetails._id),
+      //       creatorType: RoleCreatorType.ADMIN,
+      //       belongsTo: RoleBelonging.SYSTEM,
+      //     });
+      //     // Create privileges for this role concurrently
+      //     const privilegePromises = Object.keys(roleData.privileges).map(
+      //       async (privilegeKey) => {
+      //         // Get or create the resource document
+      //         let resourceDetails = await this.resourceModel.findOne({
+      //           title: ResourceTypes[privilegeKey],
+      //         });
+      //         if (!resourceDetails) {
+      //           resourceDetails = await this.resourceModel.create({
+      //             title: ResourceTypes[privilegeKey],
+      //           });
+      //         }
+      //         // For each action in the privilege, get or create the action document and create a privilege record
+      //         const actionPromises = roleData.privileges[privilegeKey].map(
+      //           async (actionKey) => {
+      //             let actionDetails = await this.actionModel.findOne({
+      //               title: Actions[actionKey],
+      //             });
+      //             if (!actionDetails) {
+      //               actionDetails = await this.actionModel.create({
+      //                 title: Actions[actionKey],
+      //               });
+      //             }
+      //             return this.privilegeModel.create({
+      //               role: createdRole._id,
+      //               resource: resourceDetails.title,
+      //               action: actionDetails.title,
+      //             });
+      //           },
+      //         );
+      //         return Promise.all(actionPromises);
+      //       },
+      //     );
+      //     await Promise.all(privilegePromises);
+      //   },
+      // );
+      // await Promise.all(rolePromises);
+    
+      for (const roleName of Object.keys(DefaultAdminRoles)) {
+        const roleData = DefaultAdminRoles[roleName];
+      
+        // 1) Create the role
+        const createdRole = await this.roleModel.create({
+          name: roleData.name,
+          creator: adminDetails._id,
+          creatorType: RoleCreatorType.ADMIN,
+          belongsTo: RoleBelonging.SYSTEM,
+        });
+      
+        // 2) For each privilegeKey under this role:
+        for (const privilegeKey of Object.keys(roleData.privileges)) {
+          const resourceTitle = ResourceTypes[privilegeKey];
+          if (!resourceTitle) {
+            console.warn(`Skipping missing ResourceTypes['${privilegeKey}']`);
+            continue;
+          }
+      
+          // 2a) Find or create the resource
+          let resourceDoc = await this.resourceModel.findOne({ title: resourceTitle });
+          if (!resourceDoc) {
+            resourceDoc = await this.resourceModel.create({ title: resourceTitle });
+          }
+      
+          // 3) For each action under this privilege:
+          for (const actionKey of roleData.privileges[privilegeKey]) {
+            const actionTitle = Actions[actionKey];
+            if (!actionTitle) {
+              console.warn(`Skipping missing Actions['${actionKey}']`);
+              continue;
+            }
+      
+            // 3a) Find or create the action
+            let actionDoc = await this.actionModel.findOne({ title: actionTitle });
+            if (!actionDoc) {
+              actionDoc = await this.actionModel.create({ title: actionTitle });
+            }
+      
+            // 4) Create the privilege link
+            await this.privilegeModel.create({
+              role:     createdRole._id,
+              resource: resourceDoc._id,
+              action:   actionDoc._id,
+            });
+          }
+        }
+      }
+    
     }
   }
+
+  // public async seedSuperAdmin() {
+  //   // 1) find the “SuperAdmin” role
+  //   const superRole = await this.roleModel.findOne({ isSuperAdmin: true });
+  //   if (!superRole) {
+  //     console.warn('⚠️  No super‐admin role found; aborting seedSuperAdmin.');
+  //     return;
+  //   }
+  //   console.log('Super Admin Role:', superRole);
+  
+  //   // 2) only seed once
+  //   const existingAdmin = await this.adminModel.findOne({
+  //     role: { $in: [superRole._id] },
+  //     isSuperAdmin: true,
+  //   });
+
+  //   console.log("Super Admin FOUNDDDDD:", existingAdmin);
+  //   if (existingAdmin) {
+  //     console.log('✅  SuperAdmin already exists; skipping.');
+  //     return;
+  //   }
+  
+  //   // 3) create the super‐admin user
+  //   const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+  //   const superAdmin = await this.adminModel.create({
+  //     email: process.env.ADMIN_EMAIL,
+  //     password: hashed,
+  //     isEmailVerified: true,
+  //     name: process.env.ADMIN_FIRST_NAME,
+  //     role:   superRole._id,
+  //     isSuperAdmin: true,
+  //     firstName: 'Robin',
+  //     lastName:  'Seth',
+  //     phone:     '7917303330',
+  //     countryCode: '+44',
+  //   });
+  //   console.log('✅  Created SuperAdmin:', superAdmin._id);
+  
+  //   // 4) link role.creator → the new admin
+  //   await this.roleModel.updateOne(
+  //     { _id: superRole._id },
+  //     { $set: { creator: superAdmin._id } }
+  //   );
+  
+  //   // 5) create that admin’s drive
+  //   const drive = await this.createDrive(superAdmin._id, Admin.name);
+  //   await this.adminModel.updateOne(
+  //     { _id: superAdmin._id },
+  //     { $set: { drive: drive._id } }
+  //   );
+  
+  //   // 6) iterate default roles
+  //   for (const roleKey of Object.keys(DefaultAdminRoles)) {
+  //     const rd = DefaultAdminRoles[roleKey];
+  
+  //     // create the role
+  //     const createdRole = await this.roleModel.create({
+  //       name: rd.name,
+  //       creator: superAdmin._id,
+  //       creatorType: RoleCreatorType.ADMIN,
+  //       belongsTo: RoleBelonging.SYSTEM,
+  //     });
+  //     console.log(`✅  Created role "${rd.name}" → ${createdRole._id}`);
+  
+  //     // for each privilegeKey → map to a resource
+  //     for (const privKey of Object.keys(rd.privileges)) {
+  //       const resourceTitle = ResourceTypes[privKey];
+  //       if (!resourceTitle) {
+  //         console.warn(`⚠️  Missing ResourceTypes['${privKey}']; skipping.`);
+  //         continue;
+  //       }
+  
+  //       // find or create the resource
+  //       let resourceDoc = await this.resourceModel.findOne({ title: resourceTitle });
+  //       if (!resourceDoc) {
+  //         resourceDoc = await this.resourceModel.create({ title: resourceTitle });
+  //         console.log(`   🌱 Created resource "${resourceTitle}" → ${resourceDoc._id}`);
+  //       }
+  
+  //       // now for each action under that privilege
+  //       for (const actionKey of rd.privileges[privKey]) {
+  //         const actionTitle = Actions[actionKey];
+  //         if (!actionTitle) {
+  //           console.warn(`⚠️  Missing Actions['${actionKey}']; skipping.`);
+  //           continue;
+  //         }
+  
+  //         // find or create the action
+  //         let actionDoc = await this.actionModel.findOne({ title: actionTitle });
+  //         if (!actionDoc) {
+  //           actionDoc = await this.actionModel.create({ title: actionTitle });
+  //           console.log(`     🌱 Created action "${actionTitle}" → ${actionDoc._id}`);
+  //         }
+  
+  //         // finally, create the privilege linking role↔resource↔action
+  //         await this.privilegeModel.create({
+  //           role:     createdRole._id,
+  //           resource: resourceDoc._id,
+  //           action:   actionDoc._id,
+  //         });
+  //       }
+  //     }
+  //   }
+  
+  //   console.log('🎉 seedSuperAdmin complete.');
+  // }
+  
 
   public async seedCategories() {
     const categories = await this.categoryModel.find();
