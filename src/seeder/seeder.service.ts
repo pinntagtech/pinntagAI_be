@@ -323,6 +323,7 @@ export class SeederService {
         // 2) For each privilegeKey under this role:
         for (const privilegeKey of Object.keys(roleData.privileges)) {
           const resourceTitle = ResourceTypes[privilegeKey];
+          // console.log('Resource Title:', resourceTitle);
           if (!resourceTitle) {
             console.warn(`Skipping missing ResourceTypes['${privilegeKey}']`);
             continue;
@@ -351,8 +352,8 @@ export class SeederService {
             // 4) Create the privilege link
             await this.privilegeModel.create({
               role:     createdRole._id,
-              resource: resourceDoc._id,
-              action:   actionDoc._id,
+              resource: resourceDoc.title,
+              action:   actionDoc.title,
             });
           }
         }
