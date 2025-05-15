@@ -23,7 +23,15 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
-import { BusinessPopulates, LocationPopulates, UserPopulates } from 'src/enums/user.enum';
+import {
+  BusinessPopulates,
+  LocationPopulates,
+  UserPopulates,
+} from 'src/enums/user.enum';
+import {
+  RewardLocation,
+  RewardLocationDocument,
+} from './model/rewardLocation.model';
 
 @Injectable()
 export class RewardsService {
@@ -42,6 +50,8 @@ export class RewardsService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(RewardLocation.name)
+    private readonly rewardLocationModel: Model<RewardLocationDocument>,
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
@@ -95,7 +105,6 @@ export class RewardsService {
         user: new mongoose.Types.ObjectId(userId),
       };
 
-
       const reward = await this.rewardModel.create(createObj);
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
@@ -109,8 +118,8 @@ export class RewardsService {
         userDetails.drive.toString(),
         QR_ImageCategory._id,
       );
-      console.log("QRCODE DETAILS:",QRCodeDetails);
-      console.log("QR ID:",QRCodeDetails._id);
+      console.log('QRCODE DETAILS:', QRCodeDetails);
+      console.log('QR ID:', QRCodeDetails._id);
       // console.log('images:', images);
       this.driveService.multiImageUpload(
         userDetails._id,
@@ -118,7 +127,6 @@ export class RewardsService {
         images,
       );
       let providedLocations = [];
-      const locationIds = [];
       if (
         data.activityType === ActivityType.CHECK_IN &&
         data.locations &&
@@ -133,6 +141,7 @@ export class RewardsService {
           providedLocations = data.locations;
         }
       }
+      const locationIds = [];
 
       // 2) If check-in activity, validate each one
 
@@ -157,7 +166,25 @@ export class RewardsService {
               message: `Outlet with id "${loc}" not found`,
             };
           }
-          locationIds.push(outletDoc._id);
+          const createdlocation = await this.rewardLocationModel.create({
+            reward: new mongoose.Types.ObjectId(reward._id),
+            businessLocationId: outletDoc._id,
+            location: {
+              type: 'Point',
+              coordinates: [outletDoc.longitude, outletDoc.latitude],
+            },
+            accuracy: outletDoc.accuracy,
+            address1: outletDoc.address1,
+            address2: outletDoc.address2 ? outletDoc.address2 : '',
+            city: outletDoc.city,
+            state: outletDoc.state,
+            zip: outletDoc.postalCode,
+            website: outletDoc.website,
+            email: outletDoc.email,
+            phone: outletDoc.phone,
+          });
+
+          locationIds.push(createdlocation._id);
         }
       }
       let startDate = new Date(data.startDate);
@@ -175,7 +202,7 @@ export class RewardsService {
             QR_CODE: QRCodeDetails._id,
           },
         },
-        {new:true}
+        { new: true },
       );
       return {
         success: true,
@@ -195,8 +222,8 @@ export class RewardsService {
     try {
       const foundReward = await this.rewardModel
         .findById(id)
-        .populate('locations',LocationPopulates.FOREIGN)
-        .populate('QR_CODE','metaData')
+        .populate('locations', LocationPopulates.FOREIGN)
+        .populate('QR_CODE', 'metaData')
         // .populate('drivePath')
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN);
@@ -237,14 +264,15 @@ export class RewardsService {
           message: 'Business not found.',
         };
       }
-      console.log("Business details:",business);
+      console.log('Business details:', business);
       const rewards = await this.rewardModel
         .find({ businessProfile: business._id })
-        .populate('locations',LocationPopulates.FOREIGN)
-        .populate('QR_CODE','metaData')
+        .populate('locations', LocationPopulates.FOREIGN)
+        .populate('QR_CODE', 'metaData')
         // .populate('drivePath')
         .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN);
+        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate('files');
       if (!rewards || rewards.length === 0) {
         return {
           success: false,

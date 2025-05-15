@@ -192,6 +192,7 @@ export class OutletService {
 
   async createOutlet(data: CreateOutletDto, user: any) {
     try {
+      console.log("data:",data);
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
         return {
@@ -213,23 +214,6 @@ export class OutletService {
           message: 'Business not found!',
         };
       }
-
-      // const foundCategory = await this.outletCategoryModel.findById(
-      //   data.category,
-      // );
-      // if (!foundCategory) {
-      //   return {
-      //     success: false,
-      //     message: 'Category not found!',
-      //   };
-      // }
-      // const foundType = await this.outletTypeModel.findById(data.type);
-      // if (!foundType) {
-      //   return {
-      //     success: false,
-      //     message: 'Type not found!',
-      //   };
-      // }
       let {
         category,
         // type,
@@ -275,16 +259,16 @@ export class OutletService {
         };
       }
       const foundOutlet = await this.outletModel.findOne({
-        email: email,
+        address1: address1,
         business: business._id,
       });
       console.log('foundOutlet', foundOutlet);
-      // if (foundOutlet) {
-      //   return {
-      //     success: false,
-      //     message: 'Outlet already exists with given email.',
-      //   };
-      // }
+      if (foundOutlet) {
+        return {
+          success: false,
+          message: 'Outlet already exists with given address.',
+        };
+      }
 
       let createObj: any = {};
       Object.keys(data).forEach((key) => {
