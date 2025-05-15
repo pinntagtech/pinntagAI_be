@@ -1,7 +1,7 @@
 // src/department/schemas/department.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import { Role } from 'src/roles/models/roles.model';
 import { Business } from './business.model';
 import { BusinessUser } from './businessUser.model';
@@ -14,11 +14,8 @@ export class Department {
   @Prop({ default: '' })
   description: string;
 
-  @Prop({
-    type: [{ type: Types.ObjectId, ref: Role.name }],
-    default: [],
-  })
-  roles: Types.ObjectId[];
+  @Prop({ref: Role.name})
+  roles: mongoose.Types.ObjectId[];
 
   @Prop({ type: Types.ObjectId, ref: Business.name, required: true })
   business: Types.ObjectId;
