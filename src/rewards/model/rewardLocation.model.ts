@@ -9,11 +9,11 @@ class LocationType {
   coordinates: Array<number>;
 }
 
-export type EventLocationDocument = EventLocation & Document;
+export type RewardLocationDocument = RewardLocation & Document;
 @Schema({ timestamps: true })
-export class EventLocation {
+export class RewardLocation {
   @Prop({ required: true, ref: 'Event' })
-  event: mongoose.Types.ObjectId;
+  reward: mongoose.Types.ObjectId;
   @Prop()
   location: LocationType;
   @Prop({ref: Outlet.name})
@@ -38,5 +38,5 @@ export class EventLocation {
   phone: string;
 }
 
-export const EventLocationSchema = SchemaFactory.createForClass(EventLocation);
-EventLocationSchema.index({ location: '2dsphere' });
+export const RewardLocationSchema = SchemaFactory.createForClass(RewardLocation);
+RewardLocationSchema.index({ location: '2dsphere' });

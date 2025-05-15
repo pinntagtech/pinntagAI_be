@@ -82,3 +82,14 @@ export class Reward {
 }
 
 export const RewardSchema = SchemaFactory.createForClass(Reward);
+
+RewardSchema.index({ schedule: 1 });
+RewardSchema.set('toObject', { virtuals: true }).set('toJSON', {
+  virtuals: true,
+});
+RewardSchema.virtual('files', {
+  ref: 'File', // the name of your File model
+  localField: 'drivePath', // the field in Event
+  foreignField: 'parentDirectory', // the field in File
+  justOne: false,
+});
