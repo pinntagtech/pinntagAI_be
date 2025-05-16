@@ -64,7 +64,7 @@ export class CreateOutletDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(10)
+  @Min(0)
   @Max(90)
   servingRadius:number;
   
