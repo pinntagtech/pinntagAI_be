@@ -80,6 +80,8 @@ import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
+import { Outlet } from 'src/outlet/model/outlet.model';
+import { LocationPopulates } from 'src/enums/user.enum';
 
 @Injectable()
 export class BusinessService {
@@ -1026,16 +1028,33 @@ export class BusinessService {
       });
       console.log('user:', user);
       const userDetails = await this.businessUserModel
-        .findById(user._id)
-        .populate('role', '_id name')
-        .populate({
-          path: 'business',
-          populate: {
-            path: 'initialOfferId',
-            model: Event.name,
-          },
-        })
-        .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
+                .findById(user._id)
+                .populate({
+                  path: 'business',
+                  populate: {
+                    path: 'outlets',
+                    model: Outlet.name,
+                    select: LocationPopulates.FOREIGN,
+                  },
+                })
+                .populate({
+                  path: 'business',
+                  populate: {
+                    path: 'initialOfferId',
+                    model: Event.name,
+                    select: '_id title description categories',
+                  },
+                })
+                .populate({
+                  path: 'business',
+                  populate: {
+                    path: 'businessIndustry',
+                    model: BusinessIndustry.name,
+                    select: ' _id title darkIcon lightIcon',
+                  },
+                })
+                .populate('role', '_id name description')
+                .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
       console.log('userDetails:', userDetails);
       return {
         success: true,
