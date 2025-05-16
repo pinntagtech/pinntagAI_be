@@ -33,6 +33,7 @@ import {
   RewardLocationDocument,
 } from './model/rewardLocation.model';
 import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
+import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 
 @Injectable()
 export class RewardsService {
@@ -295,11 +296,15 @@ export class RewardsService {
     }
   }
 
-  async getDashboardRewards(user:DecodedUser,data:GetDashboardDto,search: string,dis:string){
+  async getDashboardRewards(user:DecodedUser,data:GetRewardDashboardDto,search: string,dis:string){
     try{
       const distance = dis ? parseInt(dis) : 1000;
-      let startDate = data.startDate? new Date(data.startDate) : new Date();
-      
+      let start = data.startDate? new Date(data.startDate) : new Date();
+      let query = {};
+      // if()
+      let pipeline = [];
+      const result = await this.rewardLocationModel.aggregate();
+
 
 
     }catch(error){
