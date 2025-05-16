@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Res,
   UploadedFile,
   UploadedFiles,
@@ -23,6 +24,7 @@ import { CreateRewardDto } from './dto/create-reward.dto';
 import { Response } from 'express';
 import { RewardsService } from './rewards.service';
 import { isValidObjectId } from 'mongoose';
+import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
 
 @Controller('rewards')
 export class RewardsController {
@@ -71,13 +73,17 @@ export class RewardsController {
   }
   @Get(':id')
   @UseGuards(JwtGuard2)
-  async getRewardById(@Res() res: Response, @TokenDecoder() user: DecodedUser,@Param('id') id: string) {
-    if(!isValidObjectId(id)){
+  async getRewardById(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid Object ID',
       });
     }
-    const result = await this.rewardService.getRewardById(id,user);
+    const result = await this.rewardService.getRewardById(id, user);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -97,6 +103,27 @@ export class RewardsController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('dashboard')
+  @UseGuards(JwtGuard2)
+  async getDashboardRewards(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: GetDashboardDto,
+    @Query('search') search: string,
+    @Query('distance') distance: string,
+  ) {
+    const result = await this.rewardService.getDashboardRewards(user,data,search,distance);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

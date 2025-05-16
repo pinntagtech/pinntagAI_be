@@ -89,6 +89,7 @@ import {
 } from 'src/business/model/businessUser.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 
 @Injectable()
 export class AuthService {
@@ -119,8 +120,10 @@ export class AuthService {
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -3736,9 +3739,11 @@ export class AuthService {
     const eventObj = JSON.parse(JSON.stringify(event));
     delete eventObj.locations;
 
-
     //Increase the view count of the event
-    await this.eventModel.updateOne({_id:new mongoose.Types.ObjectId(id)}, {$inc:{viewsCount:1}});
+    await this.eventModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { $inc: { viewsCount: 1 } },
+    );
 
     const eventLocs = event.locations as any;
     eventObj['isSaved'] = isSaved;
@@ -4138,14 +4143,24 @@ export class AuthService {
             populate: {
               path: 'outlets',
               model: Outlet.name,
+              select: LocationPopulates.FOREIGN,
             },
           })
           .populate({
             path: 'business',
             populate: {
               path: 'initialOfferId',
-              model: Event.name
-            }
+              model: Event.name,
+              select: '_id title description categories',
+            },
+          })
+          .populate({
+            path: 'business',
+            populate: {
+              path: 'businessIndustry',
+              model: BusinessIndustry.name,
+              select: ' _id title darkIcon lightIcon',
+            },
           })
           .populate('role', '_id name description');
         if (!userDoc) {

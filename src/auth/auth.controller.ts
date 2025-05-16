@@ -752,7 +752,7 @@ export class AuthController {
     }
   }
   @Post('getDashboardCarouselEvent/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getDashboardCarouselEvent(
     @Res() res: Response,
     @Body() body: GetDashboardDto,

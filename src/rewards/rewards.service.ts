@@ -32,6 +32,7 @@ import {
   RewardLocation,
   RewardLocationDocument,
 } from './model/rewardLocation.model';
+import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
 
 @Injectable()
 export class RewardsService {
@@ -287,6 +288,22 @@ export class RewardsService {
       };
     } catch (error) {
       console.log('Error in getAllRewards:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getDashboardRewards(user:DecodedUser,data:GetDashboardDto,search: string,dis:string){
+    try{
+      const distance = dis ? parseInt(dis) : 1000;
+      let startDate = data.startDate? new Date(data.startDate) : new Date();
+      
+
+
+    }catch(error){
+      console.log('Error in getDashboardRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',

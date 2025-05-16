@@ -1994,7 +1994,8 @@ export class EventService2 {
               createQuery['user'] = new mongoose.Types.ObjectId(user.id);
             }
             console.log("event:",event);
-            // let thumbnailURL = event.files[0].metaData.url;
+            let thumbnailURL = (event as any).files[0].metaData.url;
+            console.log("thumbnailURL:",thumbnailURL);
 
             const createdTemplate = await this.templateModel.create({
               ...createQuery,
@@ -2002,6 +2003,7 @@ export class EventService2 {
               businessIndustry: business.businessIndustry,
               businessCategories: business.businessCategories,
               // creatorType: user.isBusiness ? BusinessUser.name : User.name,
+              thumbnail:thumbnailURL,
             });
           }
           return {
