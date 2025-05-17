@@ -1483,7 +1483,6 @@ export class EventService2 {
   }
 
   async getCreatedEvent(id: string, user: DecodedUser) {
-
     let eventStartsIn = 0;
     if (!mongoose.isValidObjectId(id)) {
       return {
@@ -1577,7 +1576,7 @@ export class EventService2 {
           following: isFollowedByMe ? true : false,
           isMe: businessProfile.id == user.id,
         };
-        
+
         if (eventObj.eventSchedule.length) {
           let startDate = null;
           let firstSchedule = eventObj.eventSchedule[0];
@@ -1932,7 +1931,12 @@ export class EventService2 {
           });
           await this.businessModel.updateOne(
             { _id: business._id },
-            { $set: { onboardingOfferStatus: OfferStatus.PUBLISHED,continueJourney:false } },
+            {
+              $set: {
+                onboardingOfferStatus: OfferStatus.PUBLISHED,
+                continueJourney: false,
+              },
+            },
           );
           if (event.notifyFollowers) {
             const business = await this.businessProfileModel.findById(
@@ -1993,9 +1997,9 @@ export class EventService2 {
             } else {
               createQuery['user'] = new mongoose.Types.ObjectId(user.id);
             }
-            console.log("event:",event);
+            console.log('event:', event);
             let thumbnailURL = (event as any).files[0].metaData.url;
-            console.log("thumbnailURL:",thumbnailURL);
+            console.log('thumbnailURL:', thumbnailURL);
 
             const createdTemplate = await this.templateModel.create({
               ...createQuery,
@@ -4816,51 +4820,53 @@ export class EventService2 {
         folderName: data.title,
       });
 
-      let bookingUrls = data.bookingSite.split(',');
-      let createObj = {
+      let createObj: any = {
         ...data,
-        bookingUrl: bookingUrls,
         type: data.eventType,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,
         user: new mongoose.Types.ObjectId(userId),
       };
-
+      if (data.bookingSite) {
+        let bookingUrls = data.bookingSite.split(',');
+        createObj.bookingUrl = bookingUrls;
+      }
       console.log('eventObj:', createObj);
 
       const event = await this.eventModel.create(createObj);
       console.log('event:', event);
-
-      console.log('Image:', image);
-      const result = await this.s3Service.s3_upload(
-        image.buffer,
-        process.env.AWS_S3_BUCKET_NAME,
-        manipulateImageName(image.originalname),
-        'image/jpeg',
-      );
-      const fileCategory = await this.fileCategoryModel.findOne({
-        name: 'gallery image',
-      });
-      const splitIndex = result.Location.indexOf('amazonaws');
-      const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
-      const part2 = result.Location.slice(splitIndex);
-      const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-      console.log('updatedUrl', updatedUrl);
-      let file = await this.fileModel.create({
-        metaData: {
-          mimeType: image.mimetype,
-          url: updatedUrl,
-          size: image.size,
-          originalName: image.originalname,
-        },
-        parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
-        ParentDirectoryType: Folder.name,
-        fileType: FileType.IMAGE,
-        category: fileCategory._id,
-        parent: new mongoose.Types.ObjectId(event._id),
-        parentType: Event.name,
-      });
+      if (image) {
+        console.log('Image:', image);
+        const result = await this.s3Service.s3_upload(
+          image.buffer,
+          process.env.AWS_S3_BUCKET_NAME,
+          manipulateImageName(image.originalname),
+          'image/jpeg',
+        );
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: 'gallery image',
+        });
+        const splitIndex = result.Location.indexOf('amazonaws');
+        const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
+        const part2 = result.Location.slice(splitIndex);
+        const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+        console.log('updatedUrl', updatedUrl);
+        let file = await this.fileModel.create({
+          metaData: {
+            mimeType: image.mimetype,
+            url: updatedUrl,
+            size: image.size,
+            originalName: image.originalname,
+          },
+          parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
+          ParentDirectoryType: Folder.name,
+          fileType: FileType.IMAGE,
+          category: fileCategory._id,
+          parent: new mongoose.Types.ObjectId(event._id),
+          parentType: Event.name,
+        });
+      }
 
       // const updatedEvent = await this.eventModel.findByIdAndUpdate(
       //   event._id,

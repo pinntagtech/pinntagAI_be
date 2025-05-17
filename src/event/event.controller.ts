@@ -599,15 +599,24 @@ export class EventController {
   }
   @Get('templates/seeded')
   @UseGuards(JwtGuard2)
-  async getDefaultTemplates(@Res() res: Response, @TokenDecoder() user: DecodedUser, @Query('page') page: string, @Query('limit') limit: string) {
+  async getDefaultTemplates(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.eventService.getDefaultTemplates(user,pageNumber, limitNumber);
+    const result = await this.eventService.getDefaultTemplates(
+      user,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
-        total: result.total
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -903,12 +912,12 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    console.log("controller image:",image);
-    if(!image){
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide an image',
-      });
-    }
+    console.log('controller image:', image);
+    // if(!image){
+    //   return res.status(HttpStatus.BAD_REQUEST).json({
+    //     message: 'Please provide an image',
+    //   });
+    // }
     const result = await this.eventService.createOffer(data, user, image);
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
@@ -932,7 +941,11 @@ export class EventController {
   ) {
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
-    const result = await this.eventService.businessDownlineEventsList(user,page,limit);
+    const result = await this.eventService.businessDownlineEventsList(
+      user,
+      page,
+      limit,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -941,7 +954,6 @@ export class EventController {
         totalEngagements: result.totalEngagements,
         statusCount: result.statusCount,
         total: result.total,
-
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -949,5 +961,4 @@ export class EventController {
       });
     }
   }
-
 }

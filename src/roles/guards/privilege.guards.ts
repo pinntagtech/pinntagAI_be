@@ -6,8 +6,6 @@ import {
 } from '@nestjs/common';
 import { PRIVILEGE_KEY } from '../privilege.decorator';
 import { Reflector } from '@nestjs/core';
-import { UserTypes } from 'src/enums/auth.enums';
-import { RolesService } from '../roles.service';
 import { PrivilegeService } from '../privilege.service';
 import { RoleBelonging } from '../enums/roles.enum';
 import { InjectModel } from '@nestjs/mongoose';
