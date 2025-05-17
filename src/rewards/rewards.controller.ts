@@ -27,7 +27,7 @@ import { isValidObjectId } from 'mongoose';
 import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
 import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 
-@Controller('rewards')
+@Controller('reward')
 export class RewardsController {
   constructor(private readonly rewardService: RewardsService) {}
 
@@ -120,11 +120,36 @@ export class RewardsController {
     @Query('search') search: string,
     @Query('distance') distance: string,
   ) {
-    const result = await this.rewardService.getDashboardRewards(user,data,search,distance);
+    const result = await this.rewardService.getDashboardRewards(
+      user,
+      data,
+      search,
+      distance ? parseInt(distance) : 1000000000000,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        // data: result.data,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('enroll/:rewardId')
+  @UseGuards(JwtGuard2)
+  async enrollReward(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('rewardId') rewardId: string,
+  ) {
+    const result = await this.rewardService.enrollReward(rewardId, user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

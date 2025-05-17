@@ -35,6 +35,7 @@ import { JwtService } from '@nestjs/jwt';
 import { EventLocation, EventLocationSchema } from 'src/event/models/eventLocation.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { RewardLocation, RewardLocationSchema } from './model/rewardLocation.model';
+import { UserReward, UserRewardSchema } from './model/userReward.model';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { RewardLocation, RewardLocationSchema } from './model/rewardLocation.mod
        { name: Outlet.name, schema: OutletSchema },
        { name: EventLocation.name, schema: EventLocationSchema },
        { name: RewardLocation.name, schema: RewardLocationSchema },
+       { name: UserReward.name, schema: UserRewardSchema },
     ]),
   ],
   controllers: [RewardsController],

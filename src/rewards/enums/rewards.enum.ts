@@ -17,3 +17,8 @@ export enum RewardStatus {
     CLOSED = 'closed',
     BLOCKED = 'blocked',
   }
+  export const ClaimStatus = {
+    CLAIMED : 'claimed',
+    REDEEMED : 'redeemed',
+    EXPIRED : 'expired',
+  }

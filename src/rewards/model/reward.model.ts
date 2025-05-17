@@ -10,6 +10,7 @@ import { Business } from 'src/business/model/business.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Folder } from 'src/drive/models/folder.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
+import { RewardLocation } from './rewardLocation.model';
 
 export type RewardDocument = Reward & Document;
 
@@ -42,7 +43,7 @@ export class Reward {
     enum: Object.values(ActivityType),
   })
   activityType: string;
-  @Prop({ref: Outlet.name})
+  @Prop({ref: RewardLocation.name})
   locations: Array<mongoose.Types.ObjectId>;
 
   @Prop()
