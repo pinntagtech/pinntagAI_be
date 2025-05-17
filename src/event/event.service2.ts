@@ -2000,10 +2000,13 @@ export class EventService2 {
             const createdTemplate = await this.templateModel.create({
               ...createQuery,
               user: new mongoose.Types.ObjectId(user.id),
+              creatorType: BusinessUser.name,
               businessIndustry: business.businessIndustry,
               businessCategories: business.businessCategories,
               // creatorType: user.isBusiness ? BusinessUser.name : User.name,
               thumbnail:thumbnailURL,
+              businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+
             });
           }
           return {

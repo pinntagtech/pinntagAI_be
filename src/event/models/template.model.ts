@@ -11,6 +11,7 @@ import { DiscountType, EventTypes } from 'src/enums/event.enums';
 import { User } from 'src/user/models/user.model';
 import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 import { BusinessCategory } from 'src/business/model/businessCategory.model';
+import { Business } from 'src/business/model/business.model';
 
 export type TemplateDocument = Template & mongoose.Document;
 
@@ -40,7 +41,7 @@ export class Template {
   @Prop()
   discountValue: string;
 
-  @Prop({ ref: BusinessProfile.name })
+  @Prop({ ref: Business.name })
   businessProfile: mongoose.Types.ObjectId;
 
   @Prop({ ref: Category.name })

@@ -302,7 +302,17 @@ export class RewardsService {
       let start = data.startDate? new Date(data.startDate) : new Date();
       let query = {};
       // if()
-      let pipeline = [];
+      let pipeline = [
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [data.longitude, data.latitude] },
+            distanceField: 'distance',
+            maxDistance: distance * 1000,
+            spherical: true,
+          },
+        },
+      ];
+
       const result = await this.rewardLocationModel.aggregate();
 
 

@@ -82,6 +82,7 @@ import { User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { LocationPopulates } from 'src/enums/user.enum';
+import { Template, TemplateDocument } from 'src/event/models/template.model';
 
 @Injectable()
 export class BusinessService {
@@ -113,8 +114,8 @@ export class BusinessService {
     private readonly departmentModel: Model<DepartmentDocument>,
     @InjectModel(Follow.name)
     private readonly followModel: Model<FollowDocument>,
-    @InjectModel(Action.name)
-    private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -2272,4 +2273,47 @@ export class BusinessService {
       };
     }
   }
+
+
+    async getTemplates(
+      user:DecodedUser,
+      page: number,
+      limit: number,
+      type: string,
+    ) {
+      try {
+        let searchQuery = {
+          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+          creatorType: BusinessUser.name,
+        };
+        if (type) {
+          searchQuery['type'] = type;
+        }
+  
+        const templates = await this.templateModel
+          .find(searchQuery)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate('categories', '_id title')
+          .populate('businessCategories', '_id title')
+          .populate('businessIndustry', '_id title');
+        const totalTemplates =
+          await this.templateModel.countDocuments(searchQuery);
+        return {
+          success: true,
+          message: 'Templates fetched successfully',
+          data: templates,
+          page,
+          limit,
+          total: totalTemplates,
+          pages: Math.ceil(totalTemplates / limit),
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    }
 }
