@@ -112,13 +112,14 @@ export class JwtGuard2 implements CanActivate {
         request['isAdmin'] = false;
         request['user'] = businessUser;
         request['business'] = business;
-        if(business && business.id){
+        if (business && business.id) {
           request['businessProfile'] = payload.businessProfile;
         }
         request['businessUser'] = businessUser.id;
         request['token'] = token;
         return true;
       } else if (payload.userType === UserTypes.USER) {
+        console.log('Payload id:', payload.id);
         const user = await this.userModel.findById(payload.id);
         if (!user) {
           throw new UnauthorizedException('Unauthorised. User does not exist.');
@@ -127,9 +128,9 @@ export class JwtGuard2 implements CanActivate {
         request['isBusiness'] = false;
         request['isAdmin'] = false;
         request['user'] = user;
-      }else if(payload.userType === UserTypes.GUEST){
-
-        
+        return true;
+      } else if (payload.userType === UserTypes.GUEST) {
+        return true;
       }
 
       return true;

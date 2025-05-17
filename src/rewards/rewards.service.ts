@@ -13,7 +13,7 @@ import { Folder } from 'src/drive/models/folder.model';
 import { Reward, RewardDocument } from './model/reward.model';
 import { S3Service } from 'src/s3.service';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
-import { ActivityType, RewardStatus } from './enums/rewards.enum';
+import { ActivityType, ClaimStatus, RewardStatus } from './enums/rewards.enum';
 import {
   EventLocation,
   EventLocationDocument,
@@ -214,7 +214,7 @@ export class RewardsService {
       );
       return {
         success: true,
-        message: 'Offer created successfully',
+        message: 'Reward created successfully',
         data: updatedReward,
       };
     } catch (error) {
@@ -370,6 +370,18 @@ export class RewardsService {
           message: 'Reward not found.',
         };
       }
+      const isAlreadyEnrolled = await this.userRewardModel.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        rewardId: new mongoose.Types.ObjectId(rewardId),
+      });
+      console.log('isAlreadyEnrolled:', isAlreadyEnrolled);
+      if (isAlreadyEnrolled) {
+        return {
+          success: false,
+          message: 'Already enrolled in this reward.',
+        };
+      }
+
       let claimReward = await this.userRewardModel.create({
         userId: new mongoose.Types.ObjectId(userId),
         rewardId: new mongoose.Types.ObjectId(rewardId),
@@ -383,6 +395,125 @@ export class RewardsService {
       };
     } catch (error) {
       console.log('Error in enrollReward:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async getUserRewards(
+    user: DecodedUser,
+    claimStatus: string,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      if (!Object.values(ClaimStatus).includes(claimStatus)) {
+        return {
+          success: false,
+          message: 'Invalid claim status.',
+        };
+      }
+      const userId = user.id;
+      const userDetails = await this.userModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+      const rewards = await this.userRewardModel
+        .find({
+          userId: new mongoose.Types.ObjectId(userId),
+          claimStatus: claimStatus,
+        })
+        .populate('rewardId', 'title')
+        .populate('userId', 'name')
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const total = await this.userRewardModel.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+        claimStatus: claimStatus,
+      });
+      if (!rewards || rewards.length === 0) {
+        return {
+          success: false,
+          message: 'No rewards found.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Rewards found successfully.',
+        data: rewards,
+        total: total,
+      };
+    } catch (error) {
+      console.log('Error in getUserRewards:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async claimReward(user: DecodedUser, rewardId: string) {
+    try {
+      const userId = user.id;
+      const userDetails = await this.userModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+
+      const reward = await this.rewardModel.findById(rewardId);
+      if (!reward) {
+        return {
+          success: false,
+          message: 'Reward not found.',
+        };
+      }
+      const userRewardLink = await this.userRewardModel.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        rewardId: new mongoose.Types.ObjectId(rewardId),
+      });
+      if (userRewardLink.claimStatus === ClaimStatus.CLAIMED) {
+        return {
+          success: false,
+          message: 'Already claimed this reward.',
+        };
+      }
+      if(userRewardLink.claimStatus === ClaimStatus.EXPIRED || reward.schedule.endDate < new Date()) {
+        return {
+          success: false,
+          message: 'Reward has expired.',
+        };
+      }
+      if(userRewardLink.progress < reward.targetCount) {
+        return {
+          success: false,
+          message: 'Reward not yet completed.',
+        };
+      }
+
+      await this.userRewardModel.findByIdAndUpdate(userRewardLink._id, {
+        $set: {
+          claimStatus: ClaimStatus.CLAIMED,
+          claimedAt: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Reward claimed successfully.',
+        // data: userRewardLink,
+      }
+
+
+
+    } catch (error) {
+      console.log('Error in claimReward:', error);
       return {
         success: false,
         message: 'Something went wrong.',

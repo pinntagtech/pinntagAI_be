@@ -3,12 +3,13 @@ import mongoose, { Document } from 'mongoose';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Reward } from './reward.model';
 import { ClaimStatus } from '../enums/rewards.enum';
+import { User } from 'src/user/models/user.model';
 
 export type UserRewardDocument = UserReward & Document;
 
 @Schema({ timestamps: true })
 export class UserReward {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: BusinessUser.name, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: User.name, required: true })
   userId: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Reward.name, required: true })
@@ -16,7 +17,7 @@ export class UserReward {
 
   @Prop({ 
     enum: Object.values(ClaimStatus),
-    default: ClaimStatus.CLAIMED 
+    default: ClaimStatus.ACTIVE 
   })
   claimStatus: string;
 

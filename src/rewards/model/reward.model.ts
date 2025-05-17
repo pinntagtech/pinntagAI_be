@@ -50,7 +50,7 @@ export class Reward {
   targetCount: number;
   
   @Prop()
-  rewardSchedule: Schedule;
+  schedule: Schedule;
 
   @Prop({
     enum: Object.values(RedemptionMode),

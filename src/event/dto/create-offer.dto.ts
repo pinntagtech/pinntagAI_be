@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsIn,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   ValidateIf,
@@ -75,4 +76,8 @@ export class CreateOfferDto {
 
   @IsOptional()
   bookingSite: string;
+
+  @IsOptional()
+  quantityLimit: any;
+
 }
