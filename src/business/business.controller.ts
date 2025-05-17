@@ -914,6 +914,37 @@ export class BusinessController {
     }
   }
 
+   @Get('templates')
+    @UseGuards(JwtGuard2)
+    async getTemplates(
+      @Res() res: Response,
+      @Query('page') page: string,
+      @Query('limit') limit: string,
+      @TokenDecoder() user: DecodedUser,
+      @Query('type') type: string,
+    ) {
+      
+      const pageNumber = page ? parseInt(page) : 1;
+      const limitNumber = limit ? parseInt(limit) : 10;
+      const result = await this.businessService.getTemplates(
+        user,
+        pageNumber,
+        limitNumber,
+        type,
+      );
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+          total: result.total,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+    }
+
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,

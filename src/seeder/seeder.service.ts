@@ -896,6 +896,7 @@ export class SeederService {
         participationCost: template.participationCost,
         termsApplied: template.termsApplied,
         termsAndConditions: template.termsAndConditions,
+        thumbnail: template.thumbnail,
         categories: eventCategoriesId,
         businessIndustry: businessIndustry._id,
         businessCategories: businessCategoriesId,

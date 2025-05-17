@@ -25,6 +25,7 @@ import { Response } from 'express';
 import { RewardsService } from './rewards.service';
 import { isValidObjectId } from 'mongoose';
 import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
+import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 
 @Controller('rewards')
 export class RewardsController {
@@ -115,7 +116,7 @@ export class RewardsController {
   async getDashboardRewards(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
-    @Body() data: GetDashboardDto,
+    @Body() data: GetRewardDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
   ) {

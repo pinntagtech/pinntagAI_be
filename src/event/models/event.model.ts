@@ -133,6 +133,9 @@ export class Event {
   @Prop({ default: 0 })
   engagementCount: number;
 
+  @Prop({default: null})
+  quantityLimit: number;
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }
