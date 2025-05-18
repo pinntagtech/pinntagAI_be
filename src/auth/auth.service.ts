@@ -2057,9 +2057,16 @@ export class AuthService {
     limit: number,
     start: Date,
     distance: number,
+    startDate: any,
+    endDate: any,
   ) {
     const now = new Date();
-
+    startDate = startDate ? new Date(startDate) : now;
+    endDate = endDate
+      ? new Date(endDate)
+      : new Date(now.setFullYear(now.getFullYear() + 2));
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -2067,6 +2074,11 @@ export class AuthService {
           distanceField: 'distance',
           maxDistance: distance * 1000,
           spherical: true,
+        },
+      },
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId('682a097324098874f60e8f92'),
         },
       },
       {
@@ -2078,7 +2090,43 @@ export class AuthService {
         },
       },
       { $unwind: '$event' },
-      { $match: { 'event.status': EventStatus.PUBLISHED, ...match } },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'event.eventSchedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      { $unwind: { path: '$schedules', preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $and: [
+            {
+              $or: [
+                { 'schedules.fixedSchedule.date': { $gte: startDate } },
+                { 'schedules.recurringSchedule.endDate': { $gte: endDate } },
+              ],
+            },
+            {
+              'event.status': EventStatus.PUBLISHED,
+              ...match,
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          event: { $first: '$$ROOT' },
+          schedules: { $push: '$schedules' },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
+        },
+      },
       {
         $lookup: {
           from: 'categories',
@@ -2087,23 +2135,24 @@ export class AuthService {
           as: 'categories',
         },
       },
-      { $unwind: '$categories' },
+      // { $unwind: '$categories' },
+      // // {
+      // //   $lookup: {
+      // //     from: 'images',
+      // //     localField: 'event.images',
+      // //     foreignField: '_id',
+      // //     as: 'images',
+      // //   },
+      // // },
+
       // {
       //   $lookup: {
-      //     from: 'images',
-      //     localField: 'event.images',
+      //     from: 'eventlocations',
+      //     localField: 'event.locations',
       //     foreignField: '_id',
-      //     as: 'images',
+      //     as: 'locations',
       //   },
       // },
-      {
-        $lookup: {
-          from: 'eventlocations',
-          localField: 'event.locations',
-          foreignField: '_id',
-          as: 'locations',
-        },
-      },
       {
         $lookup: {
           from: 'files',
@@ -2123,14 +2172,14 @@ export class AuthService {
       {
         $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
       },
-      // {
-      //   $lookup: {
-      //     from: 'agegroups',
-      //     localField: 'event.ageGroupsAllowed',
-      //     foreignField: '_id',
-      //     as: 'ageGroupsAllowed',
-      //   },
-      // },
+      // // {
+      // //   $lookup: {
+      // //     from: 'agegroups',
+      // //     localField: 'event.ageGroupsAllowed',
+      // //     foreignField: '_id',
+      // //     as: 'ageGroupsAllowed',
+      // //   },
+      // // },
       {
         $lookup: {
           from: 'users',
@@ -2206,28 +2255,28 @@ export class AuthService {
           'event.isFollowedByMe': {},
         },
       },
+      // // {
+      // //   $project: {
+      // //     _id: 1,
+      // //     distance: { $divide: ['$distance', 1000] },
+      // //     'event._id': 1,
+      // //     'event.user': 1,
+      // //     'event.businessProfile': 1,
+      // //     'event.title': 1,
+      // //     'event.qrCode': 1,
+      // //     'event.files': 1,
+      // //   },
+      // // },
       // {
-      //   $project: {
-      //     _id: 1,
-      //     distance: { $divide: ['$distance', 1000] },
-      //     'event._id': 1,
-      //     'event.user': 1,
-      //     'event.businessProfile': 1,
-      //     'event.title': 1,
-      //     'event.qrCode': 1,
-      //     'event.files': 1,
+      //   $group: {
+      //     _id: '$event._id',
+      //     distance: { $min: '$distance' },
+      //     title: { $first: '$event.title' },
+      //     scheduleRefs: { $first: '$event.eventSchedule' },
+      //     qrCode: { $first: '$event.qrCode' },
+      //     files: { $first: '$event.files' },
       //   },
       // },
-      {
-        $group: {
-          _id: '$event._id',
-          distance: { $min: '$distance' },
-          title: { $first: '$event.title' },
-          scheduleRefs: { $first: '$event.eventSchedule' },
-          qrCode: { $first: '$event.qrCode' },
-          files: { $first: '$event.files' },
-        },
-      },
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
@@ -2874,7 +2923,8 @@ export class AuthService {
 
     // return result; // Return the arranged result
 
-    return filteredEvents; // Return the arranged result
+    // return filteredEvents; // Return the arranged result
+    return rows;
   }
 
   async getDashboard(
@@ -2884,8 +2934,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     let match = {};
     if (categoryIds.length) {
@@ -2986,6 +3036,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      '',
+      '',
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -2997,6 +3049,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      '',
+      '',
     );
 
     let data = {};
@@ -3074,6 +3128,8 @@ export class AuthService {
         config.limit,
         start,
         maxDistance,
+        startDate,
+        endDate,
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult;
@@ -3097,8 +3153,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     let match = {};
     if (categoryIds.length) {
@@ -3196,6 +3252,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3207,6 +3265,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     let data = {};
@@ -3283,6 +3343,8 @@ export class AuthService {
         config.limit,
         start,
         maxDistance,
+        startDate,
+        endDate,
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult;
@@ -3306,8 +3368,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     let match = {};
     if (categoryIds.length) {
@@ -3405,6 +3467,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3416,6 +3480,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     return {
       success: true,
@@ -3435,8 +3501,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -3453,54 +3519,54 @@ export class AuthService {
     }
     const currentDate = currentDateTz();
     let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+    // if (!startDate && !endDate) {
+    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+    //   match['event.schedule.date'] = { $gte: start };
+    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    // } else if (startDate && endDate) {
+    //   start = getZeroBodyDateTz(startDate);
+    //   const end = getZeroBodyDateTz(endDate);
+    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+    //     if (
+    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+    //     ) {
+    //       console.log('start is equals to current');
+    //       // If the requested query is for today only then the end time should be greater than the current time
+    //       match['event.schedule.date'] = getZeroDateTz(new Date());
+    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //     } else {
+    //       console.log('start is not equals to current');
+    //       // If the start and end date are the same e.g. 2024-06-01
+    //       match['event.schedule.date'] = start;
+    //     }
+    //   } else if (end > start) {
+    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+    //         },
+    //       };
+    //     } else {
+    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: start },
+    //         },
+    //       };
+    //     }
+    //   } else {
+    //     // If the request date is in past
+    //     match['event.schedule.date'] = { $gte: currentDate };
+    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //   }
+    // }
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3574,6 +3640,7 @@ export class AuthService {
         },
       };
     }
+    console.log("'query after type:----->', query);");
     const eventsResult = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -3584,6 +3651,8 @@ export class AuthService {
       config.limit,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     return {
@@ -4564,8 +4633,8 @@ export class AuthService {
     search: string,
     timeZone: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -4716,6 +4785,8 @@ export class AuthService {
       config.limit,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     return {

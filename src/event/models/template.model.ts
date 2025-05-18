@@ -28,6 +28,7 @@ export class Template {
       EventTypes.OFFER,
       EventTypes.PRIVATE,
       EventTypes.LISTING,
+      EventTypes.FLASHDEAL,
     ],
   })
   type: string;
