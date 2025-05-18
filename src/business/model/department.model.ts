@@ -8,7 +8,7 @@ import { BusinessUser } from './businessUser.model';
 
 @Schema({ timestamps: true })
 export class Department {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   name: string;
 
   @Prop({ default: '' })
@@ -17,7 +17,7 @@ export class Department {
   @Prop({ref: Role.name})
   roles: mongoose.Types.ObjectId[];
 
-  @Prop({ type: Types.ObjectId, ref: Business.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: Business.name })
   business: Types.ObjectId;
 
   @Prop({ref: BusinessUser.name})

@@ -2296,7 +2296,7 @@ export class BusinessService {
           .skip((page - 1) * limit)
           .limit(limit)
           .populate('categories', '_id title')
-          .populate('businessCategories', '_id title')
+          .populate('businessCategories', '_id title ')
           .populate('businessIndustry', '_id title');
         const totalTemplates =
           await this.templateModel.countDocuments(searchQuery);

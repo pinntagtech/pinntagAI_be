@@ -26,8 +26,10 @@ import { RewardsService } from './rewards.service';
 import { isValidObjectId } from 'mongoose';
 import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
 import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
+import { totalmem } from 'os';
+import { UserTypes } from 'src/enums/auth.enums';
 
-@Controller('rewards')
+@Controller('reward')
 export class RewardsController {
   constructor(private readonly rewardService: RewardsService) {}
 
@@ -53,6 +55,11 @@ export class RewardsController {
     @UploadedFiles()
     files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },
   ) {
+    if (user.userType !== UserTypes.BUSINESS) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        message: 'Unauthorized',
+      });
+    }
     console.log('qrCode:', files.qrCode);
     console.log('images:', files.images);
     const result = await this.rewardService.createReward(
@@ -96,7 +103,7 @@ export class RewardsController {
       });
     }
   }
-  @Get()
+  @Get('business')
   @UseGuards(JwtGuard2)
   async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.rewardService.getAllRewards(user);
@@ -111,6 +118,38 @@ export class RewardsController {
       });
     }
   }
+
+  @Get('/fetch/user')
+  @UseGuards(JwtGuard2)
+  async getUserRewards(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('status') status: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    console.log('IS COMING HEREEEEEEE?:::::::');
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.rewardService.getUserRewards(
+      user,
+      status,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
   @Get('dashboard')
   @UseGuards(JwtGuard2)
   async getDashboardRewards(
@@ -120,16 +159,79 @@ export class RewardsController {
     @Query('search') search: string,
     @Query('distance') distance: string,
   ) {
-    const result = await this.rewardService.getDashboardRewards(user,data,search,distance);
+    const result = await this.rewardService.getDashboardRewards(
+      user,
+      data,
+      search,
+      distance ? parseInt(distance) : 1000000000000,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
-        // data: result.data,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
+  }
+
+  @Post('enroll/:rewardId')
+  @UseGuards(JwtGuard2)
+  async enrollReward(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('rewardId') rewardId: string,
+  ) {
+    if (!isValidObjectId(rewardId)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Object ID',
+      });
+    }
+    if (user.userType !== UserTypes.USER) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        message: 'Unauthorized',
+      });
+    }
+    const result = await this.rewardService.enrollReward(rewardId, user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('claim/:rewardId')
+  @UseGuards(JwtGuard2)
+  async claimReward(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('rewardId') rewardId: string,
+  ) {
+    if (!isValidObjectId(rewardId)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Object ID',
+      });
+    }
+    if (user.userType !== UserTypes.USER) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        message: 'Unauthorized',
+      });
+    }
+    const result = await this.rewardService.claimReward(user,rewardId);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        // data: result.data,
+      });
+    }
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: result.message,
+    });
   }
 }

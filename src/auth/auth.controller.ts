@@ -753,12 +753,13 @@ export class AuthController {
   }
   @Post('getDashboardCarouselEvent/:id')
   @UseGuards(JwtGuard2)
-  async getDashboardCarouselEvent(
+  async getDashboardCarouselEvent2(
     @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Param('id') id: string,
     @Query('search') search: string,
     @Query('distance') distance: string,
+    @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
@@ -777,13 +778,14 @@ export class AuthController {
         });
       }
     }
-    const result = await this.authService.getDashboardCarouselEvent(
+    const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
       distance ? parseInt(distance) : 1000000000000,
       search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
