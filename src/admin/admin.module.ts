@@ -128,6 +128,10 @@ import {
 } from 'src/auth/models/guestSession.model';
 import { AuthService } from 'src/auth/auth.service';
 import { SmsService } from 'src/sms/sms.service';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
 
 @Module({
   imports: [
@@ -178,6 +182,7 @@ import { SmsService } from 'src/sms/sms.service';
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
     ]),
   ],
   controllers: [AdminController],

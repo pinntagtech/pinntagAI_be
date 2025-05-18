@@ -113,6 +113,10 @@ import { File, FileSchema } from 'src/drive/models/file.model';
 import { Brand, BrandSchema } from './model/brand.model';
 import { PrivilegeService } from 'src/roles/privilege.service';
 import { Department, DepartmentSchema } from './model/department.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
 
 @Module({
   imports: [
@@ -162,6 +166,7 @@ import { Department, DepartmentSchema } from './model/department.model';
       { name: Brand.name, schema: BrandSchema },
       { name: User.name, schema: UserSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
     ]),
   ],
   controllers: [BusinessController],

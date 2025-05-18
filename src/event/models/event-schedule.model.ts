@@ -106,12 +106,11 @@ class Duration {
   // startTime: String;
   // endTime: String;
 
-    startHour: number;
-    startMinute: number;
-    endHour: number;
-    endMinute: number;
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
 }
-
 
 export class DaySchedule {
   @Prop()
@@ -166,8 +165,8 @@ export class EventSchedule {
   @Prop()
   recurringSchedule: RecurringSchedule;
 
-  @Prop({ref: Business.name})
+  @Prop({ ref: Business.name })
   businessId: mongoose.Types.ObjectId;
 }
 
-export const ScheduleSchema = SchemaFactory.createForClass(EventSchedule);
+export const EventScheduleSchema = SchemaFactory.createForClass(EventSchedule);
