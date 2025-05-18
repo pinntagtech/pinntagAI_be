@@ -251,7 +251,6 @@ export class RewardsService {
           message: 'Reward not found.',
         };
       }
-
       return {
         success: true,
         message: 'Reward found.',
@@ -422,15 +421,77 @@ export class RewardsService {
           message: 'User not found.',
         };
       }
-      const rewards = await this.userRewardModel
-        .find({
-          userId: new mongoose.Types.ObjectId(userId),
-          claimStatus: claimStatus,
-        })
-        .populate('rewardId', 'title')
-        .populate('userId', 'name')
-        .skip((page - 1) * limit)
-        .limit(limit);
+      const rewards = await this.userRewardModel.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            claimStatus: claimStatus,
+          },
+        },
+        {
+          $lookup: {
+            from: 'users', // the collection name for User model
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards', // the collection name for Reward model
+            localField: 'rewardId',
+            foreignField: '_id',
+            as: 'reward',
+          },
+        },
+        {
+          $unwind: { path: '$reward' },
+        },
+        {
+          $unwind: {
+            path: '$user',
+            preserveNullAndEmptyArrays: true, // optional if user might not exist
+          },
+        },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.drivePath',
+            foreignField: 'parentDirectory',
+            as: 'files',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            userId: 1,
+            claimStatus: 1,
+            files: 1,
+            user: {
+              _id: '$user._id',
+              name: '$user.name', // only include 'name' from populated user
+            },
+            QR_CODE: {
+              _id: '$QR_CODE._id',
+              metaData: {
+                name: '$QR_CODE.metaData.name',
+                url: '$QR_CODE.metaData.url',
+              }
+            },
+          },
+        },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ]);
 
       const total = await this.userRewardModel.countDocuments({
         userId: new mongoose.Types.ObjectId(userId),
@@ -484,13 +545,16 @@ export class RewardsService {
           message: 'Already claimed this reward.',
         };
       }
-      if(userRewardLink.claimStatus === ClaimStatus.EXPIRED || reward.schedule.endDate < new Date()) {
+      if (
+        userRewardLink.claimStatus === ClaimStatus.EXPIRED ||
+        reward.schedule.endDate < new Date()
+      ) {
         return {
           success: false,
           message: 'Reward has expired.',
         };
       }
-      if(userRewardLink.progress < reward.targetCount) {
+      if (userRewardLink.progress < reward.targetCount) {
         return {
           success: false,
           message: 'Reward not yet completed.',
@@ -508,12 +572,102 @@ export class RewardsService {
         success: true,
         message: 'Reward claimed successfully.',
         // data: userRewardLink,
-      }
-
-
-
+      };
     } catch (error) {
       console.log('Error in claimReward:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async getUserRewardById(id: string, user: DecodedUser) {
+    try {
+      const foundReward = await this.userRewardModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users', // the collection name for User model
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards', // the collection name for Reward model
+            localField: 'rewardId',
+            foreignField: '_id',
+            as: 'reward',
+          },
+        },
+        {
+          $unwind: { path: '$reward' },
+        },
+        {
+          $unwind: {
+            path: '$user',
+            preserveNullAndEmptyArrays: true, // optional if user might not exist
+          },
+        },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.drivePath',
+            foreignField: 'parentDirectory',
+            as: 'files',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            userId: 1,
+            claimStatus: 1,
+            progress: 1,
+            claimedAt: 1,
+            target: 1,
+            files: 1,
+            reward: 1,
+            user: {
+              _id: '$user._id',
+              name: '$user.name', // only include 'name' from populated user
+            },
+            QR_CODE: {
+              _id: '$QR_CODE._id',
+              metaData: {
+                name: '$QR_CODE.metaData.name',
+                url: '$QR_CODE.metaData.url',
+              }
+            },
+          },
+        }
+      ]);
+      if (!foundReward) {
+        return {
+          success: false,
+          message: 'Reward not found.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Reward found.',
+        data: foundReward,
+      };
+    } catch (error) {
+      console.log('Error in getRewardById:', error);
       return {
         success: false,
         message: 'Something went wrong.',

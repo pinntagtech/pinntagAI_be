@@ -234,4 +234,28 @@ export class RewardsController {
       message: result.message,
     });
   }
+  @Get('user/:id')
+  @UseGuards(JwtGuard2)
+  async getUserRewardById(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Object ID',
+      });
+    }
+    const result = await this.rewardService.getUserRewardById(id, user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 }
