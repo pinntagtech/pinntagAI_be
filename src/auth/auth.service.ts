@@ -4555,54 +4555,56 @@ export class AuthService {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
+
+
     const currentDate = currentDateTz(timeZone);
-    console.log("CURRENT DATE:",currentDate);
+
     let start = getZeroDateTz(new Date(),timeZone);
     console.log("START DATE:",start);
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+    // if (!startDate && !endDate) {
+    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+    //   match['event.schedule.date'] = { $gte: start };
+    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    // } else if (startDate && endDate) {
+    //   start = getZeroBodyDateTz(startDate);
+    //   const end = getZeroBodyDateTz(endDate);
+    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+    //     if (
+    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+    //     ) {
+    //       console.log('start is equals to current');
+    //       // If the requested query is for today only then the end time should be greater than the current time
+    //       match['event.schedule.date'] = getZeroDateTz(new Date());
+    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //     } else {
+    //       console.log('start is not equals to current');
+    //       // If the start and end date are the same e.g. 2024-06-01
+    //       match['event.schedule.date'] = start;
+    //     }
+    //   } else if (end > start) {
+    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+    //         },
+    //       };
+    //     } else {
+    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: start },
+    //         },
+    //       };
+    //     }
+    //   } else {
+    //     // If the request date is in past
+    //     match['event.schedule.date'] = { $gte: currentDate };
+    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //   }
+    // }
 
     if (search) {
       // Search matching business profile name
