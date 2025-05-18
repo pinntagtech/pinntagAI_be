@@ -229,6 +229,7 @@ export class AuthService {
       };
     }
   }
+
   async signupOTP(
     signupAuthDto: SignupAuthDto,
     userAgent: string,
@@ -341,6 +342,7 @@ export class AuthService {
       fcmExists: fcmExists ? true : false,
     };
   }
+
   async updateContactDetails(
     updateAuthDto: UpdateAuthDto,
     id: string,
@@ -452,6 +454,7 @@ export class AuthService {
       // fcmExists: fcmExists
     };
   }
+
   async updatePersonalDetails(
     personalDetailDTO: PersonDetailDto,
     id: string,
@@ -473,6 +476,7 @@ export class AuthService {
       message: 'User Personal Details updated successfully!',
     };
   }
+
   async verifyContactDetails(data: VerifyOtpDto) {
     const user = await this.userService.getUserById(data.user);
     if (!user) {
@@ -890,6 +894,7 @@ export class AuthService {
       token: data.token,
     };
   }
+
   async login(loginDto: LoginDto) {
     const validatedUser = await this.validateUser(
       loginDto.email,
@@ -974,6 +979,7 @@ export class AuthService {
       };
     }
   }
+
   async loginOTP(
     loginDto: SignupAuthDto,
     userAgent: string,
@@ -1264,6 +1270,7 @@ export class AuthService {
       };
     }
   }
+
   async getDashboardAllConfigs() {
     const foundConfig = await this.dashboardConfigModel
       .find({}, { _id: 1, name: 1 })
@@ -1281,6 +1288,7 @@ export class AuthService {
       };
     }
   }
+
   async updateDashboardConfiguration(
     id: string,
     data: UpdateConfigureDashboardDto,
@@ -2721,6 +2729,7 @@ export class AuthService {
       },
     };
   }
+
   async getDashboardV2(
     user: DecodedUser,
     latitude: number,
@@ -2929,6 +2938,7 @@ export class AuthService {
       },
     };
   }
+
   async dashboardFixedCarouselEvents(
     user: DecodedUser,
     latitude: number,
@@ -3056,6 +3066,7 @@ export class AuthService {
       },
     };
   }
+
   async getDashboardCarouselEvent(
     user: DecodedUser,
     carouselId: string,
@@ -3868,6 +3879,7 @@ export class AuthService {
       message: 'User deleted successfully',
     };
   }
+
   public async generateUniqueRefferalCode() {
     const code = Math.random().toString(36).substring(2, 8);
     const foundRefferal = await this.refferalModel.findOne({
@@ -3878,6 +3890,7 @@ export class AuthService {
     }
     return await this.generateUniqueRefferalCode();
   }
+
   async getPreSignedUrl(privateURL: string) {
     try {
       if (!privateURL) {
@@ -3896,6 +3909,7 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
+
   async verifyEmailviaLink(user: any, tokenId: string) {
     try {
       console.log('user:', user);
@@ -4023,6 +4037,7 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
+  
   async verifyPassReset(user: any, password: string, tokenId: string) {
     try {
       console.log('check 1:', user.userType);

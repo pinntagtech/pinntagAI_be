@@ -2008,9 +2008,10 @@ export class EventService2 {
               businessIndustry: business.businessIndustry,
               businessCategories: business.businessCategories,
               // creatorType: user.isBusiness ? BusinessUser.name : User.name,
-              thumbnail:thumbnailURL,
-              businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-
+              thumbnail: thumbnailURL,
+              businessProfile: new mongoose.Types.ObjectId(
+                user.businessProfile,
+              ),
             });
           }
           return {
@@ -4642,47 +4643,76 @@ export class EventService2 {
                           ],
                         },
                         // Else: schedule is recurring. Call $function to compute if there is a future occurrence.
+                        // {
+                        //   $cond: [
+                        //     {
+                        //       $function: {
+                        //         body: new Code(`
+                        //           function(recurringSchedule, currentDate) {
+                        //             let start = new Date(recurringSchedule.startDate);
+                        //             let end = new Date(recurringSchedule.endDate);
+                        //             let weekDays = recurringSchedule.weekDays;
+                        //             let now = new Date(currentDate);
+                        //             let checkDate = now < start ? start : now;
+
+                        //               for (var i = 0; i < 7; i++) {
+                        //                 var dayName = checkDate.toLocaleDateString("en-US", {
+                        //                   weekday: "long",
+                        //                   timeZone: "UTC"
+                        //                 }).toLowerCase();
+                        //                 if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
+                        //                   return true;
+                        //                 }
+                        //                 checkDate.setDate(checkDate.getDate() + 1);
+                        //               }
+                        //             return false;
+
+                        //           //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
+                        //           //   return true;
+                        //           //   }else{
+                        //           //   return false;
+                        //           // }
+
+                        //           }
+                        //         `),
+                        //         args: ['$$sch.recurringSchedule', currentUnix],
+                        //         lang: 'js',
+                        //       },
+                        //     },
+                        //     '$$sch', // If function returns true, keep the schedule as is.
+                        //     null, // Otherwise, mark it as null (to be removed later).
+                        //   ],
+                        // },
+                        // '$$sch'
                         {
                           $cond: [
                             {
+                              // call the function with the right ts
                               $function: {
                                 body: new Code(`
-                                  function(recurringSchedule, currentDate) {
-                                    let start = new Date(recurringSchedule.startDate);
-                                    let end = new Date(recurringSchedule.endDate);
-                                    let weekDays = recurringSchedule.weekDays;
-                                    let now = new Date(currentDate);
-                                    let checkDate = now < start ? start : now;
-                                    
-                                      for (var i = 0; i < 7; i++) {
-                                        var dayName = checkDate.toLocaleDateString("en-US", { 
-                                          weekday: "long", 
-                                          timeZone: "UTC" 
-                                        }).toLowerCase();
-                                        if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
-                                          return true;
+                                      function(recurringSchedule, currentTs) {
+                                        const start = new Date(recurringSchedule.startDate);
+                                        const end   = new Date(recurringSchedule.endDate);
+                                        let checkDate = (currentTs < start.getTime() ? start : new Date(currentTs));
+                                        const names = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+                                        for (let i = 0; i < 7; i++) {
+                                          const dow = checkDate.getUTCDay();
+                                          if (recurringSchedule.weekDays[names[dow]]?.included && checkDate.getTime() <= end.getTime()) {
+                                            return true;
+                                          }
+                                          checkDate.setUTCDate(checkDate.getUTCDate() + 1);
                                         }
-                                        checkDate.setDate(checkDate.getDate() + 1);
+                                        return false;
                                       }
-                                    return false;
-
-                                  //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
-                                  //   return true;
-                                  //   }else{
-                                  //   return false;
-                                  // }
-
-                                  }
-                                `),
-                                args: ['$$sch.recurringSchedule', currentUnix],
+                                    `),
+                                args: ['$$sch.recurringSchedule', testingDate], // <-- use the date you actually want to test
                                 lang: 'js',
                               },
                             },
-                            '$$sch', // If function returns true, keep the schedule as is.
-                            null, // Otherwise, mark it as null (to be removed later).
+                            '$$sch', // keep it
+                            null, // otherwise drop it
                           ],
                         },
-                        // '$$sch'
                       ],
                     },
                   },
@@ -4737,6 +4767,7 @@ export class EventService2 {
       };
     }
   }
+
   async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
