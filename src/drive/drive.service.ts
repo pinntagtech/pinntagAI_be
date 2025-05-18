@@ -720,6 +720,7 @@ export class DriveService {
       let totalSize = 0;
       const tasks = images
         .filter((img) => {
+          console.log('image mimetype:----------------', img.mimetype);
           const ok = img.mimetype.startsWith('image/');
           if (!ok) console.warn(`Skipped non-image: ${img.originalname}`);
           else if (img.size > driveDetails.AvailableSpace) {
