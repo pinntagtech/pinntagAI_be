@@ -63,6 +63,9 @@ export class Event {
   @Prop({ ref: 'Folder' })
   drivePath: mongoose.Types.ObjectId;
 
+  @Prop({ ref: File.name })
+  QR_CODE: mongoose.Types.ObjectId;
+
   @Prop({ ref: Image.name })
   images: Array<mongoose.Types.ObjectId>;
   @Prop()

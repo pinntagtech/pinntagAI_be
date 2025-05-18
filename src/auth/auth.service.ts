@@ -2088,14 +2088,14 @@ export class AuthService {
         },
       },
       { $unwind: '$categories' },
-      {
-        $lookup: {
-          from: 'images',
-          localField: 'event.images',
-          foreignField: '_id',
-          as: 'images',
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: 'images',
+      //     localField: 'event.images',
+      //     foreignField: '_id',
+      //     as: 'images',
+      //   },
+      // },
       {
         $lookup: {
           from: 'eventlocations',
@@ -2103,6 +2103,25 @@ export class AuthService {
           foreignField: '_id',
           as: 'locations',
         },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'event.drivePath',
+          foreignField: 'parentDirectory',
+          as: 'files',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'event.QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
       },
       // {
       //   $lookup: {
@@ -2187,28 +2206,32 @@ export class AuthService {
           'event.isFollowedByMe': {},
         },
       },
-      {
-        $project: {
-          _id: 1,
-          distance: { $divide: ['$distance', 1000] },
-          'event._id': 1,
-          'event.user': 1,
-          'event.businessProfile': 1,
-          'event.title': 1,
-        },
-      },
+      // {
+      //   $project: {
+      //     _id: 1,
+      //     distance: { $divide: ['$distance', 1000] },
+      //     'event._id': 1,
+      //     'event.user': 1,
+      //     'event.businessProfile': 1,
+      //     'event.title': 1,
+      //     'event.qrCode': 1,
+      //     'event.files': 1,
+      //   },
+      // },
       {
         $group: {
           _id: '$event._id',
           distance: { $min: '$distance' },
           title: { $first: '$event.title' },
           scheduleRefs: { $first: '$event.eventSchedule' },
+          qrCode: { $first: '$event.qrCode' },
+          files: { $first: '$event.files' },
         },
       },
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
-    console.log("Row EVENTS:",rows);
+    console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
     const schedules = await this.eventScheduleModel
       .find({ event: { $in: eventIds } })
@@ -2275,7 +2298,7 @@ export class AuthService {
 
       return row;
     });
-    
+
     // 5. Merge schedules and compute latestSchedule + inline filtering
     const filteredEvents = rows
       .map((row) => {
@@ -4558,11 +4581,10 @@ export class AuthService {
       };
     }
 
-
     const currentDate = currentDateTz(timeZone);
 
-    let start = getZeroDateTz(new Date(),timeZone);
-    console.log("START DATE:",start);
+    let start = getZeroDateTz(new Date(), timeZone);
+    console.log('START DATE:', start);
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -4704,7 +4726,6 @@ export class AuthService {
       },
     };
   }
-
 }
 
 // Relevant-logs:--- {

@@ -315,32 +315,40 @@ export class RewardsService {
     data: GetRewardDashboardDto,
     search: string,
     distance: number,
+    page: number,
+    limit: number,
   ) {
     try {
-      let start = data.startDate ? new Date(data.startDate) : new Date();
-      let query = {};
-      // if()
-      let pipeline: PipelineStage[] = [
-        {
-          $geoNear: {
-            near: {
-              type: 'Point',
-              coordinates: [Number(data.longitude), Number(data.latitude)],
-            },
-            distanceField: 'distance',
-            maxDistance: distance * 1000,
-            spherical: true,
-          },
-        },
-      ];
+      // let start = data.startDate ? new Date(data.startDate) : new Date();
+      // let query = {};
+      // // if()
+      // let pipeline: PipelineStage[] = [
+      //   {
+      //     $geoNear: {
+      //       near: {
+      //         type: 'Point',
+      //         coordinates: [Number(data.longitude), Number(data.latitude)],
+      //       },
+      //       distanceField: 'distance',
+      //       maxDistance: distance * 1000,
+      //       spherical: true,
+      //     },
+      //   },
+      // ];
 
-      const result = await this.rewardLocationModel.aggregate(pipeline);
+      // const result = await this.rewardLocationModel.aggregate(pipeline);
+      const result = await this.rewardModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const count = await this.rewardModel.countDocuments();
       console.log('Result:', result);
 
       return {
         success: true,
         message: 'Rewards found successfully.',
         data: result,
+        total: count,
       };
     } catch (error) {
       console.log('Error in getDashboardRewards:', error);
@@ -485,7 +493,7 @@ export class RewardsService {
               metaData: {
                 name: '$QR_CODE.metaData.name',
                 url: '$QR_CODE.metaData.url',
-              }
+              },
             },
           },
         },
@@ -650,10 +658,10 @@ export class RewardsService {
               metaData: {
                 name: '$QR_CODE.metaData.name',
                 url: '$QR_CODE.metaData.url',
-              }
+              },
             },
           },
-        }
+        },
       ]);
       if (!foundReward) {
         return {
