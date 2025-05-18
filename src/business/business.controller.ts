@@ -945,6 +945,129 @@ export class BusinessController {
       }
     }
 
+    // @Post('region')
+    // @UseGuards(JwtGuard2)
+    // async createRegion(
+    //   @Res() res: Response,
+    //   @TokenDecoder() user: DecodedUser,
+    //   @Body() data: CreateDepartmentDto,
+    // ) {
+    //   const result = await this.businessService.createDepartment(user, data);
+    //   if (result.success) {
+    //     return res.status(HttpStatus.OK).json({
+    //       message: result.message,
+    //       data: result.data,
+    //     });
+    //   } else {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: result.message,
+    //     });
+    //   }
+    // }
+  
+    // @Put('department/:id')
+    // @UseGuards(JwtGuard2)
+    // async updateDepartment(
+    //   @Res() res: Response,
+    //   @TokenDecoder() user: DecodedUser,
+    //   @Body() data: UpdateDepartmentDto,
+    //   @Param('id') id: string,
+    //   @Query() page: string,
+    //   @Query() limit: string,
+    // ) {
+    //   const pageNumber = page ? parseInt(page) : 1;
+    //   const limitNumber = limit ? parseInt(limit) : 10;
+    //   const result = await this.businessService.updateDepartment(user, id, data);
+    //   if (result.success) {
+    //     return res.status(HttpStatus.OK).json({
+    //       message: result.message,
+    //       data: result.data,
+    //     });
+    //   } else {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: result.message,
+    //     });
+    //   }
+    // }
+  
+    // @Get('departments')
+    // @UseGuards(JwtGuard2)
+    // async fetchDepartments(
+    //   @Res() res: Response,
+    //   @TokenDecoder() user: DecodedUser,
+    //   @Query('limit') limit: string,
+    //   @Query('page') page: string,
+    // ) {
+    //   const pageNumber = page ? parseInt(page) : 1;
+    //   const limitNumber = limit ? parseInt(limit) : 10;
+    //   const result = await this.businessService.fetchDepartment(
+    //     user,
+    //     pageNumber,
+    //     limitNumber,
+    //   );
+    //   if (result.success) {
+    //     return res.status(HttpStatus.OK).json({
+    //       message: result.message,
+    //       data: result.data,
+    //       total: result.total,
+    //     });
+    //   } else {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: result.message,
+    //     });
+    //   }
+    // }
+    // @Get('department/:id')
+    // @UseGuards(JwtGuard2)
+    // async fetchDepartmentById(
+    //   @Res() res: Response,
+    //   @TokenDecoder() user: DecodedUser,
+    //   @Param('id') id: string,
+    // ) {
+    //   if (!isValidObjectId(id)) {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: 'Invalid ObjectId',
+    //     });
+    //   }
+    //   const result = await this.businessService.fetchDepartmentById(user, id);
+    //   if (result.success) {
+    //     return res.status(HttpStatus.OK).json({
+    //       message: result.message,
+    //       data: result.data,
+    //     });
+    //   } else {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: result.message,
+    //     });
+    //   }
+    // }
+    // @Delete('department/:id')
+    // @UseGuards(JwtGuard2)
+    // async deleteDepartment(
+    //   @Res() res: Response,
+    //   @TokenDecoder() user: DecodedUser,
+    //   @Param('id') id: string,
+    // ) {
+    //   if (!isValidObjectId(id)) {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: 'Invalid ObjectId',
+    //     });
+    //   }
+  
+    //   const result = await this.businessService.deleteDepartment(user, id);
+    //   if (result.success) {
+    //     return res.status(HttpStatus.OK).json({
+    //       message: result.message,
+    //     });
+    //   } else {
+    //     return res.status(HttpStatus.BAD_REQUEST).json({
+    //       message: result.message,
+    //     });
+    //   }
+    // }
+
+
+
   // @Get('brand')
   // async fetchBrand(
   //   @Res() res: Response,
