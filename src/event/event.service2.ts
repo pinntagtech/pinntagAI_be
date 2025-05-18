@@ -4458,6 +4458,287 @@ export class EventService2 {
     return false;
   }
 
+  // async contentManagement(
+  //   user: DecodedUser,
+  //   isExpired: boolean,
+  //   page: number,
+  //   limit: number,
+  // ) {
+  //   try {
+  //     let query = {};
+  //     // console.log('USER:', user);
+  //     const businessUser = await this.businessUserModel.findById(user.id);
+  //     if (!businessUser) {
+  //       return {
+  //         sucess: false,
+  //         message: 'User not found',
+  //       };
+  //     }
+
+  //     if (user.isBusiness) {
+  //       console.log('Business User.role[0]', businessUser.role[0]);
+  //       const userRole = await this.roleModel.findById(businessUser.role[0]);
+  //       console.log('userRole:', userRole);
+  //       if (userRole.isBusinessOwner) {
+  //         query = {
+  //           creatorType: BusinessUser.name,
+  //           businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+  //         };
+  //       } else {
+  //         let outletIds = [];
+  //         outletIds = outletIds.concat(businessUser.assignedOutlets); //doubt
+  //         const childUsers = await this.getAllChildUsersIds(user.id);
+  //         console.log('childUsers:', childUsers);
+  //         for (let child of childUsers) {
+  //           const childUser = await this.businessUserModel.findOne(
+  //             { _id: new mongoose.Types.ObjectId(child) },
+  //             { outlets: 1 },
+  //           );
+  //           if (childUser) {
+  //             outletIds = outletIds.concat(childUser.assignedOutlets);
+  //           }
+  //         }
+  //         const outletObjectIds = outletIds.map(
+  //           (outletId) => new mongoose.Types.ObjectId(outletId),
+  //         );
+  //         query = {
+  //           outlets: { $in: outletIds },
+  //         };
+  //       }
+
+  //       query = {
+  //         creatorType: BusinessUser.name,
+  //         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+  //       };
+  //     } else {
+  //       query = {
+  //         creatorType: User.name,
+  //         user: new mongoose.Types.ObjectId(user.id),
+  //         type: EventTypes.PRIVATE,
+  //       };
+  //     }
+  //     console.log('query:', query);
+
+  //     const currentDate = new Date();
+  //     console.log('currentDate:', currentDate);
+  //     const currentUnix = currentDate.getTime();
+  //     // const testingDate = new Date('2025-05-10T23:00:00.000Z').getTime();
+  //     // console.log('TestingDate:', testingDate);
+
+  //     const currentMinutes =
+  //       currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
+  //     // console.log('currentMinutes:', currentMinutes);
+  //     const pipeline: any[] = [
+  //       {
+  //         $match: query,
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: 'eventschedules', // Ensure this matches your actual collection name
+  //           localField: 'eventSchedule', // Field in event model storing EventSchedule ObjectIds
+  //           foreignField: '_id',
+  //           as: 'schedules',
+  //         },
+  //       },
+  //       {
+  //         $unwind: '$schedules',
+  //       },
+  //     ];
+
+  //     if (!isExpired) {
+  //       pipeline.push({
+  //         $match: {
+  //           $or: [
+  //             // For fixed schedules: date is greater than or equal to current date (allowing today)
+  //             { 'schedules.fixedSchedule.date': { $gte: currentDate } },
+  //             { 'schedules.recurringSchedule.endDate': { $gte: currentDate } },
+  //           ],
+  //         },
+  //       });
+  //     }
+
+  //     pipeline.push(
+  //       {
+  //         $group: {
+  //           _id: '$_id',
+  //           event: { $first: '$$ROOT' }, // get the full event doc once
+  //           filteredSchedules: { $push: '$schedules' }, // push only matched schedules
+  //         },
+  //       },
+  //       {
+  //         $addFields: {
+  //           'event.schedules': '$filteredSchedules', // overwrite event.schedules with filtered ones
+  //         },
+  //       },
+  //       {
+  //         $replaceRoot: { newRoot: '$event' }, // flatten it back to event structure
+  //       },
+  //     );
+  //     if (!isExpired) {
+  //       pipeline.push({
+  //         $set: {
+  //           schedules: {
+  //             $filter: {
+  //               input: {
+  //                 $map: {
+  //                   input: '$schedules',
+  //                   as: 'sch',
+  //                   in: {
+  //                     $cond: [
+  //                       { $eq: ['$$sch.type', 'fixed'] },
+  //                       {
+  //                         $mergeObjects: [
+  //                           '$$sch',
+  //                           {
+  //                             fixedSchedule: {
+  //                               $mergeObjects: [
+  //                                 '$$sch.fixedSchedule',
+  //                                 {
+  //                                   durations: {
+  //                                     $filter: {
+  //                                       input: '$$sch.fixedSchedule.durations',
+  //                                       as: 'duration',
+  //                                       cond: {
+  //                                         $cond: [
+  //                                           {
+  //                                             $eq: [
+  //                                               {
+  //                                                 $dateToString: {
+  //                                                   date: '$$sch.fixedSchedule.date',
+  //                                                   format: '%Y-%m-%d',
+  //                                                 },
+  //                                               },
+  //                                               {
+  //                                                 $dateToString: {
+  //                                                   date: currentDate,
+  //                                                   format: '%Y-%m-%d',
+  //                                                 },
+  //                                               },
+  //                                             ],
+  //                                           },
+  //                                           {
+  //                                             $gte: [
+  //                                               {
+  //                                                 $add: [
+  //                                                   {
+  //                                                     $multiply: [
+  //                                                       '$$duration.endHour',
+  //                                                       60,
+  //                                                     ],
+  //                                                   },
+  //                                                   '$$duration.endMinute',
+  //                                                 ],
+  //                                               },
+  //                                               currentMinutes,
+  //                                             ],
+  //                                           },
+  //                                           true,
+  //                                         ],
+  //                                       },
+  //                                     },
+  //                                   },
+  //                                 },
+  //                               ],
+  //                             },
+  //                           },
+  //                         ],
+  //                       },
+  //                       // Else: schedule is recurring. Call $function to compute if there is a future occurrence.
+  //                       {
+  //                         $cond: [
+  //                           {
+  //                             $function: {
+  //                               body: new Code(`
+  //                                 function(recurringSchedule, currentDate) {
+  //                                   let start = new Date(recurringSchedule.startDate);
+  //                                   let end = new Date(recurringSchedule.endDate);
+  //                                   let weekDays = recurringSchedule.weekDays;
+  //                                   let now = new Date(currentDate);
+  //                                   let checkDate = now < start ? start : now;
+
+  //                                     for (var i = 0; i < 7; i++) {
+  //                                       var dayName = checkDate.toLocaleDateString("en-US", {
+  //                                         weekday: "long",
+  //                                         timeZone: "UTC"
+  //                                       }).toLowerCase();
+  //                                       if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
+  //                                         return true;
+  //                                       }
+  //                                       checkDate.setDate(checkDate.getDate() + 1);
+  //                                     }
+  //                                   return false;
+
+  //                                 //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
+  //                                 //   return true;
+  //                                 //   }else{
+  //                                 //   return false;
+  //                                 // }
+
+  //                                 }
+  //                               `),
+  //                               args: ['$$sch.recurringSchedule', currentUnix],
+  //                               lang: 'js',
+  //                             },
+  //                           },
+  //                           '$$sch', // If function returns true, keep the schedule as is.
+  //                           null, // Otherwise, mark it as null (to be removed later).
+  //                         ],
+  //                       },
+  //                       // '$$sch'
+  //                     ],
+  //                   },
+  //                 },
+  //               },
+  //               as: 'sch',
+  //               cond: { $ne: ['$$sch', null] }, // Remove null entries.
+  //             },
+  //           },
+  //         },
+  //       });
+  //     }
+
+  //     pipeline.push(
+  //       { $sort: { createdAt: -1 } },
+  //       { $skip: (page - 1) * limit },
+  //       { $limit: limit },
+  //     );
+
+  //     console.log('Pipeline:', JSON.stringify(pipeline));
+  //     const events = await this.eventModel.aggregate(pipeline);
+
+  //     // let updatedEvents = JSON.parse(JSON.stringify(events));
+  //     // if (!isExpired) {
+  //     //   updatedEvents = updatedEvents.map((event) => {
+  //     //     event.schedules = event.schedules.filter((schedule) => {
+  //     //       if (schedule.type === ScheduleTypes.RECURRING) {
+  //     //         return this.getNextOccurrence(
+  //     //           schedule.recurringSchedule,
+  //     //           // currentDate,
+  //     //           testingDate,
+  //     //         );
+  //     //       } else {
+  //     //         return true;
+  //     //       }
+  //     //     });
+  //     //     return event;
+  //     //   });
+  //     //   console.log('EVENT.SCHEDULESSSSS:', updatedEvents);
+  //     // }
+
+  //     return {
+  //       success: true,
+  //       message: 'Events fetched successfully',
+  //       // data: updatedEvents,
+  //       data: events,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in contentManagement:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  // }
   async contentManagement(
     user: DecodedUser,
     isExpired: boolean,
@@ -4465,51 +4746,39 @@ export class EventService2 {
     limit: number,
   ) {
     try {
-      let query = {};
-      // console.log('USER:', user);
+      // 1. Fetch business user and role
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
-        return {
-          sucess: false,
-          message: 'User not found',
-        };
+        return { success: false, message: 'User not found' };
       }
+      const userRole = await this.roleModel.findById(businessUser.role[0]);
+
+      // 2. Build base query depending on business ownership
+      const now = new Date();
+      let query: any;
 
       if (user.isBusiness) {
-        console.log('Business User.role[0]', businessUser.role[0]);
-        const userRole = await this.roleModel.findById(businessUser.role[0]);
-        console.log('userRole:', userRole);
-        if (userRole.isBusinessOwner) {
+        if (userRole?.isBusinessOwner) {
           query = {
             creatorType: BusinessUser.name,
             businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
           };
         } else {
-          let outletIds = [];
-          outletIds = outletIds.concat(businessUser.assignedOutlets); //doubt
-          const childUsers = await this.getAllChildUsersIds(user.id);
-          console.log('childUsers:', childUsers);
-          for (let child of childUsers) {
-            const childUser = await this.businessUserModel.findOne(
-              { _id: new mongoose.Types.ObjectId(child) },
-              { outlets: 1 },
-            );
-            if (childUser) {
-              outletIds = outletIds.concat(childUser.assignedOutlets);
-            }
-          }
-          const outletObjectIds = outletIds.map(
-            (outletId) => new mongoose.Types.ObjectId(outletId),
+          // gather assigned outlets from user and children
+          const childIds = await this.getAllChildUsersIds(user.id);
+          const users = await this.businessUserModel.find(
+            { _id: { $in: [user.id, ...childIds] } },
+            { assignedOutlets: 1 },
           );
+          const outletIds = users.flatMap((u) => u.assignedOutlets);
           query = {
-            outlets: { $in: outletIds },
+            creatorType: BusinessUser.name,
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+            outlets: {
+              $in: outletIds.map((id) => new mongoose.Types.ObjectId(id)),
+            },
           };
         }
-
-        query = {
-          creatorType: BusinessUser.name,
-          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-        };
       } else {
         query = {
           creatorType: User.name,
@@ -4517,254 +4786,90 @@ export class EventService2 {
           type: EventTypes.PRIVATE,
         };
       }
-      console.log('query:', query);
 
-      const currentDate = new Date();
-      console.log('currentDate:', currentDate);
-      const currentUnix = currentDate.getTime();
-      const testingDate = new Date('2025-05-10T23:00:00.000Z').getTime();
-      console.log('TestingDate:', testingDate);
-
-      const currentMinutes =
-        currentDate.getUTCHours() * 60 + currentDate.getUTCMinutes();
-      console.log('currentMinutes:', currentMinutes);
+      // 3. Build aggregation pipeline
       const pipeline: any[] = [
-        {
-          $match: query,
-        },
+        { $match: query },
         {
           $lookup: {
-            from: 'eventschedules', // Ensure this matches your actual collection name
-            localField: 'eventSchedule', // Field in event model storing EventSchedule ObjectIds
+            from: 'eventschedules',
+            localField: 'eventSchedule',
             foreignField: '_id',
             as: 'schedules',
           },
         },
-        {
-          $unwind: '$schedules',
-        },
-      ];
-      if (!isExpired) {
-        pipeline.push({
-          $match: {
-            $or: [
-              // For fixed schedules: date is greater than or equal to current date (allowing today)
-              { 'schedules.fixedSchedule.date': { $gte: currentDate } },
-              { 'schedules.recurringSchedule.endDate': { $gte: currentDate } },
-            ],
-          },
-        });
-      }
-
-      pipeline.push(
+        { $unwind: { path: '$schedules', preserveNullAndEmptyArrays: true } },
         {
           $group: {
             _id: '$_id',
-            event: { $first: '$$ROOT' }, // get the full event doc once
-            filteredSchedules: { $push: '$schedules' }, // push only matched schedules
+            event: { $first: '$$ROOT' },
+            schedules: { $push: '$schedules' },
           },
         },
         {
-          $addFields: {
-            'event.schedules': '$filteredSchedules', // overwrite event.schedules with filtered ones
+          $replaceRoot: {
+            newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
           },
         },
-        {
-          $replaceRoot: { newRoot: '$event' }, // flatten it back to event structure
-        },
-      );
-      if (!isExpired) {
-        pipeline.push({
-          $set: {
-            schedules: {
-              $filter: {
-                input: {
-                  $map: {
-                    input: '$schedules',
-                    as: 'sch',
-                    in: {
-                      $cond: [
-                        { $eq: ['$$sch.type', 'fixed'] },
-                        {
-                          $mergeObjects: [
-                            '$$sch',
-                            {
-                              fixedSchedule: {
-                                $mergeObjects: [
-                                  '$$sch.fixedSchedule',
-                                  {
-                                    durations: {
-                                      $filter: {
-                                        input: '$$sch.fixedSchedule.durations',
-                                        as: 'duration',
-                                        cond: {
-                                          $cond: [
-                                            {
-                                              $eq: [
-                                                {
-                                                  $dateToString: {
-                                                    date: '$$sch.fixedSchedule.date',
-                                                    format: '%Y-%m-%d',
-                                                  },
-                                                },
-                                                {
-                                                  $dateToString: {
-                                                    date: currentDate,
-                                                    format: '%Y-%m-%d',
-                                                  },
-                                                },
-                                              ],
-                                            },
-                                            {
-                                              $gte: [
-                                                {
-                                                  $add: [
-                                                    {
-                                                      $multiply: [
-                                                        '$$duration.endHour',
-                                                        60,
-                                                      ],
-                                                    },
-                                                    '$$duration.endMinute',
-                                                  ],
-                                                },
-                                                currentMinutes,
-                                              ],
-                                            },
-                                            true,
-                                          ],
-                                        },
-                                      },
-                                    },
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                        },
-                        // Else: schedule is recurring. Call $function to compute if there is a future occurrence.
-                        // {
-                        //   $cond: [
-                        //     {
-                        //       $function: {
-                        //         body: new Code(`
-                        //           function(recurringSchedule, currentDate) {
-                        //             let start = new Date(recurringSchedule.startDate);
-                        //             let end = new Date(recurringSchedule.endDate);
-                        //             let weekDays = recurringSchedule.weekDays;
-                        //             let now = new Date(currentDate);
-                        //             let checkDate = now < start ? start : now;
-
-                        //               for (var i = 0; i < 7; i++) {
-                        //                 var dayName = checkDate.toLocaleDateString("en-US", {
-                        //                   weekday: "long",
-                        //                   timeZone: "UTC"
-                        //                 }).toLowerCase();
-                        //                 if (weekDays[dayName] && weekDays[dayName].included && checkDate.getTime() <= end.getTime()) {
-                        //                   return true;
-                        //                 }
-                        //                 checkDate.setDate(checkDate.getDate() + 1);
-                        //               }
-                        //             return false;
-
-                        //           //   if(currentDate === new Date('2025-05-10T23:00:00.000+00:00').getTime()) {
-                        //           //   return true;
-                        //           //   }else{
-                        //           //   return false;
-                        //           // }
-
-                        //           }
-                        //         `),
-                        //         args: ['$$sch.recurringSchedule', currentUnix],
-                        //         lang: 'js',
-                        //       },
-                        //     },
-                        //     '$$sch', // If function returns true, keep the schedule as is.
-                        //     null, // Otherwise, mark it as null (to be removed later).
-                        //   ],
-                        // },
-                        // '$$sch'
-                        {
-                          $cond: [
-                            {
-                              // call the function with the right ts
-                              $function: {
-                                body: new Code(`
-                                      function(recurringSchedule, currentTs) {
-                                        const start = new Date(recurringSchedule.startDate);
-                                        const end   = new Date(recurringSchedule.endDate);
-                                        let checkDate = (currentTs < start.getTime() ? start : new Date(currentTs));
-                                        const names = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
-                                        for (let i = 0; i < 7; i++) {
-                                          const dow = checkDate.getUTCDay();
-                                          if (recurringSchedule.weekDays[names[dow]]?.included && checkDate.getTime() <= end.getTime()) {
-                                            return true;
-                                          }
-                                          checkDate.setUTCDate(checkDate.getUTCDate() + 1);
-                                        }
-                                        return false;
-                                      }
-                                    `),
-                                args: ['$$sch.recurringSchedule', testingDate], // <-- use the date you actually want to test
-                                lang: 'js',
-                              },
-                            },
-                            '$$sch', // keep it
-                            null, // otherwise drop it
-                          ],
-                        },
-                      ],
-                    },
-                  },
-                },
-                as: 'sch',
-                cond: { $ne: ['$$sch', null] }, // Remove null entries.
-              },
-            },
-          },
-        });
-      }
-
-      pipeline.push(
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
-      );
+      ];
 
-      console.log('Pipeline:', JSON.stringify(pipeline));
+      // 4. Execute aggregation
       const events = await this.eventModel.aggregate(pipeline);
 
-      // let updatedEvents = JSON.parse(JSON.stringify(events));
-      // if (!isExpired) {
-      //   updatedEvents = updatedEvents.map((event) => {
-      //     event.schedules = event.schedules.filter((schedule) => {
-      //       if (schedule.type === ScheduleTypes.RECURRING) {
-      //         return this.getNextOccurrence(
-      //           schedule.recurringSchedule,
-      //           // currentDate,
-      //           testingDate,
-      //         );
-      //       } else {
-      //         return true;
-      //       }
-      //     });
-      //     return event;
-      //   });
-      //   console.log('EVENT.SCHEDULESSSSS:', updatedEvents);
-      // }
+      // 5. Helper filters
+      const filterFixed = (sch: any) => {
+        const date = new Date(sch.fixedSchedule.date);
+        if (date < now) return false;
+        const isToday = date.toDateString() === now.toDateString();
+        return sch.fixedSchedule.durations.some((d: any) => {
+          const endMin = d.endHour * 60 + d.endMinute;
+          const nowMin = now.getHours() * 60 + now.getMinutes();
+          return !isToday || endMin > nowMin;
+        });
+      };
+
+      const filterRecurring = (sch: any) => {
+        const rec = sch.recurringSchedule;
+        const start = new Date(rec.startDate);
+        const end = new Date(rec.endDate);
+        if (now > end) return false;
+        const check = new Date(Math.max(now.getTime(), start.getTime()));
+        for (let i = 0; i < 7; i++) {
+          if (check > end) break;
+          const dow = check
+            .toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+            .toLowerCase();
+          if (rec.weekDays[dow]?.included) return true;
+          check.setUTCDate(check.getUTCDate() + 1);
+        }
+        return false;
+      };
+
+      // 6. Post-filtering by isExpired and schedules
+      const result = events.filter((evt) => {
+        if (evt.isExpired) return false;
+        if (!evt.schedules?.length) return true;
+        evt.schedules = evt.schedules.filter((sch) => {
+          return sch.type === ScheduleTypes.FIXED
+            ? filterFixed(sch)
+            : sch.type === ScheduleTypes.RECURRING
+              ? filterRecurring(sch)
+              : false;
+        });
+        return evt.schedules.length > 0;
+      });
 
       return {
         success: true,
         message: 'Events fetched successfully',
-        // data: updatedEvents,
-        data: events,
+        data: result,
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
+      return { success: false, message: 'Something went wrong.' };
     }
   }
 
