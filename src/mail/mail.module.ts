@@ -114,6 +114,10 @@ import {
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
 
 @Global()
 @Module({
@@ -160,6 +164,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
     ]),
     MailerModule.forRoot({
       transport: {

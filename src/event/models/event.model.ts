@@ -10,7 +10,7 @@ import { EventResponse } from './event-response.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { Business } from 'src/business/model/business.model';
-import { EventSchedule, ScheduleSchema } from './event-schedule.model';
+import { EventSchedule } from './event-schedule.model';
 import { IsEnum } from 'class-validator';
 
 export type EventDocument = Event & Document;
@@ -134,7 +134,7 @@ export class Event {
   @Prop({ default: 0 })
   engagementCount: number;
 
-  @Prop({default: null})
+  @Prop({ default: null })
   quantityLimit: number;
 
   // @Prop({ ref: Business.name })

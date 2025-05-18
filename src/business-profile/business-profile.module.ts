@@ -120,6 +120,10 @@ import {
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
 
 @Module({
   imports: [
@@ -167,6 +171,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
     ]),
   ],
   controllers: [BusinessProfileController],

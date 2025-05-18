@@ -76,7 +76,10 @@ import {
 } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { EventService2 } from './event.service2';
-import { EventSchedule, ScheduleSchema } from './models/event-schedule.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from './models/event-schedule.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { BusinessService } from 'src/business/business.service';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
@@ -134,7 +137,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
       { name: Admin.name, schema: AdminSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
-      { name: EventSchedule.name, schema: ScheduleSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
