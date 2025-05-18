@@ -4,25 +4,6 @@ import mongoose from 'mongoose';
 import { WeekDays } from 'src/enums/event.enums';
 import { Business } from 'src/business/model/business.model';
 
-export const ScheduleTypes = {
-  FIXED: 'fixed',
-  RECURRING: 'recurring',
-};
-
-export class FixedSchedule {
-  date: Date;
-  durations: Array<Duration>;
-}
-class Duration {
-  // startTime: String;
-  // endTime: String;
-
-    startHour: number;
-    startMinute: number;
-    endHour: number;
-    endMinute: number;
-}
-
 const sampleData = {
   startDate: new Date(),
   endDate: new Date('2025-05-31'),
@@ -111,6 +92,26 @@ const sampleData = {
     },
   },
 };
+
+export const ScheduleTypes = {
+  FIXED: 'fixed',
+  RECURRING: 'recurring',
+};
+
+export class FixedSchedule {
+  date: Date;
+  durations: Array<Duration>;
+}
+class Duration {
+  // startTime: String;
+  // endTime: String;
+
+    startHour: number;
+    startMinute: number;
+    endHour: number;
+    endMinute: number;
+}
+
 
 export class DaySchedule {
   @Prop()
