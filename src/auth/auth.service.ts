@@ -2104,14 +2104,14 @@ export class AuthService {
           as: 'locations',
         },
       },
-      {
-        $lookup: {
-          from: 'agegroups',
-          localField: 'event.ageGroupsAllowed',
-          foreignField: '_id',
-          as: 'ageGroupsAllowed',
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: 'agegroups',
+      //     localField: 'event.ageGroupsAllowed',
+      //     foreignField: '_id',
+      //     as: 'ageGroupsAllowed',
+      //   },
+      // },
       {
         $lookup: {
           from: 'users',
@@ -2194,6 +2194,7 @@ export class AuthService {
           'event._id': 1,
           'event.user': 1,
           'event.businessProfile': 1,
+          'event.title': 1,
         },
       },
       {
@@ -2207,6 +2208,7 @@ export class AuthService {
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
+    console.log("Row EVENTS:",rows);
     const eventIds = rows.map((r) => r._id);
     const schedules = await this.eventScheduleModel
       .find({ event: { $in: eventIds } })
