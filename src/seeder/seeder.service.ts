@@ -128,25 +128,25 @@ export class SeederService {
   ) {}
 
   async seed() {
-    // await this.seedRoles();
-    // await this.seedAgeGroups();
-    // await this.seedSubscriptionProducts();
-    // await this.seedAppVersion();
-    // await this.setPrivateEvents();
-    // await this.seedFileCategories();
-    // await this.seedResources();
-    // await this.seedActions();
-    // await this.seedSuperAdminRole();
-    // await this.seedSuperAdmin();
-    // await this.seedOutletCategories();
-    // await this.seedPrivileges(); //super admin privileges are not needed
+    await this.seedRoles();
+    await this.seedAgeGroups();
+    await this.seedSubscriptionProducts();
+    await this.seedAppVersion();
+    await this.setPrivateEvents();
+    await this.seedFileCategories();
+    await this.seedResources();
+    await this.seedActions();
+    await this.seedSuperAdminRole();
+    await this.seedSuperAdmin();
+    await this.seedOutletCategories();
+    await this.seedPrivileges(); //super admin privileges are not needed
 
-    // await this.seedCategories();
-    // await this.seedBusinessIndustries();
-    // await this.seedBusinessCategories();
-    // await this.seedCountries();
-    // await this.seedEventTemplates();
-    // await this.seedConstitutions();
+    await this.seedCategories();
+    await this.seedBusinessIndustries();
+    await this.seedBusinessCategories();
+    await this.seedCountries();
+    await this.seedEventTemplates();
+    await this.seedConstitutions();
   }
 
   public async seedRoles() {
