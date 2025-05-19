@@ -100,8 +100,12 @@ export const ScheduleTypes = {
 
 export class FixedSchedule {
   date: Date;
-  durations: Array<Duration>;
+  durations: Array<fixedDuration>;
 }
+class fixedDuration {
+    startTime: Date;
+    endTime: Date;
+  }
 class Duration {
   // startTime: String;
   // endTime: String;
