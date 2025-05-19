@@ -116,6 +116,7 @@ import {
   EventSchedule,
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
+import { Department, DepartmentSchema } from 'src/business/model/department.model';
 
 @Module({
   imports: [
@@ -162,6 +163,7 @@ import {
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

@@ -52,6 +52,7 @@ import {
   // BusinessIndustries,
   // OutletCategoryList,
   OutletCategories,
+  RegionCreatorType,
 } from 'src/business/enums/business.enum';
 import e from 'express';
 import {
@@ -82,6 +83,14 @@ import {
 import { DefaultAdminRoles } from 'src/business/resourceInits/template-roles';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { $Command } from '@aws-sdk/client-s3';
+import {
+  DashboardConfig,
+  DashboardConfigDocument,
+} from 'src/auth/models/dashboardConfig.model';
+import {
+  Department,
+  DepartmentDocument,
+} from 'src/business/model/department.model';
 
 @Injectable()
 export class SeederService {
@@ -111,8 +120,10 @@ export class SeederService {
     private readonly actionModel: Model<ActionDocument>,
     @InjectModel(OutletCategory.name)
     private readonly outletCategoryModel: Model<OutletCategoryDocument>,
-    @InjectModel(OutletType.name) private readonly outletTypeModel: Model<OutletTypeDocument>,
-    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(OutletType.name)
+    private readonly outletTypeModel: Model<OutletTypeDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(BusinessIndustry.name)
@@ -125,6 +136,10 @@ export class SeederService {
     private readonly businessConstitutionModel: Model<BusinessConstitutionDocument>,
     @InjectModel(BusinessDocumentType.name)
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
+    @InjectModel(DashboardConfig.name)
+    private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
+    @InjectModel(Department.name)
+    private readonly departmentModel: Model<DepartmentDocument>,
   ) {}
 
   async seed() {
@@ -140,13 +155,14 @@ export class SeederService {
     await this.seedSuperAdmin();
     await this.seedOutletCategories();
     await this.seedPrivileges(); //super admin privileges are not needed
-
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
     await this.seedEventTemplates();
     await this.seedConstitutions();
+    await this.seedDashboardConfigs();
+    // await this.seedDepartments();
   }
 
   public async seedRoles() {
@@ -260,7 +276,6 @@ export class SeederService {
         { $set: { drive: driveDetails._id } },
       );
 
-
       // const rolePromises = Object.keys(DefaultAdminRoles).map(
       //   async (roleName) => {
       //     const roleData = DefaultAdminRoles[roleName];
@@ -308,10 +323,10 @@ export class SeederService {
       //   },
       // );
       // await Promise.all(rolePromises);
-    
+
       for (const roleName of Object.keys(DefaultAdminRoles)) {
         const roleData = DefaultAdminRoles[roleName];
-      
+
         // 1) Create the role
         const createdRole = await this.roleModel.create({
           name: roleData.name,
@@ -319,7 +334,7 @@ export class SeederService {
           creatorType: RoleCreatorType.ADMIN,
           belongsTo: RoleBelonging.SYSTEM,
         });
-      
+
         // 2) For each privilegeKey under this role:
         for (const privilegeKey of Object.keys(roleData.privileges)) {
           const resourceTitle = ResourceTypes[privilegeKey];
@@ -328,13 +343,17 @@ export class SeederService {
             console.warn(`Skipping missing ResourceTypes['${privilegeKey}']`);
             continue;
           }
-      
+
           // 2a) Find or create the resource
-          let resourceDoc = await this.resourceModel.findOne({ title: resourceTitle });
+          let resourceDoc = await this.resourceModel.findOne({
+            title: resourceTitle,
+          });
           if (!resourceDoc) {
-            resourceDoc = await this.resourceModel.create({ title: resourceTitle });
+            resourceDoc = await this.resourceModel.create({
+              title: resourceTitle,
+            });
           }
-      
+
           // 3) For each action under this privilege:
           for (const actionKey of roleData.privileges[privilegeKey]) {
             const actionTitle = Actions[actionKey];
@@ -342,23 +361,24 @@ export class SeederService {
               console.warn(`Skipping missing Actions['${actionKey}']`);
               continue;
             }
-      
+
             // 3a) Find or create the action
-            let actionDoc = await this.actionModel.findOne({ title: actionTitle });
+            let actionDoc = await this.actionModel.findOne({
+              title: actionTitle,
+            });
             if (!actionDoc) {
               actionDoc = await this.actionModel.create({ title: actionTitle });
             }
-      
+
             // 4) Create the privilege link
             await this.privilegeModel.create({
-              role:     createdRole._id,
+              role: createdRole._id,
               resource: resourceDoc.title,
-              action:   actionDoc.title,
+              action: actionDoc.title,
             });
           }
         }
       }
-    
     }
   }
 
@@ -370,7 +390,7 @@ export class SeederService {
   //     return;
   //   }
   //   console.log('Super Admin Role:', superRole);
-  
+
   //   // 2) only seed once
   //   const existingAdmin = await this.adminModel.findOne({
   //     role: { $in: [superRole._id] },
@@ -382,7 +402,7 @@ export class SeederService {
   //     console.log('✅  SuperAdmin already exists; skipping.');
   //     return;
   //   }
-  
+
   //   // 3) create the super‐admin user
   //   const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
   //   const superAdmin = await this.adminModel.create({
@@ -398,24 +418,24 @@ export class SeederService {
   //     countryCode: '+44',
   //   });
   //   console.log('✅  Created SuperAdmin:', superAdmin._id);
-  
+
   //   // 4) link role.creator → the new admin
   //   await this.roleModel.updateOne(
   //     { _id: superRole._id },
   //     { $set: { creator: superAdmin._id } }
   //   );
-  
+
   //   // 5) create that admin’s drive
   //   const drive = await this.createDrive(superAdmin._id, Admin.name);
   //   await this.adminModel.updateOne(
   //     { _id: superAdmin._id },
   //     { $set: { drive: drive._id } }
   //   );
-  
+
   //   // 6) iterate default roles
   //   for (const roleKey of Object.keys(DefaultAdminRoles)) {
   //     const rd = DefaultAdminRoles[roleKey];
-  
+
   //     // create the role
   //     const createdRole = await this.roleModel.create({
   //       name: rd.name,
@@ -424,7 +444,7 @@ export class SeederService {
   //       belongsTo: RoleBelonging.SYSTEM,
   //     });
   //     console.log(`✅  Created role "${rd.name}" → ${createdRole._id}`);
-  
+
   //     // for each privilegeKey → map to a resource
   //     for (const privKey of Object.keys(rd.privileges)) {
   //       const resourceTitle = ResourceTypes[privKey];
@@ -432,14 +452,14 @@ export class SeederService {
   //         console.warn(`⚠️  Missing ResourceTypes['${privKey}']; skipping.`);
   //         continue;
   //       }
-  
+
   //       // find or create the resource
   //       let resourceDoc = await this.resourceModel.findOne({ title: resourceTitle });
   //       if (!resourceDoc) {
   //         resourceDoc = await this.resourceModel.create({ title: resourceTitle });
   //         console.log(`   🌱 Created resource "${resourceTitle}" → ${resourceDoc._id}`);
   //       }
-  
+
   //       // now for each action under that privilege
   //       for (const actionKey of rd.privileges[privKey]) {
   //         const actionTitle = Actions[actionKey];
@@ -447,14 +467,14 @@ export class SeederService {
   //           console.warn(`⚠️  Missing Actions['${actionKey}']; skipping.`);
   //           continue;
   //         }
-  
+
   //         // find or create the action
   //         let actionDoc = await this.actionModel.findOne({ title: actionTitle });
   //         if (!actionDoc) {
   //           actionDoc = await this.actionModel.create({ title: actionTitle });
   //           console.log(`     🌱 Created action "${actionTitle}" → ${actionDoc._id}`);
   //         }
-  
+
   //         // finally, create the privilege linking role↔resource↔action
   //         await this.privilegeModel.create({
   //           role:     createdRole._id,
@@ -464,10 +484,9 @@ export class SeederService {
   //       }
   //     }
   //   }
-  
+
   //   console.log('🎉 seedSuperAdmin complete.');
   // }
-  
 
   public async seedCategories() {
     const categories = await this.categoryModel.find();
@@ -854,10 +873,10 @@ export class SeederService {
 
   async seedEventTemplates() {
     const eventTemplates = await this.templateModel.find();
-    if(eventTemplates.length) {
+    if (eventTemplates.length) {
       return;
     }
-    
+
     for (let template of Seeder.EventTemplates) {
       let eventCategoriesId = [];
       for (let category of template.categories) {
@@ -869,11 +888,11 @@ export class SeederService {
         }
       }
       let businessCategoriesId = [];
-      for(let bCat of template.businessCategories) {
+      for (let bCat of template.businessCategories) {
         let foundCategory = await this.businessCategoryModel.findOne({
           title: bCat,
-        })
-        if(foundCategory){
+        });
+        if (foundCategory) {
           businessCategoriesId.push(foundCategory._id);
         }
       }
@@ -902,6 +921,64 @@ export class SeederService {
         businessCategories: businessCategoriesId,
       };
       await this.templateModel.create(createObj);
+    }
+  }
+  async seedDashboardConfigs() {
+    const dashboardConfigs = await this.dashboardConfigModel.find();
+    if (dashboardConfigs.length !== 0) return;
+
+    const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+    if (!superAdmin) return;
+
+    for (const cfg of Seeder.DashboardConfigs) {
+      const cats = await this.categoryModel
+        .find({ title: { $in: cfg.categories } })
+        .select('_id')
+        .lean();
+
+      const catIds = cats.map((c) => c._id);
+      if (catIds.length !== cfg.categories.length) {
+        console.warn(
+          `Some categories for "${cfg.name}" not found; found ${catIds.length} of ${cfg.categories.length}`,
+        );
+      }
+
+      await this.dashboardConfigModel.create({
+        name: cfg.name,
+        offersIncluded: cfg.offersIncluded,
+        eventsIncluded: cfg.eventsIncluded,
+        flashOffersIncluded: cfg.flashOffersIncluded,
+        freeIncluded: cfg.freeIncluded,
+        limit: cfg.limit,
+        categories: catIds,
+        sortOrder: cfg.sortOrder,
+      });
+    }
+  }
+
+  async seedDepartments() {
+    const departments = await this.departmentModel.find();
+    if (departments.length !== 0) return;
+
+    for (const dept of Seeder.Departmens) {
+      const roles = await this.roleModel
+        .find({ name: { $in: dept.roles } })
+        .select('_id')
+        .lean();
+
+      const catIds = roles.map((r) => r._id);
+      if (catIds.length !== dept.roles.length) {
+        console.warn(
+          `Some roles for "${dept.name}" not found; found ${catIds.length} of ${dept.roles.length}`,
+        );
+      }
+
+      await this.departmentModel.create({
+        name: dept.name,
+        roles: catIds,
+        description: dept.description,
+        creatorType: RegionCreatorType.SYSTEM,
+      });
     }
   }
 }

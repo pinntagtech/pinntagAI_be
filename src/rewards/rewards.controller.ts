@@ -79,6 +79,21 @@ export class RewardsController {
       });
     }
   }
+  @Get('business')
+  @UseGuards(JwtGuard2)
+  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.rewardService.getAllRewards(user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
   @Get(':id')
   @UseGuards(JwtGuard2)
   async getRewardById(
@@ -103,23 +118,8 @@ export class RewardsController {
       });
     }
   }
-  @Get('business')
-  @UseGuards(JwtGuard2)
-  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    const result = await this.rewardService.getAllRewards(user);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
 
-  @Get('/fetch/user')
+  @Get('fetch/user')
   @UseGuards(JwtGuard2)
   async getUserRewards(
     @Res() res: Response,
@@ -230,7 +230,7 @@ export class RewardsController {
         message: 'Unauthorized',
       });
     }
-    const result = await this.rewardService.claimReward(user,rewardId);
+    const result = await this.rewardService.claimReward(user, rewardId);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,

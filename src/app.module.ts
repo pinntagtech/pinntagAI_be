@@ -87,6 +87,8 @@ import { OutletModule } from './outlet/outlet.module';
 import { GoogleModule } from './google/google.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { Template, TemplateSchema } from './event/models/template.model';
+import { DashboardConfig, DashboardConfigSchema } from './auth/models/dashboardConfig.model';
+import { Department, DepartmentSchema } from './business/model/department.model';
 
 @Module({
   imports: [
@@ -137,6 +139,8 @@ import { Template, TemplateSchema } from './event/models/template.model';
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: Template.name, schema: TemplateSchema },
+      { name: DashboardConfig.name, schema: DashboardConfigSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
     StripeeModule,
     AuthModule,

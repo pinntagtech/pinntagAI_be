@@ -337,13 +337,13 @@ export class RewardsService {
       // ];
 
       // const result = await this.rewardLocationModel.aggregate(pipeline);
+
       const result = await this.rewardModel
         .find()
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await this.rewardModel.countDocuments();
       console.log('Result:', result);
-
       return {
         success: true,
         message: 'Rewards found successfully.',
