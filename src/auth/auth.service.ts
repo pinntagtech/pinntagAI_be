@@ -2464,6 +2464,7 @@ export class AuthService {
 
     // // 5. Merge schedules, compute latestSchedule, filter valid events
     // const currentTzTime = currentDateTz();
+    
     // // const filteredEvents = rows
     // //   .map((row) => {
     // //     const evScheds = schedules
