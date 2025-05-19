@@ -16,6 +16,9 @@ export class DashboardConfig {
   eventsIncluded: boolean;
 
   @Prop({ required: true, default: false })
+  flashOffersIncluded: boolean;
+
+  @Prop({ required: true, default: false })
   freeIncluded: boolean;
 
   @Prop({ required: true, default: 15 })

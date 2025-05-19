@@ -762,6 +762,11 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
+    if(user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Not a valid User',
+      });
+    }
     if (body.categories && body.categories.length) {
       body.categories.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {

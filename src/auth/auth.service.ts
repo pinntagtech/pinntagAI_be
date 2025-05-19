@@ -2057,9 +2057,17 @@ export class AuthService {
     limit: number,
     start: Date,
     distance: number,
+    startDate: any,
+    endDate: any,
   ) {
     const now = new Date();
-
+    startDate = startDate ? new Date(startDate) : now;
+    endDate = endDate
+      ? new Date(endDate)
+      : new Date(now.setFullYear(now.getFullYear() + 2));
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
+    console.log('Match:', match);
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -2069,6 +2077,7 @@ export class AuthService {
           spherical: true,
         },
       },
+      { $sort: { distance: 1 } },
       {
         $lookup: {
           from: 'events',
@@ -2078,7 +2087,13 @@ export class AuthService {
         },
       },
       { $unwind: '$event' },
-      { $match: { 'event.status': EventStatus.PUBLISHED, ...match } },
+      {
+        $match: {
+          // 'event._id': new mongoose.Types.ObjectId('682a38a5a85d3ccb755163b0'),
+          'event.status': EventStatus.PUBLISHED,
+          ...match,
+        },
+      },
       {
         $lookup: {
           from: 'categories',
@@ -2087,53 +2102,24 @@ export class AuthService {
           as: 'categories',
         },
       },
-      { $unwind: '$categories' },
       {
         $lookup: {
-          from: 'images',
-          localField: 'event.images',
-          foreignField: '_id',
-          as: 'images',
+          from: 'files',
+          localField: 'event.drivePath',
+          foreignField: 'parentDirectory',
+          as: 'files',
         },
       },
       {
         $lookup: {
-          from: 'eventlocations',
-          localField: 'event.locations',
+          from: 'files',
+          localField: 'event.QR_CODE',
           foreignField: '_id',
-          as: 'locations',
-        },
-      },
-      // {
-      //   $lookup: {
-      //     from: 'agegroups',
-      //     localField: 'event.ageGroupsAllowed',
-      //     foreignField: '_id',
-      //     as: 'ageGroupsAllowed',
-      //   },
-      // },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'event.user',
-          foreignField: '_id',
-          as: 'userDetails',
+          as: 'QR_CODE',
         },
       },
       {
-        $lookup: {
-          from: 'businessusers',
-          localField: 'event.user',
-          foreignField: '_id',
-          as: 'businessUserDetails',
-        },
-      },
-      { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
-      {
-        $unwind: {
-          path: '$businessUserDetails',
-          preserveNullAndEmptyArrays: true,
-        },
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
       },
       {
         $lookup: {
@@ -2188,31 +2174,193 @@ export class AuthService {
         },
       },
       {
-        $project: {
-          _id: 1,
-          distance: { $divide: ['$distance', 1000] },
-          'event._id': 1,
-          'event.user': 1,
-          'event.businessProfile': 1,
-          'event.title': 1,
+        $group: {
+          _id: '$event._id', // Group by event._id
+          // event: { $first: '$event' }, // Preserve event object
+          schedule: { $first: '$event.eventSchedule' },
+          title: { $first: '$event.title' },
+          keywords: { $first: '$event.keywords' },
+          description: { $first: '$event.description' },
+          type: { $first: '$event.type' },
+          status: { $first: '$event.status' },
+          promotionCode: { $first: '$event.promotionCode' },
+          isFree: { $first: '$event.isFree' },
+          participationCost: { $first: '$event.participationCost' },
+          bookingUrl: { $first: '$event.bookingUrl' },
+          notifyFollowers: { $first: '$event.notifyFollowers' },
+          RSVP: { $first: '$event.RSVP' },
+          termsApplied: { $first: '$event.termsApplied' },
+          termsAndConditions: { $first: '$event.termsAndConditions' },
+          facebookPostId: { $first: '$event.facebookPostId' },
+          specifyForEachDay: { $first: '$event.specifyForEachDay' },
+          participants: { $first: '$event.participants' },
+          creatorDetails: { $first: '$event.creatorDetails' },
+          categories: { $first: '$categories' },
+          businessProfileDetails: { $first: '$businessProfileDetails' },
+          files: { $first: '$files' },
+          QR_CODE: { $first: '$QR_CODE' },
+          isLiked: { $first: '$isLiked' },
+          isSaved: { $first: '$isSaved' },
+          location: {
+            $first: {
+              businessLocationId: '$_id',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$zip',
+              website: '$website',
+              email: '$email',
+              phone: '$phone',
+              distance: '$distance',
+            },
+          },
         },
       },
       {
-        $group: {
-          _id: '$event._id',
-          distance: { $min: '$distance' },
-          title: { $first: '$event.title' },
-          scheduleRefs: { $first: '$event.eventSchedule' },
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+
+      // {
+      //   $lookup: {
+      //     from: 'users',
+      //     localField: 'event.user',
+      //     foreignField: '_id',
+      //     as: 'userDetails',
+      //   },
+      // },
+      // {
+      //   $lookup: {
+      //     from: 'businessusers',
+      //     localField: 'event.user',
+      //     foreignField: '_id',
+      //     as: 'businessUserDetails',
+      //   },
+      // },
+      // { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+      // {
+      //   $unwind: {
+      //     path: '$businessUserDetails',
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
+
+      {
+        $project: {
+          _id: 1,
+          title:1,
+          description:1,
+          type:1,
+          status:1,
+          isFree:1,
+          participationCost:1,
+          bookingUrl:1,
+          termsAndConditions:1,
+          categories: {
+            $map: {
+              input: "$categories",
+              as: "category",
+              in: {
+                _id: "$$category._id",
+                title: "$$category.title",
+                darkIcon: "$$category.darkIcon",
+                lightIcon: "$$category.lightIcon",
+                activeColor: "$$category.activeColor",
+              },
+            },
+          },
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            name: '$businessProfileDetails.name',
+            profilePhoto: '$businessProfileDetails.profilePhoto',
+            email: '$businessProfileDetails.email',
+            bio: '$businessProfileDetails.bio',
+            followersCount: '$businessProfileDetails.followersCount',
+            profileType: 'BusinessProfile',
+            phone: '$businessProfileDetails.phone',
+            website: '$businessProfileDetails.website',
+          },
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
+          },
+          files: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
+              },
+            },
+          },
+          isLiked:1,
+          isSaved:1,
+          location:1,
+          schedules:1,
         },
       },
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
-    console.log("Row EVENTS:",rows);
+    console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
-    const schedules = await this.eventScheduleModel
-      .find({ event: { $in: eventIds } })
-      .lean();
+    // const schedules = await this.eventScheduleModel
+    //   .find({ event: { $in: eventIds } })
+    //   .lean();
 
     const filterFixed = (sch: any) => {
       if (
@@ -2254,127 +2402,130 @@ export class AuthService {
       return null;
     };
 
-    const result = rows.map((row) => {
-      const evScheds = schedules.filter(
-        (s) => s.event.toString() === row._id.toString(),
-      );
-      const upcomingDates = evScheds
-        .map((sch) => {
-          if (sch.type === ScheduleTypes.FIXED)
-            return filterFixed(sch) ? new Date(sch.fixedSchedule.date) : null;
-          if (sch.type === ScheduleTypes.RECURRING)
-            return getNextRecurring(sch.recurringSchedule);
-          return null;
-        })
-        .filter((d): d is Date => d !== null);
+    // const result = rows.map((row) => {
+    //   const evScheds = schedules.filter(
+    //     (s) => s.event.toString() === row._id.toString(),
+    //   );
+    //   const upcomingDates = evScheds
+    //     .map((sch) => {
+    //       if (sch.type === ScheduleTypes.FIXED)
+    //         return filterFixed(sch) ? new Date(sch.fixedSchedule.date) : null;
+    //       if (sch.type === ScheduleTypes.RECURRING)
+    //         return getNextRecurring(sch.recurringSchedule);
+    //       return null;
+    //     })
+    //     .filter((d): d is Date => d !== null);
 
-      row.latestSchedule =
-        upcomingDates.length > 0
-          ? new Date(Math.min(...upcomingDates.map((d) => d.getTime())))
-          : null;
+    //   row.latestSchedule =
+    //     upcomingDates.length > 0
+    //       ? new Date(Math.min(...upcomingDates.map((d) => d.getTime())))
+    //       : null;
 
-      return row;
-    });
-    
-    // 5. Merge schedules and compute latestSchedule + inline filtering
-    const filteredEvents = rows
-      .map((row) => {
-        const evScheds = schedules.filter(
-          (s) => s.event.toString() === row._id.toString(),
-        );
-        if (evScheds.length === 0) return null;
+    //   return row;
+    // });
 
-        const upcomingDates = evScheds
-          .map((sch) => {
-            if (sch.type === ScheduleTypes.FIXED)
-              return filterFixed(sch) ? new Date(sch.fixedSchedule.date) : null;
-            if (sch.type === ScheduleTypes.RECURRING)
-              return getNextRecurring(sch.recurringSchedule);
-            return null;
-          })
-          .filter((d) => d !== null) as Date[];
-
-        if (evScheds.length === 0) return null;
-
-        row.latestSchedule =
-          upcomingDates.length > 0
-            ? new Date(Math.min(...upcomingDates.map((d) => d.getTime())))
-            : null;
-
-        row.schedule = evScheds;
-        return row;
-      })
-      .filter((row) => row !== null && row.schedule.length > 0);
-
-    // Optional: Sort if needed
-    filteredEvents.sort((a, b) => {
-      if (!a.latestSchedule && !b.latestSchedule) return 0;
-      if (!a.latestSchedule) return 1;
-      if (!b.latestSchedule) return -1;
-      return a.latestSchedule.getTime() - b.latestSchedule.getTime();
-    });
-
-    // 5. Merge schedules, compute latestSchedule, filter valid events
-    const currentTzTime = currentDateTz();
+    // // 5. Merge schedules and compute latestSchedule + inline filtering
     // const filteredEvents = rows
     //   .map((row) => {
-    //     const evScheds = schedules
-    //       .filter((s) => s.event.toString() === row._id.toString())
+    //     const evScheds = schedules.filter(
+    //       (s) => s.event.toString() === row._id.toString(),
+    //     );
+    //     if (evScheds.length === 0) return null;
+
+    //     const upcomingDates = evScheds
     //       .map((sch) => {
-    //         if (sch.type === ScheduleTypes.FIXED && filterFixed(sch)) {
-    //           return { date: sch.fixedSchedule.date };
-    //         } else if (sch.type === ScheduleTypes.RECURRING) {
-    //           const nextDate = getNextRecurring(sch.recurringSchedule);
-    //           return nextDate ? { date: nextDate.toISOString() } : null;
-    //         }
+    //         if (sch.type === ScheduleTypes.FIXED)
+    //           return filterFixed(sch) ? new Date(sch.fixedSchedule.date) : null;
+    //         if (sch.type === ScheduleTypes.RECURRING)
+    //           return getNextRecurring(sch.recurringSchedule);
     //         return null;
     //       })
-    //       .filter((s) => s !== null) as { date: string }[];
+    //       .filter((d) => d !== null) as Date[];
 
     //     if (evScheds.length === 0) return null;
 
-    //     const scheduleDates = evScheds.map((s) => new Date(s.date).getTime());
-    //     row.latestSchedule = new Date(Math.min(...scheduleDates));
+    //     row.latestSchedule =
+    //       upcomingDates.length > 0
+    //         ? new Date(Math.min(...upcomingDates.map((d) => d.getTime())))
+    //         : null;
+
     //     row.schedule = evScheds;
     //     return row;
     //   })
     //   .filter((row) => row !== null && row.schedule.length > 0);
 
-    // 6. Scoring logic based on distance + time to event
-    const maxDistance = Math.max(...filteredEvents.map((e) => e.distance));
-    const maxTimeToEvent = Math.max(
-      ...filteredEvents.map((e) => {
-        const nextSchedule = e.schedule.find(
-          (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
-        );
-        return nextSchedule
-          ? new Date(nextSchedule.date).getTime() - currentTzTime.getTime()
-          : 0;
-      }),
-    );
+    // // Optional: Sort if needed
+    // filteredEvents.sort((a, b) => {
+    //   if (!a.latestSchedule && !b.latestSchedule) return 0;
+    //   if (!a.latestSchedule) return 1;
+    //   if (!b.latestSchedule) return -1;
+    //   return a.latestSchedule.getTime() - b.latestSchedule.getTime();
+    // });
 
-    const weightDistance = 0.5;
-    const weightTime = 0.5;
+    // // 5. Merge schedules, compute latestSchedule, filter valid events
+    // const currentTzTime = currentDateTz();
+    
+    // // const filteredEvents = rows
+    // //   .map((row) => {
+    // //     const evScheds = schedules
+    // //       .filter((s) => s.event.toString() === row._id.toString())
+    // //       .map((sch) => {
+    // //         if (sch.type === ScheduleTypes.FIXED && filterFixed(sch)) {
+    // //           return { date: sch.fixedSchedule.date };
+    // //         } else if (sch.type === ScheduleTypes.RECURRING) {
+    // //           const nextDate = getNextRecurring(sch.recurringSchedule);
+    // //           return nextDate ? { date: nextDate.toISOString() } : null;
+    // //         }
+    // //         return null;
+    // //       })
+    // //       .filter((s) => s !== null) as { date: string }[];
 
-    filteredEvents.forEach((event) => {
-      const nearestSchedule = event.schedule.find(
-        (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
-      );
-      const timeToEvent = nearestSchedule
-        ? new Date(nearestSchedule.date).getTime() - currentTzTime.getTime()
-        : maxTimeToEvent;
+    // //     if (evScheds.length === 0) return null;
 
-      const normalizedDistance =
-        Math.log(event.distance + 1) / Math.log(maxDistance + 1);
-      const normalizedTime =
-        Math.log(timeToEvent + 1) / Math.log(maxTimeToEvent + 1);
+    // //     const scheduleDates = evScheds.map((s) => new Date(s.date).getTime());
+    // //     row.latestSchedule = new Date(Math.min(...scheduleDates));
+    // //     row.schedule = evScheds;
+    // //     return row;
+    // //   })
+    // //   .filter((row) => row !== null && row.schedule.length > 0);
 
-      event.score =
-        weightDistance * normalizedDistance + weightTime * normalizedTime;
-    });
+    // // 6. Scoring logic based on distance + time to event
+    // const maxDistance = Math.max(...filteredEvents.map((e) => e.distance));
+    // const maxTimeToEvent = Math.max(
+    //   ...filteredEvents.map((e) => {
+    //     const nextSchedule = e.schedule.find(
+    //       (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
+    //     );
+    //     return nextSchedule
+    //       ? new Date(nextSchedule.date).getTime() - currentTzTime.getTime()
+    //       : 0;
+    //   }),
+    // );
 
-    // Sort by ascending score
-    filteredEvents.sort((a, b) => a.score - b.score);
+    // const weightDistance = 0.5;
+    // const weightTime = 0.5;
+
+    // filteredEvents.forEach((event) => {
+    //   const nearestSchedule = event.schedule.find(
+    //     (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
+    //   );
+    //   const timeToEvent = nearestSchedule
+    //     ? new Date(nearestSchedule.date).getTime() - currentTzTime.getTime()
+    //     : maxTimeToEvent;
+
+    //   const normalizedDistance =
+    //     Math.log(event.distance + 1) / Math.log(maxDistance + 1);
+    //   const normalizedTime =
+    //     Math.log(timeToEvent + 1) / Math.log(maxTimeToEvent + 1);
+
+    //   event.score =
+    //     weightDistance * normalizedDistance + weightTime * normalizedTime;
+    // });
+
+    // // Sort by ascending score
+    // filteredEvents.sort((a, b) => a.score - b.score);
+
+    console.log('OLD FLOWWWWWWWW::::::');
 
     // return { success: true, data: filteredEvents };
 
@@ -2851,7 +3002,8 @@ export class AuthService {
 
     // return result; // Return the arranged result
 
-    return filteredEvents; // Return the arranged result
+    // return filteredEvents; // Return the arranged result
+    return rows;
   }
 
   async getDashboard(
@@ -2861,8 +3013,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     let match = {};
     if (categoryIds.length) {
@@ -2963,6 +3115,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      '',
+      '',
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -2974,6 +3128,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      '',
+      '',
     );
 
     let data = {};
@@ -3051,6 +3207,8 @@ export class AuthService {
         config.limit,
         start,
         maxDistance,
+        startDate,
+        endDate,
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult;
@@ -3074,8 +3232,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     let match = {};
     if (categoryIds.length) {
@@ -3173,6 +3331,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3184,6 +3344,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     let data = {};
@@ -3260,6 +3422,8 @@ export class AuthService {
         config.limit,
         start,
         maxDistance,
+        startDate,
+        endDate,
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult;
@@ -3283,9 +3447,15 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
+    if(user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
+      return {
+        success: false,
+        message: 'Please provide a valid user',
+      };
+    }
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -3382,6 +3552,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3393,6 +3565,8 @@ export class AuthService {
       15,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
     return {
       success: true,
@@ -3412,8 +3586,8 @@ export class AuthService {
     maxDistance: number,
     search: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -3430,54 +3604,54 @@ export class AuthService {
     }
     const currentDate = currentDateTz();
     let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+    // if (!startDate && !endDate) {
+    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+    //   match['event.schedule.date'] = { $gte: start };
+    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    // } else if (startDate && endDate) {
+    //   start = getZeroBodyDateTz(startDate);
+    //   const end = getZeroBodyDateTz(endDate);
+    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+    //     if (
+    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+    //     ) {
+    //       console.log('start is equals to current');
+    //       // If the requested query is for today only then the end time should be greater than the current time
+    //       match['event.schedule.date'] = getZeroDateTz(new Date());
+    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //     } else {
+    //       console.log('start is not equals to current');
+    //       // If the start and end date are the same e.g. 2024-06-01
+    //       match['event.schedule.date'] = start;
+    //     }
+    //   } else if (end > start) {
+    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+    //         },
+    //       };
+    //     } else {
+    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: start },
+    //         },
+    //       };
+    //     }
+    //   } else {
+    //     // If the request date is in past
+    //     match['event.schedule.date'] = { $gte: currentDate };
+    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //   }
+    // }
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3551,6 +3725,7 @@ export class AuthService {
         },
       };
     }
+    console.log("'query after type:----->', query);");
     const eventsResult = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -3561,6 +3736,8 @@ export class AuthService {
       config.limit,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     return {
@@ -4541,8 +4718,8 @@ export class AuthService {
     search: string,
     timeZone: string,
     categoryIds?: Array<string>,
-    startDate?: Date,
-    endDate?: Date,
+    startDate?: any,
+    endDate?: any,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -4558,11 +4735,10 @@ export class AuthService {
       };
     }
 
-
     const currentDate = currentDateTz(timeZone);
 
-    let start = getZeroDateTz(new Date(),timeZone);
-    console.log("START DATE:",start);
+    let start = getZeroDateTz(new Date(), timeZone);
+    console.log('START DATE:', start);
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -4694,6 +4870,8 @@ export class AuthService {
       config.limit,
       start,
       maxDistance,
+      startDate,
+      endDate,
     );
 
     return {
@@ -4704,7 +4882,6 @@ export class AuthService {
       },
     };
   }
-
 }
 
 // Relevant-logs:--- {

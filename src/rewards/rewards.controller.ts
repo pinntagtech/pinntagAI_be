@@ -150,7 +150,7 @@ export class RewardsController {
     }
   }
 
-  @Get('dashboard')
+  @Get('user/dashboard')
   @UseGuards(JwtGuard2)
   async getDashboardRewards(
     @Res() res: Response,
@@ -158,17 +158,24 @@ export class RewardsController {
     @Body() data: GetRewardDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
   ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.rewardService.getDashboardRewards(
       user,
       data,
       search,
       distance ? parseInt(distance) : 1000000000000,
+      pageNumber,
+      limitNumber,
     );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

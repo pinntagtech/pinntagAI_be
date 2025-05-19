@@ -4976,6 +4976,7 @@ export class EventService2 {
 
       const event = await this.eventModel.create(createObj);
       console.log('event:', event);
+
       if (image) {
         console.log('Image:', image);
         const result = await this.s3Service.s3_upload(
@@ -5006,6 +5007,11 @@ export class EventService2 {
           parent: new mongoose.Types.ObjectId(event._id),
           parentType: Event.name,
         });
+        await this.eventModel.updateOne({_id: event._id},{
+          $set:{
+            QR_CODE: file._id,
+          }
+        })
       }
 
       // const updatedEvent = await this.eventModel.findByIdAndUpdate(
