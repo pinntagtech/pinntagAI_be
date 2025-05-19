@@ -5,6 +5,7 @@ import mongoose, { Document, Types } from 'mongoose';
 import { Role } from 'src/roles/models/roles.model';
 import { Business } from './business.model';
 import { BusinessUser } from './businessUser.model';
+import { RegionCreatorType } from '../enums/business.enum';
 
 @Schema({ timestamps: true })
 export class Department {
@@ -14,14 +15,17 @@ export class Department {
   @Prop({ default: '' })
   description: string;
 
-  @Prop({ref: Role.name})
+  @Prop({ ref: Role.name })
   roles: mongoose.Types.ObjectId[];
 
-  @Prop({ type: Types.ObjectId, ref: Business.name })
-  business: Types.ObjectId;
+  @Prop({ ref: Business.name })
+  business: mongoose.Types.ObjectId;
 
-  @Prop({ref: BusinessUser.name})
-  createdBy: Types.ObjectId;
+  @Prop({ refPath: 'creatorType' })
+  createdBy: mongoose.Types.ObjectId;
+
+  @Prop({ required: true, enum: Object.values(RegionCreatorType) })
+  creatorType: string;
 }
 
 export type DepartmentDocument = Department & Document;

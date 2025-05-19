@@ -58,6 +58,8 @@ import {
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
+import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboardConfig.model';
+import { Department, DepartmentSchema } from 'src/business/model/department.model';
 
 @Module({
   imports: [
@@ -85,6 +87,8 @@ import { Template, TemplateSchema } from 'src/event/models/template.model';
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: Template.name, schema: TemplateSchema },
+      { name: DashboardConfig.name, schema: DashboardConfigSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
   ],
   controllers: [],
