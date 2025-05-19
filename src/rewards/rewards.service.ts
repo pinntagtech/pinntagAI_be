@@ -672,7 +672,7 @@ export class RewardsService {
       return {
         success: true,
         message: 'Reward found.',
-        data: foundReward,
+        data: foundReward[0],
       };
     } catch (error) {
       console.log('Error in getRewardById:', error);
