@@ -4940,10 +4940,9 @@ export class EventService2 {
         let gendersArray = data.targetGenders.split(',');
         data.targetGenders = gendersArray;
       }
-      if(data.eventType == EventTypes.FLASHDEAL){
+      if (data.eventType == EventTypes.FLASHDEAL) {
         data.quantityLimit = Number(data.quantityLimit);
       }
-
 
       // if (data.isFree) {
       //   if (data.isFree === 'false') {
@@ -5007,11 +5006,14 @@ export class EventService2 {
           parent: new mongoose.Types.ObjectId(event._id),
           parentType: Event.name,
         });
-        await this.eventModel.updateOne({_id: event._id},{
-          $set:{
-            QR_CODE: file._id,
-          }
-        })
+        await this.eventModel.updateOne(
+          { _id: event._id },
+          {
+            $set: {
+              QR_CODE: file._id,
+            },
+          },
+        );
       }
 
       // const updatedEvent = await this.eventModel.findByIdAndUpdate(
@@ -5218,6 +5220,9 @@ export class EventService2 {
             business.businessIndustry,
           ),
         })
+        .populate('categories', '_id title')
+        .populate('businessCategories', '_id title')
+        .populate('businessIndustry', '_id title')
         .skip((page - 1) * limit)
         .limit(limit);
       totalDocs = await this.templateModel.countDocuments({
