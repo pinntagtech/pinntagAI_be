@@ -2190,6 +2190,8 @@ export class AuthService {
           participationCost: { $first: '$event.participationCost' },
           bookingUrl: { $first: '$event.bookingUrl' },
           RSVP: { $first: '$event.RSVP' },
+          minTargetAge:{ $first: '$event.minTargetAge' },
+          maxTargetAge:{ $first: '$event.maxTargetAge' },
           termsApplied: { $first: '$event.termsApplied' },
           termsAndConditions: { $first: '$event.termsAndConditions' },
           facebookPostId: { $first: '$event.facebookPostId' },
@@ -2212,7 +2214,7 @@ export class AuthService {
               state: '$state',
               zip: '$zip',
               website: '$website',
-              businessLocationId: '$_id',
+              _id: '$_id',
               email: '$email',
               phone: '$phone',
               distance: '$distance',
@@ -2316,6 +2318,10 @@ export class AuthService {
           participationCost:1,
           bookingUrl:1,
           termsAndConditions:1,
+          ageGroupsAllowed:{
+            minAge:'$minTargetAge',
+            maxAge:'$maxTargetAge',
+          },
           categories: {
             $map: {
               input: "$categories",
