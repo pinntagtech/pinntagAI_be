@@ -836,10 +836,10 @@ export class BusinessService {
         );
       }
 
-      if (updateObj.logo) {
+      if (updateObj.cover) {
         await this.businessUserModel.updateOne(
           { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_LOGO } },
+          { $set: { status: ProfileStatus.BUSINESS_COVER } },
         );
       }
 

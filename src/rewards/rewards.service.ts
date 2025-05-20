@@ -681,6 +681,7 @@ export class RewardsService {
             targetCount: '$reward.targetCount',
             redemptionMode: '$reward.redemptionMode',
             progress: '$progress',
+            schedule: '$reward.schedule',
             drivePath: '$reward.drivePath',
             rewardExpiration: '$reward.rewardExpiration',
             description: '$reward.description',
