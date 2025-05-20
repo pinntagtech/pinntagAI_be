@@ -11,6 +11,7 @@ import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Folder } from 'src/drive/models/folder.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { RewardLocation } from './rewardLocation.model';
+import { File } from 'src/drive/models/file.model';
 
 export type RewardDocument = Reward & Document;
 

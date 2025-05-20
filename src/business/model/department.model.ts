@@ -21,11 +21,11 @@ export class Department {
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;
 
-  @Prop({ refPath: 'creatorType' })
+  @Prop({ ref: BusinessUser.name })
   createdBy: mongoose.Types.ObjectId;
 
-  @Prop({ required: true, enum: Object.values(RegionCreatorType) })
-  creatorType: string;
+  // @Prop({ required: true, enum: Object.values(RegionCreatorType) })
+  // creatorType: string;
 }
 
 export type DepartmentDocument = Department & Document;
