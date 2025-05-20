@@ -5,7 +5,7 @@ export const ProfileStatus = {
   BUSINESS_CREATED: 3, //-> Business Created
   BUSINESS_ADDRESS: 4, //-> Business Address Added
   BUSINESS_TYPE: 5, //-> Business Type Added
-  BUSINESS_LOGO: 6,
+  BUSINESS_COVER: 6,
 };
 
 export const OfferStatus = {
