@@ -2183,12 +2183,15 @@ export class AuthService {
           description: { $first: '$event.description' },
           type: { $first: '$event.type' },
           status: { $first: '$event.status' },
+          notifyFollowers: { $first: '$event.notifyFollowers' },
+          targetGenders: { $first: '$event.targetGenders' },
           promotionCode: { $first: '$event.promotionCode' },
           isFree: { $first: '$event.isFree' },
           participationCost: { $first: '$event.participationCost' },
           bookingUrl: { $first: '$event.bookingUrl' },
-          notifyFollowers: { $first: '$event.notifyFollowers' },
           RSVP: { $first: '$event.RSVP' },
+          minTargetAge:{ $first: '$event.minTargetAge' },
+          maxTargetAge:{ $first: '$event.maxTargetAge' },
           termsApplied: { $first: '$event.termsApplied' },
           termsAndConditions: { $first: '$event.termsAndConditions' },
           facebookPostId: { $first: '$event.facebookPostId' },
@@ -2201,15 +2204,17 @@ export class AuthService {
           QR_CODE: { $first: '$QR_CODE' },
           isLiked: { $first: '$isLiked' },
           isSaved: { $first: '$isSaved' },
-          location: {
-            $first: {
-              businessLocationId: '$_id',
+          locations: {
+            $push: {
+              location: '$location',
+              accuracy: '$accuracy',
               address1: '$address1',
               address2: '$address2',
               city: '$city',
               state: '$state',
               zip: '$zip',
               website: '$website',
+              _id: '$_id',
               email: '$email',
               phone: '$phone',
               distance: '$distance',
@@ -2303,12 +2308,20 @@ export class AuthService {
           _id: 1,
           title:1,
           description:1,
+          notifyFollowers:1,
+          keywords:1,
+          targetGenders:1,
+          promotionCode:1,
           type:1,
           status:1,
           isFree:1,
           participationCost:1,
           bookingUrl:1,
           termsAndConditions:1,
+          ageGroupsAllowed:{
+            minAge:'$minTargetAge',
+            maxAge:'$maxTargetAge',
+          },
           categories: {
             $map: {
               input: "$categories",
@@ -2337,7 +2350,7 @@ export class AuthService {
             _id: '$QR_CODE._id',
             url: '$QR_CODE.metaData.url',
           },
-          files: {
+          images: {
             $map: {
               input: '$files',
               as: 'file',
@@ -2349,7 +2362,7 @@ export class AuthService {
           },
           isLiked:1,
           isSaved:1,
-          location:1,
+          locations:1,
           schedules:1,
         },
       },
@@ -4810,7 +4823,6 @@ export class AuthService {
     const config = await this.dashboardConfigModel.findById(carouselId).sort({
       sortOrder: 1,
     });
-
     if (match['event.categories']) {
       delete match['event.categories'];
     }
