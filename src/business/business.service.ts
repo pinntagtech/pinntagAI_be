@@ -136,6 +136,13 @@ export class BusinessService {
       });
 
       if (foundUser) {
+        if(foundUser.status === ProfileStatus.INITIATED && foundUser.isEmailVerified === false) {
+          await this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+          return {
+            success: true,
+            message: 'Business User already found with this email, OTP resent',
+          };
+        }
         return {
           success: false,
           message: 'Business User already found with this email',
@@ -1677,6 +1684,7 @@ export class BusinessService {
         business: new mongoose.Types.ObjectId(businessId),
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
+        status: userDetails.status,
       };
       if (data.profilePhoto) {
         createObj['profilePhoto'] = data.profilePhoto;
