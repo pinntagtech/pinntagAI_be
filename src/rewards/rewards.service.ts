@@ -543,7 +543,7 @@ export class RewardsService {
         };
       }
 
-      const reward = await this.rewardModel.findById(rewardId);
+      const reward = await this.rewardModel.findById(rewardId).populate('QR_CODE');
       if (!reward) {
         return {
           success: false,
@@ -699,7 +699,7 @@ export class RewardsService {
               name: '$businessProfile.name',
               cover: '$businessProfile.cover',
               logo: '$businessProfile.logo',
-              BusinessIndustry: {
+              businessIndustry: {
                 _id: '$businessIndustry._id',
                 title: '$businessIndustry.title',
                 darkIcon: '$businessIndustry.darkIcon',
