@@ -126,13 +126,6 @@ export enum BusinessSubCategory {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'all',
-      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/all.svg',
-      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/all.svg',
-      activeColor: '#012426',
-      description: 'All',
-    },
-    {
       title: 'Arts & Crafts',
       lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
@@ -483,83 +476,63 @@ export const Seeder = {
   BusinessIndustries: [
     {
       title: 'Food & Drink',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Food+%26+Drink.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Food+%26+Drink.svg',
-      activeColor: '#E74C3C',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Food+%26+Drink.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Food+%26+Drink.svg',
+      activeColor: '#FFE1E0', // warm, appetizing pastel pink
     },
     {
       title: 'Retail',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Retails.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Retails.svg',
-      activeColor: '#2980B9',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Retails.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Retails.svg',
+      activeColor: '#FFD1C5', // approachable and inviting
     },
     {
       title: 'Health & Beauty',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Health+%26+Beauty.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Health+%26+Beauty.svg',
-      activeColor: '#AF7AC5',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Health+%26+Beauty.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Health+%26+Beauty.svg',
+      activeColor: '#E5D9F2', // gentle, elegant, calming
     },
     {
       title: 'Fitness & Wellness',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Fitness+%26+Wellness.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Fitness+%26+Wellness.svg',
-      activeColor: '#1ABC9C',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Fitness+%26+Wellness.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Fitness+%26+Wellness.svg',
+      activeColor: '#A1EEBD', // fresh, energetic, healthy
     },
     {
       title: 'Entertainment',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Entertainment+%26+Experiences.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Entertainment+%26+Experiences.svg',
-      activeColor: '#F1C40F',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Entertainment+%26+Experiences.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Entertainment+%26+Experiences.svg',
+      activeColor: '#FFF1D5', // joyful and vibrant
     },
     {
       title: 'Automotive Services',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Automotive+Services.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Automotive+Services.svg',
-      activeColor: '#34495E',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Automotive+Services.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Automotive+Services.svg',
+      activeColor: '#D9EAFD', // clean, mechanical yet friendly
     },
     {
       title: 'Home Services',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Home+Services.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Home+Services.svg',
-      activeColor: '#D35400',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Home+Services.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Home+Services.svg',
+      activeColor: '#F2EFE5', // neutral, cozy, reliable
     },
     {
       title: 'Pet Services',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Pet+Services.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Pet+Services.svg',
-      activeColor: '#F39C12',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Pet+Services.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Pet+Services.svg',
+      activeColor: '#CDFAD5', // soft, playful green
     },
     {
       title: 'Hospitality',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Hospitality.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Hospitality.svg',
-      activeColor: '#8E44AD',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Hospitality.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Hospitality.svg',
+      activeColor: '#EECEB9', // welcoming, warm peach
     },
     {
       title: 'Professional Services',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Professional+Services.svg',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Professional+Services.svg',
-      activeColor: '#2C3E50',
+      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Professional+Services.svg',
+      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Professional+Services.svg',
+      activeColor: '#D5E5D5', // stable, neutral, trustworthy
     },
   ],
   BusinessCategories: [
