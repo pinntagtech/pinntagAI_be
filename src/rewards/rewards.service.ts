@@ -340,6 +340,12 @@ export class RewardsService {
 
       const result = await this.rewardModel
         .find()
+        .populate('locations', LocationPopulates.FOREIGN)
+        .populate('QR_CODE', 'metaData')
+        // .populate('drivePath')
+        .populate('user', UserPopulates.FOREIGN)
+        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate('files')
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await this.rewardModel.countDocuments();
@@ -391,6 +397,7 @@ export class RewardsService {
 
       let claimReward = await this.userRewardModel.create({
         userId: new mongoose.Types.ObjectId(userId),
+        businessProfile: new mongoose.Types.ObjectId(reward.businessProfile),
         rewardId: new mongoose.Types.ObjectId(rewardId),
         target: reward.targetCount,
       });
@@ -599,14 +606,6 @@ export class RewardsService {
         },
         {
           $lookup: {
-            from: 'users', // the collection name for User model
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'user',
-          },
-        },
-        {
-          $lookup: {
             from: 'rewards', // the collection name for Reward model
             localField: 'rewardId',
             foreignField: '_id',
@@ -615,12 +614,6 @@ export class RewardsService {
         },
         {
           $unwind: { path: '$reward' },
-        },
-        {
-          $unwind: {
-            path: '$user',
-            preserveNullAndEmptyArrays: true, // optional if user might not exist
-          },
         },
         {
           $lookup: {
@@ -640,24 +633,76 @@ export class RewardsService {
           },
         },
         {
+          $lookup: {
+            from: 'rewardlocations',
+            localField: 'reward.locations',
+            foreignField: '_id',
+            as: 'locations',
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'reward.businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessProfile.businessIndustry',
+            foreignField: '_id',
+            as: 'businessIndustry',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessIndustry',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
-            _id: 1,
-            userId: 1,
-            claimStatus: 1,
-            progress: 1,
-            claimedAt: 1,
-            target: 1,
-            files: 1,
-            reward: 1,
-            user: {
-              _id: '$user._id',
-              name: '$user.name', // only include 'name' from populated user
-            },
+            _id: '$reward._id',
+            status: '$reward.status',
+            claimStatus: '$claimStatus',
+            claimedAt: '$claimedAt',
+            title: '$reward.title',
+            rewardType: '$reward.rewardType',
+            activityType: '$reward.activityType',
+            locations: '$locations',
+            targetCount: '$reward.targetCount',
+            redemptionMode: '$reward.redemptionMode',
+            progress: '$progress',
+            drivePath: '$reward.drivePath',
+            rewardExpiration: '$reward.rewardExpiration',
+            description: '$reward.description',
+            createdAt: '$reward.createdAt',
+            updatedAt: '$reward.updatedAt',
+            __v: '$reward.__v',
+            rewardSchedule: '$reward.schedule',
             QR_CODE: {
               _id: '$QR_CODE._id',
-              metaData: {
-                name: '$QR_CODE.metaData.name',
-                url: '$QR_CODE.metaData.url',
+              metaData: '$QR_CODE.metaData',
+            },
+            files: '$files',
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
+              cover: '$businessProfile.cover',
+              logo: '$businessProfile.logo',
+              BusinessIndustry: {
+                _id: '$businessIndustry._id',
+                title: '$businessIndustry.title',
+                darkIcon: '$businessIndustry.darkIcon',
+                lightIcon: '$businessIndustry.lightIcon',
               },
             },
           },
@@ -676,6 +721,48 @@ export class RewardsService {
       };
     } catch (error) {
       console.log('Error in getRewardById:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async getLogistics(user: DecodedUser){
+    try{
+      const userId = user.id;
+      const businessId = user.businessProfile;
+      if(!businessId){
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      const logistics = await this.userRewardModel.aggregate([
+        {
+          $match: {
+            businessProfile: new mongoose.Types.ObjectId(businessId),
+            claimStatus: ClaimStatus.ACTIVE,
+          },
+        },
+        {
+          $count: 'activeParticipants',
+        },
+        {
+          $group: {
+            _id: '$rewardId',
+            activeRewards: { $sum: 1 },
+            activeParticipants: { $first: '$activeParticipants' },
+          },
+        },
+      ]);
+      console.log('Logistics:', logistics);
+      return {
+        success: true,
+        message: 'Logistics found successfully.',
+        data: logistics[0],
+      };
+    }catch(error){
+      console.log('Error in getLogistics:', error);
       return {
         success: false,
         message: 'Something went wrong.',

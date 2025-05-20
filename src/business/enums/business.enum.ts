@@ -128,6 +128,7 @@ export const RegionCreatorType = {
   BUSINESS: 'BusinessUser',
   SYSTEM: 'System',
 }
+
 // export const BusinessIndustries = {
 //   'Retail & E-commerce': [
 //     'Supermarkets & Grocery Stores',

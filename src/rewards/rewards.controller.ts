@@ -265,4 +265,20 @@ export class RewardsController {
       });
     }
   }
+  @Get('business/logistics')
+  @UseGuards(JwtGuard2)
+  async getLogistics(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser){
+    const result = await this.rewardService.getLogistics(user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    }
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: result.message,
+    });
+  }
 }

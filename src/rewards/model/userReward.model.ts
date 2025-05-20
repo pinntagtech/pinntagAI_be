@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
-import { BusinessUser } from 'src/business/model/businessUser.model';
 import { Reward } from './reward.model';
 import { ClaimStatus } from '../enums/rewards.enum';
 import { User } from 'src/user/models/user.model';
+import { Business } from 'src/business/model/business.model';
 
 export type UserRewardDocument = UserReward & Document;
 
@@ -14,6 +14,9 @@ export class UserReward {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Reward.name, required: true })
   rewardId: mongoose.Types.ObjectId;
+
+  @Prop({ref: Business.name})
+  businessProfile: mongoose.Types.ObjectId;
 
   @Prop({ 
     enum: Object.values(ClaimStatus),
