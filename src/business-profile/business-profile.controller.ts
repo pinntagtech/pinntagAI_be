@@ -23,7 +23,7 @@ import { FollowDto } from 'src/user/dto/follow.dto';
 import { BusinessProfile } from './models/businessProfile.model';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { BusinessProfileGuard } from 'src/auth/guards/business.guard';
+// import { BusinessProfileGuard } from 'src/auth/guards/business.guard';
 import { CreateStaffDto } from './dto/createStaff.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateBusinessProfileDto } from './dto/updateBusinessProfile.dto';
@@ -32,6 +32,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { ConnectFacebookDto } from './dto/connect-facebook.dto';
 import mongoose from 'mongoose';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 
 @Controller('business-profile')
 export class BusinessProfileController {
@@ -64,7 +65,7 @@ export class BusinessProfileController {
   }
 
   @Post('update/photo')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor(
       'profilePhoto',
@@ -101,7 +102,7 @@ export class BusinessProfileController {
   }
 
   @Post('update')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async updateBusinessProfile(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -124,7 +125,7 @@ export class BusinessProfileController {
   }
 
   @Post('add/prorate')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async addLocationsToBusiness(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -148,7 +149,7 @@ export class BusinessProfileController {
   }
 
   @Get('social/services')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getActiveSocialServices(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -169,7 +170,7 @@ export class BusinessProfileController {
   }
 
   @Get('locations')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getLocations(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -192,7 +193,7 @@ export class BusinessProfileController {
   }
 
   @Delete('location/delete/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async deleteBusinessProfileLocation(
     @Res() res: Response,
     @Param('id') id: string,
@@ -216,7 +217,7 @@ export class BusinessProfileController {
   }
 
   @Patch('location/update/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async updateLocation(
     @Res() res: Response,
     @Param('id') id: string,
@@ -288,7 +289,7 @@ export class BusinessProfileController {
   }
 
   @Post('connect/facebook')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async connectFacebook(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -311,7 +312,7 @@ export class BusinessProfileController {
   }
 
   @Post('disconnect/facebook')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async disconnectFacebook(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -358,7 +359,7 @@ export class BusinessProfileController {
   }
 
   @Patch('follow')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async follow(
     @Res() res: Response,
     @Body() body: FollowDto,
@@ -389,7 +390,7 @@ export class BusinessProfileController {
   }
 
   @Patch('unfollow/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async unfollow(
     @Req() req: Request,
     @Res() res: Response,
@@ -408,7 +409,7 @@ export class BusinessProfileController {
   }
 
   @Get('get/followers')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getFollowers(
     @Req() req: Request,
     @Res() res: Response,
@@ -429,7 +430,7 @@ export class BusinessProfileController {
   }
 
   @Get('get/following')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getFollowing(
     @Req() req: Request,
     @Res() res: Response,
@@ -450,7 +451,7 @@ export class BusinessProfileController {
   }
 
   @Patch('block/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async blockUser(
     @Req() req: Request,
     @Res() res: Response,
@@ -470,7 +471,7 @@ export class BusinessProfileController {
   }
 
   @Post('create/staff/member')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async createStaffMember(
     @Res() res: Response,
     @Body() body: CreateStaffDto,
@@ -510,7 +511,7 @@ export class BusinessProfileController {
   }
 
   @Get('staff/members')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getStaffMembers(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -532,7 +533,7 @@ export class BusinessProfileController {
   }
 
   @Delete('staff/delete/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async deleteStaffMember(
     @Res() res: Response,
     @Param('id') id: string,
@@ -554,7 +555,7 @@ export class BusinessProfileController {
   }
 
   @Get('gallery/data')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getBusinessGallery(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -575,7 +576,7 @@ export class BusinessProfileController {
   }
 
   @Post('gallery/upload')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor(
       'image',
@@ -611,7 +612,7 @@ export class BusinessProfileController {
   }
 
   @Delete('gallery/delete/:id')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async deleteGalleryImage(
     @Res() res: Response,
     @Param('id') id: string,
@@ -634,7 +635,7 @@ export class BusinessProfileController {
   }
 
   @Get('transactions/all')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async getTransactions(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -649,7 +650,7 @@ export class BusinessProfileController {
   }
 
   @Delete('delete/profile')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async deleteBusinessProfile(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
@@ -670,7 +671,7 @@ export class BusinessProfileController {
   }
 
   @Patch('cancel/delete/profile')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async cancelDeleteBusinessProfile(
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
