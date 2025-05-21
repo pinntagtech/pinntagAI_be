@@ -3608,6 +3608,14 @@ export class AuthService {
         message: 'Please provide a valid id',
       };
     }
+    const carousel = await this.dashboardConfigModel.findById(carouselId);
+    console.log("carousel", carousel);
+    if (!carousel) {
+      return {
+        success: false,
+        message: 'Please provide a valid carousel id',
+      };
+    }
 
     let match = {};
     if (categoryIds.length) {
@@ -4740,6 +4748,14 @@ export class AuthService {
         message: 'Please provide a valid id',
       };
     }
+    const carousel = await this.dashboardConfigModel
+      .findById(carouselId);
+      if(!carousel){
+        return {
+          success: false,
+          message: 'Carousel not found',
+        };
+      }
 
     let match = {};
     if (categoryIds.length) {
