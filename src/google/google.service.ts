@@ -135,8 +135,11 @@ export class GoogleService {
       );
       address['latitude'] = response.data.location.latitude;
       address['longitude'] = response.data.location.longitude;
-      address['selectedAddress'] = selectedAddress;
+      if(selectedAddress){
+        address['selectedAddress'] = selectedAddress;
+      }
       console.log('address:', address);
+      address['fullAddressString'] = response.data.formattedAddress;
 
       return {
         success: true,
