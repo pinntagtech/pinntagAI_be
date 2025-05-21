@@ -117,6 +117,9 @@ import {
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
 import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { File, FileSchema } from 'src/drive/models/file.model';
 
 @Module({
   imports: [
@@ -164,6 +167,8 @@ import { Department, DepartmentSchema } from 'src/business/model/department.mode
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
@@ -183,6 +188,7 @@ import { Department, DepartmentSchema } from 'src/business/model/department.mode
     StripeService,
     SmsService,
     SeederService,
+    DriveService,
     // GoogleStrategy
   ],
 })

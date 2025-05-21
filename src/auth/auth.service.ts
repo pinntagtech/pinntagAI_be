@@ -2190,8 +2190,8 @@ export class AuthService {
           participationCost: { $first: '$event.participationCost' },
           bookingUrl: { $first: '$event.bookingUrl' },
           RSVP: { $first: '$event.RSVP' },
-          minTargetAge:{ $first: '$event.minTargetAge' },
-          maxTargetAge:{ $first: '$event.maxTargetAge' },
+          minTargetAge: { $first: '$event.minTargetAge' },
+          maxTargetAge: { $first: '$event.maxTargetAge' },
           termsApplied: { $first: '$event.termsApplied' },
           termsAndConditions: { $first: '$event.termsAndConditions' },
           facebookPostId: { $first: '$event.facebookPostId' },
@@ -2306,39 +2306,39 @@ export class AuthService {
       {
         $project: {
           _id: 1,
-          title:1,
-          description:1,
-          notifyFollowers:1,
-          keywords:1,
-          targetGenders:1,
-          promotionCode:1,
-          type:1,
-          status:1,
-          isFree:1,
-          participationCost:1,
-          bookingUrl:1,
-          termsAndConditions:1,
-          ageGroupsAllowed:{
-            minAge:'$minTargetAge',
-            maxAge:'$maxTargetAge',
+          title: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGenders: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          ageGroupsAllowed: {
+            minAge: '$minTargetAge',
+            maxAge: '$maxTargetAge',
           },
           categories: {
             $map: {
-              input: "$categories",
-              as: "category",
+              input: '$categories',
+              as: 'category',
               in: {
-                _id: "$$category._id",
-                name: "$$category.title",
-                darkIcon: "$$category.darkIcon",
-                lightIcon: "$$category.lightIcon",
-                colorData: "$$category.activeColor",
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                colorData: '$$category.activeColor',
               },
             },
           },
           businessProfileDetails: {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
-            profilePhoto: '$businessProfileDetails.profilePhoto',
+            cover: '$businessProfileDetails.cover',
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
             followersCount: '$businessProfileDetails.followersCount',
@@ -2360,10 +2360,10 @@ export class AuthService {
               },
             },
           },
-          isLiked:1,
-          isSaved:1,
-          locations:1,
-          schedules:1,
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
         },
       },
     ];
@@ -2477,7 +2477,7 @@ export class AuthService {
 
     // // 5. Merge schedules, compute latestSchedule, filter valid events
     // const currentTzTime = currentDateTz();
-    
+
     // // const filteredEvents = rows
     // //   .map((row) => {
     // //     const evScheds = schedules
@@ -3463,7 +3463,7 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
-    if(user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
+    if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       return {
         success: false,
         message: 'Please provide a valid user',
@@ -3609,7 +3609,7 @@ export class AuthService {
       };
     }
     const carousel = await this.dashboardConfigModel.findById(carouselId);
-    console.log("carousel", carousel);
+    console.log('carousel', carousel);
     if (!carousel) {
       return {
         success: false,
@@ -4257,15 +4257,167 @@ export class AuthService {
   // }
 
   async getEventDetails(id: string, user: DecodedUser, data: GetDashboardDto) {
-    const event = await this.eventModel
-      .findById(id)
-      .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
-      .populate('images', '_id url')
-      .populate('locations', LocationPopulates.FOREIGN)
-      // .populate('ageGroupsAllowed', '_id name')
-      .populate('user', UserPopulates.FOREIGN)
-      .populate('businessProfile', BusinessPopulates.FOREIGN)
-      .exec();
+    // const event = await this.eventModel
+    //   .findById(id)
+    //   .populate({ path: 'categories', select: CategoryPopulates.FOREIGN })
+    //   .populate('images', '_id url')
+    //   .populate('locations', LocationPopulates.FOREIGN)
+    //   .populate('user', UserPopulates.FOREIGN)
+    //   .populate('businessProfile', BusinessPopulates.FOREIGN)
+
+    let event = await this.eventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'categories',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'drivePath',
+          foreignField: 'parentDirectory',
+          as: 'files',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
+      },
+      // locations
+      {
+        $lookup: {
+          from: 'locations',
+          localField: 'locations',
+          foreignField: '_id',
+          as: 'locations',
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: { path: '$user', preserveNullAndEmptyArrays: true },
+      },
+
+      // businessProfile
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          creatorType:1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGeners: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          isFromCrawlet: 1,
+          user: {
+            _id: '$user._id',
+            name: '$user.name',
+            profilePhoto: '$user.profilePhoto',
+            email: '$user.email',
+          },
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            isDeleted: '$businessProfileDetails.isDeleted',
+            name: '$businessProfileDetails.name',
+            countryCode: '$businessProfileDetails.countryCode',
+            phone: '$businessProfileDetails.phone',
+            profileType: 'BusinessProfile',
+            email: '$businessProfileDetails.email',
+            website: '$businessProfileDetails.website',
+            followersCount: '$businessProfileDetails.followersCount',
+            logo: '$businessProfileDetails.logo',
+          },
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
+          },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                colorData: '$$category.activeColor',
+              },
+            },
+          },
+          targetGenders: 1,
+          ageGroupsAllowed: {
+            minAge: '$minTargetAge',
+            maxAge: '$maxTargetAge',
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
+              },
+            },
+          },
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
+        },
+      },
+    ]).then(res => res[0]);
+    console.log("event", event);
+
     if (!event) {
       return {
         success: false,
@@ -4273,7 +4425,7 @@ export class AuthService {
       };
     }
     if (event.creatorType !== 'User') {
-      if (event.businessProfile['isDeleted']) {
+      if (event.businessProfileDetails['isDeleted']) {
         return {
           success: false,
           message: 'Event not found with the id provided.',
@@ -4341,7 +4493,7 @@ export class AuthService {
       };
     } else {
       const businessProfile = await this.businessModel.findById(
-        event.businessProfile,
+        event.businessProfileDetails._id,
       );
       const isFollowedByMe = await this.followModel.findOne({
         followerType: User.name,
@@ -4748,14 +4900,13 @@ export class AuthService {
         message: 'Please provide a valid id',
       };
     }
-    const carousel = await this.dashboardConfigModel
-      .findById(carouselId);
-      if(!carousel){
-        return {
-          success: false,
-          message: 'Carousel not found',
-        };
-      }
+    const carousel = await this.dashboardConfigModel.findById(carouselId);
+    if (!carousel) {
+      return {
+        success: false,
+        message: 'Carousel not found',
+      };
+    }
 
     let match = {};
     if (categoryIds.length) {
@@ -4916,14 +5067,16 @@ export class AuthService {
     const digits = '0123456789';
     const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
     const allChars = uppercase + lowercase + digits + special;
-  
+
     if (length < 4) {
-      throw new Error('Password length must be at least 4 characters to include required character types.');
+      throw new Error(
+        'Password length must be at least 4 characters to include required character types.',
+      );
     }
-  
+
     const getRandomChar = (chars: string) =>
       chars[Math.floor(Math.random() * chars.length)];
-  
+
     // Ensure inclusion of required types
     let password = [
       getRandomChar(uppercase),
@@ -4931,19 +5084,17 @@ export class AuthService {
       getRandomChar(special),
       getRandomChar(lowercase),
     ];
-  
+
     // Fill the rest randomly
     for (let i = password.length; i < length; i++) {
       password.push(getRandomChar(allChars));
     }
-  
+
     // Shuffle the result to avoid predictable order
     password = password.sort(() => Math.random() - 0.5);
-  
+
     return password.join('');
   }
-  
-
 }
 
 // Relevant-logs:--- {

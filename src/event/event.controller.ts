@@ -87,7 +87,7 @@ export class EventController {
   }
 
   @Post('generateEventUrl')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async generateEventUrl(@Body() generateEventUrlDto: GenerateEventUrlDto) {
     const result =
       await this.eventService.generateEventUrl(generateEventUrlDto);

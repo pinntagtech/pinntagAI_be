@@ -48,7 +48,9 @@ import {
 } from 'src/outlet/model/outletType.model';
 import {
   BusinessCountries,
+  BusinessCreatorType,
   BusinessDocumentTypes,
+  BusinessUserCreatorType,
   // BusinessIndustries,
   // OutletCategoryList,
   OutletCategories,
@@ -91,6 +93,9 @@ import {
   Department,
   DepartmentDocument,
 } from 'src/business/model/department.model';
+import { database } from 'firebase-admin';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
 
 @Injectable()
 export class SeederService {
@@ -138,30 +143,32 @@ export class SeederService {
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     @InjectModel(DashboardConfig.name)
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
-    @InjectModel(Department.name)
-    private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    private readonly driveService: DriveService,
   ) {}
 
   async seed() {
-    await this.seedRoles();
-    await this.seedAgeGroups();
-    await this.seedSubscriptionProducts();
-    await this.seedAppVersion();
-    await this.setPrivateEvents();
-    await this.seedFileCategories();
-    await this.seedResources();
-    await this.seedActions();
-    await this.seedSuperAdminRole();
-    await this.seedSuperAdmin();
-    await this.seedOutletCategories();
-    await this.seedPrivileges(); //super admin privileges are not needed
-    await this.seedCategories();
-    await this.seedBusinessIndustries();
-    await this.seedBusinessCategories();
-    await this.seedCountries();
-    await this.seedEventTemplates();
-    await this.seedConstitutions();
-    await this.seedDashboardConfigs();
+    // await this.seedRoles();
+    // await this.seedAgeGroups();
+    // await this.seedSubscriptionProducts();
+    // await this.seedAppVersion();
+    // await this.setPrivateEvents();
+    // await this.seedFileCategories();
+    // await this.seedResources();
+    // await this.seedActions();
+    // await this.seedSuperAdminRole();
+    // await this.seedSuperAdmin();
+    // await this.seedOutletCategories();
+    // await this.seedPrivileges(); //super admin privileges are not needed
+    // await this.seedCategories();
+    // await this.seedBusinessIndustries();
+    // await this.seedBusinessCategories();
+    // await this.seedCountries();
+    // await this.seedEventTemplates();
+    // await this.seedConstitutions();
+    // await this.seedDashboardConfigs();
+    await this.seedPinntagBusinessProfile();
     // await this.seedDepartments();
   }
 
@@ -980,5 +987,97 @@ export class SeederService {
         creatorType: RegionCreatorType.SYSTEM,
       });
     }
+  }
+  async seedPinntagBusinessProfile() {
+    let email = process.env.PINNTAG_BUSINESS_USER_EMAIL;
+    let password = process.env.PINNTAG_BUSINESS_USER_PASSWORD;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('password', password);
+    const foundUser = await this.businessUserModel.findOne({
+      email: email,
+    });
+    if (foundUser) {
+      return;
+    }
+    const user = await this.adminModel.findOne({ isSuperAdmin: true });
+    const ownerRole = await this.roleModel.create({
+      name: 'Owner',
+      creator: new mongoose.Types.ObjectId(user.id),
+      creatorType: RoleCreatorType.ADMIN,
+      belongsTo: RoleBelonging.BUSINESS,
+      isBusinessOwner: true,
+    });
+    let createObj = {
+      role: [new mongoose.Types.ObjectId(ownerRole.id)],
+      creatorType: BusinessUserCreatorType.ADMIN,
+      email: email,
+      password: hashedPassword,
+      isEmailVerified: true,
+      name: 'Pinntag',
+    };
+    let createdUser = await this.businessUserModel.create(createObj);
+    let driveDetails = await this.createDrive(
+      createdUser._id,
+      BusinessUser.name,
+    );
+    createdUser = await this.businessUserModel.findOneAndUpdate(
+      { _id: createdUser.id },
+      { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      { new: true },
+    );
+    const businessFolder = await this.driveService.createFolder(
+      String(createdUser._id),
+      {
+        parentDirectory: createdUser.drive,
+        parentType: Drive.name,
+        folderName: 'Pinntag Limited',
+      },
+    );
+    let businessIndustry = await this.businessIndustryModel.findOne({
+      title: 'Professional Services',
+    });
+    let businessCategory = await this.businessCategoryModel.findOne({
+      title: 'Business Consultant',
+      industry: businessIndustry._id,
+    });
+    let categoryIds = [];
+    categoryIds.push(businessCategory._id);
+
+
+    let businessObj = {
+      name: 'PinnTag Limited',
+      email: email,
+      website: 'www.pinntag.com',
+      isActive: true,
+      addressLine1: '13 Sounds Lodge',
+      addressLine2: 'Crockenhill',
+      city: 'Swanley',
+      postalCode: 'BR8 8TD',  
+      country: 'United Kingdom',
+      businessIndustry: new mongoose.Types.ObjectId(businessIndustry._id),
+      businessCategories: categoryIds,
+      state: 'Kent',
+      cover:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
+      logo: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Logo.png',
+      countryCode: '+44',
+      phone: '7917303330',
+      roleOfCreator: 'Owner',
+      drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+      creatorType: BusinessCreatorType.ADMIN,
+      creator: new mongoose.Types.ObjectId(user.id),
+      authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
+      continueJourney: false,
+    };
+
+    const createdBusiness = await this.businessModel.create(businessObj);
+    await this.businessUserModel.updateOne(
+      { _id: createdBusiness.authorisedUser },
+      {
+        $addToSet: {
+          business: createdBusiness._id,
+        },
+      },
+    );
   }
 }
