@@ -1820,6 +1820,7 @@ export class AdminService {
         creatorType: BusinessCreatorType.ADMIN,
         creator: new mongoose.Types.ObjectId(user.id),
         authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
+        continueJourney: false,
       };
       if (data.website) businessObj['website'] = data.website;
       if (data.addressLine2) businessObj['addressLine2'] = data.addressLine2;

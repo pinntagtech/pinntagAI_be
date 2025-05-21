@@ -18,20 +18,21 @@ import { UserGuard } from 'src/auth/guards/user.guard';
 import { Response } from 'express';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 
 @Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get('all')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async findAll(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const notifications = await this.notificationService.findAll(user.id);
     return res.status(HttpStatus.OK).json({ notifications });
   }
 
   @Get('unread')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async findUnread(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const notifications = await this.notificationService.findUnread(user.id);
     return res
@@ -40,7 +41,7 @@ export class NotificationController {
   }
 
   @Get('read/:id')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async findOne(
     @Res() res: Response,
     @Param('id') id: string,
@@ -57,7 +58,7 @@ export class NotificationController {
   }
 
   @Get('read')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async readAll(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.notificationService.readAll(user.id);
     return res
@@ -68,7 +69,7 @@ export class NotificationController {
   }
 
   @Delete('remove/:id')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async remove(
     @Param('id') id: string,
     @Res() res: Response,

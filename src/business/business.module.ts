@@ -117,6 +117,7 @@ import {
   EventSchedule,
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
+import { Region, RegionSchema } from './model/region.model';
 
 @Module({
   imports: [
@@ -167,6 +168,7 @@ import {
       { name: User.name, schema: UserSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: Region.name, schema: RegionSchema },
     ]),
   ],
   controllers: [BusinessController],

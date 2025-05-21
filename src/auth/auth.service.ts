@@ -2328,10 +2328,10 @@ export class AuthService {
               as: "category",
               in: {
                 _id: "$$category._id",
-                title: "$$category.title",
+                name: "$$category.title",
                 darkIcon: "$$category.darkIcon",
                 lightIcon: "$$category.lightIcon",
-                activeColor: "$$category.activeColor",
+                colorData: "$$category.activeColor",
               },
             },
           },

@@ -40,6 +40,7 @@ import {
   UpdateDepartmentDto,
 } from './dto/create-department.dto';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
+import { CreateRegionDto, UpdateRegionDto } from './dto/create-region.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -945,50 +946,46 @@ export class BusinessController {
       }
     }
 
-    // @Post('region')
-    // @UseGuards(JwtGuard2)
-    // async createRegion(
-    //   @Res() res: Response,
-    //   @TokenDecoder() user: DecodedUser,
-    //   @Body() data: CreateDepartmentDto,
-    // ) {
-    //   const result = await this.businessService.createDepartment(user, data);
-    //   if (result.success) {
-    //     return res.status(HttpStatus.OK).json({
-    //       message: result.message,
-    //       data: result.data,
-    //     });
-    //   } else {
-    //     return res.status(HttpStatus.BAD_REQUEST).json({
-    //       message: result.message,
-    //     });
-    //   }
-    // }
+    @Post('region')
+    @UseGuards(JwtGuard2)
+    async createRegion(
+      @Res() res: Response,
+      @TokenDecoder() user: DecodedUser,
+      @Body() data: CreateRegionDto,
+    ) {
+      const result = await this.businessService.createRegion(user, data);
+      if (result.success) {
+        return res.status(HttpStatus.OK).json({
+          message: result.message,
+          data: result.data,
+        });
+      } else {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: result.message,
+        });
+      }
+    }
   
-    // @Put('department/:id')
-    // @UseGuards(JwtGuard2)
-    // async updateDepartment(
-    //   @Res() res: Response,
-    //   @TokenDecoder() user: DecodedUser,
-    //   @Body() data: UpdateDepartmentDto,
-    //   @Param('id') id: string,
-    //   @Query() page: string,
-    //   @Query() limit: string,
-    // ) {
-    //   const pageNumber = page ? parseInt(page) : 1;
-    //   const limitNumber = limit ? parseInt(limit) : 10;
-    //   const result = await this.businessService.updateDepartment(user, id, data);
-    //   if (result.success) {
-    //     return res.status(HttpStatus.OK).json({
-    //       message: result.message,
-    //       data: result.data,
-    //     });
-    //   } else {
-    //     return res.status(HttpStatus.BAD_REQUEST).json({
-    //       message: result.message,
-    //     });
-    //   }
-    // }
+    @Put('region/:id')
+    @UseGuards(JwtGuard2)
+    async updateRegion(
+      @Res() res: Response,
+      @TokenDecoder() user: DecodedUser,
+      @Body() data: UpdateRegionDto,
+      @Param('id') id: string,
+    ) {
+      // const result = await this.businessService.updateRegion(user, id, data);
+      // if (result.success) {
+      //   return res.status(HttpStatus.OK).json({
+      //     message: result.message,
+      //     data: result.data,
+      //   });
+      // } else {
+      //   return res.status(HttpStatus.BAD_REQUEST).json({
+      //     message: result.message,
+      //   });
+      // }
+    }
   
     // @Get('departments')
     // @UseGuards(JwtGuard2)

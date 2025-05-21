@@ -2423,4 +2423,26 @@ export const Seeder = {
       roles: ['Finance Manager', 'General Manager'],
     },
   ],
+  Regions: [
+    {
+      name: 'North',
+      description: 'Covers the northern part of the country or service area.',
+    },
+    {
+      name: 'South',
+      description: 'Covers the southern part of the country or service area.',
+    },
+    {
+      name: 'East',
+      description: 'Covers the eastern part of the country or service area.',
+    },
+    {
+      name: 'West',
+      description: 'Covers the western part of the country or service area.',
+    },
+    {
+      name: 'Central',
+      description: 'Covers the central or downtown region.',
+    },
+  ],
 };
