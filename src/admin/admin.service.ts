@@ -69,6 +69,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import { AddBusinessDto } from './dto/add-business.dto';
 
 @Injectable()
 export class AdminService {
@@ -1611,4 +1612,6 @@ export class AdminService {
       };
     }
   }
+
+  async addBusiness(data: AddBusinessDto) {}
 }

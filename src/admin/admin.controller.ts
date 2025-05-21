@@ -42,6 +42,7 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import { AddBusinessDto } from './dto/add-business.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1030,5 +1031,27 @@ export class AdminController {
       .json({
         message: result.message,
       });
+  }
+
+  @Post('business')
+  @UseGuards(AdminGuard2)
+  @UseGuards(PrivilegeGuard)
+  @Privilege(ResourceTypes.BUSINESS, Actions.CREATE)
+  async createBusiness(
+    @Res() res: Response,
+    @Body() data: AddBusinessDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    // const result = await this.adminService.addBusiness(data);
+    // if (result.success) {
+    //   return res.status(HttpStatus.OK).json({
+    //     message: result.message,
+    //     data: result.data,
+    //   });
+    // } else {
+    //   return res.status(HttpStatus.BAD_REQUEST).json({
+    //     message: result.message,
+    //   });
+    // }
   }
 }
