@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsArray } from 'class-validator';
 
-export class CreateDepartmentDto {
+export class CreateRegionDto {
   @IsNotEmpty()
   @IsString()
   @Transform(({ value }) => value.trim())
@@ -14,10 +14,10 @@ export class CreateDepartmentDto {
 
   @IsOptional()
   @IsArray()
-  roles: any;
+  users: string[];
 }
 
-export class UpdateDepartmentDto {
+export class UpdateRegionDto {
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value.trim())
@@ -28,6 +28,5 @@ export class UpdateDepartmentDto {
   description?: string;
 
   @IsOptional()
-  roles?: string[];
+  users?: string[];
 }
-

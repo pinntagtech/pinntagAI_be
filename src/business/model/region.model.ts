@@ -22,10 +22,7 @@ export class Region {
   business: mongoose.Types.ObjectId;
 
   @Prop({ refPath: 'creatorType' })
-  creator: mongoose.Types.ObjectId;
-
-  @Prop({ required: true, enum: Object.values(RegionCreatorType) })
-  creatorType: string;
+  createdBy: mongoose.Types.ObjectId;
 }
 
 export type RegionDocument = Region & Document;

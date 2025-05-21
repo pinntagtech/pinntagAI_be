@@ -11,7 +11,9 @@ import {
   Query,
   Req,
   Res,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import mongoose from 'mongoose';
@@ -43,6 +45,7 @@ import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 @Controller('admin')
 export class AdminController {
@@ -1034,24 +1037,38 @@ export class AdminController {
   }
 
   @Post('business')
-  @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.BUSINESS, Actions.CREATE)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(AdminGuard2)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'logo', maxCount: 1 },
+      { name: 'cover', maxCount: 1 },
+    ]),
+  )
   async createBusiness(
     @Res() res: Response,
     @Body() data: AddBusinessDto,
     @TokenDecoder() user: DecodedUser,
+    @UploadedFiles()
+    files: { logo?: Express.Multer.File; cover?: Express.Multer.File },
   ) {
-    // const result = await this.adminService.addBusiness(data);
-    // if (result.success) {
-    //   return res.status(HttpStatus.OK).json({
-    //     message: result.message,
-    //     data: result.data,
-    //   });
-    // } else {
-    //   return res.status(HttpStatus.BAD_REQUEST).json({
-    //     message: result.message,
-    //   });
-    // }
+    if(!files.cover){
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Please provide cover image',
+      });
+    }
+    console.log("inside controller?")
+    const result = await this.adminService.addBusiness(user,data,files.logo,files.cover);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }

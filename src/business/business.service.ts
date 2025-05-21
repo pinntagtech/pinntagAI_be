@@ -86,6 +86,9 @@ import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUse
 import { Outlet } from 'src/outlet/model/outlet.model';
 import { LocationPopulates } from 'src/enums/user.enum';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
+import { Seeder } from 'src/seeder/data';
+import { Region, RegionDocument } from './model/region.model';
+import { CreateRegionDto } from './dto/create-region.dto';
 
 @Injectable()
 export class BusinessService {
@@ -119,8 +122,8 @@ export class BusinessService {
     private readonly followModel: Model<FollowDocument>,
     @InjectModel(Action.name)
     private readonly actionModel: Model<ActionDocument>,
-    @InjectModel(Template.name)
-    private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Region.name) private readonly regionModel: Model<RegionDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -658,7 +661,23 @@ export class BusinessService {
           { $set: { roles: deptRoles } },
         );
       }
-    } catch (error) {}
+      for( const region of Seeder.Regions){
+        const createdRegion = await this.regionModel.create({
+          name: region.name,
+          description: region.description,
+          business: businessId,
+          createdBy: new mongoose.Types.ObjectId(userId),
+        });
+        await this.departmentModel.updateOne(
+          { _id: createdRegion._id },
+          { $set: { roles: [] } },
+        );
+      }
+
+    } catch (error) {
+      console.error('Error seeding business department roles:', error);
+      throw new Error('Failed to seed business department roles');
+    }
   }
 
   async updateBusiness(
@@ -2353,4 +2372,70 @@ export class BusinessService {
       };
     }
   }
+
+  async createRegion(user: DecodedUser, data: CreateRegionDto) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const foundRegion = await this.regionModel.findOne({
+        name: data.name,
+        business: user.businessProfile,
+      });
+      if (foundRegion) {
+        return {
+          success: false,
+          message: 'Region already exists with the same name',
+        };
+      }
+      let userObjectId = [];
+      if (data.users) {
+        for (let user of data.users) {
+          if (!isValidObjectId(user)) {
+            return {
+              success: false,
+              message: 'Please provide valid User Id',
+            };
+          }
+          const foundUser = await this.businessUserModel.findById(user);
+          if (!foundUser) {
+            return {
+              success: false,
+              message: 'Please provide valid User Id',
+            };
+          }
+          userObjectId.push(new mongoose.Types.ObjectId(user));
+        }
+        data.users = userObjectId;
+      }
+
+      const createdRegion = await this.regionModel.create({
+        ...data,
+        createdBy: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      });
+      return {
+        success: true,
+        message: 'Department Created Successfully!',
+        data: createdRegion,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
 }
