@@ -120,7 +120,7 @@ export class GoogleService {
     };
   }
 
-  async getPlaceDetails(placeId: string, sessionToken: string) {
+  async getPlaceDetails(placeId: string, sessionToken: string,selectedAddress: string) {
     try {
       const params = {
         key: this.GOOGLE_API_KEY,
@@ -135,6 +135,7 @@ export class GoogleService {
       );
       address['latitude'] = response.data.location.latitude;
       address['longitude'] = response.data.location.longitude;
+      address['selectedAddress'] = selectedAddress;
       console.log('address:', address);
 
       return {
