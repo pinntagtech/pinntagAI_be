@@ -60,6 +60,11 @@ import {
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboardConfig.model';
 import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { FileSchema } from 'src/drive/models/file.model';
+import { S3Service } from 'src/s3.service';
 
 @Module({
   imports: [
@@ -89,9 +94,12 @@ import { Department, DepartmentSchema } from 'src/business/model/department.mode
       { name: Template.name, schema: TemplateSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: Business.name, schema: BusinessSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
     ]),
   ],
   controllers: [],
-  providers: [SeederService],
+  providers: [SeederService,DriveService,S3Service],
 })
 export class SeederModule {}

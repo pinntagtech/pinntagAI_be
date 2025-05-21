@@ -123,6 +123,14 @@ export enum BusinessSubCategory {
   TRANSLATION = 'Translation',
 }
 
+export const PinntagBusinessSeeder = {
+  name : 'PinnTag Limited',
+  countryCode : '+44',
+  phone : '7917303330',
+  email : 'support@pinntag.com',
+  website : 'www.pinntag.com',
+  isActive : true,
+}
 export const Seeder = {
   ContentCategories: [
     {

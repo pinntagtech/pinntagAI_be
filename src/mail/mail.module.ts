@@ -122,6 +122,9 @@ import {
   Department,
   DepartmentSchema,
 } from 'src/business/model/department.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { File, FileSchema } from 'src/drive/models/file.model';
 
 @Global()
 @Module({
@@ -170,6 +173,8 @@ import {
       { name: Business.name, schema: BusinessSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
     ]),
     MailerModule.forRoot({
       transport: {
@@ -202,6 +207,7 @@ import {
     StripeService,
     SmsService,
     SeederService,
+    DriveService,
   ],
 })
 export class MailModule {}

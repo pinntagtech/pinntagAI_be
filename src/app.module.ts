@@ -87,8 +87,19 @@ import { OutletModule } from './outlet/outlet.module';
 import { GoogleModule } from './google/google.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { Template, TemplateSchema } from './event/models/template.model';
-import { DashboardConfig, DashboardConfigSchema } from './auth/models/dashboardConfig.model';
-import { Department, DepartmentSchema } from './business/model/department.model';
+import {
+  DashboardConfig,
+  DashboardConfigSchema,
+} from './auth/models/dashboardConfig.model';
+import {
+  Department,
+  DepartmentSchema,
+} from './business/model/department.model';
+import { Business, BusinessSchema } from './business/model/business.model';
+import { DriveService } from './drive/drive.service';
+import { File, FileSchema } from './drive/models/file.model';
+import { Folder, FolderSchema } from './drive/models/folder.model';
+import { S3Service } from './s3.service';
 
 @Module({
   imports: [
@@ -141,6 +152,9 @@ import { Department, DepartmentSchema } from './business/model/department.model'
       { name: Template.name, schema: TemplateSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: Business.name, schema: BusinessSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -165,6 +179,6 @@ import { Department, DepartmentSchema } from './business/model/department.model'
     RewardsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, Logger, SeederService],
+  providers: [AppService, Logger, SeederService, DriveService,S3Service],
 })
 export class AppModule {}
