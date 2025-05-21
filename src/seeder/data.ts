@@ -131,7 +131,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
-      activeColor: '#FFEB3B',
+      activeColor: '#F1F3C2',
       description: 'Arts & Crafts',
     },
     {
@@ -140,7 +140,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
-      activeColor: '#EE536E',
+      activeColor: '#F7B5CA',
       description: 'Beauty & Spa',
     },
     {
@@ -148,7 +148,7 @@ export const Seeder = {
       lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
       darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
-      activeColor: '#ADD243',
+      activeColor: '#A1EEBD',
       description: 'Charity',
     },
     {
@@ -157,7 +157,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
-      activeColor: '#5AB1E2',
+      activeColor: '#A6D6D6',
       description: 'Clubs & Classes',
     },
     {
@@ -166,7 +166,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
-      activeColor: '#E5D59B',
+      activeColor: '#FFF1D5',
       description: 'Days Out',
     },
     {
@@ -175,7 +175,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
-      activeColor: '#ACDCD9',
+      activeColor: '#D9EAFD',
       description: 'Entertainment',
     },
     {
@@ -184,7 +184,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
-      activeColor: '#F59438',
+      activeColor: '#FFCDB2',
       description: 'Foods & Drink',
     },
     {
@@ -193,7 +193,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
-      activeColor: '#E77A6B',
+      activeColor: '#FFE1E0',
       description: 'Happy Hour',
     },
     {
@@ -202,7 +202,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
-      activeColor: '#71E2AC',
+      activeColor: '#CDFAD5',
       description: 'Health & Fitness',
     },
     {
@@ -211,7 +211,7 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
-      activeColor: '#FCBBBB',
+      activeColor: '#FFE3E3',
       description: 'Local Attractions',
     },
     {
@@ -220,31 +220,32 @@ export const Seeder = {
         'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
-      activeColor: '#7B88FB',
+      activeColor: '#8EACCD',
       description: 'Music & Nightlife',
     },
     {
       title: 'Pets',
       lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
       darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
-      activeColor: '#54BDF9',
+      activeColor: '#D4F6FF',
       description: 'Pets',
     },
     {
       title: 'Retail',
       lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
       darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
-      activeColor: '#C9DD91',
+      activeColor: '#BFD8AF',
       description: 'Retail',
     },
     {
       title: 'Sports',
       lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
       darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
-      activeColor: '#F05A39',
+      activeColor: '#FFCCEA',
       description: 'Sports',
     },
   ],
+
   roles: [
     // {
     //   name: Roles.ADMIN,
@@ -476,63 +477,83 @@ export const Seeder = {
   BusinessIndustries: [
     {
       title: 'Food & Drink',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Food+%26+Drink.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Food+%26+Drink.svg',
-      activeColor: '#FFE1E0', // warm, appetizing pastel pink
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Food+%26+Drink.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Food+%26+Drink.svg',
+      activeColor: '#FFCDB2',
     },
     {
       title: 'Retail',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Retails.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Retails.svg',
-      activeColor: '#FFD1C5', // approachable and inviting
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Retails.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Retails.svg',
+      activeColor: '#8EACCD',
     },
     {
       title: 'Health & Beauty',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Health+%26+Beauty.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Health+%26+Beauty.svg',
-      activeColor: '#E5D9F2', // gentle, elegant, calming
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Health+%26+Beauty.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Health+%26+Beauty.svg',
+      activeColor: '#AC87C5',
     },
     {
       title: 'Fitness & Wellness',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Fitness+%26+Wellness.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Fitness+%26+Wellness.svg',
-      activeColor: '#A1EEBD', // fresh, energetic, healthy
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Fitness+%26+Wellness.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Fitness+%26+Wellness.svg',
+      activeColor: '#A1EEBD',
     },
     {
       title: 'Entertainment',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Entertainment+%26+Experiences.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Entertainment+%26+Experiences.svg',
-      activeColor: '#FFF1D5', // joyful and vibrant
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Entertainment+%26+Experiences.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Entertainment+%26+Experiences.svg',
+      activeColor: '#F6F193',
     },
     {
       title: 'Automotive Services',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Automotive+Services.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Automotive+Services.svg',
-      activeColor: '#D9EAFD', // clean, mechanical yet friendly
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Automotive+Services.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Automotive+Services.svg',
+      activeColor: '#CCD3CA',
     },
     {
       title: 'Home Services',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Home+Services.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Home+Services.svg',
-      activeColor: '#F2EFE5', // neutral, cozy, reliable
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Home+Services.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Home+Services.svg',
+      activeColor: '#EECEB9',
     },
     {
       title: 'Pet Services',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Pet+Services.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Pet+Services.svg',
-      activeColor: '#CDFAD5', // soft, playful green
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Pet+Services.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Pet+Services.svg',
+      activeColor: '#D4F6FF',
     },
     {
       title: 'Hospitality',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Hospitality.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Hospitality.svg',
-      activeColor: '#EECEB9', // welcoming, warm peach
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Hospitality.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Hospitality.svg',
+      activeColor: '#AC87C5',
     },
     {
       title: 'Professional Services',
-      lightIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Professional+Services.svg',
-      darkIcon: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Professional+Services.svg',
-      activeColor: '#D5E5D5', // stable, neutral, trustworthy
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Light/Professional+Services.svg',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Industry/Dark/Professional+Services.svg',
+      activeColor: '#BED7DC',
     },
   ],
   BusinessCategories: [
@@ -542,7 +563,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Restaurant-Dine.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Restaurant-Dine.svg',
-      activeColor: '#C0392B',
+      activeColor: '#FFCDB2',
       industry: 'Food & Drink',
     },
     {
@@ -551,7 +572,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Cafe-Coffee+Shop.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Cafe-Coffee+Shop.svg',
-      activeColor: '#8E5E3A',
+      activeColor: '#DFCCFB',
       industry: 'Food & Drink',
     },
     {
@@ -560,7 +581,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Bakery-Desert+Shop.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Bakery-Desert+Shop.svg',
-      activeColor: '#F39C12',
+      activeColor: '#D4F6FF',
       industry: 'Food & Drink',
     },
     {
@@ -569,7 +590,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Bar-Lounge-Pub.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Bar-Lounge-Pub.svg',
-      activeColor: '#6C3483',
+      activeColor: '#CDFAD5',
       industry: 'Food & Drink',
     },
     {
@@ -578,7 +599,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Juice-Smoothie+Bar.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Juice-Smoothie+Bar.svg',
-      activeColor: '#27AE60',
+      activeColor: '#F7B5CA',
       industry: 'Food & Drink',
     },
     {
@@ -587,7 +608,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Food+Truck-Mobile+Vendor.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Food+Truck-Mobile+Vendor.svg',
-      activeColor: '#E67E22',
+      activeColor: '#F6F193',
       industry: 'Food & Drink',
     },
     {
@@ -596,7 +617,7 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Catering+Services.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Catering+Services.svg',
-      activeColor: '#A04000',
+      activeColor: '#FDB7EA',
       industry: 'Food & Drink',
     },
     {
@@ -605,18 +626,19 @@ export const Seeder = {
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Cloud+Kitchen+-+Delivery+Only.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Cloud+Kitchen+-+Delivery+Only.svg',
-      activeColor: '#7B241C',
+      activeColor: '#F0F1C5',
       industry: 'Food & Drink',
     },
     {
-      title: 'Frozen Desserts',
+      title: 'Desserts',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Light/Ice+Cream+-+Frozen+Desserts.svg',
       darkIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Category/Food+%26+Drink/Dark/Ice+Cream+-+Frozen+Desserts.svg',
-      activeColor: '#FADBD8',
+      activeColor: '#BED7DC',
       industry: 'Food & Drink',
     },
+
     {
       title: 'Clothing & Apparel',
       lightIcon:
@@ -1229,6 +1251,319 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '15% Off All Vegan Desserts!',
+      keywords: ['bakery', 'dessert', 'vegan', 'discount'],
+      description:
+        "Indulge your sweet tooth without any guilt by enjoying 15% off our entire range of vegan desserts. Whether you're a committed vegan or just looking to try healthier and plant-based options, our bakery offers a wide variety of treats including cakes, cookies, and pastries, all made with natural ingredients and no animal products. Perfect for anyone seeking delicious desserts that are kind to the environment and your body. This limited-time offer encourages you to explore the flavors of vegan baking with discounts on every item in the vegan section. Use promo code VEGANSWEET15 when you visit us in-store. It’s a wonderful way to treat yourself, friends, or family with sweets that everyone can enjoy. Don't miss out on this tasty deal, valid for one use per customer. Come savor the goodness while supporting sustainable eating choices.",
+      minTargetAge: 16,
+      maxTargetAge: 50,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'VEGANSWEET15',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Offer valid in-store only. Limited to one use per customer.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Bakery', 'Desserts'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Vegan+Desserts.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'FLAT',
+      discountValue: '10',
+      businessProfile: null,
+      categories: ['Happy Hour'],
+      title: '$10 Off Sushi Platters!',
+      keywords: ['restaurant', 'sushi', 'happy hour', 'discount'],
+      description:
+        'Relax and treat yourself to a delightful dining experience with $10 off our premium sushi platters during happy hour, from 4 PM to 6 PM daily. Perfectly crafted by our skilled chefs, our sushi platters feature fresh, high-quality ingredients including a variety of rolls, sashimi, and nigiri that will satisfy both sushi aficionados and newcomers alike. Whether you’re enjoying a casual night out or celebrating a special occasion, this offer makes it even more affordable to indulge in exquisite Japanese cuisine. Valid for dine-in customers only, this deal encourages you to unwind and enjoy great food paired with a welcoming atmosphere. Use promo code SUSHI10 at checkout to redeem this special offer. Don’t miss out on a chance to enjoy fresh sushi at a discounted price during our popular happy hour window. See you at the restaurant!',
+      minTargetAge: 21,
+      maxTargetAge: 60,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'SUSHI10',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'Dine-in only. Valid during happy hour.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Sushi+Platters.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '25',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '25% Off First Online Order!',
+      keywords: ['cloud kitchen', 'delivery', 'discount', 'online order'],
+      description:
+        'Enjoy a fantastic 25% discount on your very first online order from our cloud kitchen. Our menu features a variety of delicious meals prepared fresh and delivered right to your doorstep, perfect for busy lifestyles and food lovers who appreciate convenience without compromising quality. Whether you crave gourmet burgers, healthy bowls, or ethnic specialties, this offer gives you a chance to sample our popular dishes at a great price. Simply enter promo code ORDER25 during checkout to receive the discount. This promotion is exclusively for first-time customers and applies to delivery orders only. Take advantage of this opportunity to explore new flavors and support local food service. The cloud kitchen model means we focus entirely on delivery, ensuring your food arrives fresh and ready to enjoy. Don’t miss out on your first order savings!',
+      minTargetAge: 18,
+      maxTargetAge: 50,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'ORDER25',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'First-time customers only. Delivery only.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Cloud Kitchen'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/cloud+kitchen.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'FLAT',
+      discountValue: '3',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '$3 Off All Smoothies!',
+      keywords: ['smoothie', 'juice bar', 'healthy', 'discount'],
+      description:
+        'Stay refreshed and energized with $3 off any smoothie purchase at our juice bar. Our smoothies are crafted with fresh fruits, vegetables, and superfoods designed to boost your health and satisfy your taste buds. Whether you’re looking for a post-workout recharge, a nutritious snack, or a delicious treat, this discount makes it easier to enjoy wholesome, tasty beverages. Perfect for all ages, our smoothies cater to a variety of dietary preferences including vegan, gluten-free, and low-sugar options. Visit us in-store to take advantage of this offer and sip on your favorite blend without breaking the bank. Use promo code SMOOTHIE3 to redeem. This promotion is not combinable with other deals and applies only to in-store purchases. Refresh yourself the healthy way today!',
+      minTargetAge: 14,
+      maxTargetAge: 40,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'SMOOTHIE3',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Offer valid on in-store orders only. Not valid with other deals.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Juice Bar'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Smoothies+.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '30',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '30% Off Catering Orders Over $100',
+      keywords: ['catering', 'discount', 'party food', 'event'],
+      description:
+        'Planning a party or corporate event? Take advantage of 30% off any catering order over $100 to make your occasion even more special. Our catering services provide a wide range of delicious options tailored to your event’s theme and dietary needs, from finger foods and appetizers to full meal buffets. We use fresh ingredients and professional presentation to ensure your guests are impressed. This significant discount allows you to enjoy high-quality food without stretching your budget. Whether it’s a birthday, anniversary, business meeting, or casual get-together, our team will help you customize the perfect menu. Advance booking is required to guarantee availability and service quality. Use promo code CATER30 when placing your order. Celebrate with fantastic food and savings!',
+      minTargetAge: 25,
+      maxTargetAge: 60,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'CATER30',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'Advance booking required. Minimum $100 order.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Catering Services'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Catering+.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '10',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '10% Off All Breakfast Combos!',
+      keywords: ['breakfast', 'cafe', 'morning deal', 'discount'],
+      description:
+        'Start your day the right way with 10% off all breakfast combo meals at our café. From hearty classics like eggs and bacon to lighter options like fresh fruit bowls and avocado toast, our breakfast combos are designed to fuel your morning efficiently and deliciously. Perfect for early risers, busy professionals, and families alike, this offer ensures you enjoy a nutritious start while saving money. Available for dine-in customers before 11 AM, this discount is ideal for those who want quality food in a cozy, welcoming environment. Use promo code BREAKFAST10 to claim your discount and make your morning brighter and tastier. Come in early and treat yourself to a great deal on the most important meal of the day!',
+      minTargetAge: 16,
+      maxTargetAge: 45,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'BREAKFAST10',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'Valid before 11 AM. Dine-in only.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Cafe/Coffee Shop'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Breakfast+Combos+.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'FLAT',
+      discountValue: '2',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '$2 Off All Ice Cream Sundaes!',
+      keywords: ['ice cream', 'dessert', 'summer', 'discount'],
+      description:
+        'Beat the heat and satisfy your sweet cravings with $2 off any ice cream sundae from our frozen dessert selection. Our sundaes feature rich, creamy ice cream topped with fresh fruits, nuts, sauces, and whipped cream, crafted to delight kids and adults alike. Whether you’re cooling down on a hot day or treating yourself after a meal, this offer lets you indulge in premium frozen desserts at a great price. Available in-store only and perfect for families, friends, and solo dessert lovers, this discount is easy to redeem using promo code SWEETDEAL2. Not valid on holidays to ensure the best experience during peak times. Don’t miss your chance to enjoy a classic treat and make your day a little sweeter!',
+      minTargetAge: 10,
+      maxTargetAge: 40,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'SWEETDEAL2',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'In-store only. Not valid on holidays.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Desserts'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Cream+Sundaes+.jpeg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '20',
+      businessProfile: null,
+      categories: ['Happy Hour'],
+      title: '20% Off All Tap Beers!',
+      keywords: ['bar', 'beer', 'happy hour', 'drinks'],
+      description:
+        'Celebrate happy hour with a refreshing 20% discount on all tap beers served at our bar from 6 PM to 9 PM daily. Whether you prefer crisp lagers, hoppy IPAs, rich stouts, or seasonal brews, our extensive selection of draft beers will satisfy every beer lover’s palate. Gather your friends and unwind after a long day in a lively and welcoming atmosphere while enjoying great savings on your favorite brews. This offer is valid for dine-in customers only and cannot be combined with other promotions. Use promo code TAPBEER20 to redeem your discount. Perfect for casual evenings, social gatherings, or after-work relaxation, this deal makes it easier to enjoy quality craft beers without stretching your budget. Cheers to good times and great beer!',
+      minTargetAge: 21,
+      maxTargetAge: 60,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'TAPBEER20',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Dine-in only. Valid during happy hour from 6 PM to 9 PM. Must be 21 or older.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Bar'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Tap+beer.jpeg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '20',
+      businessProfile: null,
+      categories: ['Happy Hour'],
+      title: '20% Off Signature Cocktails!',
+      keywords: ['bar', 'cocktails', 'happy hour', 'discount'],
+      description:
+        'Enjoy 20% off our signature cocktails during happy hour from 5 PM to 8 PM!',
+      minTargetAge: 21,
+      maxTargetAge: 50,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'CHEERS20',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions: 'Valid during happy hour only. Must be 21 or older.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Bar'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Signature+Cocktails!+.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'FLAT',
+      discountValue: '5',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: 'Save $5 on Your Coffee Order!',
+      keywords: ['cafe', 'coffee', 'discount', 'morning deal'],
+      description:
+        'Start your day right! Save $5 on any coffee purchase over $20.',
+      minTargetAge: 16,
+      maxTargetAge: 60,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'COFFEE5',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Minimum purchase of $20 required. Valid during weekdays.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Cafe/Coffee Shop'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coffee+Order.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '10',
+      businessProfile: null,
+      categories: ['Foods & Drink'],
+      title: '10% Off All Street Food Combos!',
+      keywords: ['food truck', 'street food', 'combo', 'discount'],
+      description:
+        'Taste the street food vibes! Get 10% off any combo at our food truck.',
+      minTargetAge: 18,
+      maxTargetAge: 45,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'TRUCK10',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Valid for combo meals only. Not applicable during events.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Food Truck'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/All+Street+Food+Combos!+.jpg',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '15',
+      businessProfile: null,
       categories: ['Retail'],
       title: '15% Off All Car Accessories!',
       keywords: ['auto accessories', 'car accessories', 'discount'],
@@ -1471,92 +1806,6 @@ export const Seeder = {
       businessCategories: ['Yoga Studio'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Yoga+Classes!+.jpg',
-      createdAt: null,
-      updatedAt: null,
-      __v: 0,
-    },
-    {
-      creatorType: 'AdminUser',
-      type: 'offer',
-      user: null,
-      discountType: 'PERCENTAGE',
-      discountValue: '20',
-      businessProfile: null,
-      categories: ['Happy Hour'],
-      title: '20% Off Signature Cocktails!',
-      keywords: ['bar', 'cocktails', 'happy hour', 'discount'],
-      description:
-        'Enjoy 20% off our signature cocktails during happy hour from 5 PM to 8 PM!',
-      minTargetAge: 21,
-      maxTargetAge: 50,
-      targetGenders: ['male', 'female', 'others'],
-      promotionCode: 'CHEERS20',
-      isFree: false,
-      participationCost: '',
-      termsApplied: true,
-      termsAndConditions: 'Valid during happy hour only. Must be 21 or older.',
-      businessIndustry: 'Food & Drink',
-      businessCategories: ['Bar'],
-      thumbnail:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Signature+Cocktails!+.jpg',
-      createdAt: null,
-      updatedAt: null,
-      __v: 0,
-    },
-    {
-      creatorType: 'AdminUser',
-      type: 'offer',
-      user: null,
-      discountType: 'FLAT',
-      discountValue: '5',
-      businessProfile: null,
-      categories: ['Foods & Drink'],
-      title: 'Save $5 on Your Coffee Order!',
-      keywords: ['cafe', 'coffee', 'discount', 'morning deal'],
-      description:
-        'Start your day right! Save $5 on any coffee purchase over $20.',
-      minTargetAge: 16,
-      maxTargetAge: 60,
-      targetGenders: ['male', 'female', 'others'],
-      promotionCode: 'COFFEE5',
-      isFree: false,
-      participationCost: '',
-      termsApplied: true,
-      termsAndConditions:
-        'Minimum purchase of $20 required. Valid during weekdays.',
-      businessIndustry: 'Food & Drink',
-      businessCategories: ['Cafe/Coffee Shop'],
-      thumbnail:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coffee+Order.jpg',
-      createdAt: null,
-      updatedAt: null,
-      __v: 0,
-    },
-    {
-      creatorType: 'AdminUser',
-      type: 'offer',
-      user: null,
-      discountType: 'PERCENTAGE',
-      discountValue: '10',
-      businessProfile: null,
-      categories: ['Foods & Drink'],
-      title: '10% Off All Street Food Combos!',
-      keywords: ['food truck', 'street food', 'combo', 'discount'],
-      description:
-        'Taste the street food vibes! Get 10% off any combo at our food truck.',
-      minTargetAge: 18,
-      maxTargetAge: 45,
-      targetGenders: ['male', 'female', 'others'],
-      promotionCode: 'TRUCK10',
-      isFree: false,
-      participationCost: '',
-      termsApplied: true,
-      termsAndConditions:
-        'Valid for combo meals only. Not applicable during events.',
-      businessIndustry: 'Food & Drink',
-      businessCategories: ['Food Truck'],
-      thumbnail:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/All+Street+Food+Combos!+.jpg',
       createdAt: null,
       updatedAt: null,
       __v: 0,
@@ -1986,6 +2235,7 @@ export const Seeder = {
       __v: 0,
     },
   ],
+
   DashboardConfigs: [
     {
       name: 'Trending Now',

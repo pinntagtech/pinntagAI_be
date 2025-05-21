@@ -48,7 +48,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { RoleCreatorType } from 'src/roles/enums/roles.enum';
+import { Actions, ResourceTypes, RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
@@ -70,6 +70,23 @@ import { CreateTemplateDto } from './dto/create-template.dto';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import {
+  BusinessCreatorType,
+  BusinessUserCreatorType,
+} from 'src/business/enums/business.enum';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
+import { SeederService } from 'src/seeder/seeder.service';
+import { Drive } from 'src/drive/models/drive.model';
+import { DriveService } from 'src/drive/drive.service';
+import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
+import { Action, ActionDocument } from 'src/roles/models/actions.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Department, DepartmentDocument } from 'src/business/model/department.model';
+import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 
 @Injectable()
 export class AdminService {
@@ -102,12 +119,20 @@ export class AdminService {
     private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(Template.name)
     private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+
+    @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly authService: AuthService,
+    private readonly seederService: SeederService,
+    private readonly driveService: DriveService,
   ) {}
 
   calculateExpirationDate(expiresIn: string): Date {
@@ -1613,5 +1638,221 @@ export class AdminService {
     }
   }
 
-  async addBusiness(data: AddBusinessDto) {}
+    async seedBusinessDepartmentRoles(
+      userId: string,
+      businessId: mongoose.Types.ObjectId,
+    ) {
+      try {
+        for (const dept of DefaultBusinessDepartmentRoles) {
+          // Create department
+          const createdDepartment = await this.departmentModel.create({
+            name: dept.name,
+            description: dept.description,
+            business: businessId,
+            createdBy: new mongoose.Types.ObjectId(userId),
+          });
+          const deptRoles = [];
+          for (const roleData of dept.roles) {
+            // Create role under the department
+            const createdRole = await this.roleModel.create({
+              name: roleData.name,
+              creator: new mongoose.Types.ObjectId(userId),
+              creatorType: RoleCreatorType.BUSINESS,
+              belongsTo: RoleBelonging.BUSINESS,
+              business: businessId,
+            });
+            deptRoles.push(createdRole._id);
+  
+            // Privileges
+            const privilegeKeys = Object.keys(roleData.privileges);
+            for (const privilegeKey of privilegeKeys) {
+              // Get/create resource
+              let resourceDetails = await this.resourceModel.findOne({
+                title: ResourceTypes[privilegeKey],
+              });
+              if (!resourceDetails) {
+                resourceDetails = await this.resourceModel.create({
+                  title: ResourceTypes[privilegeKey],
+                });
+              }
+  
+              // Create privileges for each action
+              const actionKeys = roleData.privileges[privilegeKey];
+              for (const actionKey of actionKeys) {
+                let actionDetails = await this.actionModel.findOne({
+                  title: Actions[actionKey],
+                });
+                if (!actionDetails) {
+                  actionDetails = await this.actionModel.create({
+                    title: Actions[actionKey],
+                  });
+                }
+  
+                await this.privilegeModel.create({
+                  role: createdRole._id,
+                  resource: resourceDetails.title,
+                  action: actionDetails.title,
+                });
+              }
+            }
+          }
+          await this.departmentModel.updateOne(
+            { _id: createdDepartment._id },
+            { $set: { roles: deptRoles } },
+          );
+        }
+      } catch (error) {}
+    }
+  async addBusiness(
+    user: DecodedUser,
+    data: AddBusinessDto,
+    logo: Express.Multer.File,
+    cover: Express.Multer.File,
+  ) {
+    try {
+      let password = await this.authService.authGeneratePassword();
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log('password', password);
+      const foundUser = await this.businessUserModel.findOne({
+        email: data.email,
+      });
+      if (foundUser) {
+        return {
+          success: false,
+          message: 'Business User already found with this email',
+        };
+      }
+      const ownerRole = await this.roleModel.create({
+        name: 'Owner',
+        creator: new mongoose.Types.ObjectId(user.id),
+        creatorType: RoleCreatorType.ADMIN,
+        belongsTo: RoleBelonging.BUSINESS,
+        isBusinessOwner: true,
+      });
+      let createObj = {
+        role: [new mongoose.Types.ObjectId(ownerRole.id)],
+        creatorType: BusinessUserCreatorType.ADMIN,
+        email: data.email,
+        password: hashedPassword,
+        isEmailVerified: true,
+        name: data.businessUserName,
+      };
+      let createdUser = await this.businessUserModel.create(createObj);
+      let driveDetails = await this.seederService.createDrive(
+        createdUser._id,
+        BusinessUser.name,
+      );
+      createdUser = await this.businessUserModel.findOneAndUpdate(
+        { _id: createdUser.id },
+        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+        { new: true },
+      );
+
+      const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
+      await this.mailService.sendDownlineUserCredentials(
+        createdUser.name,
+        createdUser.email,
+        password,
+        loginLink,
+      );
+      // Business Creation
+
+      const findBusiness = await this.businessModel.findOne({
+        $or: [
+          { email: data.email },
+          // { registrationNumber: data.registrationNumber },
+        ],
+      });
+      if (findBusiness) {
+        return {
+          success: false,
+          message: `Business already exist with given email:${data.businessEmail} `,
+        };
+      }
+
+      const businessFolder = await this.driveService.createFolder(
+        String(createdUser._id),
+        {
+          parentDirectory: createdUser.drive,
+          parentType: Drive.name,
+          folderName: data.businessName,
+        },
+      );
+      let businessCategoriesIds = [];
+      if (data.businessCategories) {
+        data.businessCategories = data.businessCategories.split(',');
+        for (let category of data.businessCategories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory =
+            await this.businessCategoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+        }
+      }
+      console.log("Business Folder ID:", businessFolder.data._id);
+      console.log("UserID:",user.id);
+      console.log("Created User ID:",createdUser.id);
+
+      let businessObj = {
+        name: data.businessName,
+        email: data.businessEmail,
+        businessCategory: businessCategoriesIds,
+        businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
+        phone: data.phone,
+        countryCode: data.countryCode,
+        roleOfCreator: data.roleOfCreator,
+        addressLine1: data.addressLine1,
+        city: data.city,
+        state: data.state,
+        country: data.country,
+        zipCode: data.zipCode,
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        creatorType: BusinessCreatorType.ADMIN,
+        creator: new mongoose.Types.ObjectId(user.id),
+        authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
+      };
+      if (data.website) businessObj['website'] = data.website;
+      if (data.addressLine2) businessObj['addressLine2'] = data.addressLine2;
+
+      const createdBusiness = await this.businessModel.create(businessObj);
+      await this.businessUserModel.updateOne(
+        { _id: createdBusiness.authorisedUser },
+        {
+          $addToSet: {
+            business: createdBusiness._id,
+          }
+        });
+
+      //seed Roles:
+      this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
+      .then(() => console.log('Business roles seeded successfully'))
+      .catch((err) => console.error('Error seeding business roles:', err));
+
+        createdUser = await this.businessUserModel
+          .findById(createdUser.id)
+          .populate('role', '_id name')
+          .populate('business')
+      return {
+        success: true,
+        message: 'Business User Created Successfully',
+        data: createdUser,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

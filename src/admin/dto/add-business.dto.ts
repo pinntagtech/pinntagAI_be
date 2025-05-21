@@ -7,6 +7,8 @@ import {
   MinLength,
   Matches,
   IsArray,
+  Max,
+  MaxLength,
 } from 'class-validator';
 import mongoose from 'mongoose';
 
@@ -20,23 +22,28 @@ export class AddBusinessDto {
 
   @IsNotEmpty()
   @IsString()
-  @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(/[A-Z]/, {
-    message: 'Password must contain at least one uppercase letter',
-  })
-  @Matches(/[a-z]/, {
-    message: 'Password must contain at least one lowercase letter',
-  })
-  @Matches(/[0-9]/, { message: 'Password must contain at least one number' })
-  @Matches(/[\W_]/, {
-    message: 'Password must contain at least one special character',
-  })
-  password: string;
-
-  @IsNotEmpty()
-  @IsString()
   @Transform(({ value }) => value.trim())
+  @MinLength(3, { message: 'Username must be at least 3 characters long' })
+  @MaxLength(20, {
+    message: 'Name must be at most 20 characters long',
+  })
   businessUserName: string;
+
+  // @IsNotEmpty()
+  // @IsString()
+  // @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  // @Matches(/[A-Z]/, {
+  //   message: 'Password must contain at least one uppercase letter',
+  // })
+  // @Matches(/[a-z]/, {
+  //   message: 'Password must contain at least one lowercase letter',
+  // })
+  // @Matches(/[0-9]/, { message: 'Password must contain at least one number' })
+  // @Matches(/[\W_]/, {
+  //   message: 'Password must contain at least one special character',
+  // })
+  // password: string;
+
 
   @IsNotEmpty()
   @IsString()
@@ -52,6 +59,7 @@ export class AddBusinessDto {
   @IsString()
   countryCode: string;
 
+  @IsOptional()
   @IsString()
   website: string;
 
@@ -59,7 +67,6 @@ export class AddBusinessDto {
   @IsString()
   roleOfCreator: string;
 
-  @IsOptional()
   @IsString()
   addressLine1?: string;
 
@@ -67,27 +74,21 @@ export class AddBusinessDto {
   @IsString()
   addressLine2?: string;
 
-  @IsOptional()
   @IsString()
   city?: string;
 
-  @IsOptional()
   @IsString()
   state?: string;
 
-  @IsOptional()
   @IsString()
   country?: string;
 
-  @IsOptional()
   @IsString()
   zipCode: string;
 
-  @IsOptional()
   @IsString()
   businessIndustry: string;
 
-  @IsOptional()
-  @IsArray()
-  businessCategories: Array<string | mongoose.Types.ObjectId>;
+  @IsString()
+  businessCategories: any;
 }
