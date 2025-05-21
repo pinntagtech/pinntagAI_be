@@ -118,16 +118,18 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log('qrCode:', qrCode);
-      let QRCodeDetails = await this.driveService.uploadAndCreateFile(
-        qrCode[0],
-        businessFolder.data.id,
-        Folder.name,
-        userDetails.drive.toString(),
-        QR_ImageCategory._id,
-      );
-      console.log('QRCODE DETAILS:', QRCodeDetails);
-      console.log('QR ID:', QRCodeDetails._id);
+      let QRCodeDetails = null;
+      if(qrCode){
+        QRCodeDetails = await this.driveService.uploadAndCreateFile(
+          qrCode[0],
+          businessFolder.data.id,
+          Folder.name,
+          userDetails.drive.toString(),
+          QR_ImageCategory._id,
+        );
+        console.log('QRCODE DETAILS:', QRCodeDetails);
+        console.log('QR ID:', QRCodeDetails._id);
+      }
       // console.log('images:', images);
       this.driveService.multiImageUpload(
         userDetails._id,
@@ -207,7 +209,7 @@ export class RewardsService {
               endDate: endDate,
             },
             status: RewardStatus.PUBLISHED,
-            QR_CODE: QRCodeDetails._id,
+            QR_CODE: QRCodeDetails?._id,
           },
         },
         { new: true },
