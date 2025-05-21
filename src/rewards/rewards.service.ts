@@ -319,42 +319,132 @@ export class RewardsService {
     limit: number,
   ) {
     try {
-      // let start = data.startDate ? new Date(data.startDate) : new Date();
+      const now = new Date();
+      let startDate = data.startDate ? new Date(data.startDate) : now;
+      let endDate = data.endDate
+        ? new Date(data.endDate)
+        : new Date(now.setFullYear(now.getFullYear() + 2));
       // let query = {};
       // // if()
-      // let pipeline: PipelineStage[] = [
-      //   {
-      //     $geoNear: {
-      //       near: {
-      //         type: 'Point',
-      //         coordinates: [Number(data.longitude), Number(data.latitude)],
-      //       },
-      //       distanceField: 'distance',
-      //       maxDistance: distance * 1000,
-      //       spherical: true,
-      //     },
-      //   },
-      // ];
+      let consumerId = user.id;
+      console.log('Consumer ID:', consumerId);
+      let skip = (page - 1) * limit;
 
-      // const result = await this.rewardLocationModel.aggregate(pipeline);
+      let pipeline: PipelineStage[] = [
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [Number(data.longitude), Number(data.latitude)],
+            },
+            distanceField: 'distance',
+            maxDistance: distance * 1000,
+            spherical: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            as: 'reward',
+          },
+        },
+        { $unwind: '$reward' },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: { rewardId: '$reward._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      {
+                        $eq: [
+                          '$userId',
+                          new mongoose.Types.ObjectId(consumerId),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'claimed',
+          },
+        },
+        {
+          $match: {
+            'reward.status': RewardStatus.PUBLISHED,
+            claimed: { $eq: [] },
+          },
+        },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.drivePath',
+            foreignField: 'parentDirectory',
+            as: 'files',
+          },
+        },
+        {
+          $group: {
+            _id: '$reward._id',
+            status: { $first: '$reward.status' },
+            title: { $first: '$reward.title' },
+            activityType: { $first: '$reward.activityType' },
+            rewardType: { $first: '$reward.rewardType' },
+            targetCount: { $first: '$reward.targetCount' },
+            redemptionMode: { $first: '$reward.redemptionMode' },
+            locations: { $first: '$reward.locations' },
+            drivePath: { $first: '$reward.drivePath' },
+            files: { $first: '$files' },
+            QR_CODE: { $first: '$QR_CODE' },
+            rewardExpiration: { $first: '$reward.rewardExpiration' },
+            description: { $first: '$reward.description' },
+            createdAt: { $first: '$reward.createdAt' },
+            updatedAt: { $first: '$reward.updatedAt' },
+            __v: { $first: '$reward.__v' },
+            user: { $first: '$reward.user' },
+            businessProfile: { $first: '$reward.businessProfile' },
+          },
+        },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
+      ];
 
-      const result = await this.rewardModel
-        .find()
-        .populate('locations', LocationPopulates.FOREIGN)
-        .populate('QR_CODE', 'metaData')
-        // .populate('drivePath')
-        .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN)
-        .populate('files')
-        .skip((page - 1) * limit)
-        .limit(limit);
-      const count = await this.rewardModel.countDocuments();
-      console.log('Result:', result);
+      const result = await this.rewardLocationModel.aggregate(pipeline);
+
+      // const result = await this.rewardModel
+      //   .find()
+      //   .populate('locations', LocationPopulates.FOREIGN)
+      //   .populate('QR_CODE', 'metaData')
+      //   // .populate('drivePath')
+      //   .populate('user', UserPopulates.FOREIGN)
+      //   .populate('businessProfile', BusinessPopulates.FOREIGN)
+      //   .populate('files')
+      //   .skip((page - 1) * limit)
+      //   .limit(limit);
       return {
         success: true,
         message: 'Rewards found successfully.',
-        data: result,
-        total: count,
+        data: result[0].data,
+        total: result[0].totalCount[0]?.count || 0,
       };
     } catch (error) {
       console.log('Error in getDashboardRewards:', error);
@@ -543,7 +633,9 @@ export class RewardsService {
         };
       }
 
-      const reward = await this.rewardModel.findById(rewardId).populate('QR_CODE');
+      const reward = await this.rewardModel
+        .findById(rewardId)
+        .populate('QR_CODE');
       if (!reward) {
         return {
           success: false,
@@ -728,11 +820,11 @@ export class RewardsService {
       };
     }
   }
-  async getLogistics(user: DecodedUser){
-    try{
+  async getLogistics(user: DecodedUser) {
+    try {
       const userId = user.id;
       const businessId = user.businessProfile;
-      if(!businessId){
+      if (!businessId) {
         return {
           success: false,
           message: 'Business not found.',
@@ -762,7 +854,7 @@ export class RewardsService {
         message: 'Logistics found successfully.',
         data: logistics[0],
       };
-    }catch(error){
+    } catch (error) {
       console.log('Error in getLogistics:', error);
       return {
         success: false,

@@ -8,15 +8,9 @@ export class GetRewardDashboardDto {
   @IsNotEmpty()
   longitude: string;
   @IsOptional()
-  @IsArray()
-  categories: Array<string>;
-  @IsOptional()
   startDate: string;
   @IsOptional()
   endDate: string;
-
-  @IsOptional()
-  status: string;
 
   @IsOptional()
   @Transform(({ value }) => value.trim())

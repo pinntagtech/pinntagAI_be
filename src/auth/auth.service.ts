@@ -2077,7 +2077,7 @@ export class AuthService {
           spherical: true,
         },
       },
-      { $sort: { distance: 1 } },
+      // { $sort: { distance: 1 } },
       {
         $lookup: {
           from: 'events',
