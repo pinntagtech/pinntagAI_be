@@ -42,8 +42,13 @@ export class GoogleController {
     @Res() res: any,
     @Body('placeId') placeId: string,
     @Body('sessionToken') sessionToken: string,
+    @Body('selectedAddress') selectedAddress: string,
   ) {
-    const result = await this.googleService.getPlaceDetails(placeId,sessionToken);
+    const result = await this.googleService.getPlaceDetails(
+      placeId,
+      sessionToken,
+      selectedAddress,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -65,7 +70,10 @@ export class GoogleController {
     @Body('latitude') latitude: number,
     @Body('longitude') longitude: number,
   ) {
-    const result = await this.googleService.getAddressFromCoordinates(latitude, longitude);
+    const result = await this.googleService.getAddressFromCoordinates(
+      latitude,
+      longitude,
+    );
 
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -79,6 +87,4 @@ export class GoogleController {
       });
     }
   }
-
-
 }

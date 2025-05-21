@@ -88,7 +88,7 @@ import { LocationPopulates } from 'src/enums/user.enum';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { Seeder } from 'src/seeder/data';
 import { Region, RegionDocument } from './model/region.model';
-import { CreateRegionDto } from './dto/create-region.dto';
+import { CreateRegionDto, UpdateRegionDto } from './dto/create-region.dto';
 
 @Injectable()
 export class BusinessService {
@@ -2427,7 +2427,7 @@ export class BusinessService {
       });
       return {
         success: true,
-        message: 'Department Created Successfully!',
+        message: 'Region Created Successfully!',
         data: createdRegion,
       };
     } catch (error) {
@@ -2437,5 +2437,132 @@ export class BusinessService {
       };
     }
   }
+  async updateRegion(
+    user: DecodedUser,
+    regionId: string,
+    data: UpdateRegionDto,
+  ) {
+    const region = await this.regionModel.findById(regionId);
+    if (!region || region.business.toString() !== user.businessProfile) {
+      return {
+        success: false,
+        message: 'Region not found or access denied',
+      };
+    }
+    let updateObj = {};
 
+    if (data.name && data.name !== region.name) {
+      const conflict = await this.regionModel.findOne({
+        name: data.name,
+        business: user.businessProfile,
+      });
+      if (conflict) {
+        return {
+          success: false,
+          message: 'Another Region with that name exists',
+        };
+      }
+      updateObj['name'] = data.name;
+    }
+    console.log
+    // Validate any new roles
+    if (data.users) {
+      const userIds = [];
+      for (const id of data.users) {
+        if (!isValidObjectId(id)) {
+          return { success: false, message: `Invalid User ID: ${id}` };
+        }
+        const found = await this.businessUserModel.findById(id);
+        if (!found) {
+          return { success: false, message: `Role not found: ${id}` };
+        }
+        userIds.push(new mongoose.Types.ObjectId(id));
+      }
+      updateObj['users'] = userIds;
+    }
+
+    if (data.description !== undefined) {
+      updateObj['description'] = data.description;
+    }
+
+     
+
+    const updatedRegion = await this.regionModel.findOneAndUpdate({_id:new mongoose.Types.ObjectId(regionId)}, { $set: updateObj }, { new: true });
+    console.log("udpatedRegion:",updatedRegion)
+    return { success: true, message: 'Region updated', data: updatedRegion };
+  }
+
+  async fetchRegiontById(user: DecodedUser, regionId: string) {
+    try {
+      const region = await this.regionModel.findById(regionId);
+      if (!region || region.business.toString() !== user.businessProfile) {
+        return {
+          success: false,
+          message: 'Region not found or access denied',
+        };
+      }
+      const populatedRegion = await this.regionModel
+        .findById(regionId)
+        .populate('users', '_id name email profilePhoto')
+        .populate('createdBy', '_id name email profilePhoto')
+        .lean();
+      return {
+        success: true,
+        message: 'Department fetched successfully',
+        data: populatedRegion,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async fetchRegions(user: DecodedUser, page = 1, limit = 20) {
+    try {
+      console.log('Business:', user.businessProfile);
+      const query = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+      const [items, total] = await Promise.all([
+        this.regionModel
+          .find(query)
+          .populate('users', '_id name email profilePhoto')
+          .populate('createdBy', '_id name email profilePhoto')
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        this.departmentModel.countDocuments(query),
+      ]);
+      console.log('items:', items);
+      console.log('total:', total);
+
+      return {
+        success: true,
+        message: 'Regions fetched successfully.',
+        data: items,
+        total: total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async deleteRegion(user: DecodedUser, regionId: string) {
+    const region = await this.regionModel.findById(regionId);
+    if (!region || region.business.toString() !== user.businessProfile) {
+      return {
+        success: false,
+        message: 'Region not found or access denied',
+      };
+    }
+
+    await this.regionModel.deleteOne({ _id: regionId });
+    return { success: true, message: 'Region deleted' };
+  }
 }

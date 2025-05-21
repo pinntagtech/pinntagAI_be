@@ -21,7 +21,7 @@ export class Region {
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;
 
-  @Prop({ refPath: 'creatorType' })
+  @Prop({ ref:BusinessUser.name })
   createdBy: mongoose.Types.ObjectId;
 }
 
