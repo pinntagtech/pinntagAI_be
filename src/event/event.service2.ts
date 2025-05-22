@@ -3326,7 +3326,7 @@ export class EventService2 {
         };
       }
       if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === BusinessUser.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -3356,18 +3356,22 @@ export class EventService2 {
 
         //write a logic to remove the schedules that have passed i.e. either the date is in the past or the duration end time is past
         let schedules = [];
-        for (let i = 0; i < event.schedule.length; i++) {
-          const schedule = event.schedule[i];
-          if (schedule.date >= getZeroDateTz(new Date())) {
-            let durations = [];
-            for (let j = 0; j < schedule.durations.length; j++) {
-              const duration = schedule.durations[j];
-              if (new Date(duration.endTime) > currentDateTz()) {
-                durations.push(duration);
+        for (let i = 0; i < event.eventSchedule.length; i++) {
+          const schedule = await this.scheduleModel.findOne({
+            _id: event.eventSchedule[i],
+          });
+          if(schedule.type === ScheduleTypes.FIXED) {
+            if (schedule.fixedSchedule.date >= getZeroDateTz(new Date())) {
+              let durations = [];
+              for (let j = 0; j < schedule.fixedSchedule.durations.length; j++) {
+                const duration = schedule.fixedSchedule.durations[j];
+                if (new Date(duration.endTime) > currentDateTz()) {
+                  durations.push(duration);
+                }
               }
-            }
-            if (durations.length) {
-              schedules.push({ ...schedule, durations });
+              if (durations.length) {
+                schedules.push({ ...schedule, durations });
+              }
             }
           }
         }
@@ -3402,35 +3406,35 @@ export class EventService2 {
             $set: { locations },
           });
         }
-        let images = [];
-        if (event.images.length) {
-          for (let i = 0; i < event.images.length; i++) {
-            const image = await this.imageModel
-              .findById(event.images[i])
-              .lean();
-            if (image) {
-              const imageObj = { ...image };
-              delete imageObj['_id'];
-              delete imageObj['createdAt'];
-              delete imageObj['updatedAt'];
-              const copiedImage = await this.imageModel.create({
-                ...imageObj,
-                event: copiedEvent._id,
-              });
-              images.push(copiedImage._id);
-            }
-          }
-        }
-        if (images.length) {
-          await this.eventModel.findByIdAndUpdate(copiedEvent._id, {
-            $push: { images: { $each: images } },
-          });
-        }
+        // let images = [];
+        // if (event.images.length) {
+        //   for (let i = 0; i < event.images.length; i++) {
+        //     const image = await this.imageModel
+        //       .findById(event.images[i])
+        //       .lean();
+        //     if (image) {
+        //       const imageObj = { ...image };
+        //       delete imageObj['_id'];
+        //       delete imageObj['createdAt'];
+        //       delete imageObj['updatedAt'];
+        //       const copiedImage = await this.imageModel.create({
+        //         ...imageObj,
+        //         event: copiedEvent._id,
+        //       });
+        //       images.push(copiedImage._id);
+        //     }
+        //   }
+        // }
+        // if (images.length) {
+        //   await this.eventModel.findByIdAndUpdate(copiedEvent._id, {
+        //     $push: { images: { $each: images } },
+        //   });
+        // }
         const updatedEvent = await this.eventModel
           .findById(copiedEvent._id)
-          .populate('images', ImagePopulates.FOREIGN)
+          // .populate('images', ImagePopulates.FOREIGN)
           .populate('locations', LocationPopulates.FOREIGN)
-          .populate('ageGroupsAllowed', '_id id name');
+          // .populate('ageGroupsAllowed', '_id id name');
         return {
           success: true,
           message: 'Event copied successfully',
@@ -5430,13 +5434,13 @@ export class EventService2 {
               businessProfile: businessDetails._id,
               name: data.name ?? `Loc-${data.owner.name}`,
               category: OutletCategoryList.PHYSICAL,
-              city: data.address.cityName ?? "Lubbock",
-              state: data.address.stateAbbr ?? "TX",
-              country: data.address.country ?? "United States",
-            postalCode: "79491",
-            countryCode: "806",
-            email: businessEmail,
-            address1: data.address.address ?? null,
+              city: data.address.cityName ?? 'Lubbock',
+              state: data.address.stateAbbr ?? 'TX',
+              country: data.address.country ?? 'United States',
+              postalCode: '79491',
+              countryCode: '806',
+              email: businessEmail,
+              address1: data.address.address ?? null,
             };
             await this.outletModel.create(outletObj);
           }
