@@ -118,7 +118,15 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Admin } from 'src/admin/models/admin.model';
-import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from 'src/business/model/businessIndustry.model';
+import { LubbockData } from './crawledEvents.json';
+import {
+  BusinessCategory,
+  BusinessCategoryDocument,
+} from 'src/business/model/businessCategory.model';
 
 @Injectable()
 export class EventService2 {
@@ -164,6 +172,10 @@ export class EventService2 {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
+    @InjectModel(BusinessCategory.name)
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
     @InjectModel(EventSchedule.name)
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
@@ -357,8 +369,8 @@ export class EventService2 {
 
     const eventInfo = await this.eventModel.findById(eventId);
     let businessName = '';
-    if (eventInfo.creatorType === BusinessProfile.name) {
-      const businessProfile = await this.businessProfileModel.findById(
+    if (eventInfo.creatorType === BusinessUser.name) {
+      const businessProfile = await this.businessModel.findById(
         eventInfo.businessProfile,
       );
       businessName = businessProfile.name;
@@ -371,23 +383,33 @@ export class EventService2 {
     let requiredSchedule;
     //fetch the schedule whose date is greater than or equal to the current date
 
-    for (let i = 0; i < eventInfo.schedule.length; i++) {
+    for (let i = 0; i < eventInfo.eventSchedule.length; i++) {
       if (!requiredSchedule) {
-        if (eventInfo.schedule[i].date >= new Date()) {
-          // requiredSchedule = eventInfo.schedule[i];
-          for (let j = 0; j < eventInfo.schedule[i].durations.length; j++) {
-            if (eventInfo.schedule[i].durations[j].startTime >= new Date()) {
-              requiredSchedule = eventInfo.schedule[i].durations[j].startTime;
-              break;
+        const schedule = await this.scheduleModel.findOne({
+          _id: eventInfo.eventSchedule[i],
+        });
+        if (schedule.type == ScheduleTypes.FIXED) {
+          if (schedule.fixedSchedule.date >= new Date()) {
+            // requiredSchedule = eventInfo.schedule[i];
+            let durations = schedule.fixedSchedule.durations;
+            for (let j = 0; j < durations.length; j++) {
+              console.log('Durations:', durations[j]);
+              if (new Date(durations[j].startTime) >= new Date()) {
+                console.log('Start time:', durations[j].startTime);
+                requiredSchedule = durations[j].startTime;
+                break;
+              }
             }
           }
         }
       }
     }
-    if (eventInfo.schedule.length == 1) {
-      eventDescription = getStringDateTzWithTime(requiredSchedule);
+    console.log('Required schedule:', requiredSchedule);
+    if (eventInfo.eventSchedule.length == 1) {
+      eventDescription = getStringDateTzWithTime(new Date(requiredSchedule));
     } else {
-      eventDescription = `${getStringDateTzWithTime(requiredSchedule)} (plus more)`;
+      eventDescription =
+        getStringDateTzWithTime(new Date(requiredSchedule)) + '(plus more)';
     }
     const result = await this.dynamicLinkService.generateShortLink(eventUrl, {
       title,
@@ -5339,6 +5361,59 @@ export class EventService2 {
       };
     } catch (error) {
       console.error('Error in businessDownlineEventsList:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async crawlEvents() {
+    try {
+      const businessUser = await this.businessUserModel.findOne({
+        email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+      });
+      const businessIndustry = await this.businessIndustryModel.findOne({
+        title: 'Food & Drink',
+      });
+      const businessCategory = await this.businessCategoryModel.findOne({
+        title: 'Restaurant',
+        industry: businessIndustry._id,
+      });
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Pinntag Business user not seeded',
+        };
+      }
+      for (let data of LubbockData) {
+        let businessDetails = await this.businessModel.findOne({
+          email: data.organizerEmail,
+        });
+        if (!businessDetails) {
+          console.log('BusinessUser:', businessUser);
+          let businessObj = {
+            creatorType: BusinessUser.name,
+            creator: businessUser._id,
+            name: data.owner?.name,
+            email: data.organizerEmail ? data.organizerEmail : '',
+            businessIndustry: businessIndustry._id,
+            businessCategories: businessCategory._id,
+            cover:
+              'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
+          };
+          businessDetails = await this.businessModel.create(businessObj);
+        }
+        console.log('Business Details:', businessDetails);
+
+        return {
+          success: true,
+          message: 'Business Events Crawled Successfully.',
+          data: businessDetails,
+        };
+      }
+    } catch (error) {
+      console.error('Error in crawlEvents:', error);
       return {
         success: false,
         message: 'Something went wrong.',
