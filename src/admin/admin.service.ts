@@ -1255,7 +1255,9 @@ export class AdminService {
     try {
       const foundBusiness = await this.businessModel
         .findById(id)
-        .populate('brand', '_id name');
+        .populate('brand', '_id name')
+        .populate('businessIndustry')
+        .populate('businessCategories')
       if (!foundBusiness) {
         return {
           success: false,
