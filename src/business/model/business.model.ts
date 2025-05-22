@@ -28,6 +28,9 @@ export class Business {
   @Prop({ default: false })
   isDeleted: boolean;
 
+  @Prop({ default: false })
+  isFromCrawler: boolean;
+
   // @Prop({crea
   //   required: true,
   //   enum: [0, 1, 2],

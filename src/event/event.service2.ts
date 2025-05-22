@@ -127,6 +127,7 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from 'src/business/model/businessCategory.model';
+import { OutletCategoryList } from 'src/outlet/outlet.enum';
 
 @Injectable()
 export class EventService2 {
@@ -5387,8 +5388,15 @@ export class EventService2 {
         };
       }
       for (let data of LubbockData) {
+        let businessEmail = null;
+        if (data.organizerEmail) {
+          businessEmail = data.organizerEmail;
+        } else {
+          const firstWord = data.owner.name.trim().split(' ')[0].toLowerCase();
+          businessEmail = `${firstWord}@yopmail.com`;
+        }
         let businessDetails = await this.businessModel.findOne({
-          email: data.organizerEmail,
+          email: businessEmail,
         });
         if (!businessDetails) {
           console.log('BusinessUser:', businessUser);
@@ -5396,15 +5404,44 @@ export class EventService2 {
             creatorType: BusinessUser.name,
             creator: businessUser._id,
             name: data.owner.name,
-            email: data.organizerEmail ? data.organizerEmail : '',
+            email: businessEmail,
             businessIndustry: businessIndustry._id,
             businessCategories: businessCategory._id,
             cover:
               'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
+            isFromCrawler: true,
           };
           businessDetails = await this.businessModel.create(businessObj);
         }
         console.log('Business Details:', businessDetails);
+        let eventLocationData: any = {};
+        if (data.address.placeId) {
+          const foundOutlet = await this.outletModel.findOne({
+            placeId: data.address.placeId,
+          });
+          if (!foundOutlet) {
+            let outletObj = {
+              // creatorType: BusinessUser.name,
+              // creator: businessUser._id,
+              // placeId: data.address.placeId ?? null,
+              // latitude: data.address.lat,
+              // longitude: data.address.lng,
+              isFromCrawler: true,
+              businessProfile: businessDetails._id,
+              name: data.name ?? `Loc-${data.owner.name}`,
+              category: OutletCategoryList.PHYSICAL,
+              city: data.address.cityName ?? "Lubbock",
+              state: data.address.stateAbbr ?? "TX",
+              country: data.address.country ?? "United States",
+            postalCode: "79491",
+            countryCode: "806",
+            email: businessEmail,
+            address1: data.address.address ?? null,
+            };
+            await this.outletModel.create(outletObj);
+          }
+        } else {
+        }
 
         return {
           success: true,

@@ -9,8 +9,6 @@ import { OutletType } from './outletType.model';
 
 export type OutletDocument = Outlet & Document;
 
-
-
 @Schema({ timestamps: true })
 export class Outlet {
   // @Prop({ required: true, ref: OutletCategory.name })
@@ -19,11 +17,17 @@ export class Outlet {
   // @Prop({ required: true , ref: OutletType.name})
   // type: mongoose.Types.ObjectId; // Dropdown based on category
 
-  @Prop({enum: Object.values(OutletCategoryList)})
+  @Prop({ enum: Object.values(OutletCategoryList) })
   category: string;
+
+  @Prop({ default: false })
+  isFromCrawler: boolean;
 
   @Prop()
   refId: string;
+  
+  @Prop()
+  placeId: string;
 
   @Prop()
   name: string;
@@ -31,11 +35,11 @@ export class Outlet {
   @Prop({ ref: 'BusinessUser' })
   manager: mongoose.Types.ObjectId; // Dropdown reference to User entity
 
-  @Prop({ref: 'BusinessUser'})
+  @Prop({ ref: 'BusinessUser' })
   creator: mongoose.Types.ObjectId; // Dropdown reference to User entity
 
-  @Prop({ref: 'Business'})
-  business:mongoose.Types.ObjectId; // Dropdown reference to Business entity
+  @Prop({ ref: 'Business' })
+  business: mongoose.Types.ObjectId; // Dropdown reference to Business entity
 
   // Address Information (for Physical, Online, and Specialty outlets)
   @Prop()
@@ -56,17 +60,17 @@ export class Outlet {
   @Prop()
   postalCode?: string;
 
-  @Prop({ required: true })
+  @Prop()
   countryCode?: string;
 
   // Contact Information
-  @Prop({ required: true })
+  @Prop()
   phone: string;
 
-  @Prop({ required: true })
+  @Prop()
   email: string;
 
-  @Prop({default: 60})
+  @Prop({ default: 60 })
   servingRadius: number;
 
   // Social Media & Online Presence
@@ -110,7 +114,6 @@ export class Outlet {
 
   // @Prop()
   // endDate?: Date;
-
 
   // @Prop()
   // boothNumber?: string;
