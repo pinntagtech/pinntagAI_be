@@ -5421,22 +5421,17 @@ export class EventService2 {
           });
           if (!foundOutlet) {
             let outletObj = {
-              // creatorType: BusinessUser.name,
-              // creator: businessUser._id,
-              // placeId: data.address.placeId ?? null,
-              // latitude: data.address.lat,
-              // longitude: data.address.lng,
               isFromCrawler: true,
               businessProfile: businessDetails._id,
               name: data.name ?? `Loc-${data.owner.name}`,
               category: OutletCategoryList.PHYSICAL,
-              city: data.address.cityName ?? "Lubbock",
-              state: data.address.stateAbbr ?? "TX",
-              country: data.address.country ?? "United States",
-            postalCode: "79491",
-            countryCode: "806",
-            email: businessEmail,
-            address1: data.address.address ?? null,
+              city: data.address.cityName ?? 'Lubbock',
+              state: data.address.stateAbbr ?? 'TX',
+              country: data.address.country ?? 'United States',
+              postalCode: '79491',
+              countryCode: '806',
+              email: businessEmail,
+              address1: data.address.address ?? null,
             };
             await this.outletModel.create(outletObj);
           }
