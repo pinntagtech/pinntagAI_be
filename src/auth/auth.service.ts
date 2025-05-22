@@ -2135,6 +2135,20 @@ export class AuthService {
           preserveNullAndEmptyArrays: true,
         },
       },
+      // {
+      //   $lookup: {
+      //     from: 'users',
+      //     localField: 'event.user',
+      //     foreignField: '_id',
+      //     as: 'creatorDetails',
+      //   }
+      // },
+      // {
+      //   $unwind: {
+      //     path: '$creatorDetails',
+      //     preserveNullAndEmptyArrays: true,
+      //   }
+      // },
       {
         $match: {
           $expr: {
@@ -2197,7 +2211,8 @@ export class AuthService {
           facebookPostId: { $first: '$event.facebookPostId' },
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
-          creatorDetails: { $first: '$event.creatorDetails' },
+          // creatorDetails: { $first: '$creatorDetails' },
+          creatorType: { $first: '$event.creatorType' },
           categories: { $first: '$categories' },
           businessProfileDetails: { $first: '$businessProfileDetails' },
           files: { $first: '$files' },
@@ -2279,29 +2294,29 @@ export class AuthService {
         },
       },
 
-      // {
-      //   $lookup: {
-      //     from: 'users',
-      //     localField: 'event.user',
-      //     foreignField: '_id',
-      //     as: 'userDetails',
-      //   },
-      // },
-      // {
-      //   $lookup: {
-      //     from: 'businessusers',
-      //     localField: 'event.user',
-      //     foreignField: '_id',
-      //     as: 'businessUserDetails',
-      //   },
-      // },
-      // { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
-      // {
-      //   $unwind: {
-      //     path: '$businessUserDetails',
-      //     preserveNullAndEmptyArrays: true,
-      //   },
-      // },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businessusers',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'businessUserDetails',
+        },
+      },
+      { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: '$businessUserDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
       {
         $project: {
@@ -2345,10 +2360,49 @@ export class AuthService {
             profileType: 'BusinessProfile',
             phone: '$businessProfileDetails.phone',
             website: '$businessProfileDetails.website',
+            facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+            instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+            twitterPageUrl: '$businessProfileDetails.XPageUrl',
           },
           QR_CODE: {
             _id: '$QR_CODE._id',
             url: '$QR_CODE.metaData.url',
+          },
+          creatorDetails: {
+            $cond: {
+              if: { $eq: ['$creatorType', 'User'] },
+              then: {
+                _id: '$userDetails._id',
+                name: '$userDetails.name',
+                profilePhoto: '$userDetails.profilePhoto',
+                email: '$userDetails.email',
+                bio: '$userDetails.bio',
+                followersCount: '$userDetails.followersCount',
+                profileType: 'User',
+                phone: '$userDetails.phone',
+                website: '',
+                isFollowedByMe: '$event.isFollowedByMe',
+                isDeleted: '$userDetails.isDeleted',
+                isMe: false,
+              },
+              else: {
+                _id: '$businessProfileDetails._id',
+                name: '$businessProfileDetails.name',
+                profilePhoto: '$businessProfileDetails.profilePhoto',
+                email: '$businessProfileDetails.email',
+                bio: '$businessProfileDetails.bio',
+                followersCount: '$businessProfileDetails.followersCount',
+                profileType: 'BusinessProfile',
+                phone: '$businessProfileDetails.phone',
+                website: '$businessProfileDetails.website',
+                isFollowedByMe: '$event.isFollowedByMe',
+                isDeleted: '$businessProfileDetails.isDeleted',
+                facebookPageUrl: '$businessUserDetails.facebookPageUrl',
+                instagramPageUrl: '$businessUserDetails.instagramPageUrl',
+                twitterPageUrl: '$businessUserDetails.XPageUrl',
+                isMe: false,
+              },
+            },
           },
           images: {
             $map: {
@@ -2360,6 +2414,7 @@ export class AuthService {
               },
             },
           },
+          creatorType:1,
           isLiked: 1,
           isSaved: 1,
           locations: 1,
