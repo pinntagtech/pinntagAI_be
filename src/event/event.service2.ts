@@ -5395,7 +5395,7 @@ export class EventService2 {
           let businessObj = {
             creatorType: BusinessUser.name,
             creator: businessUser._id,
-            name: data.owner?.name,
+            name: data.owner.name,
             email: data.organizerEmail ? data.organizerEmail : '',
             businessIndustry: businessIndustry._id,
             businessCategories: businessCategory._id,
