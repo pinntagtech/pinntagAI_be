@@ -12,11 +12,13 @@ class LocationType {
 export type EventLocationDocument = EventLocation & Document;
 @Schema({ timestamps: true })
 export class EventLocation {
+  @Prop({ default: false })
+  isFromCrawler: boolean;
   @Prop({ required: true, ref: 'Event' })
   event: mongoose.Types.ObjectId;
   @Prop()
   location: LocationType;
-  @Prop({ref: Outlet.name})
+  @Prop({ ref: Outlet.name })
   businessLocationId: mongoose.Types.ObjectId;
   @Prop()
   accuracy: number;
