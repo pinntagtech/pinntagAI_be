@@ -213,7 +213,6 @@ export class Business {
   roleOfCreator: string;
 
   @Prop({
-      required: true,
       enum: Object.values(OfferStatus),
       default: 0,
     })

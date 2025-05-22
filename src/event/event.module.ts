@@ -142,6 +142,8 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
+      { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessCategory.name, schema: BusinessCategorySchema },
 
       { name: Folder.name, schema: FolderSchema },
       // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },

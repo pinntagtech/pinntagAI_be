@@ -292,12 +292,12 @@ export class RewardsService {
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN)
         .populate('files');
-      if (!rewards || rewards.length === 0) {
-        return {
-          success: false,
-          message: 'No rewards found.',
-        };
-      }
+      // if (!rewards || rewards.length === 0) {
+      //   return {
+      //     success: false,
+      //     message: 'No rewards found.',
+      //   };
+      // }
       return {
         success: true,
         message: 'Rewards found successfully.',

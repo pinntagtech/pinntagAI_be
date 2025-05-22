@@ -41,6 +41,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { EventService2 } from './event.service2';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
+import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 
 @Controller('event')
 export class EventController {
@@ -954,6 +955,20 @@ export class EventController {
         totalEngagements: result.totalEngagements,
         statusCount: result.statusCount,
         total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Post('crawlEvents')
+  @UseGuards(AdminGuard2)
+  async crawlEvents(@Res() res: Response) {
+    const result = await this.eventService.crawlEvents();
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
