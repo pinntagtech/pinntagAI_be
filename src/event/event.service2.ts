@@ -5425,11 +5425,6 @@ export class EventService2 {
           });
           if (!foundOutlet) {
             let outletObj = {
-              // creatorType: BusinessUser.name,
-              // creator: businessUser._id,
-              // placeId: data.address.placeId ?? null,
-              // latitude: data.address.lat,
-              // longitude: data.address.lng,
               isFromCrawler: true,
               businessProfile: businessDetails._id,
               name: data.name ?? `Loc-${data.owner.name}`,
