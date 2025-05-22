@@ -682,7 +682,7 @@ export class EventController {
   }
 
   @Post('copy/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async copyEvent(
     @Res() res: Response,
     @Param('id') id: string,
