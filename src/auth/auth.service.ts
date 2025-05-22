@@ -2293,7 +2293,6 @@ export class AuthService {
           },
         },
       },
-
       {
         $lookup: {
           from: 'users',
@@ -4376,6 +4375,14 @@ export class AuthService {
           localField: 'user',
           foreignField: '_id',
           as: 'user',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
         },
       },
       {

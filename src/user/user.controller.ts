@@ -154,7 +154,7 @@ export class UserController {
   }
 
   @Get('profile')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getProfile(
     @Req() req: Request,
     @Res() res: Response,
