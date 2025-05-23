@@ -187,7 +187,7 @@ export const Seeder = {
       description: 'Entertainment',
     },
     {
-      title: 'Foods & Drink',
+      title: 'Food & Drinks',
       lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
       darkIcon:
