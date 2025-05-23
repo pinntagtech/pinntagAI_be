@@ -5489,6 +5489,7 @@ export class EventService2 {
           let eventObj = {
             title: data.title,
             description: data.description,
+            status: EventStatus.PUBLISHED,
             clientRefId: data._id,
             type: EventTypes.FORMAL,
             businessProfile: businessDetails._id,
@@ -5498,6 +5499,7 @@ export class EventService2 {
             // status: EventStatus.PUBLISHED,
             isFromCrawler: true,
             drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+            bookingUrl: [data.eventLink??''],
           };
 
           let createdEvent = await this.eventModel.create(eventObj);
@@ -5520,6 +5522,7 @@ export class EventService2 {
             website: foundOutlet.website,
             email: foundOutlet.email,
             phone: foundOutlet.phone,
+            isFromCrawler: true,
           });
           console.log('created-location---->', createdlocation);
           await this.businessModel.updateOne(
@@ -5536,13 +5539,52 @@ export class EventService2 {
               $addToSet: { locations: createdlocation._id },
             },
           );
+          // create schedule::
+          for (let i = 0; i < data.eventTimes.length; i++) {
+            let eventTime:any = data.eventTimes[i];
+            let startTime:any = eventTime.startTime;
+            let endTime = eventTime.endTime;
+            if (!startTime) {
+              startTime = new Date();
+            } else {
+              startTime = new Date(startTime); // ensure it's a Date object
+            }
+            if (!endTime) {
+              const tempEnd = new Date(startTime); // clone startTime
+              tempEnd.setDate(tempEnd.getDate() + 5);
+              endTime = new Date(tempEnd);
+            }
+            let eventScheduleObj = {
+              event: createdEvent._id,
+              type: ScheduleTypes.FIXED,
+              fixedSchedule: {
+                date: startTime,
+                durations: [
+                  {
+                    startTime: startTime,
+                    endTime: endTime,
+                  }
+                ]
+              },
+              isFromCrawler: true,
+            };
+            let createdSchedule = await this.eventScheduleModel.create(
+              eventScheduleObj,
+            );
+            await this.eventModel.updateOne(
+              { _id: createdEvent._id },
+              {
+                $addToSet: { eventSchedule: createdSchedule._id },
+              },
+            );
+          }
 
           //download and upload image
           let getFileCategory = await this.fileCategoryModel.findOne({
                     name: FileCategoryTypes.GALLERY_IMAGE,
                   });
           if(data.cover && data.cover.source)
-          await this.driveService.downloadAndUploadImage(data.cover.source, businessUser.id,createdEvent.drivePath,getFileCategory.id)
+          await this.driveService.downloadAndUploadImage(data.cover.source, businessUser.id,createdEvent.drivePath,getFileCategory.id);
 
         } else {
           continue;

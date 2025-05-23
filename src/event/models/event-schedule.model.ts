@@ -103,9 +103,9 @@ export class FixedSchedule {
   durations: Array<fixedDuration>;
 }
 class fixedDuration {
-    startTime: Date;
-    endTime: Date;
-  }
+  startTime: Date;
+  endTime: Date;
+}
 class Duration {
   // startTime: String;
   // endTime: String;
@@ -171,6 +171,8 @@ export class EventSchedule {
 
   @Prop({ ref: Business.name })
   businessId: mongoose.Types.ObjectId;
+  @Prop({ default: false })
+  isFromCrawler: boolean;
 }
 
 export const EventScheduleSchema = SchemaFactory.createForClass(EventSchedule);

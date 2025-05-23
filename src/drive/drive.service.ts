@@ -780,7 +780,7 @@ export class DriveService {
   async downloadAndUploadImage(url, parentId, locationId, fileCategoryId) {
     try {
       // 1. Download the image as a binary (arraybuffer) to get a Buffer
-      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      const response = await axios.get(url, { responseType: 'arraybuffer',timeout: 10000 });
       const imageBuffer = Buffer.from(response.data); // Ensure we have a Node.js Buffer
       // Get MIME type from response headers (e.g., "image/jpeg", "image/png")
       let mimeType =
