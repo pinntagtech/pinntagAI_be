@@ -140,6 +140,9 @@ export class Event {
   @Prop({ default: null })
   quantityLimit: number;
 
+  @Prop()
+  clientRefId: string;
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }

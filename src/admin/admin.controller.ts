@@ -1053,17 +1053,49 @@ export class AdminController {
     @UploadedFiles()
     files: { logo?: Express.Multer.File; cover?: Express.Multer.File },
   ) {
-    if(!files.cover){
+    if (!files.cover) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Please provide cover image',
       });
     }
-    console.log("inside controller?")
-    const result = await this.adminService.addBusiness(user,data,files.logo,files.cover);
+    console.log('inside controller?');
+    const result = await this.adminService.addBusiness(
+      user,
+      data,
+      files.logo,
+      files.cover,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Get('business/followers/:id')
+  @UseGuards(AdminGuard2)
+  async getBusinessFollowers(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getBusinessFollowers(
+      id,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

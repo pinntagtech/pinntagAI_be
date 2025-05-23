@@ -87,6 +87,7 @@ import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
 import { Department, DepartmentDocument } from 'src/business/model/department.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
+import { Follow, FollowDocument } from 'src/user/models/follow.model';
 
 @Injectable()
 export class AdminService {
@@ -115,8 +116,8 @@ export class AdminService {
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
-    @InjectModel(BusinessCategory.name)
-    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(Follow.name) private readonly followModel: Model<FollowDocument>,
     @InjectModel(Template.name)
     private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
@@ -1258,6 +1259,7 @@ export class AdminService {
         .populate('brand', '_id name')
         .populate('businessIndustry')
         .populate('businessCategories')
+        .populate('outlets')
       if (!foundBusiness) {
         return {
           success: false,
@@ -1858,4 +1860,39 @@ export class AdminService {
       };
     }
   }
+
+    async getBusinessFollowers(businessId: string, page: number, limit: number) {
+      try {
+        console.log('user:', businessId);
+        console.log('User name:', User.name);
+        const followers = await this.followModel
+          .find({
+            following: new mongoose.Types.ObjectId(businessId),
+            followerType: User.name,
+          })
+          .populate(
+            'follower',
+            '_id firstName lastName profilePhoto name profileType image',
+          )
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit);
+  
+        const total = await this.businessUserModel.countDocuments({
+          business: new mongoose.Types.ObjectId(businessId),
+        });
+  
+        return {
+          success: true,
+          message: 'Followers fetched Successfully!',
+          data: followers,
+          total,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error,
+        };
+      }
+    }
 }
