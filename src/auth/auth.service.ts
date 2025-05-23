@@ -2232,7 +2232,7 @@ export class AuthService {
               _id: '$_id',
               email: '$email',
               phone: '$phone',
-              distance: '$distance',
+              distance: { $divide: ['$distance', 1609.34] },
             },
           },
           distance: { $first: { $divide: ['$distance', 1609.34] } },
