@@ -80,7 +80,7 @@ import { UpdateCrawledEventDto } from './dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { FileType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { FileCategoryTypes, FileType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { firstValueFrom, from } from 'rxjs';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
@@ -4843,6 +4843,14 @@ export class EventService2 {
             newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
           },
         },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'categories',
+            foreignField: '_id',
+            as: 'categories',
+          }
+        },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -5475,7 +5483,7 @@ export class EventService2 {
           console.log('Business Folder:', businessFolder);
 
           let randomCategoryCount = Math.floor(Math.random() * 4);
-            const [randomCategories] = await this.categoryModel.aggregate([{ $sample: { size: randomCategoryCount } }]);
+            const randomCategories = await this.categoryModel.aggregate([{ $sample: { size: randomCategoryCount } }]);
             const categoriesInObjectId = randomCategories.map(cat => cat._id);
           
           let eventObj = {
@@ -5514,6 +5522,12 @@ export class EventService2 {
             phone: foundOutlet.phone,
           });
           console.log('created-location---->', createdlocation);
+          await this.businessModel.updateOne(
+            { _id: businessDetails._id },
+            {
+              $addToSet: { outlets: foundOutlet._id },
+            },
+          );
           await this.eventModel.updateOne(
             {
               _id: new mongoose.Types.ObjectId(createdEvent._id),
@@ -5523,8 +5537,12 @@ export class EventService2 {
             },
           );
 
-          
-
+          //download and upload image
+          let getFileCategory = await this.fileCategoryModel.findOne({
+                    name: FileCategoryTypes.GALLERY_IMAGE,
+                  });
+          if(data.cover && data.cover.source)
+          await this.driveService.downloadAndUploadImage(data.cover.source, businessUser.id,createdEvent.drivePath,getFileCategory.id)
 
         } else {
           continue;
