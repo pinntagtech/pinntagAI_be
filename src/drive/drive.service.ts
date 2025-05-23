@@ -37,6 +37,7 @@ import { OfferStatus } from 'src/business/enums/business.enum';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import path from 'path';
 import axios from 'axios';
+import streamifier from 'streamifier';
 
 @Injectable()
 export class DriveService {
@@ -773,51 +774,60 @@ export class DriveService {
     }
   }
 
-  // async  downloadAndUploadImage(url, parentId, locationId, fileCategoryId) {
-  //   try {
-  //     // 1. Download the image as a binary (arraybuffer) to get a Buffer
-  //     const response = await axios.get(url, { responseType: 'arraybuffer' });
-  //     const imageBuffer = Buffer.from(response.data);  // Ensure we have a Node.js Buffer
-  //     // Get MIME type from response headers (e.g., "image/jpeg", "image/png")
-  //     let mimeType = response.headers['content-type'] || 'application/octet-stream';
-  
-  //     // 2. Determine the original file name
-  //     let originalName = 'downloaded-file';
-  //     // Check Content-Disposition header for a filename (if present)
-  //     const contentDisp = response.headers['content-disposition'];
-  //     if (contentDisp) {
-  //       // Regex to capture filename from content-disposition
-  //       const match = contentDisp.match(/filename="?([^"]+)"?/);
-  //       if (match) {
-  //         originalName = match[1];
-  //       }
-  //     } else {
-  //       // Fallback: derive file name from URL
-  //       const urlPath = new URL(url).pathname;
-  //       const baseName = path.basename(urlPath);
-  //       if (baseName) {
-  //         originalName = decodeURIComponent(baseName);  // decode URL-encoded parts
-  //       }
-  //     }
-  
-  //     // 3. Create an object mimicking Express.Multer.File
-  //     const file = {
-  //       fieldname: 'file',                // generic field name, since we don't have an actual form field
-  //       originalname: originalName,       // original file name (from URL or headers)
-  //       encoding: '7bit',                 // file encoding (typical for form uploads)
-  //       mimetype: mimeType,               // MIME type of the image
-  //       size: imageBuffer.length,         // size of the file in bytes
-  //       buffer: imageBuffer               // the image data as a Buffer
-  //     };
-  
-  //     // 4. Call the upload function with the constructed file object
-  //     const result = await this.uploadFile(parentId, locationId, fileCategoryId, file);
-  //     return result;  // return the result of the uploadFile call
-  //   } catch (error) {
-  //     console.error('Error in downloadAndUploadImage:', error);
-  //     throw error;  // re-throw or handle as needed
-  //   }
-  // }
+  async downloadAndUploadImage(url, parentId, locationId, fileCategoryId) {
+    try {
+      // 1. Download the image as a binary (arraybuffer) to get a Buffer
+      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data); // Ensure we have a Node.js Buffer
+      // Get MIME type from response headers (e.g., "image/jpeg", "image/png")
+      let mimeType =
+        response.headers['content-type'] || 'application/octet-stream';
 
-  
+      // 2. Determine the original file name
+      let originalName = 'downloaded-file';
+      // Check Content-Disposition header for a filename (if present)
+      const contentDisp = response.headers['content-disposition'];
+      if (contentDisp) {
+        // Regex to capture filename from content-disposition
+        const match = contentDisp.match(/filename="?([^"]+)"?/);
+        if (match) {
+          originalName = match[1];
+        }
+      } else {
+        // Fallback: derive file name from URL
+        const urlPath = new URL(url).pathname;
+        const baseName = path.basename(urlPath);
+        if (baseName) {
+          originalName = decodeURIComponent(baseName); // decode URL-encoded parts
+        }
+      }
+
+      // 3. Create an object mimicking Express.Multer.File
+      const file = {
+        fieldname: 'file', // generic field name, since we don't have an actual form field
+        originalname: originalName, // original file name (from URL or headers)
+        encoding: '7bit', // file encoding (typical for form uploads)
+        mimetype: mimeType, // MIME type of the image
+        size: imageBuffer.length, // size of the file in bytes
+        buffer: imageBuffer,
+        stream: streamifier.createReadStream(imageBuffer),
+        destination: '',
+        filename: originalName,
+        path: '', // Since you're not saving it to di             // the image data as a Buffer
+      };
+
+      // 4. Call the upload function with the constructed file object
+      const result = await this.uploadFile(
+        parentId,
+        locationId,
+        fileCategoryId,
+        file,
+      );
+      console.log("result:", result);
+      return result; // return the result of the uploadFile call
+    } catch (error) {
+      console.error('Error in downloadAndUploadImage:', error);
+      throw error; // re-throw or handle as needed
+    }
+  }
 }
