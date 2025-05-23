@@ -723,15 +723,18 @@ export class DriveService {
       let totalSize = 0;
       const tasks = images
         .filter((img) => {
-          console.log('image mimetype:----------------', img.mimetype);
-          const ok = img.mimetype.startsWith('image/');
-          if (!ok) console.warn(`Skipped non-image: ${img.originalname}`);
-          else if (img.size > driveDetails.AvailableSpace) {
+          if (!img.mimetype.startsWith('image/')) {
+            console.warn(`Converting mimetype of ${img.originalname} to image/jpeg`);
+            img.mimetype = 'image/jpeg'; // Force set mimetype
+          }
+      
+          if (img.size > driveDetails.AvailableSpace) {
             throw new BadRequestException(
               `Insufficient space for ${img.originalname}`,
             );
           }
-          return ok;
+      
+          return true; // All images go through now
         })
         .map((img) => {
           totalSize += img.size;
