@@ -2235,7 +2235,7 @@ export class AuthService {
               distance: '$distance',
             },
           },
-          distance: { $first: '$distance' },
+          distance: { $first: { $divide: ['$distance', 1609.34] } },
         },
       },
       {
