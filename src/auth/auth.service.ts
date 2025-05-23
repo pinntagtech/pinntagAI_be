@@ -2235,6 +2235,7 @@ export class AuthService {
               distance: '$distance',
             },
           },
+          distance: { $first: '$distance' },
         },
       },
       {
@@ -2320,6 +2321,7 @@ export class AuthService {
       {
         $project: {
           _id: 1,
+          distance:1,
           title: 1,
           keywords: 1,
           description: 1,
