@@ -119,7 +119,7 @@ export class RewardsService {
         name: 'Content QR',
       });
       let QRCodeDetails = null;
-      if(qrCode){
+      if (qrCode) {
         QRCodeDetails = await this.driveService.uploadAndCreateFile(
           qrCode[0],
           businessFolder.data.id,
@@ -234,7 +234,6 @@ export class RewardsService {
         .findById(id)
         .populate('locations', LocationPopulates.FOREIGN)
         .populate('QR_CODE', 'metaData')
-        // .populate('drivePath')
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN)
         .populate({
@@ -247,6 +246,113 @@ export class RewardsService {
         })
         .populate('locations', LocationPopulates.FOREIGN)
         .populate('files');
+
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      const pipeline = [
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        // QR_CODE
+        {
+          $lookup: {
+            from: 'files', // collection name for File model
+            localField: 'QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        // user
+        {
+          $lookup: {
+            from: 'businessusers', // adjust to actual collection name
+            localField: 'user',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+
+        // businessProfile
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // businessIndustry inside businessProfile
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessProfile.businessIndustry',
+            foreignField: '_id',
+            as: 'businessProfile.businessIndustry',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile.businessIndustry',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // locations (repeated populate—only include once in aggregation)
+        {
+          $lookup: {
+            from: 'rewardlocations', // adjust to the actual collection name for locations
+            localField: 'locations',
+            foreignField: '_id',
+            as: 'locations',
+          },
+        },
+
+        // files
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'files',
+          },
+        },
+        // {
+        //   $project: {
+        //     'businessProfile.businessIndustry._id': 1,
+        //     'businessProfile.businessIndustry.title': 1,
+        //     'businessProfile.businessIndustry.darkIcon': 1,
+        //     'businessProfile.businessIndustry.lightIcon': 1,
+        //     // other reward fields will be included by default
+        //   },
+        // },
+      ];
+
+      const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
+
       if (!foundReward) {
         return {
           success: false,
@@ -256,7 +362,7 @@ export class RewardsService {
       return {
         success: true,
         message: 'Reward found.',
-        data: foundReward,
+        data: foundRewardAgg,
       };
     } catch (error) {
       console.log('Error in getRewardById:', error);

@@ -83,7 +83,7 @@ import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
-import { Outlet } from 'src/outlet/model/outlet.model';
+import { Outlet,OutletDocument } from 'src/outlet/model/outlet.model';
 import { LocationPopulates } from 'src/enums/user.enum';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { Seeder } from 'src/seeder/data';
@@ -134,8 +134,8 @@ export class BusinessService {
     private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(LocationGroup.name)
     private readonly locationGroupModel: Model<LocationGroupDocument>,
-    @InjectModel(Region.name)
-    private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Region.name) private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -2598,6 +2598,17 @@ export class BusinessService {
             message: `Invalid location ID: ${location}`,
           };
         }
+        const foundOutlet = await this.outletModel.findOne({
+          _id: new mongoose.Types.ObjectId(location),
+          business: businessObjId,
+        });
+        if(!foundOutlet){
+          return {
+            success:false,
+            message: `Location with ID ${location} not found ordoes not belong to this business`,
+          }
+        }
+
         locationsIds.push(new mongoose.Types.ObjectId(location));
       }
     }
@@ -2657,6 +2668,8 @@ export class BusinessService {
       this.locationGroupModel.countDocuments({ business: businessObjId }),
     ]);
     return {
+      success: true,
+      message:"All LocationGroups fetched successfully",
       data: results,
       total,
       page,

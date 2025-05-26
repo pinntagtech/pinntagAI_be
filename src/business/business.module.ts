@@ -119,6 +119,7 @@ import {
 } from 'src/event/models/event-schedule.model';
 import { Region, RegionSchema } from './model/region.model';
 import { LocationGroup, LocationGroupSchema } from './model/locationGroup.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -171,6 +172,7 @@ import { LocationGroup, LocationGroupSchema } from './model/locationGroup.model'
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: Region.name, schema: RegionSchema },
       { name: LocationGroup.name, schema: LocationGroupSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
   ],
   controllers: [BusinessController],

@@ -991,7 +991,6 @@ export class SeederService {
     let email = process.env.PINNTAG_BUSINESS_USER_EMAIL;
     let password = process.env.PINNTAG_BUSINESS_USER_PASSWORD;
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('password', password);
     const foundUser = await this.businessUserModel.findOne({
       email: email,
     });
