@@ -38,6 +38,7 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 import path from 'path';
 import axios from 'axios';
 import streamifier from 'streamifier';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Injectable()
 export class DriveService {
@@ -724,16 +725,18 @@ export class DriveService {
       const tasks = images
         .filter((img) => {
           if (!img.mimetype.startsWith('image/')) {
-            console.warn(`Converting mimetype of ${img.originalname} to image/jpeg`);
+            console.warn(
+              `Converting mimetype of ${img.originalname} to image/jpeg`,
+            );
             img.mimetype = 'image/jpeg'; // Force set mimetype
           }
-      
+
           if (img.size > driveDetails.AvailableSpace) {
             throw new BadRequestException(
               `Insufficient space for ${img.originalname}`,
             );
           }
-      
+
           return true; // All images go through now
         })
         .map((img) => {
@@ -780,7 +783,10 @@ export class DriveService {
   async downloadAndUploadImage(url, parentId, locationId, fileCategoryId) {
     try {
       // 1. Download the image as a binary (arraybuffer) to get a Buffer
-      const response = await axios.get(url, { responseType: 'arraybuffer',timeout: 10000 });
+      const response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 10000,
+      });
       const imageBuffer = Buffer.from(response.data); // Ensure we have a Node.js Buffer
       // Get MIME type from response headers (e.g., "image/jpeg", "image/png")
       let mimeType =
@@ -826,11 +832,47 @@ export class DriveService {
         fileCategoryId,
         file,
       );
-      console.log("result:", result);
+      console.log('result:', result);
       return result; // return the result of the uploadFile call
     } catch (error) {
       console.error('Error in downloadAndUploadImage:', error);
       throw error; // re-throw or handle as needed
+    }
+  }
+
+  async updateFile(
+    id: string,
+    newFile: Express.Multer.File,
+    user: DecodedUser,
+  ) {
+    try {
+      if (!isValidObjectId(id)) {
+        return { success: false, message: 'Invalid file ID' };
+      }
+      const userDetails = await this.businessUserModel.findById(user.id);
+      const file = await this.fileModel.findById(id);
+      if (!file) {
+        return { success: false, message: 'File not found' };
+      }
+      console.log('newFile:', newFile);
+      const updatedFile = await this.uploadAndCreateFile(
+        newFile,
+        file.parentDirectory.toString(),
+        file.ParentDirectoryType,
+        userDetails.drive.toString(),
+        file.category.toString(),
+      );
+
+      await this.fileModel.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+
+      return {
+        success: true,
+        message: 'File updated successfully',
+        data: updatedFile,
+      };
+    } catch (error) {
+      console.error('Error while updating file:', error);
+      return { success: false, message: 'Failed to update file' };
     }
   }
 }

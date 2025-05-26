@@ -236,4 +236,33 @@ export class DriveController {
       });
     }
   }
+  @Post('updateFile/:id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
+    }),
+  )
+  async updateFile(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+    @UploadedFile() image: Express.Multer.File,
+  ){
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid file ID');
+    }
+    const result = await this.driveService.updateFile(id,image, user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
 }
