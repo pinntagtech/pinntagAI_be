@@ -232,10 +232,9 @@ export class EventController {
         message: result.message,
         // count: result.events.length,
         events: result.data,
-        // pages: result.pages,
-        // total: result.total,
-        // page: result.page,
-        // limit: result.limit,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

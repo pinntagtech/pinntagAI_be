@@ -4898,7 +4898,7 @@ export class EventService2 {
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ];
-
+      const countDocuments = await this.eventModel.countDocuments(query);
       // 4. Execute aggregation
       const events = await this.eventModel.aggregate(pipeline);
 
@@ -4949,7 +4949,10 @@ export class EventService2 {
         success: true,
         message: 'Events fetched successfully',
         data: result,
-        
+        total: countDocuments,
+        page,
+        limit
+
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
