@@ -14,6 +14,7 @@ import {
   Query,
   UploadedFiles,
   Req,
+  Put,
 } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -827,7 +828,7 @@ export class EventController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async remove(
     @Res() res: Response,
     @Param('id') id: string,
@@ -884,6 +885,45 @@ export class EventController {
       return res.status(HttpStatus.CREATED).json({
         message: result.message,
         data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Put('schedule/:id')
+  @UseGuards(JwtGuard2)
+  async updateSchedule(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() data: CreateScheduleDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.createSchedule(id, data, user);
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  @Delete('schedule/:id')
+  @UseGuards(JwtGuard2)
+  async deleteSchedule(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Query('eventId') eventId: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.deleteSchedule(id, eventId);
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

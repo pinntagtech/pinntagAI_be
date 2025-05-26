@@ -114,7 +114,7 @@ export class RewardsService {
       };
 
       const reward = await this.rewardModel.create(createObj);
-
+      console.log("Q@CODE::::", qrCode);
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
