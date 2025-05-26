@@ -230,22 +230,22 @@ export class RewardsService {
 
   async getRewardById(id: string, user: DecodedUser) {
     try {
-      const foundReward = await this.rewardModel
-        .findById(id)
-        .populate('locations', LocationPopulates.FOREIGN)
-        .populate('QR_CODE', 'metaData')
-        .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN)
-        .populate({
-          path: 'businessProfile',
-          populate: {
-            path: 'businessIndustry',
-            model: BusinessIndustry.name,
-            select: ' _id title darkIcon lightIcon',
-          },
-        })
-        .populate('locations', LocationPopulates.FOREIGN)
-        .populate('files');
+      // const foundReward = await this.rewardModel
+      //   .findById(id)
+      //   .populate('locations', LocationPopulates.FOREIGN)
+      //   .populate('QR_CODE', 'metaData')
+      //   .populate('user', UserPopulates.FOREIGN)
+      //   .populate('businessProfile', BusinessPopulates.FOREIGN)
+      //   .populate({
+      //     path: 'businessProfile',
+      //     populate: {
+      //       path: 'businessIndustry',
+      //       model: BusinessIndustry.name,
+      //       select: ' _id title darkIcon lightIcon',
+      //     },
+      //   })
+      //   .populate('locations', LocationPopulates.FOREIGN)
+      //   .populate('files');
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
@@ -353,7 +353,7 @@ export class RewardsService {
 
       const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
 
-      if (!foundReward) {
+      if (!foundRewardAgg || foundRewardAgg.length === 0) {
         return {
           success: false,
           message: 'Reward not found.',
@@ -362,7 +362,7 @@ export class RewardsService {
       return {
         success: true,
         message: 'Reward found.',
-        data: foundRewardAgg,
+        data: foundRewardAgg[0],
       };
     } catch (error) {
       console.log('Error in getRewardById:', error);
@@ -390,24 +390,131 @@ export class RewardsService {
         };
       }
       console.log('Business details:', business);
-      const rewards = await this.rewardModel
-        .find({ businessProfile: business._id })
-        .populate('locations', LocationPopulates.FOREIGN)
-        .populate('QR_CODE', 'metaData')
-        // .populate('drivePath')
-        .populate('user', UserPopulates.FOREIGN)
-        .populate('businessProfile', BusinessPopulates.FOREIGN)
-        .populate('files');
+      // const rewards = await this.rewardModel
+      //   .find({ businessProfile: business._id })
+      //   .populate('locations', LocationPopulates.FOREIGN)
+      //   .populate('QR_CODE', 'metaData')
+      //   // .populate('drivePath')
+      //   .populate('user', UserPopulates.FOREIGN)
+      //   .populate('businessProfile', BusinessPopulates.FOREIGN)
+      //   .populate('files');
       // if (!rewards || rewards.length === 0) {
       //   return {
       //     success: false,
       //     message: 'No rewards found.',
       //   };
       // }
+
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      const pipeline = [
+        { $match: { businessProfile: business._id } },
+        // QR_CODE
+        {
+          $lookup: {
+            from: 'files', // collection name for File model
+            localField: 'QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        // user
+        {
+          $lookup: {
+            from: 'businessusers', // adjust to actual collection name
+            localField: 'user',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+
+        // businessProfile
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // businessIndustry inside businessProfile
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessProfile.businessIndustry',
+            foreignField: '_id',
+            as: 'businessProfile.businessIndustry',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile.businessIndustry',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // locations (repeated populate—only include once in aggregation)
+        {
+          $lookup: {
+            from: 'rewardlocations', // adjust to the actual collection name for locations
+            localField: 'locations',
+            foreignField: '_id',
+            as: 'locations',
+          },
+        },
+
+        // files
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'files',
+          },
+        },
+        // {
+        //   $project: {
+        //     'businessProfile.businessIndustry._id': 1,
+        //     'businessProfile.businessIndustry.title': 1,
+        //     'businessProfile.businessIndustry.darkIcon': 1,
+        //     'businessProfile.businessIndustry.lightIcon': 1,
+        //     // other reward fields will be included by default
+        //   },
+        // },
+      ];
+
+      const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
+
       return {
         success: true,
         message: 'Rewards found successfully.',
-        data: rewards,
+        data: foundRewardAgg,
       };
     } catch (error) {
       console.log('Error in getAllRewards:', error);
@@ -437,7 +544,9 @@ export class RewardsService {
       let consumerId = user.id;
       console.log('Consumer ID:', consumerId);
       let skip = (page - 1) * limit;
-
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
@@ -500,9 +609,25 @@ export class RewardsService {
         { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
-            from: 'files',
-            localField: 'reward.drivePath',
-            foreignField: 'parentDirectory',
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
             as: 'files',
           },
         },
@@ -634,6 +759,9 @@ export class RewardsService {
           message: 'User not found.',
         };
       }
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
       const rewards = await this.userRewardModel.aggregate([
         {
           $match: {
@@ -677,9 +805,25 @@ export class RewardsService {
         { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
-            from: 'files',
-            localField: 'reward.drivePath',
-            foreignField: 'parentDirectory',
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
             as: 'files',
           },
         },
@@ -798,6 +942,9 @@ export class RewardsService {
   }
   async getUserRewardById(id: string, user: DecodedUser) {
     try {
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
       const foundReward = await this.userRewardModel.aggregate([
         {
           $match: {
@@ -826,9 +973,25 @@ export class RewardsService {
         { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
-            from: 'files',
-            localField: 'reward.drivePath',
-            foreignField: 'parentDirectory',
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
             as: 'files',
           },
         },

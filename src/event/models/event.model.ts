@@ -143,6 +143,15 @@ export class Event {
   @Prop()
   clientRefId: string;
 
+  @Prop({default:0})
+  totalLikes: number;
+
+  @Prop({default:0})
+  totalShares: number;
+
+  @Prop({default:0})
+  totalSaved: number;
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }

@@ -80,7 +80,12 @@ import { UpdateCrawledEventDto } from './dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { FileCategoryTypes, FileType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  FileCategoryTypes,
+  FileType,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { firstValueFrom, from } from 'rxjs';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { GenerateEventUrlDto } from './dto/generate-event-url.dto';
@@ -4818,6 +4823,10 @@ export class EventService2 {
           type: EventTypes.PRIVATE,
         };
       }
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      console.log("QR_ImageCategory:", QR_ImageCategory);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
@@ -4830,27 +4839,61 @@ export class EventService2 {
             as: 'schedules',
           },
         },
-        { $unwind: { path: '$schedules', preserveNullAndEmptyArrays: true } },
-        {
-          $group: {
-            _id: '$_id',
-            event: { $first: '$$ROOT' },
-            schedules: { $push: '$schedules' },
-          },
-        },
-        {
-          $replaceRoot: {
-            newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
-          },
-        },
+        // { $unwind: { path: '$schedules', preserveNullAndEmptyArrays: true } },
+        // {
+        //   $group: {
+        //     _id: '$_id',
+        //     event: { $first: '$$ROOT' },
+        //     schedules: { $push: '$schedules' },
+        //   },
+        // },
+        // {
+        //   $replaceRoot: {
+        //     newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
+        //   },
+        // },
         {
           $lookup: {
             from: 'categories',
             localField: 'categories',
             foreignField: '_id',
             as: 'categories',
-          }
+          },
         },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'files',
+          },
+        },
+
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -4906,6 +4949,7 @@ export class EventService2 {
         success: true,
         message: 'Events fetched successfully',
         data: result,
+        
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
@@ -5440,7 +5484,10 @@ export class EventService2 {
           businessDetails = await this.businessModel.create(businessObj);
         }
         console.log('Business Details:', businessDetails);
-        await this.businessUserModel.updateOne({ _id: businessUser._id }, {$addToSet: { business: businessDetails._id }});
+        await this.businessUserModel.updateOne(
+          { _id: businessUser._id },
+          { $addToSet: { business: businessDetails._id } },
+        );
         // let eventLocationData: any = {};
         if (data.address.placeId) {
           let foundOutlet = await this.outletModel.findOne({
@@ -5483,9 +5530,11 @@ export class EventService2 {
           console.log('Business Folder:', businessFolder);
 
           let randomCategoryCount = Math.floor(Math.random() * 4);
-            const randomCategories = await this.categoryModel.aggregate([{ $sample: { size: randomCategoryCount } }]);
-            const categoriesInObjectId = randomCategories.map(cat => cat._id);
-          
+          const randomCategories = await this.categoryModel.aggregate([
+            { $sample: { size: randomCategoryCount } },
+          ]);
+          const categoriesInObjectId = randomCategories.map((cat) => cat._id);
+
           let eventObj = {
             title: data.title,
             description: data.description,
@@ -5499,7 +5548,7 @@ export class EventService2 {
             // status: EventStatus.PUBLISHED,
             isFromCrawler: true,
             drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
-            bookingUrl: [data.eventLink??''],
+            bookingUrl: [data.eventLink ?? ''],
           };
 
           let createdEvent = await this.eventModel.create(eventObj);
@@ -5541,8 +5590,8 @@ export class EventService2 {
           );
           // create schedule::
           for (let i = 0; i < data.eventTimes.length; i++) {
-            let eventTime:any = data.eventTimes[i];
-            let startTime:any = eventTime.startTime;
+            let eventTime: any = data.eventTimes[i];
+            let startTime: any = eventTime.startTime;
             let endTime = eventTime.endTime;
             if (!startTime) {
               startTime = new Date();
@@ -5563,14 +5612,13 @@ export class EventService2 {
                   {
                     startTime: startTime,
                     endTime: endTime,
-                  }
-                ]
+                  },
+                ],
               },
               isFromCrawler: true,
             };
-            let createdSchedule = await this.eventScheduleModel.create(
-              eventScheduleObj,
-            );
+            let createdSchedule =
+              await this.eventScheduleModel.create(eventScheduleObj);
             await this.eventModel.updateOne(
               { _id: createdEvent._id },
               {
@@ -5581,11 +5629,15 @@ export class EventService2 {
 
           //download and upload image
           let getFileCategory = await this.fileCategoryModel.findOne({
-                    name: FileCategoryTypes.GALLERY_IMAGE,
-                  });
-          if(data.cover && data.cover.source)
-          await this.driveService.downloadAndUploadImage(data.cover.source, businessUser.id,createdEvent.drivePath,getFileCategory.id);
-
+            name: FileCategoryTypes.GALLERY_IMAGE,
+          });
+          if (data.cover && data.cover.source)
+            await this.driveService.downloadAndUploadImage(
+              data.cover.source,
+              businessUser.id,
+              createdEvent.drivePath,
+              getFileCategory.id,
+            );
         } else {
           continue;
         }
