@@ -12,13 +12,15 @@ import {
   Req,
   UseGuards,
   Put,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { Request, Response } from 'express';
 import { CreateBusinessUserDto } from './dto/create-businessUser.dto';
-import { isValidObjectId } from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { UpdateBusinessUserDto } from './dto/update-businessUser.dto';
 import { FetchBusinessDto } from './dto/fetch-business.dto';
@@ -41,6 +43,10 @@ import {
 } from './dto/create-department.dto';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 import { CreateRegionDto, UpdateRegionDto } from './dto/create-region.dto';
+import {
+  CreateLocationGroupDto,
+  UpdateLocationGroupDto,
+} from './dto/create-locationGroup.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -585,10 +591,7 @@ export class BusinessController {
         message: 'BusinessId not Found.',
       });
     }
-    const result = await this.businessService.updateDownlineUser(
-      id,
-      data,
-    );
+    const result = await this.businessService.updateDownlineUser(id, data);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -600,8 +603,6 @@ export class BusinessController {
       });
     }
   }
-
-
 
   @Post('user/login/reset-password')
   @UseGuards(ResetPasswordGuard)
@@ -647,7 +648,7 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
-    console.log("Is comiing in controller?")
+    console.log('Is comiing in controller?');
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -915,157 +916,298 @@ export class BusinessController {
     }
   }
 
-   @Get('templates')
-    @UseGuards(JwtGuard2)
-    async getTemplates(
-      @Res() res: Response,
-      @Query('page') page: string,
-      @Query('limit') limit: string,
-      @TokenDecoder() user: DecodedUser,
-      @Query('type') type: string,
-    ) {
-      
-      const pageNumber = page ? parseInt(page) : 1;
-      const limitNumber = limit ? parseInt(limit) : 10;
-      const result = await this.businessService.getTemplates(
-        user,
-        pageNumber,
-        limitNumber,
-        type,
-      );
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-          total: result.total,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+  @Get('templates')
+  @UseGuards(JwtGuard2)
+  async getTemplates(
+    @Res() res: Response,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @TokenDecoder() user: DecodedUser,
+    @Query('type') type: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.getTemplates(
+      user,
+      pageNumber,
+      limitNumber,
+      type,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('region')
+  @UseGuards(JwtGuard2)
+  async createRegion(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: CreateRegionDto,
+  ) {
+    const result = await this.businessService.createRegion(user, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Put('region/:id')
+  @UseGuards(JwtGuard2)
+  async updateRegion(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: UpdateRegionDto,
+    @Param('id') id: string,
+  ) {
+    const result = await this.businessService.updateRegion(user, id, data);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('regions')
+  @UseGuards(JwtGuard2)
+  async fetchRegions(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.businessService.fetchRegions(
+      user,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('region/:id')
+  @UseGuards(JwtGuard2)
+  async fetchRegiontById(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const result = await this.businessService.fetchRegiontById(user, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Delete('region/:id')
+  @UseGuards(JwtGuard2)
+  async deleteRegion(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
     }
 
-    @Post('region')
-    @UseGuards(JwtGuard2)
-    async createRegion(
-      @Res() res: Response,
-      @TokenDecoder() user: DecodedUser,
-      @Body() data: CreateRegionDto,
-    ) {
-      const result = await this.businessService.createRegion(user, data);
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+    const result = await this.businessService.deleteRegion(user, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
     }
-  
-    @Put('region/:id')
-    @UseGuards(JwtGuard2)
-    async updateRegion(
-      @Res() res: Response,
-      @TokenDecoder() user: DecodedUser,
-      @Body() data: UpdateRegionDto,
-      @Param('id') id: string,
-    ) {
-      const result = await this.businessService.updateRegion(user, id, data);
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
-    }
-  
-    @Get('regions')
-    @UseGuards(JwtGuard2)
-    async fetchRegions(
-      @Res() res: Response,
-      @TokenDecoder() user: DecodedUser,
-      @Query('limit') limit: string,
-      @Query('page') page: string,
-    ) {
-      const pageNumber = page ? parseInt(page) : 1;
-      const limitNumber = limit ? parseInt(limit) : 10;
-      const result = await this.businessService.fetchRegions(
-        user,
-        pageNumber,
-        limitNumber,
-      );
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-          total: result.total,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
-    }
+  }
 
-    @Get('region/:id')
-    @UseGuards(JwtGuard2)
-    async fetchRegiontById(
-      @Res() res: Response,
-      @TokenDecoder() user: DecodedUser,
-      @Param('id') id: string,
-    ) {
-      if (!isValidObjectId(id)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Invalid ObjectId',
-        });
-      }
-      const result = await this.businessService.fetchRegiontById(user, id);
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-          data: result.data,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+  @Post('location-group')
+  @UseGuards(JwtGuard2)
+  async createLocationGroup(
+    @Res() res: Response,
+    @TokenDecoder() user: any, // Extracted token payload (contains userId, businessId, etc.)
+    @Body() createLocationGroupDto: CreateLocationGroupDto,
+  ) {
+    const businessId = user.businessId; // Business context from token
+    const userId = user.userId; // ID of the user creating the group
+
+    const result = await this.businessService.createLocationGroup(
+      businessId,
+      userId,
+      createLocationGroupDto,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
     }
+  }
 
-    @Delete('region/:id')
-    @UseGuards(JwtGuard2)
-    async deleteRegion(
-      @Res() res: Response,
-      @TokenDecoder() user: DecodedUser,
-      @Param('id') id: string,
-    ) {
-      if (!isValidObjectId(id)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Invalid ObjectId',
-        });
-      }
-  
-      const result = await this.businessService.deleteRegion(user, id);
-      if (result.success) {
-        return res.status(HttpStatus.OK).json({
-          message: result.message,
-        });
-      } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: result.message,
-        });
-      }
+  /**
+   * Update an existing LocationGroup by id
+   * PUT /location-groups/:id
+   */
+  @Put(':id')
+  async update(
+    @Res() res: Response,
+    @TokenDecoder() user: any,
+    @Param('id') id: string,
+    @Body() updateLocationGroupDto: UpdateLocationGroupDto,
+  ) {
+    const businessId = user.businessId;
+    const userId = user.userId;
+    const result = await this.businessService.updateLocationGroup(
+      businessId,
+      userId,
+      id,
+      updateLocationGroupDto,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
     }
+  }
 
+  /**
+   * Get a paginated list of LocationGroups for the current business
+   * GET /location-groups?page=1&limit=10
+   */
+  @Get()
+  async findAll(
+    @Res() res: Response,
+    @TokenDecoder() user: any,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    const businessId = user.businessId;
+    const result = await this.businessService.findAllLocationGroups(
+      businessId,
+      page,
+      limit,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        total: result.total,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
+  /**
+   * Get a single LocationGroup by id
+   * GET /location-groups/:id
+   */
+
+  @Get(':id')
+  async findOne(
+    @Res() res: Response,
+    @TokenDecoder() user: any,
+    @Param('id') id: string,
+  ) {
+    const businessId = user.businessId;
+    const result = await this.businessService.findOneLocationGroup(businessId, id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  /**
+   * Delete a LocationGroup by id
+   * DELETE /location-groups/:id
+   */
+  @Delete(':id')
+  async remove(
+    @Res() res: Response,
+    @TokenDecoder() user: any,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid ObjectId',
+      });
+    }
+    const businessId = user.businessId;
+    const result = await this.businessService.removeLocationGroup(
+      businessId,
+      id,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
   // @Get('brand')
   // async fetchBrand(
