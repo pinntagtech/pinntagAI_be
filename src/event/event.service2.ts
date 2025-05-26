@@ -4237,6 +4237,70 @@ export class EventService2 {
     }
   }
 
+  async editSchedule(
+    scheduleId: string,
+    eventId: string,
+    userId: string,
+    data: CreateScheduleDto,
+  ) {
+    if (!mongoose.isValidObjectId(scheduleId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid schedule id',
+      };
+    }
+    const schedule = await this.scheduleModel.findById(scheduleId);
+    if (!schedule) {
+      return {
+        success: false,
+        message: 'Schedule not found',
+      };
+    }
+    if (schedule.event.toString() !== eventId) {
+      return {
+        success: false,
+        message: 'This schedule does not belong to this event',
+      };
+    }
+    return {
+      success: true,
+      message: 'Schedule fetched successfully',
+      data: schedule,
+    };
+  }
+  async deleteSchedule(scheduleId: string, eventId: string) {
+    if (!mongoose.isValidObjectId(scheduleId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid schedule id',
+      };
+    }
+    const schedule = await this.scheduleModel.findById(scheduleId);
+    if (!schedule) {
+      return {
+        success: false,
+        message: 'Schedule not found',
+      };
+    }
+    if (schedule.event.toString() !== eventId) {
+      return {
+        success: false,
+        message: 'This schedule does not belong to this event',
+      };
+    }
+    await this.scheduleModel.findByIdAndDelete({
+      _id: new mongoose.Types.ObjectId(scheduleId),
+    });
+    await this.eventModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(eventId) },
+      { $pull: { eventSchedule: new mongoose.Types.ObjectId(scheduleId) } },
+    );
+    return {
+      success: true,
+      message: 'Schedule deleted successfully',
+    };
+  }
+
   private async getUserCreatorDetails(userId: string, currentUserId: string) {
     const creator = await this.userModel.findById(userId);
     if (!creator) return null;
@@ -4826,7 +4890,7 @@ export class EventService2 {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log("QR_ImageCategory:", QR_ImageCategory);
+      console.log('QR_ImageCategory:', QR_ImageCategory);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
@@ -4951,8 +5015,7 @@ export class EventService2 {
         data: result,
         total: countDocuments,
         page,
-        limit
-
+        limit,
       };
     } catch (error) {
       console.error('Error in contentManagement:', error);
