@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import * as bcrypt from 'bcrypt';
@@ -89,6 +89,14 @@ import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { Seeder } from 'src/seeder/data';
 import { Region, RegionDocument } from './model/region.model';
 import { CreateRegionDto, UpdateRegionDto } from './dto/create-region.dto';
+import {
+  CreateLocationGroupDto,
+  UpdateLocationGroupDto,
+} from './dto/create-locationGroup.dto';
+import {
+  LocationGroup,
+  LocationGroupDocument,
+} from './model/locationGroup.model';
 
 @Injectable()
 export class BusinessService {
@@ -122,8 +130,12 @@ export class BusinessService {
     private readonly followModel: Model<FollowDocument>,
     @InjectModel(Action.name)
     private readonly actionModel: Model<ActionDocument>,
-    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(Region.name) private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(LocationGroup.name)
+    private readonly locationGroupModel: Model<LocationGroupDocument>,
+    @InjectModel(Region.name)
+    private readonly regionModel: Model<RegionDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -139,7 +151,10 @@ export class BusinessService {
       });
 
       if (foundUser) {
-        if(foundUser.status === ProfileStatus.INITIATED && foundUser.isEmailVerified === false) {
+        if (
+          foundUser.status === ProfileStatus.INITIATED &&
+          foundUser.isEmailVerified === false
+        ) {
           await this.mailService.sendBusinessUserVerificationMail(foundUser.id);
           return {
             success: true,
@@ -661,7 +676,7 @@ export class BusinessService {
           { $set: { roles: deptRoles } },
         );
       }
-      for( const region of Seeder.Regions){
+      for (const region of Seeder.Regions) {
         const createdRegion = await this.regionModel.create({
           name: region.name,
           description: region.description,
@@ -673,7 +688,6 @@ export class BusinessService {
           { $set: { roles: [] } },
         );
       }
-
     } catch (error) {
       console.error('Error seeding business department roles:', error);
       throw new Error('Failed to seed business department roles');
@@ -2464,7 +2478,7 @@ export class BusinessService {
       }
       updateObj['name'] = data.name;
     }
-    console.log
+    console.log;
     // Validate any new roles
     if (data.users) {
       const userIds = [];
@@ -2485,10 +2499,12 @@ export class BusinessService {
       updateObj['description'] = data.description;
     }
 
-     
-
-    const updatedRegion = await this.regionModel.findOneAndUpdate({_id:new mongoose.Types.ObjectId(regionId)}, { $set: updateObj }, { new: true });
-    console.log("udpatedRegion:",updatedRegion)
+    const updatedRegion = await this.regionModel.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(regionId) },
+      { $set: updateObj },
+      { new: true },
+    );
+    console.log('udpatedRegion:', updatedRegion);
     return { success: true, message: 'Region updated', data: updatedRegion };
   }
 
@@ -2564,5 +2580,202 @@ export class BusinessService {
 
     await this.regionModel.deleteOne({ _id: regionId });
     return { success: true, message: 'Region deleted' };
+  }
+
+  async createLocationGroup(
+    businessId: string,
+    userId: string,
+    createDto: CreateLocationGroupDto,
+  ) {
+    const businessObjId = new mongoose.Types.ObjectId(businessId);
+    const userObjId = new mongoose.Types.ObjectId(userId);
+    let locationsIds = [];
+    if (createDto.locations) {
+      for (let location of createDto.locations) {
+        if (!isValidObjectId(location)) {
+          return {
+            success: false,
+            message: `Invalid location ID: ${location}`,
+          };
+        }
+        locationsIds.push(new mongoose.Types.ObjectId(location));
+      }
+    }
+
+    const businessExists = await this.businessModel.exists({
+      _id: businessObjId,
+    });
+    const userExists = await this.businessUserModel.exists({
+      _id: userObjId,
+      business: businessObjId,
+    });
+    if (!businessExists) {
+      return {
+        success: false,
+        message: 'Business not found',
+      };
+    }
+    if (!userExists) {
+      return {
+        success: false,
+        message: 'User not found or does not belong to this business',
+      };
+    }
+
+    const toCreate = {
+      name: createDto.name,
+      description: createDto.description ?? '',
+      locations: createDto.locations ?? [],
+      business: businessObjId,
+      createdBy: userObjId,
+    };
+    const locationGroup = await this.locationGroupModel.create(toCreate);
+    return {
+      success: true,
+      message: 'LocationGroup created successfully',
+      data: locationGroup,
+    };
+  }
+
+  async findAllLocationGroups(businessId: string, page: number, limit: number) {
+    const businessObjId = new mongoose.Types.ObjectId(businessId);
+    if (page < 1 || limit < 1) {
+      return {
+        success: false,
+        message: 'Page and limit must be greater than 0',
+      };
+    }
+    const skip = (page - 1) * limit;
+    // Find all groups for this business with pagination
+    const [results, total] = await Promise.all([
+      this.locationGroupModel
+        .find({ business: businessObjId })
+        .sort({ createdAt: -1 }) // sort newest first (optional)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.locationGroupModel.countDocuments({ business: businessObjId }),
+    ]);
+    return {
+      data: results,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Find a single LocationGroup by id (within the current business).
+   */
+  async findOneLocationGroup(businessId: string, id: string) {
+    if (!isValidObjectId(id)) {
+      return {
+        success: false,
+        message: 'Invalid LocationGroup ID',
+      };
+    }
+    const businessObjId = new mongoose.Types.ObjectId(businessId);
+
+    const locationGroup = await this.locationGroupModel
+      .findOne({ _id: id, business: businessObjId })
+      .exec();
+
+    if (!locationGroup) {
+      return {
+        success: false,
+        message: 'LocationGroup not found or does not belong to this business',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'LocationGroup found',
+      data: locationGroup,
+    };
+  }
+
+  /**
+   * Update an existing LocationGroup.
+   * Only fields provided in updateDto will be modified.
+   */
+  async updateLocationGroup(
+    businessId: string,
+    userId: string,
+    id: string,
+    updateDto: UpdateLocationGroupDto,
+  ) {
+    if (!isValidObjectId(id)) {
+      return {
+        success: false,
+        message: 'Invalid LocationGroup ID',
+      };
+    }
+    const businessObjId = new mongoose.Types.ObjectId(businessId);
+    const userObjId = new mongoose.Types.ObjectId(userId);
+    // Validate outlet references if the update payload includes any
+    let locationsIds = [];
+    if (updateDto.locations) {
+      for (let location of updateDto.locations) {
+        if (!isValidObjectId(location)) {
+          return {
+            success: false,
+            message: `Invalid location ID: ${location}`,
+          };
+        }
+        locationsIds.push(new mongoose.Types.ObjectId(location));
+      }
+    }
+
+    const locationGroup = await this.locationGroupModel
+      .findOne({ _id: id, business: businessObjId })
+      .exec();
+    if (!locationGroup) {
+      return {
+        success: false,
+        message: 'LocationGroup not found or does not belong to this business',
+      };
+    }
+
+    // Update allowed fields
+    if (updateDto.name !== undefined) {
+      locationGroup.name = updateDto.name;
+    }
+    if (updateDto.description !== undefined) {
+      locationGroup.description = updateDto.description;
+    }
+    if (updateDto.locations !== undefined) {
+      locationGroup.locations = updateDto.locations.map(
+        (outletId) => new mongoose.Types.ObjectId(outletId),
+      );
+    }
+    // (We do not allow changing `business` or `createdBy` through updateDto)
+
+    await locationGroup.save();
+    return {
+      success: true,
+      message: 'LocationGroup updated successfully',
+      data: locationGroup,
+    };
+  }
+
+  /**
+   * Remove (delete) a LocationGroup by id.
+   */
+  async removeLocationGroup(businessId: string, id: string) {
+    const businessObjId = new mongoose.Types.ObjectId(businessId);
+
+    const result = await this.locationGroupModel
+      .findOneAndDelete({ _id: id, business: businessObjId })
+      .exec();
+    if (!result) {
+      return {
+        success: false,
+        message: 'LocationGroup not found or does not belong to this business',
+      };
+    }
+    return {
+      success: true,
+      message: 'LocationGroup deleted successfully',
+    };
   }
 }

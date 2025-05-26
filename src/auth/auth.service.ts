@@ -2317,7 +2317,6 @@ export class AuthService {
           preserveNullAndEmptyArrays: true,
         },
       },
-
       {
         $project: {
           _id: 1,
@@ -2347,7 +2346,7 @@ export class AuthService {
                 name: '$$category.title',
                 darkIcon: '$$category.darkIcon',
                 lightIcon: '$$category.lightIcon',
-                colorData: '$$category.activeColor',
+                activeColor: '$$category.activeColor',
               },
             },
           },
@@ -2422,6 +2421,7 @@ export class AuthService {
           schedules: 1,
         },
       },
+      {$limit: limit}
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
