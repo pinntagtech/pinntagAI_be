@@ -2545,6 +2545,14 @@ export class BusinessService {
         this.regionModel
           .find(query)
           .populate('users', '_id name email profilePhoto')
+          .populate({
+            path: 'users',
+            populate:{
+              path: 'role',
+              model: Role.name,
+              select: '_id name description'
+            }
+          })
           .populate('createdBy', '_id name email profilePhoto')
           .sort({ createdAt: -1 })
           .skip((page - 1) * limit)

@@ -51,16 +51,16 @@ export class RolesService {
         return {
           success: false,
           message: 'Business User not found',
-        };  
+        };
       }
-      let findQuery:any = {};
-      if(isAdmin){
+      let findQuery: any = {};
+      if (isAdmin) {
         findQuery = {
           name: createRoleDto.name,
           // belongsTo: RoleBelonging.SYSTEM,
         };
       }
-      if(isBusiness){
+      if (isBusiness) {
         findQuery = {
           name: createRoleDto.name,
           creatorType: RoleCreatorType.BUSINESS,
@@ -177,13 +177,10 @@ export class RolesService {
     }
     return collectedIds;
   }
-  async getAllChildAdminIds2(
-    id: string,
-    creatorType: string
-  ) {
-    console.log("id:,creatorType:",id,creatorType)
+  async getAllChildAdminIds2(id: string, creatorType: string) {
+    console.log('id:,creatorType:', id, creatorType);
     const objectId = new mongoose.Types.ObjectId(id);
-  
+
     const result = await this.roleModel.aggregate([
       { $match: { creator: objectId } },
       {
@@ -193,8 +190,8 @@ export class RolesService {
           connectFromField: '_id',
           connectToField: 'creator',
           as: 'descendants',
-          restrictSearchWithMatch: { creatorType }
-        }
+          restrictSearchWithMatch: { creatorType },
+        },
       },
       {
         $project: {
@@ -203,23 +200,23 @@ export class RolesService {
             $map: {
               input: '$descendants',
               as: 'd',
-              in: { $toString: '$$d._id' }
-            }
-          }
-        }
-      }
+              in: { $toString: '$$d._id' },
+            },
+          },
+        },
+      },
     ]);
-  
+
     // Return only descendants, excluding the root
     return result[0]?.descendantIds || [];
   }
 
-  async fetchRoles(id: string, userType: string,page:number,limit:number) {
+  async fetchRoles(id: string, userType: string, page: number, limit: number) {
     try {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
-      let allAdminIds = await this.getAllChildAdminIds2(id,userType);
-      console.log("allAdminIds:", allAdminIds);
-      console.log("allAdminIds111:", allAdminIds);
+      let allAdminIds = await this.getAllChildAdminIds2(id, userType);
+      console.log('allAdminIds:', allAdminIds);
+      console.log('allAdminIds111:', allAdminIds);
       let ownerRole = null;
       if (userType === UserTypes.ADMIN) {
         const findAdminUser = await this.adminModel.findById(id);
@@ -240,18 +237,24 @@ export class RolesService {
         }
         ownerRole = findBusinessUser.role[0];
       }
-      console.log("businessUser:",userType)
+      console.log('businessUser:', userType);
       console.log('allAdminIds:', allAdminIds);
-      const allAdminObjectIds = allAdminIds.map(id => new mongoose.Types.ObjectId(id));
-      const roles = await this.roleModel.find({
-        _id: { $in: allAdminObjectIds, $ne: ownerRole },
-        creatorType: userType,
-      })
-      .populate({
-        path: 'creator',
-        select: 'name',
-        model: userType,
-      }).skip((page-1)*limit).limit(limit);
+      const allAdminObjectIds = allAdminIds.map(
+        (id) => new mongoose.Types.ObjectId(id),
+      );
+      const roles = await this.roleModel
+        .find({
+          _id: { $in: allAdminObjectIds, $ne: ownerRole },
+          creatorType: userType,
+        })
+        .populate({
+          path: 'creator',
+          select: 'name',
+          model: userType,
+        })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
       const total = await this.roleModel.countDocuments({
         _id: { $in: allAdminObjectIds, $ne: ownerRole },
         creatorType: userType,
@@ -262,11 +265,11 @@ export class RolesService {
       //     $match: {
       //       _id: { $in: allAdminObjectIds, $ne: ownerRole },
       //       creatorType: userType,
-      //     }, 
+      //     },
       //   },
       //   {
       //     $lookup: {
-      //       from: 'businessusers', 
+      //       from: 'businessusers',
       //       localField: "creator",
       //       foreignField: "_id",
       //       as: "creator",
@@ -288,7 +291,6 @@ export class RolesService {
       //   //   },
       //   // },
       // ]);
-
 
       console.log("'roles:", roles);
       return {
