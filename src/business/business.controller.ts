@@ -1072,8 +1072,8 @@ export class BusinessController {
     @TokenDecoder() user: any, // Extracted token payload (contains userId, businessId, etc.)
     @Body() createLocationGroupDto: CreateLocationGroupDto,
   ) {
-    const businessId = user.businessId; // Business context from token
-    const userId = user.userId; // ID of the user creating the group
+    const businessId = user.businessProfile; // Business context from token
+    const userId = user.id; // ID of the user creating the group
 
     const result = await this.businessService.createLocationGroup(
       businessId,
@@ -1096,15 +1096,16 @@ export class BusinessController {
    * Update an existing LocationGroup by id
    * PUT /location-groups/:id
    */
-  @Put(':id')
+  @Put('location-group/:id')
+  @UseGuards(JwtGuard2)
   async update(
     @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
     @Body() updateLocationGroupDto: UpdateLocationGroupDto,
   ) {
-    const businessId = user.businessId;
-    const userId = user.userId;
+    const businessId = user.businessProfile;
+    const userId = user.id;
     const result = await this.businessService.updateLocationGroup(
       businessId,
       userId,
@@ -1127,14 +1128,15 @@ export class BusinessController {
    * Get a paginated list of LocationGroups for the current business
    * GET /location-groups?page=1&limit=10
    */
-  @Get()
-  async findAll(
+  @Get('location-groups')
+  @UseGuards(JwtGuard2)
+  async findAllLocationGroups(
     @Res() res: Response,
     @TokenDecoder() user: any,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const businessId = user.businessId;
+    const businessId = user.businessProfile;
     const result = await this.businessService.findAllLocationGroups(
       businessId,
       page,
@@ -1158,13 +1160,14 @@ export class BusinessController {
    * GET /location-groups/:id
    */
 
-  @Get(':id')
-  async findOne(
+  @Get('location-group/:id')
+  @UseGuards(JwtGuard2)
+  async findOneLocationGroup(
     @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
   ) {
-    const businessId = user.businessId;
+    const businessId = user.businessProfile;
     const result = await this.businessService.findOneLocationGroup(businessId, id);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -1182,8 +1185,9 @@ export class BusinessController {
    * Delete a LocationGroup by id
    * DELETE /location-groups/:id
    */
-  @Delete(':id')
-  async remove(
+  @Delete('location-group/:id')
+  @UseGuards(JwtGuard2)
+  async removeLocationGroup(
     @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
@@ -1193,7 +1197,7 @@ export class BusinessController {
         message: 'Invalid ObjectId',
       });
     }
-    const businessId = user.businessId;
+    const businessId = user.businessProfile;
     const result = await this.businessService.removeLocationGroup(
       businessId,
       id,
