@@ -111,10 +111,10 @@ export class RewardsService {
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,
         user: new mongoose.Types.ObjectId(userId),
-        schedule:{
+        schedule: {
           startDate: new Date(data.startDate),
           endDate: new Date(data.endDate),
-        }
+        },
       };
 
       const reward = await this.rewardModel.create(createObj);
@@ -651,6 +651,7 @@ export class RewardsService {
             QR_CODE: { $first: '$QR_CODE' },
             rewardExpiration: { $first: '$reward.rewardExpiration' },
             description: { $first: '$reward.description' },
+            schedule: { $first: '$reward.schedule' },
             createdAt: { $first: '$reward.createdAt' },
             updatedAt: { $first: '$reward.updatedAt' },
             __v: { $first: '$reward.__v' },
@@ -791,7 +792,7 @@ export class RewardsService {
           },
         },
         {
-          $unwind: { path: '$reward' },
+          $unwind: { path: '$reward', preserveNullAndEmptyArrays: true },
         },
         {
           $unwind: {
@@ -845,6 +846,7 @@ export class RewardsService {
             activityType: '$reward.activityType',
             rewardExpiration: '$reward.rewardExpiration',
             description: '$reward.description',
+            schedule: '$reward.schedule',
             user: {
               _id: '$user._id',
               name: '$user.name', // only include 'name' from populated user
@@ -993,7 +995,7 @@ export class RewardsService {
         {
           $lookup: {
             from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$event.drivePath' },
+            let: { folderId: '$reward.drivePath' },
             pipeline: [
               {
                 $match: {
@@ -1152,12 +1154,16 @@ export class RewardsService {
       };
     }
   }
-  async getBusinessRewardById(id: string, user: DecodedUser,claimStatus:string) {
-    let matchQuery:any = {
+  async getBusinessRewardById(
+    id: string,
+    user: DecodedUser,
+    claimStatus: string,
+  ) {
+    let matchQuery: any = {
       businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       rewardId: new mongoose.Types.ObjectId(id),
-    }
-    if( claimStatus){
+    };
+    if (claimStatus) {
       matchQuery.claimStatus = claimStatus; // Add claim status filter if provided
     }
     const [result] = await this.userRewardModel.aggregate([
@@ -1220,13 +1226,13 @@ export class RewardsService {
         },
       },
     ]);
-    
-    console.log("result:",result);
+
+    console.log('result:', result);
     return {
       success: true,
       message: 'Rewards found successfully.',
       data: result.data,
-      claimStatusCounts: result.claimStatusCounts
+      claimStatusCounts: result.claimStatusCounts,
     };
   }
 }
