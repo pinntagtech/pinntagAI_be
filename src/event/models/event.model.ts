@@ -166,6 +166,7 @@ class Duration {
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
+
 EventSchema.index({ schedule: 1 });
 EventSchema.set('toObject', { virtuals: true }).set('toJSON', {
   virtuals: true,

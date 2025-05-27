@@ -95,6 +95,7 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
+import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class AuthService {
@@ -129,8 +130,8 @@ export class AuthService {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
-    @InjectModel(EventSchedule.name)
-    private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -2068,6 +2069,10 @@ export class AuthService {
     console.log('Start Date:', startDate);
     console.log('End Date:', endDate);
     console.log('Match:', match);
+
+    const QR_ImageCategory = await this.fileCategoryModel.findOne({
+      name: 'Content QR',
+    });
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -2102,14 +2107,40 @@ export class AuthService {
           as: 'categories',
         },
       },
+      // {
+      //   $lookup: {
+      //     from: 'files',
+      //     localField: 'event.drivePath',
+      //     foreignField: 'parentDirectory',
+      //     as: 'files',
+      //   },
+      // },
+
       {
         $lookup: {
-          from: 'files',
-          localField: 'event.drivePath',
-          foreignField: 'parentDirectory',
+          from: 'files', // assuming this is the same collection as QR_CODE
+          let: { folderId: '$event.drivePath' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$parentDirectory', '$$folderId'] },
+                    {
+                      $ne: [
+                        '$category',
+                        new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
           as: 'files',
         },
       },
+
       {
         $lookup: {
           from: 'files',
@@ -2320,7 +2351,7 @@ export class AuthService {
       {
         $project: {
           _id: 1,
-          distance:1,
+          distance: 1,
           title: 1,
           keywords: 1,
           description: 1,
@@ -2421,7 +2452,7 @@ export class AuthService {
           schedules: 1,
         },
       },
-      {$limit: limit}
+      { $limit: limit },
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
