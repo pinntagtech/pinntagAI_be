@@ -2834,15 +2834,15 @@ export class EventService2 {
             as: 'category',
           },
         },
-        { $unwind: '$category' },
-        {
-          $lookup: {
-            from: 'images',
-            localField: 'event.images',
-            foreignField: '_id',
-            as: 'images',
-          },
-        },
+        // { $unwind: '$category' },
+        // {
+        //   $lookup: {
+        //     from: 'images',
+        //     localField: 'event.images',
+        //     foreignField: '_id',
+        //     as: 'images',
+        //   },
+        // },
         {
           $lookup: {
             from: 'eventlocations',
