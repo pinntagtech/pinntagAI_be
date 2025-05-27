@@ -1140,13 +1140,17 @@ export class RewardsService {
       };
     }
   }
-  async getBusinessRewardById(id: string, user: DecodedUser) {
+  async getBusinessRewardById(id: string, user: DecodedUser,claimStatus:string) {
+    let matchQuery:any = {
+      businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+      rewardId: new mongoose.Types.ObjectId(id),
+    }
+    if( claimStatus){
+      matchQuery.claimStatus = claimStatus; // Add claim status filter if provided
+    }
     const [result] = await this.userRewardModel.aggregate([
       {
-        $match: {
-          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-          rewardId: new mongoose.Types.ObjectId(id),
-        },
+        $match: matchQuery,
       },
       {
         $lookup: {

@@ -28,6 +28,7 @@ import { GetDashboardDto } from 'src/auth/dto/getDashboard.dto';
 import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 import { totalmem } from 'os';
 import { UserTypes } from 'src/enums/auth.enums';
+import { ClaimStatus } from './enums/rewards.enum';
 
 @Controller('reward')
 export class RewardsController {
@@ -285,6 +286,7 @@ export class RewardsController {
   async getBusinessRewardById(
     @Res() res: Response,
     @Param('id') id: string,
+    @Query('claimstatus') claimStatus: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!isValidObjectId(id)) {
@@ -292,7 +294,16 @@ export class RewardsController {
         message: 'Invalid Object ID',
       });
     }
-    const result = await this.rewardService.getBusinessRewardById(id,user);
+    if (!Object.values(ClaimStatus).includes(claimStatus)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Claim Status',
+      });
+    }
+    const result = await this.rewardService.getBusinessRewardById(
+      id,
+      user,
+      claimStatus,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
