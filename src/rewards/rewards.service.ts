@@ -610,7 +610,7 @@ export class RewardsService {
         {
           $lookup: {
             from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$drivePath' },
+            let: { folderId: '$reward.drivePath' },
             pipeline: [
               {
                 $match: {
