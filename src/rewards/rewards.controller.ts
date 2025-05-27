@@ -267,9 +267,7 @@ export class RewardsController {
   }
   @Get('business/logistics')
   @UseGuards(JwtGuard2)
-  async getLogistics(
-    @Res() res: Response,
-    @TokenDecoder() user: DecodedUser){
+  async getLogistics(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.rewardService.getLogistics(user);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
@@ -280,5 +278,31 @@ export class RewardsController {
     return res.status(HttpStatus.BAD_REQUEST).json({
       message: result.message,
     });
+  }
+
+  @Get('business/:id')
+  @UseGuards(JwtGuard2)
+  async getBusinessRewardById(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid Object ID',
+      });
+    }
+    const result = await this.rewardService.getBusinessRewardById(id,user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+        claimStatusCounts: result.claimStatusCounts,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }
