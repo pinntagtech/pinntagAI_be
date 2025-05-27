@@ -389,6 +389,10 @@ export class EventService2 {
     let eventDescription = '';
     let requiredSchedule;
     //fetch the schedule whose date is greater than or equal to the current date
+    const now = new Date();
+    const todaysDate = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    ).toISOString();
 
     for (let i = 0; i < eventInfo.eventSchedule.length; i++) {
       if (!requiredSchedule) {
@@ -396,7 +400,7 @@ export class EventService2 {
           _id: eventInfo.eventSchedule[i],
         });
         if (schedule.type == ScheduleTypes.FIXED) {
-          if (schedule.fixedSchedule.date >= new Date()) {
+          if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
             // requiredSchedule = eventInfo.schedule[i];
             let durations = schedule.fixedSchedule.durations;
             for (let j = 0; j < durations.length; j++) {
@@ -405,7 +409,17 @@ export class EventService2 {
                 console.log('Start time:', durations[j].startTime);
                 requiredSchedule = durations[j].startTime;
                 break;
+              }else{
+                return {
+                  success: false,
+                  message: 'No upcoming schedule found for this event',
+                }
               }
+            }
+          } else {
+            return {
+              success: false,
+              message: 'No upcoming schedule found for this event',
             }
           }
         }
@@ -1519,7 +1533,6 @@ export class EventService2 {
         message: 'Please provide a valid event id',
       };
     } else {
-
       const QR_CATEGORY_ID = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
