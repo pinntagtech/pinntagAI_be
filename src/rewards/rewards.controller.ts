@@ -294,7 +294,7 @@ export class RewardsController {
         message: 'Invalid Object ID',
       });
     }
-    if (!Object.values(ClaimStatus).includes(claimStatus)) {
+    if (claimStatus && !Object.values(ClaimStatus).includes(claimStatus)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid Claim Status',
       });

@@ -829,7 +829,7 @@ export class RewardsService {
         },
         {
           $project: {
-            _id: 1,
+            _id: '$reward._id',
             userId: 1,
             claimStatus: '$reward.claimStatus',
             files: 1,
