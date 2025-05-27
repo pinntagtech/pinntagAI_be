@@ -1519,6 +1519,10 @@ export class EventService2 {
         message: 'Please provide a valid event id',
       };
     } else {
+
+      const QR_CATEGORY_ID = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
       const event = await this.eventModel
         .findById(id)
         .populate('images', ImagePopulates.FOREIGN)
@@ -1536,7 +1540,10 @@ export class EventService2 {
           },
           select: BusinessPopulates.FOREIGN,
         })
-        .populate('files');
+        .populate({
+          path: 'files',
+          match: { category: { $ne: QR_CATEGORY_ID._id } },
+        });
       if (!event) {
         return {
           success: false,
@@ -4119,91 +4126,91 @@ export class EventService2 {
           data.recurringSchedule
         ) {
           console.log('Check:1');
-          let startDate = new Date(data.recurringSchedule.startDate);
-          let endDate = new Date(data.recurringSchedule.endDate);
+          // let startDate = new Date(data.recurringSchedule.startDate);
+          // let endDate = new Date(data.recurringSchedule.endDate);
 
-          if (startDate < new Date(Date.now())) {
-            return {
-              success: false,
-              message: `Start date cannot be in past`,
-            };
-          }
-          if (endDate < new Date(Date.now())) {
-            return {
-              success: false,
-              message: `End date cannot be in past`,
-            };
-          }
+          // if (startDate < new Date(Date.now())) {
+          //   return {
+          //     success: false,
+          //     message: `Start date cannot be in past`,
+          //   };
+          // }
+          // if (endDate < new Date(Date.now())) {
+          //   return {
+          //     success: false,
+          //     message: `End date cannot be in past`,
+          //   };
+          // }
 
-          data.recurringSchedule.startDate = startDate;
-          data.recurringSchedule.endDate = endDate;
-          console.log('Check:2', startDate, endDate);
-          if (startDate > endDate) {
-            return {
-              success: false,
-              message: `Start date cannot be greater than end date for this schedule`,
-            };
-          }
-          let week = data.recurringSchedule.weekDays;
-          for (let i = 0; i < Object.keys(week).length; i++) {
-            let day = Object.keys(week)[i];
-            let dayObj = week[day];
-            console.log('day:', day);
-            console.log('Day Data:', dayObj);
-            if (dayObj.included) {
-              if (dayObj.durations.length == 0) {
-                return {
-                  success: false,
-                  message: `Please provide the duration for the ${day}`,
-                };
-              }
-              //durations array
-              for (let j = 0; j < dayObj.durations.length; j++) {
-                console.log('Duration:', dayObj.durations[j]);
-                let duration = dayObj.durations[j];
-                // let startTime = duration.startTime;
-                // let endTime = duration.endTime;
+          // data.recurringSchedule.startDate = startDate;
+          // data.recurringSchedule.endDate = endDate;
+          // console.log('Check:2', startDate, endDate);
+          // if (startDate > endDate) {
+          //   return {
+          //     success: false,
+          //     message: `Start date cannot be greater than end date for this schedule`,
+          //   };
+          // }
+          // let week = data.recurringSchedule.weekDays;
+          // for (let i = 0; i < Object.keys(week).length; i++) {
+          //   let day = Object.keys(week)[i];
+          //   let dayObj = week[day];
+          //   console.log('day:', day);
+          //   console.log('Day Data:', dayObj);
+          //   if (dayObj.included) {
+          //     if (dayObj.durations.length == 0) {
+          //       return {
+          //         success: false,
+          //         message: `Please provide the duration for the ${day}`,
+          //       };
+          //     }
+          //     //durations array
+          //     for (let j = 0; j < dayObj.durations.length; j++) {
+          //       console.log('Duration:', dayObj.durations[j]);
+          //       let duration = dayObj.durations[j];
+          //       // let startTime = duration.startTime;
+          //       // let endTime = duration.endTime;
 
-                let startHour = duration.startHour;
-                let startMinute = duration.startMinute;
-                let endHour = duration.endHour;
-                let endMinute = duration.endMinute;
-                const isValid = this.isValidTimeRange(
-                  startHour,
-                  startMinute,
-                  endHour,
-                  endMinute,
-                );
-                if (!isValid) {
-                  return {
-                    success: false,
-                    message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
-                  };
-                }
-              }
-              dayObj.durations.sort((a, b) => {
-                return (
-                  a.startHour * 60 +
-                  a.startMinute -
-                  (b.startHour * 60 + b.startMinute)
-                );
-              });
-              data.recurringSchedule.weekDays[day] = dayObj;
-            }
-          }
+          //       let startHour = duration.startHour;
+          //       let startMinute = duration.startMinute;
+          //       let endHour = duration.endHour;
+          //       let endMinute = duration.endMinute;
+          //       const isValid = this.isValidTimeRange(
+          //         startHour,
+          //         startMinute,
+          //         endHour,
+          //         endMinute,
+          //       );
+          //       if (!isValid) {
+          //         return {
+          //           success: false,
+          //           message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
+          //         };
+          //       }
+          //     }
+          //     dayObj.durations.sort((a, b) => {
+          //       return (
+          //         a.startHour * 60 +
+          //         a.startMinute -
+          //         (b.startHour * 60 + b.startMinute)
+          //       );
+          //     });
+          //     data.recurringSchedule.weekDays[day] = dayObj;
+          //   }
+          // }
 
-          let scheduleObj = {
-            type: data.scheduleType,
-            event: new mongoose.Types.ObjectId(eventId),
-            recurringSchedule: {
-              startDate: data.recurringSchedule.startDate,
-              endDate: data.recurringSchedule.endDate,
-              weekDays: data.recurringSchedule.weekDays,
-            },
-            businessId: new mongoose.Types.ObjectId(user.businessProfile),
-          };
-          const createdSchedule = await this.scheduleModel.create(scheduleObj);
-          scheduleList.push(createdSchedule._id);
+          // let scheduleObj = {
+          //   type: data.scheduleType,
+          //   event: new mongoose.Types.ObjectId(eventId),
+          //   recurringSchedule: {
+          //     startDate: data.recurringSchedule.startDate,
+          //     endDate: data.recurringSchedule.endDate,
+          //     weekDays: data.recurringSchedule.weekDays,
+          //   },
+          //   businessId: new mongoose.Types.ObjectId(user.businessProfile),
+          // };
+          // const createdSchedule = await this.scheduleModel.create(scheduleObj);
+          // scheduleList.push(createdSchedule._id);
         }
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
           eventId,
@@ -5135,7 +5142,7 @@ export class EventService2 {
           'image/jpeg',
         );
         const fileCategory = await this.fileCategoryModel.findOne({
-          name: 'gallery image',
+          name: 'Content QR',
         });
         const splitIndex = result.Location.indexOf('amazonaws');
         const part1 = result.Location.slice(0, splitIndex); // "https://staging-pinntagbucket"
