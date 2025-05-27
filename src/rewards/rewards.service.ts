@@ -111,6 +111,10 @@ export class RewardsService {
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,
         user: new mongoose.Types.ObjectId(userId),
+        schedule:{
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+        }
       };
 
       const reward = await this.rewardModel.create(createObj);
@@ -408,8 +412,9 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      const pipeline = [
+      const pipeline: any = [
         { $match: { businessProfile: business._id } },
+        { $sort: { createdAt: -1 } },
         // QR_CODE
         {
           $lookup: {
@@ -829,7 +834,7 @@ export class RewardsService {
         },
         {
           $project: {
-            _id: '$reward._id',
+            _id: 1,
             userId: 1,
             claimStatus: '$reward.claimStatus',
             files: 1,
@@ -881,7 +886,7 @@ export class RewardsService {
       };
     }
   }
-  async claimReward(user: DecodedUser, rewardId: string) {
+  async claimReward(user: DecodedUser, userRewardId: string) {
     try {
       const userId = user.id;
       const userDetails = await this.userModel.findById(userId);
@@ -891,9 +896,16 @@ export class RewardsService {
           message: 'User not found.',
         };
       }
+      const userReward = await this.userRewardModel.findById(userRewardId);
+      if (!userReward) {
+        return {
+          success: false,
+          message: 'User reward not found.',
+        };
+      }
 
       const reward = await this.rewardModel
-        .findById(rewardId)
+        .findById(userReward.rewardId)
         .populate('QR_CODE');
       if (!reward) {
         return {
@@ -903,7 +915,7 @@ export class RewardsService {
       }
       const userRewardLink = await this.userRewardModel.findOne({
         userId: new mongoose.Types.ObjectId(userId),
-        rewardId: new mongoose.Types.ObjectId(rewardId),
+        rewardId: new mongoose.Types.ObjectId(reward._id),
       });
       if (userRewardLink.claimStatus === ClaimStatus.CLAIMED) {
         return {

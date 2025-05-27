@@ -129,7 +129,6 @@ export class RewardsController {
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
-    console.log('IS COMING HEREEEEEEE?:::::::');
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.rewardService.getUserRewards(
