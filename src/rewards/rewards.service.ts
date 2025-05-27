@@ -981,7 +981,7 @@ export class RewardsService {
         {
           $lookup: {
             from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$drivePath' },
+            let: { folderId: '$event.drivePath' },
             pipeline: [
               {
                 $match: {
@@ -1139,5 +1139,82 @@ export class RewardsService {
         message: 'Something went wrong.',
       };
     }
+  }
+  async getBusinessRewardById(id: string, user: DecodedUser,claimStatus:string) {
+    let matchQuery:any = {
+      businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+      rewardId: new mongoose.Types.ObjectId(id),
+    }
+    if( claimStatus){
+      matchQuery.claimStatus = claimStatus; // Add claim status filter if provided
+    }
+    const [result] = await this.userRewardModel.aggregate([
+      {
+        $match: matchQuery,
+      },
+      {
+        $lookup: {
+          from: 'rewards',
+          localField: 'rewardId',
+          foreignField: '_id',
+          as: 'reward',
+        },
+      },
+      { $unwind: '$reward' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $facet: {
+          data: [
+            {
+              $project: {
+                _id: 1,
+                userId: 1,
+                claimStatus: 1,
+                progress: 1,
+                rewardId: '$reward._id',
+                title: '$reward.title',
+                rewardType: '$reward.rewardType',
+                targetCount: '$reward.targetCount',
+                redemptionMode: '$reward.redemptionMode',
+                activityType: '$reward.activityType',
+                rewardExpiration: '$reward.rewardExpiration',
+                description: '$reward.description',
+                user: {
+                  _id: '$user._id',
+                  name: '$user.name',
+                  email: '$user.email',
+                  phone: '$user.phone',
+                  profilePhoto: '$user.profilePhoto',
+                },
+              },
+            },
+          ],
+          claimStatusCounts: [
+            {
+              $group: {
+                _id: '$claimStatus',
+                count: { $sum: 1 },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    
+    console.log("result:",result);
+    return {
+      success: true,
+      message: 'Rewards found successfully.',
+      data: result.data,
+      claimStatusCounts: result.claimStatusCounts
+    };
   }
 }

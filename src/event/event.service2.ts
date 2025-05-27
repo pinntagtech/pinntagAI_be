@@ -2851,14 +2851,14 @@ export class EventService2 {
             as: 'locations',
           },
         },
-        {
-          $lookup: {
-            from: 'agegroups',
-            localField: 'event.ageGroupsAllowed',
-            foreignField: '_id',
-            as: 'ageGroupsAllowed',
-          },
-        },
+        // {
+        //   $lookup: {
+        //     from: 'agegroups',
+        //     localField: 'event.ageGroupsAllowed',
+        //     foreignField: '_id',
+        //     as: 'ageGroupsAllowed',
+        //   },
+        // },
         {
           $lookup: {
             from: 'users',

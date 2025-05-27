@@ -750,7 +750,7 @@ export class EventController {
   }
 
   @Get('saved')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getSavedEvents(
     @Res() res: Response,
     @Body() body: SavedEventsDto,
