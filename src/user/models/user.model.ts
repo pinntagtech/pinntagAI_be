@@ -34,7 +34,7 @@ export class User {
   name: string;
   @Prop({
     default:
-      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+User+Image.png',
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Consumer.svg',
   })
   profilePhoto: string;
   @Prop({ unique: true, sparse: true })
