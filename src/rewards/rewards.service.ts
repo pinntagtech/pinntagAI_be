@@ -114,7 +114,7 @@ export class RewardsService {
       };
 
       const reward = await this.rewardModel.create(createObj);
-      console.log("Q@CODE::::", qrCode);
+      console.log('Q@CODE::::', qrCode);
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
@@ -806,7 +806,7 @@ export class RewardsService {
         {
           $lookup: {
             from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$drivePath' },
+            let: { folderId: '$reward.drivePath' },
             pipeline: [
               {
                 $match: {
@@ -831,8 +831,15 @@ export class RewardsService {
           $project: {
             _id: 1,
             userId: 1,
-            claimStatus: 1,
+            claimStatus: '$reward.claimStatus',
             files: 1,
+            title: '$reward.title',
+            rewardType: '$reward.rewardType',
+            targetCount: '$reward.targetCount',
+            redemptionMode: '$reward.redemptionMode',
+            activityType: '$reward.activityType',
+            rewardExpiration: '$reward.rewardExpiration',
+            description: '$reward.description',
             user: {
               _id: '$user._id',
               name: '$user.name', // only include 'name' from populated user
