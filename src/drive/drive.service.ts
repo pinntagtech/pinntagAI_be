@@ -875,4 +875,109 @@ export class DriveService {
       return { success: false, message: 'Failed to update file' };
     }
   }
+
+  async deleteBufferAndMultiImageUpload(
+    user: any,
+    locationId: string,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      //delete previously uploaded files
+      if (!isValidObjectId(locationId)) {
+        return { success: false, message: 'Invalid locationId' };
+      }
+      await this.fileModel.deleteMany({
+        parentDirectory: new mongoose.Types.ObjectId(locationId),
+      });
+
+      let parentId = user.id;
+      if (!isValidObjectId(parentId)) {
+        return { success: false, message: 'Invalid parentId' };
+      }
+      console.log('parentId:', parentId);
+      // Fetch driveDetails, drive/folder location, and fileCategory in parallel
+      const [driveDetails, fileCategory] = await Promise.all([
+        this.driveModel
+          .findOne({ owner: new mongoose.Types.ObjectId(parentId) })
+          .lean(),
+        this.fileCategoryModel.findOne({ name: 'gallery image' }).lean(),
+      ]);
+      if (!driveDetails) {
+        return { success: false, message: 'Drive not found' };
+      }
+      if (!fileCategory) {
+        return { success: false, message: 'File category not found' };
+      }
+
+      // Determine target directory type/id
+      const locId = locationId || driveDetails._id.toString();
+      const [driveLoc, folderLoc] = await Promise.all([
+        this.driveModel.findById(locId).lean(),
+        this.folderModel.findById(locId).lean(),
+      ]);
+      if (!driveLoc && !folderLoc) {
+        return { success: false, message: 'Location not found' };
+      }
+      const parentDirectoryType = driveLoc ? Drive.name : folderLoc.parentType;
+      const parentDirectoryId = driveLoc ? driveLoc._id : folderLoc.drive;
+
+      // Filter valid images and prepare upload/create tasks
+      let totalSize = 0;
+      const tasks = images
+        .filter((img) => {
+          if (!img.mimetype.startsWith('image/')) {
+            console.warn(
+              `Converting mimetype of ${img.originalname} to image/jpeg`,
+            );
+            img.mimetype = 'image/jpeg'; // Force set mimetype
+          }
+
+          if (img.size > driveDetails.AvailableSpace) {
+            throw new BadRequestException(
+              `Insufficient space for ${img.originalname}`,
+            );
+          }
+
+          return true; // All images go through now
+        })
+        .map((img) => {
+          totalSize += img.size;
+          return this.uploadAndCreateFile(
+            img,
+            locId,
+            parentDirectoryType,
+            parentId,
+            fileCategory._id,
+          );
+        });
+
+      // Run uploads/creates in parallel
+      const createdFiles = await Promise.all(tasks);
+
+      const isInEvent = await this.eventModel.findOne({
+        drivePath: new mongoose.Types.ObjectId(locationId),
+      });
+      if (isInEvent) {
+        await this.businessModel.updateOne(
+          { _id: isInEvent.businessProfile },
+          { $set: { onboardingOfferStatus: OfferStatus.GALLERY } },
+        );
+      }
+
+      // Deduct used space
+      await this.driveModel.updateOne(
+        { _id: parentDirectoryId },
+        { $inc: { AvailableSpace: -totalSize } },
+      );
+
+      return {
+        success: true,
+        message: 'Files uploaded successfully',
+        data: createdFiles,
+      };
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return { success: false, message: 'Failed to upload media' };
+    }
+  }
 }

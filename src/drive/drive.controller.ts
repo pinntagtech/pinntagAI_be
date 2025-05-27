@@ -220,7 +220,7 @@ export class DriveController {
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     console.log('user:', user);
-    const result = await this.driveService.multiImageUpload(
+    const result = await this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
       images,

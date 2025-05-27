@@ -897,10 +897,11 @@ export class EventController {
   async updateSchedule(
     @Res() res: Response,
     @Param('id') id: string,
+    @Query('eventId') eventId: string,
     @Body() data: CreateScheduleDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.eventService.createSchedule(id, data, user);
+    const result = await this.eventService.editSchedule(id,eventId,user.id,data);
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
         message: result.message,
