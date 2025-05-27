@@ -2326,6 +2326,11 @@ export class AuthService {
         },
       },
       {
+        $match: {
+          $expr: { $gt: [{ $size: "$schedules" }, 0] }
+        }
+      },
+      {
         $lookup: {
           from: 'users',
           localField: 'event.user',
@@ -2456,7 +2461,7 @@ export class AuthService {
     ];
 
     const rows = await this.eventLocationModel.aggregate(basePipeline);
-    console.log('Row EVENTS:', rows);
+    // console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -3689,6 +3694,7 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
+    console.log("Is this COMINGGGGG HEREEE!!!")
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
         success: false,
@@ -5004,7 +5010,7 @@ export class AuthService {
         message: 'Carousel not found',
       };
     }
-
+    console.log("Service Category IDs:",categoryIds);
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -5016,6 +5022,7 @@ export class AuthService {
 
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
+    console.log("Match:",match);
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -5136,6 +5143,8 @@ export class AuthService {
         },
       };
     }
+
+    console.log("query from carousel dashboard:", query);
     const eventsResult = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,

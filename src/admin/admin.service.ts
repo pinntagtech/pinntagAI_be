@@ -432,7 +432,7 @@ export class AdminService {
   async getDashboardConfig() {
     const foundConfig = await this.dashboardConfigModel
       .find()
-      .populate('categories', '_id name')
+      .populate('categories')
       .sort({ sortOrder: 1 });
     if (!foundConfig) {
       return {
