@@ -5782,7 +5782,36 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
-      const event = await this.eventModel.findById(id);
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      const [event] = await this.eventModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+         {
+                $lookup: {
+                  from: 'files', // assuming this is the same collection as QR_CODE
+                  let: { folderId: '$event.drivePath' },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ['$parentDirectory', '$$folderId'] },
+                            {
+                              $ne: [
+                                '$category',
+                                new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                  as: 'files',
+                },
+              },
+      ])
       if (!event) {
         return {
           success: false,
@@ -5796,7 +5825,7 @@ export class EventService2 {
         };
       }
 
-      let createQuery = { ...event.toObject() };
+      let createQuery = { ...event };
       delete createQuery._id;
       delete createQuery.__v;
       if (event.creatorType === BusinessUser.name) {
@@ -5807,7 +5836,11 @@ export class EventService2 {
         createQuery['user'] = new mongoose.Types.ObjectId(user.id);
       }
       console.log('event:', event);
-      let thumbnailURL = (event as any).files[0].metaData.url;
+      let thumbnailURL = null;
+      if( event.files && event.files.length > 0) {
+        thumbnailURL = event.files[0].metaData.url;
+      }
+      // let thumbnailURL = (event as any).files[0].metaData.url;
       console.log('thumbnailURL:', thumbnailURL);
 
       const createdTemplate = await this.templateModel.create({
