@@ -245,7 +245,7 @@ export class RolesService {
       const roles = await this.roleModel
         .find({
           _id: { $in: allAdminObjectIds, $ne: ownerRole },
-          creatorType: userType,
+          // creatorType: userType,
         })
         .populate({
           path: 'creator',

@@ -131,6 +131,7 @@ import {
 import { DriveService } from 'src/drive/drive.service';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { Region, RegionSchema } from 'src/business/model/region.model';
 
 @Module({
   imports: [
@@ -182,6 +183,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
       { name: Department.name, schema: DepartmentSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
+      { name: Region.name, schema: RegionSchema },
     ]),
   ],
   controllers: [BusinessProfileController],

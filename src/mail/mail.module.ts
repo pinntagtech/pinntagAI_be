@@ -125,6 +125,7 @@ import {
 import { DriveService } from 'src/drive/drive.service';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
+import { Region, RegionSchema } from 'src/business/model/region.model';
 
 @Global()
 @Module({
@@ -175,6 +176,7 @@ import { File, FileSchema } from 'src/drive/models/file.model';
       { name: Department.name, schema: DepartmentSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
+      { name: Region.name, schema: RegionSchema },
     ]),
     MailerModule.forRoot({
       transport: {
