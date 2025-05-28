@@ -1717,7 +1717,7 @@ export class BusinessService {
         business: new mongoose.Types.ObjectId(businessId),
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
-        status: userDetails.status,
+        status: ProfileStatus.BUSINESS_COVER,
       };
       if (data.profilePhoto) {
         createObj['profilePhoto'] = data.profilePhoto;
