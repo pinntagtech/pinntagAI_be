@@ -95,7 +95,10 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
-import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class AuthService {
@@ -130,8 +133,10 @@ export class AuthService {
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
-    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
-    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -2327,8 +2332,8 @@ export class AuthService {
       },
       {
         $match: {
-          $expr: { $gt: [{ $size: "$schedules" }, 0] }
-        }
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+        },
       },
       {
         $lookup: {
@@ -3694,7 +3699,7 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
-    console.log("Is this COMINGGGGG HEREEE!!!")
+    console.log('Is this COMINGGGGG HEREEE!!!');
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
         success: false,
@@ -5010,7 +5015,7 @@ export class AuthService {
         message: 'Carousel not found',
       };
     }
-    console.log("Service Category IDs:",categoryIds);
+    console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -5022,7 +5027,7 @@ export class AuthService {
 
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
-    console.log("Match:",match);
+    console.log('Match:', match);
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -5098,6 +5103,7 @@ export class AuthService {
       delete match['event.categories'];
     }
     let query = { ...match };
+    let eventsResult = [];
     if (categoryIds.length) {
       const sameCategories = [];
       categoryIds.forEach((id) => {
@@ -5111,6 +5117,14 @@ export class AuthService {
           'event.categories': {
             $in: sameCategories,
           },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data:{
+            eventsResult
+          }
         };
       }
     } else {
@@ -5144,8 +5158,8 @@ export class AuthService {
       };
     }
 
-    console.log("query from carousel dashboard:", query);
-    const eventsResult = await this.fetchEventsV2(
+    console.log('query from carousel dashboard:', query);
+    eventsResult = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
