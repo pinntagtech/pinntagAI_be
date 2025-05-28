@@ -100,6 +100,7 @@ import { DriveService } from './drive/drive.service';
 import { File, FileSchema } from './drive/models/file.model';
 import { Folder, FolderSchema } from './drive/models/folder.model';
 import { S3Service } from './s3.service';
+import { Region, RegionSchema } from './business/model/region.model';
 
 @Module({
   imports: [
@@ -155,6 +156,7 @@ import { S3Service } from './s3.service';
       { name: Business.name, schema: BusinessSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
+      { name: Region.name, schema: RegionSchema },
     ]),
     StripeeModule,
     AuthModule,

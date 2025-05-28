@@ -65,6 +65,7 @@ import { DriveService } from 'src/drive/drive.service';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
+import { Region, RegionSchema } from 'src/business/model/region.model';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { S3Service } from 'src/s3.service';
       { name: Business.name, schema: BusinessSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
+      { name: Region.name, schema: RegionSchema },
     ]),
   ],
   controllers: [],
