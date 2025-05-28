@@ -5118,15 +5118,16 @@ export class AuthService {
             $in: sameCategories,
           },
         };
-      } else {
-        return {
-          success: true,
-          message: 'Dashboard fetched successfully',
-          data:{
-            eventsResult
-          }
-        };
-      }
+      } 
+      // else {
+      //   return {
+      //     success: true,
+      //     message: 'Dashboard fetched successfully',
+      //     data:{
+      //       eventsResult
+      //     }
+      //   };
+      // }
     } else {
       query = {
         ...query,
