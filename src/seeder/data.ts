@@ -2057,7 +2057,7 @@ export const Seeder = {
         'Entertainment',
         'Music & Nightlife',
         'Sports',
-        'Foods & Drink',
+        'Food & Drinks',
         'Health & Fitness',
       ],
       sortOrder: 100,
@@ -2069,7 +2069,7 @@ export const Seeder = {
       flashOffersIncluded: true,
       freeIncluded: false,
       limit: 15,
-      categories: ['Foods & Drink', 'Retail', 'Beauty & Spa', 'Happy Hour'],
+      categories: ['Food & Drinks', 'Retail', 'Beauty & Spa', 'Happy Hour'],
       sortOrder: 200,
     },
     {
@@ -2095,7 +2095,7 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: false,
       limit: 15,
-      categories: ['Foods & Drink', 'Happy Hour'],
+      categories: ['Food & Drinks', 'Happy Hour'],
       sortOrder: 400,
     },
     {

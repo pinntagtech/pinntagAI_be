@@ -5773,7 +5773,7 @@ export class EventService2 {
     }
   }
 
-  async saveTemplate(id: string, user: DecodedUser) {
+  async saveTemplate(data: PublishEventDto, user: DecodedUser) {
     try {
       const business = await this.businessModel.findById(user.businessProfile);
       if (!business) {
@@ -5786,7 +5786,7 @@ export class EventService2 {
         name: 'Content QR',
       });
       const [event] = await this.eventModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        { $match: { _id: new mongoose.Types.ObjectId(data.id) } },
          {
                 $lookup: {
                   from: 'files', // assuming this is the same collection as QR_CODE
@@ -5858,6 +5858,7 @@ export class EventService2 {
         success: true,
         message: 'Template saved successfully',
         data: createdTemplate,
+        status: EventStatus.PUBLISHED,
       };
     } catch (error) {
       console.error('Error in saveTemplate:', error);
