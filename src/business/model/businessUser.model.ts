@@ -38,7 +38,7 @@ export class BusinessUser {
 
   @Prop({
     default:
-      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Business+User.svg',
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+business+user.png',
   })
   profilePhoto: string;
   @Prop({ required: true })

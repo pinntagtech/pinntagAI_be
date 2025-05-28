@@ -573,6 +573,7 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
+        { $sort: { 'reward.createdAt': -1 } }, // Sort by creation date of the reward
         {
           $lookup: {
             from: 'userrewards',
