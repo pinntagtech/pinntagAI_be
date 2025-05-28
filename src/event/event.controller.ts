@@ -1022,22 +1022,19 @@ export class EventController {
     }
   }
 
-  @Post('saveTemplate/:id')
+  @Post('saveTemplate')
   @UseGuards(JwtGuard2)
   async saveTemplate(
     @Res() res: Response,
-    @Param('id') id: string,
+    @Body() body: PublishEventDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid event id',
-      });
-    }
-    const result = await this.eventService.saveTemplate(id, user);
+    
+    const result = await this.eventService.saveTemplate(body, user);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
+        status: result.status,
         data: result.data,
       });
     } else {
