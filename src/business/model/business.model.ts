@@ -37,7 +37,7 @@ export class Business {
   //   default: 0,
   // })
   // status: number;
-  @Prop({default:"https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Business+Logo.svg"})
+  @Prop({default:"https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png"})
   logo: string;
   @Prop()
   isRegistered: boolean;

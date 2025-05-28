@@ -901,7 +901,12 @@ export class EventController {
     @Body() data: CreateScheduleDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.eventService.editSchedule(id,eventId,user.id,data);
+    const result = await this.eventService.editSchedule(
+      id,
+      eventId,
+      user.id,
+      data,
+    );
     if (result.success) {
       return res.status(HttpStatus.CREATED).json({
         message: result.message,
@@ -1009,6 +1014,31 @@ export class EventController {
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('saveTemplate/:id')
+  @UseGuards(JwtGuard2)
+  async saveTemplate(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid event id',
+      });
+    }
+    const result = await this.eventService.saveTemplate(id, user);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
