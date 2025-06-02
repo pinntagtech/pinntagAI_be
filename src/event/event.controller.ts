@@ -182,8 +182,8 @@ export class EventController {
         message: result.message,
         count: result.events.length,
         events: result.events,
-        pages: result.pages,
         total: result.total,
+        pages: result.pages,
         page: result.page,
         limit: result.limit,
       });

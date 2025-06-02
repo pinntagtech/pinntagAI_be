@@ -45,6 +45,7 @@ import { UserTypes } from 'src/enums/auth.enums';
 import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
+import { RateLimitGuard } from './guards/rateLimiter.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -589,6 +590,7 @@ export class AuthController {
   }
 
   @Get('fcm/report')
+  @UseGuards(RateLimitGuard)
   async fcmReport(@Res() res: Response) {
     await this.authService.fcmReport();
     return res.status(HttpStatus.OK).json({

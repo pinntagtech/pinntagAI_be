@@ -29,12 +29,14 @@ import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 import { totalmem } from 'os';
 import { UserTypes } from 'src/enums/auth.enums';
 import { ClaimStatus } from './enums/rewards.enum';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('reward')
 export class RewardsController {
   constructor(private readonly rewardService: RewardsService) {}
 
   @Get('checking')
+  @UseGuards(RateLimitGuard)
   async checking() {
     console.log('checking');
     return {
@@ -82,8 +84,10 @@ export class RewardsController {
   }
   @Get('business')
   @UseGuards(JwtGuard2)
-  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    const result = await this.rewardService.getAllRewards(user);
+  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.rewardService.getAllRewards(user, pageNumber, limitNumber);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -142,6 +146,9 @@ export class RewardsController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -176,6 +183,9 @@ export class RewardsController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
