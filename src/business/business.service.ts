@@ -968,6 +968,8 @@ export class BusinessService {
         data: businesses,
         total,
         pages: Math.ceil(total / limit),
+        page,
+        limit
       };
     } catch (error) {
       console.error('Error:', error);
@@ -1198,6 +1200,8 @@ export class BusinessService {
     data?: any[];
     total?: number;
     pages?: number;
+    page?:number;
+    limit?:number;
   }> {
     try {
       console.log('check 1:', id);
@@ -1290,6 +1294,9 @@ export class BusinessService {
         message: 'Business User fetched Successfully!',
         data: users,
         total: countDocs,
+        pages: Math.ceil(countDocs / limit),
+        page,
+        limit,
       };
     } catch (error) {
       return {
@@ -1421,6 +1428,9 @@ export class BusinessService {
         message: 'Business Industries fetched Successfully.',
         data: industries[0].data,
         total: industries[0].totalCount[0].count,
+        pages: Math.ceil(industries[0].totalCount[0].count / limit),
+        page,
+        limit,
       };
     } catch (error) {
       return {
@@ -1449,6 +1459,9 @@ export class BusinessService {
         message: 'Categories fetched Successfully!',
         data: categories,
         total: totalDocs,
+        pages: Math.ceil(totalDocs / limit),
+        page,
+        limit,
       };
     } catch (error) {
       return {
@@ -2061,6 +2074,9 @@ export class BusinessService {
         message: 'Organisation Roles fetched Successfully.',
         data: paginated,
         total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       return {
@@ -2262,6 +2278,9 @@ export class BusinessService {
         message: 'Departments fetched successfully.',
         data: items,
         total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       return {
@@ -2336,6 +2355,9 @@ export class BusinessService {
         message: 'Followers fetched Successfully!',
         data: followers,
         total,
+        pages: Math.ceil(total / limit),
+        page, 
+        limit,
       };
     } catch (error) {
       return {
@@ -2568,6 +2590,9 @@ export class BusinessService {
         message: 'Regions fetched successfully.',
         data: items,
         total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       return {
@@ -2680,6 +2705,7 @@ export class BusinessService {
       message:"All LocationGroups fetched successfully",
       data: results,
       total,
+      pages: Math.ceil(total / limit),
       page,
       limit,
     };

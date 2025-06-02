@@ -47,6 +47,7 @@ import {
   CreateLocationGroupDto,
   UpdateLocationGroupDto,
 } from './dto/create-locationGroup.dto';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('business')
 export class BusinessController {
@@ -100,6 +101,7 @@ export class BusinessController {
 
   @Get()
   @UseGuards(JwtGuard2)
+  @UseGuards(RateLimitGuard)
   async fetch(
     @Res() res: Response,
     @Query('limit') limit: string,
@@ -117,6 +119,8 @@ export class BusinessController {
         data: result.data,
         total: result.total,
         pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -248,6 +252,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -301,14 +308,8 @@ export class BusinessController {
   }
 
   @Get('user/mailStatus/:id')
-  async mailVerificationStatus(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-  ) {
-    const pageNumber = page ? parseInt(page) : 1;
-    const limitNumber = limit ? parseInt(limit) : 10;
+  @UseGuards(RateLimitGuard)
+  async mailVerificationStatus(@Res() res: Response, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Invalid ObjectId',
@@ -328,7 +329,7 @@ export class BusinessController {
   }
 
   @Get('industryList')
-  @RateLimit({ points: 5, duration: 60 })
+  @UseGuards(RateLimitGuard)
   async industryList(
     @Res() res: Response,
     @Query('page') page: string,
@@ -345,6 +346,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -354,7 +358,7 @@ export class BusinessController {
   }
 
   @Get('businessCategoryList/:id')
-  @RateLimit({ points: 5, duration: 60 })
+  @UseGuards(RateLimitGuard)
   async businessCategoryList(
     @Res() res: Response,
     @Param('id') id: string,
@@ -378,6 +382,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -409,6 +416,7 @@ export class BusinessController {
   }
 
   @Get('countries')
+  @UseGuards(RateLimitGuard)
   async getCountries(
     @Res() res: Response,
     @Query('page') page: string,
@@ -433,6 +441,7 @@ export class BusinessController {
     }
   }
   @Get('constitutionList/:id')
+  @UseGuards(RateLimitGuard)
   async constitutionList(
     @Res() res: Response,
     @Param('id') id: string,
@@ -464,6 +473,7 @@ export class BusinessController {
     }
   }
   @Get('documentTypes/:id')
+  @UseGuards(RateLimitGuard)
   async documentTypes(
     @Res() res: Response,
     @Param('id') id: string,
@@ -696,6 +706,7 @@ export class BusinessController {
   }
 
   @Get('teamSize')
+  @UseGuards(RateLimitGuard)
   async fetchTeamSizeDropdown(
     @Res() res: Response,
     @Query('limit') limit: string,
@@ -715,6 +726,7 @@ export class BusinessController {
     }
   }
   @Get('organisation-roles-list')
+  @UseGuards(RateLimitGuard)
   async fetchOrganisationRolesList(
     @Res() res: Response,
     @Query('limit') limit: string,
@@ -731,6 +743,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -833,6 +848,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -908,6 +926,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -938,6 +959,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -1007,6 +1031,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -1147,6 +1174,9 @@ export class BusinessController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -1168,7 +1198,10 @@ export class BusinessController {
     @Param('id') id: string,
   ) {
     const businessId = user.businessProfile;
-    const result = await this.businessService.findOneLocationGroup(businessId, id);
+    const result = await this.businessService.findOneLocationGroup(
+      businessId,
+      id,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,

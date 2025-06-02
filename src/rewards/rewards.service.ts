@@ -377,7 +377,7 @@ export class RewardsService {
     }
   }
 
-  async getAllRewards(user: DecodedUser) {
+  async getAllRewards(user: DecodedUser,page: number, limit: number) {
     try {
       const userId = user.id;
       if (!user.businessProfile) {
@@ -515,11 +515,17 @@ export class RewardsService {
       ];
 
       const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
+      const total = await this.rewardModel.countDocuments({businessProfile: business._id});
+
 
       return {
         success: true,
         message: 'Rewards found successfully.',
         data: foundRewardAgg,
+        total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       console.log('Error in getAllRewards:', error);
@@ -685,6 +691,9 @@ export class RewardsService {
         message: 'Rewards found successfully.',
         data: result[0].data,
         total: result[0].totalCount[0]?.count || 0,
+        pages: Math.ceil((result[0].totalCount[0]?.count || 0) / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       console.log('Error in getDashboardRewards:', error);
@@ -880,6 +889,9 @@ export class RewardsService {
         message: 'Rewards found successfully.',
         data: rewards,
         total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
     } catch (error) {
       console.log('Error in getUserRewards:', error);
