@@ -298,7 +298,11 @@ export class RolesService {
         message: 'Roles Fetched Successfully!',
         data: roles,
         total: total,
+        pages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
       };
+
     } catch (error) {
       console.error('Error:', error);
       return {

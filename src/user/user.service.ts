@@ -634,7 +634,7 @@ export class UserService {
       userType: UserTypes.USER,
       user: new mongoose.Types.ObjectId(id),
       type,
-      expiresAt: new Date(Date.now() + 86400000),
+      expiresAt: expiresAt,
     });
   }
 

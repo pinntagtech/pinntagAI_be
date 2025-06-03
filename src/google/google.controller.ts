@@ -10,6 +10,7 @@ import {
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { AddressAutofillDto } from './dto/address-autofill.dto';
 import { GoogleService } from './google.service';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('google')
 export class GoogleController {
@@ -17,6 +18,7 @@ export class GoogleController {
 
   @Post()
   @UseGuards(JwtGuard2)
+  @UseGuards(RateLimitGuard)
   async googleRecommendation(
     @Res() res: any,
     @Body() data: AddressAutofillDto,
@@ -38,6 +40,7 @@ export class GoogleController {
 
   @Post('placeDetails')
   @UseGuards(JwtGuard2)
+  @UseGuards(RateLimitGuard)
   async getPlaceDetails(
     @Res() res: any,
     @Body('placeId') placeId: string,
@@ -65,6 +68,7 @@ export class GoogleController {
 
   @Post('reverseGeocode')
   @UseGuards(JwtGuard2)
+  @UseGuards(RateLimitGuard)
   async getAddressFromCoordinates(
     @Res() res: any,
     @Body('latitude') latitude: number,
