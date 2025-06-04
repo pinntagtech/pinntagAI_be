@@ -12,6 +12,7 @@ import {
   UploadedFile,
   Query,
   Param,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -46,7 +47,9 @@ import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
+@UseInterceptors(CacheInterceptor)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -78,7 +81,7 @@ export class AuthController {
     @Res() res: Response,
     @Body() createAuthDto: CreateAuthDto,
   ) {
-    const userAgent = req.headers['user-agent']; 
+    const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.create(createAuthDto, userAgent, ip);
     if (result.success) {
@@ -756,7 +759,7 @@ export class AuthController {
   @Post('getDashboardCarouselEvent/:id')
   @UseGuards(JwtGuard2)
   async getDashboardCarouselEvent2(
-    @Res() res: Response,
+    // @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Param('id') id: string,
     @Query('search') search: string,
@@ -764,25 +767,29 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
-    if(user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Not a valid User',
-      });
+    if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
+      // return res.status(HttpStatus.BAD_REQUEST).json({
+      //   message: 'Not a valid User',
+      // });
+      throw new BadRequestException('Not a valid User');
     }
     if (body.categories && body.categories.length) {
       body.categories.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
+          // return res.status(HttpStatus.BAD_REQUEST).json({
+          //   message: `${cat} is not a valid category id.`,
+          // });
         }
       });
     }
     if (distance) {
       if (isNaN(parseInt(distance))) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide a valid distance value.',
-        });
+        throw new BadRequestException('Please provide a valid distance value.');
+
+        // return res.status(HttpStatus.BAD_REQUEST).json({
+        //   message: 'Please provide a valid distance value.',
+        // });
       }
     }
     const result = await this.authService.getDashboardCarouselEvent2(
@@ -798,19 +805,16 @@ export class AuthController {
       body.endDate ? new Date(body.endDate) : null,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      // return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-        // events: result.events,
-        // freeEvents: result.freeEvents,
-        // privateEvents: result.privateEvents,
-        // offers: result.offers,
-        // data: result.data,
         ...result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      // return res.status(HttpStatus.BAD_REQUEST).json({
+      //   message: result.message,
+      // });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -962,13 +966,13 @@ export class AuthController {
   @Post('verify-email')
   @UseGuards(VerifyMailGuard)
   async verifyEmailviaLink(
-    @Req() req:Request,
+    @Req() req: Request,
     @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     // @Query('token') token: string,
   ) {
     const tokenId = req['tokenId'];
-    const result = await this.authService.verifyEmailviaLink(user,tokenId);
+    const result = await this.authService.verifyEmailviaLink(user, tokenId);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -989,10 +993,7 @@ export class AuthController {
 
     @Body('userType') userType: string,
   ) {
-    const result = await this.authService.passwordResetLink(
-      email,
-      userType,
-    );
+    const result = await this.authService.passwordResetLink(email, userType);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -1042,10 +1043,7 @@ export class AuthController {
         message: 'Invalid ObjectId',
       });
     }
-    const result = await this.authService.resendVerificationLink(
-      id,
-      userType,
-    );
+    const result = await this.authService.resendVerificationLink(id, userType);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -1060,7 +1058,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    const result = await this.authService.getProfile(user.id,user.userType);
+    const result = await this.authService.getProfile(user.id, user.userType);
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
