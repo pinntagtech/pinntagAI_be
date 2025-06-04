@@ -21,6 +21,11 @@ import { BusinessDocumentType } from './BussinessDocumentType.model';
 import { OfferStatus } from '../enums/business.enum';
 import { Event } from 'src/event/models/event.model';
 
+export enum CreatorType{
+  Admin = 'Admin',
+  BusinessUser = 'BusinessUser',
+}
+
 export type BusinessDocument = Business & Document;
 
 @Schema({ timestamps: true })
@@ -45,7 +50,7 @@ export class Business {
   @Prop({ ref: BusinessCategory.name })
   businessCategories: mongoose.Types.ObjectId[];
 
-  @Prop({ ref: BusinessIndustry.name })
+  @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId })
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop()
@@ -69,8 +74,8 @@ export class Business {
   @Prop({ ref: 'BusinessUser' })
   boardMembers: mongoose.Types.ObjectId[];
 
-  @Prop({ enum: ['Admin', 'BusinessUser'] })
-  creatorType: string;
+  @Prop({ enum: Object.values(CreatorType),type: String, required: true })
+  creatorType: CreatorType;
 
   @Prop({ required: true, refPath: 'creatorType' })
   creator: mongoose.Types.ObjectId;

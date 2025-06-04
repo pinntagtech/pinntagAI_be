@@ -39,17 +39,20 @@ export class RefreshGuard implements CanActivate {
       secret: process.env.JWT_SECRET,
       ignoreExpiration: true,
     });
-    console.log('payloadghgjgjfdkmd:---', payload);
+    console.log('payload:---', payload);
     if (!payload.role) {
       return response.status(HttpStatus.UNAUTHORIZED).json({
         message: 'Invalid token. Please login again.',
       });
     } else {
-      const user = JSON.parse(
-        JSON.stringify(
-          await this.userModel.findById(payload.id).populate('role').exec(),
-        ),
-      );
+      // const user = JSON.parse(
+      //   JSON.stringify(
+      //     await this.userModel.findById(payload.id).populate('role').exec(),
+      //   ),
+      // );
+      const user = await this.userModel
+        .findById(payload.id)
+        .populate('role');
       if (!user) {
         return response.status(HttpStatus.UNAUTHORIZED).json({
           message: 'Invalid Token. User not found',
