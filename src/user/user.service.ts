@@ -532,17 +532,21 @@ export class UserService {
   }
 
   async getUserById(id: string): Promise<User> {
-    return await this.userModel
-      .findById(id)
-      .select({ password: 0 })
-      .populate('role', {
-        __v: 0,
-        createdAt: 0,
-        updatedAt: 0,
-      })
-      .populate('subscriptions')
-      .populate('refferal', 'id code isBlacklisted')
-      .exec();
+    console.log("IDDD:",id);
+    const user = await this.userModel
+    .findById(id)
+    .select({ password: 0 })
+    // .populate('role', {
+      //   __v: 0,
+      //   createdAt: 0,
+      //   updatedAt: 0,
+      // })
+      // .populate('subscriptions')
+      // .populate('refferal', 'id code isBlacklisted')
+      // .exec();
+
+      console.log("USERRRR:",user);
+      return user;
   }
 
   async saveOtpToDb(id: string, otp: number, type: string) {
@@ -634,7 +638,7 @@ export class UserService {
       userType: UserTypes.USER,
       user: new mongoose.Types.ObjectId(id),
       type,
-      expiresAt: new Date(Date.now() + 86400000),
+      expiresAt: expiresAt,
     });
   }
 

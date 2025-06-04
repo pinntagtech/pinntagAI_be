@@ -130,6 +130,9 @@ export class RolesController {
         message: result.message,
         data: result.data,
         total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,  
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({

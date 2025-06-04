@@ -554,7 +554,7 @@ export class AuthController {
   }
 
   @Get('refresh/token')
-  @UseGuards(RefreshGuard)
+  @UseGuards(JwtGuard2)
   async refreshToken(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
     const result = await this.authService.refreshToken(user);
     if (result.success) {

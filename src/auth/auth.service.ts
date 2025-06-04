@@ -816,7 +816,14 @@ export class AuthService {
   }
 
   async refreshToken(user: DecodedUser) {
-    const foundUser = await this.userService.getUserById(user.id);
+    let foundUser = null;
+    if (user.userType === UserTypes.BUSINESS) {
+      foundUser = await this.businessUserModel
+        .findById(user.id)
+        .select({ password: 0 });
+    } else {
+      foundUser = await this.userService.getUserById(user.id);
+    }
     if (!foundUser) {
       return {
         success: false,
@@ -824,7 +831,7 @@ export class AuthService {
       };
     } else {
       if (user.isBusiness) {
-        const businessProfile = await this.businessProfileModel.findById(
+        const businessProfile = await this.businessModel.findById(
           user.businessProfile,
         );
         if (!businessProfile) {
@@ -1585,14 +1592,41 @@ export class AuthService {
       expiresIn: expireIn,
     });
     console.log('Token::::', token);
+    const expirationTime = this.calculateExpirationDate(expireIn);
+    console.log('Expiration Time:', expirationTime);
     // if (update) {
     //   await this.userService.updateToken(token, payload.id);
     // } else {
-    await this.userService.saveToken(token, payload.id, tokenType, userType);
+    await this.userService.saveToken2(
+      token,
+      payload.id,
+      tokenType,
+      expirationTime,
+    );
     // }
     return token;
   }
+  calculateExpirationDate(expiresIn: string): Date {
+    const timeUnit = expiresIn.slice(-1); // Get last character (m, h, d)
+    const timeValue = parseInt(expiresIn.slice(0, -1), 10); // Get numeric value
 
+    let multiplier = 1000; // Default to seconds
+    switch (timeUnit) {
+      case 'm': // Minutes
+        multiplier *= 60;
+        break;
+      case 'h': // Hours
+        multiplier *= 60 * 60;
+        break;
+      case 'd': // Days
+        multiplier *= 60 * 60 * 24;
+        break;
+      default:
+        throw new Error(`Invalid expiresIn format: ${expiresIn}`);
+    }
+
+    return new Date(Date.now() + timeValue * multiplier);
+  }
   async logout(user: DecodedUser, token: string, fcm: string) {
     if (user.isGuest) {
       await this.guestSessionModel.findByIdAndDelete(user.sessionId);
@@ -5118,7 +5152,7 @@ export class AuthService {
             $in: sameCategories,
           },
         };
-      } 
+      }
       // else {
       //   return {
       //     success: true,

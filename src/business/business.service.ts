@@ -1003,7 +1003,7 @@ export class BusinessService {
   async validateBusinessUser(email: string, password: string) {
     console.log('email password:', email, password);
     const user = await this.businessUserModel.findOne({ email });
-    console.log('User::', user);
+    // console.log('User::', user);
     if (user) {
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
@@ -1040,7 +1040,7 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    console.log('Validated Business User:', validatedBusinessUser);
+    // console.log('Validated Business User:', validatedBusinessUser);
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -1099,7 +1099,7 @@ export class BusinessService {
         userId: user._id,
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
-      console.log('user:', user);
+      // console.log('user:', user);
       const userDetails = await this.businessUserModel
         .findById(user._id)
         .populate({
@@ -1128,7 +1128,7 @@ export class BusinessService {
         })
         .populate('role', '_id name description')
         .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
-      console.log('userDetails:', userDetails);
+      // console.log('userDetails:', userDetails);
       return {
         success: true,
         status: true,
@@ -1155,6 +1155,7 @@ export class BusinessService {
       expiresIn,
     });
     const expirationTime = this.calculateExpirationDate(expiresIn);
+    console.log("Expiration Time:",expirationTime);
     await this.userService.saveToken2(token, payload.id, type, expirationTime);
     return token;
   }
