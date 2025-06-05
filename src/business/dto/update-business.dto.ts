@@ -65,6 +65,9 @@ export class UpdateBusinessDto {
   @IsBoolean()
   isOnlineType: boolean;
 
+  @IsOptional()
+  description: string;
+
   // @IsOptional()
   // @IsBoolean()
   // isRegistered?: boolean;
