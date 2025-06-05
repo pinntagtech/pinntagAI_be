@@ -4957,6 +4957,7 @@ export class AuthService {
 
   async getProfile(userId: string, userType: string) {
     try {
+      console.log("Is coming here:::::::", userId, userType);
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
@@ -4979,34 +4980,33 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
+
+        console.log("Insiide Businessssss:::")
         userDoc = await this.businessUserModel
           .findById(userId)
           // .populate('business')
           .populate({
             path: 'business',
-            populate: {
-              path: 'outlets',
-              model: Outlet.name,
-              select: LocationPopulates.FOREIGN,
-            },
+            populate: [
+              {
+                path: 'outlets',
+                model: Outlet.name,
+                select: LocationPopulates.FOREIGN,
+              },
+              {
+                path: 'initialOfferId',
+                model: Event.name,
+                select: '_id title description categories',
+              },
+              {
+                path: 'businessIndustry',
+                model: BusinessIndustry.name,
+                select: '_id title darkIcon lightIcon',
+              },
+            ],
           })
-          .populate({
-            path: 'business',
-            populate: {
-              path: 'initialOfferId',
-              model: Event.name,
-              select: '_id title description categories',
-            },
-          })
-          .populate({
-            path: 'business',
-            populate: {
-              path: 'businessIndustry',
-              model: BusinessIndustry.name,
-              select: ' _id title darkIcon lightIcon',
-            },
-          })
-          .populate('role', '_id name description');
+          .populate('role', '_id name description')
+          .lean();
         if (!userDoc) {
           return {
             success: false,
