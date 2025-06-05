@@ -43,6 +43,7 @@ import { EventService2 } from './event.service2';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
+import { UpdateOfferDto } from './dto/update-offer.dto';
 
 @Controller('event')
 export class EventController {
@@ -1043,4 +1044,28 @@ export class EventController {
       });
     }
   }
+
+  @Put('offer/:id')
+  @UseGuards(JwtGuard2)
+  async updateOffer(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @Body() body: UpdateOfferDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.eventService.updateOffer(id, body, user,image);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+  
+
 }

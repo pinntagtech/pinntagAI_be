@@ -101,12 +101,21 @@ import { File, FileSchema } from './drive/models/file.model';
 import { Folder, FolderSchema } from './drive/models/folder.model';
 import { S3Service } from './s3.service';
 import { Region, RegionSchema } from './business/model/region.model';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
     // ServeStaticModule.forRoot({
     //   rootPath: join(__dirname, '..', 'uploads'),
     // }),
+    CacheModule.register({
+      store: redisStore,
+      host: 'localhost', // or use process.env.REDIS_HOST
+      port: 6379,
+      ttl: 86400, // cache for 1 day
+      isGlobal: true,
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',
