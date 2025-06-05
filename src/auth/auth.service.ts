@@ -843,8 +843,8 @@ export class AuthService {
         const payload: JwtPayload = {
           id: user.id,
           userType: UserTypes.BUSINESS,
-          business: businessProfile.id.toString(),
-          role: user.role,
+          role: foundUser.role[0].toString(),
+          businessProfile: businessProfile.id,
         };
         const token = await this.generateJWT(
           payload,
