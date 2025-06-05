@@ -1092,7 +1092,7 @@ export class BusinessService {
         };
       }
 
-      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS,'2m');
 
       const fcmExists = await this.tokenModel.exists({
         type: TokenTypes.FCM,
