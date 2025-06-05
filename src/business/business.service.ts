@@ -1092,7 +1092,7 @@ export class BusinessService {
         };
       }
 
-      const token = await this.generateJWT(payload, TokenTypes.ACCESS,'2m');
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
 
       const fcmExists = await this.tokenModel.exists({
         type: TokenTypes.FCM,
@@ -2119,7 +2119,7 @@ export class BusinessService {
         },
         {
           secret: process.env.JWT_SECRET,
-          expiresIn: '1d',
+          expiresIn: '365d',
         },
       );
       console.log('updated Token##########', updatedToken);
