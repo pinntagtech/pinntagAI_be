@@ -5260,6 +5260,7 @@ export class EventService2 {
     image: Express.Multer.File,
   ) {
     try {
+      console.log("Data:::::",data);
       const event = await this.eventModel.findById(offerId);
       if (!event) return { success: false, message: 'Offer not found' };
   
