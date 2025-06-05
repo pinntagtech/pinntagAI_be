@@ -11,6 +11,8 @@ import { AiDescriptionDto } from './dto/aiDescription.dto';
 import { Response } from 'express';
 import { UserGuard } from 'src/auth/guards/user.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Controller('ai')
 export class AiController {
@@ -18,19 +20,18 @@ export class AiController {
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
-  async getAiDescription(@Res() res: Response, @Body() body: AiDescriptionDto) {
-    const result = await this.aiService.getEventDescription(body);
+  async getAiDescription(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+    const result = await this.aiService.getEventDescription(user.businessProfile);
     console.log("RESULT:",result);
-    return { data: result.data,message:result.message }
-    // if (result.success) {
-    //   return res.status(HttpStatus.CREATED).json({
-    //     message: result.message,
-    //     data: result.data,
-    //   });
-    // } else {
-    //   return res.status(HttpStatus.BAD_REQUEST).json({
-    //     message: result.message,
-    //   });
-    // }
+    if (result.success) {
+      return res.status(HttpStatus.CREATED).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
 }

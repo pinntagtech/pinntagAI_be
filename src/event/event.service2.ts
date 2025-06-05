@@ -134,6 +134,7 @@ import {
 } from 'src/business/model/businessCategory.model';
 import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
+import { UpdateOfferDto } from './dto/update-offer.dto';
 
 @Injectable()
 export class EventService2 {
@@ -5251,6 +5252,95 @@ export class EventService2 {
       };
     }
   }
+
+  async updateOffer(
+    offerId: string,
+    data: UpdateOfferDto,
+    user: DecodedUser,
+    image: Express.Multer.File,
+  ) {
+    try {
+      const event = await this.eventModel.findById(offerId);
+      if (!event) return { success: false, message: 'Offer not found' };
+  
+      if (!user.businessProfile) {
+        return { success: false, message: 'Business not found.' };
+      }
+  
+      if (data.categories) {
+        data.categories = data.categories.split(',').map((cat) => new mongoose.Types.ObjectId(cat));
+      }
+  
+      if (data.minTargetAge && data.maxTargetAge && data.minTargetAge > data.maxTargetAge) {
+        return { success: false, message: 'Minimum target age cannot be greater than maximum target age' };
+      }
+  
+      if (data.targetGenders) {
+        data.targetGenders = data.targetGenders.split(',');
+      }
+  
+      if (data.eventType === EventTypes.FLASHDEAL) {
+        data.quantityLimit = Number(data.quantityLimit);
+      }
+  
+      if (data.isFree !== undefined) {
+        data.isFree = data.isFree === 'true';
+      }
+  
+      console.log("Data:",data);
+      const updateObj: any = { ...data };
+      
+      if (data.bookingSite) {
+        updateObj.bookingUrl = data.bookingSite.split(',');
+      }
+
+
+      console.log("Upate Obj:",updateObj);
+      const updatedEvent = await this.eventModel.findByIdAndUpdate(offerId, updateObj, { new: true });
+  
+      if (image) {
+        const result = await this.s3Service.s3_upload(
+          image.buffer,
+          process.env.AWS_S3_BUCKET_NAME,
+          manipulateImageName(image.originalname),
+          'image/jpeg',
+        );
+  
+        const fileCategory = await this.fileCategoryModel.findOne({ name: 'Content QR' });
+        const splitIndex = result.Location.indexOf('amazonaws');
+        const part1 = result.Location.slice(0, splitIndex);
+        const part2 = result.Location.slice(splitIndex);
+        const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+  
+        const file = await this.fileModel.create({
+          metaData: {
+            mimeType: image.mimetype,
+            url: updatedUrl,
+            size: image.size,
+            originalName: image.originalname,
+          },
+          parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
+          ParentDirectoryType: Folder.name,
+          fileType: FileType.IMAGE,
+          category: fileCategory._id,
+          parent: new mongoose.Types.ObjectId(event._id),
+          parentType: Event.name,
+        });
+  
+        await this.eventModel.updateOne({ _id: event._id }, { $set: { QR_CODE: file._id } });
+      }
+  
+      return {
+        success: true,
+        message: 'Offer updated successfully',
+        data: updatedEvent,
+      };
+    } catch (err) {
+      console.log('Error in updateOffer:', err);
+      return { success: false, message: 'Something went wrong.' };
+    }
+  }
+
 
   // async createOffer(
   //   data: CreateOfferDto,
