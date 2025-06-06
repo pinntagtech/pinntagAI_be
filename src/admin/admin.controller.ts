@@ -36,10 +36,10 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
-import { CreateIndustryDto } from './dto/business-industry.dto';
+import { CreateIndustryDto, UpdateIndustryDto } from './dto/business-industry.dto';
 import { database } from 'firebase-admin';
 import { BusinessCategory } from 'src/business/model/businessCategory.model';
-import { BusinessCategoryDto } from './dto/business-category.dto';
+import { BusinessCategoryDto, UpdateBusinessCategoryDto } from './dto/business-category.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -842,6 +842,55 @@ export class AdminController {
       });
     }
   }
+
+  @Put('update/industry/:industryId')
+  @UseGuards(AdminGuard2)
+  async updateIndustry(
+    @Param('industryId') industryId: string,
+    @Res() res: Response,
+    @Body() data: UpdateIndustryDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.updateBusinessIndustry(
+      industryId,
+      user.id,
+      data,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
+
+  @Delete('delete/industry/:id')
+  @UseGuards(AdminGuard2)
+  async deleteIndustry(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id provided',
+      });
+    }
+    const result = await this.adminService.deleteBusinessIndustry(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
   @Post('create/business/category')
   @UseGuards(AdminGuard2)
   async createBusinessCategory(
@@ -865,40 +914,55 @@ export class AdminController {
     }
   }
 
-  // @Get('business/industry')
-  // async getBusinessIndustry(
-  //   @Res() res: Response,
-  //   @Query('page') page: string,
-  //   @Query('limit') limit: string,
-  // ) {
-  //   const pageNumber = page ? parseInt(page) : 1;
-  //   const limitNumber = limit ? parseInt(limit) : 10;
-  //   console.log('pageNumber', pageNumber);
-  //   console.log('limitNumber', limitNumber);
-  //   // const result = await this.adminService.getBusinessIndustry(
-  //   //   pageNumber,
-  //   //   limitNumber,
-  //   // );
-  //   // if (result.success) {
-  //   //   return res.status(HttpStatus.OK).json({
-  //   //     message: result.message,
-  //   //     data: result.data,
-  //   //     // limit: result.limit,
-  //   //     total: result.total,
-  //   //     // pages: result.pages,
-  //   //   });
-  //   // } else {
-  //   //   return res.status(HttpStatus.BAD_REQUEST).json({
-  //   //     message: result.message,
-  //   //   });
-  //   // }
+  @Put('update/business/category/:categoryId')
+@UseGuards(AdminGuard2)
+async updateBusinessCategory(
+  @Param('categoryId') categoryId: string,
+  @Res() res: Response,
+  @Body() data: UpdateBusinessCategoryDto,
+  @TokenDecoder() user: DecodedUser,
+) {
+  const result = await this.adminService.updateBusinessCategory(
+    categoryId,
+    user.id,
+    data,
+  );
+  if (result.success) {
+    return res.status(HttpStatus.OK).json({
+      message: result.message,
+      data: result.data,
+    });
+  } else {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      message: result.message,
+    });
+  }
+}
+  @Delete('delete/business/category/:id')
+  @UseGuards(AdminGuard2)
+  async deleteBusinessCategory(
+    @Res() res: Response,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'Invalid id provided',
+      });
+    }
+    const result = await this.adminService.deleteBusinessCategory(id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
+  }
 
-  //   return res.status(HttpStatus.OK).json({
-  //     message: 'testing',
-  //   });
-  // }
-
-  @Get('testing')
+  @Get('business/industries')
   async getBusinessIndustry(
     @Res() res: Response,
     @Query('page') page: string,
@@ -916,19 +980,48 @@ export class AdminController {
       return res.status(HttpStatus.OK).json({
         message: result.message,
         data: result.data,
+        // limit: result.limit,
         total: result.total,
+        // pages: result.pages,
       });
     } else {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
     }
-
-    // console.log('testing here');
-    // return res.status(HttpStatus.OK).json({
-    //   message: 'testing',
-    // });
   }
+
+  // @Get('testing')
+  // async getBusinessIndustry(
+  //   @Res() res: Response,
+  //   @Query('page') page: string,
+  //   @Query('limit') limit: string,
+  // ) {
+  //   const pageNumber = page ? parseInt(page) : 1;
+  //   const limitNumber = limit ? parseInt(limit) : 10;
+  //   console.log('pageNumber', pageNumber);
+  //   console.log('limitNumber', limitNumber);
+  //   const result = await this.adminService.getBusinessIndustry(
+  //     pageNumber,
+  //     limitNumber,
+  //   );
+  //   if (result.success) {
+  //     return res.status(HttpStatus.OK).json({
+  //       message: result.message,
+  //       data: result.data,
+  //       total: result.total,
+  //     });
+  //   } else {
+  //     return res.status(HttpStatus.BAD_REQUEST).json({
+  //       message: result.message,
+  //     });
+  //   }
+
+  //   // console.log('testing here');
+  //   // return res.status(HttpStatus.OK).json({
+  //   //   message: 'testing',
+  //   // });
+  // }
 
   @Post('create/template')
   @UseGuards(AdminGuard2)

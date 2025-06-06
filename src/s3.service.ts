@@ -2,6 +2,7 @@ import { Injectable, Req, Res } from '@nestjs/common';
 import * as AWS from 'aws-sdk';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class S3Service {
@@ -82,5 +83,18 @@ export class S3Service {
     } catch (e) {
       console.log(e);
     }
+  }
+
+  async generateQrCode(text: string): Promise<Buffer> {
+    // Step 1: Generate QR code as PNG buffer
+    const pngBuffer = await QRCode.toBuffer(text, { type: 'png' });
+
+    // Step 2: Convert PNG to JPG using sharp
+    // const jpgBuffer = await sharp(pngBuffer)
+    //   .jpeg({ quality: 90 })
+    //   .toBuffer();
+
+    // return jpgBuffer;
+    return pngBuffer;
   }
 }

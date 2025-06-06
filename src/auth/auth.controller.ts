@@ -1057,18 +1057,32 @@ export class AuthController {
 
   @Get('getProfile')
   @UseGuards(JwtGuard2)
-  async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    console.log("even coming inside::: controller")
+  async getProfile(@TokenDecoder() user: DecodedUser, res: Response) {
+    console.log('even coming inside::: controller');
     const result = await this.authService.getProfile(user.id, user.userType);
+    // if (result.success) {
+    // return res.status(HttpStatus.OK).json({
+    //   message: result.message,
+    //   user: result.user,
+    //   // });
+    //   return res.status(HttpStatus.OK).json({
+    //     message: result.message,
+
+    //     user: result.user,
+    //   });
+    // } else {
+    //   return res.status(HttpStatus.BAD_REQUEST).json({
+    //     message: result.message,
+    //   });
+    // }
+
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         user: result.user,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 }
