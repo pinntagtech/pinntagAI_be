@@ -118,6 +118,11 @@ export class RewardsService {
       };
 
       const reward = await this.rewardModel.create(createObj);
+      // let generatedQR = null;
+      // if(data.activityType === ActivityType.CHECK_IN) {
+      //   generatedQR = await this.s3Service
+      // }
+
       console.log('Q@CODE::::', qrCode);
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
@@ -377,7 +382,7 @@ export class RewardsService {
     }
   }
 
-  async getAllRewards(user: DecodedUser,page: number, limit: number) {
+  async getAllRewards(user: DecodedUser, page: number, limit: number) {
     try {
       const userId = user.id;
       if (!user.businessProfile) {
@@ -515,8 +520,9 @@ export class RewardsService {
       ];
 
       const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
-      const total = await this.rewardModel.countDocuments({businessProfile: business._id});
-
+      const total = await this.rewardModel.countDocuments({
+        businessProfile: business._id,
+      });
 
       return {
         success: true,
@@ -1247,5 +1253,72 @@ export class RewardsService {
       data: result.data,
       claimStatusCounts: result.claimStatusCounts,
     };
+  }
+
+  async handleScanReward(rewardId: string, userId: string) {
+    try {
+      const foundReward = await this.rewardModel.findById(rewardId);
+      if (!foundReward) {
+        return {
+          success: false,
+          message: 'Reward Expired',
+        };
+      }
+      if (foundReward.schedule.endDate < new Date()) {
+        return {
+          success: false,
+          message: 'Reward Expired',
+        };
+      }
+      if (foundReward.status !== ClaimStatus.ACTIVE) {
+        return {
+          success: false,
+          message: 'Reward is not active.',
+        };
+      }
+
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+      const userReward = await this.userRewardModel.findOne({
+        userId: new mongoose.Types.ObjectId(userId),
+        rewardId: new mongoose.Types.ObjectId(rewardId),
+      });
+      if (!userReward) {
+        return {
+          success: false,
+          message: 'Please Enroll this reward first.',
+        };
+      }
+      if (userReward.progress >= userReward.target) {
+        return {
+          success: false,
+          message: 'Reward already completed.',
+        };
+      }
+      await this.userRewardModel.updateOne(
+        {
+          _id: userReward._id,
+        },
+        {
+          $inc: { progress: 1 },
+        },
+      );
+      return {
+        success: true,
+        message: 'Reward scanned successfully.',
+        data: userReward,
+      };
+    } catch (error) {
+      console.log('Error in handleScanReward:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
   }
 }

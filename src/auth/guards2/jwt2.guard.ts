@@ -68,7 +68,6 @@ export class JwtGuard2 implements CanActivate {
       if (!tokenDoc) {
         throw new UnauthorizedException('Unauthorised. Token expired.');
       }
-      console.log('inside jwt2 guard');
 
       const payload: JwtPayload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
@@ -106,7 +105,7 @@ export class JwtGuard2 implements CanActivate {
         const business = await this.businessModel.findById(
           payload.businessProfile,
         );
-
+        console.log('Check 1', business.id);
         request['isGuest'] = false;
         request['isBusiness'] = true;
         request['isAdmin'] = false;

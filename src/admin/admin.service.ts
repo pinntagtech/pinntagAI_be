@@ -48,7 +48,12 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { Actions, ResourceTypes, RoleBelonging, RoleCreatorType } from 'src/roles/enums/roles.enum';
+import {
+  Actions,
+  ResourceTypes,
+  RoleBelonging,
+  RoleCreatorType,
+} from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
@@ -57,8 +62,14 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import { CreateIndustryDto } from './dto/business-industry.dto';
-import { BusinessCategoryDto } from './dto/business-category.dto';
+import {
+  CreateIndustryDto,
+  UpdateIndustryDto,
+} from './dto/business-industry.dto';
+import {
+  BusinessCategoryDto,
+  UpdateBusinessCategoryDto,
+} from './dto/business-category.dto';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -85,7 +96,10 @@ import { DriveService } from 'src/drive/drive.service';
 import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
-import { Department, DepartmentDocument } from 'src/business/model/department.model';
+import {
+  Department,
+  DepartmentDocument,
+} from 'src/business/model/department.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 
@@ -116,16 +130,23 @@ export class AdminService {
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
     @InjectModel(PlatformConfig.name)
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
-    @InjectModel(BusinessCategory.name) private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
-    @InjectModel(Follow.name) private readonly followModel: Model<FollowDocument>,
+    @InjectModel(BusinessCategory.name)
+    private readonly businessCategoryModel: Model<BusinessCategoryDocument>,
+    @InjectModel(Follow.name)
+    private readonly followModel: Model<FollowDocument>,
     @InjectModel(Template.name)
     private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
 
-    @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
-    @InjectModel(Resource.name) private readonly resourceModel: Model<ResourceDocument>,
-    @InjectModel(Action.name) private readonly actionModel: Model<ActionDocument>,
-    @InjectModel(Privilege.name) private readonly privilegeModel: Model<PrivilegeDocument>,
+    @InjectModel(Department.name)
+    private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Resource.name)
+    private readonly resourceModel: Model<ResourceDocument>,
+    @InjectModel(Action.name)
+    private readonly actionModel: Model<ActionDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -1259,7 +1280,7 @@ export class AdminService {
         .populate('brand', '_id name')
         .populate('businessIndustry')
         .populate('businessCategories')
-        .populate('outlets')
+        .populate('outlets');
       if (!foundBusiness) {
         return {
           success: false,
@@ -1305,6 +1326,56 @@ export class AdminService {
       };
     }
   }
+
+  async updateBusinessIndustry(
+    industryId: string,
+    adminId: string,
+    data: UpdateIndustryDto,
+  ) {
+    try {
+      const industry = await this.industryModel.findById(industryId);
+      if (!industry) {
+        return {
+          success: false,
+          message: 'Industry not found.',
+        };
+      }
+
+      if (data.title) {
+        const existing = await this.industryModel.findOne({
+          title: data.title,
+          _id: { $ne: industryId },
+        });
+        if (existing) {
+          return {
+            success: false,
+            message: 'Another industry with the same title already exists.',
+          };
+        }
+      }
+
+      const updated = await this.industryModel.findByIdAndUpdate(
+        industryId,
+        {
+          ...data,
+          updatedBy: new mongoose.Types.ObjectId(adminId),
+          updatedAt: new Date(),
+        },
+        { new: true },
+      );
+
+      return {
+        success: true,
+        message: 'Industry updated successfully.',
+        data: updated,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
   async createBusinessCategory(id: string, data: BusinessCategoryDto) {
     try {
       const industry = await this.industryModel.findById(data.industry);
@@ -1341,6 +1412,59 @@ export class AdminService {
       };
     }
   }
+
+  async updateBusinessCategory(
+    categoryId: string,
+    adminId: string,
+    data: UpdateBusinessCategoryDto,
+  ) {
+    try {
+      const category = await this.businessCategoryModel.findById(categoryId);
+      if (!category) {
+        return {
+          success: false,
+          message: 'Business Category not found.',
+        };
+      }
+
+      if (data.title) {
+        const existing = await this.businessCategoryModel.findOne({
+          title: data.title,
+          // industry: data.industry ?? category.industry,
+          _id: { $ne: categoryId },
+        });
+        if (existing) {
+          return {
+            success: false,
+            message:
+              'Another category with the same title already exists in this industry.',
+          };
+        }
+      }
+
+      const updated = await this.businessCategoryModel.findByIdAndUpdate(
+        categoryId,
+        {
+          ...data,
+          updatedBy: new mongoose.Types.ObjectId(adminId),
+          updatedAt: new Date(),
+        },
+        { new: true },
+      );
+
+      return {
+        success: true,
+        message: 'Business category updated successfully.',
+        data: updated,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
   async getBusinessIndustry(page: number, limit: number) {
     try {
       const industries = await this.industryModel
@@ -1384,6 +1508,27 @@ export class AdminService {
         success: true,
         message: 'Category with given ID is Updated Successfully!',
       };
+    } catch (error) {
+      console.error(error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async deleteBusinessIndustry(industryId: string) {
+    try {
+      if (!mongoose.isValidObjectId(industryId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid id',
+        };
+      }
+      const findIndustry = await this.industryModel.findById(industryId);
+      if (!findIndustry) {
+        return {
+          success: false,
+          message: 'Industry not found with the id provided.',
+        };
+      }
     } catch (error) {
       console.error(error);
       return { success: false, message: error.message };
@@ -1642,71 +1787,71 @@ export class AdminService {
     }
   }
 
-    async seedBusinessDepartmentRoles(
-      userId: string,
-      businessId: mongoose.Types.ObjectId,
-    ) {
-      try {
-        for (const dept of DefaultBusinessDepartmentRoles) {
-          // Create department
-          const createdDepartment = await this.departmentModel.create({
-            name: dept.name,
-            description: dept.description,
+  async seedBusinessDepartmentRoles(
+    userId: string,
+    businessId: mongoose.Types.ObjectId,
+  ) {
+    try {
+      for (const dept of DefaultBusinessDepartmentRoles) {
+        // Create department
+        const createdDepartment = await this.departmentModel.create({
+          name: dept.name,
+          description: dept.description,
+          business: businessId,
+          createdBy: new mongoose.Types.ObjectId(userId),
+        });
+        const deptRoles = [];
+        for (const roleData of dept.roles) {
+          // Create role under the department
+          const createdRole = await this.roleModel.create({
+            name: roleData.name,
+            creator: new mongoose.Types.ObjectId(userId),
+            creatorType: RoleCreatorType.BUSINESS,
+            belongsTo: RoleBelonging.BUSINESS,
             business: businessId,
-            createdBy: new mongoose.Types.ObjectId(userId),
           });
-          const deptRoles = [];
-          for (const roleData of dept.roles) {
-            // Create role under the department
-            const createdRole = await this.roleModel.create({
-              name: roleData.name,
-              creator: new mongoose.Types.ObjectId(userId),
-              creatorType: RoleCreatorType.BUSINESS,
-              belongsTo: RoleBelonging.BUSINESS,
-              business: businessId,
+          deptRoles.push(createdRole._id);
+
+          // Privileges
+          const privilegeKeys = Object.keys(roleData.privileges);
+          for (const privilegeKey of privilegeKeys) {
+            // Get/create resource
+            let resourceDetails = await this.resourceModel.findOne({
+              title: ResourceTypes[privilegeKey],
             });
-            deptRoles.push(createdRole._id);
-  
-            // Privileges
-            const privilegeKeys = Object.keys(roleData.privileges);
-            for (const privilegeKey of privilegeKeys) {
-              // Get/create resource
-              let resourceDetails = await this.resourceModel.findOne({
+            if (!resourceDetails) {
+              resourceDetails = await this.resourceModel.create({
                 title: ResourceTypes[privilegeKey],
               });
-              if (!resourceDetails) {
-                resourceDetails = await this.resourceModel.create({
-                  title: ResourceTypes[privilegeKey],
-                });
-              }
-  
-              // Create privileges for each action
-              const actionKeys = roleData.privileges[privilegeKey];
-              for (const actionKey of actionKeys) {
-                let actionDetails = await this.actionModel.findOne({
+            }
+
+            // Create privileges for each action
+            const actionKeys = roleData.privileges[privilegeKey];
+            for (const actionKey of actionKeys) {
+              let actionDetails = await this.actionModel.findOne({
+                title: Actions[actionKey],
+              });
+              if (!actionDetails) {
+                actionDetails = await this.actionModel.create({
                   title: Actions[actionKey],
                 });
-                if (!actionDetails) {
-                  actionDetails = await this.actionModel.create({
-                    title: Actions[actionKey],
-                  });
-                }
-  
-                await this.privilegeModel.create({
-                  role: createdRole._id,
-                  resource: resourceDetails.title,
-                  action: actionDetails.title,
-                });
               }
+
+              await this.privilegeModel.create({
+                role: createdRole._id,
+                resource: resourceDetails.title,
+                action: actionDetails.title,
+              });
             }
           }
-          await this.departmentModel.updateOne(
-            { _id: createdDepartment._id },
-            { $set: { roles: deptRoles } },
-          );
         }
-      } catch (error) {}
-    }
+        await this.departmentModel.updateOne(
+          { _id: createdDepartment._id },
+          { $set: { roles: deptRoles } },
+        );
+      }
+    } catch (error) {}
+  }
   async addBusiness(
     user: DecodedUser,
     data: AddBusinessDto,
@@ -1803,9 +1948,9 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
-      console.log("Business Folder ID:", businessFolder.data._id);
-      console.log("UserID:",user.id);
-      console.log("Created User ID:",createdUser.id);
+      console.log('Business Folder ID:', businessFolder.data._id);
+      console.log('UserID:', user.id);
+      console.log('Created User ID:', createdUser.id);
 
       let businessObj = {
         name: data.businessName,
@@ -1835,18 +1980,19 @@ export class AdminService {
         {
           $addToSet: {
             business: createdBusiness._id,
-          }
-        });
+          },
+        },
+      );
 
       //seed Roles:
       this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
-      .then(() => console.log('Business roles seeded successfully'))
-      .catch((err) => console.error('Error seeding business roles:', err));
+        .then(() => console.log('Business roles seeded successfully'))
+        .catch((err) => console.error('Error seeding business roles:', err));
 
-        createdUser = await this.businessUserModel
-          .findById(createdUser.id)
-          .populate('role', '_id name')
-          .populate('business')
+      createdUser = await this.businessUserModel
+        .findById(createdUser.id)
+        .populate('role', '_id name')
+        .populate('business');
       return {
         success: true,
         message: 'Business User Created Successfully',
@@ -1861,38 +2007,38 @@ export class AdminService {
     }
   }
 
-    async getBusinessFollowers(businessId: string, page: number, limit: number) {
-      try {
-        console.log('user:', businessId);
-        console.log('User name:', User.name);
-        const followers = await this.followModel
-          .find({
-            following: new mongoose.Types.ObjectId(businessId),
-            followerType: User.name,
-          })
-          .populate(
-            'follower',
-            '_id firstName lastName profilePhoto name profileType image',
-          )
-          .sort({ createdAt: -1 })
-          .skip((page - 1) * limit)
-          .limit(limit);
-  
-        const total = await this.businessUserModel.countDocuments({
-          business: new mongoose.Types.ObjectId(businessId),
-        });
-  
-        return {
-          success: true,
-          message: 'Followers fetched Successfully!',
-          data: followers,
-          total,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: error,
-        };
-      }
+  async getBusinessFollowers(businessId: string, page: number, limit: number) {
+    try {
+      console.log('user:', businessId);
+      console.log('User name:', User.name);
+      const followers = await this.followModel
+        .find({
+          following: new mongoose.Types.ObjectId(businessId),
+          followerType: User.name,
+        })
+        .populate(
+          'follower',
+          '_id firstName lastName profilePhoto name profileType image',
+        )
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const total = await this.businessUserModel.countDocuments({
+        business: new mongoose.Types.ObjectId(businessId),
+      });
+
+      return {
+        success: true,
+        message: 'Followers fetched Successfully!',
+        data: followers,
+        total,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
     }
+  }
 }

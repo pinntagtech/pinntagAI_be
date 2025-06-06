@@ -81,6 +81,9 @@ export class Reward {
 
   @Prop()
   description: string;
+
+  @Prop()
+  activityQrCode: string;
 }
 
 export const RewardSchema = SchemaFactory.createForClass(Reward);

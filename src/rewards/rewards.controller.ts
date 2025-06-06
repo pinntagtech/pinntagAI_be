@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Res,
   UploadedFile,
@@ -84,10 +85,19 @@ export class RewardsController {
   }
   @Get('business')
   @UseGuards(JwtGuard2)
-  async getAllRewards(@Res() res: Response, @TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+  async getAllRewards(
+    @Res() res: Response,
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.rewardService.getAllRewards(user, pageNumber, limitNumber);
+    const result = await this.rewardService.getAllRewards(
+      user,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return res.status(HttpStatus.OK).json({
         message: result.message,
@@ -323,6 +333,21 @@ export class RewardsController {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: result.message,
       });
+    }
+  }
+
+  @Put('scan-reward/:rewardId')
+  @UseGuards(JwtGuard2)
+  async scanReward(
+    @Param('rewardId') rewardId: string,
+    @TokenDecoder() user: DecodedUser,
+    @Res() res: Response,
+  ) {
+    const result = await this.rewardService.handleScanReward(rewardId, user.id);
+    if (result.success) {
+      return res.status(HttpStatus.OK).json(result);
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json(result);
     }
   }
 }
