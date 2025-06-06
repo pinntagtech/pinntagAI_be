@@ -105,7 +105,6 @@ export class JwtGuard2 implements CanActivate {
         const business = await this.businessModel.findById(
           payload.businessProfile,
         );
-        console.log('Check 1', business.id);
         request['isGuest'] = false;
         request['isBusiness'] = true;
         request['isAdmin'] = false;
