@@ -27,7 +27,7 @@ export const TokenDecoder = createParamDecorator(
       userType: request.isBusiness ? UserTypes.BUSINESS : UserTypes.USER,
       name: request.isBusiness ? request.user.name : '',
       id: request.user.id,
-      businessProfile: request.isBusiness ? request.business : '',
+      businessProfile: request.isBusiness ? request.businessProfile : '',
       // businessProfile: 'NA',
       isBusiness: request.isBusiness,
       token: request.token,
