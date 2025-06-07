@@ -6,6 +6,8 @@ import mongoose from 'mongoose';
 import { Folder, FolderDocument } from './models/folder.model';
 import { Exception } from 'handlebars';
 import { User, UserDocument } from 'src/user/models/user.model';
+import * as QRCode from 'qrcode';
+import { v4 as uuidv4 } from 'uuid';
 import {
   BusinessProfile,
   BusinessProfileDocument,
@@ -979,5 +981,46 @@ export class DriveService {
       console.error('Error uploading media:', error);
       return { success: false, message: 'Failed to upload media' };
     }
+  }
+
+  async generateQrCode(
+    text: string,
+    originalName: string,
+    parentId: string,
+    fileCategoryId: string,
+    locationId: string,
+  ) {
+    // Step 1: Generate QR code as PNG buffer
+    const qrBuffer = await QRCode.toBuffer(text, { type: 'png' });
+
+    // Step 2: Convert PNG to JPG using sharp
+    // const jpgBuffer = await sharp(pngBuffer)
+    //   .jpeg({ quality: 90 })
+    //   .toBuffer();
+
+    // return jpgBuffer;
+    // return pngBuffer;
+
+    const file = {
+      fieldname: 'file',
+      originalname: originalName,
+      encoding: '7bit',
+      mimetype: 'image/png',
+      size: qrBuffer.length,
+      buffer: qrBuffer,
+      stream: streamifier.createReadStream(qrBuffer),
+      destination: '',
+      filename: `${uuidv4()}-${originalName}`, // Optional: add unique ID to filename
+      path: '',
+    };
+
+    const result = await this.uploadFile(
+      parentId,
+      locationId,
+      fileCategoryId,
+      file,
+    );
+
+    return result;
   }
 }
