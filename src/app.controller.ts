@@ -14,7 +14,9 @@ export class AppController {
   @Get('categories')
   async getCategories() {
     const result = await this.appService.getCategories();
-    return result;
+    return {
+      catgories: result,
+    };
   }
 
   @Get('ages')
