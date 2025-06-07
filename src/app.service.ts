@@ -98,9 +98,9 @@ export class AppService implements OnModuleInit {
   async getCategories() {
     return await this.categoryModel
       .find()
-      .sort({ sortOrder: 1 })
+      // .sort({ sortOrder: 1 })
       //sort with alphabatical order
-      // .sort({ title: 1 })
+      .sort({ title: 1 })
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .exec();
   }
