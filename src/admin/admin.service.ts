@@ -1467,6 +1467,7 @@ export class AdminService {
 
   async getBusinessIndustry(page: number, limit: number) {
     try {
+      console.log('is inside service::?');
       const industries = await this.industryModel
         .find()
         .skip((page - 1) * limit)
@@ -1506,7 +1507,7 @@ export class AdminService {
 
       return {
         success: true,
-        message: 'Category with given ID is Updated Successfully!',
+        message: 'Category with given ID is Deleted Successfully!',
       };
     } catch (error) {
       console.error(error);
@@ -1529,6 +1530,12 @@ export class AdminService {
           message: 'Industry not found with the id provided.',
         };
       }
+
+      await this.industryModel.findByIdAndDelete(industryId);
+      return {
+        success: true,
+        message: 'Industry with given ID is Deleted Successfully.',
+      };
     } catch (error) {
       console.error(error);
       return { success: false, message: error.message };
