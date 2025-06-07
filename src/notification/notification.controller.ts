@@ -4,14 +4,12 @@ import {
   Delete,
   Param,
   UseGuards,
-  HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { UserGuard } from 'src/auth/guards/user.guard';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 
 @Controller('notification')
 export class NotificationController {
