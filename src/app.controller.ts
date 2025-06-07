@@ -15,7 +15,7 @@ export class AppController {
   async getCategories() {
     const result = await this.appService.getCategories();
     return {
-      catgories: result,
+      categories: result,
     };
   }
 
