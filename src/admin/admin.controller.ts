@@ -36,10 +36,16 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
-import { CreateIndustryDto, UpdateIndustryDto } from './dto/business-industry.dto';
+import {
+  CreateIndustryDto,
+  UpdateIndustryDto,
+} from './dto/business-industry.dto';
 import { database } from 'firebase-admin';
 import { BusinessCategory } from 'src/business/model/businessCategory.model';
-import { BusinessCategoryDto, UpdateBusinessCategoryDto } from './dto/business-category.dto';
+import {
+  BusinessCategoryDto,
+  UpdateBusinessCategoryDto,
+} from './dto/business-category.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -915,29 +921,29 @@ export class AdminController {
   }
 
   @Put('update/business/category/:categoryId')
-@UseGuards(AdminGuard2)
-async updateBusinessCategory(
-  @Param('categoryId') categoryId: string,
-  @Res() res: Response,
-  @Body() data: UpdateBusinessCategoryDto,
-  @TokenDecoder() user: DecodedUser,
-) {
-  const result = await this.adminService.updateBusinessCategory(
-    categoryId,
-    user.id,
-    data,
-  );
-  if (result.success) {
-    return res.status(HttpStatus.OK).json({
-      message: result.message,
-      data: result.data,
-    });
-  } else {
-    return res.status(HttpStatus.BAD_REQUEST).json({
-      message: result.message,
-    });
+  @UseGuards(AdminGuard2)
+  async updateBusinessCategory(
+    @Param('categoryId') categoryId: string,
+    @Res() res: Response,
+    @Body() data: UpdateBusinessCategoryDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.updateBusinessCategory(
+      categoryId,
+      user.id,
+      data,
+    );
+    if (result.success) {
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        message: result.message,
+      });
+    }
   }
-}
   @Delete('delete/business/category/:id')
   @UseGuards(AdminGuard2)
   async deleteBusinessCategory(
@@ -962,7 +968,7 @@ async updateBusinessCategory(
     }
   }
 
-  @Get('business/industries')
+  @Get('industries')
   async getBusinessIndustry(
     @Res() res: Response,
     @Query('page') page: string,
