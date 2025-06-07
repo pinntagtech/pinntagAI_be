@@ -118,22 +118,38 @@ export class RewardsService {
       };
 
       const reward = await this.rewardModel.create(createObj);
-      // let generatedQR = null;
-      // if(data.activityType === ActivityType.CHECK_IN) {
-      //   generatedQR = await this.s3Service
-      // }
 
-      console.log('Q@CODE::::', qrCode);
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      let generatedQR = null;
+      console.log(
+        'rewardID:',
+        reward.id,
+        reward.title,
+        userDetails.drive.toString(),
+        QR_ImageCategory.id,
+        businessFolder.data.id,
+      );
+      if (data.activityType === ActivityType.CHECK_IN) {
+        generatedQR = await this.driveService.generateQrCode(
+          `${reward.id}`,
+          reward.title,
+          userDetails._id.toString(),
+          QR_ImageCategory.id,
+          businessFolder.data.id,
+        );
+        console.log('Generated QR Code:', generatedQR);
+      }
+
+      console.log('Q@CODE::::', qrCode);
       let QRCodeDetails = null;
       if (qrCode) {
         QRCodeDetails = await this.driveService.uploadAndCreateFile(
           qrCode[0],
           businessFolder.data.id,
           Folder.name,
-          userDetails.drive.toString(),
+          userDetails._id.toString(),
           QR_ImageCategory._id,
         );
         console.log('QRCODE DETAILS:', QRCodeDetails);
@@ -219,6 +235,7 @@ export class RewardsService {
             },
             status: RewardStatus.PUBLISHED,
             QR_CODE: QRCodeDetails?._id,
+            activityQrCode: generatedQR.data.metaData.url,
           },
         },
         { new: true },
