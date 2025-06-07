@@ -5,7 +5,7 @@ import {
   Body,
   UseGuards,
   Req,
-  Res,
+  HttpCode,
   HttpStatus,
   Delete,
   UseInterceptors,
@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { ContinueWithFacebookDto } from './dto/continueWithFb.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
@@ -57,51 +57,40 @@ export class AuthController {
   @Post('upload/photo')
   @UseGuards(UserGuard)
   @UseInterceptors(FileInterceptor('photo'))
+  @HttpCode(HttpStatus.OK)
   async uploadPhoto(
-    @Res() res: Response,
     @UploadedFile() photo: Express.Multer.File,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.authService.uploadPhoto(user, photo);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        url: result.image,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      url: result.image,
+    };
   }
 
   @Post('signup')
-  async create(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() createAuthDto: CreateAuthDto,
-  ) {
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Req() req: Request, @Body() createAuthDto: CreateAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.create(createAuthDto, userAgent, ip);
-    if (result.success) {
-      return res.status(HttpStatus.CREATED).json({
-        message: result.message,
-        user: result.user,
-        fcmExists: result.fcmExists,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      fcmExists: result.fcmExists,
+    };
   }
+
   @Post('signupOTP')
-  async signupOTP(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() createAuthDto: SignupAuthDto,
-  ) {
+  @HttpCode(HttpStatus.CREATED)
+  async signupOTP(@Req() req: Request, @Body() createAuthDto: SignupAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.signupOTP(
@@ -109,22 +98,20 @@ export class AuthController {
       userAgent,
       ip,
     );
-    if (result.success) {
-      return res.status(HttpStatus.CREATED).json({
-        message: result.message,
-        user: result.user,
-        fcmExists: result.fcmExists,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      fcmExists: result.fcmExists,
+    };
   }
+
   @Post('updateContactDetails/:id')
+  @HttpCode(HttpStatus.ACCEPTED)
   async contactDetails(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() createAuthDto: UpdateAuthDto,
     @Param('id') id: string,
   ) {
@@ -136,36 +123,30 @@ export class AuthController {
       userAgent,
       ip,
     );
-    if (result.success) {
-      return res.status(HttpStatus.ACCEPTED).json({
-        message: result.message,
-        // user: result.user,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
 
   @Post('verifyContactDetails')
-  async verifyContactDetails(@Res() res: Response, @Body() body: VerifyOtpDto) {
+  @HttpCode(HttpStatus.OK)
+  async verifyContactDetails(@Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyContactDetails(body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        // user: result.user,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
+
   @Post('updatePersonalDetails/:id')
+  @HttpCode(HttpStatus.ACCEPTED)
   async updatePersonalDetails(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() personalDetailDTO: PersonDetailDto,
     @Param('id') id: string,
   ) {
@@ -177,327 +158,253 @@ export class AuthController {
       userAgent,
       ip,
     );
-    if (result.success) {
-      return res.status(HttpStatus.ACCEPTED).json({
-        message: result.message,
-        // user: result.user,
-        // fcmExists: result.fcmExists,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
 
   @Post('google')
-  async loginWithGoogle(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: OAuth2Dto,
-  ) {
+  @HttpCode(HttpStatus.OK)
+  async loginWithGoogle(@Req() req: Request, @Body() body: OAuth2Dto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.loginWithGoogle(body, userAgent, ip);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
-  // @Get('apple')
-  // @UseGuards(AuthGuard('apple'))
-  // async loginWithApple(@Res() res: Response) {
-  //   return HttpStatus.OK;
-  // }
-
   @Post('apple')
-  // @UseGuards(AuthGuard('apple'))
-  async appleCallback(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: OAuth2Dto,
-  ) {
+  @HttpCode(HttpStatus.OK)
+  async appleCallback(@Req() req: Request, @Body() body: OAuth2Dto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.loginWithApple(body, userAgent, ip);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
+
   @Post('login')
-  async login(@Res() res: Response, @Body() loginDto: LoginDto) {
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-        fcmExists: result.fcmExists,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+      fcmExists: result.fcmExists,
+    };
   }
 
   @Post('loginOTP')
-  async loginOTP(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() loginDto: SignupAuthDto,
-  ) {
+  @HttpCode(HttpStatus.OK)
+  async loginOTP(@Req() req: Request, @Body() loginDto: SignupAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
     const result = await this.authService.loginOTP(loginDto, userAgent, ip);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        // token: result.token,
-        // fcmExists: result.fcmExists,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+    };
   }
 
   @Post('admin/login')
-  async adminLogin(@Res() res: Response, @Body() loginDto: LoginDto) {
+  @HttpCode(HttpStatus.OK)
+  async adminLogin(@Body() loginDto: LoginDto) {
     const result = await this.authService.adminLogin(loginDto);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('admin/login-v2')
-  async adminLoginV2(@Res() res: Response, @Body() loginDto: LoginDto) {
+  @HttpCode(HttpStatus.OK)
+  async adminLoginV2(@Body() loginDto: LoginDto) {
     const result = await this.authService.adminLoginV2(loginDto);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('dashboard/config/add')
   @UseGuards(AdminGuard)
-  async configureDashboard(
-    @Res() res: Response,
-    @Body() body: ConfigureDashboardDto,
-  ) {
+  @HttpCode(HttpStatus.OK)
+  async configureDashboard(@Body() body: ConfigureDashboardDto) {
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     const result = await this.authService.addDashboardConfiguration(body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Get('dashboard/config')
   @UseGuards(AdminGuard)
-  async getDashboardConfig(@Res() res: Response) {
+  async getDashboardConfig() {
     const result = await this.authService.getDashboardConfig();
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
+
   @Get('dashboard/getAllConfigs')
   @UseGuards(JwtGuard2)
-  async getDashboardAllConfigs(@Res() res: Response) {
+  async getDashboardAllConfigs() {
     const result = await this.authService.getDashboardAllConfigs();
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Post('dashboard/config/update/:id')
   @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.OK)
   async editDashboardConfig(
-    @Res() res: Response,
     @Body() body: UpdateConfigureDashboardDto,
     @Param('id') id: string,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid id',
-      });
+      throw new BadRequestException('Invalid id');
     }
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     const result = await this.authService.updateDashboardConfiguration(
       id,
       body,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Delete('dashboard/config/delete/:id')
   @UseGuards(AdminGuard)
-  async deleteDashboardConfig(@Res() res: Response, @Param('id') id: string) {
+  async deleteDashboardConfig(@Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid id',
-      });
+      throw new BadRequestException('Invalid id');
     }
     const result = await this.authService.deleteDashboardConfiguration(id);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
 
   @Get('dashboard/weight')
   @UseGuards(AdminGuard)
-  async getDashboardWeight(@Res() res: Response) {
+  async getDashboardWeight() {
     const result = await this.authService.getDashboardWeight();
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Post('dashboard/weight/update')
   @UseGuards(AdminGuard)
-  async updateDashboardWeight(
-    @Res() res: Response,
-    @Body() body: PlatformConfigDto,
-  ) {
+  @HttpCode(HttpStatus.OK)
+  async updateDashboardWeight(@Body() body: PlatformConfigDto) {
     if (!body.distanceWeightage && !body.timeWeightage) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide data to update',
-      });
+      throw new BadRequestException('Please provide data to update');
     }
-    // body.distanceWeightage and body.timeWeightage both should be in the range of 0.1 to 1.0 and their sum should be 1.0
     if (body.distanceWeightage < 0.1 || body.distanceWeightage > 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Distance weightage should be between 0.1 to 1.0',
-      });
+      throw new BadRequestException(
+        'Distance weightage should be between 0.1 to 1.0',
+      );
     }
     if (body.timeWeightage < 0.1 || body.timeWeightage > 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Time weightage should be between 0.1 to 1.0',
-      });
+      throw new BadRequestException(
+        'Time weightage should be between 0.1 to 1.0',
+      );
     }
     if (body.distanceWeightage + body.timeWeightage !== 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Sum of distance and time weightage should be 1.0',
-      });
+      throw new BadRequestException(
+        'Sum of distance and time weightage should be 1.0',
+      );
     }
     const result = await this.authService.editDashboardWeight(body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        data: result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Post('guest/login')
-  async guestLogin(@Res() res: Response, @Body() body: GuestLoginDto) {
+  @HttpCode(HttpStatus.OK)
+  async guestLogin(@Body() body: GuestLoginDto) {
     const result = await this.authService.guestLogin(body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('continueWithFacebook')
@@ -506,124 +413,106 @@ export class AuthController {
   }
 
   @Post('verify/otp')
-  async verifyEmail(@Res() res: Response, @Body() body: VerifyOtpDto) {
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyOtp(body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('resend/otp')
-  async resendOtp(@Res() res: Response, @Body() body: ResendOtpDto) {
+  @HttpCode(HttpStatus.OK)
+  async resendOtp(@Body() body: ResendOtpDto) {
     const { success, message } = await this.authService.resendOtp(body);
-    const status = success ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-    return res.status(status).json({
-      message,
-    });
+    if (!success) {
+      throw new BadRequestException(message);
+    }
+    return { message };
   }
 
   @Post('forgotPassword')
-  async forgotPassword(@Res() res: Response, @Body() body: { email: string }) {
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() body: { email: string }) {
     const result = await this.authService.forgotPassword(body.email);
-    if (result.success) {
-      const { id, message } = result;
-      return res.status(HttpStatus.OK).json({
-        id,
-        message,
-      });
-    } else {
-      const { message } = result;
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    const { id, message } = result;
+    return { id, message };
   }
 
   @Post('resetPassword')
-  async resetPassword(@Res() res: Response, @Body() body: ResetPaswordDto) {
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: ResetPaswordDto) {
     const { success, message } = await this.authService.resetPassword(body);
-    const status = success ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-    return res.status(status).json({
-      message,
-    });
+    if (!success) {
+      throw new BadRequestException(message);
+    }
+    return { message };
   }
 
   @Get('refresh/token')
   @UseGuards(RefreshGuard)
-  async refreshToken(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+  async refreshToken(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.refreshToken(user);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      token: result.token,
+    };
   }
 
   @Post('refresh/token/fcm')
   @UseGuards(RefreshGuard)
+  @HttpCode(HttpStatus.OK)
   async refreshFcmToken(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() body: RefreshFcmDto,
   ) {
     const result = await this.authService.refreshFcmToken(user.id, body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      token: result.token,
+    };
   }
 
   @Get('fcm/report')
   @UseGuards(RateLimitGuard)
-  async fcmReport(@Res() res: Response) {
+  async fcmReport() {
     await this.authService.fcmReport();
-    return res.status(HttpStatus.OK).json({
-      message: 'Report sent',
-    });
+    return { message: 'Report sent' };
   }
 
   @Post('dashboard')
   @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
   async dashboard(
-    @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     if (distance) {
       if (isNaN(parseInt(distance))) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide a valid distance value.',
-        });
+        throw new BadRequestException('Please provide a valid distance value.');
       }
     }
     const result = await this.authService.getDashboard(
@@ -636,46 +525,34 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        // events: result.events,
-        // freeEvents: result.freeEvents,
-        // privateEvents: result.privateEvents,
-        // offers: result.offers,
-        // data: result.data,
-        ...result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      ...result.data,
+    };
   }
 
   @Post('dashboard/v2')
   @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
   async dashboardV2(
-    @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     if (distance) {
       if (isNaN(parseInt(distance))) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide a valid distance value.',
-        });
+        throw new BadRequestException('Please provide a valid distance value.');
       }
     }
     const result = await this.authService.getDashboardV2(
@@ -688,46 +565,34 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        // events: result.events,
-        // freeEvents: result.freeEvents,
-        // privateEvents: result.privateEvents,
-        // offers: result.offers,
-        // data: result.data,
-        ...result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      ...result.data,
+    };
   }
 
   @Post('fixedCarouselEvents')
   @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
   async dashboardFixedCarouselEvents(
-    @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     if (distance) {
       if (isNaN(parseInt(distance))) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide a valid distance value.',
-        });
+        throw new BadRequestException('Please provide a valid distance value.');
       }
     }
     const result = await this.authService.dashboardFixedCarouselEvents(
@@ -740,26 +605,19 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        // events: result.events,
-        // freeEvents: result.freeEvents,
-        // privateEvents: result.privateEvents,
-        // offers: result.offers,
-        // data: result.data,
-        ...result.data,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      ...result.data,
+    };
   }
+
   @Post('getDashboardCarouselEvent/:id')
   @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
   async getDashboardCarouselEvent2(
-    // @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Param('id') id: string,
     @Query('search') search: string,
@@ -768,28 +626,18 @@ export class AuthController {
     @TokenDecoder() user: DecodedUser,
   ) {
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
-      // return res.status(HttpStatus.BAD_REQUEST).json({
-      //   message: 'Not a valid User',
-      // });
       throw new BadRequestException('Not a valid User');
     }
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
           throw new BadRequestException(`${cat} is not a valid category id.`);
-          // return res.status(HttpStatus.BAD_REQUEST).json({
-          //   message: `${cat} is not a valid category id.`,
-          // });
         }
-      });
+      }
     }
     if (distance) {
       if (isNaN(parseInt(distance))) {
         throw new BadRequestException('Please provide a valid distance value.');
-
-        // return res.status(HttpStatus.BAD_REQUEST).json({
-        //   message: 'Please provide a valid distance value.',
-        // });
       }
     }
     const result = await this.authService.getDashboardCarouselEvent2(
@@ -804,24 +652,19 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    if (result.success) {
-      // return res.status(HttpStatus.OK).json({
-      return {
-        message: result.message,
-        ...result.data,
-      };
-    } else {
-      // return res.status(HttpStatus.BAD_REQUEST).json({
-      //   message: result.message,
-      // });
+    if (!result.success) {
       throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      ...result.data,
+    };
   }
 
   @Post('dashboard/map-view')
   @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
   async dashboardMapView(
-    @Res() res: Response,
     @Body() body: GetDashboardDto,
     @Query('search') search: string,
     @Query('limit') limit: string,
@@ -830,13 +673,11 @@ export class AuthController {
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
-      body.categories.forEach((cat) => {
+      for (const cat of body.categories) {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: `${cat} is not a valid category id.`,
-          });
+          throw new BadRequestException(`${cat} is not a valid category id.`);
         }
-      });
+      }
     }
     const result = await this.authService.getDashboardMapView(
       user,
@@ -851,238 +692,175 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        events: result.events,
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        pages: result.pages,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      events: result.events,
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      pages: result.pages,
+    };
   }
 
   @Get('dashboard/:id')
   @UseGuards(JwtGuard2)
   async getEventDetails(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid event id',
-      });
+      throw new BadRequestException('Invalid event id');
     }
     const result = await this.authService.getEventDetails(id, user, body);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        event: result.event,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      event: result.event,
+    };
   }
 
   @Get('switch/profile')
   @UseGuards(BusinessProfileGuard)
-  async switchToUserProfile(
-    @Res() res: Response,
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async switchToUserProfile(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.switchToUserProfile(user.id);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        user: result.user,
-        token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('logout')
   @UseGuards(UserGuard)
+  @HttpCode(HttpStatus.OK)
   async logout(
     @Req() req,
-    @Res() res,
     @Query('fcm') fcm: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     const token = req.headers.authorization.split(' ')[1];
     const result = await this.authService.logout(user, token, fcm ? fcm : '');
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
 
   @Delete('delete')
   @UseGuards(UserGuard)
-  async deleteAccount(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+  async deleteAccount(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.deleteAccount(user);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
+
   @Get('preSignedURL')
   @UseGuards(JwtGuard2)
-  async getPresignedUrl(@Res() res: Response, @Query('url') url: string) {
+  async getPresignedUrl(@Query('url') url: string) {
     const result = await this.authService.getPreSignedUrl(url);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        preSignedUrl: result.url,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      preSignedUrl: result.url,
+    };
   }
+
   @Post('verify-email')
   @UseGuards(VerifyMailGuard)
   async verifyEmailviaLink(
     @Req() req: Request,
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
-    // @Query('token') token: string,
   ) {
     const tokenId = req['tokenId'];
     const result = await this.authService.verifyEmailviaLink(user, tokenId);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-        // token: result.token,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
-  //forgot password API
+
   @Post('password-reset-link')
+  @HttpCode(HttpStatus.OK)
   async passwordResetLink(
     @Req() req: Request,
-    @Res() res: Response,
     @Body('email') email: string,
-
     @Body('userType') userType: string,
   ) {
     const result = await this.authService.passwordResetLink(email, userType);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return { message: result.message };
   }
-  // forgot password Verify API
+
   @Post('verify-pass-reset')
   @UseGuards(ResetPasswordGuard)
+  @HttpCode(HttpStatus.OK)
   async verifyPassReset(
     @Req() req: Request,
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body('password') password: string,
   ) {
     const tokenId = req['tokenId'];
-
     const result = await this.authService.verifyPassReset(
       user,
       password,
       tokenId,
     );
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+    };
   }
 
   @Post('resendVerificationLink/:id')
+  @HttpCode(HttpStatus.OK)
   async resendVerificationLink(
     @Req() req: Request,
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('userType') userType: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.authService.resendVerificationLink(id, userType);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+    if (!result.success) {
+      throw new BadRequestException(result.message);
     }
+    return { message: result.message };
   }
 
   @Get('getProfile')
   @UseGuards(JwtGuard2)
-  async getProfile(@TokenDecoder() user: DecodedUser, res: Response) {
-    console.log('even coming inside::: controller');
+  async getProfile(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.getProfile(user.id, user.userType);
-    // if (result.success) {
-    // return res.status(HttpStatus.OK).json({
-    //   message: result.message,
-    //   user: result.user,
-    //   // });
-    //   return res.status(HttpStatus.OK).json({
-    //     message: result.message,
-
-    //     user: result.user,
-    //   });
-    // } else {
-    //   return res.status(HttpStatus.BAD_REQUEST).json({
-    //     message: result.message,
-    //   });
-    // }
-
-    if (result.success) {
-      return {
-        message: result.message,
-        user: result.user,
-      };
-    } else {
+    if (!result.success) {
       throw new BadRequestException(result.message);
     }
+    return {
+      message: result.message,
+      user: result.user,
+    };
   }
 }
