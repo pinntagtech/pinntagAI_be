@@ -3292,19 +3292,19 @@ export class AuthService {
       }
       let query = { ...match };
       if (categoryIds.length) {
-        const sameCategories = [];
+        const matchingCategories = [];
         categoryIds.forEach((id) => {
           if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-            sameCategories.push(new mongoose.Types.ObjectId(id));
+            matchingCategories.push(new mongoose.Types.ObjectId(id));
           }
         });
-        if (!sameCategories.length) {
+        if (!matchingCategories.length) {
           continue;
         } else {
           query = {
             ...query,
             'event.category': {
-              $in: sameCategories,
+              $in: matchingCategories,
             },
           };
         }
@@ -4957,7 +4957,7 @@ export class AuthService {
 
   async getProfile(userId: string, userType: string) {
     try {
-      console.log("Is coming here:::::::", userId, userType);
+      console.log('Is coming here:::::::', userId, userType);
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
@@ -4980,8 +4980,7 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-
-        console.log("Insiide Businessssss:::")
+        console.log('Insiide Businessssss:::');
         userDoc = await this.businessUserModel
           .findById(userId)
           // .populate('business')
@@ -5139,29 +5138,28 @@ export class AuthService {
     let query = { ...match };
     let eventsResult = [];
     if (categoryIds.length) {
-      const sameCategories = [];
+      const matchingCategories = [];
       categoryIds.forEach((id) => {
         if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-          sameCategories.push(new mongoose.Types.ObjectId(id));
+          matchingCategories.push(new mongoose.Types.ObjectId(id));
         }
       });
-      if (sameCategories.length) {
+      if (matchingCategories.length) {
         query = {
           ...query,
           'event.categories': {
-            $in: sameCategories,
+            $in: matchingCategories,
+          },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
           },
         };
       }
-      // else {
-      //   return {
-      //     success: true,
-      //     message: 'Dashboard fetched successfully',
-      //     data:{
-      //       eventsResult
-      //     }
-      //   };
-      // }
     } else {
       query = {
         ...query,
@@ -5250,9 +5248,6 @@ export class AuthService {
 
     return password.join('');
   }
-
- 
-
 }
 
 // Relevant-logs:--- {
