@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,6 +12,7 @@ import {
   Query,
   Req,
   Res,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -59,32 +61,27 @@ export class AdminController {
 
   @Get('list')
   @UseGuards(AdminGuard2)
-  async getUsers(
-    @Res() res: Response,
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-  ) {
+  async getUsers(@Query('page') page: string, @Query('limit') limit: string) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.adminService.getUsers(pageNumber, limitNumber);
 
     if (result.success) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return {
         message: result.message,
-      });
+      };
     }
   }
 
   @Get('crawled')
   @UseGuards(AdminGuard2)
   async getCrawledEvents(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('status') status: string,
@@ -104,56 +101,59 @@ export class AdminController {
       status,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         count: result.count,
         events: result.crawledEvents,
         pages: result.pages,
         page: result.page,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return {
         message: result.message,
-      });
+      };
     }
   }
 
   @Delete('crawled/:id')
   @UseGuards(AdminGuard2)
-  async removeCrawledEvent(@Res() res: Response, @Param('id') id: string) {
+  async removeCrawledEvent(@Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Invalid event id',
       });
     }
     const result = await this.adminService.deleteCrawledEvent(id);
-    return res
-      .status(result.success ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
-      .json({
+    if (result.success) {
+      return {
         message: result.message,
-      });
+      };
+    } else {
+      return {
+        message: result.message,
+      };
+    }
   }
 
   @Post('crawled/edit/:id')
   @UseGuards(AdminGuard2)
   async updateCrawledEvent(
-    @Res() res: Response,
     @Param('id') id: string,
     @Body() body: UpdateCrawledEventDto,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Please provide a valid id',
       });
     }
     const result = await this.adminService.updateCrawledEvent(id, body);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         event: result.event,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: result.message,
       });
     }
@@ -161,10 +161,7 @@ export class AdminController {
 
   @Post('crawled/publish')
   @UseGuards(AdminGuard2)
-  async publishCrawledEvent(
-    @Res() res: Response,
-    @Body() body: PublishCrawledEventDto,
-  ) {
+  async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
     // if (!mongoose.isValidObjectId(body.id)) {
     //   return res.status(HttpStatus.BAD_REQUEST).json({
     //     message: 'Please provide a valid id',
@@ -172,29 +169,29 @@ export class AdminController {
     // }
     body.ids.forEach((id) => {
       if (!mongoose.isValidObjectId(id)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
+        throw new BadRequestException({
           message: `Please provide a valid id for ${id}`,
         });
       }
     });
     if (!mongoose.isValidObjectId(body.businessProfile)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Please provide a valid business id',
       });
     }
     if (!mongoose.isValidObjectId(body.user)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Please provide a valid user id',
       });
     }
     const result = await this.adminService.publishCrawledEvent(body);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: result.message,
       });
     }
@@ -202,14 +199,11 @@ export class AdminController {
 
   @Post('dashboard/config/add')
   @UseGuards(AdminGuard2)
-  async configureDashboard(
-    @Res() res: Response,
-    @Body() body: ConfigureDashboardDto,
-  ) {
+  async configureDashboard(@Body() body: ConfigureDashboardDto) {
     if (body.categories && body.categories.length) {
       body.categories.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
+          return new BadRequestException({
             message: `${cat} is not a valid category id.`,
           });
         }
@@ -217,12 +211,12 @@ export class AdminController {
     }
     const result = await this.adminService.addDashboardConfiguration(body);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -230,15 +224,15 @@ export class AdminController {
 
   @Get('dashboard/config')
   @UseGuards(AdminGuard2)
-  async getDashboardConfig(@Res() res: Response) {
+  async getDashboardConfig() {
     const result = await this.adminService.getDashboardConfig();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -247,19 +241,18 @@ export class AdminController {
   @Post('dashboard/config/update/:id')
   @UseGuards(AdminGuard2)
   async editDashboardConfig(
-    @Res() res: Response,
     @Body() body: UpdateConfigureDashboardDto,
     @Param('id') id: string,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id',
       });
     }
     if (body.categories && body.categories.length) {
       body.categories.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
+          throw new BadRequestException({
             message: `${cat} is not a valid category id.`,
           });
         }
@@ -270,12 +263,12 @@ export class AdminController {
       body,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -283,19 +276,19 @@ export class AdminController {
 
   @Delete('dashboard/config/delete/:id')
   @UseGuards(AdminGuard2)
-  async deleteDashboardConfig(@Res() res: Response, @Param('id') id: string) {
+  async deleteDashboardConfig(@Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id',
       });
     }
     const result = await this.adminService.deleteDashboardConfiguration(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -303,15 +296,15 @@ export class AdminController {
 
   @Get('dashboard/weight')
   @UseGuards(AdminGuard2)
-  async getDashboardWeight(@Res() res: Response) {
+  async getDashboardWeight() {
     const result = await this.adminService.getDashboardWeight();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -319,58 +312,62 @@ export class AdminController {
 
   @Post('dashboard/weight/update')
   @UseGuards(AdminGuard2)
-  async updateDashboardWeight(
-    @Res() res: Response,
-    @Body() body: PlatformConfigDto,
-  ) {
+  async updateDashboardWeight(@Body() body: PlatformConfigDto) {
     if (!body.distanceWeightage && !body.timeWeightage) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Please provide data to update',
       });
     }
     // body.distanceWeightage and body.timeWeightage both should be in the range of 0.1 to 1.0 and their sum should be 1.0
     if (body.distanceWeightage < 0.1 || body.distanceWeightage > 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Distance weightage should be between 0.1 to 1.0',
       });
     }
     if (body.timeWeightage < 0.1 || body.timeWeightage > 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Time weightage should be between 0.1 to 1.0',
       });
     }
     if (body.distanceWeightage + body.timeWeightage !== 1.0) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Sum of distance and time weightage should be 1.0',
       });
     }
     const result = await this.adminService.editDashboardWeight(body);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
   }
 
   @Post('login')
-  async adminLogin(@Res() res: Response, @Body() loginDto: LoginDto) {
+  async adminLogin(@Body() loginDto: LoginDto) {
     const result = await this.adminService.adminLogin(loginDto);
     if (result.success) {
-      const status = result.status ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
-      return res.status(status).json({
-        message: result.message,
-        status: result.status,
-        user: result.user,
-        token: result.token,
-      });
+      if (result.status) {
+        return {
+          message: result.message,
+          status: result.status,
+          user: result.user,
+          token: result.token,
+        };
+      } else {
+        return new UnauthorizedException({
+          message: result.message,
+          status: result.status,
+          user: result.user,
+          token: result.token,
+        });
+      }
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        status: false,
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -380,17 +377,16 @@ export class AdminController {
   @UseGuards(ResetPasswordGuard)
   async forceResetPassword(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() body: { password: string },
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!body.password) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: 'Please provide password.',
       });
     }
     if (typeof body.password !== 'string') {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Please provide valid password.',
       });
     }
@@ -400,12 +396,12 @@ export class AdminController {
       req['tokenId'],
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         token: result.token,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -413,34 +409,30 @@ export class AdminController {
 
   @Get('profile')
   @UseGuards(AdminGuard2)
-  async getProfile(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+  async getProfile(@TokenDecoder() user: DecodedUser) {
     const result = await this.adminService.getProfile(user.id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
   }
 
   @Post('forgot-password')
-  async forgotPassword(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: ForgotPasswordDto,
-  ) {
+  async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
     const origin = req.headers.origin;
     const result = await this.adminService.forgotPassword(origin, body.email);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -469,16 +461,15 @@ export class AdminController {
 
   @Post('dbQueries') //just to add run db queries or only for testing purpose
   @UseGuards(AdminGuard2)
-  async dbQueries(@Res() res: Response) {
+  async dbQueries() {
     const result = await this.adminService.dbQueries();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     }
-
-    return res.status(HttpStatus.BAD_REQUEST).json({
+    throw new BadRequestException({
       message: result.message,
     });
   }
@@ -487,7 +478,6 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async createCategory(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() createCategoryDto: CreateCategoryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -496,13 +486,12 @@ export class AdminController {
       createCategoryDto,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     }
-
-    return res.status(HttpStatus.BAD_REQUEST).json({
+    throw new BadRequestException({
       message: result.message,
     });
   }
@@ -510,25 +499,22 @@ export class AdminController {
   @Get('content/categories')
   // @UseGuards(AdminGuard2)
   async getCategories(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
     let pageNumber = page ? parseInt(page) : 1;
     let limitNumber = limit ? parseInt(limit) : 10;
-    return res.status(HttpStatus.OK).json({
-      categories: await this.adminService.getCategories(
-        pageNumber,
-        limitNumber,
-      ),
-    });
+    const result = await this.adminService.getCategories(
+      pageNumber,
+      limitNumber,
+    );
+    return result;
   }
 
   @Put('content/updateCategory/:id')
   @UseGuards(AdminGuard2)
   async updateCategory(
     @Req() req: Request,
-    @Res() res: Response,
     @Param('id') id: string,
     @Body() updateCategoryDto: CreateCategoryDto,
   ) {
@@ -537,24 +523,20 @@ export class AdminController {
       updateCategoryDto,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     }
   }
   @Delete('content/deleteCategory/:id')
   @UseGuards(AdminGuard2)
-  async deleteContentCategory(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('id') id: string,
-  ) {
+  async deleteContentCategory(@Req() req: Request, @Param('id') id: string) {
     const result = await this.adminService.deleteContentCategory(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     }
   }
 
@@ -563,7 +545,6 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async getUsersList(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -576,16 +557,16 @@ export class AdminController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         page: result.page,
         limit: result.limit,
         total: result.total,
         pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: result.message,
       });
     }
@@ -596,7 +577,6 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async createAdmin(
-    @Res() res: Response,
     @Body() data: CreateAdminDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -610,12 +590,12 @@ export class AdminController {
       console.log('inside create admin');
       const result = await this.adminService.createAdmin(user.id, data);
       if (result.success) {
-        return res.status(HttpStatus.OK).json({
+        return {
           message: result.message,
           data: result.data,
-        });
+        };
       } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
+        return new BadRequestException({
           message: result.message,
         });
       }
@@ -626,24 +606,20 @@ export class AdminController {
   @Privilege(ResourceTypes.ADMIN, Actions.READ)
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
-  async getUser(
-    @Res() res: Response,
-    @Param('id') id: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async getUser(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid ObjectId',
       });
     }
     const result = await this.adminService.getAdminById(user.id, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -654,7 +630,6 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async assignRole(
-    @Res() res: Response,
     @Body() data: AssignRoleDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -667,12 +642,12 @@ export class AdminController {
       }
       const result = await this.adminService.assignRoleToAdmin(data);
       if (result.success) {
-        return res.status(HttpStatus.OK).json({
+        return {
           message: result.message,
           data: result.data,
-        });
+        };
       } else {
-        return res.status(HttpStatus.BAD_REQUEST).json({
+        return new BadRequestException({
           message: result.message,
         });
       }
@@ -685,24 +660,23 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async updateAdmin(
     @Req() req: Request,
-    @Res() res: Response,
     @Param('id') id: string,
     @Body() data: UpdateAdminDto,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid ObjectId',
       });
     }
     const result = await this.adminService.updateAdmin(user.id, id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -713,7 +687,6 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async getConsumers(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -725,16 +698,16 @@ export class AdminController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         page: result.page,
         limit: result.limit,
         total: result.total,
         pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -745,23 +718,22 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async getConsumer(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id provided',
       });
     }
     const result = await this.adminService.getConsumerById(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -772,7 +744,6 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async getBusinesses(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -784,16 +755,16 @@ export class AdminController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         page: result.page,
         limit: result.limit,
         total: result.total,
         pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -804,23 +775,22 @@ export class AdminController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(AdminGuard2)
   async getBusiness(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id provided',
       });
     }
     const result = await this.adminService.getBusinessById(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -829,7 +799,6 @@ export class AdminController {
   @Post('create/industry')
   @UseGuards(AdminGuard2)
   async createIndustry(
-    @Res() res: Response,
     @Body() data: CreateIndustryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -838,12 +807,12 @@ export class AdminController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -853,7 +822,6 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async updateIndustry(
     @Param('industryId') industryId: string,
-    @Res() res: Response,
     @Body() data: UpdateIndustryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -863,12 +831,12 @@ export class AdminController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -877,22 +845,21 @@ export class AdminController {
   @Delete('delete/industry/:id')
   @UseGuards(AdminGuard2)
   async deleteIndustry(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id provided',
       });
     }
     const result = await this.adminService.deleteBusinessIndustry(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -900,7 +867,6 @@ export class AdminController {
   @Post('create/business/category')
   @UseGuards(AdminGuard2)
   async createBusinessCategory(
-    @Res() res: Response,
     @Body() data: BusinessCategoryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -909,12 +875,12 @@ export class AdminController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -924,7 +890,6 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async updateBusinessCategory(
     @Param('categoryId') categoryId: string,
-    @Res() res: Response,
     @Body() data: UpdateBusinessCategoryDto,
     @TokenDecoder() user: DecodedUser,
   ) {
@@ -934,12 +899,12 @@ export class AdminController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -947,22 +912,21 @@ export class AdminController {
   @Delete('delete/business/category/:id')
   @UseGuards(AdminGuard2)
   async deleteBusinessCategory(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Invalid id provided',
       });
     }
     const result = await this.adminService.deleteBusinessCategory(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -970,7 +934,6 @@ export class AdminController {
 
   @Get('industries')
   async getBusinessIndustry(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -983,15 +946,15 @@ export class AdminController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         // limit: result.limit,
         total: result.total,
         // pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -999,7 +962,7 @@ export class AdminController {
 
   // @Get('testing')
   // async getBusinessIndustry(
-  //   @Res() res: Response,
+  //   ,
   //   @Query('page') page: string,
   //   @Query('limit') limit: string,
   // ) {
@@ -1032,18 +995,17 @@ export class AdminController {
   @Post('create/template')
   @UseGuards(AdminGuard2)
   async createTemplate(
-    @Res() res: Response,
     @Body() data: CreateTemplateDto,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.adminService.createTemplate(user.id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1052,19 +1014,18 @@ export class AdminController {
   @Post('update/template/:id')
   @UseGuards(AdminGuard2)
   async updateTemplate(
-    @Res() res: Response,
     @Param('id') id: string,
     @Body() data: UpdateTemplateDto,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.adminService.updateTemplate(user.id, id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1073,7 +1034,6 @@ export class AdminController {
   @Get('templates')
   @UseGuards(AdminGuard2)
   async getTemplates(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('businessIndustry') businessIndustry: string,
@@ -1088,13 +1048,13 @@ export class AdminController {
       type,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1103,18 +1063,17 @@ export class AdminController {
   @Get('template/:id')
   @UseGuards(AdminGuard2)
   async getTemplate(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.adminService.getTemplate(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         event: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1123,16 +1082,19 @@ export class AdminController {
   @Delete('template/:id')
   @UseGuards(AdminGuard2)
   async removeTemplate(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.adminService.deleteTemplate(id);
-    return res
-      .status(result.success ? HttpStatus.OK : HttpStatus.BAD_REQUEST)
-      .json({
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      return new BadRequestException({
         message: result.message,
       });
+    }
   }
 
   @Post('business')
@@ -1146,14 +1108,13 @@ export class AdminController {
     ]),
   )
   async createBusiness(
-    @Res() res: Response,
     @Body() data: AddBusinessDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles()
     files: { logo?: Express.Multer.File; cover?: Express.Multer.File },
   ) {
     if (!files.cover) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: 'Please provide cover image',
       });
     }
@@ -1165,12 +1126,12 @@ export class AdminController {
       files.cover,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1178,7 +1139,6 @@ export class AdminController {
   @Get('business/followers/:id')
   @UseGuards(AdminGuard2)
   async getBusinessFollowers(
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -1191,13 +1151,13 @@ export class AdminController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }

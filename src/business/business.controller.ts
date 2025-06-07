@@ -14,6 +14,7 @@ import {
   Put,
   ParseIntPipe,
   DefaultValuePipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -53,31 +54,10 @@ import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 export class BusinessController {
   constructor(private readonly businessService: BusinessService) {}
 
-  // @Post('type')
-  // @UseGuards(JwtGuard2)
-  // async addBusinessType(
-  //   @Res() res: Response,
-  //   @TokenDecoder() user: DecodedUser,
-  //   @Body() data: TypeDataDto,
-  // ) {
-  //   const result = await this.businessService.addBusinessType(user.id, data);
-  //   if (result.success) {
-  //     return res.status(HttpStatus.OK).json({
-  //       message: result.message,
-  //       data: result.data,
-  //     });
-  //   } else {
-  //     return res.status(HttpStatus.BAD_REQUEST).json({
-  //       message: result.message,
-  //     });
-  //   }
-  // }
-
   @Post()
   @UseGuards(JwtGuard2)
   async createBusiness(
     @TokenDecoder() user: DecodedUser,
-    @Res() res: Response,
     @Body() data: CreateBusinessDto,
   ) {
     const result = await this.businessService.createBusiness(
@@ -87,15 +67,13 @@ export class BusinessController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         token: result.token,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -103,7 +81,6 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   @UseGuards(RateLimitGuard)
   async fetch(
-    @Res() res: Response,
     @Query('limit') limit: string,
     @Query('page') page: string,
     @Body() data: FetchBusinessDto,
@@ -114,54 +91,44 @@ export class BusinessController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('active')
   @UseGuards(JwtGuard2)
-  async tokenBusinessData(
-    @Res() res: Response,
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async tokenBusinessData(@TokenDecoder() user: DecodedUser) {
     const result = await this.businessService.tokenBusinessData(
       user.businessProfile,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('update')
   @UseGuards(JwtGuard2)
   async updateBusiness(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessDto,
   ) {
     if (!isValidObjectId(user.id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
-    console.log('USER: in CONTROLLER:', user);
     const result = await this.businessService.updateBusiness(
       user.id,
       user.businessProfile,
@@ -169,72 +136,59 @@ export class BusinessController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('user')
-  async create(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() data: CreateBusinessUserDto,
-  ) {
+  async create(@Req() req: Request, @Body() data: CreateBusinessUserDto) {
     const origin = req.headers.origin;
     const result = await this.businessService.createBusinessUser(data, origin);
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('user/verify')
-  async verifyUser(@Res() res: Response, @Body() data: VerifyEmailDto) {
+  async verifyUser(@Body() data: VerifyEmailDto) {
     const result = await this.businessService.verifyUser(data);
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         token: result.token,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
-    }
-  }
-  @Post('user/resendOtp')
-  async resendOtp(@Res() res: Response, @Body('email') email: string) {
-    const result = await this.businessService.resendOtp(email);
-    if (result.success) {
-      return res.status(HttpStatus.OK).json({
-        message: result.message,
-      });
-    } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
-  //fetch self created bussiness users and downline users'
+  @Post('user/resendOtp')
+  async resendOtp(@Body('email') email: string) {
+    const result = await this.businessService.resendOtp(email);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get('users')
   @UseGuards(JwtGuard2)
   async fetchUsers(
-    @Req() req: Request,
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
     @TokenDecoder() user: DecodedUser,
@@ -248,90 +202,75 @@ export class BusinessController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('user/update')
   @UseGuards(JwtGuard2)
   async updateBusinessUser(
-    @Req() req: Request,
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessUserDto,
   ) {
     if (!isValidObjectId(user.id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.updateBusinessUser(user.id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('user/login')
-  async login(@Res() res: Response, @Body() data: LoginBusinessDto) {
+  async login(@Body() data: LoginBusinessDto) {
     const result = await this.businessService.login(data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         user: result.user,
         status: result.status,
         token: result.token,
         fcmExists: result.fcmExists,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('user/mailStatus/:id')
   @UseGuards(RateLimitGuard)
-  async mailVerificationStatus(@Res() res: Response, @Param('id') id: string) {
+  async mailVerificationStatus(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.mailVerificationStatus(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('industryList')
   @UseGuards(RateLimitGuard)
   async industryList(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -342,25 +281,22 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('businessCategoryList/:id')
   @UseGuards(RateLimitGuard)
   async businessCategoryList(
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -368,9 +304,7 @@ export class BusinessController {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.businessCategoryList(
       id,
@@ -378,24 +312,22 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('verifyRegistrationNumber')
   @UseGuards(JwtGuard2)
   async checkRegistrationNumber(
-    @Res() res: Response,
     @Query('docNumber') docNumber: string,
     @Query('docType') docType: string,
   ) {
@@ -404,21 +336,18 @@ export class BusinessController {
       docNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('countries')
   @UseGuards(RateLimitGuard)
   async getCountries(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -429,21 +358,19 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('constitutionList/:id')
   @UseGuards(RateLimitGuard)
   async constitutionList(
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -451,9 +378,7 @@ export class BusinessController {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.getConstitutions(
       id,
@@ -461,21 +386,19 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('documentTypes/:id')
   @UseGuards(RateLimitGuard)
   async documentTypes(
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -483,9 +406,7 @@ export class BusinessController {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.getBusinessDocumentTypes(
       id,
@@ -493,45 +414,40 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('brand')
-  async createBrand(@Res() res: Response, @Body() data: CreateBrandDto) {
+  async createBrand(@Body() data: CreateBrandDto) {
     const result = await this.businessService.createBrand(data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('toggleStatus/:id')
   @Privilege(ResourceTypes.USERS, Actions.UPDATE)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async toggleStatus(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
     @Body('isActive') isActive: boolean,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.toggleStatus(
       user.id,
@@ -539,14 +455,12 @@ export class BusinessController {
       isActive,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -556,16 +470,13 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   async createDownlineUser(
     @TokenDecoder() user: DecodedUser,
-    @Res() res: Response,
     @Body() data: CreateDownlineBusinessUserDto,
   ) {
     if (
       !user.businessProfile ||
       (user.businessProfile && !isValidObjectId(user.businessProfile))
     ) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'BusinessId not Found.',
-      });
+      throw new BadRequestException('BusinessId not Found.');
     }
     const result = await this.businessService.createDownlineUser(
       user.id,
@@ -573,23 +484,21 @@ export class BusinessController {
       data,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Patch('downlineUser/:id')
   @Privilege(ResourceTypes.USERS, Actions.UPDATE)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async updateDownlineUser(
     @TokenDecoder() user: DecodedUser,
-    @Res() res: Response,
     @Param('id') id: string,
     @Body() data: UpdateDownlineBusinessUserDto,
   ) {
@@ -597,20 +506,16 @@ export class BusinessController {
       !user.businessProfile ||
       (user.businessProfile && !isValidObjectId(user.businessProfile))
     ) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'BusinessId not Found.',
-      });
+      throw new BadRequestException('BusinessId not Found.');
     }
     const result = await this.businessService.updateDownlineUser(id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -618,19 +523,14 @@ export class BusinessController {
   @UseGuards(ResetPasswordGuard)
   async forceResetPassword(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() body: { password: string },
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!body.password) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide password.',
-      });
+      throw new BadRequestException('Please provide password.');
     }
     if (typeof body.password !== 'string') {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide valid password.',
-      });
+      throw new BadRequestException('Please provide valid password.');
     }
     const result = await this.businessService.forceResetPassword(
       user.id,
@@ -638,49 +538,34 @@ export class BusinessController {
       req['tokenId'],
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         token: result.token,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Delete('deleteUser/:id')
-  // @Privilege(ResourceTypes.USERS, Actions.DELETE)
-  // @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
-  async deleteUser(
-    @Res() res: Response,
-    @TokenDecoder() user: DecodedUser,
-    @Param('id') id: string,
-  ) {
-    console.log('Is comiing in controller?');
+  async deleteUser(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.deleteUser(user.id, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-        // data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('list')
   @UseGuards(JwtGuard2)
   async fetchBusinessList(
-    @Res() res: Response,
     @Query('limit') limit: string,
     @Query('page') page: string,
     @TokenDecoder() user: DecodedUser,
@@ -692,43 +577,32 @@ export class BusinessController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-        // total: result.total,
-        // pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('teamSize')
   @UseGuards(RateLimitGuard)
-  async fetchTeamSizeDropdown(
-    @Res() res: Response,
-    @Query('limit') limit: string,
-    @Query('page') page: string,
-  ) {
+  async fetchTeamSizeDropdown() {
     const result = await this.businessService.fetchTeamSizeDropdown();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-        // total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('organisation-roles-list')
   @UseGuards(RateLimitGuard)
   async fetchOrganisationRolesList(
-    @Res() res: Response,
     @Query('limit') limit: string,
     @Query('page') page: string,
   ) {
@@ -739,32 +613,27 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('switch/:id')
   @UseGuards(JwtGuard2)
   async switchBusiness(
-    @Res() res: Response,
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.switchBusiness(
       user.id,
@@ -772,66 +641,53 @@ export class BusinessController {
       id,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         token: result.token,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('department')
   @UseGuards(JwtGuard2)
   async createDepartment(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: CreateDepartmentDto,
   ) {
     const result = await this.businessService.createDepartment(user, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Put('department/:id')
   @UseGuards(JwtGuard2)
   async updateDepartment(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateDepartmentDto,
     @Param('id') id: string,
-    @Query() page: string,
-    @Query() limit: string,
   ) {
-    const pageNumber = page ? parseInt(page) : 1;
-    const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.businessService.updateDepartment(user, id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('departments')
   @UseGuards(JwtGuard2)
   async fetchDepartments(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
     @Query('page') page: string,
@@ -844,72 +700,62 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('department/:id')
   @UseGuards(JwtGuard2)
   async fetchDepartmentById(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.fetchDepartmentById(user, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Delete('department/:id')
   @UseGuards(JwtGuard2)
   async deleteDepartment(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
 
     const result = await this.businessService.deleteDepartment(user, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('followers')
   @UseGuards(JwtGuard2)
   async fetchFollowers(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
     @Query('page') page: string,
@@ -922,25 +768,22 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('templates')
   @UseGuards(JwtGuard2)
   async getTemplates(
-    @Res() res: Response,
     @Query('page') page: string,
     @Query('limit') limit: string,
     @TokenDecoder() user: DecodedUser,
@@ -955,66 +798,57 @@ export class BusinessController {
       type,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('region')
   @UseGuards(JwtGuard2)
   async createRegion(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: CreateRegionDto,
   ) {
     const result = await this.businessService.createRegion(user, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Put('region/:id')
   @UseGuards(JwtGuard2)
   async updateRegion(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateRegionDto,
     @Param('id') id: string,
   ) {
     const result = await this.businessService.updateRegion(user, id, data);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('regions')
   @UseGuards(JwtGuard2)
   async fetchRegions(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
     @Query('page') page: string,
@@ -1027,75 +861,62 @@ export class BusinessController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('region/:id')
   @UseGuards(JwtGuard2)
   async fetchRegiontById(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.businessService.fetchRegiontById(user, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Delete('region/:id')
   @UseGuards(JwtGuard2)
   async deleteRegion(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
 
     const result = await this.businessService.deleteRegion(user, id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('location-group')
   @UseGuards(JwtGuard2)
   async createLocationGroup(
-    @Res() res: Response,
     @TokenDecoder() user: any, // Extracted token payload (contains userId, businessId, etc.)
     @Body() createLocationGroupDto: CreateLocationGroupDto,
   ) {
@@ -1108,14 +929,12 @@ export class BusinessController {
       createLocationGroupDto,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -1126,7 +945,6 @@ export class BusinessController {
   @Put('location-group/:id')
   @UseGuards(JwtGuard2)
   async update(
-    @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
     @Body() updateLocationGroupDto: UpdateLocationGroupDto,
@@ -1140,14 +958,12 @@ export class BusinessController {
       updateLocationGroupDto,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -1158,7 +974,6 @@ export class BusinessController {
   @Get('location-groups')
   @UseGuards(JwtGuard2)
   async findAllLocationGroups(
-    @Res() res: Response,
     @TokenDecoder() user: any,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
@@ -1170,18 +985,16 @@ export class BusinessController {
       limit,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -1193,7 +1006,6 @@ export class BusinessController {
   @Get('location-group/:id')
   @UseGuards(JwtGuard2)
   async findOneLocationGroup(
-    @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
   ) {
@@ -1203,14 +1015,12 @@ export class BusinessController {
       id,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -1221,14 +1031,11 @@ export class BusinessController {
   @Delete('location-group/:id')
   @UseGuards(JwtGuard2)
   async removeLocationGroup(
-    @Res() res: Response,
     @TokenDecoder() user: any,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const businessId = user.businessProfile;
     const result = await this.businessService.removeLocationGroup(
@@ -1236,38 +1043,11 @@ export class BusinessController {
       id,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
-
-  // @Get('brand')
-  // async fetchBrand(
-  //   @Res() res: Response,
-  //   @Query('limit') limit: string,
-  //   @Query('page') page: string,
-  // ) {
-  //   const result = await this.businessService.fetchBrand(
-  //     page ? parseInt(page) : 1,
-  //     limit ? parseInt(limit) : 10,
-  //   );
-
-  //   if (result.success) {
-  //     return res.status(HttpStatus.OK).json({
-  //       message: result.message,
-  //       data: result.data,
-  //       total: result.total,
-  //       pages: result.pages,
-  //     });
-  //   } else {
-  //     return res.status(HttpStatus.BAD_REQUEST).json({
-  //       message: result.message,
-  //     });
-  //   }
-  // }
 }

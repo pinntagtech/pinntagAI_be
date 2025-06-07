@@ -1,16 +1,5 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
-import { Response } from 'express';
-import OpenAI from 'openai';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 class GPTRequestDto {
@@ -23,34 +12,39 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('categories')
-  async getCategories(@Res() res: Response) {
-    return res.status(HttpStatus.OK).json({
-      categories: await this.appService.getCategories(),
-    });
+  async getCategories() {
+    const result = await this.appService.getCategories();
+    return {
+      catgories: result,
+    };
   }
 
   @Get('ages')
-  async getAgeGroups(@Res() res: Response) {
-    return res.status(HttpStatus.OK).json({
-      ages: await this.appService.getAgeGroups(),
-    });
+  async getAgeGroups() {
+    const ageGroups = await this.appService.getAgeGroups();
+    return {
+      ages: ageGroups,
+    };
   }
 
   @Get('prod/app/version')
-  async getAppVersion(@Res() res: Response) {
+  async getAppVersion() {
     const appVersion = await this.appService.getAppVersion();
-    return res.status(HttpStatus.OK).json(appVersion);
+    return appVersion;
   }
 
   @Post('test/openAI')
-  async testGPT(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() paramsDto: GPTRequestDto,
-  ) {
-    console.log('paramsDto.prompt::', paramsDto.prompt);
-    return res.status(HttpStatus.OK).json({
-      response: await this.appService.generateText(paramsDto.prompt),
-    });
+  async testGPT(@Body() paramsDto: GPTRequestDto) {
+    try {
+      const response = await this.appService.generateText(paramsDto.prompt);
+      return {
+        response,
+      };
+    } catch (error) {
+      console.error('Error generating text:', error);
+      return {
+        error: 'Failed to generate text',
+      };
+    }
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpStatus,
@@ -20,16 +21,18 @@ export class AiController {
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
-  async getAiDescription(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
-    const result = await this.aiService.getEventDescription(user.businessProfile);
-    console.log("RESULT:",result);
+  async getAiDescription(@TokenDecoder() user: DecodedUser) {
+    const result = await this.aiService.getEventDescription(
+      user.businessProfile,
+    );
+    console.log('RESULT:', result);
     if (result.success) {
-      return res.status(HttpStatus.CREATED).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      return new BadRequestException({
         message: result.message,
       });
     }

@@ -12,6 +12,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -39,11 +40,11 @@ export class RewardsController {
   @Get('checking')
   @UseGuards(RateLimitGuard)
   async checking() {
-    console.log('checking');
     return {
       message: 'Checking',
     };
   }
+
   @Post()
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -53,19 +54,14 @@ export class RewardsController {
     ]),
   )
   async createReward(
-    @Res() res: Response,
     @Body() data: CreateRewardDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles()
     files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },
   ) {
     if (user.userType !== UserTypes.BUSINESS) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Unauthorized',
-      });
+      throw new BadRequestException('Unauthorized');
     }
-    console.log('qrCode:', files.qrCode);
-    console.log('images:', files.images);
     const result = await this.rewardService.createReward(
       data,
       user,
@@ -73,20 +69,18 @@ export class RewardsController {
       files.qrCode,
     );
     if (result.success) {
-      return res.status(HttpStatus.CREATED).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('business')
   @UseGuards(JwtGuard2)
   async getAllRewards(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -99,45 +93,38 @@ export class RewardsController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get(':id')
   @UseGuards(JwtGuard2)
   async getRewardById(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Object ID',
-      });
+      throw new BadRequestException('Invalid Object ID');
     }
     const result = await this.rewardService.getRewardById(id, user);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('fetch/user')
   @UseGuards(JwtGuard2)
   async getUserRewards(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('status') status: string,
     @Query('page') page: string,
@@ -152,25 +139,22 @@ export class RewardsController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('user/dashboard')
   @UseGuards(JwtGuard2)
   async getDashboardRewards(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Body() data: GetRewardDashboardDto,
     @Query('search') search: string,
@@ -189,134 +173,110 @@ export class RewardsController {
       limitNumber,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
         limit: result.limit,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('enroll/:rewardId')
   @UseGuards(JwtGuard2)
   async enrollReward(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('rewardId') rewardId: string,
   ) {
     if (!isValidObjectId(rewardId)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Object ID',
-      });
+      throw new BadRequestException('Invalid Object ID');
     }
     if (user.userType !== UserTypes.USER) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Unauthorized',
-      });
+      throw new BadRequestException('Unauthorized');
     }
     const result = await this.rewardService.enrollReward(rewardId, user);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('claim/:rewardId')
   @UseGuards(JwtGuard2)
   async claimReward(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('rewardId') rewardId: string,
   ) {
     if (!isValidObjectId(rewardId)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Object ID',
-      });
+      throw new BadRequestException('Invalid Object ID');
     }
     if (user.userType !== UserTypes.USER) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Unauthorized',
-      });
+      throw new BadRequestException('Unauthorized');
     }
     const result = await this.rewardService.claimReward(user, rewardId);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-        // data: result.data,
-      });
+      };
+    } else {
+      throw new BadRequestException(result.message);
     }
-    return res.status(HttpStatus.BAD_REQUEST).json({
-      message: result.message,
-    });
   }
+
   @Get('user/:id')
   @UseGuards(JwtGuard2)
   async getUserRewardById(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Object ID',
-      });
+      throw new BadRequestException('Invalid Object ID');
     }
     const result = await this.rewardService.getUserRewardById(id, user);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('business/logistics')
   @UseGuards(JwtGuard2)
-  async getLogistics(@Res() res: Response, @TokenDecoder() user: DecodedUser) {
+  async getLogistics(@TokenDecoder() user: DecodedUser) {
     const result = await this.rewardService.getLogistics(user);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
+    } else {
+      throw new BadRequestException(result.message);
     }
-    return res.status(HttpStatus.BAD_REQUEST).json({
-      message: result.message,
-    });
   }
 
   @Get('business/:id')
   @UseGuards(JwtGuard2)
   async getBusinessRewardById(
-    @Res() res: Response,
     @Param('id') id: string,
     @Query('claimstatus') claimStatus: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Object ID',
-      });
+      throw new BadRequestException('Invalid Object ID');
     }
     if (claimStatus && !Object.values(ClaimStatus).includes(claimStatus)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Claim Status',
-      });
+      throw new BadRequestException('Invalid Claim Status');
     }
     const result = await this.rewardService.getBusinessRewardById(
       id,
@@ -324,15 +284,13 @@ export class RewardsController {
       claimStatus,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         claimStatusCounts: result.claimStatusCounts,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -341,13 +299,12 @@ export class RewardsController {
   async scanReward(
     @Param('rewardId') rewardId: string,
     @TokenDecoder() user: DecodedUser,
-    @Res() res: Response,
   ) {
     const result = await this.rewardService.handleScanReward(rewardId, user.id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json(result);
+      return result;
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json(result);
+      throw new BadRequestException(result.message);
     }
   }
 }

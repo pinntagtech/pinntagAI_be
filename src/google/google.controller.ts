@@ -6,6 +6,7 @@ import {
   Post,
   Res,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { AddressAutofillDto } from './dto/address-autofill.dto';
@@ -19,22 +20,17 @@ export class GoogleController {
   @Post()
   @UseGuards(JwtGuard2)
   @UseGuards(RateLimitGuard)
-  async googleRecommendation(
-    @Res() res: any,
-    @Body() data: AddressAutofillDto,
-  ) {
+  async googleRecommendation(@Body() data: AddressAutofillDto) {
     const result = await this.googleService.googleRecommendation(data);
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         sessionToken: result.sessionToken,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -42,7 +38,6 @@ export class GoogleController {
   @UseGuards(JwtGuard2)
   @UseGuards(RateLimitGuard)
   async getPlaceDetails(
-    @Res() res: any,
     @Body('placeId') placeId: string,
     @Body('sessionToken') sessionToken: string,
     @Body('selectedAddress') selectedAddress: string,
@@ -54,15 +49,12 @@ export class GoogleController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-        // sessionToken: result.sessionToken,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -70,7 +62,6 @@ export class GoogleController {
   @UseGuards(JwtGuard2)
   @UseGuards(RateLimitGuard)
   async getAddressFromCoordinates(
-    @Res() res: any,
     @Body('latitude') latitude: number,
     @Body('longitude') longitude: number,
   ) {
@@ -80,15 +71,13 @@ export class GoogleController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         postalCode: result.postalCode,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 }
