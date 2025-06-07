@@ -123,12 +123,19 @@ export class RewardsService {
         name: 'Content QR',
       });
       let generatedQR = null;
-      console.log('rewardID:', reward.id);
+      console.log(
+        'rewardID:',
+        reward.id,
+        reward.title,
+        userDetails.drive.toString(),
+        QR_ImageCategory.id,
+        businessFolder.data.id,
+      );
       if (data.activityType === ActivityType.CHECK_IN) {
         generatedQR = await this.driveService.generateQrCode(
           `${reward.id}`,
           reward.title,
-          userDetails.drive.toString(),
+          userDetails._id.toString(),
           QR_ImageCategory.id,
           businessFolder.data.id,
         );
@@ -142,7 +149,7 @@ export class RewardsService {
           qrCode[0],
           businessFolder.data.id,
           Folder.name,
-          userDetails.drive.toString(),
+          userDetails._id.toString(),
           QR_ImageCategory._id,
         );
         console.log('QRCODE DETAILS:', QRCodeDetails);
@@ -228,6 +235,7 @@ export class RewardsService {
             },
             status: RewardStatus.PUBLISHED,
             QR_CODE: QRCodeDetails?._id,
+            activityQrCode: generatedQR.data.metaData.url,
           },
         },
         { new: true },
