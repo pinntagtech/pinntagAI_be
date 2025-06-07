@@ -1,15 +1,17 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Controller, Post, Req } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post('webhook')
-  async webhook(@Req() request: Request, @Res() response: Response) {
+  async webhook(@Req() request: Request) {
     const event = request.body;
     await this.stripeService.webhook(event);
-    return response.json({ received: true });
+    return {
+      received: true,
+    };
   }
 }

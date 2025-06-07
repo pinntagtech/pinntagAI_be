@@ -8,7 +8,6 @@ import {
   Post,
   Query,
   Req,
-  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -40,13 +39,11 @@ export class DriveController {
   )
   async uploadFile(
     @Req() req: Request,
-    @Res() res: Response,
     @Body('locationId') locationId: string,
     @Body('fileCategoryId') fileCategoryId: string,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log('user:', user);
     const result = await this.driveService.uploadFile(
       user.id,
       locationId,
@@ -54,41 +51,36 @@ export class DriveController {
       file,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Post('createFolder')
   @UseGuards(JwtGuard2)
   async createFolder(
-    @Res() res: Response,
     @TokenDecoder() user: JwtPayload,
     @Body() createDto: Partial<Folder>,
   ) {
     const result = await this.driveService.createFolder(user.id, createDto);
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('getFiles')
   @UseGuards(JwtGuard2)
   async getFiles(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('fileCategory') fileCategory?: string,
     @Query('fileType') fileType?: string,
@@ -96,20 +88,18 @@ export class DriveController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
-    let pageNumber = Number(page);
-    let limitNumber = Number(limit);
     const result = await this.driveService.getFiles(
       user.id,
       user.userType,
       fileCategory,
       folderId,
       fileType,
-      pageNumber,
-      limitNumber,
+      page,
+      limit,
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         directoryDetails: result.directoryDetails,
@@ -117,68 +107,57 @@ export class DriveController {
         page: result.page,
         limit: result.limit,
         pages: result.pages,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Get('fileCategories')
-  async fileCategories(@Res() res: Response) {
+  async fileCategories() {
     const result = await this.driveService.fileCategories();
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('moveFile')
-  async moveFile(
-    @Res() res: Response,
-    @Body('toMove') toMove: string,
-    @Body('dest') dest: string,
-  ) {
+  async moveFile(@Body('toMove') toMove: string, @Body('dest') dest: string) {
     const result = await this.driveService.moveFile(toMove, dest);
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('fileType')
-  async fileType(@Res() res: Response) {
+  async fileType() {
     const result = await this.driveService.fileType();
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('recentFiles')
   @UseGuards(JwtGuard2)
   async recentFiles(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -191,51 +170,44 @@ export class DriveController {
     );
 
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
-
 
   @Post('multiImageUpload')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FilesInterceptor('images',10, {
+    FilesInterceptor('images', 10, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async multiImageUpload(
     @Req() req: Request,
-    @Res() res: Response,
     @Body('locationId') locationId: string,
-    // @Body('fileCategoryId') fileCategoryId: string,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
-    console.log('user:', user);
     const result = await this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
       images,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
+
   @Post('updateFile/:id')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -244,25 +216,21 @@ export class DriveController {
     }),
   )
   async updateFile(
-    @Res() res: Response,
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
     @UploadedFile() image: Express.Multer.File,
-  ){
+  ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid file ID');
     }
-    const result = await this.driveService.updateFile(id,image, user);
+    const result = await this.driveService.updateFile(id, image, user);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
-
 }

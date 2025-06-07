@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -33,18 +34,17 @@ export class RolesController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async createRole(
-    @Res() res: Response,
     @TokenDecoder() user: any,
     @Body() createRoleDto: CreateRoleDto,
   ) {
     const result = await this.roleService.createRole(user, createRoleDto);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -55,26 +55,19 @@ export class RolesController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async mapPrivilege(
-    @Res() res: Response,
     @Param('roleId') roleId: string,
     @Body() mapPrivilegeDto: MapPrivilegeDto,
   ) {
     if (!mongoose.isValidObjectId(roleId)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Please provide a valid role id',
-      });
+      throw new BadRequestException('Please provide a valid role id');
     }
     for (let i = 0; i < mapPrivilegeDto.data.length; i++) {
       if (!mongoose.isValidObjectId(mapPrivilegeDto.data[i].resource)) {
-        return res.status(HttpStatus.BAD_REQUEST).json({
-          message: 'Please provide a valid resource',
-        });
+        throw new BadRequestException('Please provide a valid resource');
       }
       for (let j = 0; j < mapPrivilegeDto.data[i].actions.length; j++) {
         if (!mongoose.isValidObjectId(mapPrivilegeDto.data[i].actions[j])) {
-          return res.status(HttpStatus.BAD_REQUEST).json({
-            message: 'Please provide a valid action',
-          });
+          throw new BadRequestException('Please provide a valid action');
         }
       }
     }
@@ -83,14 +76,12 @@ export class RolesController {
       mapPrivilegeDto,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -98,22 +89,17 @@ export class RolesController {
   @Privilege(ResourceTypes.ROLES, Actions.DELETE)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
-  async deletePrivilege(@Res() res: Response, @Param('id') id: string) {
+  async deletePrivilege(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.roleService.deletePrivilege(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
-        // data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -121,23 +107,30 @@ export class RolesController {
   @Privilege(ResourceTypes.ROLES, Actions.READ)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
-  async fetchRoles(@Res() res: Response, @TokenDecoder() user: any,@Query('page') page: string, @Query('limit') limit: string) {
+  async fetchRoles(
+    @TokenDecoder() user: any,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     const pageNumber = parseInt(page) || 1;
     const limitNumber = parseInt(limit) || 10;
-    const result = await this.roleService.fetchRoles(user.id, user.userType,pageNumber,limitNumber);
+    const result = await this.roleService.fetchRoles(
+      user.id,
+      user.userType,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
         total: result.total,
         pages: result.pages,
         page: result.page,
-        limit: result.limit,  
-      });
+        limit: result.limit,
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -145,52 +138,44 @@ export class RolesController {
   @Privilege(ResourceTypes.ROLES, Actions.READ)
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
-  async fetchRole(@Res() res: Response, @Param('id') id: string) {
+  async fetchRole(@Param('id') id: string) {
     if (!isValidObjectId(id)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid ObjectId',
-      });
+      throw new BadRequestException('Invalid ObjectId');
     }
     const result = await this.roleService.fetchRole(id);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('resourcesList')
-  async reourcesList(@Res() res: Response) {
+  async reourcesList() {
     const result = await this.roleService.resourcesList();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
   @Get('actionsList')
-  async actionsList(@Res() res: Response) {
+  async actionsList() {
     const result = await this.roleService.actionsList();
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -199,20 +184,17 @@ export class RolesController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async updateRole(
-    @Res() res: Response,
     // @TokenDecoder() user: any,
     @Body() updateRoleDto: UpdateRoleDto,
   ) {
     const result = await this.roleService.updateRole(updateRoleDto);
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -220,14 +202,11 @@ export class RolesController {
   @Post('assign/:roleId')
   @UseGuards(JwtGuard2)
   async assignRole(
-    @Res() res: Response,
     @TokenDecoder() user: JwtPayload,
     @Param('roleId') roleId: string,
   ) {
     if (!isValidObjectId(roleId)) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: 'Invalid Token',
-      });
+      throw new BadRequestException('Invalid Token');
     }
 
     const result = await this.roleService.assignRole(
@@ -236,14 +215,12 @@ export class RolesController {
       roleId,
     );
     if (result.success) {
-      return res.status(HttpStatus.OK).json({
+      return {
         message: result.message,
         data: result.data,
-      });
+      };
     } else {
-      return res.status(HttpStatus.BAD_REQUEST).json({
-        message: result.message,
-      });
+      throw new BadRequestException(result.message);
     }
   }
 }

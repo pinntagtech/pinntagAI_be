@@ -80,7 +80,7 @@ export class EventController {
         event: result.event,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -139,7 +139,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -160,7 +160,7 @@ export class EventController {
         event: result.event,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -187,7 +187,7 @@ export class EventController {
         limit: result.limit,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -235,7 +235,7 @@ export class EventController {
         limit: result.limit,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -255,7 +255,7 @@ export class EventController {
         eventStartsIn: result.eventStartsIn,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -291,7 +291,7 @@ export class EventController {
         page: result.page,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -311,7 +311,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -335,7 +335,7 @@ export class EventController {
         event: result.event,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -368,7 +368,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -403,7 +403,7 @@ export class EventController {
         image: result.image,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -422,7 +422,7 @@ export class EventController {
         status: result.status,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -446,7 +446,7 @@ export class EventController {
         invitation: result.invitation,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -469,7 +469,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -492,7 +492,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -521,7 +521,7 @@ export class EventController {
         rsvp: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -545,7 +545,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -568,7 +568,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -584,7 +584,7 @@ export class EventController {
         events: result.templates,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -610,7 +610,7 @@ export class EventController {
         total: result.total,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -629,7 +629,7 @@ export class EventController {
         event: result.template,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -647,7 +647,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -663,7 +663,7 @@ export class EventController {
         status: result.status,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -687,7 +687,7 @@ export class EventController {
         event: result.event,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -709,7 +709,7 @@ export class EventController {
         saved: result.saved,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -728,7 +728,7 @@ export class EventController {
         liked: result.liked,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -766,7 +766,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -804,7 +804,7 @@ export class EventController {
         events: result.events,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -819,7 +819,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -837,7 +837,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -853,7 +853,7 @@ export class EventController {
         reports: result.reports,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -872,7 +872,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -897,7 +897,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -915,7 +915,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -947,7 +947,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -977,7 +977,7 @@ export class EventController {
         total: result.total,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -991,7 +991,7 @@ export class EventController {
         message: result.message,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1011,7 +1011,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
@@ -1032,7 +1032,7 @@ export class EventController {
         data: result.data,
       };
     } else {
-      return new BadRequestException({
+      throw new BadRequestException({
         message: result.message,
       });
     }
