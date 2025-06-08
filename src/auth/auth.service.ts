@@ -5108,7 +5108,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
