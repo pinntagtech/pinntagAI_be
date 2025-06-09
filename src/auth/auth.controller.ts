@@ -740,7 +740,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   @HttpCode(HttpStatus.OK)
   async logout(
     @Req() req,

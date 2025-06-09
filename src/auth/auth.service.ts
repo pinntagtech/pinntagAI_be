@@ -1635,7 +1635,7 @@ export class AuthService {
       await this.tokenModel.deleteOne({
         token,
         type: TokenTypes.ACCESS,
-        userId: new mongoose.Types.ObjectId(user.id),
+        user: new mongoose.Types.ObjectId(user.id),
       });
     }
     if (fcm) {
