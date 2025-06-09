@@ -270,7 +270,7 @@ export class UserController {
   }
 
   @Get('get/followers')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getFollowers(@Req() req: Request) {
     const result = await this.userService.getFollowers(req.user['_id']);
     if (result.success) {
@@ -285,7 +285,7 @@ export class UserController {
   }
 
   @Get('get/following')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getFollowing(@Req() req: Request) {
     const result = await this.userService.getFollowing(req.user['_id']);
     if (result.success) {

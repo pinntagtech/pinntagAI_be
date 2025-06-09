@@ -915,7 +915,7 @@ export class AdminService {
   async getCategories(page: number, limit: number) {
     return await this.contentCategoryModel
       .find()
-      .sort({ sortOrder: 1 })
+      .sort({ title: 1 })
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .populate('createdBy', '_id name')
       .skip((page - 1) * limit)

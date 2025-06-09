@@ -2121,7 +2121,6 @@ export class AuthService {
           spherical: true,
         },
       },
-      // { $sort: { distance: 1 } },
       {
         $lookup: {
           from: 'events',
@@ -2496,10 +2495,11 @@ export class AuthService {
           schedules: 1,
         },
       },
+      { $sort: { distance: 1 } },
       { $limit: limit },
     ];
 
-    const rows = await this.eventLocationModel.aggregate(basePipeline);
+    let rows = await this.eventLocationModel.aggregate(basePipeline);
     // console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
@@ -2607,7 +2607,7 @@ export class AuthService {
     // });
 
     // // 5. Merge schedules, compute latestSchedule, filter valid events
-    // const currentTzTime = currentDateTz();
+    const currentTzTime = currentDateTz();
 
     // // const filteredEvents = rows
     // //   .map((row) => {
@@ -2634,40 +2634,85 @@ export class AuthService {
     // //   .filter((row) => row !== null && row.schedule.length > 0);
 
     // // 6. Scoring logic based on distance + time to event
-    // const maxDistance = Math.max(...filteredEvents.map((e) => e.distance));
-    // const maxTimeToEvent = Math.max(
-    //   ...filteredEvents.map((e) => {
-    //     const nextSchedule = e.schedule.find(
-    //       (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
-    //     );
-    //     return nextSchedule
-    //       ? new Date(nextSchedule.date).getTime() - currentTzTime.getTime()
-    //       : 0;
-    //   }),
-    // );
+    const maxDistance = Math.max(...rows.map((e) => e.distance));
+    const maxTimeToEvent = Math.max(
+      ...rows.map((e) => {
+        const nextSchedule = e.schedules.find((s) => {
+          if (s.type === ScheduleTypes.FIXED) {
+            return (
+              new Date(s.fixedSchedule.date).getTime() > currentTzTime.getTime()
+            );
+          } else if (s.scheduleType === ScheduleTypes.RECURRING) {
+            const nextDate = getNextRecurring(s.recurringSchedule);
+            return nextDate
+              ? nextDate.getTime() > currentTzTime.getTime()
+              : false;
+          }
+          return false;
+        });
 
-    // const weightDistance = 0.5;
-    // const weightTime = 0.5;
+        // console.log('nextSchedule::', nextSchedule);
+        let nextScheduleDate = null;
+        if (nextSchedule.type === ScheduleTypes.FIXED) {
+          nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
+        } else if (nextSchedule.type === ScheduleTypes.RECURRING) {
+          nextScheduleDate = getNextRecurring(nextSchedule.recurringSchedule);
+        }
+        console.log('nextScheduleDate::', nextScheduleDate);
+        return nextSchedule
+          ? new Date(nextScheduleDate).getTime() - currentTzTime.getTime()
+          : 0;
+      }),
+    );
+    console.log('maxDistance:', maxDistance);
+    console.log('maxTimeToEvent:', maxTimeToEvent);
 
-    // filteredEvents.forEach((event) => {
-    //   const nearestSchedule = event.schedule.find(
-    //     (s) => new Date(s.date).getTime() > currentTzTime.getTime(),
-    //   );
-    //   const timeToEvent = nearestSchedule
-    //     ? new Date(nearestSchedule.date).getTime() - currentTzTime.getTime()
-    //     : maxTimeToEvent;
+    const weightDistance = 0.5;
+    const weightTime = 0.5;
 
-    //   const normalizedDistance =
-    //     Math.log(event.distance + 1) / Math.log(maxDistance + 1);
-    //   const normalizedTime =
-    //     Math.log(timeToEvent + 1) / Math.log(maxTimeToEvent + 1);
+    rows.forEach((event) => {
+      const nearestSchedule = event.schedules.find((s) => {
+        if (s.type === ScheduleTypes.FIXED) {
+          return (
+            new Date(s.fixedSchedule.date).getTime() > currentTzTime.getTime()
+          );
+        } else if (s.scheduleType === ScheduleTypes.RECURRING) {
+          const nextDate = getNextRecurring(s.recurringSchedule);
+          return nextDate
+            ? nextDate.getTime() > currentTzTime.getTime()
+            : false;
+        }
+        return false;
+      });
+      // const timeToEvent = nearestSchedule
+      //   ? new Date(nearestSchedule.date).getTime() - currentTzTime.getTime()
+      //   : maxTimeToEvent;
 
-    //   event.score =
-    //     weightDistance * normalizedDistance + weightTime * normalizedTime;
-    // });
+      let timeToEvent = maxTimeToEvent;
+      if (nearestSchedule) {
+        let nextDate = null;
+        if (nearestSchedule.type === ScheduleTypes.FIXED) {
+          nextDate = new Date(nearestSchedule.fixedSchedule.date);
+        } else if (nearestSchedule.type === ScheduleTypes.RECURRING) {
+          nextDate = getNextRecurring(nearestSchedule.recurringSchedule);
+        }
+        if (nextDate) {
+          timeToEvent = nextDate.getTime() - currentTzTime.getTime();
+        }
+      }
 
-    // // Sort by ascending score
-    // filteredEvents.sort((a, b) => a.score - b.score);
+      const normalizedDistance =
+        Math.log(event.distance + 1) / Math.log(maxDistance + 1);
+      const normalizedTime =
+        Math.log(timeToEvent + 1) / Math.log(maxTimeToEvent + 1);
+
+      event.score =
+        weightDistance * normalizedDistance + weightTime * normalizedTime;
+      console.log('event.score::', event.score);
+    });
+
+    // Sort by ascending score
+    rows.sort((a, b) => a.score - b.score);
 
     console.log('OLD FLOWWWWWWWW::::::');
 
