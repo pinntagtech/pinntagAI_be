@@ -78,6 +78,7 @@ export class JwtGuard2 implements CanActivate {
         throw new UnauthorizedException('Unauthorised. Invalid Token.');
       }
       if (payload.userType === UserTypes.ADMIN) {
+        console.log('admin ki basti mai');
         const admin = await this.adminModel.findById(payload.id);
         if (!admin) {
           throw new UnauthorizedException('Unauthorised. User does not exist.');
