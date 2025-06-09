@@ -147,8 +147,7 @@ export class BusinessController {
 
   @Post('user')
   async create(@Req() req: Request, @Body() data: CreateBusinessUserDto) {
-    const origin = req.headers.origin;
-    const result = await this.businessService.createBusinessUser(data, origin);
+    const result = await this.businessService.createBusinessUser(data);
 
     if (result.success) {
       return {

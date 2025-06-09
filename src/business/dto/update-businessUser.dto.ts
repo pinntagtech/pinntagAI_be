@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsPhoneNumber, IsMongoId, IsUrl, IsBoolean, IsNumber } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsPhoneNumber,
+  IsMongoId,
+  IsUrl,
+  IsBoolean,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateBusinessUserDto {
   // @IsUrl()
@@ -17,9 +25,4 @@ export class UpdateBusinessUserDto {
   @IsOptional()
   @IsString()
   phone: string;
-
-  @IsOptional()
-  @IsNumber()
-  scalabilityFactor: number;
-
 }

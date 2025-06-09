@@ -1,11 +1,14 @@
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
-  MULTIPLE_BUSINESS_STATUS: 2,
-  BUSINESS_CREATED: 3, //-> Business Created
-  BUSINESS_ADDRESS: 4, //-> Business Address Added
-  BUSINESS_TYPE: 5, //-> Business Type Added
-  BUSINESS_COVER: 6,
+  // MULTIPLE_BUSINESS_STATUS: 2,
+};
+export const BusinessStatus = {
+  CREATED: 0, //-> Business Created
+  ADDRESS_ADDED: 1, //-> Business Address Added
+  TYPE_ADDED: 2, //-> Business Type Added
+  DESCRIPTION_ADDED: 3,
+  COVER_ADDED: 4,
 };
 
 export const OfferStatus = {
@@ -127,7 +130,7 @@ export const BusinessCreatorType = {
 export const RegionCreatorType = {
   BUSINESS: 'BusinessUser',
   SYSTEM: 'System',
-}
+};
 
 // export const BusinessIndustries = {
 //   'Retail & E-commerce': [

@@ -54,6 +54,8 @@ import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { RateLimit } from 'nestjs-rate-limiter';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('admin')
 export class AdminController {
@@ -498,6 +500,7 @@ export class AdminController {
 
   @Get('content/categories')
   // @UseGuards(AdminGuard2)
+  @UseGuards(RateLimitGuard)
   async getCategories(
     @Query('page') page: string,
     @Query('limit') limit: string,

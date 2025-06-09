@@ -21,8 +21,26 @@ export class AiController {
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
-  async getAiDescription(@TokenDecoder() user: DecodedUser) {
+  async getAiEventDescription(@TokenDecoder() user: DecodedUser) {
     const result = await this.aiService.getEventDescription(
+      user.businessProfile,
+    );
+    console.log('RESULT:', result);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      return new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('/business-description')
+  @UseGuards(JwtGuard2)
+  async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
+    const result = await this.aiService.getBusinessDescription(
       user.businessProfile,
     );
     console.log('RESULT:', result);

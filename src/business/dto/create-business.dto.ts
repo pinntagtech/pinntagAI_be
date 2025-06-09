@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsArray,
   IsNotEmpty,
+  IsNumber,
 } from 'class-validator';
 import mongoose from 'mongoose';
 
@@ -15,7 +16,8 @@ export class CreateBusinessDto {
   @Transform(({ value }) => value.trim())
   name: string;
 
-  @IsEmail({},{message: 'Invalid email address'})
+  @IsNotEmpty()
+  @IsEmail({}, { message: 'Invalid email address' })
   email: string;
 
   // @IsString()
@@ -30,18 +32,25 @@ export class CreateBusinessDto {
   // @IsBoolean()
   // isRegistered: boolean;
 
+  @IsNotEmpty()
   @IsString()
   phone: string;
 
+  @IsNotEmpty()
   @IsString()
   countryCode: string;
 
+  @IsOptional()
   @IsString()
   website: string;
 
   @IsOptional()
   @IsString()
   roleOfCreator: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  scalabilityFactor: number;
 
   // @IsString()
   // brand:string;

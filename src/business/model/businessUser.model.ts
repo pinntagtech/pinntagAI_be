@@ -65,8 +65,6 @@ export class BusinessUser {
   forcePasswordReset: boolean;
   @Prop()
   assignedOutlets: mongoose.Types.ObjectId[];
-  @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
-  scalabilityFactor: number;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);
