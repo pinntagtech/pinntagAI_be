@@ -18,10 +18,14 @@ import { BusinessIndustry } from './businessIndustry.model';
 import { BusinessCountry } from './businessCountry.model';
 import { BusinessConstitution } from './businessConstitution.model';
 import { BusinessDocumentType } from './BussinessDocumentType.model';
-import { OfferStatus } from '../enums/business.enum';
+import {
+  BusinessStatus,
+  OfferStatus,
+  ScalabilityFactor,
+} from '../enums/business.enum';
 import { Event } from 'src/event/models/event.model';
 
-export enum CreatorType{
+export enum CreatorType {
   Admin = 'Admin',
   BusinessUser = 'BusinessUser',
 }
@@ -36,13 +40,23 @@ export class Business {
   @Prop({ default: false })
   isFromCrawler: boolean;
 
+  @Prop({
+    required: true,
+    enum: Object.values(BusinessStatus),
+    default: 0,
+  })
+  status: number;
+
   // @Prop({crea
   //   required: true,
   //   enum: [0, 1, 2],
   //   default: 0,
   // })
   // status: number;
-  @Prop({default:"https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png"})
+  @Prop({
+    default:
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png',
+  })
   logo: string;
   @Prop()
   isRegistered: boolean;
@@ -62,6 +76,9 @@ export class Business {
   @Prop()
   documentNumber: string;
 
+  @Prop()
+  description: string;
+
   @Prop({ ref: BusinessDocumentType.name })
   documentType: mongoose.Types.ObjectId;
 
@@ -74,7 +91,7 @@ export class Business {
   @Prop({ ref: 'BusinessUser' })
   boardMembers: mongoose.Types.ObjectId[];
 
-  @Prop({ enum: Object.values(CreatorType),type: String, required: true })
+  @Prop({ enum: Object.values(CreatorType), type: String, required: true })
   creatorType: CreatorType;
 
   @Prop({ required: true, refPath: 'creatorType' })
@@ -221,13 +238,16 @@ export class Business {
   roleOfCreator: string;
 
   @Prop({
-      enum: Object.values(OfferStatus),
-      default: 0,
-    })
-    onboardingOfferStatus: number;
+    enum: Object.values(OfferStatus),
+    default: 0,
+  })
+  onboardingOfferStatus: number;
 
-  @Prop({ref: 'Event'})
+  @Prop({ ref: 'Event' })
   initialOfferId: mongoose.Types.ObjectId;
+
+  @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
+  scalabilityFactor: number;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

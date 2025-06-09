@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { RateLimitGuard } from './auth/guards/rateLimiter.guard';
 
 class GPTRequestDto {
   @IsString()
@@ -12,6 +13,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('categories')
+  @UseGuards(RateLimitGuard)
   async getCategories() {
     const result = await this.appService.getCategories();
     return {
@@ -20,6 +22,7 @@ export class AppController {
   }
 
   @Get('ages')
+  @UseGuards(RateLimitGuard)
   async getAgeGroups() {
     const ageGroups = await this.appService.getAgeGroups();
     return {
@@ -28,12 +31,14 @@ export class AppController {
   }
 
   @Get('prod/app/version')
+  @UseGuards(RateLimitGuard)
   async getAppVersion() {
     const appVersion = await this.appService.getAppVersion();
     return appVersion;
   }
 
   @Post('test/openAI')
+  @UseGuards(RateLimitGuard)
   async testGPT(@Body() paramsDto: GPTRequestDto) {
     try {
       const response = await this.appService.generateText(paramsDto.prompt);

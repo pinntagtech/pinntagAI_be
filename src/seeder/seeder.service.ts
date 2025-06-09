@@ -50,6 +50,7 @@ import {
   BusinessCountries,
   BusinessCreatorType,
   BusinessDocumentTypes,
+  BusinessStatus,
   BusinessUserCreatorType,
   // BusinessIndustries,
   // OutletCategoryList,
@@ -83,7 +84,10 @@ import {
   BusinessDocumentType,
   BusinessDocumentTypeDocument,
 } from 'src/business/model/BussinessDocumentType.model';
-import { DefaultAdminRoles, DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
+import {
+  DefaultAdminRoles,
+  DefaultBusinessDepartmentRoles,
+} from 'src/business/resourceInits/template-roles';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { $Command } from '@aws-sdk/client-s3';
 import {
@@ -146,9 +150,12 @@ export class SeederService {
     private readonly businessDocumentTypeModel: Model<BusinessDocumentTypeDocument>,
     @InjectModel(DashboardConfig.name)
     private readonly dashboardConfigModel: Model<DashboardConfigDocument>,
-    @InjectModel(Department.name) private readonly departmentModel: Model<DepartmentDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>, 
-    @InjectModel(Region.name) private readonly regionModel: Model<RegionDocument>, 
+    @InjectModel(Department.name)
+    private readonly departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Region.name)
+    private readonly regionModel: Model<RegionDocument>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
   ) {}
@@ -992,86 +999,86 @@ export class SeederService {
       });
     }
   }
-   async seedBusinessDepartmentRoles(
-      userId: string,
-      businessId: mongoose.Types.ObjectId,
-    ) {
-      try {
-        for (const dept of DefaultBusinessDepartmentRoles) {
-          // Create department
-          const createdDepartment = await this.departmentModel.create({
-            name: dept.name,
-            description: dept.description,
+  async seedBusinessDepartmentRoles(
+    userId: string,
+    businessId: mongoose.Types.ObjectId,
+  ) {
+    try {
+      for (const dept of DefaultBusinessDepartmentRoles) {
+        // Create department
+        const createdDepartment = await this.departmentModel.create({
+          name: dept.name,
+          description: dept.description,
+          business: businessId,
+          createdBy: new mongoose.Types.ObjectId(userId),
+        });
+        const deptRoles = [];
+        for (const roleData of dept.roles) {
+          // Create role under the department
+          const createdRole = await this.roleModel.create({
+            name: roleData.name,
+            creator: new mongoose.Types.ObjectId(userId),
+            creatorType: RoleCreatorType.BUSINESS,
+            belongsTo: RoleBelonging.BUSINESS,
             business: businessId,
-            createdBy: new mongoose.Types.ObjectId(userId),
           });
-          const deptRoles = [];
-          for (const roleData of dept.roles) {
-            // Create role under the department
-            const createdRole = await this.roleModel.create({
-              name: roleData.name,
-              creator: new mongoose.Types.ObjectId(userId),
-              creatorType: RoleCreatorType.BUSINESS,
-              belongsTo: RoleBelonging.BUSINESS,
-              business: businessId,
+          deptRoles.push(createdRole._id);
+
+          // Privileges
+          const privilegeKeys = Object.keys(roleData.privileges);
+          for (const privilegeKey of privilegeKeys) {
+            // Get/create resource
+            let resourceDetails = await this.resourceModel.findOne({
+              title: ResourceTypes[privilegeKey],
             });
-            deptRoles.push(createdRole._id);
-  
-            // Privileges
-            const privilegeKeys = Object.keys(roleData.privileges);
-            for (const privilegeKey of privilegeKeys) {
-              // Get/create resource
-              let resourceDetails = await this.resourceModel.findOne({
+            if (!resourceDetails) {
+              resourceDetails = await this.resourceModel.create({
                 title: ResourceTypes[privilegeKey],
               });
-              if (!resourceDetails) {
-                resourceDetails = await this.resourceModel.create({
-                  title: ResourceTypes[privilegeKey],
-                });
-              }
-  
-              // Create privileges for each action
-              const actionKeys = roleData.privileges[privilegeKey];
-              for (const actionKey of actionKeys) {
-                let actionDetails = await this.actionModel.findOne({
+            }
+
+            // Create privileges for each action
+            const actionKeys = roleData.privileges[privilegeKey];
+            for (const actionKey of actionKeys) {
+              let actionDetails = await this.actionModel.findOne({
+                title: Actions[actionKey],
+              });
+              if (!actionDetails) {
+                actionDetails = await this.actionModel.create({
                   title: Actions[actionKey],
                 });
-                if (!actionDetails) {
-                  actionDetails = await this.actionModel.create({
-                    title: Actions[actionKey],
-                  });
-                }
-  
-                await this.privilegeModel.create({
-                  role: createdRole._id,
-                  resource: resourceDetails.title,
-                  action: actionDetails.title,
-                });
               }
+
+              await this.privilegeModel.create({
+                role: createdRole._id,
+                resource: resourceDetails.title,
+                action: actionDetails.title,
+              });
             }
           }
-          await this.departmentModel.updateOne(
-            { _id: createdDepartment._id },
-            { $set: { roles: deptRoles } },
-          );
         }
-        for (const region of Seeder.Regions) {
-          const createdRegion = await this.regionModel.create({
-            name: region.name,
-            description: region.description,
-            business: businessId,
-            createdBy: new mongoose.Types.ObjectId(userId),
-          });
-          await this.departmentModel.updateOne(
-            { _id: createdRegion._id },
-            { $set: { roles: [] } },
-          );
-        }
-      } catch (error) {
-        console.error('Error seeding business department roles:', error);
-        throw new Error('Failed to seed business department roles');
+        await this.departmentModel.updateOne(
+          { _id: createdDepartment._id },
+          { $set: { roles: deptRoles } },
+        );
       }
+      for (const region of Seeder.Regions) {
+        const createdRegion = await this.regionModel.create({
+          name: region.name,
+          description: region.description,
+          business: businessId,
+          createdBy: new mongoose.Types.ObjectId(userId),
+        });
+        await this.departmentModel.updateOne(
+          { _id: createdRegion._id },
+          { $set: { roles: [] } },
+        );
+      }
+    } catch (error) {
+      console.error('Error seeding business department roles:', error);
+      throw new Error('Failed to seed business department roles');
     }
+  }
   async seedPinntagBusinessProfile() {
     let email = process.env.PINNTAG_BUSINESS_USER_EMAIL;
     let password = process.env.PINNTAG_BUSINESS_USER_PASSWORD;
@@ -1097,7 +1104,7 @@ export class SeederService {
       password: hashedPassword,
       isEmailVerified: true,
       name: 'Pinntag',
-      status: ProfileStatus.BUSINESS_COVER,
+      status: ProfileStatus.EMAIL_VERIFIED,
     };
     let createdUser = await this.businessUserModel.create(createObj);
     let driveDetails = await this.createDrive(
@@ -1127,7 +1134,6 @@ export class SeederService {
     let categoryIds = [];
     categoryIds.push(businessCategory._id);
 
-
     let businessObj = {
       name: 'PinnTag Limited',
       email: email,
@@ -1136,7 +1142,7 @@ export class SeederService {
       addressLine1: '13 Sounds Lodge',
       addressLine2: 'Crockenhill',
       city: 'Swanley',
-      postalCode: 'BR8 8TD',  
+      postalCode: 'BR8 8TD',
       country: 'United Kingdom',
       businessIndustry: new mongoose.Types.ObjectId(businessIndustry._id),
       businessCategories: categoryIds,
@@ -1152,13 +1158,16 @@ export class SeederService {
       creator: new mongoose.Types.ObjectId(user.id),
       authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
       continueJourney: false,
+      status: BusinessStatus.COVER_ADDED,
+      description:
+        'PinnTag is a business consultancy firm that provides expert advice and solutions to help businesses grow and succeed. Our team of experienced consultants works closely with clients to understand their unique challenges and develop tailored strategies that drive results. From operational efficiency to market expansion, we are committed to delivering value and helping businesses achieve their goals.',
     };
 
     const createdBusiness = await this.businessModel.create(businessObj);
 
     this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
-        .then(() => console.log('Business roles seeded successfully'))
-        .catch((err) => console.error('Error seeding business roles:', err));
+      .then(() => console.log('Business roles seeded successfully'))
+      .catch((err) => console.error('Error seeding business roles:', err));
     await this.businessUserModel.updateOne(
       { _id: createdBusiness.authorisedUser },
       {

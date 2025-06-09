@@ -13,6 +13,7 @@ import {
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessCreatorType,
+  BusinessStatus,
   BusinessUserCreatorType,
   ProfileStatus,
   ROLES_IN_ORGANISATION,
@@ -83,7 +84,7 @@ import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
-import { Outlet,OutletDocument } from 'src/outlet/model/outlet.model';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { LocationPopulates } from 'src/enums/user.enum';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { Seeder } from 'src/seeder/data';
@@ -134,8 +135,10 @@ export class BusinessService {
     private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(LocationGroup.name)
     private readonly locationGroupModel: Model<LocationGroupDocument>,
-    @InjectModel(Region.name) private readonly regionModel: Model<RegionDocument>,
-    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Region.name)
+    private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -144,7 +147,7 @@ export class BusinessService {
     private readonly userService: UserService,
   ) {}
 
-  async createBusinessUser(data: CreateBusinessUserDto, origin: string) {
+  async createBusinessUser(data: CreateBusinessUserDto) {
     try {
       const foundUser = await this.businessUserModel.findOne({
         email: data.email,
@@ -463,25 +466,30 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
-      const businessUser = await this.businessUserModel
+      let userDetails = await this.businessUserModel
         .findById(userId)
         .select({ password: 0 });
-      if (!businessUser) {
+      if (!userDetails) {
         return {
           success: false,
           message: 'Business User not found with given ID',
         };
       }
-      if (businessUser.status < ProfileStatus.EMAIL_VERIFIED) {
+      if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
         return {
           success: false,
           message: 'Business User email not verified',
-          data: businessUser,
+          data: userDetails,
+        };
+      }
+      if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
+        return {
+          success: false,
+          message: 'Please provide valid Scalability Factor',
         };
       }
 
       //create business folder in drive
-      const userDetails = await this.businessUserModel.findById(userId);
       console.log('userDetails:', userDetails);
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: userDetails.drive,
@@ -496,6 +504,7 @@ export class BusinessService {
         // businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
+        scalabilityFactor: data.scalabilityFactor,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessCreatorType.BUSINESS_USER,
         creator: new mongoose.Types.ObjectId(userId),
@@ -514,7 +523,7 @@ export class BusinessService {
               business: createdBusiness._id,
             },
             $set: {
-              status: ProfileStatus.BUSINESS_CREATED,
+              // status: ProfileStatus.BUSINESS_CREATED,
               selectedBusiness: createdBusiness._id,
             },
           },
@@ -848,7 +857,7 @@ export class BusinessService {
         delete updateObj.boardMembers;
       }
       console.log('udpateObj:', updateObj);
-      const updatedDetails = await this.businessModel.findByIdAndUpdate(
+      let updatedDetails = await this.businessModel.findByIdAndUpdate(
         businessId,
         {
           $set: { ...updateObj },
@@ -856,32 +865,33 @@ export class BusinessService {
         { new: true },
       );
       if (updateObj.addressLine1) {
-        await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_ADDRESS } },
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
 
       if (updateObj.businessIndustry && updateObj.businessCategories) {
-        await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_TYPE } },
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.TYPE_ADDED } },
+        );
+      }
+      if (updateObj.description && updateObj.description.length > 0) {
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
         );
       }
 
       if (updateObj.cover) {
-        await this.businessUserModel.updateOne(
-          { _id: businessUser.id },
-          { $set: { status: ProfileStatus.BUSINESS_COVER } },
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.COVER_ADDED } },
         );
       }
 
-      // if(updatedDetails.teamSize){
-      //   await this.businessUserModel.updateOne(
-      //     { _id: businessUser.id },
-      //     { $set: { status: ProfileStatus.BUSINESS_TEAM_SIZE_ADDED } },
-      //   );
-      // }
+      updatedDetails = await this.businessModel.findById(businessId);
       console.log('udpatedDetails:', updatedDetails);
       return {
         success: true,
@@ -907,21 +917,6 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
-      if (
-        updateObj.scalabilityFactor == ScalabilityFactor.SINGLE ||
-        updateObj.scalabilityFactor == ScalabilityFactor.MULTIBRAND ||
-        updateObj.scalabilityFactor == ScalabilityFactor.MULTIPLE ||
-        updateObj.scalabilityFactor == ScalabilityFactor.FRANCHISE
-      ) {
-        if (updateObj.scalabilityFactor > ScalabilityFactor.FRANCHISE) {
-          return {
-            success: false,
-            message: 'Scalability Factor is not valid',
-          };
-        }
-
-        updateObj['status'] = ProfileStatus.MULTIPLE_BUSINESS_STATUS;
-      }
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
         { _id: id },
         {
@@ -969,7 +964,7 @@ export class BusinessService {
         total,
         pages: Math.ceil(total / limit),
         page,
-        limit
+        limit,
       };
     } catch (error) {
       console.error('Error:', error);
@@ -1155,7 +1150,7 @@ export class BusinessService {
       expiresIn,
     });
     const expirationTime = this.calculateExpirationDate(expiresIn);
-    console.log("Expiration Time:",expirationTime);
+    console.log('Expiration Time:', expirationTime);
     await this.userService.saveToken2(token, payload.id, type, expirationTime);
     return token;
   }
@@ -1201,8 +1196,8 @@ export class BusinessService {
     data?: any[];
     total?: number;
     pages?: number;
-    page?:number;
-    limit?:number;
+    page?: number;
+    limit?: number;
   }> {
     try {
       console.log('check 1:', id);
@@ -1731,7 +1726,7 @@ export class BusinessService {
         business: new mongoose.Types.ObjectId(businessId),
         isEmailVerified: true,
         forcePasswordReset: data.forcePasswordReset,
-        status: ProfileStatus.BUSINESS_COVER,
+        status: ProfileStatus.EMAIL_VERIFIED,
       };
       if (data.profilePhoto) {
         createObj['profilePhoto'] = data.profilePhoto;
@@ -2357,7 +2352,7 @@ export class BusinessService {
         data: followers,
         total,
         pages: Math.ceil(total / limit),
-        page, 
+        page,
         limit,
       };
     } catch (error) {
@@ -2570,11 +2565,11 @@ export class BusinessService {
           .populate('users', '_id name email profilePhoto')
           .populate({
             path: 'users',
-            populate:{
+            populate: {
               path: 'role',
               model: Role.name,
-              select: '_id name description'
-            }
+              select: '_id name description',
+            },
           })
           .populate('createdBy', '_id name email profilePhoto')
           .sort({ createdAt: -1 })
@@ -2636,11 +2631,11 @@ export class BusinessService {
           _id: new mongoose.Types.ObjectId(location),
           business: businessObjId,
         });
-        if(!foundOutlet){
+        if (!foundOutlet) {
           return {
-            success:false,
+            success: false,
             message: `Location with ID ${location} not found ordoes not belong to this business`,
-          }
+          };
         }
 
         locationsIds.push(new mongoose.Types.ObjectId(location));
@@ -2703,7 +2698,7 @@ export class BusinessService {
     ]);
     return {
       success: true,
-      message:"All LocationGroups fetched successfully",
+      message: 'All LocationGroups fetched successfully',
       data: results,
       total,
       pages: Math.ceil(total / limit),
