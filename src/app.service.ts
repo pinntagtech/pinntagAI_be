@@ -101,7 +101,7 @@ export class AppService implements OnModuleInit {
       // .sort({ sortOrder: 1 })
       //sort with alphabatical order
       .sort({ title: 1 })
-      .select({ createdAt: 0, updatedAt: 0, __v: 0 })
+      .select({ updatedAt: 0, __v: 0 })
       .populate('createdBy', '_id name')
       .exec();
   }

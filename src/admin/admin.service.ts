@@ -923,7 +923,7 @@ export class AdminService {
     return await this.contentCategoryModel
       .find()
       .sort({ title: 1 })
-      .select({ createdAt: 0, updatedAt: 0, __v: 0 })
+      .select({ updatedAt: 0, __v: 0 })
       .populate('createdBy', '_id name')
       .skip((page - 1) * limit)
       .limit(limit);
@@ -938,7 +938,7 @@ export class AdminService {
         };
       }
       const updatedCategory = await this.contentCategoryModel.findOneAndUpdate(
-        { _id: catId },
+        { _id: new mongoose.Types.ObjectId(catId) },
         { $set: { ...updateCategoryDto } },
       );
       console.log('UpdatedCategory:', updatedCategory);
@@ -1208,6 +1208,11 @@ export class AdminService {
       const users = await this.userModel
         .find()
         .sort({ createdAt: -1 })
+        .select({
+          password: 0,
+          updatedAt: 0,
+          __v: 0,
+        })
         .skip((page - 1) * limit)
         .limit(limit);
       const totalUsers = await this.userModel.find();

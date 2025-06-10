@@ -40,7 +40,10 @@ export enum CrawledEventStatus {
 
 export enum ReportTypes {
   VALIDITY = 'validity',
-  INAPPROPRIATE = 'inappropriate',
+  INAPPROPRIATE = 'Inappropriate or offensive content',
+  MISLEADING = 'Misleading information',
+  HATE_SPEECH = 'Hate speech or harassment',
+  DUPLICATE = 'duplicate or outdated event',
   OTHER = 'other',
 }
 
@@ -248,11 +251,11 @@ export enum WeekDays {
 }
 
 export enum DiscountType {
-  Percentage = "PERCENTAGE",
-  Flat = "FLAT",
-  BOGO = "BUY_ONE_GET_ONE",
-  FREE_ITEM = "FREE_ITEM",
-  BUNDLE= 'BUNDLE',
+  Percentage = 'PERCENTAGE',
+  Flat = 'FLAT',
+  BOGO = 'BUY_ONE_GET_ONE',
+  FREE_ITEM = 'FREE_ITEM',
+  BUNDLE = 'BUNDLE',
   HAPPY_HOUR = 'HAPPY_HOUR',
   CUSTOM = 'CUSTOM',
 }
