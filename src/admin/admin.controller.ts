@@ -513,7 +513,9 @@ export class AdminController {
       pageNumber,
       limitNumber,
     );
-    return result;
+    return {
+      categories: result,
+    };
   }
 
   @Put('content/updateCategory/:id')
