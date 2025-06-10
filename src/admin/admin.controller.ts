@@ -57,6 +57,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -520,7 +521,7 @@ export class AdminController {
   async updateCategory(
     @Req() req: Request,
     @Param('id') id: string,
-    @Body() updateCategoryDto: CreateCategoryDto,
+    @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     const result = await this.adminService.updateCategory(
       id,

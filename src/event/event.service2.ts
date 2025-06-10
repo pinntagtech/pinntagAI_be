@@ -4009,6 +4009,16 @@ export class EventService2 {
       };
     }
     data.event = event._id;
+    const isAlreadyReported = await this.reportModel.findOne({
+      user: new mongoose.Types.ObjectId(userId),
+      event: new mongoose.Types.ObjectId(data.event),
+    });
+    if (isAlreadyReported) {
+      return {
+        success: true,
+        message: 'Event reported successfully.',
+      };
+    }
     const report = await this.reportModel.create({
       user: new mongoose.Types.ObjectId(userId),
       ...data,

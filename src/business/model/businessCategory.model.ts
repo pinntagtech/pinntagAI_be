@@ -22,6 +22,9 @@ export class BusinessCategory {
 
   @Prop({ ref: Admin.name })
   createdBy: mongoose.Types.ObjectId;
+
+  @Prop({ default: false })
+  isDeleted: boolean;
 }
 export const BusinessCategorySchema =
   SchemaFactory.createForClass(BusinessCategory);

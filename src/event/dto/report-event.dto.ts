@@ -9,7 +9,7 @@ export class ReportEventDto {
 
   @IsNotEmpty()
   @IsString()
-  @IsIn([ReportTypes.VALIDITY, ReportTypes.INAPPROPRIATE, ReportTypes.OTHER])
+  @IsIn(Object.values(ReportTypes))
   type: string;
 
   @IsOptional()
