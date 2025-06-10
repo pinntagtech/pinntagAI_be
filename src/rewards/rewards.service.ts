@@ -224,19 +224,22 @@ export class RewardsService {
       }
       let startDate = new Date(data.startDate);
       let endDate = new Date(data.endDate);
+      let updateRewardObj = {
+        locations: locationIds,
+        rewardSchedule: {
+          startDate: startDate,
+          endDate: endDate,
+        },
+        status: RewardStatus.PUBLISHED,
+        QR_CODE: QRCodeDetails?._id,
+      };
+      if (generatedQR) {
+        updateRewardObj['activityQrCode'] = generatedQR.data.metaData.url;
+      }
       const updatedReward = await this.rewardModel.findOneAndUpdate(
         { _id: reward._id },
         {
-          $set: {
-            locations: locationIds,
-            rewardSchedule: {
-              startDate: startDate,
-              endDate: endDate,
-            },
-            status: RewardStatus.PUBLISHED,
-            QR_CODE: QRCodeDetails?._id,
-            activityQrCode: generatedQR.data.metaData.url,
-          },
+          $set: updateRewardObj,
         },
         { new: true },
       );

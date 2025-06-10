@@ -102,6 +102,10 @@ import {
 } from 'src/business/model/department.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
+import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
+import { OutletCategoryList } from 'src/outlet/outlet.enum';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
+import { GoogleService } from 'src/google/google.service';
 
 @Injectable()
 export class AdminService {
@@ -147,6 +151,8 @@ export class AdminService {
     private readonly actionModel: Model<ActionDocument>,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -155,6 +161,7 @@ export class AdminService {
     private readonly authService: AuthService,
     private readonly seederService: SeederService,
     private readonly driveService: DriveService,
+    private readonly googleService: GoogleService,
   ) {}
 
   calculateExpirationDate(expiresIn: string): Date {
@@ -1469,12 +1476,14 @@ export class AdminService {
     try {
       console.log('is inside service::?');
       const industries = await this.industryModel
-        .find()
+        .find({ isDeleted: false })
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
       console.log('Industries:', industries);
-      const totalDocs = await this.industryModel.countDocuments();
+      const totalDocs = await this.industryModel.countDocuments({
+        isDeleted: false,
+      });
       return {
         success: true,
         message: 'Business Industries fetched Successfully.',
@@ -1503,7 +1512,12 @@ export class AdminService {
           message: 'Category not found with the id provided.',
         };
       }
-      await this.businessCategoryModel.findByIdAndDelete(catId);
+      // await this.businessCategoryModel.findByIdAndDelete(catId);
+
+      await this.businessCategoryModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(catId) },
+        { $set: { isDeleted: true } },
+      );
 
       return {
         success: true,
@@ -1531,7 +1545,10 @@ export class AdminService {
         };
       }
 
-      await this.industryModel.findByIdAndDelete(industryId);
+      await this.industryModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(industryId) },
+        { $set: { isDeleted: true } },
+      );
       return {
         success: true,
         message: 'Industry with given ID is Deleted Successfully.',
@@ -2031,8 +2048,9 @@ export class AdminService {
         .skip((page - 1) * limit)
         .limit(limit);
 
-      const total = await this.businessUserModel.countDocuments({
-        business: new mongoose.Types.ObjectId(businessId),
+      const total = await this.followModel.countDocuments({
+        following: new mongoose.Types.ObjectId(businessId),
+        followerType: User.name,
       });
 
       return {
@@ -2045,6 +2063,128 @@ export class AdminService {
       return {
         success: false,
         message: error,
+      };
+    }
+  }
+
+  async fetchBusinessUsers(businessId: string) {
+    try {
+      const users = await this.businessUserModel
+        .find({ business: new mongoose.Types.ObjectId(businessId) })
+        .populate('role', '_id name')
+        .populate('business', '_id name')
+        .select({ password: 0, updatedAt: 0, __v: 0 });
+      return {
+        success: true,
+        message: 'Business Users fetched successfully',
+        data: users,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async createOutletForBusiness(
+    businessId: string,
+    data: CreateOutletByAdminDto,
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+
+      if (
+        !Object.values(OutletCategoryList).includes(
+          data.category as OutletCategoryList,
+        )
+      ) {
+        return {
+          success: false,
+          message: 'Invalid category',
+        };
+      }
+
+      if (data.category === OutletCategoryList.MOBILE && !data.vehicleType) {
+        return {
+          success: false,
+          message: 'Vehicle Type is required',
+        };
+      }
+
+      const foundOutlet = await this.outletModel.findOne({
+        address1: data.address1,
+        business: business._id,
+      });
+
+      if (foundOutlet) {
+        return {
+          success: false,
+          message: 'Outlet already exists with the given address.',
+        };
+      }
+
+      const createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
+      });
+
+      let address = `${createObj.address1}, ${createObj.city}, ${createObj.state}, ${createObj.country}, ${createObj.zipCode}`;
+      let placeList = await this.googleService.googleRecommendation(address);
+      let placeDetails = await this.googleService.getPlaceDetails(
+        '',
+        placeList.data[0].placePrediction.placeId,
+        placeList.sessionToken,
+      );
+
+      // createObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      createObj['business'] = new mongoose.Types.ObjectId(businessId);
+      createObj['latitude'] = placeDetails.data['latitude'];
+      createObj['longitude'] = placeDetails.data['longitude'];
+
+      const outlet = await this.outletModel.create(createObj);
+
+      const updateObj: any = {};
+      if (outlet.category === OutletCategoryList.PHYSICAL) {
+        updateObj['physicalUnitsCreated'] = business.physicalUnitsCreated + 1;
+      }
+      if (outlet.category === OutletCategoryList.MOBILE) {
+        updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
+      }
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        {
+          $push: { outlets: new mongoose.Types.ObjectId(outlet.id) },
+          $set: { ...updateObj },
+        },
+      );
+
+      if (createObj.manager) {
+        await this.businessUserModel.updateOne(
+          { _id: createObj.manager },
+          { $addToSet: { assignedOutlets: outlet.id } },
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Outlet created successfully.',
+        data: outlet,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Something went wrong',
       };
     }
   }

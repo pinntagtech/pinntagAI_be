@@ -192,7 +192,7 @@ export class OutletService {
 
   async createOutlet(data: CreateOutletDto, user: any) {
     try {
-      console.log("data:",data);
+      console.log('data:', data);
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
         return {
@@ -276,64 +276,6 @@ export class OutletService {
           createObj[key] = data[key];
         }
       });
-      // if (createObj.manager && createObj.manager !== '') {
-      //   const foundManager = await this.businessUserModel.findOne({
-      //     _id: new mongoose.Types.ObjectId(manager),
-      //   });
-      //   if (!foundManager) {
-      //     return {
-      //       success: false,
-      //       message: 'Manager not found in the database!',
-      //     };
-      //   }
-      //   createObj['manager'] = new mongoose.Types.ObjectId(manager);
-      // }
-
-      // if (createObj.category === OutletCategoryList.PHYSICAL) {
-      //   console.log('address1:', address1);
-      //   console.log('posSystemId:', posSystemId, typeof posSystemId);
-      //   if (!address1 || !posSystemId) {
-      //     console.log('it should enter this block');
-      //     return {
-      //       success: false,
-      //       message: 'Address Line 1 or POS System ID is required.',
-      //     };
-      //   }
-      // } else if (createObj.category === OutletCategoryList.MOBILE) {
-      //   if (!vehicleRegistrationNumber || !vehicleType || !gpsTrackerEnabled) {
-      //     return {
-      //       success: false,
-      //       message:
-      //         'Vehicle Registration Number or Vehicle Type or GPS Status is required.',
-      //     };
-      //   }
-      // }
-      // else if (foundCategory.title === OutletCategoryList.TEMPORARY) {
-      //   if (!eventName || !startDate || !endDate || !boothNumber) {
-      //     return {
-      //       success: false,
-      //       message:
-      //         'Event Name or Start Date or End Date or Booth Number is required.',
-      //     };
-      //   }
-      // } else if (foundCategory.title === OutletCategoryList.ONLINE) {
-      // } else if (foundCategory.title === OutletCategoryList.SPECIALTY) {
-      //   if (!insidePremise || !premiseName) {
-      //     return {
-      //       success: false,
-      //       message: 'Inside Premise or Premise Name is required.',
-      //     };
-      //   }
-      // }
-      // else {
-      //   return {
-      //     success: false,
-      //     message: 'Invalid category.',
-      //   };
-      // }
-
-      // createObj['category'] = new mongoose.Types.ObjectId(category);
-      // createObj['type'] = new mongoose.Types.ObjectId(type);
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
 
@@ -348,16 +290,19 @@ export class OutletService {
       }
       console.log('Business User Id:', businessUser.id);
 
-      if (createObj.manager) {
-        const isUserUpdated = await this.businessUserModel.updateOne(
-          { _id: createObj.manager },
-          { $addToSet: { assignedOutlets: outlet.id } },
-        );
-      }
+      // if (createObj.manager) {
+      //   const isUserUpdated = await this.businessUserModel.updateOne(
+      //     { _id: createObj.manager },
+      //     { $addToSet: { assignedOutlets: outlet.id } },
+      //   );
+      // }
 
       await this.businessModel.updateOne(
         { _id: business._id },
-        { $push: { outlets: outlet.id }, $set: { ...updateObj } },
+        {
+          $push: { outlets: new mongoose.Types.ObjectId(outlet.id) },
+          $set: { ...updateObj },
+        },
       );
       await this.businessUserModel.updateOne(
         { _id: businessUser.id },
@@ -485,8 +430,6 @@ export class OutletService {
         .limit(limit);
 
       console.log('outlets:', outlets);
-     
-
 
       const total = await this.outletModel.countDocuments({
         ...getOutletObj,
@@ -560,9 +503,6 @@ export class OutletService {
         .skip((page - 1) * limit)
         .limit(limit);
 
-
-
-
       const total = await this.outletModel.countDocuments({
         creator: new mongoose.Types.ObjectId(userDetails._id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
@@ -577,17 +517,17 @@ export class OutletService {
         },
         {
           $group: {
-            _id: "$category",
-            count: { $sum: 1 }
-          }
+            _id: '$category',
+            count: { $sum: 1 },
+          },
         },
         {
           $project: {
-            category: "$_id",
+            category: '$_id',
             count: 1,
-            _id: 0
-          }
-        }
+            _id: 0,
+          },
+        },
       ]);
       console.log('numerics:', numerics);
       return {

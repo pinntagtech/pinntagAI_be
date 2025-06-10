@@ -62,13 +62,16 @@ export class CreateOutletDto {
   @IsEmail()
   email: string;
 
+  @IsNotEmpty()
+  latitude: number;
+  @IsNotEmpty()
+  longitude: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(90)
-  servingRadius:number;
-  
-
+  servingRadius: number;
 
   // Social Media & Online Presence
   // @IsOptional()
@@ -116,5 +119,87 @@ export class CreateOutletDto {
   // @IsOptional()
   // @IsBoolean()
   // gpsTrackerEnabled?: boolean;
+}
+export class CreateOutletByAdminDto {
+  // Outlet Basic Information
+  @IsNotEmpty()
+  @IsString()
+  category: string;
 
+  // @IsOptional()
+  // @IsString()
+  // refId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  // @IsOptional()
+  // @IsString()
+  // manager: string; // Reference to a User entity
+
+  @IsNotEmpty()
+  @IsString()
+  city: string;
+
+  @IsNotEmpty()
+  @IsString()
+  state: string;
+
+  @IsNotEmpty()
+  @IsString()
+  country: string;
+
+  @IsNotEmpty()
+  @IsString()
+  postalCode: string;
+
+  // Contact Information
+
+  @IsNotEmpty()
+  @IsString()
+  countryCode: string;
+
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  // @IsNotEmpty()
+  // latitude: number;
+  // @IsNotEmpty()
+  // longitude: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(90)
+  servingRadius: number;
+
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @IsString()
+  address1?: string;
+
+  @IsOptional()
+  @IsString()
+  address2?: string;
+
+  // Mobile & Flexible Outlet Specific Fields
+  @IsOptional()
+  @IsEnum(VehicleType)
+  vehicleType?: string;
+
+  // @IsOptional()
+  // @IsString()
+  // vehicleRegistrationNumber?: string;
+
+  // @IsOptional()
+  // @IsBoolean()
+  // gpsTrackerEnabled?: boolean;
 }

@@ -17,6 +17,8 @@ export class BusinessIndustry {
   activeColor: string;
   @Prop({ ref: Admin.name })
   createdBy: mongoose.Types.ObjectId;
+  @Prop({ default: false })
+  isDeleted: boolean;
 }
 export const BusinessIndustrySchema =
   SchemaFactory.createForClass(BusinessIndustry);
