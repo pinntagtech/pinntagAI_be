@@ -62,6 +62,9 @@ export class RewardsController {
     if (user.userType !== UserTypes.BUSINESS) {
       throw new BadRequestException('Unauthorized');
     }
+    if (!files.images) {
+      throw new BadRequestException('Cover Image is required');
+    }
     const result = await this.rewardService.createReward(
       data,
       user,

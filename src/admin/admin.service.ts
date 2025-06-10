@@ -1481,7 +1481,9 @@ export class AdminService {
         .limit(limit)
         .populate('createdBy', '_id name');
       console.log('Industries:', industries);
-      const totalDocs = await this.industryModel.countDocuments();
+      const totalDocs = await this.industryModel.countDocuments({
+        isDeleted: false,
+      });
       return {
         success: true,
         message: 'Business Industries fetched Successfully.',
