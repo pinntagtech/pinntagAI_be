@@ -1399,6 +1399,7 @@ export class BusinessService {
           $project: {
             title: '$result.title',
             activeColor: '$result.activeColor',
+            isDeleted: '$result.isDeleted',
             createdAt: '$result.createdAt',
             createdBy: {
               _id: '$createdBy._id',
@@ -1409,6 +1410,7 @@ export class BusinessService {
             updatedAt: '$result.updatedAt',
           },
         },
+        { $match: { isDeleted: false } },
         {
           $sort: { title: 1 },
         },
@@ -1441,6 +1443,7 @@ export class BusinessService {
       const categories = await this.businessCategoryModel
         .find({
           industry: new mongoose.Types.ObjectId(id),
+          isDeleted: false,
         })
         .sort({ title: 1 })
         .skip((page - 1) * limit)

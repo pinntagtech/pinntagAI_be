@@ -56,6 +56,7 @@ import { AddBusinessDto } from './dto/add-business.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1163,6 +1164,50 @@ export class AdminController {
       throw new BadRequestException({
         message: result.message,
       });
+    }
+  }
+
+  @Get('businessUsers/:businessId')
+  @UseGuards(AdminGuard2)
+  async businessUsers(
+    @Param('businessId') businessId: string,
+    // @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(businessId)) {
+      throw new BadRequestException({
+        message: 'Invalid business id',
+      });
+    }
+    const result = await this.adminService.fetchBusinessUsers(businessId);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('createLocation/:businessId')
+  @UseGuards(AdminGuard2)
+  async createOutletForBusiness(
+    @Param('businessId') businessId: string,
+    @Body() createOutletDto: CreateOutletByAdminDto,
+  ) {
+    const result = await this.adminService.createOutletForBusiness(
+      businessId,
+      createOutletDto,
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
     }
   }
 }

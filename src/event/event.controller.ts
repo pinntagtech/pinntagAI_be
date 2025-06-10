@@ -826,7 +826,7 @@ export class EventController {
   }
 
   @Post('report')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async reportEvent(
     @Body() body: ReportEventDto,
     @TokenDecoder() user: DecodedUser,
@@ -844,7 +844,7 @@ export class EventController {
   }
 
   @Get('reports')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getReports(@TokenDecoder() user: DecodedUser) {
     const result = await this.eventService.getReports(user.id);
     if (result.success) {

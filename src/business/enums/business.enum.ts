@@ -1,7 +1,6 @@
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
-  // MULTIPLE_BUSINESS_STATUS: 2,
 };
 export const BusinessStatus = {
   CREATED: 0, //-> Business Created

@@ -5260,45 +5260,58 @@ export class EventService2 {
     image: Express.Multer.File,
   ) {
     try {
-      console.log("Data:::::",data);
+      console.log('Data:::::', data);
       const event = await this.eventModel.findById(offerId);
       if (!event) return { success: false, message: 'Offer not found' };
-  
+
       if (!user.businessProfile) {
         return { success: false, message: 'Business not found.' };
       }
-  
+
       if (data.categories) {
-        data.categories = data.categories.split(',').map((cat) => new mongoose.Types.ObjectId(cat));
+        data.categories = data.categories
+          .split(',')
+          .map((cat) => new mongoose.Types.ObjectId(cat));
       }
-  
-      if (data.minTargetAge && data.maxTargetAge && data.minTargetAge > data.maxTargetAge) {
-        return { success: false, message: 'Minimum target age cannot be greater than maximum target age' };
+
+      if (
+        data.minTargetAge &&
+        data.maxTargetAge &&
+        data.minTargetAge > data.maxTargetAge
+      ) {
+        return {
+          success: false,
+          message:
+            'Minimum target age cannot be greater than maximum target age',
+        };
       }
-  
+
       if (data.targetGenders) {
         data.targetGenders = data.targetGenders.split(',');
       }
-  
+
       if (data.eventType === EventTypes.FLASHDEAL) {
         data.quantityLimit = Number(data.quantityLimit);
       }
-  
+
       if (data.isFree !== undefined) {
         data.isFree = data.isFree === 'true';
       }
-  
-      console.log("Data:",data);
+
+      console.log('Data:', data);
       const updateObj: any = { ...data };
-      
+
       if (data.bookingSite) {
         updateObj.bookingUrl = data.bookingSite.split(',');
       }
 
+      console.log('Upate Obj:', updateObj);
+      const updatedEvent = await this.eventModel.findByIdAndUpdate(
+        offerId,
+        updateObj,
+        { new: true },
+      );
 
-      console.log("Upate Obj:",updateObj);
-      const updatedEvent = await this.eventModel.findByIdAndUpdate(offerId, updateObj, { new: true });
-  
       if (image) {
         const result = await this.s3Service.s3_upload(
           image.buffer,
@@ -5306,13 +5319,15 @@ export class EventService2 {
           manipulateImageName(image.originalname),
           'image/jpeg',
         );
-  
-        const fileCategory = await this.fileCategoryModel.findOne({ name: 'Content QR' });
+
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: 'Content QR',
+        });
         const splitIndex = result.Location.indexOf('amazonaws');
         const part1 = result.Location.slice(0, splitIndex);
         const part2 = result.Location.slice(splitIndex);
         const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
-  
+
         const file = await this.fileModel.create({
           metaData: {
             mimeType: image.mimetype,
@@ -5327,10 +5342,13 @@ export class EventService2 {
           parent: new mongoose.Types.ObjectId(event._id),
           parentType: Event.name,
         });
-  
-        await this.eventModel.updateOne({ _id: event._id }, { $set: { QR_CODE: file._id } });
+
+        await this.eventModel.updateOne(
+          { _id: event._id },
+          { $set: { QR_CODE: file._id } },
+        );
       }
-  
+
       return {
         success: true,
         message: 'Offer updated successfully',
@@ -5341,7 +5359,6 @@ export class EventService2 {
       return { success: false, message: 'Something went wrong.' };
     }
   }
-
 
   // async createOffer(
   //   data: CreateOfferDto,
@@ -5720,6 +5737,12 @@ export class EventService2 {
             foundOutlet = await this.outletModel.create(outletObj);
           }
           console.log('Found Outlet:', foundOutlet);
+          await this.businessModel.updateOne(
+            { _id: businessDetails._id },
+            {
+              $addToSet: { outlets: foundOutlet._id },
+            },
+          );
 
           //Event Creation
 
@@ -5782,12 +5805,7 @@ export class EventService2 {
             isFromCrawler: true,
           });
           console.log('created-location---->', createdlocation);
-          await this.businessModel.updateOne(
-            { _id: businessDetails._id },
-            {
-              $addToSet: { outlets: foundOutlet._id },
-            },
-          );
+
           await this.eventModel.updateOne(
             {
               _id: new mongoose.Types.ObjectId(createdEvent._id),
@@ -5878,31 +5896,31 @@ export class EventService2 {
       });
       const [event] = await this.eventModel.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(data.id) } },
-         {
-                $lookup: {
-                  from: 'files', // assuming this is the same collection as QR_CODE
-                  let: { folderId: '$event.drivePath' },
-                  pipeline: [
-                    {
-                      $match: {
-                        $expr: {
-                          $and: [
-                            { $eq: ['$parentDirectory', '$$folderId'] },
-                            {
-                              $ne: [
-                                '$category',
-                                new mongoose.Types.ObjectId(QR_ImageCategory.id),
-                              ],
-                            },
-                          ],
-                        },
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$event.drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
                       },
-                    },
-                  ],
-                  as: 'files',
+                    ],
+                  },
                 },
               },
-      ])
+            ],
+            as: 'files',
+          },
+        },
+      ]);
       if (!event) {
         return {
           success: false,
@@ -5928,7 +5946,7 @@ export class EventService2 {
       }
       console.log('event:', event);
       let thumbnailURL = null;
-      if( event.files && event.files.length > 0) {
+      if (event.files && event.files.length > 0) {
         thumbnailURL = event.files[0].metaData.url;
       }
       // let thumbnailURL = (event as any).files[0].metaData.url;
