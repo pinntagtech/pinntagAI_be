@@ -4,7 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
-import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 import { OtpTypes, UserTypes } from 'src/enums/auth.enums';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
@@ -14,13 +17,14 @@ export class MailService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
     private readonly mailerService: MailerService,
     private readonly userService: UserService,
   ) {}
 
   async sendSampleMail(content: any) {
-    await this.mailerService.sendMail({
+    this.mailerService.sendMail({
       to: 'rahulmvn13259@gmail.com',
       subject: 'Sample Mail',
       template: process.cwd() + '/src/mail/templates/sampleMail.template.hbs',
@@ -32,7 +36,7 @@ export class MailService {
 
   async sendUserWelcomeMail(userId: string) {
     const user = await this.userService.getUserById(userId);
-    await this.mailerService.sendMail({
+    this.mailerService.sendMail({
       to: user.email,
       subject: 'Welcome to Pinntag',
       template: process.cwd() + '/src/mail/templates/welcomeMail.template.hbs',
@@ -48,7 +52,7 @@ export class MailService {
       user: userId,
       type: OtpTypes.EMAIL,
     });
-    await this.mailerService.sendMail({
+    this.mailerService.sendMail({
       to: user.email,
       subject: 'Verify your email',
       template:
@@ -63,7 +67,7 @@ export class MailService {
 
   async sendBusinessUserVerificationMail(userId: string) {
     // const user = await this.userService.getUserById(userId);
-    const profile = await this.businessUserModel.findOne({_id:userId});
+    const profile = await this.businessUserModel.findOne({ _id: userId });
     const otp = await this.userService.saveOtp({
       user: userId,
       type: OtpTypes.EMAIL,
@@ -80,8 +84,6 @@ export class MailService {
       },
     });
   }
-
-
 
   async sendForgotPasswordMail(userId: string) {
     const user = await this.userService.getUserById(userId);
@@ -135,7 +137,12 @@ export class MailService {
     });
   }
 
-  async sendForgotPasswordMail2(name: string, email: string, link: string,linkExpiry:string) {
+  async sendForgotPasswordMail2(
+    name: string,
+    email: string,
+    link: string,
+    linkExpiry: string,
+  ) {
     // const user = await this.userService.getUserById(userId);
     // const otp = await this.userService.saveOtp({
     //   user: userId,
@@ -146,19 +153,25 @@ export class MailService {
       subject: 'Reset your account password',
       template:
         process.cwd() + '/src/mail/templates/resetPassword.template.hbs',
-      context: { name, link,linkExpiry },
+      context: { name, link, linkExpiry },
     });
   }
-  async sendEmailVerificationMail(name:string,email:string,link:string){
+  async sendEmailVerificationMail(name: string, email: string, link: string) {
     await this.mailerService.sendMail({
       to: email,
       subject: 'Verify your Email',
       template:
-        process.cwd() + '/src/mail/templates/emailVerificationViaLink.template.hbs',
+        process.cwd() +
+        '/src/mail/templates/emailVerificationViaLink.template.hbs',
       context: { name, link },
     });
   }
-  async sendDownlineUserCredentials(name:string,email:string,password:string,loginLink:string){
+  async sendDownlineUserCredentials(
+    name: string,
+    email: string,
+    password: string,
+    loginLink: string,
+  ) {
     await this.mailerService.sendMail({
       to: email,
       subject: 'Welcome to Pinntag',

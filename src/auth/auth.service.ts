@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -11,7 +10,6 @@ import {
   LocationPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
-import { LoginDto } from '../admin/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
@@ -40,7 +38,6 @@ import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Auth, google } from 'googleapis';
 import { OAuth2Dto } from './dto/oAuth2.dto';
-import { Otp, OtpDocument } from './models/otp.model';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { S3Service } from 'src/s3.service';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
@@ -170,85 +167,13 @@ export class AuthService {
     };
   }
 
-  async create(
-    createAuthDto: CreateAuthDto,
-    userAgent: string,
-    ipAddress: string,
-  ) {
-    createAuthDto.email = createAuthDto.email.toLowerCase().trim();
-    const foundUser = await this.userModel
-      .findOne({ email: createAuthDto.email })
-      .exec();
-    if (foundUser) {
-      return {
-        success: false,
-        message: 'User already exists',
-      };
-    } else {
-      const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
-      const hashedPassword = await bcrypt.hash(createAuthDto.password, 10);
-      delete createAuthDto.password;
-      const createdUser = await this.userModel.create({
-        role: role._id,
-        ...createAuthDto,
-        password: hashedPassword,
-        userAgent,
-        ipAddress,
-      });
-      // Generate a random refferal code of 6 length with numbers and alphabets
-      const refferalCode = await this.generateUniqueRefferalCode();
-      const refferal = await this.refferalModel.create({
-        user: createdUser._id,
-        code: refferalCode,
-      });
-      await this.userModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(createdUser.id) },
-        { $set: { refferal: refferal._id } },
-      );
-      await this.mailService.sendUserWelcomeMail(createdUser.id);
-      await this.mailService.sendUserVerificationMail(createdUser.id);
-      const user = await this.userService.getUserById(createdUser.id);
-      const customer = await this.stripeService.createCustomer(
-        createdUser.email,
-        createdUser.name,
-      );
-      if (customer.id) {
-        await this.userModel.updateOne(
-          { _id: createdUser._id },
-          { $set: { stripeCustomerId: customer.id } },
-        );
-      }
-      if (createAuthDto.fcmToken) {
-        await this.tokenModel.create({
-          token: createAuthDto.fcmToken,
-          type: TokenTypes.FCM,
-          userType: UserTypes.USER,
-          user: createdUser._id,
-          deviceType: createAuthDto.deviceType
-            ? createAuthDto.deviceType
-            : 'web',
-        });
-      }
-      const fcmExists = await this.tokenModel.exists({
-        type: TokenTypes.FCM,
-        userId: createdUser._id,
-        deviceType: createAuthDto.deviceType ? createAuthDto.deviceType : 'web',
-      });
-      return {
-        success: true,
-        message: 'User created successfully',
-        user,
-        fcmExists: fcmExists ? true : false,
-      };
-    }
-  }
-
   async signupOTP(
     signupAuthDto: SignupAuthDto,
     userAgent: string,
     ipAddress: string,
   ) {
-    const { signupMethod, email, phone, countryCode } = signupAuthDto;
+    const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
+      signupAuthDto;
 
     if (!phone && !email) {
       return {
@@ -257,12 +182,11 @@ export class AuthService {
       };
     }
 
-    let createdUser;
     const role = await this.roleModel.findOne({ name: Roles.USER });
+    let createdUser;
+
     if (signupMethod === SignupMethod.EMAIL) {
-      const foundUser = await this.userModel.findOne({
-        email: signupAuthDto.email,
-      });
+      const foundUser = await this.userModel.findOne({ email });
       if (foundUser) {
         return {
           success: false,
@@ -276,83 +200,89 @@ export class AuthService {
         userAgent,
         ipAddress,
       });
-      await this.mailService.sendUserWelcomeMail(createdUser.id);
-      await this.mailService.sendUserVerificationMail(createdUser.id);
-    } else if (signupMethod === SignupMethod.PHONE) {
+
+      await Promise.all([
+        this.mailService.sendUserWelcomeMail(createdUser.id),
+        this.mailService.sendUserVerificationMail(createdUser.id),
+      ]);
+    }
+
+    if (signupMethod === SignupMethod.PHONE) {
       const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
       if (!phoneNumber || !phoneNumber.isValid()) {
-        return {
-          success: false,
-          message: 'Invalid phone number',
-        };
+        return { success: false, message: 'Invalid phone number' };
       }
-      let fullPhoneNumber = phoneNumber.format('E.164');
-      const foundUser = await this.userModel.findOne({
-        fullPhoneNumber: fullPhoneNumber,
-      });
+
+      const fullPhoneNumber = phoneNumber.format('E.164');
+      const foundUser = await this.userModel.findOne({ fullPhoneNumber });
       if (foundUser) {
         return {
           success: false,
           message: 'User already exists with the given mobile number!',
         };
-      } else {
-        console.log('createAuthDto', signupAuthDto);
-        createdUser = await this.userModel.create({
-          ...signupAuthDto,
-          fullPhoneNumber: fullPhoneNumber,
-          role: role._id,
-          userAgent,
-          ipAddress,
-        });
-
-        await this.smsService.sendSMS(
-          createdUser.id,
-          fullPhoneNumber,
-          SMSType.OTP,
-        );
       }
+
+      createdUser = await this.userModel.create({
+        ...signupAuthDto,
+        fullPhoneNumber,
+        role: role._id,
+        userAgent,
+        ipAddress,
+      });
+
+      await this.smsService.sendSMS(
+        createdUser.id,
+        fullPhoneNumber,
+        SMSType.OTP,
+      );
     }
-    const refferalCode = await this.generateUniqueRefferalCode();
-    const refferal = await this.refferalModel.create({
+
+    const [refferalCode, customer] = await Promise.all([
+      this.generateUniqueRefferalCode(),
+      this.stripeService.createCustomer(createdUser.email, createdUser.name),
+    ]);
+
+    const referral = await this.refferalModel.create({
       user: createdUser._id,
       code: refferalCode,
     });
+
     await this.userModel.updateOne(
       { _id: createdUser.id },
-      { $set: { refferal: refferal._id } },
+      {
+        $set: {
+          refferal: referral._id,
+          stripeCustomerId: customer?.id || null,
+        },
+      },
     );
-    const customer = await this.stripeService.createCustomer(
-      createdUser.email,
-      createdUser.name,
-    );
-    if (customer.id) {
-      await this.userModel.updateOne(
-        { _id: createdUser._id },
-        { $set: { stripeCustomerId: customer.id } },
-      );
-    }
-    if (signupAuthDto.fcmToken) {
+
+    if (fcmToken) {
       await this.tokenModel.create({
-        token: signupAuthDto.fcmToken,
+        token: fcmToken,
         type: TokenTypes.FCM,
         userType: UserTypes.USER,
         user: createdUser._id,
-        deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
+        deviceType: deviceType || 'web',
       });
     }
-    const fcmExists = await this.tokenModel.exists({
-      type: TokenTypes.FCM,
-      userId: createdUser._id,
-      deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
-    });
-    const user = await this.userService.getUserById(createdUser.id);
 
-    await this.seederService.createDrive(createdUser.id, User.name);
+    const [fcmExists, user] = await Promise.all([
+      this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        userId: createdUser._id,
+        deviceType: deviceType || 'web',
+      }),
+      this.userService.getUserById(createdUser.id),
+    ]);
+    // knowingly removed async to make this api fast
+    this.seederService.createDrive(createdUser.id, User.name);
+
     return {
       success: true,
       message: 'User created successfully',
       user,
-      fcmExists: fcmExists ? true : false,
+      fcmExists: !!fcmExists,
     };
   }
 
@@ -915,91 +845,6 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
-    const validatedUser = await this.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
-    if (validatedUser.success) {
-      const user = validatedUser.user;
-      if (!user.isEmailVerified) {
-        await this.mailService.sendUserVerificationMail(user.id);
-        return {
-          success: true,
-          user: user.id,
-          message:
-            'Please verify your email to login, otp has been sent to the registered mail.',
-        };
-      }
-      if (loginDto.fcmToken) {
-        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
-          {
-            type: TokenTypes.FCM,
-            userId: user._id,
-            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-          },
-          {
-            $set: {
-              token: loginDto.fcmToken,
-            },
-          },
-        );
-        if (!foundFcmToken) {
-          await this.tokenModel.create({
-            token: loginDto.fcmToken,
-            type: TokenTypes.FCM,
-            userType: UserTypes.USER,
-            user: user._id,
-            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-          });
-        }
-      }
-      const payload: JwtPayload = {
-        id: user.id,
-        // email: user.email,
-        userType: UserTypes.USER,
-        role: Roles.USER,
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.USER,
-      );
-      const updatedUser = await this.userModel
-        .findByIdAndUpdate(user.id, {
-          $set: { isDeleted: false },
-        })
-        .populate('role', '_id name');
-      if (!user.stripeCustomerId) {
-        const customer = await this.stripeService.createCustomer(
-          user.email,
-          user.name,
-        );
-        if (customer.id) {
-          user.stripeCustomerId = customer.id;
-          await user.save();
-        }
-      }
-      const fcmExists = await this.tokenModel.exists({
-        type: TokenTypes.FCM,
-        userId: user._id,
-        deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-      });
-      return {
-        success: true,
-        message: 'User logged in successfully',
-        user: updatedUser,
-        token,
-        fcmExists: fcmExists ? true : false,
-      };
-    } else {
-      return {
-        success: false,
-        message: validatedUser.message,
-      };
-    }
-  }
-
   async loginOTP(
     loginDto: SignupAuthDto,
     userAgent: string,
@@ -1117,7 +962,6 @@ export class AuthService {
       };
     }
   }
-
 
   async fcmReport() {
     const users = await this.userModel.find({

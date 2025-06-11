@@ -15,10 +15,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
 import { Request } from 'express';
 import { ContinueWithFacebookDto } from './dto/continueWithFb.dto';
-import { LoginDto } from '../admin/dto/login.dto';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
@@ -64,22 +62,6 @@ export class AuthController {
     return {
       message: result.message,
       url: result.image,
-    };
-  }
-
-  @Post('signup')
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: Request, @Body() createAuthDto: CreateAuthDto) {
-    const userAgent = req.headers['user-agent'];
-    const ip = req.ip;
-    const result = await this.authService.create(createAuthDto, userAgent, ip);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      fcmExists: result.fcmExists,
     };
   }
 
@@ -190,22 +172,6 @@ export class AuthController {
       message: result.message,
       user: result.user,
       token: result.token,
-    };
-  }
-
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RateLimitGuard)
-  async login(@Body() loginDto: LoginDto) {
-    const result = await this.authService.login(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-      fcmExists: result.fcmExists,
     };
   }
 
