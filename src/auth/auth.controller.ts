@@ -395,6 +395,7 @@ export class AuthController {
 
   @Post('guest/login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async guestLogin(@Body() body: GuestLoginDto) {
     const result = await this.authService.guestLogin(body);
     if (!result.success) {
@@ -414,6 +415,7 @@ export class AuthController {
 
   @Post('verify/otp')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async verifyEmail(@Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyOtp(body);
     if (!result.success) {
@@ -438,6 +440,7 @@ export class AuthController {
 
   @Post('forgotPassword')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async forgotPassword(@Body() body: { email: string }) {
     const result = await this.authService.forgotPassword(body.email);
     if (!result.success) {
@@ -449,6 +452,7 @@ export class AuthController {
 
   @Post('resetPassword')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async resetPassword(@Body() body: ResetPaswordDto) {
     const { success, message } = await this.authService.resetPassword(body);
     if (!success) {
@@ -800,6 +804,7 @@ export class AuthController {
 
   @Post('password-reset-link')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async passwordResetLink(
     @Req() req: Request,
     @Body('email') email: string,
@@ -836,6 +841,7 @@ export class AuthController {
 
   @Post('resendVerificationLink/:id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async resendVerificationLink(
     @Req() req: Request,
     @Param('id') id: string,
