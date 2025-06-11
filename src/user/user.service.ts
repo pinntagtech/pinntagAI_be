@@ -82,24 +82,15 @@ export class UserService {
     private readonly reportModel: Model<ReportDocument>,
     @InjectModel(SavedEvent.name)
     private readonly savedEventModel: Model<SavedEventDocument>,
-    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
     // private readonly mailerService: MailService,
   ) {}
-
-  async getUsers() {
-    const users = await this.userModel
-      .find()
-      .populate(
-        'businessProfiles',
-        'id _id profilePhoto name bio brandColor countryCode phone email website',
-      )
-      .exec();
-    return users;
-  }
 
   async getMyRefferalCode(userId: string) {
     const user = await this.userModel.findById(userId);
@@ -532,21 +523,19 @@ export class UserService {
   }
 
   async getUserById(id: string): Promise<User> {
-    console.log("IDDD:",id);
-    const user = await this.userModel
-    .findById(id)
-    .select({ password: 0 })
+    console.log('IDDD:', id);
+    const user = await this.userModel.findById(id).select({ password: 0 });
     // .populate('role', {
-      //   __v: 0,
-      //   createdAt: 0,
-      //   updatedAt: 0,
-      // })
-      // .populate('subscriptions')
-      // .populate('refferal', 'id code isBlacklisted')
-      // .exec();
+    //   __v: 0,
+    //   createdAt: 0,
+    //   updatedAt: 0,
+    // })
+    // .populate('subscriptions')
+    // .populate('refferal', 'id code isBlacklisted')
+    // .exec();
 
-      console.log("USERRRR:",user);
-      return user;
+    console.log('USERRRR:', user);
+    return user;
   }
 
   async saveOtpToDb(id: string, otp: number, type: string) {
@@ -597,13 +586,12 @@ export class UserService {
     //   foundOtpDoc.otp = otp;
     //   await foundOtpDoc.save();
     // }
-    
+
     await this.otpModel.deleteMany({
       user: new mongoose.Types.ObjectId(user),
       type: type,
     });
     this.saveOtpToDb(user, otp, type);
-
 
     return otp;
   }
@@ -673,8 +661,7 @@ export class UserService {
         };
       }
     } else {
-      const businessProfile =
-        await this.businessModel.findById(targetId);
+      const businessProfile = await this.businessModel.findById(targetId);
       if (!businessProfile) {
         return {
           success: false,

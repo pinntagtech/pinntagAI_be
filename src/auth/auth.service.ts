@@ -11,7 +11,7 @@ import {
   LocationPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from '../admin/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
@@ -62,19 +62,19 @@ import {
   EventResponse,
   EventResponseDocument,
 } from 'src/event/models/event-response.model';
-import { ConfigureDashboardDto } from './dto/configureDashboard.dto';
+import { ConfigureDashboardDto } from '../admin/dto/configureDashboard.dto';
 import {
   DashboardConfig,
   DashboardConfigDocument,
 } from './models/dashboardConfig.model';
-import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
+import { UpdateConfigureDashboardDto } from '../admin/dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
 import { Workbook } from 'exceljs';
 import {
   PlatformConfig,
   PlatformConfigDocument,
 } from './models/platformConfig.model';
-import { PlatformConfigDto } from './dto/platformConfig.dto';
+import { PlatformConfigDto } from '../admin/dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
@@ -1118,85 +1118,6 @@ export class AuthService {
     }
   }
 
-  async adminLogin(loginDto: LoginDto) {
-    const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
-    const foundAdmin = await this.userModel.findOne({
-      email: loginDto.email,
-      role: role._id,
-    });
-    if (!foundAdmin) {
-      return {
-        success: false,
-        message: 'Admin not found with the email provided.',
-      };
-    } else {
-      const validPassword = await bcrypt.compare(
-        loginDto.password,
-        foundAdmin.password,
-      );
-      if (!validPassword) {
-        return {
-          success: false,
-          message: 'Incorrect password',
-        };
-      }
-      const payload: JwtPayload = {
-        id: foundAdmin.id,
-        userType: UserTypes.ADMIN,
-        role: Roles.ADMIN,
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.ADMIN,
-      );
-      return {
-        success: true,
-        message: 'Admin logged in successfully',
-        user: foundAdmin,
-        token,
-      };
-    }
-  }
-
-  async adminLoginV2(loginDto: LoginDto) {
-    const admin = await this.adminModel.findOne({
-      email: loginDto.email,
-    });
-    if (!admin) {
-      return {
-        success: false,
-        message: 'Admin not found with the email provided.',
-      };
-    } else {
-      const validPassword = await bcrypt.compare(
-        loginDto.password,
-        admin.password,
-      );
-      if (!validPassword) {
-        return {
-          success: false,
-          message: 'Incorrect password',
-        };
-      }
-      const payload: JwtPayload = {
-        id: admin.id,
-        userType: UserTypes.ADMIN,
-        role: admin.role.toString(),
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.ADMIN,
-      );
-      return {
-        success: true,
-        message: 'Admin logged in successfully',
-        user: admin,
-        token,
-      };
-    }
-  }
 
   async fcmReport() {
     const users = await this.userModel.find({
@@ -1247,177 +1168,6 @@ export class AuthService {
       fcmTokens.length,
       fileBuffer,
     );
-  }
-
-  async addDashboardConfiguration(data: ConfigureDashboardDto) {
-    if (data.categories.length) {
-      for (let i = 0; i < data.categories.length; i++) {
-        const foundCategory = await this.categoryModel
-          .findById(data.categories[i])
-          .exec();
-        if (!foundCategory) {
-          return {
-            message: `Category not found with the id provided: ${data.categories[i]}`,
-          };
-        } else {
-          data.categories[i] = foundCategory._id;
-        }
-      }
-    }
-    const createdConfiguration = await this.dashboardConfigModel.create(data);
-    return {
-      success: true,
-      message: 'Dashboard configuration added successfully',
-      data: createdConfiguration,
-    };
-  }
-
-  async getDashboardConfig() {
-    const foundConfig = await this.dashboardConfigModel
-      .find()
-      .populate('categories', '_id name')
-      .sort({ sortOrder: 1 });
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the name provided.',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Dashboard configuration found successfully',
-        data: foundConfig,
-      };
-    }
-  }
-
-  async getDashboardAllConfigs() {
-    const foundConfig = await this.dashboardConfigModel
-      .find({}, { _id: 1, name: 1 })
-      .sort({ sortOrder: 1 });
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the name provided.',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Dashboard configuration found successfully',
-        data: foundConfig,
-      };
-    }
-  }
-
-  async updateDashboardConfiguration(
-    id: string,
-    data: UpdateConfigureDashboardDto,
-  ) {
-    const configExists = await this.dashboardConfigModel.exists({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-    if (!configExists) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the id provided.',
-      };
-    } else {
-      if (data.categories && data.categories.length) {
-        data.categories = data.categories.map(
-          (category) => new mongoose.Types.ObjectId(category),
-        );
-      }
-      const updatedConfiguration =
-        await this.dashboardConfigModel.findOneAndUpdate(
-          { _id: new mongoose.Types.ObjectId(id) },
-          { $set: data },
-          { new: true },
-        );
-      if (updatedConfiguration) {
-        return {
-          success: true,
-          message: 'Dashboard configuration updated successfully',
-          data: updatedConfiguration,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Error updating dashboard configuration',
-        };
-      }
-    }
-  }
-
-  async deleteDashboardConfiguration(id: string) {
-    const configExists = await this.dashboardConfigModel.exists({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-    if (!configExists) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the id provided.',
-      };
-    } else {
-      await this.dashboardConfigModel.deleteOne({
-        _id: new mongoose.Types.ObjectId(id),
-      });
-      return {
-        success: true,
-        message: 'Dashboard configuration deleted successfully',
-      };
-    }
-  }
-
-  async getDashboardWeight() {
-    const foundConfig = await this.platformConfigModel.findOne();
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Platform configuration not found',
-      };
-    } else {
-      if (!foundConfig.distanceWeightage || !foundConfig.timeWeightage) {
-        return {
-          success: false,
-          message: 'Dashboard weightage not found',
-        };
-      }
-      return {
-        success: true,
-        message: 'Dashboard weightage found successfully',
-        data: {
-          distanceWeightage: foundConfig.distanceWeightage,
-          timeWeightage: foundConfig.timeWeightage,
-        },
-      };
-    }
-  }
-
-  async editDashboardWeight(data: PlatformConfigDto) {
-    const foundConfig = await this.platformConfigModel.findOne();
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Platform configuration not found',
-      };
-    } else {
-      if (!data.distanceWeightage || !data.timeWeightage) {
-        return {
-          success: false,
-          message: 'Dashboard weightage not found',
-        };
-      }
-      const updatedData = await this.platformConfigModel.findOneAndUpdate(
-        {},
-        { $set: data },
-        { new: true },
-      );
-      return {
-        success: true,
-        message: 'Dashboard weightage updated successfully',
-        data: updatedData,
-      };
-    }
   }
 
   async guestLogin(data: GuestLoginDto) {

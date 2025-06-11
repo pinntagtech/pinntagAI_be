@@ -3,10 +3,10 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
-import { LoginDto } from 'src/auth/dto/login.dto';
-import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
-import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
+import { ConfigureDashboardDto } from 'src/admin/dto/configureDashboard.dto';
+import { LoginDto } from 'src/admin/dto/login.dto';
+import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
+import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -588,7 +588,6 @@ export class AdminService {
   }
 
   async adminLogin(loginDto: LoginDto) {
-    // const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
     const foundAdmin = await this.adminModel.findOne({
       email: loginDto.email,
       // role: role._id,

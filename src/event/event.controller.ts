@@ -29,7 +29,6 @@ import mongoose from 'mongoose';
 import { InviteEventDto } from './dto/invite-event.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { ReportEventDto } from './dto/report-event.dto';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { UpdateCrawledEventDto } from './dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { SavedEventsDto } from './dto/saved-events.dto';
@@ -262,7 +261,7 @@ export class EventController {
   }
 
   @Get('crawled')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getCrawledEvents(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -298,7 +297,7 @@ export class EventController {
   }
 
   @Delete('crawled/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async removeCrawledEvent(@Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException({
@@ -318,7 +317,7 @@ export class EventController {
   }
 
   @Post('crawled/edit/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateCrawledEvent(
     @Param('id') id: string,
     @Body() body: UpdateCrawledEventDto,
@@ -342,7 +341,7 @@ export class EventController {
   }
 
   @Post('crawled/publish')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
     body.ids.forEach((id) => {
       if (!mongoose.isValidObjectId(id)) {

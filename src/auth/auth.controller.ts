@@ -18,7 +18,7 @@ import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Request } from 'express';
 import { ContinueWithFacebookDto } from './dto/continueWithFb.dto';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from '../admin/dto/login.dto';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
@@ -33,12 +33,7 @@ import { OAuth2Dto } from './dto/oAuth2.dto';
 import { JwtGuard } from './guards/jwt.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RefreshGuard } from './guards/refresh.guard';
-import { AuthGuard } from '@nestjs/passport';
-import { ConfigureDashboardDto } from './dto/configureDashboard.dto';
-import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
-import { AdminGuard } from './guards/admin.guard';
-import { PlatformConfigDto } from './dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -200,6 +195,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
     if (!result.success) {
@@ -215,6 +211,7 @@ export class AuthController {
 
   @Post('loginOTP')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async loginOTP(@Req() req: Request, @Body() loginDto: SignupAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
@@ -225,171 +222,6 @@ export class AuthController {
     return {
       message: result.message,
       user: result.user,
-    };
-  }
-
-  @Post('admin/login')
-  @HttpCode(HttpStatus.OK)
-  async adminLogin(@Body() loginDto: LoginDto) {
-    const result = await this.authService.adminLogin(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-    };
-  }
-
-  @Post('admin/login-v2')
-  @HttpCode(HttpStatus.OK)
-  async adminLoginV2(@Body() loginDto: LoginDto) {
-    const result = await this.authService.adminLoginV2(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-    };
-  }
-
-  @Post('dashboard/config/add')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async configureDashboard(@Body() body: ConfigureDashboardDto) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    const result = await this.authService.addDashboardConfiguration(body);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Get('dashboard/config')
-  @UseGuards(AdminGuard)
-  async getDashboardConfig() {
-    const result = await this.authService.getDashboardConfig();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Get('dashboard/getAllConfigs')
-  @UseGuards(JwtGuard2)
-  async getDashboardAllConfigs() {
-    const result = await this.authService.getDashboardAllConfigs();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Post('dashboard/config/update/:id')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async editDashboardConfig(
-    @Body() body: UpdateConfigureDashboardDto,
-    @Param('id') id: string,
-  ) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('Invalid id');
-    }
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    const result = await this.authService.updateDashboardConfiguration(
-      id,
-      body,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Delete('dashboard/config/delete/:id')
-  @UseGuards(AdminGuard)
-  async deleteDashboardConfig(@Param('id') id: string) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('Invalid id');
-    }
-    const result = await this.authService.deleteDashboardConfiguration(id);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-    };
-  }
-
-  @Get('dashboard/weight')
-  @UseGuards(AdminGuard)
-  async getDashboardWeight() {
-    const result = await this.authService.getDashboardWeight();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Post('dashboard/weight/update')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async updateDashboardWeight(@Body() body: PlatformConfigDto) {
-    if (!body.distanceWeightage && !body.timeWeightage) {
-      throw new BadRequestException('Please provide data to update');
-    }
-    if (body.distanceWeightage < 0.1 || body.distanceWeightage > 1.0) {
-      throw new BadRequestException(
-        'Distance weightage should be between 0.1 to 1.0',
-      );
-    }
-    if (body.timeWeightage < 0.1 || body.timeWeightage > 1.0) {
-      throw new BadRequestException(
-        'Time weightage should be between 0.1 to 1.0',
-      );
-    }
-    if (body.distanceWeightage + body.timeWeightage !== 1.0) {
-      throw new BadRequestException(
-        'Sum of distance and time weightage should be 1.0',
-      );
-    }
-    const result = await this.authService.editDashboardWeight(body);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
     };
   }
 

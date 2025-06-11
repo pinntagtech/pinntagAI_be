@@ -21,10 +21,10 @@ import { AdminService } from './admin.service';
 import mongoose from 'mongoose';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
-import { ConfigureDashboardDto } from 'src/auth/dto/configureDashboard.dto';
-import { PlatformConfigDto } from 'src/auth/dto/platformConfig.dto';
-import { UpdateConfigureDashboardDto } from 'src/auth/dto/updateDashConfig.dto';
-import { LoginDto } from 'src/auth/dto/login.dto';
+import { ConfigureDashboardDto } from 'src/admin/dto/configureDashboard.dto';
+import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
+import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
+import { LoginDto } from 'src/admin/dto/login.dto';
 // import { Permission, ResourceEnums } from './models/permission.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -49,7 +49,6 @@ import {
   UpdateBusinessCategoryDto,
 } from './dto/business-category.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';

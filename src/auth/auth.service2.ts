@@ -11,7 +11,7 @@ import {
   LocationPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto } from '../admin/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
@@ -62,19 +62,19 @@ import {
   EventResponse,
   EventResponseDocument,
 } from 'src/event/models/event-response.model';
-import { ConfigureDashboardDto } from './dto/configureDashboard.dto';
+import { ConfigureDashboardDto } from '../admin/dto/configureDashboard.dto';
 import {
   DashboardConfig,
   DashboardConfigDocument,
 } from './models/dashboardConfig.model';
-import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
+import { UpdateConfigureDashboardDto } from '../admin/dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
 import { Workbook } from 'exceljs';
 import {
   PlatformConfig,
   PlatformConfigDocument,
 } from './models/platformConfig.model';
-import { PlatformConfigDto } from './dto/platformConfig.dto';
+import { PlatformConfigDto } from '../admin/dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
