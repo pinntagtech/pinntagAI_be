@@ -724,7 +724,8 @@ export class UserService {
             isRead: false,
           });
         }
-      } else if (followingType == BusinessProfile.name) {
+      } else if (followingType == Business.name) {
+        console.log("Inside business follow");
         const businessProfile = await this.businessModel
           .findById(targetId)
           .select({ _id: 0, name: 1, createdBy: 1 });
