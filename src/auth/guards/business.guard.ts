@@ -11,19 +11,19 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { User, UserDocument } from 'src/user/models/user.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Token, TokenDocument } from '../models/token.model';
 import { TokenTypes } from 'src/enums/auth.enums';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class BusinessProfileGuard implements CanActivate {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     private jwtService: JwtService,
   ) {}
@@ -67,7 +67,7 @@ export class BusinessProfileGuard implements CanActivate {
           message: 'User not found',
         });
       } else {
-        const businessProfile = await this.businessProfileModel.findById(
+        const businessProfile = await this.businessModel.findById(
           // payload.businessProfile,
           payload.id,
         );

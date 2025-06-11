@@ -23,10 +23,10 @@ import {
   UserTypes,
   allowedRoutesForGuest,
 } from 'src/enums/auth.enums';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
 import {
@@ -39,8 +39,7 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 export class VerifyMailGuard implements CanActivate {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(GuestSession.name)
     private readonly guestSessionModel: Model<GuestSessionDocument>,

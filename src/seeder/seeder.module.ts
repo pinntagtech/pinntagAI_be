@@ -17,10 +17,10 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { AppService } from 'src/app.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
@@ -80,7 +80,7 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
       { name: Admin.name, schema: AdminSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Drive.name, schema: DriveSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Privilege.name, schema: PrivilegeSchema },
       { name: Resource.name, schema: ResourceSchema },
       { name: Action.name, schema: ActionSchema },

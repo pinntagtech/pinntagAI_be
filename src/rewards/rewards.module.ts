@@ -13,10 +13,10 @@ import { DriveService } from 'src/drive/drive.service';
 import { S3Service } from 'src/s3.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
@@ -46,7 +46,7 @@ import { UserReward, UserRewardSchema } from './model/userReward.model';
       { name: Reward.name, schema: RewardSchema },
       { name: Drive.name, schema: DriveSchema },
       { name: Folder.name, schema: FolderSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Event.name, schema: EventSchema },
       { name: File.name, schema: FileSchema },

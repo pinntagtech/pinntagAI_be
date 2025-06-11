@@ -14,7 +14,6 @@ import {
   Put,
   BadRequestException,
 } from '@nestjs/common';
-import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { UserGuard } from 'src/auth/guards/user.guard';
@@ -340,38 +339,38 @@ export class EventController {
     }
   }
 
-  @Post('crawled/publish')
-  @UseGuards(AdminGuard2)
-  async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
-    body.ids.forEach((id) => {
-      if (!mongoose.isValidObjectId(id)) {
-        throw new BadRequestException({
-          message: `Please provide a valid id for ${id}`,
-        });
-      }
-    });
-    if (!mongoose.isValidObjectId(body.businessProfile)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid business id',
-      });
-    }
-    if (!mongoose.isValidObjectId(body.user)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid user id',
-      });
-    }
-    const result = await this.eventService.publishCrawledEvent(body);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('crawled/publish')
+  // @UseGuards(AdminGuard2)
+  // async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
+  //   body.ids.forEach((id) => {
+  //     if (!mongoose.isValidObjectId(id)) {
+  //       throw new BadRequestException({
+  //         message: `Please provide a valid id for ${id}`,
+  //       });
+  //     }
+  //   });
+  //   if (!mongoose.isValidObjectId(body.businessProfile)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid business id',
+  //     });
+  //   }
+  //   if (!mongoose.isValidObjectId(body.user)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid user id',
+  //     });
+  //   }
+  //   const result = await this.eventService.publishCrawledEvent(body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   @Post('update/image/:id')
   @UseGuards(JwtGuard)

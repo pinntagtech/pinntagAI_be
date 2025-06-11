@@ -8,10 +8,10 @@ import { MailService } from 'src/mail/mail.service';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
@@ -53,7 +53,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: Follow.name, schema: FollowSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: Refferal.name, schema: RefferalSchema },

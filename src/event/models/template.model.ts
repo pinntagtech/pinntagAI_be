@@ -1,8 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
-import { Event, Schedule } from './event.model';
-import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
 import { Admin } from 'src/admin/models/admin.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';

@@ -8,7 +8,7 @@ import { OutletType, OutletTypeSchema } from './model/outletType.model';
 import { Outlet, OutletSchema } from './model/outlet.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { User, UserSchema } from 'src/user/models/user.model';
-import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
+// import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
 import { GuestSession, GuestSessionSchema } from 'src/auth/models/guestSession.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
@@ -24,7 +24,7 @@ import { JwtService } from '@nestjs/jwt';
       { name: Outlet.name, schema: OutletSchema },
       { name: Role.name, schema: RoleSchema },
       { name: User.name, schema: UserSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Admin.name, schema: AdminSchema },

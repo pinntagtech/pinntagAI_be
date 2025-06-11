@@ -9,10 +9,10 @@ import {
   Transaction,
   TransactionSchema,
 } from 'src/user/models/transaction.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   Subscription,
   SubscriptionSchema,
@@ -21,6 +21,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
+import { Business, BusinessSchema } from 'src/business/model/business.model';
 
 @Module({
   imports: [
@@ -38,8 +39,8 @@ import {
         schema: TransactionSchema,
       },
       {
-        name: BusinessProfile.name,
-        schema: BusinessProfileSchema,
+        name: Business.name,
+        schema: BusinessSchema,
       },
       {
         name: Subscription.name,

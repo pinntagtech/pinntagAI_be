@@ -26,10 +26,10 @@ import { JwtPayload } from './interfaces/tokenPayload.interface';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { Token, TokenDocument } from './models/token.model';
 import { Refferal, RefferalDocument } from 'src/user/models/refferal.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   EventLocation,
   EventLocationDocument,
@@ -108,8 +108,7 @@ export class AuthService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Refferal.name)
     private readonly refferalModel: Model<RefferalDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Category.name)
@@ -2873,7 +2872,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3092,7 +3091,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3313,7 +3312,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3625,7 +3624,7 @@ export class AuthService {
     }
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -4298,7 +4297,7 @@ export class AuthService {
       const isFollowedByMe = await this.followModel.findOne({
         followerType: User.name,
         follower: new mongoose.Types.ObjectId(user.id),
-        followingType: BusinessProfile.name,
+        followingType: Business.name,
         following: businessProfile._id,
         isBlocked: false,
       });
