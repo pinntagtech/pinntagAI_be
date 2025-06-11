@@ -289,6 +289,20 @@ export class AuthController {
     };
   }
 
+
+  @Get('dashboard/getAllConfigs')
+  @UseGuards(JwtGuard2)
+  async getDashboardAllConfigs() {
+    const result = await this.authService.getDashboardAllConfigs();
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
+
   @Get('fcm/report')
   @UseGuards(RateLimitGuard)
   async fcmReport() {

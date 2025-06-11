@@ -807,6 +807,25 @@ export class AuthService {
     }
   }
 
+
+  async getDashboardAllConfigs() {
+    const foundConfig = await this.dashboardConfigModel
+      .find({}, { _id: 1, name: 1 })
+      .sort({ sortOrder: 1 });
+    if (!foundConfig) {
+      return {
+        success: false,
+        message: 'Dashboard configuration not found with the name provided.',
+      };
+    } else {
+      return {
+        success: true,
+        message: 'Dashboard configuration found successfully',
+        data: foundConfig,
+      };
+    }
+  }
+
   async refreshFcmToken(userId: string, data: RefreshFcmDto) {
     const foundUser = await this.userModel.findById(userId);
     if (!foundUser) {
