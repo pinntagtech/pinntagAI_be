@@ -21,20 +21,16 @@ import { PublishEventDto } from './dto/publishEvent.dto';
 import { Template, TemplateDocument } from './models/template.model';
 import { PostToSocialMediaDto } from 'src/event/dto/postToSocialMedia.dto';
 import { FacebookService } from 'src/user/facebook.service';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
 import { HttpService } from '@nestjs/axios';
-import { Request } from 'node-fetch';
 import {
   EventLocation,
   EventLocationDocument,
 } from './models/eventLocation.model';
-import {
-  BusinessLocation,
-  BusinessLocationDocument,
-} from 'src/business-profile/models/businessLocation.model';
+// import {
+//   BusinessLocation,
+//   BusinessLocationDocument,
+//   // Location,
+// } from 'src/business-profile/models/businessLocation.model';
 import {
   Notification,
   NotificationDocument,
@@ -42,7 +38,6 @@ import {
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { UserService } from 'src/user/user.service';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { Location } from 'src/business-profile/models/types.model';
 import {
   BusinessPopulates,
   CategoryPopulates,
@@ -135,6 +130,7 @@ import {
 import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
+import { LocationClass } from 'src/business/model/types.model';
 
 @Injectable()
 export class EventService2 {
@@ -155,8 +151,7 @@ export class EventService2 {
     private readonly ageGroupModel: Model<AgeGroupDocument>,
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
-    @InjectModel(BusinessLocation.name)
-    private readonly businessLocationModel: Model<BusinessLocationDocument>,
+    // @InjectModel(BusinessLocation.name) private readonly businessLocationModel: Model<BusinessLocationDocument>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Follow.name)
@@ -895,7 +890,7 @@ export class EventService2 {
               },
             );
           } else {
-            const locationData: Location = location as Location;
+            const locationData: LocationClass = location as unknown as LocationClass;
             const latitude = locationData.latitude;
             const longitude = locationData.longitude;
             delete locationData.latitude;
@@ -1131,7 +1126,7 @@ export class EventService2 {
           message: 'Event not found',
         };
       } else if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === Business.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -1178,7 +1173,7 @@ export class EventService2 {
         };
       }
       if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === Business.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -1301,7 +1296,7 @@ export class EventService2 {
         const isFollowedByMe = await this.followModel.findOne({
           followerType: User.name,
           follower: new mongoose.Types.ObjectId(user.id),
-          followingType: BusinessProfile.name,
+          followingType: Business.name,
           following: businessProfile._id,
           isBlocked: false,
         });
@@ -1481,7 +1476,7 @@ export class EventService2 {
         const isFollowedByMe = await this.followModel.findOne({
           followerType: User.name,
           follower: new mongoose.Types.ObjectId(user.id),
-          followingType: BusinessProfile.name,
+          followingType: Business.name,
           following: businessProfile._id,
           isBlocked: false,
         });
@@ -1564,7 +1559,7 @@ export class EventService2 {
           message: 'Event not found',
         };
       }
-      if (event.creatorType === BusinessProfile.name) {
+      if (event.creatorType === Business.name) {
         if (event.businessProfile._id.toString() !== user.businessProfile) {
           return {
             success: false,
@@ -1609,7 +1604,7 @@ export class EventService2 {
         const isFollowedByMe = await this.followModel.findOne({
           followerType: User.name,
           follower: new mongoose.Types.ObjectId(user.id),
-          followingType: BusinessProfile.name,
+          followingType: Business.name,
           following: businessProfile._id,
           isBlocked: false,
         });
@@ -1714,138 +1709,138 @@ export class EventService2 {
     }
   }
 
-  async publishCrawledEvent(data: PublishCrawledEventDto) {
-    const { ids, user, businessProfile } = data;
-    let resData = [];
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      const foundDoc = await this.crawledEventModel.findById(id);
-      if (!foundDoc) {
-        return {
-          success: false,
-          message: 'No event data found with the id',
-        };
-      } else {
-        let images = [];
-        //Download image and upload to s3 bucket
-        if (foundDoc.image) {
-          const file = await this.downloadImage(foundDoc.image);
-          const result = await this.s3Service.s3_upload(
-            file,
-            process.env.AWS_S3_BUCKET_NAME,
-            manipulateImageName(foundDoc.title),
-            'image/jpeg',
-          );
-          const createdImage = await this.imageModel.create({
-            url: result.Location,
-          });
-          images.push(createdImage._id);
-        }
-        //Save event location
-        let findQuery = {};
-        if (mongoose.isValidObjectId(foundDoc.category)) {
-          findQuery = { _id: new mongoose.Types.ObjectId(foundDoc.category) };
-        } else {
-          findQuery = { name: foundDoc.category };
-        }
-        const category = await this.categoryModel.findOne(findQuery);
-        if (!category) {
-          return {
-            success: false,
-            message: 'Category not found',
-          };
-        }
-        const allAgeGroup = await this.ageGroupModel.findOne({
-          name: 'all',
-        });
-        const event = await this.eventModel.create({
-          isFromCrawler: true,
-          businessProfile: new mongoose.Types.ObjectId(businessProfile),
-          user: new mongoose.Types.ObjectId(user),
-          type: foundDoc.type,
-          creatorType: BusinessProfile.name,
-          status: EventStatus.PUBLISHED,
-          category,
-          images,
-          title: foundDoc.title,
-          description: foundDoc.description,
-          schedule: foundDoc.schedule,
-          // locations: [createdLocation._id],
-          ageGroupsAllowed: [allAgeGroup._id],
-          targetGenders: ['male', 'female', 'other'],
-          promotionCode: '',
-          // isFree: foundDoc.participationCost == 'Free' ? true : false,
-          isFree: true,
-          // participationCost: foundDoc.participationCost.split('')[1],
-          participationCost: foundDoc.participationCost
-            ? foundDoc.participationCost
-            : '',
-          bookingUrl: foundDoc.website ? foundDoc.website : '',
-          offset: foundDoc.offset,
-        });
-        if (foundDoc.coordinates) {
-          const locationObj = {
-            type: 'Point',
-            coordinates: [
-              foundDoc.coordinates['lng'],
-              foundDoc.coordinates['lat'],
-            ],
-          };
-          // Add the location to business location as well
-          const businessLocationId = await this.businessLocationModel.create({
-            latitude: foundDoc.coordinates['lat'],
-            longitude: foundDoc.coordinates['lng'],
-            accuracy: 0,
-            address1: foundDoc.address,
-            address2: '',
-            city: '',
-            state: '',
-            zip: '',
-            website: foundDoc.website ? foundDoc.website : '',
-            email: foundDoc.email ? foundDoc.email : '',
-            phone: foundDoc.phone ? foundDoc.phone : '',
-            businessProfile: new mongoose.Types.ObjectId(businessProfile),
-          });
-          const createdLocation = await this.eventLocationModel.create({
-            location: locationObj,
-            accuracy: 0,
-            event: event._id,
-            address1: foundDoc.address,
-            address2: '',
-            city: '',
-            state: '',
-            zip: '',
-            website: foundDoc.website ? foundDoc.website : '',
-            email: foundDoc.email ? foundDoc.email : '',
-            phone: foundDoc.phone ? foundDoc.phone : '',
-            businessLocationId: businessLocationId._id,
-          });
-          const updatedEvent = await this.eventModel.findByIdAndUpdate(
-            event.id,
-            {
-              $addToSet: {
-                locations: createdLocation._id,
-              },
-            },
-            { new: true },
-          );
-          resData.push(updatedEvent);
+  // async publishCrawledEvent(data: PublishCrawledEventDto) {
+  //   const { ids, user, businessProfile } = data;
+  //   let resData = [];
+  //   for (let i = 0; i < ids.length; i++) {
+  //     const id = ids[i];
+  //     const foundDoc = await this.crawledEventModel.findById(id);
+  //     if (!foundDoc) {
+  //       return {
+  //         success: false,
+  //         message: 'No event data found with the id',
+  //       };
+  //     } else {
+  //       let images = [];
+  //       //Download image and upload to s3 bucket
+  //       if (foundDoc.image) {
+  //         const file = await this.downloadImage(foundDoc.image);
+  //         const result = await this.s3Service.s3_upload(
+  //           file,
+  //           process.env.AWS_S3_BUCKET_NAME,
+  //           manipulateImageName(foundDoc.title),
+  //           'image/jpeg',
+  //         );
+  //         const createdImage = await this.imageModel.create({
+  //           url: result.Location,
+  //         });
+  //         images.push(createdImage._id);
+  //       }
+  //       //Save event location
+  //       let findQuery = {};
+  //       if (mongoose.isValidObjectId(foundDoc.category)) {
+  //         findQuery = { _id: new mongoose.Types.ObjectId(foundDoc.category) };
+  //       } else {
+  //         findQuery = { name: foundDoc.category };
+  //       }
+  //       const category = await this.categoryModel.findOne(findQuery);
+  //       if (!category) {
+  //         return {
+  //           success: false,
+  //           message: 'Category not found',
+  //         };
+  //       }
+  //       const allAgeGroup = await this.ageGroupModel.findOne({
+  //         name: 'all',
+  //       });
+  //       const event = await this.eventModel.create({
+  //         isFromCrawler: true,
+  //         businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //         user: new mongoose.Types.ObjectId(user),
+  //         type: foundDoc.type,
+  //         creatorType: Business.name,
+  //         status: EventStatus.PUBLISHED,
+  //         category,
+  //         images,
+  //         title: foundDoc.title,
+  //         description: foundDoc.description,
+  //         schedule: foundDoc.schedule,
+  //         // locations: [createdLocation._id],
+  //         ageGroupsAllowed: [allAgeGroup._id],
+  //         targetGenders: ['male', 'female', 'other'],
+  //         promotionCode: '',
+  //         // isFree: foundDoc.participationCost == 'Free' ? true : false,
+  //         isFree: true,
+  //         // participationCost: foundDoc.participationCost.split('')[1],
+  //         participationCost: foundDoc.participationCost
+  //           ? foundDoc.participationCost
+  //           : '',
+  //         bookingUrl: foundDoc.website ? foundDoc.website : '',
+  //         offset: foundDoc.offset,
+  //       });
+  //       if (foundDoc.coordinates) {
+  //         const locationObj = {
+  //           type: 'Point',
+  //           coordinates: [
+  //             foundDoc.coordinates['lng'],
+  //             foundDoc.coordinates['lat'],
+  //           ],
+  //         };
+  //         // Add the location to business location as well
+  //         const businessLocationId = await this.businessLocationModel.create({
+  //           latitude: foundDoc.coordinates['lat'],
+  //           longitude: foundDoc.coordinates['lng'],
+  //           accuracy: 0,
+  //           address1: foundDoc.address,
+  //           address2: '',
+  //           city: '',
+  //           state: '',
+  //           zip: '',
+  //           website: foundDoc.website ? foundDoc.website : '',
+  //           email: foundDoc.email ? foundDoc.email : '',
+  //           phone: foundDoc.phone ? foundDoc.phone : '',
+  //           businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //         });
+  //         const createdLocation = await this.eventLocationModel.create({
+  //           location: locationObj,
+  //           accuracy: 0,
+  //           event: event._id,
+  //           address1: foundDoc.address,
+  //           address2: '',
+  //           city: '',
+  //           state: '',
+  //           zip: '',
+  //           website: foundDoc.website ? foundDoc.website : '',
+  //           email: foundDoc.email ? foundDoc.email : '',
+  //           phone: foundDoc.phone ? foundDoc.phone : '',
+  //           businessLocationId: businessLocationId._id,
+  //         });
+  //         const updatedEvent = await this.eventModel.findByIdAndUpdate(
+  //           event.id,
+  //           {
+  //             $addToSet: {
+  //               locations: createdLocation._id,
+  //             },
+  //           },
+  //           { new: true },
+  //         );
+  //         resData.push(updatedEvent);
 
-          //Update the crawled event status
-          await this.crawledEventModel.findByIdAndUpdate(id, {
-            status: CrawledEventStatus.PUBLISHED,
-          });
-        } else {
-          resData.push(event);
-        }
-      }
-    }
-    return {
-      success: true,
-      message: 'Event has been published successfully.',
-      data: resData,
-    };
-  }
+  //         //Update the crawled event status
+  //         await this.crawledEventModel.findByIdAndUpdate(id, {
+  //           status: CrawledEventStatus.PUBLISHED,
+  //         });
+  //       } else {
+  //         resData.push(event);
+  //       }
+  //     }
+  //   }
+  //   return {
+  //     success: true,
+  //     message: 'Event has been published successfully.',
+  //     data: resData,
+  //   };
+  // }
 
   async downloadImage(url: string) {
     return new Promise((resolve, reject) => {
@@ -1885,7 +1880,7 @@ export class EventService2 {
           message: 'Event not found',
         };
       } else if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === Business.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -2028,7 +2023,7 @@ export class EventService2 {
                 await this.notificationModel.create({
                   type: NotificationTypes.EVENT,
                   event: new mongoose.Types.ObjectId(id),
-                  targetType: BusinessProfile.name,
+                  targetType: Business.name,
                   targetUser: new mongoose.Types.ObjectId(user.businessProfile),
                   message,
                   user: followers[i].follower['_id'],
@@ -2082,7 +2077,7 @@ export class EventService2 {
         message: 'Event not found',
       };
     }
-    if (event.creatorType === BusinessProfile.name) {
+    if (event.creatorType === Business.name) {
       if (event.businessProfile.toString() !== user.businessProfile) {
         return {
           success: false,
@@ -2297,7 +2292,7 @@ export class EventService2 {
         message: 'Event not found',
       };
     }
-    if (event.creatorType === BusinessProfile.name) {
+    if (event.creatorType === Business.name) {
       if (event.businessProfile.toString() !== user.businessProfile) {
         return {
           success: false,
@@ -2503,7 +2498,7 @@ export class EventService2 {
           message: 'Template not found',
         };
       }
-      if (template.creatorType === BusinessProfile.name) {
+      if (template.creatorType === Business.name) {
         if (template.businessProfile._id.toString() !== user.businessProfile) {
           return {
             success: false,
@@ -2540,7 +2535,7 @@ export class EventService2 {
           message: 'Template not found',
         };
       }
-      if (template.creatorType === BusinessProfile.name) {
+      if (template.creatorType === Business.name) {
         if (template.businessProfile.toString() !== user.businessProfile) {
           return {
             success: false,
@@ -3341,7 +3336,7 @@ export class EventService2 {
         };
       }
       if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === Business.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -3955,7 +3950,7 @@ export class EventService2 {
         };
       }
       if (
-        event.creatorType === BusinessProfile.name &&
+        event.creatorType === Business.name &&
         event.businessProfile.toString() !== user.businessProfile
       ) {
         return {
@@ -4401,7 +4396,7 @@ export class EventService2 {
     const isFollowedByMe = await this.followModel.findOne({
       followerType: User.name,
       follower: new mongoose.Types.ObjectId(currentUserId),
-      followingType: BusinessProfile.name,
+      followingType: Business.name,
       following: businessProfile._id,
       isBlocked: false,
     });

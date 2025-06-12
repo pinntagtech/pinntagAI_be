@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
+// import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { Refferal } from './refferal.model';
@@ -75,10 +75,10 @@ export class User {
   subscriptions: Array<mongoose.Types.ObjectId>;
   @Prop({ default: false })
   isBusiness: boolean;
-  @Prop({ ref: BusinessProfile.name })
-  businessProfiles: Array<mongoose.Types.ObjectId>;
-  @Prop({ ref: BusinessProfile.name })
-  createdBy: mongoose.Types.ObjectId;
+  // @Prop({ ref: BusinessProfile.name })
+  // businessProfiles: Array<mongoose.Types.ObjectId>;
+  // @Prop({ ref: Business.name })
+  // createdBy: mongoose.Types.ObjectId;
   @Prop({ required: true, default: 0 })
   followersCount: number;
   @Prop({ required: true, default: 0 })

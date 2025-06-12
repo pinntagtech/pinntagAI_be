@@ -1,7 +1,7 @@
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { User } from 'src/user/models/user.model';
-import { Location } from '../business-profile/models/types.model';
+// import { Location } from '../business/model/types.model';
 import { Business } from 'src/business/model/business.model';
+import { LocationClass } from 'src/business/model/types.model';
 
 
 
@@ -41,7 +41,7 @@ export const CategoryPopulates = {
 export const TransactionPopulates = {
   FOREIGN: 'id _id amount status transactionId createdAt updatedAt',
 };
-const Loc: Location = {
+const Loc: LocationClass = {
   latitude: 0,
   longitude: 0,
   accuracy: 0,

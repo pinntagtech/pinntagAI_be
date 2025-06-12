@@ -1,15 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { SocialMediaTokenDetails } from 'src/business-profile/models/businessProfile.model';
-import {
-  Menu,
-  Allergen,
-  OpeningHours,
-  Review,
-  Promotion,
-  Insurance,
-  TaxDetails,
-} from 'src/business-profile/models/types.model';
 import { Outlet } from '../../outlet/model/outlet.model';
 import { Brand } from './brand.model';
 import { Folder } from 'src/drive/models/folder.model';
@@ -24,6 +14,12 @@ import {
   ScalabilityFactor,
 } from '../enums/business.enum';
 import { Event } from 'src/event/models/event.model';
+import { Allergen, Insurance, Menu, OpeningHours, Promotion, Review, TaxDetails } from './types.model';
+
+export class SocialMediaTokenDetails {
+  value: string;
+  age: Date;
+}
 
 export enum CreatorType {
   Admin = 'Admin',

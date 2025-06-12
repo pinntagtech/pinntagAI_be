@@ -19,19 +19,19 @@ import {
 import { JwtPayload } from '../interfaces/tokenPayload.interface';
 import { Token, TokenDocument } from '../models/token.model';
 import { TokenTypes, allowedRoutesForGuest } from 'src/enums/auth.enums';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Roles } from 'src/roles/enums/roles.enum';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(GuestSession.name)
     private readonly guestSessionModel: Model<GuestSessionDocument>,
@@ -132,7 +132,7 @@ export class JwtGuard implements CanActivate {
           }
           // console.log('user in guard:---', user);
           if (payload.role == Roles.BUSINESS_PROFILE) {
-            const businessProfile = await this.businessProfileModel.findById(
+            const businessProfile = await this.businessModel.findById(
               // payload.businessProfile,
               payload.id,
             );

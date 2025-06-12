@@ -162,43 +162,43 @@ export class AdminController {
     }
   }
 
-  @Post('crawled/publish')
-  @UseGuards(AdminGuard2)
-  async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
-    // if (!mongoose.isValidObjectId(body.id)) {
-    //   return res.status(HttpStatus.BAD_REQUEST).json({
-    //     message: 'Please provide a valid id',
-    //   });
-    // }
-    body.ids.forEach((id) => {
-      if (!mongoose.isValidObjectId(id)) {
-        throw new BadRequestException({
-          message: `Please provide a valid id for ${id}`,
-        });
-      }
-    });
-    if (!mongoose.isValidObjectId(body.businessProfile)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid business id',
-      });
-    }
-    if (!mongoose.isValidObjectId(body.user)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid user id',
-      });
-    }
-    const result = await this.adminService.publishCrawledEvent(body);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      return new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('crawled/publish')
+  // @UseGuards(AdminGuard2)
+  // async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
+  //   // if (!mongoose.isValidObjectId(body.id)) {
+  //   //   return res.status(HttpStatus.BAD_REQUEST).json({
+  //   //     message: 'Please provide a valid id',
+  //   //   });
+  //   // }
+  //   body.ids.forEach((id) => {
+  //     if (!mongoose.isValidObjectId(id)) {
+  //       throw new BadRequestException({
+  //         message: `Please provide a valid id for ${id}`,
+  //       });
+  //     }
+  //   });
+  //   if (!mongoose.isValidObjectId(body.businessProfile)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid business id',
+  //     });
+  //   }
+  //   if (!mongoose.isValidObjectId(body.user)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid user id',
+  //     });
+  //   }
+  //   const result = await this.adminService.publishCrawledEvent(body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     return new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   @Post('dashboard/config/add')
   @UseGuards(AdminGuard2)

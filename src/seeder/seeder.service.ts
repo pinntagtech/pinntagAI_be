@@ -24,10 +24,10 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { Drive, DriveDocument } from 'src/drive/models/drive.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   Actions,
   ResourceTypes,
@@ -117,8 +117,7 @@ export class SeederService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Resource.name)

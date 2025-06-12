@@ -10,10 +10,10 @@ import { AuthService } from 'src/auth/auth.service';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { JwtService } from '@nestjs/jwt';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   GuestSession,
   GuestSessionSchema,
@@ -135,7 +135,7 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
       { name: User.name, schema: UserSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Role.name, schema: RoleSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Follow.name, schema: FollowSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },

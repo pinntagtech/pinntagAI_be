@@ -1,5 +1,4 @@
 import { Module, Logger } from '@nestjs/common';
-import { EventService } from './event.service';
 import { EventController } from './event.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Event, EventSchema } from './models/event.model';
@@ -13,10 +12,10 @@ import {
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { JwtService } from '@nestjs/jwt';
 import { Image, ImageSchema } from './models/image.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import { S3Service } from 'src/s3.service';
 import { Template, TemplateSchema } from './models/template.model';
 import { HttpModule } from '@nestjs/axios';
@@ -25,10 +24,10 @@ import {
   EventLocation,
   EventLocationSchema,
 } from './models/eventLocation.model';
-import {
-  BusinessLocation,
-  BusinessLocationSchema,
-} from 'src/business-profile/models/businessLocation.model';
+// import {
+//   BusinessLocation,
+//   BusinessLocationSchema,
+// } from 'src/business-profile/models/businessLocation.model';
 import {
   Notification,
   NotificationSchema,
@@ -115,10 +114,10 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Image.name, schema: ImageSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Template.name, schema: TemplateSchema },
       { name: AgeGroup.name, schema: AgeGroupSchema },
-      { name: BusinessLocation.name, schema: BusinessLocationSchema },
+      // { name: BusinessLocation.name, schema: BusinessLocationSchema },
       { name: EventLocation.name, schema: EventLocationSchema },
       { name: Notification.name, schema: NotificationSchema },
       { name: Follow.name, schema: FollowSchema },

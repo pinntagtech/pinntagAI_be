@@ -12,17 +12,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { EventTypes } from 'src/enums/event.enums';
-import { Location } from '../../business-profile/models/types.model';
 import { Schedule } from '../models/event.model';
 import mongoose from 'mongoose';
 import { Type } from 'class-transformer';
-import { Prop } from '@nestjs/mongoose';
-class LocationRequestData {
-  @IsString()
-  location: string;
-  @IsString()
-  longitude;
-}
 class ScheduleRequestData {
   date: String;
   durations: Array<DurationDto>;

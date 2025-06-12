@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Admin } from 'src/admin/models/admin.model';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';
 import { User } from 'src/user/models/user.model';
 

@@ -8,10 +8,10 @@ import { Exception } from 'handlebars';
 import { User, UserDocument } from 'src/user/models/user.model';
 import * as QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { EventDocument } from 'src/event/models/event.model';
 import {
@@ -49,8 +49,7 @@ export class DriveService {
     @InjectModel(Folder.name)
     private readonly folderModel: Model<FolderDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
