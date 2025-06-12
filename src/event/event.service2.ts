@@ -1984,7 +1984,7 @@ export class EventService2 {
             },
           );
           if (event.notifyFollowers) {
-            const business = await this.businessProfileModel.findById(
+            const business = await this.businessModel.findById(
               user.businessProfile,
             );
             const followersRes = await this.userService.getFollowers(

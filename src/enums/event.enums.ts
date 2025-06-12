@@ -17,6 +17,7 @@ export enum EventStatus {
 export enum NotificationTypes {
   FOLLOW = 'follow',
   EVENT = 'event',
+  REWARD = 'reward',
   OFFER = 'offer',
   COMMENT = 'comment',
   LIKE = 'like',
