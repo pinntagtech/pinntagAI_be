@@ -755,13 +755,17 @@ export class EventController {
       type,
       body.latitude ? parseFloat(body.latitude) : 0,
       body.longitude ? parseFloat(body.longitude) : 0,
-      // parseInt(page),
-      // parseInt(limit),
+      parseInt(page),
+      parseInt(limit),
     );
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        events: result.data,
+        pages: result.pages,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException({
@@ -769,9 +773,8 @@ export class EventController {
       });
     }
   }
-
   @Get('liked')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getLikedEvents(
     @TokenDecoder() user: DecodedUser,
     @Body() body: SavedEventsDto,
@@ -793,13 +796,17 @@ export class EventController {
       type,
       body.latitude ? parseInt(body.latitude) : 0,
       body.longitude ? parseInt(body.longitude) : 0,
-      // parseInt(page),
-      // parseInt(limit),
+      parseInt(page),
+      parseInt(limit),
     );
     if (result.success) {
       return {
         message: result.message,
         events: result.events,
+        pages: result.pages,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException({

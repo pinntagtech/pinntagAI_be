@@ -103,7 +103,7 @@ export class Event {
   @Prop()
   bookingUrl: string[];
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   notifyFollowers: boolean;
 
   @Prop({ default: '' })
