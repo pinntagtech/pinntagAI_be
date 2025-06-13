@@ -2141,11 +2141,13 @@ export class AdminService {
       });
 
       let address = `${createObj.address1}, ${createObj.city}, ${createObj.state}, ${createObj.country}, ${createObj.zipCode}`;
-      let placeList = await this.googleService.googleRecommendation(address);
+      let placeList = await this.googleService.googleRecommendation({
+        address: address,
+      });
       let placeDetails = await this.googleService.getPlaceDetails(
-        '',
         placeList.data[0].placePrediction.placeId,
         placeList.sessionToken,
+        address,
       );
 
       // createObj['creator'] = new mongoose.Types.ObjectId(user.id);

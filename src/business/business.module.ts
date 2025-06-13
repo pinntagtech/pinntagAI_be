@@ -120,6 +120,7 @@ import {
 import { Region, RegionSchema } from './model/region.model';
 import { LocationGroup, LocationGroupSchema } from './model/locationGroup.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 
 @Module({
   imports: [
@@ -173,6 +174,8 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: Region.name, schema: RegionSchema },
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+
     ]),
   ],
   controllers: [BusinessController],

@@ -22,10 +22,10 @@ export class Event {
     required: true,
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
+      // EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
-      EventTypes.LISTING,
+      // EventTypes.LISTING,
       EventTypes.FLASHDEAL,
     ],
   })
