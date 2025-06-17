@@ -22,10 +22,10 @@ export class Event {
     required: true,
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
+      // EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
-      EventTypes.LISTING,
+      // EventTypes.LISTING,
       EventTypes.FLASHDEAL,
     ],
   })
@@ -103,7 +103,7 @@ export class Event {
   @Prop()
   bookingUrl: string[];
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   notifyFollowers: boolean;
 
   @Prop({ default: '' })

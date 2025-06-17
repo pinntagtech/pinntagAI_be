@@ -37,6 +37,14 @@ import { GetRewardDashboardDto } from './dto/get-rewards-dashboard.dto';
 import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { UserReward, UserRewardDocument } from './model/userReward.model';
+import { NotificationTypes } from 'src/enums/event.enums';
+import { TokenTypes } from 'src/enums/auth.enums';
+import { Token } from 'aws-sdk';
+import { TokenDocument } from 'src/auth/models/token.model';
+import { FirebaseService } from 'src/notification/firebase.service';
+import { UserService } from 'src/user/user.service';
+import { Notification, NotificationDocument } from 'src/notification/models/notification.model';
+import { UserDetail } from 'aws-sdk/clients/iam';
 
 @Injectable()
 export class RewardsService {
@@ -60,11 +68,18 @@ export class RewardsService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(UserReward.name)
     private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+     @InjectModel(Notification.name)
+        private readonly notificationModel: Model<NotificationDocument>,
+        
+
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
     private readonly driveService: DriveService,
     private readonly s3Service: S3Service,
+    private readonly userService: UserService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   // Create Offer
@@ -77,35 +92,23 @@ export class RewardsService {
   ) {
     try {
       console.log('createReward data:', data);
+  
       const userId = user.id;
-      if (!user.businessProfile) {
-        return {
-          success: false,
-          message: 'Business not found.',
-        };
-      }
-
-      const userDetails = await this.businessUserModel.findById(userId);
-      if (!userDetails) {
-        return {
-          success: false,
-          message: 'User not found.',
-        };
-      }
-
+      const businessUser = await this.businessUserModel.findById(userId);
+      if (!businessUser) return { success: false, message: 'User not found.' };
+  
+      if (!user.businessProfile) return { success: false, message: 'Business Profile not found.' };
+  
       const business = await this.businessModel.findById(user.businessProfile);
-      if (!business) {
-        return {
-          success: false,
-          message: 'Business not found.',
-        };
-      }
+      if (!business) return { success: false, message: 'Business not found.' };
+  
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: business.drivePath,
         parentType: Folder.name,
         folderName: data.title,
       });
-      let createObj = {
+  
+      const createObj = {
         ...data,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
@@ -116,93 +119,65 @@ export class RewardsService {
           endDate: new Date(data.endDate),
         },
       };
-
+  
       const reward = await this.rewardModel.create(createObj);
-
-      const QR_ImageCategory = await this.fileCategoryModel.findOne({
-        name: 'Content QR',
-      });
-      let generatedQR = null;
-      console.log(
-        'rewardID:',
-        reward.id,
-        reward.title,
-        userDetails.drive.toString(),
-        QR_ImageCategory.id,
-        businessFolder.data.id,
-      );
+  
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({ name: 'Content QR' });
+  
+      // Generate QR if applicable
+      let generatedQR: any = null;
       if (data.activityType === ActivityType.CHECK_IN) {
         generatedQR = await this.driveService.generateQrCode(
-          `${reward.id}`,
+          reward.id,
           reward.title,
-          userDetails._id.toString(),
+          userId,
           QR_ImageCategory.id,
           businessFolder.data.id,
         );
         console.log('Generated QR Code:', generatedQR);
       }
-
-      console.log('Q@CODE::::', qrCode);
+  
+      // Handle QR Code upload (if any)
       let QRCodeDetails = null;
       if (qrCode) {
         QRCodeDetails = await this.driveService.uploadAndCreateFile(
           qrCode[0],
           businessFolder.data.id,
           Folder.name,
-          userDetails._id.toString(),
+          userId,
           QR_ImageCategory._id,
         );
-        console.log('QRCODE DETAILS:', QRCodeDetails);
-        console.log('QR ID:', QRCodeDetails._id);
       }
-      // console.log('images:', images);
-      this.driveService.multiImageUpload(
-        userDetails._id,
-        businessFolder.data.id,
-        images,
-      );
-      let providedLocations = [];
-      if (
-        data.activityType === ActivityType.CHECK_IN &&
-        data.locations &&
-        data.locations.length > 0
-      ) {
+  
+      // Upload images async (fire and forget)
+      this.driveService.multiImageUpload(userId, businessFolder.data.id, images);
+  
+      // Handle locations if Check-In activity
+      let locationIds: mongoose.Types.ObjectId[] = [];
+      if (data.activityType === ActivityType.CHECK_IN) {
+        let providedLocations: string[] = [];
+  
         if (typeof data.locations === 'string') {
-          providedLocations = data.locations
-            .split(',')
-            .map((id) => id.trim())
-            .filter((id) => id.length > 0);
+          providedLocations = data.locations.split(',').map(id => id.trim()).filter(Boolean);
         } else if (Array.isArray(data.locations)) {
           providedLocations = data.locations;
         }
-      }
-      const locationIds = [];
-
-      // 2) If check-in activity, validate each one
-
-      if (data.activityType === ActivityType.CHECK_IN) {
+  
         if (providedLocations.length === 0) {
-          return {
-            success: false,
-            message: 'Please provide locations.',
-          };
+          return { success: false, message: 'Please provide locations.' };
         }
+  
         for (const loc of providedLocations) {
           if (!mongoose.isValidObjectId(loc)) {
-            return {
-              success: false,
-              message: `Please provide a valid location id, "${loc}" is not valid`,
-            };
+            return { success: false, message: `Invalid location id: "${loc}"` };
           }
           const outletDoc = await this.outletModel.findById(loc);
           if (!outletDoc) {
-            return {
-              success: false,
-              message: `Outlet with id "${loc}" not found`,
-            };
+            return { success: false, message: `Outlet with id "${loc}" not found.` };
           }
-          const createdlocation = await this.rewardLocationModel.create({
-            reward: new mongoose.Types.ObjectId(reward._id),
+  
+          const createdLocation = await this.rewardLocationModel.create({
+            reward: reward._id,
             businessLocationId: outletDoc._id,
             location: {
               type: 'Point',
@@ -210,7 +185,7 @@ export class RewardsService {
             },
             accuracy: outletDoc.accuracy,
             address1: outletDoc.address1,
-            address2: outletDoc.address2 ? outletDoc.address2 : '',
+            address2: outletDoc.address2 || '',
             city: outletDoc.city,
             state: outletDoc.state,
             zip: outletDoc.postalCode,
@@ -218,44 +193,77 @@ export class RewardsService {
             email: outletDoc.email,
             phone: outletDoc.phone,
           });
-
-          locationIds.push(createdlocation._id);
+  
+          locationIds.push(createdLocation._id);
         }
       }
-      let startDate = new Date(data.startDate);
-      let endDate = new Date(data.endDate);
-      let updateRewardObj = {
+  
+      const updateRewardObj: any = {
         locations: locationIds,
         rewardSchedule: {
-          startDate: startDate,
-          endDate: endDate,
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
         },
         status: RewardStatus.PUBLISHED,
-        QR_CODE: QRCodeDetails?._id,
+        QR_CODE: QRCodeDetails?._id || null,
       };
+  
       if (generatedQR) {
         updateRewardObj['activityQrCode'] = generatedQR.data.metaData.url;
       }
-      const updatedReward = await this.rewardModel.findOneAndUpdate(
-        { _id: reward._id },
-        {
-          $set: updateRewardObj,
-        },
+  
+      const updatedReward = await this.rewardModel.findByIdAndUpdate(
+        reward._id,
+        { $set: updateRewardObj },
         { new: true },
       );
+  
+      // Notify followers
+      if (reward.notifyFollowers) {
+        const followersRes = await this.userService.getFollowers(user.businessProfile);
+        const followers = followersRes?.followers || [];
+  
+        if (followers.length > 0) {
+          const message = `${business.name} published a new Reward called ${reward.title}`;
+  
+          for (const follower of followers) {
+            const fcmTokens = await this.tokenModel.find({
+              userId: follower.follower['_id'],
+              type: TokenTypes.FCM,
+            });
+  
+            for (const token of fcmTokens) {
+              this.firebaseService.sendNotification(
+                token.token,
+                reward.title,
+                message,
+                { data: NotificationTypes.EVENT, id: reward.id },
+              );
+            }
+  
+            await this.notificationModel.create({
+              type: NotificationTypes.REWARD,
+              reward: reward._id,
+              targetType: Business.name,
+              targetUser: user.businessProfile,
+              message,
+              user: follower.follower['_id'],
+            });
+          }
+        }
+      }
+  
       return {
         success: true,
         message: 'Reward created successfully',
         data: updatedReward,
       };
     } catch (error) {
-      console.log('Error in createOffer:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
+      console.error('Error in createReward:', error);
+      return { success: false, message: 'Something went wrong.' };
     }
   }
+  
 
   async getRewardById(id: string, user: DecodedUser) {
     try {
@@ -760,17 +768,41 @@ export class RewardsService {
         };
       }
 
-      let claimReward = await this.userRewardModel.create({
+      let enrollReward = await this.userRewardModel.create({
         userId: new mongoose.Types.ObjectId(userId),
         businessProfile: new mongoose.Types.ObjectId(reward.businessProfile),
         rewardId: new mongoose.Types.ObjectId(rewardId),
         target: reward.targetCount,
       });
-      console.log('claimReward:', claimReward);
+      let message = `User ${userDetails.name} enrolled in reward ${reward.title}`;
+      const fcmTokens = await this.tokenModel.find({
+        userId: userDetails._id,
+        type: TokenTypes.FCM,
+      });
+
+      for (const token of fcmTokens) {
+        this.firebaseService.sendNotification(
+          token.token,
+          reward.title,
+          message,
+          { data: NotificationTypes.EVENT, id: reward.id },
+        );
+      }
+
+      await this.notificationModel.create({
+        type: NotificationTypes.REWARD,
+        reward: reward._id,
+        targetType: Business.name,
+        targetUser: reward.businessProfile,
+        message,
+        user: userDetails._id,
+      });
+
+      
       return {
         success: true,
         message: 'Reward enrolled successfully',
-        data: claimReward,
+        data: enrollReward,
       };
     } catch (error) {
       console.log('Error in enrollReward:', error);
@@ -986,6 +1018,30 @@ export class RewardsService {
           claimedAt: new Date(),
         },
       });
+      let message = `User ${userDetails.name} claimed in reward ${reward.title}`;
+      const fcmTokens = await this.tokenModel.find({
+        userId: userDetails._id,
+        type: TokenTypes.FCM,
+      });
+
+      for (const token of fcmTokens) {
+        this.firebaseService.sendNotification(
+          token.token,
+          reward.title,
+          message,
+          { data: NotificationTypes.EVENT, id: reward.id },
+        );
+      }
+
+      await this.notificationModel.create({
+        type: NotificationTypes.REWARD,
+        reward: reward._id,
+        targetType: Business.name,
+        targetUser: reward.businessProfile,
+        message,
+        user: userDetails._id,
+      });
+
 
       return {
         success: true,

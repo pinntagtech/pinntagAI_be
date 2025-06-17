@@ -98,6 +98,10 @@ import {
   LocationGroup,
   LocationGroupDocument,
 } from './model/locationGroup.model';
+import { Event, EventDocument } from 'src/event/models/event.model';
+import { EventStatus } from 'src/enums/event.enums';
+import { ClaimStatus } from 'src/rewards/enums/rewards.enum';
+import { UserReward, UserRewardDocument } from 'src/rewards/model/userReward.model';
 
 @Injectable()
 export class BusinessService {
@@ -137,8 +141,9 @@ export class BusinessService {
     private readonly locationGroupModel: Model<LocationGroupDocument>,
     @InjectModel(Region.name)
     private readonly regionModel: Model<RegionDocument>,
-    @InjectModel(Outlet.name)
-    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -2823,5 +2828,165 @@ export class BusinessService {
       success: true,
       message: 'LocationGroup deleted successfully',
     };
+  }
+
+  async getDashboardData(user: DecodedUser,limit: number = 10) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      console.log('businessProfile:', user.businessProfile);
+      const [eventLogistics] = await this.eventModel.aggregate([
+        {
+          $match: {
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+            status: EventStatus.PUBLISHED,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalEvents: { $sum: 1 },
+            totalViewsCount: { $sum: '$viewsCount' },
+            totalEngagementCount: { $sum: '$engagementCount' },
+          },
+        },
+      ]);
+      const rewardRedeemptions = await this.userRewardModel.countDocuments({
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        claimStatus: ClaimStatus.CLAIMED
+      })
+      console.log("rewardRedeemptions:", JSON.stringify(rewardRedeemptions));
+
+      const [typeWiseStats] = await this.eventModel.aggregate([
+        {
+          $match: {
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+            status: EventStatus.PUBLISHED,
+          },
+        },
+        {
+          $facet: {
+            typeWiseStats: [
+              {
+                $group: {
+                  _id: '$type',
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+            overallStats: [
+              {
+                $group: {
+                  _id: null,
+                  totalEvents: { $sum: 1 },
+                },
+              },
+            ],
+          },
+        },
+      ]);
+      console.log('typeWiseStats:', JSON.stringify(typeWiseStats));
+      const events = await this.eventModel.aggregate([
+        {
+          $match: {
+            businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+            status: EventStatus.PUBLISHED,
+          },
+        },
+        {
+          $addFields: {
+            totalEngagement: { $add: ['$viewsCount', '$engagementCount'] },
+          },
+        },
+        {
+          $lookup: {
+            from: 'eventschedules',
+            localField: 'eventSchedule',
+            foreignField: '_id',
+            as: 'schedules',
+          },
+        },
+        {
+          $sort: { totalEngagement: -1 }, // Descending
+        },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            totalEngagement: 1,
+            viewsCount: 1,
+            engagementCount: 1,
+            totalLikes: 1,
+            totalShares:1,
+            totalSaved:1,
+            schedules: 1,
+          },
+        },
+        { $limit: limit },
+      ]); 
+      console.log("events:", JSON.stringify(events));
+
+
+      // const outletWiseStats = await this.eventModel.aggregate([
+      //   {
+      //     $match: {
+      //       businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+      //       status: EventStatus.PUBLISHED,
+      //     },
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: 'eventlocations',
+      //       localField: 'locations',
+      //       foreignField: '_id',
+      //       as: 'locations',
+      //     },
+      //   },
+      //   {
+      //     $unwind: '$locations',
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: 'outlets',
+      //       localField: 'locations.',
+      //       foreignField: '_id',
+      //       as: 'locations.outletDetails',
+      //     }
+      //   },
+      //   {
+      //     $group: {
+      //       _id: '$locations._id',
+      //       outletName: { $first: '$locations.name' },
+      //       totalEvents: { $sum: 1 },
+      //       totalViewsCount: { $sum: '$viewsCount' },
+      //       totalEngagementCount: { $sum: '$engagementCount' },
+      //     },
+      //   },
+      // ])
+      // console.log('outletWiseStats:', JSON.stringify(outletWiseStats));
+
+
+      return {
+        success: true,
+        message: 'Dashboard data fetched successfully',
+        data: {
+          eventLogistics:eventLogistics,
+          rewardRedeemptions:rewardRedeemptions,
+          events: events,
+          typeWiseStats: typeWiseStats,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 }
