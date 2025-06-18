@@ -15,7 +15,7 @@ export class AiService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getEventDescription(businessId: string) {
+  async getEventDescription(businessId:string,contentType: string,category:string,dealType:string,title:string) {
     try {
       const business = await this.businessModel
         .findById(businessId)
@@ -42,6 +42,22 @@ export class AiService {
           Use a professional yet inviting tone.  
           Avoid generic phrases and focus on making the content stand out.  
           Keep it under 80 words.
+
+
+          Generate a concise, compelling, and professionally engaging description for a content item.
+          Business Name: ${business.name}
+          Business Category: ${business.businessIndustry['name']}
+          Content Type: ${contentType}
+          Content Category: ${category}
+          Deal Type: ${dealType}
+          Title: ${title}
+          Guidelines:
+          Keep it under 80 words.
+          Use a professional yet inviting tone.
+          Make it relevant to the business category and content type.
+          Highlight what makes the content unique or valuable to the audience.
+          Avoid generic filler (e.g., “Don’t miss out” or “This is the best”).
+          Focus on clarity, persuasion, and specificity.
         `,
         },
       ];

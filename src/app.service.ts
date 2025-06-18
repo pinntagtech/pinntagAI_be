@@ -42,7 +42,8 @@ export class AppService implements OnModuleInit {
     @InjectModel(AppVersion.name)
     private readonly appVersionModel: Model<AppVersionDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(PlatformConfig.name)
@@ -92,7 +93,7 @@ export class AppService implements OnModuleInit {
         );
       }),
     );
-    await this.seederService.seed();
+    // await this.seederService.seed();
   }
 
   async getCategories() {

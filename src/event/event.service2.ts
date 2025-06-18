@@ -866,6 +866,7 @@ export class EventService2 {
             const createdlocation = await this.eventLocationModel.create({
               event: new mongoose.Types.ObjectId(id),
               businessLocationId: outletDoc._id,
+              businessProfile: event.businessProfile,
               location: {
                 type: 'Point',
                 coordinates: [outletDoc.longitude, outletDoc.latitude],
@@ -890,7 +891,8 @@ export class EventService2 {
               },
             );
           } else {
-            const locationData: LocationClass = location as unknown as LocationClass;
+            const locationData: LocationClass =
+              location as unknown as LocationClass;
             const latitude = locationData.latitude;
             const longitude = locationData.longitude;
             delete locationData.latitude;
@@ -901,6 +903,7 @@ export class EventService2 {
                 type: 'Point',
                 coordinates: [longitude, latitude],
               },
+              businessProfile: event.businessProfile,
               ...locationData,
             };
             const createdlocation =
@@ -1995,7 +1998,7 @@ export class EventService2 {
               case EventTypes.PRIVATE:
                 eventType = 'Private';
                 break;
-              case EventTypes.FORMAL || EventTypes.INFORMAL:
+              case EventTypes.FORMAL:
                 eventType = 'Event';
                 break;
               case EventTypes.OFFER:
@@ -3529,6 +3532,7 @@ export class EventService2 {
               const copiedLocation = await this.eventLocationModel.create({
                 ...locationObj,
                 event: copiedEvent._id,
+                businessProfile: event.businessProfile,
               });
               locations.push(copiedLocation._id);
             }
@@ -4122,7 +4126,7 @@ export class EventService2 {
         total: total,
         pages: Math.ceil(total / limit),
         page: page,
-        limit: limit
+        limit: limit,
       };
     }
   }
@@ -6000,6 +6004,7 @@ export class EventService2 {
             email: foundOutlet.email,
             phone: foundOutlet.phone,
             isFromCrawler: true,
+            businessProfile: businessDetails._id,
           });
           console.log('created-location---->', createdlocation);
 

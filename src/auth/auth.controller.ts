@@ -310,45 +310,45 @@ export class AuthController {
     return { message: 'Report sent' };
   }
 
-  @Post('dashboard')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.OK)
-  async dashboard(
-    @Body() body: GetDashboardDto,
-    @Query('search') search: string,
-    @Query('distance') distance: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    if (distance) {
-      if (isNaN(parseInt(distance))) {
-        throw new BadRequestException('Please provide a valid distance value.');
-      }
-    }
-    const result = await this.authService.getDashboard(
-      user,
-      parseFloat(body.latitude),
-      parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
-      search ? search : '',
-      body.categories ? body.categories : [],
-      body.startDate ? new Date(body.startDate) : null,
-      body.endDate ? new Date(body.endDate) : null,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      ...result.data,
-    };
-  }
+  // @Post('dashboard')
+  // @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.OK)
+  // async dashboard(
+  //   @Body() body: GetDashboardDto,
+  //   @Query('search') search: string,
+  //   @Query('distance') distance: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   if (body.categories && body.categories.length) {
+  //     for (const cat of body.categories) {
+  //       if (!mongoose.Types.ObjectId.isValid(cat)) {
+  //         throw new BadRequestException(`${cat} is not a valid category id.`);
+  //       }
+  //     }
+  //   }
+  //   if (distance) {
+  //     if (isNaN(parseInt(distance))) {
+  //       throw new BadRequestException('Please provide a valid distance value.');
+  //     }
+  //   }
+  //   const result = await this.authService.getDashboard(
+  //     user,
+  //     parseFloat(body.latitude),
+  //     parseFloat(body.longitude),
+  //     distance ? parseInt(distance) : 1000000000000,
+  //     search ? search : '',
+  //     body.categories ? body.categories : [],
+  //     body.startDate ? new Date(body.startDate) : null,
+  //     body.endDate ? new Date(body.endDate) : null,
+  //   );
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //     ...result.data,
+  //   };
+  // }
 
   @Post('dashboard/v2')
   @UseGuards(JwtGuard)

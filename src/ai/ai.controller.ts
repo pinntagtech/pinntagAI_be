@@ -21,9 +21,19 @@ export class AiController {
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
-  async getAiEventDescription(@TokenDecoder() user: DecodedUser) {
+  async getAiEventDescription(
+    @TokenDecoder() user: DecodedUser,
+    @Body('contentType') contentType: string,
+    @Body('category') category: string,
+    @Body('dealType') dealType: string,
+    @Body('title') title: string,
+  ) {
     const result = await this.aiService.getEventDescription(
       user.businessProfile,
+      contentType,
+      category,
+      dealType,
+      title,
     );
     console.log('RESULT:', result);
     if (result.success) {
