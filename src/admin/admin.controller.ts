@@ -465,11 +465,10 @@ export class AdminController {
   @Post('dbQueries') //just to add run db queries or only for testing purpose
   @UseGuards(AdminGuard2)
   async dbQueries() {
-    const result = await this.adminService.dbQueries();
+    const result = await this.adminService.updatePlaceIdinAtlantaData();
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
       };
     }
     throw new BadRequestException({
@@ -1212,4 +1211,5 @@ export class AdminController {
       throw new BadRequestException(result.message);
     }
   }
+
 }

@@ -1001,6 +1001,20 @@ export class EventController {
       });
     }
   }
+  @Post('crawlAtlantaEvents')
+  @UseGuards(AdminGuard2)
+  async crawlAtlantaEvents() {
+    const result = await this.eventService.crawlAtlantaEvents();
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
 
   @Post('saveTemplate')
   @UseGuards(JwtGuard2)

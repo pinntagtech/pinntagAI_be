@@ -15,7 +15,13 @@ export class AiService {
     private readonly httpService: HttpService,
   ) {}
 
-  async getEventDescription(businessId:string,contentType: string,category:string,dealType:string,title:string) {
+  async getEventDescription(
+    businessId: string,
+    contentType: string,
+    category: string,
+    dealType: string,
+    title: string,
+  ) {
     try {
       const business = await this.businessModel
         .findById(businessId)
@@ -36,15 +42,7 @@ export class AiService {
         {
           role: 'user',
           content: `
-          Generate a compelling and engaging description for a event titled "${business.name}".  
-          Category: ${business.businessIndustry['name']}.  
-          The description should be concise, persuasive, and relevant to the category.  
-          Use a professional yet inviting tone.  
-          Avoid generic phrases and focus on making the content stand out.  
-          Keep it under 80 words.
-
-
-          Generate a concise, compelling, and professionally engaging description for a content item.
+          Generate a compelling, and professionally engaging description for a content item.
           Business Name: ${business.name}
           Business Category: ${business.businessIndustry['name']}
           Content Type: ${contentType}
@@ -52,12 +50,13 @@ export class AiService {
           Deal Type: ${dealType}
           Title: ${title}
           Guidelines:
-          Keep it under 80 words.
-          Use a professional yet inviting tone.
+          Keep it under 100 words.
+          Use a professional yet friendly inviting tone.
           Make it relevant to the business category and content type.
           Highlight what makes the content unique or valuable to the audience.
-          Avoid generic filler (e.g., “Don’t miss out” or “This is the best”).
+          Avoid generic filler (e.g., “Don't miss out”, "Welcome to" or “This is the best”).
           Focus on clarity, persuasion, and specificity.
+          Prefer not to use business name in the description and keep it focused on the content.
         `,
         },
       ];
