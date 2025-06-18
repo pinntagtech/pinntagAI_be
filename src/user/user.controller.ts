@@ -246,7 +246,7 @@ export class UserController {
   }
 
   @Patch('unfollow/:id')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async unfollow(@Req() req: Request, @Param('id') id: string) {
     const result = await this.userService.unfollowUser(id, req.user['_id']);
     if (result.success) {
