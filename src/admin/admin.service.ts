@@ -7,6 +7,7 @@ import { ConfigureDashboardDto } from 'src/admin/dto/configureDashboard.dto';
 import { LoginDto } from 'src/admin/dto/login.dto';
 import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
+import * as fs from 'fs';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -105,6 +106,7 @@ import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
+import { AtlantaData } from 'src/event/crawledEvents.json';
 
 @Injectable()
 export class AdminService {
@@ -2154,6 +2156,7 @@ export class AdminService {
       createObj['business'] = new mongoose.Types.ObjectId(businessId);
       createObj['latitude'] = placeDetails.data['latitude'];
       createObj['longitude'] = placeDetails.data['longitude'];
+      createObj['placeId'] = placeDetails.data['placeId'];
 
       const outlet = await this.outletModel.create(createObj);
 
@@ -2189,6 +2192,49 @@ export class AdminService {
       return {
         success: false,
         message: error.message || 'Something went wrong',
+      };
+    }
+  }
+
+  async updatePlaceIdinAtlantaData() {
+    try {
+      const jsonData = JSON.parse(
+        fs.readFileSync('src/admin/Init-resources/atlantadata.json', 'utf-8'),
+      );
+      for (let data of jsonData) {
+        if (!data.address.placeId || data.address.placeId === '') {
+          console.log('Processing address:', data.address.address);
+          let placeList = await this.googleService.googleRecommendation({
+            address: data.address.address,
+          });
+          if (
+            placeList &&
+            placeList.data &&
+            Array.isArray(placeList.data) &&
+            placeList.data.length > 0 &&
+            placeList.data[0].placePrediction &&
+            placeList.data[0].placePrediction.placeId
+          ) {
+            data.address.placeId = placeList.data[0].placePrediction.placeId;
+          } else {
+            data.address.placeId = 'ChIJjQmTaV0E9YgRC2MLmS_e_mY';
+            console.error('No place id found');
+          }
+        }
+      }
+      fs.writeFileSync(
+        'src/admin/Init-resources/atlantadata.json',
+        JSON.stringify(jsonData, null, 2), // Pretty-print with 2-space indentation
+      );
+      return {
+        success: true,
+        message: 'Place IDs updated successfully',
+      };
+    } catch (error) {
+      console.error('Error in updatePlaceIdinAtlantaData:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
       };
     }
   }

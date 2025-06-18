@@ -122,7 +122,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import { LubbockData } from './crawledEvents.json';
+import { AtlantaData, LubbockData } from './crawledEvents.json';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -6070,6 +6070,195 @@ export class EventService2 {
           continue;
         }
       }
+
+      return {
+        success: true,
+        message: 'Business Events Crawled Successfully.',
+        // data: businessDetails,
+      };
+    } catch (error) {
+      console.error('Error in crawlEvents:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async crawlAtlantaEvents() {
+    try {
+      const businessUser = await this.businessUserModel.findOne({
+        email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+      });
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Pinntag Business user not seeded',
+        };
+      }
+
+      const businessIndustry = await this.businessIndustryModel.findOne({
+        title: 'Entertainment',
+      });
+      const businessCategory = await this.businessCategoryModel.findOne({
+        title: 'Local Experiences',
+        industry: businessIndustry._id,
+      });
+
+      const businessFolder = await this.driveService.createFolder(
+        businessUser.id,
+        {
+          parentDirectory: businessUser.drive,
+          parentType: Drive.name,
+          folderName: 'Discover Atlanta',
+        },
+      );
+      let businessObj = {
+        creatorType: BusinessUser.name,
+        creator: businessUser._id,
+        name: 'Discover Atlanta',
+        email: 'atlantaetl@pinntag.com',
+        businessIndustry: businessIndustry._id,
+        businessCategories: businessCategory._id,
+        cover:
+          'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
+        isFromCrawler: true,
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+      };
+      let businessDetails = await this.businessModel.create(businessObj);
+
+
+      for (let data of AtlantaData) {
+        if (!businessUser || !businessIndustry || !businessCategory) continue;
+
+        await this.businessUserModel.updateOne(
+          { _id: businessUser._id },
+          { $addToSet: { business: businessDetails._id } },
+        );
+
+        if (!data.address.lat || !data.address.lng) continue;
+
+        let foundOutlet = await this.outletModel.findOne({
+          placeId: data.address.placeId,
+        });
+
+        if (!foundOutlet) {
+          let outletName = data.address.address;
+          console.log('Outlet Name:', outletName);
+          foundOutlet = await this.outletModel.create({
+            isFromCrawler: true,
+            businessProfile: businessDetails._id,
+            name: outletName || `Loc-Atlanta City Hall`,
+            category: OutletCategoryList.PHYSICAL,
+            city: data.address.cityName ?? 'Atlanta',
+            state: data.address.stateAbbr ?? 'GA',
+            country: data.address.country ?? 'United States',
+            postalCode: '30303',
+            countryCode: '404',
+            email: 'atlanta@yopmail.com',
+            address1: data.address.address ?? null,
+            latitude: data.address.lat,
+            longitude: data.address.lng,
+          });
+        }
+
+        await this.businessModel.updateOne(
+          { _id: businessDetails._id },
+          { $addToSet: { outlets: foundOutlet._id } },
+        );
+
+        const existingEvent = await this.eventModel.findOne({
+          clientRefId: data.nameId,
+        });
+        if (existingEvent) continue;
+
+        const eventFolder = await this.driveService.createFolder(
+          businessUser.id,
+          {
+            parentDirectory: businessDetails.drivePath,
+            parentType: Folder.name,
+            folderName: data.title,
+          },
+        );
+
+        const randomCategoryCount = Math.floor(Math.random() * 3);
+        const randomCategories = await this.categoryModel.aggregate([
+          { $sample: { size: randomCategoryCount } },
+        ]);
+        const categoriesInObjectId = randomCategories.map((cat) => cat._id);
+
+        const createdEvent = await this.eventModel.create({
+          title: data.title,
+          description: data.description,
+          status: EventStatus.PUBLISHED,
+          clientRefId: data.nameId,
+          type: EventTypes.FORMAL,
+          businessProfile: businessDetails._id,
+          creatorType: BusinessUser.name,
+          user: businessUser._id,
+          categories: categoriesInObjectId,
+          isFromCrawler: true,
+          drivePath: new mongoose.Types.ObjectId(eventFolder.data._id),
+          bookingUrl: [data.eventLink || ''],
+        });
+
+        const createdLocation = await this.eventLocationModel.create({
+          event: createdEvent._id,
+          businessLocationId: foundOutlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [foundOutlet.longitude, foundOutlet.latitude],
+          },
+          address1: foundOutlet.address1,
+          city: foundOutlet.city,
+          state: foundOutlet.state,
+          zip: foundOutlet.postalCode,
+          email: foundOutlet.email,
+          isFromCrawler: true,
+          businessProfile: businessDetails._id,
+        });
+
+        await this.eventModel.updateOne(
+          { _id: createdEvent._id },
+          { $addToSet: { locations: createdLocation._id } },
+        );
+
+        for (let time of data.eventTimes || []) {
+          const startTime = new Date(time.startTime || Date.now());
+          const endTime = time.endTime
+            ? new Date(time.endTime)
+            : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
+          const createdSchedule = await this.eventScheduleModel.create({
+            event: createdEvent._id,
+            type: ScheduleTypes.FIXED,
+            fixedSchedule: {
+              date: startTime,
+              durations: [{ startTime, endTime }],
+            },
+            isFromCrawler: true,
+          });
+
+          await this.eventModel.updateOne(
+            { _id: createdEvent._id },
+            { $addToSet: { eventSchedule: createdSchedule._id } },
+          );
+        }
+
+        if (data.cover?.source) {
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.GALLERY_IMAGE,
+          });
+
+          await this.driveService.downloadAndUploadImage(
+            data.cover.source,
+            businessUser.id,
+            createdEvent.drivePath,
+            fileCategory.id,
+          );
+        }
+      }
+
       return {
         success: true,
         message: 'Business Events Crawled Successfully.',
@@ -6179,4 +6368,6 @@ export class EventService2 {
       };
     }
   }
+
+
 }
