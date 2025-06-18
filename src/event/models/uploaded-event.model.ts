@@ -12,7 +12,6 @@ export class UploadedEvent {
   @Prop({
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
     ],

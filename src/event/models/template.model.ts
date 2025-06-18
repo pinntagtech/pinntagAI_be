@@ -21,15 +21,13 @@ export class Template {
     required: true,
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
-      EventTypes.LISTING,
       EventTypes.FLASHDEAL,
     ],
   })
   type: string;
-
+x
   @Prop({ refPath: 'creatorType' })
   user: mongoose.Types.ObjectId;
 
@@ -77,10 +75,10 @@ export class Template {
   @Prop()
   termsAndConditions: string;
 
-  @Prop({ref: BusinessIndustry.name})
+  @Prop({ ref: BusinessIndustry.name })
   businessIndustry: mongoose.Types.ObjectId;
 
-  @Prop({ref: BusinessCategory.name})
+  @Prop({ ref: BusinessCategory.name })
   businessCategories: Array<mongoose.Types.ObjectId>;
 
   @Prop()

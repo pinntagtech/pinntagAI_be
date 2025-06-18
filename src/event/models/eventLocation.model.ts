@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { Business } from 'src/business/model/business.model';
 import { Outlet } from 'src/outlet/model/outlet.model';
 
 class LocationType {
@@ -20,6 +21,8 @@ export class EventLocation {
   location: LocationType;
   @Prop({ ref: Outlet.name })
   businessLocationId: mongoose.Types.ObjectId;
+  @Prop({ ref: Business.name })
+  businessProfile: mongoose.Types.ObjectId;
   @Prop()
   accuracy: number;
   @Prop()
