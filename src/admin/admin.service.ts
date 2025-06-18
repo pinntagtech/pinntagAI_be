@@ -107,6 +107,7 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
 import { AtlantaData } from 'src/event/crawledEvents.json';
+import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
 
 @Injectable()
 export class AdminService {
@@ -1887,7 +1888,7 @@ export class AdminService {
     cover: Express.Multer.File,
   ) {
     try {
-      let password = await this.authService.authGeneratePassword();
+      let password = await this.authService.autoGeneratePassword();
       const hashedPassword = await bcrypt.hash(password, 10);
       console.log('password', password);
       const foundUser = await this.businessUserModel.findOne({
@@ -2232,6 +2233,39 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in updatePlaceIdinAtlantaData:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async createBusinessUser(user: DecodedUser, data: CreateBusinessUserDto) {
+    try {
+      const businessUser = await this.businessUserModel.findOne({
+        email: data.email,
+      });
+      if (businessUser) {
+        return {
+          success: false,
+          message: 'Business User already exists with this email.',
+        };
+      }
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const createdBusinessUser = await this.businessUserModel.create({
+        ...data,
+        password: hashedPassword,
+        isEmailVerified: true,
+        creatorType: BusinessUserCreatorType.ADMIN,
+        creator: new mongoose.Types.ObjectId(user.id),
+      });
+      return {
+        success: true,
+        message: 'Business User created successfully',
+        data: createdBusinessUser,
+      };
+    } catch (error) {
+      console.error('Error in createBusinessUser:', error);
       return {
         success: false,
         message: 'Something went wrong.',

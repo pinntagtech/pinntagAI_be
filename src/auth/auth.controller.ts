@@ -289,7 +289,6 @@ export class AuthController {
     };
   }
 
-
   @Get('dashboard/getAllConfigs')
   @UseGuards(JwtGuard2)
   async getDashboardAllConfigs() {
@@ -681,5 +680,11 @@ export class AuthController {
       message: result.message,
       user: result.user,
     };
+  }
+
+  @Get('autoGeneratePassword')
+  @UseGuards(JwtGuard2)
+  async autoGeneratePassword() {
+    return this.authService.autoGeneratePassword();
   }
 }
