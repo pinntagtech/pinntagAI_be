@@ -57,6 +57,7 @@ import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1211,5 +1212,21 @@ export class AdminController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('business/createBusinessUser')
+  @UseGuards(AdminGuard2)
+  async createBusinessUser(
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: CreateBusinessUserDto,
+  ) {
+    const result = await this.adminService.createBusinessUser(user,data);
 
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

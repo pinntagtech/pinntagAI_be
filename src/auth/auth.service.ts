@@ -806,7 +806,6 @@ export class AuthService {
     }
   }
 
-
   async getDashboardAllConfigs() {
     const foundConfig = await this.dashboardConfigModel
       .find({}, { _id: 1, name: 1 })
@@ -4808,7 +4807,7 @@ export class AuthService {
             $in: matchingCategories,
           },
         };
-      } 
+      }
       // else {
       //   return {
       //     success: true,
@@ -4872,7 +4871,43 @@ export class AuthService {
       },
     };
   }
-  async authGeneratePassword(length: number = 12) {
+  async autoGeneratePassword(length: number = 12) {
+    try {
+      const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+      const digits = '0123456789';
+      const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+      const allChars = uppercase + lowercase + digits + special;
+
+      if (length < 4) {
+        throw new Error(
+          'Password length must be at least 4 characters to include required character types.',
+        );
+      }
+
+      const getRandomChar = (chars: string) =>
+        chars[Math.floor(Math.random() * chars.length)];
+
+      // Ensure inclusion of required types
+      let password = [
+        getRandomChar(uppercase),
+        getRandomChar(digits),
+        getRandomChar(special),
+        getRandomChar(lowercase),
+      ];
+
+      // Fill the rest randomly
+      for (let i = password.length; i < length; i++) {
+        password.push(getRandomChar(allChars));
+      }
+
+      // Shuffle the result to avoid predictable order
+      password = password.sort(() => Math.random() - 0.5);
+
+      return password.join('');
+    } catch (error) {
+      throw new Error(`Error generating password: ${error.message}`);
+    }
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const digits = '0123456789';
