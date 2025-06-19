@@ -2111,7 +2111,7 @@ export class AuthService {
     ];
 
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-    // console.log('Row EVENTS:', rows);
+    console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -4706,17 +4706,18 @@ export class AuthService {
     }
     console.log('Service Category IDs:', categoryIds);
     let match = {};
-    if (categoryIds.length) {
-      match['event.categories'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
+    // if (categoryIds.length) {
+    //   match['event.categories'] = {
+    //     $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+    //   };
+    // }
 
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
     console.log('Match:', match);
+
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -4788,41 +4789,55 @@ export class AuthService {
     const config = await this.dashboardConfigModel.findById(carouselId).sort({
       sortOrder: 1,
     });
-    if (match['event.categories']) {
-      delete match['event.categories'];
-    }
+    // if (match['event.categories']) {
+    //   delete match['event.categories'];
+    // }
     let query = { ...match };
     let eventsResult = [];
-    if (categoryIds.length) {
-      const matchingCategories = [];
-      categoryIds.forEach((id) => {
-        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-          matchingCategories.push(new mongoose.Types.ObjectId(id));
-        }
-      });
-      if (matchingCategories.length) {
-        query = {
-          ...query,
-          'event.categories': {
-            $in: matchingCategories,
-          },
-        };
-      }
-      // else {
-      //   return {
-      //     success: true,
-      //     message: 'Dashboard fetched successfully',
-      //     data: {
-      //       eventsResult,
-      //     },
-      //   };
-      // }
-    } else {
+    // if (categoryIds.length) {
+    //   const matchingCategories = [];
+    //   categoryIds.forEach((id) => {
+    //     if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+    //       matchingCategories.push(new mongoose.Types.ObjectId(id));
+    //     }
+    //   });
+    //   if (matchingCategories.length) {
+    //     query = {
+    //       ...query,
+    //       'event.categories': {
+    //         $in: matchingCategories,
+    //       },
+    //     };
+    //   }
+    //   // else {
+    //   //   return {
+    //   //     success: true,
+    //   //     message: 'Dashboard fetched successfully',
+    //   //     data: {
+    //   //       eventsResult,
+    //   //     },
+    //   //   };
+    //   // }
+    // } else {
+    //   query = {
+    //     ...query,
+    //     'event.categories': { $in: config.categories },
+    //   };
+    // }
+    if(!categoryIds.length){
       query = {
         ...query,
         'event.categories': { $in: config.categories },
       };
+    }else{
+      query = {
+        ...query,
+        'event.categories': {
+          $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+        },
+      }
     }
+
     if (!config.freeIncluded) {
       query = {
         ...query,

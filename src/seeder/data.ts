@@ -18,7 +18,7 @@ export enum BusinessIndustries {
 }
 
 export enum EventCategory {
-  ARTS_CRAFTS = 'Arts & Crafts',
+  ARTS_CRAFTS = 'Art & Crafts',
   CHARITY = 'Charity',
   SPORTS = 'Sports',
   FOODS_DRINK = 'Foods & Drink',
@@ -134,13 +134,13 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Arts & Crafts',
+      title: 'Art & Crafts',
       lightIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
       activeColor: '#F1F3C2',
-      description: 'Arts & Crafts',
+      description: 'Art & Crafts',
     },
     {
       title: 'Beauty & Spa',
@@ -193,7 +193,7 @@ export const Seeder = {
       darkIcon:
         'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
       activeColor: '#FFCDB2',
-      description: 'Foods & Drink',
+      description: 'Food & Drinks',
     },
     {
       title: 'Happy Hour',

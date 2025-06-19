@@ -4258,7 +4258,7 @@ export class EventService2 {
   }
 
   async createSchedule(
-    eventId: string,
+    eventId: string, 
     data: CreateScheduleDto,
     user: DecodedUser,
   ) {
@@ -5961,12 +5961,12 @@ export class EventService2 {
           );
           console.log('Business Folder:', businessFolder);
 
-          let randomCategoryCount = Math.floor(Math.random() * 4);
+          let randomCategoryCount = Math.floor(Math.random() * 4)+1;
           const randomCategories = await this.categoryModel.aggregate([
             { $sample: { size: randomCategoryCount } },
           ]);
           const categoriesInObjectId = randomCategories.map((cat) => cat._id);
-
+          console.log("CATEGORIES::::",categoriesInObjectId);
           let eventObj = {
             title: data.title,
             description: data.description,
@@ -6181,12 +6181,13 @@ export class EventService2 {
           },
         );
 
-        const randomCategoryCount = Math.floor(Math.random() * 3);
+        const randomCategoryCount = Math.floor(Math.random() * 3)+1;
         const randomCategories = await this.categoryModel.aggregate([
           { $sample: { size: randomCategoryCount } },
         ]);
         const categoriesInObjectId = randomCategories.map((cat) => cat._id);
 
+        console.log("CATEGORIES::::",categoriesInObjectId);
         const createdEvent = await this.eventModel.create({
           title: data.title,
           description: data.description,
