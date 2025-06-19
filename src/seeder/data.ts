@@ -2089,7 +2089,7 @@ export const Seeder = {
       sortOrder: 300,
     },
     {
-      name: 'Food and Drink',
+      name: 'Food and Drinks',
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,

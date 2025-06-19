@@ -4706,11 +4706,11 @@ export class AuthService {
     }
     console.log('Service Category IDs:', categoryIds);
     let match = {};
-    // if (categoryIds.length) {
-    //   match['event.categories'] = {
-    //     $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-    //   };
-    // }
+    if (categoryIds.length) {
+      match['event.categories'] = {
+        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
 
     const currentDate = currentDateTz(timeZone);
 
@@ -4794,48 +4794,35 @@ export class AuthService {
     // }
     let query = { ...match };
     let eventsResult = [];
-    // if (categoryIds.length) {
-    //   const matchingCategories = [];
-    //   categoryIds.forEach((id) => {
-    //     if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-    //       matchingCategories.push(new mongoose.Types.ObjectId(id));
-    //     }
-    //   });
-    //   if (matchingCategories.length) {
-    //     query = {
-    //       ...query,
-    //       'event.categories': {
-    //         $in: matchingCategories,
-    //       },
-    //     };
-    //   }
-    //   // else {
-    //   //   return {
-    //   //     success: true,
-    //   //     message: 'Dashboard fetched successfully',
-    //   //     data: {
-    //   //       eventsResult,
-    //   //     },
-    //   //   };
-    //   // }
-    // } else {
-    //   query = {
-    //     ...query,
-    //     'event.categories': { $in: config.categories },
-    //   };
-    // }
-    if(!categoryIds.length){
+    if (categoryIds.length) {
+      const matchingCategories = [];
+      categoryIds.forEach((id) => {
+        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+          matchingCategories.push(new mongoose.Types.ObjectId(id));
+        }
+      });
+      if (matchingCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: matchingCategories,
+          },
+        };
+      }
+      else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
+      }
+    } else {
       query = {
         ...query,
         'event.categories': { $in: config.categories },
       };
-    }else{
-      query = {
-        ...query,
-        'event.categories': {
-          $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-        },
-      }
     }
 
     if (!config.freeIncluded) {
