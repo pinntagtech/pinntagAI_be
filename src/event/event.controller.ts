@@ -1038,12 +1038,26 @@ export class EventController {
 
   @Put('offer/:id')
   @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async updateOffer(
     @Param('id') id: string,
-    @Body() body: UpdateOfferDto,
+    @Body() body,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
+    console.log('Updating offer with ID:', id);
+    console.log('Body::', body);
     const result = await this.eventService.updateOffer(id, body, user, image);
     if (result.success) {
       return {

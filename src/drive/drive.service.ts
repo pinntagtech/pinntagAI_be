@@ -654,7 +654,7 @@ export class DriveService {
     file: Express.Multer.File,
     parentDirectoryId: string,
     parentDirectoryType: string,
-    parentId: string,
+    parentId: any,
     categoryId: any,
   ) {
     // 1. Upload
@@ -1022,4 +1022,50 @@ export class DriveService {
 
     return result;
   }
+
+  async deleteFile(
+    id: string,
+    user: DecodedUser,
+  ) {
+    try {
+      if (!isValidObjectId(id)) {
+        return { success: false, message: 'Invalid file ID' };
+      }
+      const userDetails = await this.businessUserModel.findById(user.id);
+      const file = await this.fileModel.findById(id);
+      if (!file) {
+        return { success: false, message: 'File not found' };
+      }
+      // Delete file from S3
+      const fileUrl = file.metaData.url;
+      const fileName = path.basename(fileUrl);
+      await this.s3Service.s3_delete(
+        process.env.AWS_S3_BUCKET_NAME,
+        fileName,
+      );
+
+      // Delete file document from MongoDB
+      await this.fileModel.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+
+      // Update drive space
+      const driveDetails = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(userDetails.id),
+      });
+      if (driveDetails) {
+        await this.driveModel.updateOne(
+          { _id: driveDetails._id },
+          { $inc: { AvailableSpace: file.metaData.size } },
+        );
+      }
+
+      return {
+        success: true,
+        message: 'File deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error while deleting file:', error);
+      return { success: false, message: 'Failed to delete file' };
+    }
+  }
+
 }

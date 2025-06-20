@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -228,6 +229,25 @@ export class DriveController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Delete('deleteFile/:id')
+  @UseGuards(JwtGuard2)
+  async deleteFile(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid file ID');
+    }
+    const result = await this.driveService.deleteFile(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
       };
     } else {
       throw new BadRequestException(result.message);
