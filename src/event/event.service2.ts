@@ -5781,12 +5781,12 @@ export class EventService2 {
           );
           console.log('Business Folder:', businessFolder);
 
-          console.log('CATEGORIES:', data.categories);
-          const cats = await this.categoryModel
-            .find({ title: { $in: data.categories } })
-            .select('_id')
-            .lean();
-          const categoriesInObjectId = cats.map((cat) => cat._id);
+          let randomCategoryCount = Math.floor(Math.random() * 4)+1;
+          const randomCategories = await this.categoryModel.aggregate([
+            { $sample: { size: randomCategoryCount } },
+          ]);
+          const categoriesInObjectId = randomCategories.map((cat) => cat._id);
+          console.log("CATEGORIES::::",categoriesInObjectId);
           let eventObj = {
             title: data.title,
             description: data.description,
