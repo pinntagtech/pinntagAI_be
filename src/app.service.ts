@@ -14,10 +14,10 @@ import { SubscriptionProduct } from './subscription/models/subscriptionProduct.m
 import { AppVersion, AppVersionDocument } from './models/appVersion.model';
 import { User, UserDocument } from './user/models/user.model';
 import { EventTypes } from './enums/event.enums';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from './business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from './business-profile/models/businessProfile.model';
 import { Token, TokenDocument } from './auth/models/token.model';
 import { Client } from 'twilio/lib/base/BaseTwilio';
 import OpenAI from 'openai';
@@ -29,6 +29,7 @@ import {
 } from './auth/models/platformConfig.model';
 import { Drive, DriveDocument } from './drive/models/drive.model';
 import { Admin, AdminDocument } from './admin/models/admin.model';
+import { Business, BusinessDocument } from './business/model/business.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -41,8 +42,8 @@ export class AppService implements OnModuleInit {
     @InjectModel(AppVersion.name)
     private readonly appVersionModel: Model<AppVersionDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(PlatformConfig.name)
@@ -81,18 +82,18 @@ export class AppService implements OnModuleInit {
         timeWeightage: 0.5,
       });
     }
-    const businessProfiles = await this.businessProfileModel
+    const businessProfiles = await this.businessModel
       .find({ isDeleted: { $exists: false } })
       .exec();
     const result1 = await Promise.all(
       businessProfiles.map(async (businessProfile) => {
-        return await this.businessProfileModel.updateOne(
+        return await this.businessModel.updateOne(
           { _id: businessProfile._id },
           { isDeleted: false },
         );
       }),
     );
-    await this.seederService.seed();
+    if(Number(process.env.START_SEEDER) || 1) await this.seederService.seed();
   }
 
   async getCategories() {

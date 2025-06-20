@@ -1,8 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
-import { Event, Schedule } from './event.model';
-import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
 import { Admin } from 'src/admin/models/admin.model';
 import { BusinessUser } from 'src/business/model/businessUser.model';
@@ -24,15 +21,13 @@ export class Template {
     required: true,
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
-      EventTypes.LISTING,
       EventTypes.FLASHDEAL,
     ],
   })
   type: string;
-
+x
   @Prop({ refPath: 'creatorType' })
   user: mongoose.Types.ObjectId;
 
@@ -80,10 +75,10 @@ export class Template {
   @Prop()
   termsAndConditions: string;
 
-  @Prop({ref: BusinessIndustry.name})
+  @Prop({ ref: BusinessIndustry.name })
   businessIndustry: mongoose.Types.ObjectId;
 
-  @Prop({ref: BusinessCategory.name})
+  @Prop({ ref: BusinessCategory.name })
   businessCategories: Array<mongoose.Types.ObjectId>;
 
   @Prop()

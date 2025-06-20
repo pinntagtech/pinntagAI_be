@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { DiscountType, EventStatus, EventTypes } from 'src/enums/event.enums';
 import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
@@ -23,10 +22,10 @@ export class Event {
     required: true,
     enum: [
       EventTypes.FORMAL,
-      EventTypes.INFORMAL,
+      // EventTypes.INFORMAL,
       EventTypes.OFFER,
       EventTypes.PRIVATE,
-      EventTypes.LISTING,
+      // EventTypes.LISTING,
       EventTypes.FLASHDEAL,
     ],
   })
@@ -104,7 +103,7 @@ export class Event {
   @Prop()
   bookingUrl: string[];
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   notifyFollowers: boolean;
 
   @Prop({ default: '' })

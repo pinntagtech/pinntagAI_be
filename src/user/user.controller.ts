@@ -26,23 +26,12 @@ import { FollowDto } from './dto/follow.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { ContactUsDto } from './dto/contact-us.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { User } from './models/user.model';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  @Get('list')
-  @UseGuards(AdminGuard)
-  async getUsers() {
-    const result = await this.userService.getUsers();
-    return {
-      message: 'Users fetched successfully',
-      users: result,
-    };
-  }
 
   @Get('my/refferal')
   @UseGuards(UserGuard)
@@ -257,7 +246,7 @@ export class UserController {
   }
 
   @Patch('unfollow/:id')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async unfollow(@Req() req: Request, @Param('id') id: string) {
     const result = await this.userService.unfollowUser(id, req.user['_id']);
     if (result.success) {

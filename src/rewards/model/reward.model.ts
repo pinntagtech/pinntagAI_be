@@ -61,6 +61,9 @@ export class Reward {
   @Prop({ ref: Folder.name })
   drivePath: mongoose.Types.ObjectId;
 
+  @Prop({ default: true })
+  notifyFollowers: boolean;
+
   @Prop({ ref: File.name })
   QR_CODE: mongoose.Types.ObjectId;
 

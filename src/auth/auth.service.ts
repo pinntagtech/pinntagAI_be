@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -11,7 +10,6 @@ import {
   LocationPopulates,
   UserPopulates,
 } from 'src/enums/user.enum';
-import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
@@ -28,10 +26,10 @@ import { JwtPayload } from './interfaces/tokenPayload.interface';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { Token, TokenDocument } from './models/token.model';
 import { Refferal, RefferalDocument } from 'src/user/models/refferal.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   EventLocation,
   EventLocationDocument,
@@ -40,7 +38,6 @@ import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Auth, google } from 'googleapis';
 import { OAuth2Dto } from './dto/oAuth2.dto';
-import { Otp, OtpDocument } from './models/otp.model';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { S3Service } from 'src/s3.service';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
@@ -62,19 +59,19 @@ import {
   EventResponse,
   EventResponseDocument,
 } from 'src/event/models/event-response.model';
-import { ConfigureDashboardDto } from './dto/configureDashboard.dto';
+import { ConfigureDashboardDto } from '../admin/dto/configureDashboard.dto';
 import {
   DashboardConfig,
   DashboardConfigDocument,
 } from './models/dashboardConfig.model';
-import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
+import { UpdateConfigureDashboardDto } from '../admin/dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
 import { Workbook } from 'exceljs';
 import {
   PlatformConfig,
   PlatformConfigDocument,
 } from './models/platformConfig.model';
-import { PlatformConfigDto } from './dto/platformConfig.dto';
+import { PlatformConfigDto } from '../admin/dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { PersonDetailDto } from './dto/personalDetail.dto';
@@ -111,8 +108,7 @@ export class AuthService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Refferal.name)
     private readonly refferalModel: Model<RefferalDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(EventLocation.name)
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(Category.name)
@@ -170,85 +166,13 @@ export class AuthService {
     };
   }
 
-  async create(
-    createAuthDto: CreateAuthDto,
-    userAgent: string,
-    ipAddress: string,
-  ) {
-    createAuthDto.email = createAuthDto.email.toLowerCase().trim();
-    const foundUser = await this.userModel
-      .findOne({ email: createAuthDto.email })
-      .exec();
-    if (foundUser) {
-      return {
-        success: false,
-        message: 'User already exists',
-      };
-    } else {
-      const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
-      const hashedPassword = await bcrypt.hash(createAuthDto.password, 10);
-      delete createAuthDto.password;
-      const createdUser = await this.userModel.create({
-        role: role._id,
-        ...createAuthDto,
-        password: hashedPassword,
-        userAgent,
-        ipAddress,
-      });
-      // Generate a random refferal code of 6 length with numbers and alphabets
-      const refferalCode = await this.generateUniqueRefferalCode();
-      const refferal = await this.refferalModel.create({
-        user: createdUser._id,
-        code: refferalCode,
-      });
-      await this.userModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(createdUser.id) },
-        { $set: { refferal: refferal._id } },
-      );
-      await this.mailService.sendUserWelcomeMail(createdUser.id);
-      await this.mailService.sendUserVerificationMail(createdUser.id);
-      const user = await this.userService.getUserById(createdUser.id);
-      const customer = await this.stripeService.createCustomer(
-        createdUser.email,
-        createdUser.name,
-      );
-      if (customer.id) {
-        await this.userModel.updateOne(
-          { _id: createdUser._id },
-          { $set: { stripeCustomerId: customer.id } },
-        );
-      }
-      if (createAuthDto.fcmToken) {
-        await this.tokenModel.create({
-          token: createAuthDto.fcmToken,
-          type: TokenTypes.FCM,
-          userType: UserTypes.USER,
-          user: createdUser._id,
-          deviceType: createAuthDto.deviceType
-            ? createAuthDto.deviceType
-            : 'web',
-        });
-      }
-      const fcmExists = await this.tokenModel.exists({
-        type: TokenTypes.FCM,
-        userId: createdUser._id,
-        deviceType: createAuthDto.deviceType ? createAuthDto.deviceType : 'web',
-      });
-      return {
-        success: true,
-        message: 'User created successfully',
-        user,
-        fcmExists: fcmExists ? true : false,
-      };
-    }
-  }
-
   async signupOTP(
     signupAuthDto: SignupAuthDto,
     userAgent: string,
     ipAddress: string,
   ) {
-    const { signupMethod, email, phone, countryCode } = signupAuthDto;
+    const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
+      signupAuthDto;
 
     if (!phone && !email) {
       return {
@@ -257,12 +181,11 @@ export class AuthService {
       };
     }
 
-    let createdUser;
     const role = await this.roleModel.findOne({ name: Roles.USER });
+    let createdUser;
+
     if (signupMethod === SignupMethod.EMAIL) {
-      const foundUser = await this.userModel.findOne({
-        email: signupAuthDto.email,
-      });
+      const foundUser = await this.userModel.findOne({ email });
       if (foundUser) {
         return {
           success: false,
@@ -276,83 +199,89 @@ export class AuthService {
         userAgent,
         ipAddress,
       });
-      await this.mailService.sendUserWelcomeMail(createdUser.id);
-      await this.mailService.sendUserVerificationMail(createdUser.id);
-    } else if (signupMethod === SignupMethod.PHONE) {
+
+      await Promise.all([
+        this.mailService.sendUserWelcomeMail(createdUser.id),
+        this.mailService.sendUserVerificationMail(createdUser.id),
+      ]);
+    }
+
+    if (signupMethod === SignupMethod.PHONE) {
       const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
       if (!phoneNumber || !phoneNumber.isValid()) {
-        return {
-          success: false,
-          message: 'Invalid phone number',
-        };
+        return { success: false, message: 'Invalid phone number' };
       }
-      let fullPhoneNumber = phoneNumber.format('E.164');
-      const foundUser = await this.userModel.findOne({
-        fullPhoneNumber: fullPhoneNumber,
-      });
+
+      const fullPhoneNumber = phoneNumber.format('E.164');
+      const foundUser = await this.userModel.findOne({ fullPhoneNumber });
       if (foundUser) {
         return {
           success: false,
           message: 'User already exists with the given mobile number!',
         };
-      } else {
-        console.log('createAuthDto', signupAuthDto);
-        createdUser = await this.userModel.create({
-          ...signupAuthDto,
-          fullPhoneNumber: fullPhoneNumber,
-          role: role._id,
-          userAgent,
-          ipAddress,
-        });
-
-        await this.smsService.sendSMS(
-          createdUser.id,
-          fullPhoneNumber,
-          SMSType.OTP,
-        );
       }
+
+      createdUser = await this.userModel.create({
+        ...signupAuthDto,
+        fullPhoneNumber,
+        role: role._id,
+        userAgent,
+        ipAddress,
+      });
+
+      await this.smsService.sendSMS(
+        createdUser.id,
+        fullPhoneNumber,
+        SMSType.OTP,
+      );
     }
-    const refferalCode = await this.generateUniqueRefferalCode();
-    const refferal = await this.refferalModel.create({
+
+    const [refferalCode, customer] = await Promise.all([
+      this.generateUniqueRefferalCode(),
+      this.stripeService.createCustomer(createdUser.email, createdUser.name),
+    ]);
+
+    const referral = await this.refferalModel.create({
       user: createdUser._id,
       code: refferalCode,
     });
+
     await this.userModel.updateOne(
       { _id: createdUser.id },
-      { $set: { refferal: refferal._id } },
+      {
+        $set: {
+          refferal: referral._id,
+          stripeCustomerId: customer?.id || null,
+        },
+      },
     );
-    const customer = await this.stripeService.createCustomer(
-      createdUser.email,
-      createdUser.name,
-    );
-    if (customer.id) {
-      await this.userModel.updateOne(
-        { _id: createdUser._id },
-        { $set: { stripeCustomerId: customer.id } },
-      );
-    }
-    if (signupAuthDto.fcmToken) {
+
+    if (fcmToken) {
       await this.tokenModel.create({
-        token: signupAuthDto.fcmToken,
+        token: fcmToken,
         type: TokenTypes.FCM,
         userType: UserTypes.USER,
         user: createdUser._id,
-        deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
+        deviceType: deviceType || 'web',
       });
     }
-    const fcmExists = await this.tokenModel.exists({
-      type: TokenTypes.FCM,
-      userId: createdUser._id,
-      deviceType: signupAuthDto.deviceType ? signupAuthDto.deviceType : 'web',
-    });
-    const user = await this.userService.getUserById(createdUser.id);
 
-    await this.seederService.createDrive(createdUser.id, User.name);
+    const [fcmExists, user] = await Promise.all([
+      this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        userId: createdUser._id,
+        deviceType: deviceType || 'web',
+      }),
+      this.userService.getUserById(createdUser.id),
+    ]);
+    // knowingly removed async to make this api fast
+    this.seederService.createDrive(createdUser.id, User.name);
+
     return {
       success: true,
       message: 'User created successfully',
       user,
-      fcmExists: fcmExists ? true : false,
+      fcmExists: !!fcmExists,
     };
   }
 
@@ -877,6 +806,24 @@ export class AuthService {
     }
   }
 
+  async getDashboardAllConfigs() {
+    const foundConfig = await this.dashboardConfigModel
+      .find({}, { _id: 1, name: 1 })
+      .sort({ sortOrder: 1 });
+    if (!foundConfig) {
+      return {
+        success: false,
+        message: 'Dashboard configuration not found with the name provided.',
+      };
+    } else {
+      return {
+        success: true,
+        message: 'Dashboard configuration found successfully',
+        data: foundConfig,
+      };
+    }
+  }
+
   async refreshFcmToken(userId: string, data: RefreshFcmDto) {
     const foundUser = await this.userModel.findById(userId);
     if (!foundUser) {
@@ -913,91 +860,6 @@ export class AuthService {
       message: 'Fcm token refreshed successfully',
       token: data.token,
     };
-  }
-
-  async login(loginDto: LoginDto) {
-    const validatedUser = await this.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
-    if (validatedUser.success) {
-      const user = validatedUser.user;
-      if (!user.isEmailVerified) {
-        await this.mailService.sendUserVerificationMail(user.id);
-        return {
-          success: true,
-          user: user.id,
-          message:
-            'Please verify your email to login, otp has been sent to the registered mail.',
-        };
-      }
-      if (loginDto.fcmToken) {
-        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
-          {
-            type: TokenTypes.FCM,
-            userId: user._id,
-            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-          },
-          {
-            $set: {
-              token: loginDto.fcmToken,
-            },
-          },
-        );
-        if (!foundFcmToken) {
-          await this.tokenModel.create({
-            token: loginDto.fcmToken,
-            type: TokenTypes.FCM,
-            userType: UserTypes.USER,
-            user: user._id,
-            deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-          });
-        }
-      }
-      const payload: JwtPayload = {
-        id: user.id,
-        // email: user.email,
-        userType: UserTypes.USER,
-        role: Roles.USER,
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.USER,
-      );
-      const updatedUser = await this.userModel
-        .findByIdAndUpdate(user.id, {
-          $set: { isDeleted: false },
-        })
-        .populate('role', '_id name');
-      if (!user.stripeCustomerId) {
-        const customer = await this.stripeService.createCustomer(
-          user.email,
-          user.name,
-        );
-        if (customer.id) {
-          user.stripeCustomerId = customer.id;
-          await user.save();
-        }
-      }
-      const fcmExists = await this.tokenModel.exists({
-        type: TokenTypes.FCM,
-        userId: user._id,
-        deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
-      });
-      return {
-        success: true,
-        message: 'User logged in successfully',
-        user: updatedUser,
-        token,
-        fcmExists: fcmExists ? true : false,
-      };
-    } else {
-      return {
-        success: false,
-        message: validatedUser.message,
-      };
-    }
   }
 
   async loginOTP(
@@ -1118,86 +980,6 @@ export class AuthService {
     }
   }
 
-  async adminLogin(loginDto: LoginDto) {
-    const role = await this.roleModel.findOne({ name: Roles.ADMIN }).exec();
-    const foundAdmin = await this.userModel.findOne({
-      email: loginDto.email,
-      role: role._id,
-    });
-    if (!foundAdmin) {
-      return {
-        success: false,
-        message: 'Admin not found with the email provided.',
-      };
-    } else {
-      const validPassword = await bcrypt.compare(
-        loginDto.password,
-        foundAdmin.password,
-      );
-      if (!validPassword) {
-        return {
-          success: false,
-          message: 'Incorrect password',
-        };
-      }
-      const payload: JwtPayload = {
-        id: foundAdmin.id,
-        userType: UserTypes.ADMIN,
-        role: Roles.ADMIN,
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.ADMIN,
-      );
-      return {
-        success: true,
-        message: 'Admin logged in successfully',
-        user: foundAdmin,
-        token,
-      };
-    }
-  }
-
-  async adminLoginV2(loginDto: LoginDto) {
-    const admin = await this.adminModel.findOne({
-      email: loginDto.email,
-    });
-    if (!admin) {
-      return {
-        success: false,
-        message: 'Admin not found with the email provided.',
-      };
-    } else {
-      const validPassword = await bcrypt.compare(
-        loginDto.password,
-        admin.password,
-      );
-      if (!validPassword) {
-        return {
-          success: false,
-          message: 'Incorrect password',
-        };
-      }
-      const payload: JwtPayload = {
-        id: admin.id,
-        userType: UserTypes.ADMIN,
-        role: admin.role.toString(),
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.ADMIN,
-      );
-      return {
-        success: true,
-        message: 'Admin logged in successfully',
-        user: admin,
-        token,
-      };
-    }
-  }
-
   async fcmReport() {
     const users = await this.userModel.find({
       createdAt: { $lte: new Date('2024-11-24') },
@@ -1247,177 +1029,6 @@ export class AuthService {
       fcmTokens.length,
       fileBuffer,
     );
-  }
-
-  async addDashboardConfiguration(data: ConfigureDashboardDto) {
-    if (data.categories.length) {
-      for (let i = 0; i < data.categories.length; i++) {
-        const foundCategory = await this.categoryModel
-          .findById(data.categories[i])
-          .exec();
-        if (!foundCategory) {
-          return {
-            message: `Category not found with the id provided: ${data.categories[i]}`,
-          };
-        } else {
-          data.categories[i] = foundCategory._id;
-        }
-      }
-    }
-    const createdConfiguration = await this.dashboardConfigModel.create(data);
-    return {
-      success: true,
-      message: 'Dashboard configuration added successfully',
-      data: createdConfiguration,
-    };
-  }
-
-  async getDashboardConfig() {
-    const foundConfig = await this.dashboardConfigModel
-      .find()
-      .populate('categories', '_id name')
-      .sort({ sortOrder: 1 });
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the name provided.',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Dashboard configuration found successfully',
-        data: foundConfig,
-      };
-    }
-  }
-
-  async getDashboardAllConfigs() {
-    const foundConfig = await this.dashboardConfigModel
-      .find({}, { _id: 1, name: 1 })
-      .sort({ sortOrder: 1 });
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the name provided.',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Dashboard configuration found successfully',
-        data: foundConfig,
-      };
-    }
-  }
-
-  async updateDashboardConfiguration(
-    id: string,
-    data: UpdateConfigureDashboardDto,
-  ) {
-    const configExists = await this.dashboardConfigModel.exists({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-    if (!configExists) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the id provided.',
-      };
-    } else {
-      if (data.categories && data.categories.length) {
-        data.categories = data.categories.map(
-          (category) => new mongoose.Types.ObjectId(category),
-        );
-      }
-      const updatedConfiguration =
-        await this.dashboardConfigModel.findOneAndUpdate(
-          { _id: new mongoose.Types.ObjectId(id) },
-          { $set: data },
-          { new: true },
-        );
-      if (updatedConfiguration) {
-        return {
-          success: true,
-          message: 'Dashboard configuration updated successfully',
-          data: updatedConfiguration,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Error updating dashboard configuration',
-        };
-      }
-    }
-  }
-
-  async deleteDashboardConfiguration(id: string) {
-    const configExists = await this.dashboardConfigModel.exists({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-    if (!configExists) {
-      return {
-        success: false,
-        message: 'Dashboard configuration not found with the id provided.',
-      };
-    } else {
-      await this.dashboardConfigModel.deleteOne({
-        _id: new mongoose.Types.ObjectId(id),
-      });
-      return {
-        success: true,
-        message: 'Dashboard configuration deleted successfully',
-      };
-    }
-  }
-
-  async getDashboardWeight() {
-    const foundConfig = await this.platformConfigModel.findOne();
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Platform configuration not found',
-      };
-    } else {
-      if (!foundConfig.distanceWeightage || !foundConfig.timeWeightage) {
-        return {
-          success: false,
-          message: 'Dashboard weightage not found',
-        };
-      }
-      return {
-        success: true,
-        message: 'Dashboard weightage found successfully',
-        data: {
-          distanceWeightage: foundConfig.distanceWeightage,
-          timeWeightage: foundConfig.timeWeightage,
-        },
-      };
-    }
-  }
-
-  async editDashboardWeight(data: PlatformConfigDto) {
-    const foundConfig = await this.platformConfigModel.findOne();
-    if (!foundConfig) {
-      return {
-        success: false,
-        message: 'Platform configuration not found',
-      };
-    } else {
-      if (!data.distanceWeightage || !data.timeWeightage) {
-        return {
-          success: false,
-          message: 'Dashboard weightage not found',
-        };
-      }
-      const updatedData = await this.platformConfigModel.findOneAndUpdate(
-        {},
-        { $set: data },
-        { new: true },
-      );
-      return {
-        success: true,
-        message: 'Dashboard weightage updated successfully',
-        data: updatedData,
-      };
-    }
   }
 
   async guestLogin(data: GuestLoginDto) {
@@ -2500,7 +2111,7 @@ export class AuthService {
     ];
 
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-    // console.log('Row EVENTS:', rows);
+    console.log('Row EVENTS:', rows);
     const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -3195,224 +2806,224 @@ export class AuthService {
     return rows;
   }
 
-  async getDashboard(
-    user: DecodedUser,
-    latitude: number,
-    longitude: number,
-    maxDistance: number,
-    search: string,
-    categoryIds?: Array<string>,
-    startDate?: any,
-    endDate?: any,
-  ) {
-    let match = {};
-    if (categoryIds.length) {
-      match['event.category'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
-    const currentDate = currentDateTz();
-    let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+  // async getDashboard(
+  //   user: DecodedUser,
+  //   latitude: number,
+  //   longitude: number,
+  //   maxDistance: number,
+  //   search: string,
+  //   categoryIds?: Array<string>,
+  //   startDate?: any,
+  //   endDate?: any,
+  // ) {
+  //   let match = {};
+  //   if (categoryIds.length) {
+  //     match['event.category'] = {
+  //       $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+  //     };
+  //   }
+  //   const currentDate = currentDateTz();
+  //   let start = getZeroDateTz(new Date());
+  //   if (!startDate && !endDate) {
+  //     // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+  //     match['event.schedule.date'] = { $gte: start };
+  //     match['event.schedule.durations.endTime'] = { $gte: currentDate };
+  //   } else if (startDate && endDate) {
+  //     start = getZeroBodyDateTz(startDate);
+  //     const end = getZeroBodyDateTz(endDate);
+  //     if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+  //       if (
+  //         getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+  //       ) {
+  //         console.log('start is equals to current');
+  //         // If the requested query is for today only then the end time should be greater than the current time
+  //         match['event.schedule.date'] = getZeroDateTz(new Date());
+  //         match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //       } else {
+  //         console.log('start is not equals to current');
+  //         // If the start and end date are the same e.g. 2024-06-01
+  //         match['event.schedule.date'] = start;
+  //       }
+  //     } else if (end > start) {
+  //       if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+  //         // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+  //           },
+  //         };
+  //       } else {
+  //         // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: start },
+  //           },
+  //         };
+  //       }
+  //     } else {
+  //       // If the request date is in past
+  //       match['event.schedule.date'] = { $gte: currentDate };
+  //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //     }
+  //   }
 
-    if (search) {
-      // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
-      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
-      match['$or'] = [
-        { 'event.title': { $regex: search, $options: 'i' } },
-        { 'event.description': { $regex: search, $options: 'i' } },
-        { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
-      ];
-    }
+  //   if (search) {
+  //     // Search matching business profile name
+  //     const matchingBusinesses = await this.businessModel.find({
+  //       name: { $regex: search, $options: 'i' },
+  //     });
+  //     // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+  //     const businessProfileIds = matchingBusinesses.map(
+  //       (business) => business._id,
+  //     );
+  //     match['$or'] = [
+  //       { 'event.title': { $regex: search, $options: 'i' } },
+  //       { 'event.description': { $regex: search, $options: 'i' } },
+  //       { 'event.keywords': { $regex: search, $options: 'i' } },
+  //       { 'event.businessProfile': { $in: businessProfileIds } },
+  //     ];
+  //   }
 
-    let age = 0;
-    if (!user.isGuest) {
-      const foundUser = await this.userModel.findById(user.id);
-      age = foundUser.age ? foundUser.age : 0;
-    }
+  //   let age = 0;
+  //   if (!user.isGuest) {
+  //     const foundUser = await this.userModel.findById(user.id);
+  //     age = foundUser.age ? foundUser.age : 0;
+  //   }
 
-    const freeEventsMatch = {
-      ...match,
-      'event.type': { $ne: EventTypes.PRIVATE },
-      'event.isFree': true,
-    };
-    const privateEventsMatch = {
-      ...match,
-      'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
-      'event.type': EventTypes.PRIVATE,
-    };
-    console.log('match....', match);
-    console.log('start????', start);
-    console.log('current time``````````````', currentDateTz());
-    const freeEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      age,
-      freeEventsMatch,
-      1,
-      15,
-      start,
-      maxDistance,
-      '',
-      '',
-    );
-    const privateEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      age,
-      privateEventsMatch,
-      1,
-      15,
-      start,
-      maxDistance,
-      '',
-      '',
-    );
+  //   const freeEventsMatch = {
+  //     ...match,
+  //     'event.type': { $ne: EventTypes.PRIVATE },
+  //     'event.isFree': true,
+  //   };
+  //   const privateEventsMatch = {
+  //     ...match,
+  //     'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
+  //     'event.type': EventTypes.PRIVATE,
+  //   };
+  //   console.log('match....', match);
+  //   console.log('start????', start);
+  //   console.log('current time``````````````', currentDateTz());
+  //   const freeEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     age,
+  //     freeEventsMatch,
+  //     1,
+  //     15,
+  //     start,
+  //     maxDistance,
+  //     '',
+  //     '',
+  //   );
+  //   const privateEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     age,
+  //     privateEventsMatch,
+  //     1,
+  //     15,
+  //     start,
+  //     maxDistance,
+  //     '',
+  //     '',
+  //   );
 
-    let data = {};
-    const dashboardConfigs = await this.dashboardConfigModel.find().sort({
-      sortOrder: 1,
-    });
-    console.log('dashboardConfigs', dashboardConfigs.length);
-    for (let i = 0; i < dashboardConfigs.length; i++) {
-      const config = dashboardConfigs[i];
-      console.log('config name', config.name);
-      if (match['event.category']) {
-        delete match['event.category'];
-      }
-      if (config.name == 'Food & Drinks') {
-        console.log('query after type:----->', match);
-      }
-      let query = { ...match };
-      if (categoryIds.length) {
-        const matchingCategories = [];
-        categoryIds.forEach((id) => {
-          if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-            matchingCategories.push(new mongoose.Types.ObjectId(id));
-          }
-        });
-        if (!matchingCategories.length) {
-          continue;
-        } else {
-          query = {
-            ...query,
-            'event.category': {
-              $in: matchingCategories,
-            },
-          };
-        }
-      } else {
-        query = {
-          ...query,
-          'event.category': { $in: config.categories },
-        };
-      }
-      if (!config.freeIncluded) {
-        query = {
-          ...query,
-          'event.isFree': false,
-        };
-      }
-      if (config.eventsIncluded && !config.offersIncluded) {
-        query = {
-          ...query,
-          'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
-        };
-      } else if (config.offersIncluded && !config.eventsIncluded) {
-        query = {
-          ...query,
-          'event.type': EventTypes.OFFER,
-        };
-      } else if (config.offersIncluded && config.eventsIncluded) {
-        query = {
-          ...query,
-          'event.type': {
-            $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
-          },
-        };
-      }
-      if (config.name == 'Food & Drinks') {
-        console.log('query after type:----->', query);
-      }
-      const eventsResult = await this.fetchEventsV2(
-        new mongoose.Types.ObjectId(user.id),
-        longitude,
-        latitude,
-        age,
-        query,
-        1,
-        config.limit,
-        start,
-        maxDistance,
-        startDate,
-        endDate,
-      );
-      // data.push({ [`${config.name}`]: eventsResult });
-      data[`${config.name}`] = eventsResult;
-    }
+  //   let data = {};
+  //   const dashboardConfigs = await this.dashboardConfigModel.find().sort({
+  //     sortOrder: 1,
+  //   });
+  //   console.log('dashboardConfigs', dashboardConfigs.length);
+  //   for (let i = 0; i < dashboardConfigs.length; i++) {
+  //     const config = dashboardConfigs[i];
+  //     console.log('config name', config.name);
+  //     if (match['event.category']) {
+  //       delete match['event.category'];
+  //     }
+  //     if (config.name == 'Food & Drinks') {
+  //       console.log('query after type:----->', match);
+  //     }
+  //     let query = { ...match };
+  //     if (categoryIds.length) {
+  //       const matchingCategories = [];
+  //       categoryIds.forEach((id) => {
+  //         if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+  //           matchingCategories.push(new mongoose.Types.ObjectId(id));
+  //         }
+  //       });
+  //       if (!matchingCategories.length) {
+  //         continue;
+  //       } else {
+  //         query = {
+  //           ...query,
+  //           'event.category': {
+  //             $in: matchingCategories,
+  //           },
+  //         };
+  //       }
+  //     } else {
+  //       query = {
+  //         ...query,
+  //         'event.category': { $in: config.categories },
+  //       };
+  //     }
+  //     if (!config.freeIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.isFree': false,
+  //       };
+  //     }
+  //     if (config.eventsIncluded && !config.offersIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
+  //       };
+  //     } else if (config.offersIncluded && !config.eventsIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': EventTypes.OFFER,
+  //       };
+  //     } else if (config.offersIncluded && config.eventsIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': {
+  //           $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
+  //         },
+  //       };
+  //     }
+  //     if (config.name == 'Food & Drinks') {
+  //       console.log('query after type:----->', query);
+  //     }
+  //     const eventsResult = await this.fetchEventsV2(
+  //       new mongoose.Types.ObjectId(user.id),
+  //       longitude,
+  //       latitude,
+  //       age,
+  //       query,
+  //       1,
+  //       config.limit,
+  //       start,
+  //       maxDistance,
+  //       startDate,
+  //       endDate,
+  //     );
+  //     // data.push({ [`${config.name}`]: eventsResult });
+  //     data[`${config.name}`] = eventsResult;
+  //   }
 
-    return {
-      success: true,
-      message: 'Dashboard fetched successfully',
-      data: {
-        Free: freeEvents,
-        ...data,
-        'Private Invitations': privateEvents,
-      },
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Dashboard fetched successfully',
+  //     data: {
+  //       Free: freeEvents,
+  //       ...data,
+  //       'Private Invitations': privateEvents,
+  //     },
+  //   };
+  // }
 
   async getDashboardV2(
     user: DecodedUser,
@@ -3479,7 +3090,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3583,7 +3194,7 @@ export class AuthService {
       if (config.eventsIncluded && !config.offersIncluded) {
         query = {
           ...query,
-          'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
+          'event.type': { $in: [EventTypes.FORMAL] },
         };
       } else if (config.offersIncluded && !config.eventsIncluded) {
         query = {
@@ -3594,7 +3205,7 @@ export class AuthService {
         query = {
           ...query,
           'event.type': {
-            $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
+            $in: [EventTypes.OFFER, EventTypes.FORMAL],
           },
         };
       }
@@ -3700,7 +3311,7 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -3908,7 +3519,7 @@ export class AuthService {
     if (config.eventsIncluded && !config.offersIncluded) {
       query = {
         ...query,
-        'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
+        'event.type': { $in: [EventTypes.FORMAL] },
       };
     } else if (config.offersIncluded && !config.eventsIncluded) {
       query = {
@@ -3919,7 +3530,7 @@ export class AuthService {
       query = {
         ...query,
         'event.type': {
-          $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
+          $in: [EventTypes.OFFER, EventTypes.FORMAL],
         },
       };
     }
@@ -4012,7 +3623,7 @@ export class AuthService {
     }
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessProfileModel.find({
+      const matchingBusinesses = await this.businessModel.find({
         name: { $regex: search, $options: 'i' },
       });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
@@ -4034,7 +3645,7 @@ export class AuthService {
     }
     if (!type) {
       match['event.type'] = {
-        $in: [EventTypes.FORMAL, EventTypes.INFORMAL, EventTypes.OFFER],
+        $in: [EventTypes.FORMAL, EventTypes.OFFER],
       };
     } else {
       if (type == EventTypes.PRIVATE) {
@@ -4045,7 +3656,7 @@ export class AuthService {
       } else if (type == 'free') {
         match['event.isFree'] = true;
         match['event.type'] = {
-          $in: [EventTypes.FORMAL, EventTypes.INFORMAL, EventTypes.OFFER],
+          $in: [EventTypes.FORMAL, EventTypes.OFFER],
         };
       } else {
         const dashConfig = await this.dashboardConfigModel.findOne({
@@ -4068,13 +3679,13 @@ export class AuthService {
           }
           if (dashConfig.eventsIncluded && !dashConfig.offersIncluded) {
             match['event.type'] = {
-              $in: [EventTypes.FORMAL, EventTypes.INFORMAL],
+              $in: [EventTypes.FORMAL],
             };
           } else if (dashConfig.offersIncluded && !dashConfig.eventsIncluded) {
             match['event.type'] = EventTypes.OFFER;
           } else if (dashConfig.offersIncluded && dashConfig.eventsIncluded) {
             match['event.type'] = {
-              $in: [EventTypes.FORMAL, EventTypes.INFORMAL, EventTypes.OFFER],
+              $in: [EventTypes.FORMAL, EventTypes.OFFER],
             };
           }
         }
@@ -4685,7 +4296,7 @@ export class AuthService {
       const isFollowedByMe = await this.followModel.findOne({
         followerType: User.name,
         follower: new mongoose.Types.ObjectId(user.id),
-        followingType: BusinessProfile.name,
+        followingType: Business.name,
         following: businessProfile._id,
         isBlocked: false,
       });
@@ -5106,6 +4717,7 @@ export class AuthService {
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
     console.log('Match:', match);
+
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
     //   match['event.schedule.date'] = { $gte: start };
@@ -5177,9 +4789,9 @@ export class AuthService {
     const config = await this.dashboardConfigModel.findById(carouselId).sort({
       sortOrder: 1,
     });
-    if (match['event.categories']) {
-      delete match['event.categories'];
-    }
+    // if (match['event.categories']) {
+    //   delete match['event.categories'];
+    // }
     let query = { ...match };
     let eventsResult = [];
     if (categoryIds.length) {
@@ -5196,7 +4808,8 @@ export class AuthService {
             $in: matchingCategories,
           },
         };
-      } else {
+      }
+      else {
         return {
           success: true,
           message: 'Dashboard fetched successfully',
@@ -5211,6 +4824,7 @@ export class AuthService {
         'event.categories': { $in: config.categories },
       };
     }
+
     if (!config.freeIncluded) {
       query = {
         ...query,
@@ -5220,7 +4834,7 @@ export class AuthService {
     if (config.eventsIncluded && !config.offersIncluded) {
       query = {
         ...query,
-        'event.type': { $in: [EventTypes.FORMAL, EventTypes.INFORMAL] },
+        'event.type': { $in: [EventTypes.FORMAL] },
       };
     } else if (config.offersIncluded && !config.eventsIncluded) {
       query = {
@@ -5231,7 +4845,7 @@ export class AuthService {
       query = {
         ...query,
         'event.type': {
-          $in: [EventTypes.OFFER, EventTypes.FORMAL, EventTypes.INFORMAL],
+          $in: [EventTypes.OFFER, EventTypes.FORMAL],
         },
       };
     }
@@ -5259,7 +4873,43 @@ export class AuthService {
       },
     };
   }
-  async authGeneratePassword(length: number = 12) {
+  async autoGeneratePassword(length: number = 12) {
+    try {
+      const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+      const digits = '0123456789';
+      const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+      const allChars = uppercase + lowercase + digits + special;
+
+      if (length < 4) {
+        throw new Error(
+          'Password length must be at least 4 characters to include required character types.',
+        );
+      }
+
+      const getRandomChar = (chars: string) =>
+        chars[Math.floor(Math.random() * chars.length)];
+
+      // Ensure inclusion of required types
+      let password = [
+        getRandomChar(uppercase),
+        getRandomChar(digits),
+        getRandomChar(special),
+        getRandomChar(lowercase),
+      ];
+
+      // Fill the rest randomly
+      for (let i = password.length; i < length; i++) {
+        password.push(getRandomChar(allChars));
+      }
+
+      // Shuffle the result to avoid predictable order
+      password = password.sort(() => Math.random() - 0.5);
+
+      return password.join('');
+    } catch (error) {
+      throw new Error(`Error generating password: ${error.message}`);
+    }
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const digits = '0123456789';

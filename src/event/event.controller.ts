@@ -14,7 +14,6 @@ import {
   Put,
   BadRequestException,
 } from '@nestjs/common';
-import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { UserGuard } from 'src/auth/guards/user.guard';
@@ -29,7 +28,6 @@ import mongoose from 'mongoose';
 import { InviteEventDto } from './dto/invite-event.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { ReportEventDto } from './dto/report-event.dto';
-import { AdminGuard } from 'src/auth/guards/admin.guard';
 import { UpdateCrawledEventDto } from './dto/update-crawled-event.dto';
 import { PublishCrawledEventDto } from './dto/publish-crawled-event.dto';
 import { SavedEventsDto } from './dto/saved-events.dto';
@@ -262,7 +260,7 @@ export class EventController {
   }
 
   @Get('crawled')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async getCrawledEvents(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -298,7 +296,7 @@ export class EventController {
   }
 
   @Delete('crawled/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async removeCrawledEvent(@Param('id') id: string) {
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException({
@@ -318,7 +316,7 @@ export class EventController {
   }
 
   @Post('crawled/edit/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard2)
   async updateCrawledEvent(
     @Param('id') id: string,
     @Body() body: UpdateCrawledEventDto,
@@ -341,38 +339,38 @@ export class EventController {
     }
   }
 
-  @Post('crawled/publish')
-  @UseGuards(AdminGuard)
-  async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
-    body.ids.forEach((id) => {
-      if (!mongoose.isValidObjectId(id)) {
-        throw new BadRequestException({
-          message: `Please provide a valid id for ${id}`,
-        });
-      }
-    });
-    if (!mongoose.isValidObjectId(body.businessProfile)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid business id',
-      });
-    }
-    if (!mongoose.isValidObjectId(body.user)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid user id',
-      });
-    }
-    const result = await this.eventService.publishCrawledEvent(body);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('crawled/publish')
+  // @UseGuards(AdminGuard2)
+  // async publishCrawledEvent(@Body() body: PublishCrawledEventDto) {
+  //   body.ids.forEach((id) => {
+  //     if (!mongoose.isValidObjectId(id)) {
+  //       throw new BadRequestException({
+  //         message: `Please provide a valid id for ${id}`,
+  //       });
+  //     }
+  //   });
+  //   if (!mongoose.isValidObjectId(body.businessProfile)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid business id',
+  //     });
+  //   }
+  //   if (!mongoose.isValidObjectId(body.user)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid user id',
+  //     });
+  //   }
+  //   const result = await this.eventService.publishCrawledEvent(body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   @Post('update/image/:id')
   @UseGuards(JwtGuard)
@@ -757,13 +755,17 @@ export class EventController {
       type,
       body.latitude ? parseFloat(body.latitude) : 0,
       body.longitude ? parseFloat(body.longitude) : 0,
-      // parseInt(page),
-      // parseInt(limit),
+      parseInt(page),
+      parseInt(limit),
     );
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        events: result.data,
+        pages: result.pages,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException({
@@ -771,9 +773,8 @@ export class EventController {
       });
     }
   }
-
   @Get('liked')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getLikedEvents(
     @TokenDecoder() user: DecodedUser,
     @Body() body: SavedEventsDto,
@@ -795,13 +796,17 @@ export class EventController {
       type,
       body.latitude ? parseInt(body.latitude) : 0,
       body.longitude ? parseInt(body.longitude) : 0,
-      // parseInt(page),
-      // parseInt(limit),
+      parseInt(page),
+      parseInt(limit),
     );
     if (result.success) {
       return {
         message: result.message,
         events: result.events,
+        pages: result.pages,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException({
@@ -986,6 +991,20 @@ export class EventController {
   @UseGuards(AdminGuard2)
   async crawlEvents() {
     const result = await this.eventService.crawlEvents();
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('crawlAtlantaEvents')
+  @UseGuards(AdminGuard2)
+  async crawlAtlantaEvents() {
+    const result = await this.eventService.crawlAtlantaEvents();
     if (result.success) {
       return {
         message: result.message,

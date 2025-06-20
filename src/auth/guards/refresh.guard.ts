@@ -11,10 +11,10 @@ import { Request } from 'express';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { JwtPayload } from '../interfaces/tokenPayload.interface';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Roles } from 'src/roles/enums/roles.enum';
 import { UserTypes } from 'src/enums/auth.enums';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
@@ -28,8 +28,8 @@ import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 export class RefreshGuard implements CanActivate {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name)
+    // private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,

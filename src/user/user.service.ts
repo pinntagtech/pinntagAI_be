@@ -12,10 +12,10 @@ import {
   TokenTypes,
   UserTypes,
 } from 'src/enums/auth.enums';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from '../business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from '../business-profile/models/businessProfile.model';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/updateProfile.dto';
@@ -63,8 +63,7 @@ export class UserService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Follow.name)
     private readonly followModel: Model<FollowDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(SubscriptionProduct.name)
     private readonly subscriptionProductModel: Model<SubscriptionProductDocument>,
     @InjectModel(Subscription.name)
@@ -82,24 +81,15 @@ export class UserService {
     private readonly reportModel: Model<ReportDocument>,
     @InjectModel(SavedEvent.name)
     private readonly savedEventModel: Model<SavedEventDocument>,
-    @InjectModel(Template.name) private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Template.name)
+    private readonly templateModel: Model<TemplateDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
     // private readonly mailerService: MailService,
   ) {}
-
-  async getUsers() {
-    const users = await this.userModel
-      .find()
-      .populate(
-        'businessProfiles',
-        'id _id profilePhoto name bio brandColor countryCode phone email website',
-      )
-      .exec();
-    return users;
-  }
 
   async getMyRefferalCode(userId: string) {
     const user = await this.userModel.findById(userId);
@@ -238,7 +228,7 @@ export class UserService {
         },
       );
       if (data.businessProfileId) {
-        await this.businessProfileModel.updateOne(
+        await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(data.businessProfileId) },
           {
             $addToSet: { subscriptions: createdSubscription._id },
@@ -532,21 +522,19 @@ export class UserService {
   }
 
   async getUserById(id: string): Promise<User> {
-    console.log("IDDD:",id);
-    const user = await this.userModel
-    .findById(id)
-    .select({ password: 0 })
+    console.log('IDDD:', id);
+    const user = await this.userModel.findById(id).select({ password: 0 });
     // .populate('role', {
-      //   __v: 0,
-      //   createdAt: 0,
-      //   updatedAt: 0,
-      // })
-      // .populate('subscriptions')
-      // .populate('refferal', 'id code isBlacklisted')
-      // .exec();
+    //   __v: 0,
+    //   createdAt: 0,
+    //   updatedAt: 0,
+    // })
+    // .populate('subscriptions')
+    // .populate('refferal', 'id code isBlacklisted')
+    // .exec();
 
-      console.log("USERRRR:",user);
-      return user;
+    console.log('USERRRR:', user);
+    return user;
   }
 
   async saveOtpToDb(id: string, otp: number, type: string) {
@@ -597,13 +585,12 @@ export class UserService {
     //   foundOtpDoc.otp = otp;
     //   await foundOtpDoc.save();
     // }
-    
+
     await this.otpModel.deleteMany({
       user: new mongoose.Types.ObjectId(user),
       type: type,
     });
     this.saveOtpToDb(user, otp, type);
-
 
     return otp;
   }
@@ -673,8 +660,7 @@ export class UserService {
         };
       }
     } else {
-      const businessProfile =
-        await this.businessModel.findById(targetId);
+      const businessProfile = await this.businessModel.findById(targetId);
       if (!businessProfile) {
         return {
           success: false,
@@ -737,7 +723,7 @@ export class UserService {
             isRead: false,
           });
         }
-      } else if (followingType == BusinessProfile.name) {
+      } else if (followingType == Business.name) {
         const businessProfile = await this.businessModel
           .findById(targetId)
           .select({ _id: 0, name: 1, createdBy: 1 });
@@ -791,7 +777,7 @@ export class UserService {
         }
       } else {
         const businessProfile =
-          await this.businessProfileModel.findById(targetId);
+          await this.businessModel.findById(targetId);
         if (!businessProfile) {
           return {
             success: false,
@@ -804,13 +790,13 @@ export class UserService {
       await this.updateFollowingCount(
         follow.followerType == User.name
           ? this.userModel
-          : this.businessProfileModel,
+          : this.businessModel,
         userId,
         -1,
       );
       //Update followers count of target user
       await this.updateFollowerCount(
-        followingType == User.name ? this.userModel : this.businessProfileModel,
+        followingType == User.name ? this.userModel : this.businessModel,
         targetId,
         -1,
       );
@@ -865,7 +851,7 @@ export class UserService {
     });
     //if the following type is business profile then only select the profile which are not deleted
     const filteredFollowing = following.filter((follow) => {
-      if (follow.following['profileType'] == BusinessProfile.name) {
+      if (follow.following['profileType'] == Business.name) {
         return follow.following['isDeleted'] == false;
       }
       return true;
@@ -902,7 +888,7 @@ export class UserService {
         }
       } else {
         const businessProfile =
-          await this.businessProfileModel.findById(targetId);
+          await this.businessModel.findById(targetId);
         if (!businessProfile) {
           return {
             success: false,
@@ -1074,7 +1060,7 @@ export class UserService {
     await this.otpModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });
-    await this.businessProfileModel.deleteMany({
+    await this.businessModel.deleteMany({
       createdBy: new mongoose.Types.ObjectId(userId),
     });
     await this.eventModel.deleteMany({

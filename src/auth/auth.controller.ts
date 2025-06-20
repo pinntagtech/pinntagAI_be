@@ -15,10 +15,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
 import { Request } from 'express';
 import { ContinueWithFacebookDto } from './dto/continueWithFb.dto';
-import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
@@ -33,12 +31,7 @@ import { OAuth2Dto } from './dto/oAuth2.dto';
 import { JwtGuard } from './guards/jwt.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RefreshGuard } from './guards/refresh.guard';
-import { AuthGuard } from '@nestjs/passport';
-import { ConfigureDashboardDto } from './dto/configureDashboard.dto';
-import { UpdateConfigureDashboardDto } from './dto/updateDashConfig.dto';
 import { RefreshFcmDto } from './dto/refreshFcm.dto';
-import { AdminGuard } from './guards/admin.guard';
-import { PlatformConfigDto } from './dto/platformConfig.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -69,22 +62,6 @@ export class AuthController {
     return {
       message: result.message,
       url: result.image,
-    };
-  }
-
-  @Post('signup')
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: Request, @Body() createAuthDto: CreateAuthDto) {
-    const userAgent = req.headers['user-agent'];
-    const ip = req.ip;
-    const result = await this.authService.create(createAuthDto, userAgent, ip);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      fcmExists: result.fcmExists,
     };
   }
 
@@ -198,23 +175,9 @@ export class AuthController {
     };
   }
 
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    const result = await this.authService.login(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-      fcmExists: result.fcmExists,
-    };
-  }
-
   @Post('loginOTP')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async loginOTP(@Req() req: Request, @Body() loginDto: SignupAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
@@ -228,173 +191,9 @@ export class AuthController {
     };
   }
 
-  @Post('admin/login')
-  @HttpCode(HttpStatus.OK)
-  async adminLogin(@Body() loginDto: LoginDto) {
-    const result = await this.authService.adminLogin(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-    };
-  }
-
-  @Post('admin/login-v2')
-  @HttpCode(HttpStatus.OK)
-  async adminLoginV2(@Body() loginDto: LoginDto) {
-    const result = await this.authService.adminLoginV2(loginDto);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-    };
-  }
-
-  @Post('dashboard/config/add')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async configureDashboard(@Body() body: ConfigureDashboardDto) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    const result = await this.authService.addDashboardConfiguration(body);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Get('dashboard/config')
-  @UseGuards(AdminGuard)
-  async getDashboardConfig() {
-    const result = await this.authService.getDashboardConfig();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Get('dashboard/getAllConfigs')
-  @UseGuards(JwtGuard2)
-  async getDashboardAllConfigs() {
-    const result = await this.authService.getDashboardAllConfigs();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Post('dashboard/config/update/:id')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async editDashboardConfig(
-    @Body() body: UpdateConfigureDashboardDto,
-    @Param('id') id: string,
-  ) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('Invalid id');
-    }
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    const result = await this.authService.updateDashboardConfiguration(
-      id,
-      body,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Delete('dashboard/config/delete/:id')
-  @UseGuards(AdminGuard)
-  async deleteDashboardConfig(@Param('id') id: string) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('Invalid id');
-    }
-    const result = await this.authService.deleteDashboardConfiguration(id);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-    };
-  }
-
-  @Get('dashboard/weight')
-  @UseGuards(AdminGuard)
-  async getDashboardWeight() {
-    const result = await this.authService.getDashboardWeight();
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
-  @Post('dashboard/weight/update')
-  @UseGuards(AdminGuard)
-  @HttpCode(HttpStatus.OK)
-  async updateDashboardWeight(@Body() body: PlatformConfigDto) {
-    if (!body.distanceWeightage && !body.timeWeightage) {
-      throw new BadRequestException('Please provide data to update');
-    }
-    if (body.distanceWeightage < 0.1 || body.distanceWeightage > 1.0) {
-      throw new BadRequestException(
-        'Distance weightage should be between 0.1 to 1.0',
-      );
-    }
-    if (body.timeWeightage < 0.1 || body.timeWeightage > 1.0) {
-      throw new BadRequestException(
-        'Time weightage should be between 0.1 to 1.0',
-      );
-    }
-    if (body.distanceWeightage + body.timeWeightage !== 1.0) {
-      throw new BadRequestException(
-        'Sum of distance and time weightage should be 1.0',
-      );
-    }
-    const result = await this.authService.editDashboardWeight(body);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      data: result.data,
-    };
-  }
-
   @Post('guest/login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async guestLogin(@Body() body: GuestLoginDto) {
     const result = await this.authService.guestLogin(body);
     if (!result.success) {
@@ -414,6 +213,7 @@ export class AuthController {
 
   @Post('verify/otp')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async verifyEmail(@Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyOtp(body);
     if (!result.success) {
@@ -438,6 +238,7 @@ export class AuthController {
 
   @Post('forgotPassword')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async forgotPassword(@Body() body: { email: string }) {
     const result = await this.authService.forgotPassword(body.email);
     if (!result.success) {
@@ -449,6 +250,7 @@ export class AuthController {
 
   @Post('resetPassword')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async resetPassword(@Body() body: ResetPaswordDto) {
     const { success, message } = await this.authService.resetPassword(body);
     if (!success) {
@@ -487,6 +289,19 @@ export class AuthController {
     };
   }
 
+  @Get('dashboard/getAllConfigs')
+  @UseGuards(JwtGuard2)
+  async getDashboardAllConfigs() {
+    const result = await this.authService.getDashboardAllConfigs();
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
+
   @Get('fcm/report')
   @UseGuards(RateLimitGuard)
   async fcmReport() {
@@ -494,45 +309,45 @@ export class AuthController {
     return { message: 'Report sent' };
   }
 
-  @Post('dashboard')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.OK)
-  async dashboard(
-    @Body() body: GetDashboardDto,
-    @Query('search') search: string,
-    @Query('distance') distance: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    if (distance) {
-      if (isNaN(parseInt(distance))) {
-        throw new BadRequestException('Please provide a valid distance value.');
-      }
-    }
-    const result = await this.authService.getDashboard(
-      user,
-      parseFloat(body.latitude),
-      parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
-      search ? search : '',
-      body.categories ? body.categories : [],
-      body.startDate ? new Date(body.startDate) : null,
-      body.endDate ? new Date(body.endDate) : null,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      ...result.data,
-    };
-  }
+  // @Post('dashboard')
+  // @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.OK)
+  // async dashboard(
+  //   @Body() body: GetDashboardDto,
+  //   @Query('search') search: string,
+  //   @Query('distance') distance: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   if (body.categories && body.categories.length) {
+  //     for (const cat of body.categories) {
+  //       if (!mongoose.Types.ObjectId.isValid(cat)) {
+  //         throw new BadRequestException(`${cat} is not a valid category id.`);
+  //       }
+  //     }
+  //   }
+  //   if (distance) {
+  //     if (isNaN(parseInt(distance))) {
+  //       throw new BadRequestException('Please provide a valid distance value.');
+  //     }
+  //   }
+  //   const result = await this.authService.getDashboard(
+  //     user,
+  //     parseFloat(body.latitude),
+  //     parseFloat(body.longitude),
+  //     distance ? parseInt(distance) : 1000000000000,
+  //     search ? search : '',
+  //     body.categories ? body.categories : [],
+  //     body.startDate ? new Date(body.startDate) : null,
+  //     body.endDate ? new Date(body.endDate) : null,
+  //   );
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //     ...result.data,
+  //   };
+  // }
 
   @Post('dashboard/v2')
   @UseGuards(JwtGuard)
@@ -800,6 +615,7 @@ export class AuthController {
 
   @Post('password-reset-link')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async passwordResetLink(
     @Req() req: Request,
     @Body('email') email: string,
@@ -836,6 +652,7 @@ export class AuthController {
 
   @Post('resendVerificationLink/:id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
   async resendVerificationLink(
     @Req() req: Request,
     @Param('id') id: string,
@@ -863,5 +680,11 @@ export class AuthController {
       message: result.message,
       user: result.user,
     };
+  }
+
+  @Get('autoGeneratePassword')
+  @UseGuards(JwtGuard2)
+  async autoGeneratePassword() {
+    return this.authService.autoGeneratePassword();
   }
 }

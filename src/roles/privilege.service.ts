@@ -4,10 +4,11 @@ import { Model } from 'mongoose';
 import { Privilege } from './privilege.decorator';
 import { PrivilegeDocument } from './models/privilage.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 
 @Injectable()
 export class PrivilegeService {
@@ -15,8 +16,8 @@ export class PrivilegeService {
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
   ) {}
 
   async hasPrivilege(

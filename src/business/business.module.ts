@@ -17,10 +17,10 @@ import {
 } from '../outlet/model/outletCategory.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   Subscription,
   SubscriptionSchema,
@@ -120,6 +120,7 @@ import {
 import { Region, RegionSchema } from './model/region.model';
 import { LocationGroup, LocationGroupSchema } from './model/locationGroup.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 
 @Module({
   imports: [
@@ -132,7 +133,7 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: Otp.name, schema: OtpSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: Follow.name, schema: FollowSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
       { name: Refferal.name, schema: RefferalSchema },
@@ -173,6 +174,8 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: Region.name, schema: RegionSchema },
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+
     ]),
   ],
   controllers: [BusinessController],

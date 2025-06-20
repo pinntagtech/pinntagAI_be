@@ -24,10 +24,10 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { Drive, DriveDocument } from 'src/drive/models/drive.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   Actions,
   ResourceTypes,
@@ -58,7 +58,6 @@ import {
   ProfileStatus,
   RegionCreatorType,
 } from 'src/business/enums/business.enum';
-import e from 'express';
 import {
   BusinessUser,
   BusinessUserDocument,
@@ -71,7 +70,6 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from 'src/business/model/businessCategory.model';
-import { In } from 'typeorm';
 import {
   BusinessCountry,
   BusinessCountryDocument,
@@ -89,7 +87,6 @@ import {
   DefaultBusinessDepartmentRoles,
 } from 'src/business/resourceInits/template-roles';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
-import { $Command } from '@aws-sdk/client-s3';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -98,11 +95,9 @@ import {
   Department,
   DepartmentDocument,
 } from 'src/business/model/department.model';
-import { database } from 'firebase-admin';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Region, RegionDocument } from 'src/business/model/region.model';
-// import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class SeederService {
@@ -122,8 +117,7 @@ export class SeederService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Resource.name)
@@ -171,25 +165,19 @@ export class SeederService {
     await this.seedActions();
     await this.seedSuperAdminRole();
     await this.seedSuperAdmin();
-    await this.seedOutletCategories();
+    // await this.seedOutletCategories();
     await this.seedPrivileges(); //super admin privileges are not needed
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
     await this.seedEventTemplates();
-    await this.seedConstitutions();
+    // await this.seedConstitutions();
     await this.seedDashboardConfigs();
     await this.seedPinntagBusinessProfile();
   }
 
   public async seedRoles() {
-    // const roles = await this.roleModel.find().exec();
-    // if (!roles.length) {
-    //   await this.roleModel
-    //     .insertMany(Seeder.roles)
-    //     .then(() => console.log('Roles created.'));
-    // }
     for (let role of Seeder.roles) {
       const foundRole = await this.roleModel.findOne({ name: role.name });
       if (!foundRole) {
@@ -399,113 +387,6 @@ export class SeederService {
       }
     }
   }
-
-  // public async seedSuperAdmin() {
-  //   // 1) find the “SuperAdmin” role
-  //   const superRole = await this.roleModel.findOne({ isSuperAdmin: true });
-  //   if (!superRole) {
-  //     console.warn('⚠️  No super‐admin role found; aborting seedSuperAdmin.');
-  //     return;
-  //   }
-  //   console.log('Super Admin Role:', superRole);
-
-  //   // 2) only seed once
-  //   const existingAdmin = await this.adminModel.findOne({
-  //     role: { $in: [superRole._id] },
-  //     isSuperAdmin: true,
-  //   });
-
-  //   console.log("Super Admin FOUNDDDDD:", existingAdmin);
-  //   if (existingAdmin) {
-  //     console.log('✅  SuperAdmin already exists; skipping.');
-  //     return;
-  //   }
-
-  //   // 3) create the super‐admin user
-  //   const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-  //   const superAdmin = await this.adminModel.create({
-  //     email: process.env.ADMIN_EMAIL,
-  //     password: hashed,
-  //     isEmailVerified: true,
-  //     name: process.env.ADMIN_FIRST_NAME,
-  //     role:   superRole._id,
-  //     isSuperAdmin: true,
-  //     firstName: 'Robin',
-  //     lastName:  'Seth',
-  //     phone:     '7917303330',
-  //     countryCode: '+44',
-  //   });
-  //   console.log('✅  Created SuperAdmin:', superAdmin._id);
-
-  //   // 4) link role.creator → the new admin
-  //   await this.roleModel.updateOne(
-  //     { _id: superRole._id },
-  //     { $set: { creator: superAdmin._id } }
-  //   );
-
-  //   // 5) create that admin’s drive
-  //   const drive = await this.createDrive(superAdmin._id, Admin.name);
-  //   await this.adminModel.updateOne(
-  //     { _id: superAdmin._id },
-  //     { $set: { drive: drive._id } }
-  //   );
-
-  //   // 6) iterate default roles
-  //   for (const roleKey of Object.keys(DefaultAdminRoles)) {
-  //     const rd = DefaultAdminRoles[roleKey];
-
-  //     // create the role
-  //     const createdRole = await this.roleModel.create({
-  //       name: rd.name,
-  //       creator: superAdmin._id,
-  //       creatorType: RoleCreatorType.ADMIN,
-  //       belongsTo: RoleBelonging.SYSTEM,
-  //     });
-  //     console.log(`✅  Created role "${rd.name}" → ${createdRole._id}`);
-
-  //     // for each privilegeKey → map to a resource
-  //     for (const privKey of Object.keys(rd.privileges)) {
-  //       const resourceTitle = ResourceTypes[privKey];
-  //       if (!resourceTitle) {
-  //         console.warn(`⚠️  Missing ResourceTypes['${privKey}']; skipping.`);
-  //         continue;
-  //       }
-
-  //       // find or create the resource
-  //       let resourceDoc = await this.resourceModel.findOne({ title: resourceTitle });
-  //       if (!resourceDoc) {
-  //         resourceDoc = await this.resourceModel.create({ title: resourceTitle });
-  //         console.log(`   🌱 Created resource "${resourceTitle}" → ${resourceDoc._id}`);
-  //       }
-
-  //       // now for each action under that privilege
-  //       for (const actionKey of rd.privileges[privKey]) {
-  //         const actionTitle = Actions[actionKey];
-  //         if (!actionTitle) {
-  //           console.warn(`⚠️  Missing Actions['${actionKey}']; skipping.`);
-  //           continue;
-  //         }
-
-  //         // find or create the action
-  //         let actionDoc = await this.actionModel.findOne({ title: actionTitle });
-  //         if (!actionDoc) {
-  //           actionDoc = await this.actionModel.create({ title: actionTitle });
-  //           console.log(`     🌱 Created action "${actionTitle}" → ${actionDoc._id}`);
-  //         }
-
-  //         // finally, create the privilege linking role↔resource↔action
-  //         await this.privilegeModel.create({
-  //           role:     createdRole._id,
-  //           resource: resourceDoc._id,
-  //           action:   actionDoc._id,
-  //         });
-  //       }
-  //     }
-  //   }
-
-  //   console.log('🎉 seedSuperAdmin complete.');
-  // }
-
   public async seedCategories() {
     const categories = await this.categoryModel.find();
     if (!categories.length) {
@@ -683,27 +564,6 @@ export class SeederService {
     }
   }
 
-  // async seedBusinessIndustries() {
-  //   const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-  //   const findBusinessIndustry = await this.businessIndustryModel.find();
-  //   if (findBusinessIndustry.length < Seeder.BusinessIndustries.length) {
-  //     for (let industry of Seeder.BusinessIndustries) {
-  //       const foundIndustry = await this.businessIndustryModel.findOne({
-  //         title: industry.title,
-  //       });
-  //       if (!foundIndustry) {
-  //         const createdBusinessIndustry =
-  //           await this.businessIndustryModel.create({
-  //             title: industry.title,
-  //             lightIcon: industry.lightIcon,
-  //             darkIcon: industry.darkIcon,
-  //             activeColor: industry.activeColor,
-  //             createdBy: new mongoose.Types.ObjectId(superAdmin.id),
-  //           });
-  //       }
-  //     }
-  //   }
-  // }
   async seedBusinessIndustries() {
     // 1. Fetch super-admin once
     const superAdmin = await this.adminModel
@@ -741,35 +601,7 @@ export class SeederService {
       `Business‐Industries: ${inserted} created, ${matched} already existed`,
     );
   }
-  // async seedBusinessCategories() {
-  //   const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-  //   const findBusinessCategory = await this.businessCategoryModel.find();
-  //   if (findBusinessCategory.length < Seeder.BusinessCategories.length) {
-  //     for (let category of Seeder.BusinessCategories) {
-  //       const industry = await this.businessIndustryModel.findOne({
-  //         title: category.industry,
-  //       });
-  //       if (industry) {
-  //         const foundCategory = await this.businessCategoryModel.findOne({
-  //           title: category.title,
-  //           industry: industry._id,
-  //         });
-  //         if (!foundCategory) {
-  //           const createdCategory = await this.businessCategoryModel.create({
-  //             title: category.title,
-  //             industry: industry._id,
-  //             lightIcon: category.lightIcon,
-  //             darkIcon: category.darkIcon,
-  //             activeColor: category.activeColor,
-  //             createdBy: superAdmin._id,
-  //           });
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  // Optimized seeding of BusinessCategories using bulkWrite
+ 
   async seedBusinessCategories() {
     // 1. Fetch super-admin once
     const superAdmin = await this.adminModel
@@ -792,7 +624,6 @@ export class SeederService {
     );
 
     // 3. Prepare bulk operations for categories
-    // Cast to mongoose.AnyBulkWriteOperation[] to satisfy TS typings
     const ops = Seeder.BusinessCategories.flatMap((category) => {
       const indId = industryMap[category.industry];
       if (!indId) return [];
@@ -849,6 +680,7 @@ export class SeederService {
       console.log('All countries are already seeded.');
     }
   }
+
   async seedConstitutions() {
     const existingCountries = await this.businessCountryModel.find();
     if (existingCountries.length < Object.keys(BusinessDocumentTypes).length) {
@@ -941,6 +773,7 @@ export class SeederService {
       await this.templateModel.create(createObj);
     }
   }
+  
   async seedDashboardConfigs() {
     const dashboardConfigs = await this.dashboardConfigModel.find();
     if (dashboardConfigs.length !== 0) return;

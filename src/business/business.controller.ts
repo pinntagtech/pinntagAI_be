@@ -81,8 +81,8 @@ export class BusinessController {
   @UseGuards(JwtGuard2)
   @UseGuards(RateLimitGuard)
   async fetch(
-    @Query('limit') limit: string,
     @Query('page') page: string,
+    @Query('limit') limit: string,
     @Body() data: FetchBusinessDto,
   ) {
     const result = await this.businessService.fetch(
@@ -1049,4 +1049,19 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Get('dashboard')
+  @UseGuards(JwtGuard2)
+  async getDashboardData(@TokenDecoder() user: DecodedUser,@Query('limit') limit: string) {
+    const result = await this.businessService.getDashboardData(user,parseInt(limit));
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

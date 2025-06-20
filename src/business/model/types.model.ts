@@ -40,7 +40,7 @@ export class TaxDetails {
   corporationTaxRate: number;
 }
 
-export class Location {
+export class LocationClass {
   id?: string;
   name?: string;
   latitude: number;

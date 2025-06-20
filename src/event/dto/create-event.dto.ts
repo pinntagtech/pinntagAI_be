@@ -13,10 +13,8 @@ export class CreateEventDto {
   @IsString()
   @IsIn([
     EventTypes.FORMAL,
-    EventTypes.INFORMAL,
     EventTypes.OFFER,
     EventTypes.PRIVATE,
-    EventTypes.LISTING,
     EventTypes.FLASHDEAL,
   ])
   type: string;

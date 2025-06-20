@@ -10,7 +10,6 @@ import { Category, CategorySchema } from './models/contentCategory.model';
 import { MailModule } from './mail/mail.module';
 import { Logger } from 'winston';
 import { EventModule } from './event/event.module';
-import { BusinessProfileModule } from './business-profile/business-profile.module';
 import { AgeGroup, AgeGroupSchema } from './models/ageGroup.model';
 import { SeederModule } from './seeder/seeder.module';
 import { SeederService } from './seeder/seeder.service';
@@ -25,10 +24,10 @@ import { StripeModule } from 'nestjs-stripe';
 import { StripeeModule } from './stripe/stripe.module';
 import { InAppPurchaseModule } from './in-app-purchase/in-app-purchase.module';
 import { Event, EventSchema } from './event/models/event.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from './business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from './business-profile/models/businessProfile.model';
 import { Token, TokenSchema } from './auth/models/token.model';
 import { CronModule } from './cron/cron.module';
 import { SmsModule } from './sms/sms.module';
@@ -141,7 +140,7 @@ import * as redisStore from 'cache-manager-redis-store';
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: AppVersion.name, schema: AppVersionSchema },
       { name: Event.name, schema: EventSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Token.name, schema: TokenSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
@@ -173,7 +172,6 @@ import * as redisStore from 'cache-manager-redis-store';
     MailModule,
     EventModule,
     SeederModule,
-    BusinessProfileModule,
     SubscriptionModule,
     NotificationModule,
     StripeModule,

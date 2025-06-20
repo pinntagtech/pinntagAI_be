@@ -10,10 +10,10 @@ import {
 import { EventSchema } from 'src/event/models/event.model';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
-import {
-  BusinessLocation,
-  BusinessLocationSchema,
-} from 'src/business-profile/models/businessLocation.model';
+// import {
+//   BusinessLocation,
+//   BusinessLocationSchema,
+// } from 'src/business-profile/models/businessLocation.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import {
   EventLocation,
@@ -33,10 +33,10 @@ import { UserService } from 'src/user/user.service';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
@@ -152,7 +152,7 @@ import { GoogleService } from 'src/google/google.service';
       { name: Admin.name, schema: AdminSchema },
       { name: Role.name, schema: RoleSchema },
       { name: Token.name, schema: TokenSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
       { name: Refferal.name, schema: RefferalSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
@@ -166,7 +166,7 @@ import { GoogleService } from 'src/google/google.service';
       { name: Report.name, schema: ReportSchema },
       { name: Category.name, schema: CategorySchema },
       { name: Image.name, schema: ImageSchema },
-      { name: BusinessLocation.name, schema: BusinessLocationSchema },
+      // { name: BusinessLocation.name, schema: BusinessLocationSchema },
       { name: AgeGroup.name, schema: AgeGroupSchema },
       { name: EventLocation.name, schema: EventLocationSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },

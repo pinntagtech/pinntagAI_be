@@ -10,14 +10,10 @@ import {
 } from 'src/user/models/transaction.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import Stripe from 'stripe';
-import {
-  BusinessLocation,
-  BusinessLocationDocument,
-} from 'src/business-profile/models/businessLocation.model';
-import {
-  BusinessProfile,
-  BusinessProfileDocument,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileDocument,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   Subscription,
   SubscriptionDocument,
@@ -28,6 +24,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotDocument,
 } from 'src/user/models/webhook.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 
 @Injectable()
 export class StripeService {
@@ -36,8 +33,7 @@ export class StripeService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<TransactionDocument>,
-    @InjectModel(BusinessProfile.name)
-    private readonly businessProfileModel: Model<BusinessProfileDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(WebhookSnapshot.name)
@@ -414,7 +410,7 @@ export class StripeService {
             });
 
             if (businessProfile && newLocationCount !== undefined) {
-              await this.businessProfileModel.updateOne(
+              await this.businessModel.updateOne(
                 { _id: new mongoose.Types.ObjectId(businessProfile) },
                 {
                   // $addToSet: { subscriptions: createdSubscription._id },
@@ -549,7 +545,7 @@ export class StripeService {
                 businessProfile,
               );
               if (user && businessProfile) {
-                await this.businessProfileModel.updateOne(
+                await this.businessModel.updateOne(
                   { _id: new mongoose.Types.ObjectId(businessProfile) },
                   {
                     $set: { locationCount: Number(quantity) },

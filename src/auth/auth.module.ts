@@ -11,10 +11,10 @@ import { Otp, OtpSchema } from './models/otp.model';
 import { MailService } from 'src/mail/mail.service';
 import { UserService } from 'src/user/user.service';
 import { Token, TokenSchema } from './models/token.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import { GuestSession, GuestSessionSchema } from './models/guestSession.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
@@ -130,7 +130,7 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
       { name: Role.name, schema: RoleSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: Token.name, schema: TokenSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Follow.name, schema: FollowSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: Refferal.name, schema: RefferalSchema },

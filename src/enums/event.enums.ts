@@ -1,9 +1,9 @@
 export enum EventTypes {
   FORMAL = 'business_event',
-  INFORMAL = 'social_event',
+  // INFORMAL = 'social_event',
   OFFER = 'offer',
   PRIVATE = 'private',
-  LISTING = 'listing',
+  // LISTING = 'listing',
   FLASHDEAL = 'flashdeal',
 }
 
@@ -17,6 +17,7 @@ export enum EventStatus {
 export enum NotificationTypes {
   FOLLOW = 'follow',
   EVENT = 'event',
+  REWARD = 'reward',
   OFFER = 'offer',
   COMMENT = 'comment',
   LIKE = 'like',

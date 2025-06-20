@@ -7,10 +7,10 @@ import { UserService } from 'src/user/user.service';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import {
   GuestSession,
   GuestSessionSchema,
@@ -72,7 +72,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Token.name, schema: TokenSchema },
       { name: Follow.name, schema: FollowSchema },
       { name: Role.name, schema: RoleSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Follow.name, schema: FollowSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },

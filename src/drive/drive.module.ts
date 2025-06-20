@@ -6,10 +6,10 @@ import { Drive, DriveSchema } from './models/drive.model';
 import { DriveService } from './drive.service';
 import { Folder, FolderSchema } from './models/folder.model';
 import { User, UserSchema } from 'src/user/models/user.model';
-import {
-  BusinessProfile,
-  BusinessProfileSchema,
-} from 'src/business-profile/models/businessProfile.model';
+// import {
+//   BusinessProfile,
+//   BusinessProfileSchema,
+// } from 'src/business-profile/models/businessProfile.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
@@ -64,7 +64,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Role.name, schema: RoleSchema },
       { name: Otp.name, schema: OtpSchema },
       { name: Token.name, schema: TokenSchema },
-      { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
       { name: Follow.name, schema: FollowSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
