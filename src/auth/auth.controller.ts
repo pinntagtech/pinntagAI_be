@@ -476,15 +476,18 @@ export class AuthController {
     };
   }
 
-  @Post('dashboard/map-view')
-  @UseGuards(JwtGuard)
+  @Post('dashboard/map-view/:id')
+  @UseGuards(JwtGuard2)
   @HttpCode(HttpStatus.OK)
   async dashboardMapView(
     @Body() body: GetDashboardDto,
+    @Param('id') id: string,
     @Query('search') search: string,
-    @Query('limit') limit: string,
     @Query('page') page: string,
-    @Query('type') type: string,
+    @Query('limit') limit: string,
+    @Query('distance') distance: string,
+    @Query('timeZone') timeZone: string,
+    // @Query('type') type: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
@@ -496,13 +499,15 @@ export class AuthController {
     }
     const result = await this.authService.getDashboardMapView(
       user,
+      id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
-      100000,
+      distance ? parseInt(distance) : 1000000000000,
       search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
       limit ? parseInt(limit) : 15,
       page ? parseInt(page) : 1,
-      type ? type.toLowerCase() : '',
+      // type ? type.toLowerCase() : '',
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
@@ -515,7 +520,7 @@ export class AuthController {
       events: result.events,
       page: result.page,
       limit: result.limit,
-      total: result.total,
+      total: result.totalCount,
       pages: result.pages,
     };
   }
