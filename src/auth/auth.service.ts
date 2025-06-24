@@ -4107,6 +4107,7 @@ export class AuthService {
     //   .populate('user', UserPopulates.FOREIGN)
     //   .populate('businessProfile', BusinessPopulates.FOREIGN)
 
+    console.log("Checking something:::::")
     let event = await this.eventModel
       .aggregate([
         {
@@ -4247,8 +4248,12 @@ export class AuthService {
             },
             targetGenders: 1,
             ageGroupsAllowed: {
-              minAge: '$minTargetAge',
-              maxAge: '$maxTargetAge',
+              $mergeObjects: [
+                {
+                  minAge: { $ifNull: ['$minTargetAge', null] },
+                  maxAge: { $ifNull: ['$maxTargetAge', null] },
+                }
+              ]
             },
             images: {
               $map: {
