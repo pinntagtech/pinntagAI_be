@@ -96,6 +96,7 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { SavedEvent } from 'src/event/models/savedEvent.model';
 
 @Injectable()
 export class AuthService {
@@ -1712,7 +1713,7 @@ export class AuthService {
     startDate: any,
     endDate: any,
   ) {
-    console.log("LIMITTTTTTT:::::", limit);
+    console.log('LIMITTTTTTT:::::', limit);
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
@@ -2122,7 +2123,7 @@ export class AuthService {
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
     console.log('Data Rows:', dataRows);
-    console.log("Total counts:", totalCount);
+    console.log('Total counts:', totalCount);
     // const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -3545,7 +3546,7 @@ export class AuthService {
       };
     }
     console.log("'query after type:----->', query);");
-    const [eventsResult,totalCount] = await this.fetchEventsV2(
+    const [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
@@ -3575,7 +3576,7 @@ export class AuthService {
     longitude: number,
     maxDistance: number,
     search: string,
-    timeZone:string,
+    timeZone: string,
     limit: number,
     page: number,
     // type: string,
@@ -3743,7 +3744,7 @@ export class AuthService {
     let totalCount = 0;
 
     console.log('query from carousel dashboard:', query);
-     [eventsResult,totalCount] = await this.fetchEventsV2(
+    [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
@@ -3756,7 +3757,7 @@ export class AuthService {
       startDate,
       endDate,
     );
-    console.log("Total:::::::", totalCount);
+    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard data fetched successfully',
@@ -4107,7 +4108,7 @@ export class AuthService {
     //   .populate('user', UserPopulates.FOREIGN)
     //   .populate('businessProfile', BusinessPopulates.FOREIGN)
 
-    console.log("Checking something:::::")
+    console.log('Checking something:::::', user.id);
     let event = await this.eventModel
       .aggregate([
         {
@@ -4164,7 +4165,7 @@ export class AuthService {
             from: 'users',
             localField: 'user',
             foreignField: '_id',
-            as: 'user',
+            as: 'userDetails',
           },
         },
         {
@@ -4176,9 +4177,39 @@ export class AuthService {
           },
         },
         {
-          $unwind: { path: '$user', preserveNullAndEmptyArrays: true },
+          $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true },
         },
-
+        // {
+        //   $lookup: {
+        //     from: 'users',
+        //     let: { eventId: { $toString: '$_id' } }, // convert event ID to string
+        //     pipeline: [
+        //       {
+        //         $match: {
+        //           _id: new mongoose.Types.ObjectId(user.id),
+        //           $expr: {
+        //             $in: [
+        //               '$$eventId',
+        //               {
+        //                 $map: {
+        //                   input: '$savedEvents',
+        //                   as: 'e',
+        //                   in: { $toString: '$$e' },
+        //                 },
+        //               },
+        //             ],
+        //           },
+        //         },
+        //       },
+        //     ],
+        //     as: 'isSavedByUser',
+        //   },
+        // },
+        // {
+        //   $addFields: {
+        //     isSaved: { $gt: [{ $size: '$isSavedByUser' }, 0] },
+        //   },
+        // },
         // businessProfile
         {
           $lookup: {
@@ -4211,11 +4242,12 @@ export class AuthService {
             bookingUrl: 1,
             termsAndConditions: 1,
             isFromCrawlet: 1,
+            userDetails: 1,
             user: {
-              _id: '$user._id',
-              name: '$user.name',
-              profilePhoto: '$user.profilePhoto',
-              email: '$user.email',
+              _id: '$userDetails._id',
+              name: '$userDetails.name',
+              profilePhoto: '$userDetails.profilePhoto',
+              email: '$userDetails.email',
             },
             businessProfileDetails: {
               _id: '$businessProfileDetails._id',
@@ -4252,8 +4284,8 @@ export class AuthService {
                 {
                   minAge: { $ifNull: ['$minTargetAge', null] },
                   maxAge: { $ifNull: ['$maxTargetAge', null] },
-                }
-              ]
+                },
+              ],
             },
             images: {
               $map: {
@@ -4275,6 +4307,9 @@ export class AuthService {
       .then((res) => res[0]);
     console.log('event', event);
 
+    const findUser = await this.userModel.findById(user.id);
+    console.log('findUser.saved:', findUser.savedEvents);
+
     if (!event) {
       return {
         success: false,
@@ -4289,8 +4324,8 @@ export class AuthService {
         };
       }
     }
-    const isSaved = await this.userService.isEventSaved(event.id, user.id);
-    const isLiked = await this.userService.isEventLiked(event.id, user.id);
+    const isSaved = await this.userService.isEventSaved(id, user.id);
+    const isLiked = await this.userService.isEventLiked(id, user.id);
     const eventObj = JSON.parse(JSON.stringify(event));
     delete eventObj.locations;
 
@@ -4910,7 +4945,7 @@ export class AuthService {
     let totalCount = 0;
 
     console.log('query from carousel dashboard:', query);
-     [eventsResult,totalCount] = await this.fetchEventsV2(
+    [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
@@ -4923,7 +4958,7 @@ export class AuthService {
       startDate,
       endDate,
     );
-    console.log("Total:::::::", totalCount);
+    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard fetched successfully',

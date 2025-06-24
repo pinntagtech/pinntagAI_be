@@ -1720,8 +1720,8 @@ export class BusinessService {
           message: 'Business User already found with this email',
         };
       }
-
-      const hashedPassword = await bcrypt.hash(data.password, 10);
+      let password = await this.authService.autoGeneratePassword();
+      const hashedPassword = await bcrypt.hash(password, 10);
       if (data.role) {
         if (!isValidObjectId(data.role)) {
           return {
@@ -1778,7 +1778,7 @@ export class BusinessService {
       await this.mailService.sendDownlineUserCredentials(
         createdUser.name,
         createdUser.email,
-        data.password,
+        password,
         loginLink,
       );
 

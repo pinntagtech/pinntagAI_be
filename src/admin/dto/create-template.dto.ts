@@ -83,4 +83,8 @@ export class CreateTemplateDto {
   @IsArray()
   @IsMongoId({ each: true })
   businessCategories?: string | mongoose.Types.ObjectId[];
+
+  @IsOptional()
+  @IsString()
+  thumbnail?: string;
 }
