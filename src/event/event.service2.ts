@@ -3378,7 +3378,7 @@ export class EventService2 {
       //   }
       //   return 0;
       // });
-      const total = result[0].totalCount[0].count;
+      const total = result[0].totalCount[0]?.count || 0;
       return {
         success: true,
         message: 'Saved events fetched successfully',
