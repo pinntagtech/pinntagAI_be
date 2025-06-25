@@ -40,9 +40,7 @@ import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
-import { CacheInterceptor } from '@nestjs/cache-manager';
 
-// @UseInterceptors(CacheInterceptor)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

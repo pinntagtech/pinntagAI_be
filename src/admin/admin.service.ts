@@ -45,7 +45,7 @@ import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { FileCategoryTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import {
@@ -108,6 +108,10 @@ import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
 import { AtlantaData } from 'src/event/crawledEvents.json';
 import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class AdminService {
@@ -154,6 +158,8 @@ export class AdminService {
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -1564,7 +1570,11 @@ export class AdminService {
     }
   }
 
-  async createTemplate(adminId: string, data: CreateTemplateDto) {
+  async createTemplate(
+    adminId: string,
+    data: CreateTemplateDto,
+    image: Express.Multer.File,
+  ) {
     try {
       const template = await this.templateModel.findOne({ title: data.title });
       if (template) {
@@ -1573,12 +1583,11 @@ export class AdminService {
           message: 'Template with this title already exists.',
         };
       }
+      const admin = await this.adminModel.findById(adminId);
 
       let categoryObjectIds = [];
       if (data.contentCategories) {
-        console.log('date.contentCategories:', data.contentCategories);
         for (let i = 0; i < data.contentCategories.length; i++) {
-          console.log('data.categories[i]:', data.contentCategories[i]);
           const foundCategory = await this.contentCategoryModel.findById(
             data.contentCategories[i],
           );
@@ -1608,17 +1617,33 @@ export class AdminService {
             busCategoryObjectIds.push(foundCategory._id);
           }
         }
-        data.businessCategories = categoryObjectIds;
+        console.log('busCategoryObjectIds:', busCategoryObjectIds);
+        data.businessCategories = busCategoryObjectIds;
       }
       data.businessIndustry = new mongoose.Types.ObjectId(
         data.businessIndustry,
       );
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+      let imageUpload = await this.driveService.uploadAndCreateFile(
+        image,
+        String(admin.drive),
+        Drive.name,
+        admin._id,
+        fileCategory._id,
+      );
 
       const createdTemplate = await this.templateModel.create({
         ...data,
+        isFree: data.isFree === 'true' ? true : false,
+        termsApplied: data.termsApplied === 'true' ? true : false,
+        minTargetAge: Number(data.minTargetAge),
+        maxTargetAge: Number(data.maxTargetAge),
         creatorType: Admin.name,
         categories: data.contentCategories,
         user: new mongoose.Types.ObjectId(adminId),
+        thumbnail: imageUpload.metaData.url,
       });
       console.log('CreatedTemplate:', createdTemplate);
       return {
