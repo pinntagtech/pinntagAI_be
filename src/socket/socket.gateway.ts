@@ -13,7 +13,7 @@ import { AuthService } from '../auth/auth.service';
 import { UserTypes } from '../enums/auth.enums';
 import { DecodedUser } from '../auth/interfaces/decodedUser.interface';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { User, UserDocument } from '../user/models/user.model';
 import { BusinessUser, BusinessUserDocument } from '../business/model/businessUser.model';
 import { Admin, AdminDocument } from '../admin/models/admin.model';
@@ -147,6 +147,42 @@ export class SocketGateway
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
       ...result.data,
+    });
+  }
+
+  @SubscribeMessage('getEventDetails')
+  async handleGetEventDetails(
+    client: Socket,
+    payload: { body: GetDashboardDto; eventId: string },
+  ) {
+    const { body, eventId } = payload;
+    if (!isValidObjectId(eventId)) {
+      return client.emit('getEventDetailsResponse', {
+        message: 'Invalid event id',
+        event: null,
+      });
+    }
+    const userId = (client as any).userId;
+    const userType = (client as any).userType;
+    const decodedUser: DecodedUser = {
+      id: userId,
+      userType,
+      isGuest: userType === UserTypes.GUEST,
+      email: '',
+      role: '',
+      name: '',
+      token: '',
+      profilePhoto: '',
+      isBusiness: userType === UserTypes.BUSINESS,
+    };
+    const result = await this.authService.getEventCardView(
+      eventId,
+      decodedUser,
+      body,
+    );
+    client.emit('getEventDetailsResponse', {
+      message: result.message,
+      event: result.event,
     });
   }
 }
