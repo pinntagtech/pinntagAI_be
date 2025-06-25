@@ -42,7 +42,7 @@ import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
 import { CacheInterceptor } from '@nestjs/cache-manager';
 
-@UseInterceptors(CacheInterceptor)
+// @UseInterceptors(CacheInterceptor)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -532,10 +532,12 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
+    console.log('Entered Controllerrrr!!!');
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
-    const result = await this.authService.getEventDetails(id, user, body);
+    const result = await this.authService.getEventCardView(id, user, body);
+    // const result = await this.authService.getEventDetails(id, user, body);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }

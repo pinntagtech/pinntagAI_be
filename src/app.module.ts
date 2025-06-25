@@ -122,11 +122,11 @@ import * as redisStore from 'cache-manager-redis-store';
     MulterModule.register({
       dest: './uploads',
     }),
-    RateLimiterModule.register({
-      points: 5, // 5 requests
-      duration: 60, // per 60 seconds (1 minute)
-      keyPrefix: 'ratelimit', // Optional: Redis-based tracking
-    }),
+    // RateLimiterModule.register({
+    //   points: 5, // 5 requests
+    //   duration: 60, // per 60 seconds (1 minute)
+    //   keyPrefix: 'ratelimit', // Optional: Redis-based tracking
+    // }),
     MongooseModule.forRoot(process.env.MONGO_URI),
     MongooseModule.forFeature([
       {

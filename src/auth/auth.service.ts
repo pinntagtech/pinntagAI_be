@@ -1846,8 +1846,8 @@ export class AuthService {
       {
         $lookup: {
           from: 'users',
-          localField: 'event._id',
-          foreignField: 'savedEvents',
+          localField: 'event._id', //123
+          foreignField: 'savedEvents', //123, 456
           as: 'savedEvents',
         },
       },
@@ -4099,6 +4099,397 @@ export class AuthService {
   //   return resultArranged; // Return the arranged result
   // }
 
+  async getEventCardView(id: string, user: DecodedUser, data: GetDashboardDto) {
+    const now = new Date();
+    const startDate = data.startDate ? new Date(data.startDate) : now;
+    const endDate = data.endDate
+      ? new Date(data.endDate)
+      : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
+    const QR_ImageCategory = await this.fileCategoryModel.findOne({
+      name: 'Content QR',
+    });
+    let [event] = await this.eventLocationModel.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [
+              parseFloat(data.longitude),
+              parseFloat(data.latitude),
+            ],
+          },
+          distanceField: 'distance',
+          maxDistance: 100000000 * 1000,
+          spherical: true,
+        },
+      },
+      {
+        $match: {
+          event: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'event',
+          foreignField: '_id',
+          as: 'event',
+        },
+      },
+      { $unwind: '$event' },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'event.categories',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files', // assuming this is the same collection as QR_CODE
+          let: { folderId: '$event.drivePath' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$parentDirectory', '$$folderId'] },
+                    {
+                      $ne: [
+                        '$category',
+                        new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'files',
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'event.QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'event.businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $cond: [
+              { $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null] },
+              true,
+              { $eq: ['$businessProfileDetails.isDeleted', false] },
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event._id', //123
+          foreignField: 'savedEvents', //123, 456
+          as: 'savedEvents',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event._id',
+          foreignField: 'likedEvents',
+          as: 'likedEvents',
+        },
+      },
+      {
+        $addFields: {
+          isSaved: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$savedEvents._id'],
+          },
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$likedEvents._id'],
+          },
+          'event.isFollowedByMe': {},
+        },
+      },
+      {
+        $group: {
+          _id: '$event._id', // Group by event._id
+          // event: { $first: '$event' }, // Preserve event object
+          schedule: { $first: '$event.eventSchedule' },
+          title: { $first: '$event.title' },
+          keywords: { $first: '$event.keywords' },
+          description: { $first: '$event.description' },
+          type: { $first: '$event.type' },
+          status: { $first: '$event.status' },
+          notifyFollowers: { $first: '$event.notifyFollowers' },
+          targetGenders: { $first: '$event.targetGenders' },
+          promotionCode: { $first: '$event.promotionCode' },
+          isFree: { $first: '$event.isFree' },
+          participationCost: { $first: '$event.participationCost' },
+          bookingUrl: { $first: '$event.bookingUrl' },
+          RSVP: { $first: '$event.RSVP' },
+          minTargetAge: { $first: '$event.minTargetAge' },
+          maxTargetAge: { $first: '$event.maxTargetAge' },
+          termsApplied: { $first: '$event.termsApplied' },
+          termsAndConditions: { $first: '$event.termsAndConditions' },
+          facebookPostId: { $first: '$event.facebookPostId' },
+          specifyForEachDay: { $first: '$event.specifyForEachDay' },
+          participants: { $first: '$event.participants' },
+          // creatorDetails: { $first: '$creatorDetails' },
+          creatorType: { $first: '$event.creatorType' },
+          categories: { $first: '$categories' },
+          businessProfileDetails: { $first: '$businessProfileDetails' },
+          files: { $first: '$files' },
+          QR_CODE: { $first: '$QR_CODE' },
+          isLiked: { $first: '$isLiked' },
+          isSaved: { $first: '$isSaved' },
+          locations: {
+            $push: {
+              location: '$location',
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$zip',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+          distance: { $first: { $divide: ['$distance', 1609.34] } },
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businessusers',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'businessUserDetails',
+        },
+      },
+      { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: '$businessUserDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          distance: 1,
+          title: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGenders: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          ageGroupsAllowed: {
+            minAge: '$minTargetAge',
+            maxAge: '$maxTargetAge',
+          },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                activeColor: '$$category.activeColor',
+              },
+            },
+          },
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            name: '$businessProfileDetails.name',
+            cover: '$businessProfileDetails.cover',
+            email: '$businessProfileDetails.email',
+            bio: '$businessProfileDetails.bio',
+            followersCount: '$businessProfileDetails.followersCount',
+            profileType: 'BusinessProfile',
+            phone: '$businessProfileDetails.phone',
+            website: '$businessProfileDetails.website',
+            facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+            instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+            twitterPageUrl: '$businessProfileDetails.XPageUrl',
+          },
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
+          },
+          creatorDetails: {
+            $cond: {
+              if: { $eq: ['$creatorType', 'User'] },
+              then: {
+                _id: '$userDetails._id',
+                name: '$userDetails.name',
+                profilePhoto: '$userDetails.profilePhoto',
+                email: '$userDetails.email',
+                bio: '$userDetails.bio',
+                followersCount: '$userDetails.followersCount',
+                profileType: 'User',
+                phone: '$userDetails.phone',
+                website: '',
+                isFollowedByMe: '$event.isFollowedByMe',
+                isDeleted: '$userDetails.isDeleted',
+                isMe: false,
+              },
+              else: {
+                _id: '$businessProfileDetails._id',
+                name: '$businessProfileDetails.name',
+                profilePhoto: '$businessProfileDetails.profilePhoto',
+                email: '$businessProfileDetails.email',
+                bio: '$businessProfileDetails.bio',
+                followersCount: '$businessProfileDetails.followersCount',
+                profileType: 'BusinessProfile',
+                phone: '$businessProfileDetails.phone',
+                website: '$businessProfileDetails.website',
+                isFollowedByMe: '$event.isFollowedByMe',
+                isDeleted: '$businessProfileDetails.isDeleted',
+                facebookPageUrl: '$businessUserDetails.facebookPageUrl',
+                instagramPageUrl: '$businessUserDetails.instagramPageUrl',
+                twitterPageUrl: '$businessUserDetails.XPageUrl',
+                isMe: false,
+              },
+            },
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
+              },
+            },
+          },
+          creatorType: 1,
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
+        },
+      },
+    ]);
+    console.log('event', event);
+
+    if (!event) {
+      return {
+        success: false,
+        message: 'Event not found with the id provided.',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Event details fetched successfully',
+      event: event,
+    };
+  }
   async getEventDetails(id: string, user: DecodedUser, data: GetDashboardDto) {
     // const event = await this.eventModel
     //   .findById(id)
@@ -4109,206 +4500,205 @@ export class AuthService {
     //   .populate('businessProfile', BusinessPopulates.FOREIGN)
 
     console.log('Checking something:::::', user.id);
-    let event = await this.eventModel
-      .aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
+    let [event] = await this.eventModel.aggregate([
+      // {
+      //   $geoNear: {
+      //     near: { type: 'Point', coordinates: [data.longitude, data.latitude] },
+      //     distanceField: 'distance',
+      //     maxDistance: 1000000 * 1000,
+      //     spherical: true,
+      //   },
+      // },
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'categories',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'drivePath',
+          foreignField: 'parentDirectory',
+          as: 'files',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
+      },
+      // locations
+      {
+        $lookup: {
+          from: 'locations',
+          localField: 'locations',
+          foreignField: '_id',
+          as: 'locations',
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id', //123
+          foreignField: 'savedEvents', //123, 456
+          as: 'savedEvents',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'likedEvents',
+          as: 'likedEvents',
+        },
+      },
+      {
+        $addFields: {
+          isSaved: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$savedEvents._id'],
           },
-        },
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'categories',
-            foreignField: '_id',
-            as: 'categories',
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$likedEvents._id'],
           },
+          'event.isFollowedByMe': {},
         },
-        {
-          $lookup: {
-            from: 'files',
-            localField: 'drivePath',
-            foreignField: 'parentDirectory',
-            as: 'files',
+      },
+      // businessProfile
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          creatorType: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGeners: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          isFromCrawlet: 1,
+          userDetails: 1,
+          user: {
+            _id: '$userDetails._id',
+            name: '$userDetails.name',
+            profilePhoto: '$userDetails.profilePhoto',
+            email: '$userDetails.email',
           },
-        },
-        {
-          $lookup: {
-            from: 'files',
-            localField: 'QR_CODE',
-            foreignField: '_id',
-            as: 'QR_CODE',
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            isDeleted: '$businessProfileDetails.isDeleted',
+            name: '$businessProfileDetails.name',
+            countryCode: '$businessProfileDetails.countryCode',
+            phone: '$businessProfileDetails.phone',
+            profileType: 'BusinessProfile',
+            email: '$businessProfileDetails.email',
+            website: '$businessProfileDetails.website',
+            followersCount: '$businessProfileDetails.followersCount',
+            logo: '$businessProfileDetails.logo',
           },
-        },
-        {
-          $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
-        },
-        // locations
-        {
-          $lookup: {
-            from: 'locations',
-            localField: 'locations',
-            foreignField: '_id',
-            as: 'locations',
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
           },
-        },
-        {
-          $lookup: {
-            from: 'eventschedules',
-            localField: 'schedule',
-            foreignField: '_id',
-            as: 'schedules',
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'user',
-            foreignField: '_id',
-            as: 'userDetails',
-          },
-        },
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessProfile',
-            foreignField: '_id',
-            as: 'businessProfileDetails',
-          },
-        },
-        {
-          $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true },
-        },
-        // {
-        //   $lookup: {
-        //     from: 'users',
-        //     let: { eventId: { $toString: '$_id' } }, // convert event ID to string
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           _id: new mongoose.Types.ObjectId(user.id),
-        //           $expr: {
-        //             $in: [
-        //               '$$eventId',
-        //               {
-        //                 $map: {
-        //                   input: '$savedEvents',
-        //                   as: 'e',
-        //                   in: { $toString: '$$e' },
-        //                 },
-        //               },
-        //             ],
-        //           },
-        //         },
-        //       },
-        //     ],
-        //     as: 'isSavedByUser',
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     isSaved: { $gt: [{ $size: '$isSavedByUser' }, 0] },
-        //   },
-        // },
-        // businessProfile
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessProfile',
-            foreignField: '_id',
-            as: 'businessProfileDetails',
-          },
-        },
-        {
-          $unwind: {
-            path: '$businessProfileDetails',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            title: 1,
-            creatorType: 1,
-            keywords: 1,
-            description: 1,
-            type: 1,
-            status: 1,
-            notifyFollowers: 1,
-            targetGeners: 1,
-            promotionCode: 1,
-            isFree: 1,
-            participationCost: 1,
-            bookingUrl: 1,
-            termsAndConditions: 1,
-            isFromCrawlet: 1,
-            userDetails: 1,
-            user: {
-              _id: '$userDetails._id',
-              name: '$userDetails.name',
-              profilePhoto: '$userDetails.profilePhoto',
-              email: '$userDetails.email',
-            },
-            businessProfileDetails: {
-              _id: '$businessProfileDetails._id',
-              isDeleted: '$businessProfileDetails.isDeleted',
-              name: '$businessProfileDetails.name',
-              countryCode: '$businessProfileDetails.countryCode',
-              phone: '$businessProfileDetails.phone',
-              profileType: 'BusinessProfile',
-              email: '$businessProfileDetails.email',
-              website: '$businessProfileDetails.website',
-              followersCount: '$businessProfileDetails.followersCount',
-              logo: '$businessProfileDetails.logo',
-            },
-            QR_CODE: {
-              _id: '$QR_CODE._id',
-              url: '$QR_CODE.metaData.url',
-            },
-            categories: {
-              $map: {
-                input: '$categories',
-                as: 'category',
-                in: {
-                  _id: '$$category._id',
-                  name: '$$category.title',
-                  darkIcon: '$$category.darkIcon',
-                  lightIcon: '$$category.lightIcon',
-                  colorData: '$$category.activeColor',
-                },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                colorData: '$$category.activeColor',
               },
             },
-            targetGenders: 1,
-            ageGroupsAllowed: {
-              $mergeObjects: [
-                {
-                  minAge: { $ifNull: ['$minTargetAge', null] },
-                  maxAge: { $ifNull: ['$maxTargetAge', null] },
-                },
-              ],
-            },
-            images: {
-              $map: {
-                input: '$files',
-                as: 'file',
-                in: {
-                  _id: '$$file._id',
-                  url: '$$file.metaData.url',
-                },
+          },
+          targetGenders: 1,
+          ageGroupsAllowed: {
+            $mergeObjects: [
+              {
+                minAge: { $ifNull: ['$minTargetAge', null] },
+                maxAge: { $ifNull: ['$maxTargetAge', null] },
+              },
+            ],
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
               },
             },
-            isLiked: 1,
-            isSaved: 1,
-            locations: 1,
-            schedules: 1,
           },
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
         },
-      ])
-      .then((res) => res[0]);
+      },
+    ]);
     console.log('event', event);
-
-    const findUser = await this.userModel.findById(user.id);
-    console.log('findUser.saved:', findUser.savedEvents);
 
     if (!event) {
       return {
@@ -4324,8 +4714,9 @@ export class AuthService {
         };
       }
     }
-    const isSaved = await this.userService.isEventSaved(id, user.id);
-    const isLiked = await this.userService.isEventLiked(id, user.id);
+    // const isSaved = await this.userService.isEventSaved(id, user.id);
+    // console.log("IsSaved:",isSaved);
+    // const isLiked = await this.userService.isEventLiked(id, user.id);
     const eventObj = JSON.parse(JSON.stringify(event));
     delete eventObj.locations;
 
@@ -4336,8 +4727,8 @@ export class AuthService {
     );
 
     const eventLocs = event.locations as any;
-    eventObj['isSaved'] = isSaved;
-    eventObj['isLiked'] = isLiked;
+    // eventObj['isSaved'] = isSaved;
+    // eventObj['isLiked'] = isLiked;
     let eventDistance = 0;
     for (let l = 0; l < eventLocs.length; l++) {
       //Convert to JSON and then back to object to avoid reference issues
