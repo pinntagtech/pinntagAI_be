@@ -150,6 +150,65 @@ export class SocketGateway
     });
   }
 
+  @SubscribeMessage('dashboardMapView')
+  async handleDashboardMapView(
+    client: Socket,
+    payload: {
+      body: GetDashboardDto;
+      carouselId: string;
+      search?: string;
+      page?: string;
+      limit?: string;
+      distance?: string;
+      timeZone?: string;
+    },
+  ) {
+    const {
+      body,
+      carouselId,
+      search,
+      page,
+      limit,
+      distance,
+      timeZone,
+    } = payload;
+    const userId = (client as any).userId;
+    const userType = (client as any).userType;
+    const decodedUser: DecodedUser = {
+      id: userId,
+      userType,
+      isGuest: userType === UserTypes.GUEST,
+      email: '',
+      role: '',
+      name: '',
+      token: '',
+      profilePhoto: '',
+      isBusiness: userType === UserTypes.BUSINESS,
+    };
+    const result = await this.authService.getDashboardMapView(
+      decodedUser,
+      carouselId,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      distance ? parseInt(distance) : 1000000000000,
+      search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
+      limit ? parseInt(limit) : 15,
+      page ? parseInt(page) : 1,
+      body.categories ? body.categories : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+    );
+    client.emit('dashboardMapViewResponse', {
+      message: result.message,
+      events: result.events,
+      page: result.page,
+      limit: result.limit,
+      total: result.totalCount,
+      pages: result.pages,
+    });
+  }
+
   @SubscribeMessage('getEventDetails')
   async handleGetEventDetails(
     client: Socket,
