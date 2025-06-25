@@ -85,6 +85,7 @@ import { RateLimiterModule } from 'nestjs-rate-limiter';
 import { OutletModule } from './outlet/outlet.module';
 import { GoogleModule } from './google/google.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { SocketModule } from './socket/socket.module';
 import { Template, TemplateSchema } from './event/models/template.model';
 import {
   DashboardConfig,
@@ -186,6 +187,7 @@ import * as redisStore from 'cache-manager-redis-store';
     OutletModule,
     GoogleModule,
     RewardsModule,
+    SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, SeederService, DriveService,S3Service],
