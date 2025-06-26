@@ -1683,24 +1683,51 @@ export class AdminService {
       }
 
       let categoryObjectIds = [];
+      // if (data.contentCategories) {
+      //   for (let i = 0; i < data.contentCategories.length; i++) {
+      //     const foundCategory = await this.contentCategoryModel.findById(
+      //       data.contentCategories[i],
+      //     );
+      //     if (!foundCategory) {
+      //       return {
+      //         success: false,
+      //         message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+      //       };
+      //     } else {
+      //       categoryObjectIds.push(foundCategory._id);
+      //     }
+      //   }
+      //   data.contentCategories = categoryObjectIds;
+      // }
       if (data.contentCategories) {
-        console.log('date.contentCategories:', data.contentCategories);
-        for (let i = 0; i < data.contentCategories.length; i++) {
-          console.log('data.categories[i]:', data.contentCategories[i]);
-          const foundCategory = await this.contentCategoryModel.findById(
-            data.contentCategories[i],
-          );
-          if (!foundCategory) {
-            return {
-              success: false,
-              message: `Category not found with the id provided: ${data.contentCategories[i]}`,
-            };
-          } else {
-            categoryObjectIds.push(foundCategory._id);
-          }
-        }
-        data.contentCategories = categoryObjectIds;
-      }
+  const categories = Array.isArray(data.contentCategories)
+    ? data.contentCategories
+    : [data.contentCategories];
+
+  for (let i = 0; i < categories.length; i++) {
+    const categoryId = categories[i];
+
+    // Optionally validate ObjectId format early
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return {
+        success: false,
+        message: `Invalid category ID format: ${categoryId}`,
+      };
+    }
+
+    const foundCategory = await this.contentCategoryModel.findById(categoryId);
+    if (!foundCategory) {
+      return {
+        success: false,
+        message: `Category not found with the id provided: ${categoryId}`,
+      };
+    } else {
+      categoryObjectIds.push(foundCategory._id);
+    }
+  }
+
+  data.contentCategories = categoryObjectIds;
+}
       let busCategoryObjectIds = [];
       if (data.businessCategories) {
         for (let i = 0; i < data.businessCategories.length; i++) {
@@ -1716,7 +1743,8 @@ export class AdminService {
             busCategoryObjectIds.push(foundCategory._id);
           }
         }
-        data.businessCategories = categoryObjectIds;
+        console.log('busCategoryObjectIds:', busCategoryObjectIds);
+        data.businessCategories = busCategoryObjectIds;
       }
       if (data.businessIndustry) {
         data.businessIndustry = new mongoose.Types.ObjectId(
