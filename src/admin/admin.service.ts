@@ -1002,8 +1002,8 @@ export class AdminService {
         message: 'Admin not found with the id provided.',
       };
     }
-    let password = data.password;
-    data.password = await bcrypt.hash(data.password, 10);
+    let password = await this.authService.autoGeneratePassword();
+    password = await bcrypt.hash(password, 10);
     if (data.role) {
       const role = await this.roleModel.findById(data.role);
       if (!role) {
