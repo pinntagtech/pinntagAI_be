@@ -37,7 +37,6 @@ export class UpdateTemplateDto {
   title: string;
 
   @IsOptional()
-  @IsArray()
   @IsString({ each: true })
   keywords: string[];
 
@@ -46,19 +45,16 @@ export class UpdateTemplateDto {
   description?: string;
 
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
   @Min(0)
-  minTargetAge?: number;
+  minTargetAge?: string;
 
   @IsOptional()
-  @IsNumber()
   @Type(() => Number)
   @Min(0)
-  maxTargetAge?: number;
+  maxTargetAge?: string;
 
   @IsOptional()
-  @IsArray()
   @IsString({ each: true })
   targetGenders: string[];
 
@@ -67,27 +63,22 @@ export class UpdateTemplateDto {
   promotionCode?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isFree: boolean;
+  isFree: string;
 
   @IsOptional()
   @IsString()
   participationCost?: string;
 
   @IsOptional()
-  @IsBoolean()
-  termsApplied: boolean;
+  termsApplied: string;
 
   @IsOptional()
   @IsString()
   termsAndConditions?: string;
 
   @IsOptional()
-  @IsMongoId()
-  businessIndustry?: string | mongoose.Types.ObjectId;
+  businessIndustry?: any;
 
   @IsOptional()
-  @IsArray()
-  @IsMongoId({ each: true })
-  businessCategories?: string | mongoose.Types.ObjectId[];
+  businessCategories?: string[];
 }

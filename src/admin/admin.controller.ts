@@ -1026,12 +1026,18 @@ export class AdminController {
 
   @Post('update/template/:id')
   @UseGuards(AdminGuard2)
+  @UseInterceptors(
+      FileInterceptor('image', {
+        limits: { fileSize: 1000000 },
+      }),
+    )
   async updateTemplate(
     @Param('id') id: string,
     @Body() data: UpdateTemplateDto,
     @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.updateTemplate(user.id, id, data);
+    const result = await this.adminService.updateTemplate(user.id, id, data,image);
     if (result.success) {
       return {
         message: result.message,
@@ -1231,6 +1237,33 @@ export class AdminController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Get('reportedEvents')
+  @UseGuards(AdminGuard2)
+  async getReportedEvents(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('status') status: string = 'all',
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getReportedEvents(
+      pageNumber,
+      limitNumber,
+      status
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
       };
     } else {
       throw new BadRequestException(result.message);

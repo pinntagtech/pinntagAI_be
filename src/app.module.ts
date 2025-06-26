@@ -108,13 +108,13 @@ import * as redisStore from 'cache-manager-redis-store';
     // ServeStaticModule.forRoot({
     //   rootPath: join(__dirname, '..', 'uploads'),
     // }),
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost', // or use process.env.REDIS_HOST
-      port: 6379,
-      ttl: 86400, // cache for 1 day
-      isGlobal: true,
-    }),
+    // CacheModule.register({
+    //   store: redisStore,
+    //   host: 'localhost', // or use process.env.REDIS_HOST
+    //   port: 6379,
+    //   ttl: 86400, // cache for 1 day
+    //   isGlobal: true,
+    // }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',

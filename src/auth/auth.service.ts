@@ -5098,7 +5098,6 @@ export class AuthService {
 
   async getProfile(userId: string, userType: string) {
     try {
-      console.log('Is coming here:::::::', userId, userType);
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
@@ -5121,7 +5120,6 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        console.log('Insiide Businessssss:::');
         userDoc = await this.businessUserModel
           .findById(userId)
           // .populate('business')

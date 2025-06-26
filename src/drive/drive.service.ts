@@ -212,11 +212,14 @@ export class DriveService {
         owner: new mongoose.Types.ObjectId(id),
       });
       console.log('folder data........', folderData);
-      if (!isValidObjectId(folderData.parentDirectory)) {
+      if (folderData.parentDirectory && !isValidObjectId(folderData.parentDirectory)) {
         return {
           success: false,
           message: 'Invalid ObjectId',
         };
+      }
+      if(!folderData.parentDirectory){
+        folderData.parentDirectory = driveDetails.id;
       }
       let isDrive = await this.driveModel.findOne({
         _id: folderData.parentDirectory,

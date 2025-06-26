@@ -20,7 +20,11 @@ import {
 //   BusinessLocation,
 //   BusinessLocationDocument,
 // } from 'src/business-profile/models/businessLocation.model';
-import { CrawledEventStatus, EventStatus } from 'src/enums/event.enums';
+import {
+  CrawledEventStatus,
+  EventStatus,
+  ReportTypes,
+} from 'src/enums/event.enums';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
 import {
@@ -112,6 +116,8 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { Report, ReportDocument } from 'src/event/models/reports.model';
+import { BusinessPopulates } from 'src/enums/user.enum';
 
 @Injectable()
 export class AdminService {
@@ -158,6 +164,8 @@ export class AdminService {
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Report.name)
+    private readonly reportModel: Model<ReportDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly httpService: HttpService,
@@ -1658,8 +1666,14 @@ export class AdminService {
       };
     }
   }
-  async updateTemplate(adminId: string, id: string, data: UpdateTemplateDto) {
+  async updateTemplate(
+    adminId: string,
+    id: string,
+    data: UpdateTemplateDto,
+    image: Express.Multer.File,
+  ) {
     try {
+      const admin = await this.adminModel.findById(adminId);
       const template = await this.templateModel.findById(id);
       if (!template) {
         return {
@@ -1716,11 +1730,22 @@ export class AdminService {
           updateObj[key] = data[key];
         }
       });
-
       if (data.contentCategories) {
         updateObj.categories = data.contentCategories;
       }
-
+      if (image) {
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.GALLERY_IMAGE,
+        });
+        let imageUpload = await this.driveService.uploadAndCreateFile(
+          image,
+          String(admin.drive),
+          Drive.name,
+          admin._id,
+          fileCategory._id,
+        );
+        updateObj.thumbnail = imageUpload.metaData.url;
+      }
       const updatedTemplate = await this.templateModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         {
@@ -2291,6 +2316,52 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in createBusinessUser:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getReportedEvents(page: number, limit: number, status?: string) {
+    try {
+      const query: any = {};
+      if (
+        status &&
+        status !== 'all' &&
+        Object.values(ReportTypes).includes(status as ReportTypes)
+      ) {
+        query.status = status;
+      }
+      const reportedEvents = await this.reportModel
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('user', '_id name')
+        // .populate('event', '_id title')
+        .populate({
+          path: 'event',
+          populate: {
+            path: 'businessProfile',
+            model: Business.name,
+            select: BusinessPopulates.FOREIGN,
+          },
+        });
+
+      const totalReportedEvents = await this.reportModel.countDocuments(query);
+
+      return {
+        success: true,
+        message: 'Reported events fetched successfully',
+        data: reportedEvents,
+        page,
+        limit,
+        total: totalReportedEvents,
+        pages: Math.ceil(totalReportedEvents / limit),
+      };
+    } catch (error) {
+      console.error('Error in getReportedEvents:', error);
       return {
         success: false,
         message: 'Something went wrong.',
