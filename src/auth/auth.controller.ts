@@ -120,6 +120,7 @@ export class AuthController {
 
   @Post('updatePersonalDetails/:id')
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(JwtGuard2)
   async updatePersonalDetails(
     @Req() req: Request,
     @Body() personalDetailDTO: PersonDetailDto,

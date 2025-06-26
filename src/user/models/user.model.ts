@@ -6,6 +6,7 @@ import { Subscription } from 'src/subscription/models/subscription.model';
 import { Refferal } from './refferal.model';
 import { Drive } from 'src/drive/models/drive.model';
 import { Role } from 'src/roles/models/roles.model';
+import { UserProfileStatus } from 'src/enums/user.enum';
 
 export const Genders = {
   MALE: 'male',
@@ -32,6 +33,14 @@ export class User {
   lastName: string;
   @Prop({ default: '' })
   name: string;
+
+  @Prop({
+    required: true,
+    enum: Object.values(UserProfileStatus),
+    default: UserProfileStatus.INITIATED,
+  })
+  status: number;
+
   @Prop({
     default:
       'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+user+logo.png',

@@ -9,6 +9,7 @@ import {
   CategoryPopulates,
   LocationPopulates,
   UserPopulates,
+  UserProfileStatus,
 } from 'src/enums/user.enum';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
@@ -410,6 +411,7 @@ export class AuthService {
       {
         $set: {
           ...personalDetailDTO,
+          status: UserProfileStatus.DETAILS_ADDED,
         },
       },
     );
