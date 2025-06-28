@@ -427,7 +427,7 @@ export class EventController {
   }
 
   @Post('invitation')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: InviteEventDto,
@@ -451,7 +451,7 @@ export class EventController {
   }
 
   @Post('accept/invitation')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async acceptInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: AcceptInvitationDto,
@@ -474,7 +474,7 @@ export class EventController {
   }
 
   @Post('decline/invitation/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async declineInvitation(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
@@ -497,7 +497,7 @@ export class EventController {
   }
 
   @Post('rsvp/response/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async rsvpResponse(
     @Body() body: RespondRsvp,
     @Param('id') eventId: string,
@@ -526,7 +526,7 @@ export class EventController {
   }
 
   @Get('rsvp/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getRsvp(
     @Param('id') eventId: string,
     @TokenDecoder() user: DecodedUser,
