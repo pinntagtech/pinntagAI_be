@@ -14,6 +14,7 @@ import {
   EventStatus,
   EventTypes,
   NotificationTypes,
+  ReportTypes,
   RSVPTypes,
 } from 'src/enums/event.enums';
 import { S3Service } from 'src/s3.service';
@@ -4182,6 +4183,14 @@ export class EventService2 {
         };
       }
     }
+  }
+  async getReportTypes() {
+    const reportTypes = Object.values(ReportTypes);
+    return {
+      success: true,
+      message: 'Report types fetched successfully',
+      data: reportTypes,
+    };
   }
 
   async reportEvent(userId: string, data: ReportEventDto) {

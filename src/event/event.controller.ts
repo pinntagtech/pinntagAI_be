@@ -40,6 +40,7 @@ import { CreateOfferDto } from './dto/create-offer.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('event')
 export class EventController {
@@ -822,6 +823,22 @@ export class EventController {
     if (result.success) {
       return {
         message: result.message,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Get('reportTypes')
+  @UseGuards(RateLimitGuard)
+  async getReportTypes() {
+    const result = await this.eventService.getReportTypes();
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
       };
     } else {
       throw new BadRequestException({
