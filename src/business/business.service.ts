@@ -107,6 +107,8 @@ import {
 } from 'src/rewards/model/userReward.model';
 import { EventLocation, EventLocationDocument } from 'src/event/models/eventLocation.model';
 
+import { instance as logger } from 'src/logger/winston.logger';
+
 @Injectable()
 export class BusinessService {
   constructor(
@@ -1046,7 +1048,7 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    // console.log('Validated Business User:', validatedBusinessUser);
+    logger.info(`Winston Log: Validated Business User: ${validatedBusinessUser}`);
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 

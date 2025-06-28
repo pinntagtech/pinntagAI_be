@@ -13,6 +13,7 @@ import {
   Query,
   Param,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -110,6 +111,28 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyContactDetails(@Body() body: VerifyOtpDto) {
     const result = await this.authService.verifyContactDetails(body);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+    };
+  }
+
+  @Put('updateUserConsent')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async updateUserConsent(
+    @Req() req: Request,
+    @Body('privacyConsent')  privacyConsent: boolean,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.updateUserConsent(
+      user.id,
+      privacyConsent,
+    );
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
