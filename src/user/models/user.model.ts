@@ -110,6 +110,12 @@ export class User {
   savedCards: Array<string>;
   @Prop()
   drive: mongoose.Types.ObjectId;
+
+  @Prop({default: false })
+  privacyConsent: boolean;
+
+  @Prop()
+  consentTimestamp: Date;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 

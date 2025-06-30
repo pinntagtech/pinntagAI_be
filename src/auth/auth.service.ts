@@ -399,6 +399,25 @@ export class AuthService {
     };
   }
 
+  async updateUserConsent(
+    id: string,
+    privacyConsent: boolean,
+  ) {
+    await this.userModel.updateOne(
+      { _id: id },
+      {
+        $set: {
+          privacyConsent,
+          consentTimestamp: new Date(),
+        },
+      },
+    );
+    return {
+      success: true,
+      message: 'User consent updated successfully',
+    };
+  }
+
   async updatePersonalDetails(
     personalDetailDTO: PersonDetailDto,
     id: string,

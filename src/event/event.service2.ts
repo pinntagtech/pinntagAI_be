@@ -5288,7 +5288,7 @@ export class EventService2 {
   async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
-    image: Express.Multer.File,
+    images: Express.Multer.File[],
   ) {
     try {
       const userId = user.id;
@@ -5383,18 +5383,12 @@ export class EventService2 {
       const fileCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      if (image) {
-        console.log('Image:', image);
 
-        let qrDetails = await this.driveService.uploadAndCreateFile(image,String(event.drivePath),Folder.name,event._id,fileCategory._id)
-
-        await this.eventModel.updateOne(
-          { _id: event._id },
-          {
-            $set: {
-              QR_CODE: qrDetails._id,
-            },
-          },
+      if (images) {
+        this.driveService.multiImageUpload(
+          user.id,
+          String(event.drivePath),
+          images,
         );
       }
 
@@ -5442,24 +5436,23 @@ export class EventService2 {
           .split(',')
           .map((cat) => new mongoose.Types.ObjectId(cat));
 
-          for (let category of data.categories) {
-            if (!mongoose.isValidObjectId(category)) {
-              return {
-                success: false,
-                message: 'Please provide a valid category id',
-              };
-            }
-            const foundCategory = await this.categoryModel.findById(category);
-            if (!foundCategory) {
-              return {
-                success: false,
-                message: 'Category not found',
-              };
-            }
-            categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        for (let category of data.categories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
           }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
       }
-      
 
       if (
         data.minTargetAge &&
@@ -5508,7 +5501,7 @@ export class EventService2 {
         );
 
         const fileCategory = await this.fileCategoryModel.findOne({
-          name: 'Content QR',
+          name: FileCategoryTypes.GALLERY_IMAGE,
         });
         const splitIndex = result.Location.indexOf('amazonaws');
         const part1 = result.Location.slice(0, splitIndex);
@@ -5790,12 +5783,12 @@ export class EventService2 {
           );
           console.log('Business Folder:', businessFolder);
 
-          let randomCategoryCount = Math.floor(Math.random() * 4)+1;
+          let randomCategoryCount = Math.floor(Math.random() * 4) + 1;
           const randomCategories = await this.categoryModel.aggregate([
             { $sample: { size: randomCategoryCount } },
           ]);
           const categoriesInObjectId = randomCategories.map((cat) => cat._id);
-          console.log("CATEGORIES::::",categoriesInObjectId);
+          console.log('CATEGORIES::::', categoriesInObjectId);
           let eventObj = {
             title: data.title,
             description: data.description,

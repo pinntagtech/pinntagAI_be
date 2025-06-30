@@ -41,7 +41,6 @@ import {
   BusinessCategory,
   BusinessCategoryDocument,
 } from './model/businessCategory.model';
-import { count, profile } from 'console';
 import {
   BusinessCountry,
   BusinessCountryDocument,
@@ -106,6 +105,8 @@ import {
   UserRewardDocument,
 } from 'src/rewards/model/userReward.model';
 import { EventLocation, EventLocationDocument } from 'src/event/models/eventLocation.model';
+
+import { instance as logger } from 'src/logger/winston.logger';
 
 @Injectable()
 export class BusinessService {
@@ -251,7 +252,7 @@ export class BusinessService {
         data: updatedUser,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -501,13 +502,13 @@ export class BusinessService {
       }
 
       //create business folder in drive
-      console.log('userDetails:', userDetails);
+        logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,
       });
-      console.log('Business Folder:', businessFolder);
+        logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
       let createObj = {
         name: data.name,
         email: data.email,
@@ -540,7 +541,7 @@ export class BusinessService {
           },
         );
       }
-      console.log('OLD ROLES SEEDER');
+        logger.info('OLD ROLES SEEDER');
       // const rolePromises = Object.keys(DefaultBusinessRoles).map(
       //   async (roleName) => {
       //     const roleData = DefaultBusinessRoles[roleName];
@@ -591,10 +592,10 @@ export class BusinessService {
       // await Promise.all(rolePromises);
 
       this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
-        .then(() => console.log('Business roles seeded successfully'))
-        .catch((err) => console.error('Error seeding business roles:', err));
+        .then(() => logger.info('Business roles seeded successfully'))
+        .catch((err) => logger.error('Error seeding business roles:', err));
 
-      console.log('businessId:', createdBusiness.id);
+      logger.info(`businessId: ${createdBusiness.id}`);
 
       const updatedToken = await this.jwtService.signAsync(
         {
@@ -608,7 +609,7 @@ export class BusinessService {
           expiresIn: '1d',
         },
       );
-      console.log('udpatedToken:', updatedToken);
+      logger.info(`udpatedToken: ${updatedToken}`);
 
       await this.tokenModel.findOneAndUpdate(
         { token },
@@ -626,7 +627,7 @@ export class BusinessService {
         token: updatedToken,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -709,7 +710,7 @@ export class BusinessService {
         );
       }
     } catch (error) {
-      console.error('Error seeding business department roles:', error);
+      logger.error('Error seeding business department roles:', error);
       throw new Error('Failed to seed business department roles');
     }
   }
@@ -727,7 +728,7 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
-      console.log('Business ID:', businessId);
+      logger.info(`Business ID: ${businessId}`);
       const findBusiness = await this.businessModel.findById(businessId);
       if (!findBusiness) {
         return {
@@ -867,7 +868,7 @@ export class BusinessService {
         };
         delete updateObj.boardMembers;
       }
-      console.log('udpateObj:', updateObj);
+      logger.info(`udpateObj: ${JSON.stringify(updateObj)}`);
       let updatedDetails = await this.businessModel.findByIdAndUpdate(
         businessId,
         {
@@ -903,14 +904,14 @@ export class BusinessService {
       }
 
       updatedDetails = await this.businessModel.findById(businessId);
-      console.log('udpatedDetails:', updatedDetails);
+      logger.info(`udpatedDetails: ${JSON.stringify(updatedDetails)}`);
       return {
         success: true,
         message: 'Business Updated Successfully!',
         data: updatedDetails,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -920,8 +921,8 @@ export class BusinessService {
 
   async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
     try {
-      console.log('id:', id);
-      console.log('data:', data);
+      logger.info(`updateBusinessUser id: ${id}`);
+      logger.info(`updateBusinessUser data: ${JSON.stringify(data)}`);
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
@@ -935,14 +936,14 @@ export class BusinessService {
         },
         { new: true },
       );
-      console.log('update details:', updatedDetails);
+      logger.info(`update details: ${JSON.stringify(updatedDetails)}`);
       return {
         success: true,
         message: 'Business Updated Successfully!',
         data: updatedDetails,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -978,7 +979,7 @@ export class BusinessService {
         limit,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -997,7 +998,7 @@ export class BusinessService {
         data: business,
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -1007,7 +1008,7 @@ export class BusinessService {
 
   //helper
   async validateBusinessUser(email: string, password: string) {
-    console.log('email password:', email, password);
+    logger.info(`email password: ${email} ${password}`);
     const user = await this.businessUserModel.findOne({ email });
     // console.log('User::', user);
     if (user) {
@@ -1046,7 +1047,7 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    // console.log('Validated Business User:', validatedBusinessUser);
+    logger.info(`Winston Log: Validated Business User: ${validatedBusinessUser}`);
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -1161,7 +1162,7 @@ export class BusinessService {
       expiresIn,
     });
     const expirationTime = this.calculateExpirationDate(expiresIn);
-    console.log('Expiration Time:', expirationTime);
+    logger.info(`Expiration Time: ${expirationTime}`);
     await this.userService.saveToken2(token, payload.id, type, expirationTime);
     return token;
   }
@@ -1211,7 +1212,7 @@ export class BusinessService {
     limit?: number;
   }> {
     try {
-      console.log('check 1:', id);
+      logger.info(`check 1: ${id}`);
       const user = await this.businessUserModel.findById(id);
       if (!user) {
         return {
@@ -1220,7 +1221,7 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
-      console.log('ALL USERE IDS:', allUserIds);
+      logger.info(`ALL USERE IDS: ${JSON.stringify(allUserIds)}`);
 
       const users = await this.businessUserModel.aggregate([
         {
@@ -1283,7 +1284,7 @@ export class BusinessService {
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ]);
-      console.log('users:', users);
+      logger.info(`users: ${JSON.stringify(users)}`);
 
       // const modifiedUsers = users.map((user) => ({
       //   ...user,
@@ -1450,7 +1451,7 @@ export class BusinessService {
   }
   async businessCategoryList(id: string, page: number, limit: number) {
     try {
-      console.log('ID:', id);
+      logger.info(`ID: ${id}`);
       const categories = await this.businessCategoryModel
         .find({
           industry: new mongoose.Types.ObjectId(id),
@@ -1460,7 +1461,7 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-      console.log('categories:', categories);
+      logger.info(`categories: ${JSON.stringify(categories)}`);
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
@@ -1492,11 +1493,11 @@ export class BusinessService {
           message: 'No Countries Found!',
         };
       }
-      console.log('page,limit', page, limit);
-      console.log('countries:', countries);
+      logger.info(`page,limit ${page} ${limit}`);
+      logger.info(`countries: ${JSON.stringify(countries)}`);
 
       const countDocs = await this.businessCountryModel.countDocuments();
-      console.log('countDocs:', countDocs);
+      logger.info(`countDocs: ${countDocs}`);
       return {
         success: true,
         message: 'Countries fetched Successfully!',
@@ -1600,7 +1601,7 @@ export class BusinessService {
         data: '',
       };
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -1632,7 +1633,7 @@ export class BusinessService {
   }
   async getAllChildUserIds2(userId) {
     const objectId = new mongoose.Types.ObjectId(userId);
-    console.log('objectIdque', objectId);
+    logger.info(`objectIdque ${objectId}`);
     const result = await this.businessUserModel
       .aggregate([
         {
@@ -1842,7 +1843,7 @@ export class BusinessService {
           message: 'Business User not found.',
         };
       }
-      console.log('check 1;');
+      logger.info('check 1;');
       let updateObj: any = {};
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined) {
@@ -1850,7 +1851,7 @@ export class BusinessService {
         }
       });
       delete updateObj.role;
-      console.log('updateObj: check 2', updateObj);
+      logger.info(`updateObj: check 2 ${JSON.stringify(updateObj)}`);
       if (data.role && data.role.trim() !== '') {
         if (!isValidObjectId(data.role)) {
           return {
@@ -1860,13 +1861,13 @@ export class BusinessService {
         }
         updateObj['role'] = [new mongoose.Types.ObjectId(data.role)];
       }
-      console.log('updateObj:', updateObj);
+      logger.info(`updateObj: ${JSON.stringify(updateObj)}`);
       const updatedUser = await this.businessUserModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         { $set: updateObj },
         { new: true },
       );
-      console.log('updatedUser:', updatedUser);
+      logger.info(`updatedUser: ${JSON.stringify(updatedUser)}`);
       // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
       const updatedUserDetails = await this.businessUserModel.aggregate([
         {
@@ -1912,7 +1913,7 @@ export class BusinessService {
           },
         },
       ]);
-      console.log('updatedUserDetails:', updatedUserDetails);
+      logger.info(`updatedUserDetails: ${JSON.stringify(updatedUserDetails)}`);
       return {
         success: true,
         message: 'Business User Updated Successfully!',
@@ -1968,7 +1969,7 @@ export class BusinessService {
         };
       }
       const getAllChildUsersIds = await this.getAllChildUserIds2(id);
-      console.log('getAllChildUsersIds:', getAllChildUsersIds);
+      logger.info(`getAllChildUsersIds: ${JSON.stringify(getAllChildUsersIds)}`);
       if (!getAllChildUsersIds.includes(deleteId)) {
         return {
           success: false,
@@ -2131,7 +2132,7 @@ export class BusinessService {
           expiresIn: '365d',
         },
       );
-      console.log('updated Token##########', updatedToken);
+      logger.info(`updated Token########## ${updatedToken}`);
 
       await this.tokenModel.findOneAndUpdate(
         { token: token },
@@ -2265,7 +2266,7 @@ export class BusinessService {
 
   async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {
     try {
-      console.log('Business:', user.businessProfile);
+      logger.info(`Business: ${user.businessProfile}`);
       const query = {
         business: new mongoose.Types.ObjectId(user.businessProfile),
       };
@@ -2280,8 +2281,8 @@ export class BusinessService {
           .lean(),
         this.departmentModel.countDocuments(query),
       ]);
-      console.log('items:', items);
-      console.log('total:', total);
+      logger.info(`items: ${JSON.stringify(items)}`);
+      logger.info(`total: ${total}`);
 
       return {
         success: true,
@@ -2341,8 +2342,8 @@ export class BusinessService {
 
   async fetchFollowers(user: DecodedUser, page: number, limit: number) {
     try {
-      console.log('user:', user.businessProfile);
-      console.log('User name:', User.name);
+      logger.info(`user: ${user.businessProfile}`);
+      logger.info(`User name: ${User.name}`);
       const followers = await this.followModel
         .find({
           following: new mongoose.Types.ObjectId(user.businessProfile),
@@ -2510,7 +2511,7 @@ export class BusinessService {
       }
       updateObj['name'] = data.name;
     }
-    console.log;
+    
     // Validate any new roles
     if (data.users) {
       const userIds = [];
@@ -2536,7 +2537,7 @@ export class BusinessService {
       { $set: updateObj },
       { new: true },
     );
-    console.log('udpatedRegion:', updatedRegion);
+    logger.info(`udpatedRegion: ${JSON.stringify(updatedRegion)}`);
     return { success: true, message: 'Region updated', data: updatedRegion };
   }
 
@@ -2569,7 +2570,7 @@ export class BusinessService {
 
   async fetchRegions(user: DecodedUser, page = 1, limit = 20) {
     try {
-      console.log('Business:', user.businessProfile);
+      logger.info(`Business: ${user.businessProfile}`);
       const query = {
         business: new mongoose.Types.ObjectId(user.businessProfile),
       };
@@ -2592,8 +2593,8 @@ export class BusinessService {
           .lean(),
         this.departmentModel.countDocuments(query),
       ]);
-      console.log('items:', items);
-      console.log('total:', total);
+      logger.info(`items: ${JSON.stringify(items)}`);
+      logger.info(`total: ${total}`);
 
       return {
         success: true,
