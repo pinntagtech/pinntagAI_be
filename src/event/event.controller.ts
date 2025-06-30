@@ -945,24 +945,30 @@ export class EventController {
 
   @Post('offer')
   @UseGuards(JwtGuard2)
+  // @UseInterceptors(
+  //   FileInterceptor('image', {
+  //     //   dest: './uploads',
+  //     //   fileFilter: imageFileFilter,
+  //     //   storage: diskStorage({
+  //     //     destination: './uploads',
+  //     //     filename: editFileName,
+  //     //   }),
+  //     //   //Setting file size limit to 1 MB
+  //     limits: { fileSize: 1000000 },
+  //   }),
+  // )
   @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async createOffer(
     @Body() data: CreateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    // @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles() images: Express.Multer.File[],
   ) {
-    const result = await this.eventService.createOffer(data, user, image);
+    const result = await this.eventService.createOffer(data, user, images);
     if (result.success) {
       return {
         message: result.message,
