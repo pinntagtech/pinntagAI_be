@@ -689,12 +689,14 @@ export class DriveService {
   }
 
   async multiImageUpload(
-    user: any,
+    userId: string,
     locationId: string,
     images: Express.Multer.File[],
   ) {
     try {
-      let parentId = user.id;
+      console.log("Location ID:", locationId);
+      let parentId = userId;
+      console.log("ParentID:",parentId);
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
@@ -715,6 +717,7 @@ export class DriveService {
 
       // Determine target directory type/id
       const locId = locationId || driveDetails._id.toString();
+      console.log('locId:', locId);
       const [driveLoc, folderLoc] = await Promise.all([
         this.driveModel.findById(locId).lean(),
         this.folderModel.findById(locId).lean(),
