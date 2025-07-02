@@ -203,6 +203,7 @@ export class BusinessService {
         email: data.email,
         password: hashedPassword,
         name: data.name,
+        forcePasswordReset: false,
       };
 
       //append creator to roles
@@ -1710,7 +1711,7 @@ export class BusinessService {
     data: CreateDownlineBusinessUserDto,
   ) {
     try {
-      const userDetails = await this.businessUserModel.findById(id);
+      // const userDetails = await this.businessUserModel.findById(id);
       const foundUser = await this.businessUserModel.findOne({
         email: data.email,
       });
@@ -1740,9 +1741,11 @@ export class BusinessService {
         password: hashedPassword,
         business: new mongoose.Types.ObjectId(businessId),
         isEmailVerified: true,
-        forcePasswordReset: data.forcePasswordReset,
         status: ProfileStatus.EMAIL_VERIFIED,
       };
+      if(data.forcePasswordReset !== undefined) {
+        createObj['forcePasswordReset'] = data.forcePasswordReset;
+      }
       if (data.profilePhoto) {
         createObj['profilePhoto'] = data.profilePhoto;
       }
@@ -1776,7 +1779,7 @@ export class BusinessService {
       //   UserTypes.BUSINESS,
       // );
       const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
-      await this.mailService.sendDownlineUserCredentials(
+      this.mailService.sendDownlineUserCredentials(
         createdUser.name,
         createdUser.email,
         password,

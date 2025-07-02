@@ -61,7 +61,7 @@ export class BusinessUser {
 
   @Prop()
   drive: mongoose.Types.ObjectId;
-  @Prop({ default: false })
+  @Prop({ default: true })
   forcePasswordReset: boolean;
   @Prop()
   assignedOutlets: mongoose.Types.ObjectId[];

@@ -938,6 +938,7 @@ export class SeederService {
       isEmailVerified: true,
       name: 'Pinntag',
       status: ProfileStatus.EMAIL_VERIFIED,
+      forcePasswordReset: false
     };
     let createdUser = await this.businessUserModel.create(createObj);
     let driveDetails = await this.createDrive(
