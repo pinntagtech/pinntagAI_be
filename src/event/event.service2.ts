@@ -5391,7 +5391,6 @@ export class EventService2 {
           images,
         );
       }
-
       await this.businessModel.updateOne(
         { _id: user.businessProfile },
         {
@@ -5401,10 +5400,15 @@ export class EventService2 {
           },
         },
       );
+
+      const eventDetails = await this.eventModel
+        .findById(event._id)
+        .populate('files');
+
       return {
         success: true,
         message: 'Offer created successfully',
-        data: event,
+        data: eventDetails,
       };
     } catch (error) {
       console.log('Error in createOffer:', error);
