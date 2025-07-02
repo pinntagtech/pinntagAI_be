@@ -602,7 +602,7 @@ export class AuthController {
   }
 
   @Delete('delete')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async deleteAccount(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.deleteAccount(user);
     if (!result.success) {
