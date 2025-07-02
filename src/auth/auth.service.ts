@@ -399,10 +399,7 @@ export class AuthService {
     };
   }
 
-  async updateUserConsent(
-    id: string,
-    privacyConsent: boolean,
-  ) {
+  async updateUserConsent(id: string, privacyConsent: boolean) {
     await this.userModel.updateOne(
       { _id: id },
       {
@@ -1813,7 +1810,6 @@ export class AuthService {
           as: 'files',
         },
       },
-
       {
         $lookup: {
           from: 'files',
@@ -1888,9 +1884,56 @@ export class AuthService {
           isLiked: {
             $in: [new mongoose.Types.ObjectId(userId), '$likedEvents._id'],
           },
-          'event.isFollowedByMe': {},
+          followingTarget: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: '$userDetails._id',
+              else: '$businessProfileDetails._id',
+            },
+          },
+          followingTargetType: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: User.name,
+              else: Business.name,
+            },
+          },
         },
       },
+      {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            targetId: '$followingTarget',
+            targetType: '$followingTargetType',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+
       {
         $group: {
           _id: '$event._id', // Group by event._id
@@ -1923,6 +1966,7 @@ export class AuthService {
           QR_CODE: { $first: '$QR_CODE' },
           isLiked: { $first: '$isLiked' },
           isSaved: { $first: '$isSaved' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
           locations: {
             $push: {
               location: '$location',
@@ -2066,6 +2110,7 @@ export class AuthService {
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
             followersCount: '$businessProfileDetails.followersCount',
+            isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
             phone: '$businessProfileDetails.phone',
             website: '$businessProfileDetails.website',
@@ -4253,7 +4298,53 @@ export class AuthService {
           isLiked: {
             $in: [new mongoose.Types.ObjectId(user.id), '$likedEvents._id'],
           },
-          'event.isFollowedByMe': {},
+          followingTarget: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: '$userDetails._id',
+              else: '$businessProfileDetails._id',
+            },
+          },
+          followingTargetType: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: User.name,
+              else: Business.name,
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(user.id), // assuming userId is available in the scope
+            targetId: '$followingTarget',
+            targetType: '$followingTargetType',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
         },
       },
       {
@@ -4278,6 +4369,7 @@ export class AuthService {
           termsApplied: { $first: '$event.termsApplied' },
           termsAndConditions: { $first: '$event.termsAndConditions' },
           facebookPostId: { $first: '$event.facebookPostId' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
           // creatorDetails: { $first: '$creatorDetails' },
@@ -4431,6 +4523,7 @@ export class AuthService {
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
             followersCount: '$businessProfileDetails.followersCount',
+            isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
             phone: '$businessProfileDetails.phone',
             website: '$businessProfileDetails.website',
@@ -4455,7 +4548,7 @@ export class AuthService {
                 profileType: 'User',
                 phone: '$userDetails.phone',
                 website: '',
-                isFollowedByMe: '$event.isFollowedByMe',
+                isFollowedByMe: '$isFollowedByMe',
                 isDeleted: '$userDetails.isDeleted',
                 isMe: false,
               },
@@ -4469,7 +4562,7 @@ export class AuthService {
                 profileType: 'BusinessProfile',
                 phone: '$businessProfileDetails.phone',
                 website: '$businessProfileDetails.website',
-                isFollowedByMe: '$event.isFollowedByMe',
+                isFollowedByMe: '$isFollowedByMe',
                 isDeleted: '$businessProfileDetails.isDeleted',
                 facebookPageUrl: '$businessUserDetails.facebookPageUrl',
                 instagramPageUrl: '$businessUserDetails.instagramPageUrl',

@@ -5385,7 +5385,7 @@ export class EventService2 {
       });
 
       if (images) {
-        this.driveService.multiImageUpload(
+        await this.driveService.multiImageUpload(
           user.id,
           String(event.drivePath),
           images,
