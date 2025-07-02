@@ -83,8 +83,8 @@ export class Event {
   @Prop({ ref: EventLocation.name })
   locations: Array<mongoose.Types.ObjectId>; //Event Locations Ids
 
-  @Prop({ ref: AgeGroup.name })
-  ageGroupsAllowed: Array<mongoose.Types.ObjectId>;
+  // @Prop({ ref: AgeGroup.name })
+  // ageGroupsAllowed: Array<mongoose.Types.ObjectId>;
 
   @Prop()
   minTargetAge: number;

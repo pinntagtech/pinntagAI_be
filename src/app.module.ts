@@ -108,13 +108,13 @@ import * as redisStore from 'cache-manager-redis-store';
     // ServeStaticModule.forRoot({
     //   rootPath: join(__dirname, '..', 'uploads'),
     // }),
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost', // or use process.env.REDIS_HOST
-      port: 6379,
-      ttl: 86400, // cache for 1 day
-      isGlobal: true,
-    }),
+    // CacheModule.register({
+    //   store: redisStore,
+    //   host: 'localhost', // or use process.env.REDIS_HOST
+    //   port: 6379,
+    //   ttl: 86400, // cache for 1 day
+    //   isGlobal: true,
+    // }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',
@@ -122,11 +122,11 @@ import * as redisStore from 'cache-manager-redis-store';
     MulterModule.register({
       dest: './uploads',
     }),
-    RateLimiterModule.register({
-      points: 5, // 5 requests
-      duration: 60, // per 60 seconds (1 minute)
-      keyPrefix: 'ratelimit', // Optional: Redis-based tracking
-    }),
+    // RateLimiterModule.register({
+    //   points: 5, // 5 requests
+    //   duration: 60, // per 60 seconds (1 minute)
+    //   keyPrefix: 'ratelimit', // Optional: Redis-based tracking
+    // }),
     MongooseModule.forRoot(process.env.MONGO_URI),
     MongooseModule.forFeature([
       {

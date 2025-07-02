@@ -1,6 +1,6 @@
 import { Injectable, Req, Res } from '@nestjs/common';
 import * as AWS from 'aws-sdk';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
@@ -81,6 +81,21 @@ export class S3Service {
       return s3Response;
     } catch (e) {
       console.log(e);
+    }
+  }
+
+  async s3_delete(bucket: string, key: string): Promise<void> {
+    try {
+      await this.s3
+      .deleteObject({
+        Bucket: bucket,
+        Key: key,
+      })
+      .promise();
+      console.log(`✅ Deleted: ${key}`);
+    } catch (err) {
+      console.error(`❌ Failed to delete ${key}:`, err);
+      throw err;
     }
   }
 }

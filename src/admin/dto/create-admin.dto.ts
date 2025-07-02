@@ -39,10 +39,10 @@ export class CreateAdminDto {
   @Transform(({ value }) => value.trim())
   phone: string;
 
-  @IsNotEmpty()
-  @IsString()
-  @Transform(({ value }) => value.trim())
-  password: string;
+  // @IsNotEmpty()
+  // @IsString()
+  // @Transform(({ value }) => value.trim())
+  // password: string;
 
   @IsNotEmpty()
   @IsBoolean()

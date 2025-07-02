@@ -14,7 +14,7 @@ export class Report {
 
   @Prop({
     required: true,
-    enum: [ReportTypes.VALIDITY, ReportTypes.INAPPROPRIATE, ReportTypes.OTHER],
+    enum: ReportTypes,
   })
   type: string;
 

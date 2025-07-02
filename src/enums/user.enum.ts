@@ -11,6 +11,11 @@ export const BusinessProfileStatus = {
   BLOCKED: 2,
 };
 
+export const UserProfileStatus = {
+  INITIATED: 0,
+  DETAILS_ADDED: 1,
+}
+
 export const FollowingStatus = {
   PENDING: 0,
   ACCEPTED: 1,
@@ -57,7 +62,7 @@ const Loc: LocationClass = {
 
 export const ExmpLocKeys = Object.keys(Loc);
 
-export const ProfileTypes = [User.name, Business.name];
+export const ProfileTypes = ['User', Business.name];
 
 export const SubscriptionStatus = {
   ACTIVE: 0,

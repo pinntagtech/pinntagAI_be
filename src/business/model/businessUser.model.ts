@@ -23,7 +23,7 @@ export class BusinessUser {
   @Prop({
     required: true,
     enum: Object.values(ProfileStatus),
-    default: 0,
+    default: ProfileStatus.INITIATED,
   })
   status: number;
 
@@ -61,7 +61,7 @@ export class BusinessUser {
 
   @Prop()
   drive: mongoose.Types.ObjectId;
-  @Prop({ default: false })
+  @Prop({ default: true })
   forcePasswordReset: boolean;
   @Prop()
   assignedOutlets: mongoose.Types.ObjectId[];

@@ -13,6 +13,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -52,7 +53,7 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
@@ -998,11 +999,17 @@ export class AdminController {
 
   @Post('create/template')
   @UseGuards(AdminGuard2)
+  @UseInterceptors(
+      FileInterceptor('image', {
+        limits: { fileSize: 1000000 },
+      }),
+    )
   async createTemplate(
     @Body() data: CreateTemplateDto,
     @TokenDecoder() user: DecodedUser,
+     @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.createTemplate(user.id, data);
+    const result = await this.adminService.createTemplate(user.id, data,image);
     if (result.success) {
       return {
         message: result.message,
@@ -1017,12 +1024,18 @@ export class AdminController {
 
   @Post('update/template/:id')
   @UseGuards(AdminGuard2)
+  @UseInterceptors(
+      FileInterceptor('image', {
+        limits: { fileSize: 1000000 },
+      }),
+    )
   async updateTemplate(
     @Param('id') id: string,
     @Body() data: UpdateTemplateDto,
     @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.updateTemplate(user.id, id, data);
+    const result = await this.adminService.updateTemplate(user.id, id, data,image);
     if (result.success) {
       return {
         message: result.message,
@@ -1222,6 +1235,33 @@ export class AdminController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Get('reportedEvents')
+  @UseGuards(AdminGuard2)
+  async getReportedEvents(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('status') status: string = 'all',
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getReportedEvents(
+      pageNumber,
+      limitNumber,
+      status
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
       };
     } else {
       throw new BadRequestException(result.message);

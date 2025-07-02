@@ -13,6 +13,7 @@ import {
   Query,
   Param,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -40,9 +41,7 @@ import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
-import { CacheInterceptor } from '@nestjs/cache-manager';
 
-@UseInterceptors(CacheInterceptor)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -120,8 +119,31 @@ export class AuthController {
     };
   }
 
+  @Put('updateUserConsent')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async updateUserConsent(
+    @Req() req: Request,
+    @Body('privacyConsent')  privacyConsent: boolean,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.updateUserConsent(
+      user.id,
+      privacyConsent,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+    };
+  }
+
   @Post('updatePersonalDetails/:id')
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(JwtGuard2)
   async updatePersonalDetails(
     @Req() req: Request,
     @Body() personalDetailDTO: PersonDetailDto,
@@ -476,15 +498,18 @@ export class AuthController {
     };
   }
 
-  @Post('dashboard/map-view')
-  @UseGuards(JwtGuard)
+  @Post('dashboard/map-view/:id')
+  @UseGuards(JwtGuard2)
   @HttpCode(HttpStatus.OK)
   async dashboardMapView(
     @Body() body: GetDashboardDto,
+    @Param('id') id: string,
     @Query('search') search: string,
-    @Query('limit') limit: string,
     @Query('page') page: string,
-    @Query('type') type: string,
+    @Query('limit') limit: string,
+    @Query('distance') distance: string,
+    @Query('timeZone') timeZone: string,
+    // @Query('type') type: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
@@ -496,13 +521,15 @@ export class AuthController {
     }
     const result = await this.authService.getDashboardMapView(
       user,
+      id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
-      100000,
+      distance ? parseInt(distance) : 1000000000000,
       search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
       limit ? parseInt(limit) : 15,
       page ? parseInt(page) : 1,
-      type ? type.toLowerCase() : '',
+      // type ? type.toLowerCase() : '',
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
@@ -515,7 +542,7 @@ export class AuthController {
       events: result.events,
       page: result.page,
       limit: result.limit,
-      total: result.total,
+      total: result.totalCount,
       pages: result.pages,
     };
   }
@@ -527,10 +554,12 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
+    console.log('Entered Controllerrrr!!!');
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
-    const result = await this.authService.getEventDetails(id, user, body);
+    const result = await this.authService.getEventCardView(id, user, body);
+    // const result = await this.authService.getEventDetails(id, user, body);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -573,7 +602,7 @@ export class AuthController {
   }
 
   @Delete('delete')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async deleteAccount(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.deleteAccount(user);
     if (!result.success) {
@@ -671,7 +700,6 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@TokenDecoder() user: DecodedUser) {
-    console.log('User/Admin in controller:', user);
     const result = await this.authService.getProfile(user.id, user.userType);
     if (!result.success) {
       throw new BadRequestException(result.message);

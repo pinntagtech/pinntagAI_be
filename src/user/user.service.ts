@@ -1087,6 +1087,9 @@ export class UserService {
     await this.refferalModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });
+    await this.tokenModel.deleteMany({
+      user: new mongoose.Types.ObjectId(userId),
+    });
     return {
       success: true,
       message: 'Account deleted successfully',

@@ -44,18 +44,18 @@ export class CreateTemplateDto {
   description?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  minTargetAge?: number;
+  // @IsNumber()
+  // @Type(() => Number)
+  // @Min(0)
+  minTargetAge?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  maxTargetAge?: number;
+  // @IsNumber()
+  // @Type(() => Number)
+  // @Min(0)
+  maxTargetAge?: string;
 
-  @IsArray()
+  @IsOptional()
   @IsString({ each: true })
   targetGenders: string[];
 
@@ -63,24 +63,25 @@ export class CreateTemplateDto {
   @IsString()
   promotionCode?: string;
 
-  @IsBoolean()
-  isFree: boolean;
+  @IsOptional()
+  isFree: string;
 
   @IsOptional()
   @IsString()
   participationCost?: string;
 
-  @IsBoolean()
-  termsApplied: boolean;
+  @IsOptional()
+  termsApplied: string;
 
   @IsOptional()
   @IsString()
   termsAndConditions?: string;
 
   @IsMongoId()
-  businessIndustry?: string | mongoose.Types.ObjectId;
+  businessIndustry?: any;
 
-  @IsArray()
-  @IsMongoId({ each: true })
-  businessCategories?: string | mongoose.Types.ObjectId[];
+  // @IsArray()
+  // @IsMongoId({ each: true })
+  businessCategories?: string[];
+
 }

@@ -9,6 +9,7 @@ import {
   CategoryPopulates,
   LocationPopulates,
   UserPopulates,
+  UserProfileStatus,
 } from 'src/enums/user.enum';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
@@ -96,6 +97,7 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { SavedEvent } from 'src/event/models/savedEvent.model';
 
 @Injectable()
 export class AuthService {
@@ -397,6 +399,22 @@ export class AuthService {
     };
   }
 
+  async updateUserConsent(id: string, privacyConsent: boolean) {
+    await this.userModel.updateOne(
+      { _id: id },
+      {
+        $set: {
+          privacyConsent,
+          consentTimestamp: new Date(),
+        },
+      },
+    );
+    return {
+      success: true,
+      message: 'User consent updated successfully',
+    };
+  }
+
   async updatePersonalDetails(
     personalDetailDTO: PersonDetailDto,
     id: string,
@@ -409,6 +427,7 @@ export class AuthService {
       {
         $set: {
           ...personalDetailDTO,
+          status: UserProfileStatus.DETAILS_ADDED,
         },
       },
     );
@@ -1559,6 +1578,7 @@ export class AuthService {
         },
       },
       {
+        //
         $group: {
           _id: '$event._id',
           locationId: { $first: '$_id' },
@@ -1711,6 +1731,7 @@ export class AuthService {
     startDate: any,
     endDate: any,
   ) {
+    console.log('LIMITTTTTTT:::::', limit);
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
@@ -1789,7 +1810,6 @@ export class AuthService {
           as: 'files',
         },
       },
-
       {
         $lookup: {
           from: 'files',
@@ -1843,8 +1863,8 @@ export class AuthService {
       {
         $lookup: {
           from: 'users',
-          localField: 'event._id',
-          foreignField: 'savedEvents',
+          localField: 'event._id', //123
+          foreignField: 'savedEvents', //123, 456
           as: 'savedEvents',
         },
       },
@@ -1864,9 +1884,56 @@ export class AuthService {
           isLiked: {
             $in: [new mongoose.Types.ObjectId(userId), '$likedEvents._id'],
           },
-          'event.isFollowedByMe': {},
+          followingTarget: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: '$userDetails._id',
+              else: '$businessProfileDetails._id',
+            },
+          },
+          followingTargetType: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: User.name,
+              else: Business.name,
+            },
+          },
         },
       },
+      {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            targetId: '$followingTarget',
+            targetType: '$followingTargetType',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+
       {
         $group: {
           _id: '$event._id', // Group by event._id
@@ -1899,6 +1966,7 @@ export class AuthService {
           QR_CODE: { $first: '$QR_CODE' },
           isLiked: { $first: '$isLiked' },
           isSaved: { $first: '$isSaved' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
           locations: {
             $push: {
               location: '$location',
@@ -2042,6 +2110,7 @@ export class AuthService {
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
             followersCount: '$businessProfileDetails.followersCount',
+            isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
             phone: '$businessProfileDetails.phone',
             website: '$businessProfileDetails.website',
@@ -2107,12 +2176,21 @@ export class AuthService {
         },
       },
       { $sort: { distance: 1 } },
-      { $limit: limit },
+      {
+        $facet: {
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
     ];
 
     let rows = await this.eventLocationModel.aggregate(basePipeline);
     console.log('Row EVENTS:', rows);
-    const eventIds = rows.map((r) => r._id);
+    const dataRows = rows[0]?.data || [];
+    const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
+    console.log('Data Rows:', dataRows);
+    console.log('Total counts:', totalCount);
+    // const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
     //   .lean();
@@ -2245,9 +2323,9 @@ export class AuthService {
     // //   .filter((row) => row !== null && row.schedule.length > 0);
 
     // // 6. Scoring logic based on distance + time to event
-    const maxDistance = Math.max(...rows.map((e) => e.distance));
+    const maxDistance = Math.max(...dataRows.map((e) => e.distance));
     const maxTimeToEvent = Math.max(
-      ...rows.map((e) => {
+      ...dataRows.map((e) => {
         const nextSchedule = e.schedules.find((s) => {
           if (s.type === ScheduleTypes.FIXED) {
             return (
@@ -2281,7 +2359,7 @@ export class AuthService {
     const weightDistance = 0.5;
     const weightTime = 0.5;
 
-    rows.forEach((event) => {
+    dataRows.forEach((event) => {
       const nearestSchedule = event.schedules.find((s) => {
         if (s.type === ScheduleTypes.FIXED) {
           return (
@@ -2323,7 +2401,7 @@ export class AuthService {
     });
 
     // Sort by ascending score
-    rows.sort((a, b) => a.score - b.score);
+    dataRows.sort((a, b) => a.score - b.score);
 
     console.log('OLD FLOWWWWWWWW::::::');
 
@@ -2803,7 +2881,7 @@ export class AuthService {
     // return result; // Return the arranged result
 
     // return filteredEvents; // Return the arranged result
-    return rows;
+    return [dataRows, totalCount];
   }
 
   // async getDashboard(
@@ -3226,16 +3304,16 @@ export class AuthService {
         endDate,
       );
       // data.push({ [`${config.name}`]: eventsResult });
-      data[`${config.name}`] = eventsResult;
+      data[`${config.name}`] = eventsResult[0];
     }
 
     return {
       success: true,
       message: 'Dashboard fetched successfully',
       data: {
-        Free: freeEvents,
+        Free: freeEvents[0],
         ...data,
-        'Private Invitations': privateEvents,
+        'Private Invitations': privateEvents[0],
       },
     };
   }
@@ -3372,8 +3450,8 @@ export class AuthService {
       success: true,
       message: 'Dashboard fetched successfully',
       data: {
-        Free: freeEvents,
-        'Private Invitations': privateEvents,
+        Free: freeEvents[0],
+        'Private Invitations': privateEvents[0],
       },
     };
   }
@@ -3389,7 +3467,6 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
-    console.log('Is this COMINGGGGG HEREEE!!!');
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
         success: false,
@@ -3535,7 +3612,7 @@ export class AuthService {
       };
     }
     console.log("'query after type:----->', query);");
-    const eventsResult = await this.fetchEventsV2(
+    const [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
@@ -3560,67 +3637,91 @@ export class AuthService {
 
   async getDashboardMapView(
     user: DecodedUser,
+    carouselId: string,
     latitude: number,
     longitude: number,
     maxDistance: number,
     search: string,
+    timeZone: string,
     limit: number,
     page: number,
-    type: string,
+    // type: string,
     categoryIds?: Array<string>,
     startDate?: Date,
     endDate?: Date,
   ) {
+    if (!mongoose.isValidObjectId(carouselId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid id',
+      };
+    }
+    const carousel = await this.dashboardConfigModel.findById(carouselId);
+    if (!carousel) {
+      return {
+        success: false,
+        message: 'Carousel not found',
+      };
+    }
+    console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
-    const currentDate = currentDateTz();
-    let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+
+    const currentDate = currentDateTz(timeZone);
+
+    let start = getZeroDateTz(new Date(), timeZone);
+    console.log('START DATE:', start);
+    console.log('Match:', match);
+
+    // if (!startDate && !endDate) {
+    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+    //   match['event.schedule.date'] = { $gte: start };
+    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
+    // } else if (startDate && endDate) {
+    //   start = getZeroBodyDateTz(startDate);
+    //   const end = getZeroBodyDateTz(endDate);
+    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+    //     if (
+    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+    //     ) {
+    //       console.log('start is equals to current');
+    //       // If the requested query is for today only then the end time should be greater than the current time
+    //       match['event.schedule.date'] = getZeroDateTz(new Date());
+    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //     } else {
+    //       console.log('start is not equals to current');
+    //       // If the start and end date are the same e.g. 2024-06-01
+    //       match['event.schedule.date'] = start;
+    //     }
+    //   } else if (end > start) {
+    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+    //         },
+    //       };
+    //     } else {
+    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+    //       match['event.schedule.durations'] = {
+    //         $elemMatch: {
+    //           startTime: { $lte: end },
+    //           endTime: { $gte: start },
+    //         },
+    //       };
+    //     }
+    //   } else {
+    //     // If the request date is in past
+    //     match['event.schedule.date'] = { $gte: currentDate };
+    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+    //   }
+    // }
+
     if (search) {
       // Search matching business profile name
       const matchingBusinesses = await this.businessModel.find({
@@ -3643,74 +3744,94 @@ export class AuthService {
       const foundUser = await this.userModel.findById(user.id);
       age = foundUser.age ? foundUser.age : 0;
     }
-    if (!type) {
-      match['event.type'] = {
-        $in: [EventTypes.FORMAL, EventTypes.OFFER],
-      };
-    } else {
-      if (type == EventTypes.PRIVATE) {
-        match['event.type'] = EventTypes.PRIVATE;
-        match['event.participants'] = {
-          $in: [new mongoose.Types.ObjectId(user.id)],
-        };
-      } else if (type == 'free') {
-        match['event.isFree'] = true;
-        match['event.type'] = {
-          $in: [EventTypes.FORMAL, EventTypes.OFFER],
+    let data = {};
+    const config = await this.dashboardConfigModel.findById(carouselId).sort({
+      sortOrder: 1,
+    });
+    // if (match['event.categories']) {
+    //   delete match['event.categories'];
+    // }
+    let query = { ...match };
+    let eventsResult = [];
+    if (categoryIds.length) {
+      const matchingCategories = [];
+      categoryIds.forEach((id) => {
+        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+          matchingCategories.push(new mongoose.Types.ObjectId(id));
+        }
+      });
+      if (matchingCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: matchingCategories,
+          },
         };
       } else {
-        const dashConfig = await this.dashboardConfigModel.findOne({
-          name: { $regex: type.toLowerCase(), $options: 'i' },
-        });
-        if (!dashConfig) {
-          match['event.type'] = type;
-        } else {
-          if (match['event.type']) {
-            delete match['event.type'];
-          }
-          if (match['event.categories']) {
-            delete match['event.categories'];
-          }
-          match['event.categories'] = {
-            $in: dashConfig.categories,
-          };
-          if (!dashConfig.freeIncluded) {
-            match['event.isFree'] = false;
-          }
-          if (dashConfig.eventsIncluded && !dashConfig.offersIncluded) {
-            match['event.type'] = {
-              $in: [EventTypes.FORMAL],
-            };
-          } else if (dashConfig.offersIncluded && !dashConfig.eventsIncluded) {
-            match['event.type'] = EventTypes.OFFER;
-          } else if (dashConfig.offersIncluded && dashConfig.eventsIncluded) {
-            match['event.type'] = {
-              $in: [EventTypes.FORMAL, EventTypes.OFFER],
-            };
-          }
-        }
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
       }
+    } else {
+      query = {
+        ...query,
+        'event.categories': { $in: config.categories },
+      };
     }
-    // const total = await this.eventModel.countDocuments(match);
-    const nearestEvents = await this.fetchEvents(
+
+    if (!config.freeIncluded) {
+      query = {
+        ...query,
+        'event.isFree': false,
+      };
+    }
+    if (config.eventsIncluded && !config.offersIncluded) {
+      query = {
+        ...query,
+        'event.type': { $in: [EventTypes.FORMAL] },
+      };
+    } else if (config.offersIncluded && !config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': EventTypes.OFFER,
+      };
+    } else if (config.offersIncluded && config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': {
+          $in: [EventTypes.OFFER, EventTypes.FORMAL],
+        },
+      };
+    }
+    let totalCount = 0;
+
+    console.log('query from carousel dashboard:', query);
+    [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
       age,
-      match,
+      query,
       page,
       limit,
       start,
+      maxDistance,
+      startDate,
+      endDate,
     );
-    const total = nearestEvents.length;
+    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard data fetched successfully',
-      events: nearestEvents,
+      events: eventsResult,
       page,
       limit,
-      total,
-      pages: Math.ceil(total / limit),
+      totalCount,
+      pages: Math.ceil(totalCount / limit),
     };
   }
 
@@ -4044,6 +4165,445 @@ export class AuthService {
   //   return resultArranged; // Return the arranged result
   // }
 
+  async getEventCardView(id: string, user: DecodedUser, data: GetDashboardDto) {
+    const now = new Date();
+    const startDate = data.startDate ? new Date(data.startDate) : now;
+    const endDate = data.endDate
+      ? new Date(data.endDate)
+      : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
+    const QR_ImageCategory = await this.fileCategoryModel.findOne({
+      name: 'Content QR',
+    });
+    let [event] = await this.eventLocationModel.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [
+              parseFloat(data.longitude),
+              parseFloat(data.latitude),
+            ],
+          },
+          distanceField: 'distance',
+          maxDistance: 100000000 * 1000,
+          spherical: true,
+        },
+      },
+      {
+        $match: {
+          event: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'event',
+          foreignField: '_id',
+          as: 'event',
+        },
+      },
+      { $unwind: '$event' },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'event.categories',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files', // assuming this is the same collection as QR_CODE
+          let: { folderId: '$event.drivePath' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$parentDirectory', '$$folderId'] },
+                    {
+                      $ne: [
+                        '$category',
+                        new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'files',
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'event.QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'event.businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $cond: [
+              { $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null] },
+              true,
+              { $eq: ['$businessProfileDetails.isDeleted', false] },
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event._id', //123
+          foreignField: 'savedEvents', //123, 456
+          as: 'savedEvents',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event._id',
+          foreignField: 'likedEvents',
+          as: 'likedEvents',
+        },
+      },
+      {
+        $addFields: {
+          isSaved: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$savedEvents._id'],
+          },
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$likedEvents._id'],
+          },
+          followingTarget: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: '$userDetails._id',
+              else: '$businessProfileDetails._id',
+            },
+          },
+          followingTargetType: {
+            $cond: {
+              if: { $eq: ['$event.creatorType', 'User'] },
+              then: User.name,
+              else: Business.name,
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(user.id), // assuming userId is available in the scope
+            targetId: '$followingTarget',
+            targetType: '$followingTargetType',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$event._id', // Group by event._id
+          // event: { $first: '$event' }, // Preserve event object
+          schedule: { $first: '$event.eventSchedule' },
+          title: { $first: '$event.title' },
+          keywords: { $first: '$event.keywords' },
+          description: { $first: '$event.description' },
+          type: { $first: '$event.type' },
+          status: { $first: '$event.status' },
+          notifyFollowers: { $first: '$event.notifyFollowers' },
+          targetGenders: { $first: '$event.targetGenders' },
+          promotionCode: { $first: '$event.promotionCode' },
+          isFree: { $first: '$event.isFree' },
+          participationCost: { $first: '$event.participationCost' },
+          bookingUrl: { $first: '$event.bookingUrl' },
+          RSVP: { $first: '$event.RSVP' },
+          minTargetAge: { $first: '$event.minTargetAge' },
+          maxTargetAge: { $first: '$event.maxTargetAge' },
+          termsApplied: { $first: '$event.termsApplied' },
+          termsAndConditions: { $first: '$event.termsAndConditions' },
+          facebookPostId: { $first: '$event.facebookPostId' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
+          specifyForEachDay: { $first: '$event.specifyForEachDay' },
+          participants: { $first: '$event.participants' },
+          // creatorDetails: { $first: '$creatorDetails' },
+          creatorType: { $first: '$event.creatorType' },
+          categories: { $first: '$categories' },
+          businessProfileDetails: { $first: '$businessProfileDetails' },
+          files: { $first: '$files' },
+          QR_CODE: { $first: '$QR_CODE' },
+          isLiked: { $first: '$isLiked' },
+          isSaved: { $first: '$isSaved' },
+          locations: {
+            $push: {
+              location: '$location',
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$zip',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+          distance: { $first: { $divide: ['$distance', 1609.34] } },
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businessusers',
+          localField: 'event.user',
+          foreignField: '_id',
+          as: 'businessUserDetails',
+        },
+      },
+      { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: '$businessUserDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          distance: 1,
+          title: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGenders: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          ageGroupsAllowed: {
+            minAge: '$minTargetAge',
+            maxAge: '$maxTargetAge',
+          },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                activeColor: '$$category.activeColor',
+              },
+            },
+          },
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            name: '$businessProfileDetails.name',
+            cover: '$businessProfileDetails.cover',
+            email: '$businessProfileDetails.email',
+            bio: '$businessProfileDetails.bio',
+            followersCount: '$businessProfileDetails.followersCount',
+            isFollowedByMe: '$isFollowedByMe',
+            profileType: 'BusinessProfile',
+            phone: '$businessProfileDetails.phone',
+            website: '$businessProfileDetails.website',
+            facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+            instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+            twitterPageUrl: '$businessProfileDetails.XPageUrl',
+          },
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
+          },
+          creatorDetails: {
+            $cond: {
+              if: { $eq: ['$creatorType', 'User'] },
+              then: {
+                _id: '$userDetails._id',
+                name: '$userDetails.name',
+                profilePhoto: '$userDetails.profilePhoto',
+                email: '$userDetails.email',
+                bio: '$userDetails.bio',
+                followersCount: '$userDetails.followersCount',
+                profileType: 'User',
+                phone: '$userDetails.phone',
+                website: '',
+                isFollowedByMe: '$isFollowedByMe',
+                isDeleted: '$userDetails.isDeleted',
+                isMe: false,
+              },
+              else: {
+                _id: '$businessProfileDetails._id',
+                name: '$businessProfileDetails.name',
+                profilePhoto: '$businessProfileDetails.profilePhoto',
+                email: '$businessProfileDetails.email',
+                bio: '$businessProfileDetails.bio',
+                followersCount: '$businessProfileDetails.followersCount',
+                profileType: 'BusinessProfile',
+                phone: '$businessProfileDetails.phone',
+                website: '$businessProfileDetails.website',
+                isFollowedByMe: '$isFollowedByMe',
+                isDeleted: '$businessProfileDetails.isDeleted',
+                facebookPageUrl: '$businessUserDetails.facebookPageUrl',
+                instagramPageUrl: '$businessUserDetails.instagramPageUrl',
+                twitterPageUrl: '$businessUserDetails.XPageUrl',
+                isMe: false,
+              },
+            },
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
+              },
+            },
+          },
+          creatorType: 1,
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
+        },
+      },
+    ]);
+    console.log('event', event);
+
+    if (!event) {
+      return {
+        success: false,
+        message: 'Event not found with the id provided.',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Event details fetched successfully',
+      event: event,
+    };
+  }
   async getEventDetails(id: string, user: DecodedUser, data: GetDashboardDto) {
     // const event = await this.eventModel
     //   .findById(id)
@@ -4053,167 +4613,205 @@ export class AuthService {
     //   .populate('user', UserPopulates.FOREIGN)
     //   .populate('businessProfile', BusinessPopulates.FOREIGN)
 
-    let event = await this.eventModel
-      .aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
+    console.log('Checking something:::::', user.id);
+    let [event] = await this.eventModel.aggregate([
+      // {
+      //   $geoNear: {
+      //     near: { type: 'Point', coordinates: [data.longitude, data.latitude] },
+      //     distanceField: 'distance',
+      //     maxDistance: 1000000 * 1000,
+      //     spherical: true,
+      //   },
+      // },
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'categories',
+          foreignField: '_id',
+          as: 'categories',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'drivePath',
+          foreignField: 'parentDirectory',
+          as: 'files',
+        },
+      },
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'QR_CODE',
+          foreignField: '_id',
+          as: 'QR_CODE',
+        },
+      },
+      {
+        $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
+      },
+      // locations
+      {
+        $lookup: {
+          from: 'locations',
+          localField: 'locations',
+          foreignField: '_id',
+          as: 'locations',
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id', //123
+          foreignField: 'savedEvents', //123, 456
+          as: 'savedEvents',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: 'likedEvents',
+          as: 'likedEvents',
+        },
+      },
+      {
+        $addFields: {
+          isSaved: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$savedEvents._id'],
           },
-        },
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'categories',
-            foreignField: '_id',
-            as: 'categories',
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(user.id), '$likedEvents._id'],
           },
+          'event.isFollowedByMe': {},
         },
-        {
-          $lookup: {
-            from: 'files',
-            localField: 'drivePath',
-            foreignField: 'parentDirectory',
-            as: 'files',
+      },
+      // businessProfile
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          creatorType: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGeners: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          isFromCrawlet: 1,
+          userDetails: 1,
+          user: {
+            _id: '$userDetails._id',
+            name: '$userDetails.name',
+            profilePhoto: '$userDetails.profilePhoto',
+            email: '$userDetails.email',
           },
-        },
-        {
-          $lookup: {
-            from: 'files',
-            localField: 'QR_CODE',
-            foreignField: '_id',
-            as: 'QR_CODE',
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            isDeleted: '$businessProfileDetails.isDeleted',
+            name: '$businessProfileDetails.name',
+            countryCode: '$businessProfileDetails.countryCode',
+            phone: '$businessProfileDetails.phone',
+            profileType: 'BusinessProfile',
+            email: '$businessProfileDetails.email',
+            website: '$businessProfileDetails.website',
+            followersCount: '$businessProfileDetails.followersCount',
+            logo: '$businessProfileDetails.logo',
           },
-        },
-        {
-          $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true },
-        },
-        // locations
-        {
-          $lookup: {
-            from: 'locations',
-            localField: 'locations',
-            foreignField: '_id',
-            as: 'locations',
+          QR_CODE: {
+            _id: '$QR_CODE._id',
+            url: '$QR_CODE.metaData.url',
           },
-        },
-        {
-          $lookup: {
-            from: 'eventschedules',
-            localField: 'schedule',
-            foreignField: '_id',
-            as: 'schedules',
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'user',
-            foreignField: '_id',
-            as: 'user',
-          },
-        },
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessProfile',
-            foreignField: '_id',
-            as: 'businessProfileDetails',
-          },
-        },
-        {
-          $unwind: { path: '$user', preserveNullAndEmptyArrays: true },
-        },
-
-        // businessProfile
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'businessProfile',
-            foreignField: '_id',
-            as: 'businessProfileDetails',
-          },
-        },
-        {
-          $unwind: {
-            path: '$businessProfileDetails',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            title: 1,
-            creatorType: 1,
-            keywords: 1,
-            description: 1,
-            type: 1,
-            status: 1,
-            notifyFollowers: 1,
-            targetGeners: 1,
-            promotionCode: 1,
-            isFree: 1,
-            participationCost: 1,
-            bookingUrl: 1,
-            termsAndConditions: 1,
-            isFromCrawlet: 1,
-            user: {
-              _id: '$user._id',
-              name: '$user.name',
-              profilePhoto: '$user.profilePhoto',
-              email: '$user.email',
-            },
-            businessProfileDetails: {
-              _id: '$businessProfileDetails._id',
-              isDeleted: '$businessProfileDetails.isDeleted',
-              name: '$businessProfileDetails.name',
-              countryCode: '$businessProfileDetails.countryCode',
-              phone: '$businessProfileDetails.phone',
-              profileType: 'BusinessProfile',
-              email: '$businessProfileDetails.email',
-              website: '$businessProfileDetails.website',
-              followersCount: '$businessProfileDetails.followersCount',
-              logo: '$businessProfileDetails.logo',
-            },
-            QR_CODE: {
-              _id: '$QR_CODE._id',
-              url: '$QR_CODE.metaData.url',
-            },
-            categories: {
-              $map: {
-                input: '$categories',
-                as: 'category',
-                in: {
-                  _id: '$$category._id',
-                  name: '$$category.title',
-                  darkIcon: '$$category.darkIcon',
-                  lightIcon: '$$category.lightIcon',
-                  colorData: '$$category.activeColor',
-                },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                colorData: '$$category.activeColor',
               },
             },
-            targetGenders: 1,
-            ageGroupsAllowed: {
-              minAge: '$minTargetAge',
-              maxAge: '$maxTargetAge',
-            },
-            images: {
-              $map: {
-                input: '$files',
-                as: 'file',
-                in: {
-                  _id: '$$file._id',
-                  url: '$$file.metaData.url',
-                },
+          },
+          targetGenders: 1,
+          ageGroupsAllowed: {
+            $mergeObjects: [
+              {
+                minAge: { $ifNull: ['$minTargetAge', null] },
+                maxAge: { $ifNull: ['$maxTargetAge', null] },
+              },
+            ],
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
               },
             },
-            isLiked: 1,
-            isSaved: 1,
-            locations: 1,
-            schedules: 1,
           },
+          isLiked: 1,
+          isSaved: 1,
+          locations: 1,
+          schedules: 1,
         },
-      ])
-      .then((res) => res[0]);
+      },
+    ]);
     console.log('event', event);
 
     if (!event) {
@@ -4230,8 +4828,9 @@ export class AuthService {
         };
       }
     }
-    const isSaved = await this.userService.isEventSaved(event.id, user.id);
-    const isLiked = await this.userService.isEventLiked(event.id, user.id);
+    // const isSaved = await this.userService.isEventSaved(id, user.id);
+    // console.log("IsSaved:",isSaved);
+    // const isLiked = await this.userService.isEventLiked(id, user.id);
     const eventObj = JSON.parse(JSON.stringify(event));
     delete eventObj.locations;
 
@@ -4242,8 +4841,8 @@ export class AuthService {
     );
 
     const eventLocs = event.locations as any;
-    eventObj['isSaved'] = isSaved;
-    eventObj['isLiked'] = isLiked;
+    // eventObj['isSaved'] = isSaved;
+    // eventObj['isLiked'] = isLiked;
     let eventDistance = 0;
     for (let l = 0; l < eventLocs.length; l++) {
       //Convert to JSON and then back to object to avoid reference issues
@@ -4613,7 +5212,6 @@ export class AuthService {
 
   async getProfile(userId: string, userType: string) {
     try {
-      console.log('Is coming here:::::::', userId, userType);
       let userDoc = null;
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
@@ -4636,7 +5234,6 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        console.log('Insiide Businessssss:::');
         userDoc = await this.businessUserModel
           .findById(userId)
           // .populate('business')
@@ -4808,8 +5405,7 @@ export class AuthService {
             $in: matchingCategories,
           },
         };
-      }
-      else {
+      } else {
         return {
           success: true,
           message: 'Dashboard fetched successfully',
@@ -4849,9 +5445,10 @@ export class AuthService {
         },
       };
     }
+    let totalCount = 0;
 
     console.log('query from carousel dashboard:', query);
-    eventsResult = await this.fetchEventsV2(
+    [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
@@ -4864,7 +5461,7 @@ export class AuthService {
       startDate,
       endDate,
     );
-
+    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard fetched successfully',

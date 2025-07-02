@@ -40,6 +40,7 @@ import { CreateOfferDto } from './dto/create-offer.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
+import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 
 @Controller('event')
 export class EventController {
@@ -427,7 +428,7 @@ export class EventController {
   }
 
   @Post('invitation')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: InviteEventDto,
@@ -451,7 +452,7 @@ export class EventController {
   }
 
   @Post('accept/invitation')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async acceptInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: AcceptInvitationDto,
@@ -474,7 +475,7 @@ export class EventController {
   }
 
   @Post('decline/invitation/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async declineInvitation(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
@@ -497,7 +498,7 @@ export class EventController {
   }
 
   @Post('rsvp/response/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async rsvpResponse(
     @Body() body: RespondRsvp,
     @Param('id') eventId: string,
@@ -526,7 +527,7 @@ export class EventController {
   }
 
   @Get('rsvp/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getRsvp(
     @Param('id') eventId: string,
     @TokenDecoder() user: DecodedUser,
@@ -830,6 +831,22 @@ export class EventController {
     }
   }
 
+  @Get('reportTypes')
+  @UseGuards(RateLimitGuard)
+  async getReportTypes() {
+    const result = await this.eventService.getReportTypes();
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('report')
   @UseGuards(JwtGuard2)
   async reportEvent(
@@ -928,24 +945,30 @@ export class EventController {
 
   @Post('offer')
   @UseGuards(JwtGuard2)
+  // @UseInterceptors(
+  //   FileInterceptor('image', {
+  //     //   dest: './uploads',
+  //     //   fileFilter: imageFileFilter,
+  //     //   storage: diskStorage({
+  //     //     destination: './uploads',
+  //     //     filename: editFileName,
+  //     //   }),
+  //     //   //Setting file size limit to 1 MB
+  //     limits: { fileSize: 1000000 },
+  //   }),
+  // )
   @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async createOffer(
     @Body() data: CreateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    // @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles() images: Express.Multer.File[],
   ) {
-    const result = await this.eventService.createOffer(data, user, image);
+    const result = await this.eventService.createOffer(data, user, images);
     if (result.success) {
       return {
         message: result.message,
@@ -1038,12 +1061,26 @@ export class EventController {
 
   @Put('offer/:id')
   @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async updateOffer(
     @Param('id') id: string,
-    @Body() body: UpdateOfferDto,
+    @Body() body,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
+    console.log('Updating offer with ID:', id);
+    console.log('Body::', body);
     const result = await this.eventService.updateOffer(id, body, user, image);
     if (result.success) {
       return {

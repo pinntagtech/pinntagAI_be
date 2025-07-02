@@ -1,6 +1,8 @@
+import { Transform } from 'class-transformer';
 import {
   IsDate,
   IsDateString,
+  IsEmail,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -13,14 +15,31 @@ export class PersonDetailDto {
   @IsString()
   profilePhoto: string;
 
+  @IsOptional()
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsDateString()
   dob: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @IsIn([Genders.FEMALE, Genders.MALE, Genders.OTHER, Genders.RATHER_NOT_SAY])
   gender: string;
+
+  @IsOptional()
+  @IsEmail()
+  @IsString()
+  @Transform(({ value }) => value.toLowerCase())
+  @Transform(({ value }) => value.trim())
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  phone: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode: string;
 }

@@ -20,7 +20,11 @@ import {
 //   BusinessLocation,
 //   BusinessLocationDocument,
 // } from 'src/business-profile/models/businessLocation.model';
-import { CrawledEventStatus, EventStatus } from 'src/enums/event.enums';
+import {
+  CrawledEventStatus,
+  EventStatus,
+  ReportTypes,
+} from 'src/enums/event.enums';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
 import {
@@ -45,7 +49,7 @@ import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { FileCategoryTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import {
@@ -108,6 +112,12 @@ import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
 import { AtlantaData } from 'src/event/crawledEvents.json';
 import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
+import { Report, ReportDocument } from 'src/event/models/reports.model';
+import { BusinessPopulates } from 'src/enums/user.enum';
 
 @Injectable()
 export class AdminService {
@@ -154,6 +164,10 @@ export class AdminService {
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Report.name)
+    private readonly reportModel: Model<ReportDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -988,8 +1002,8 @@ export class AdminService {
         message: 'Admin not found with the id provided.',
       };
     }
-    let password = data.password;
-    data.password = await bcrypt.hash(data.password, 10);
+    let password = await this.authService.autoGeneratePassword();
+    password = await bcrypt.hash(password, 10);
     if (data.role) {
       const role = await this.roleModel.findById(data.role);
       if (!role) {
@@ -1564,7 +1578,11 @@ export class AdminService {
     }
   }
 
-  async createTemplate(adminId: string, data: CreateTemplateDto) {
+  async createTemplate(
+    adminId: string,
+    data: CreateTemplateDto,
+    image: Express.Multer.File,
+  ) {
     try {
       const template = await this.templateModel.findOne({ title: data.title });
       if (template) {
@@ -1573,12 +1591,11 @@ export class AdminService {
           message: 'Template with this title already exists.',
         };
       }
+      const admin = await this.adminModel.findById(adminId);
 
       let categoryObjectIds = [];
       if (data.contentCategories) {
-        console.log('date.contentCategories:', data.contentCategories);
         for (let i = 0; i < data.contentCategories.length; i++) {
-          console.log('data.categories[i]:', data.contentCategories[i]);
           const foundCategory = await this.contentCategoryModel.findById(
             data.contentCategories[i],
           );
@@ -1608,17 +1625,33 @@ export class AdminService {
             busCategoryObjectIds.push(foundCategory._id);
           }
         }
-        data.businessCategories = categoryObjectIds;
+        console.log('busCategoryObjectIds:', busCategoryObjectIds);
+        data.businessCategories = busCategoryObjectIds;
       }
       data.businessIndustry = new mongoose.Types.ObjectId(
         data.businessIndustry,
       );
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+      let imageUpload = await this.driveService.uploadAndCreateFile(
+        image,
+        String(admin.drive),
+        Drive.name,
+        admin._id,
+        fileCategory._id,
+      );
 
       const createdTemplate = await this.templateModel.create({
         ...data,
+        isFree: data.isFree === 'true' ? true : false,
+        termsApplied: data.termsApplied === 'true' ? true : false,
+        minTargetAge: Number(data.minTargetAge),
+        maxTargetAge: Number(data.maxTargetAge),
         creatorType: Admin.name,
         categories: data.contentCategories,
         user: new mongoose.Types.ObjectId(adminId),
+        thumbnail: imageUpload.metaData.url,
       });
       console.log('CreatedTemplate:', createdTemplate);
       return {
@@ -1633,8 +1666,14 @@ export class AdminService {
       };
     }
   }
-  async updateTemplate(adminId: string, id: string, data: UpdateTemplateDto) {
+  async updateTemplate(
+    adminId: string,
+    id: string,
+    data: UpdateTemplateDto,
+    image: Express.Multer.File,
+  ) {
     try {
+      const admin = await this.adminModel.findById(adminId);
       const template = await this.templateModel.findById(id);
       if (!template) {
         return {
@@ -1644,24 +1683,51 @@ export class AdminService {
       }
 
       let categoryObjectIds = [];
+      // if (data.contentCategories) {
+      //   for (let i = 0; i < data.contentCategories.length; i++) {
+      //     const foundCategory = await this.contentCategoryModel.findById(
+      //       data.contentCategories[i],
+      //     );
+      //     if (!foundCategory) {
+      //       return {
+      //         success: false,
+      //         message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+      //       };
+      //     } else {
+      //       categoryObjectIds.push(foundCategory._id);
+      //     }
+      //   }
+      //   data.contentCategories = categoryObjectIds;
+      // }
       if (data.contentCategories) {
-        console.log('date.contentCategories:', data.contentCategories);
-        for (let i = 0; i < data.contentCategories.length; i++) {
-          console.log('data.categories[i]:', data.contentCategories[i]);
-          const foundCategory = await this.contentCategoryModel.findById(
-            data.contentCategories[i],
-          );
-          if (!foundCategory) {
-            return {
-              success: false,
-              message: `Category not found with the id provided: ${data.contentCategories[i]}`,
-            };
-          } else {
-            categoryObjectIds.push(foundCategory._id);
-          }
-        }
-        data.contentCategories = categoryObjectIds;
-      }
+  const categories = Array.isArray(data.contentCategories)
+    ? data.contentCategories
+    : [data.contentCategories];
+
+  for (let i = 0; i < categories.length; i++) {
+    const categoryId = categories[i];
+
+    // Optionally validate ObjectId format early
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return {
+        success: false,
+        message: `Invalid category ID format: ${categoryId}`,
+      };
+    }
+
+    const foundCategory = await this.contentCategoryModel.findById(categoryId);
+    if (!foundCategory) {
+      return {
+        success: false,
+        message: `Category not found with the id provided: ${categoryId}`,
+      };
+    } else {
+      categoryObjectIds.push(foundCategory._id);
+    }
+  }
+
+  data.contentCategories = categoryObjectIds;
+}
       let busCategoryObjectIds = [];
       if (data.businessCategories) {
         for (let i = 0; i < data.businessCategories.length; i++) {
@@ -1677,7 +1743,8 @@ export class AdminService {
             busCategoryObjectIds.push(foundCategory._id);
           }
         }
-        data.businessCategories = categoryObjectIds;
+        console.log('busCategoryObjectIds:', busCategoryObjectIds);
+        data.businessCategories = busCategoryObjectIds;
       }
       if (data.businessIndustry) {
         data.businessIndustry = new mongoose.Types.ObjectId(
@@ -1691,11 +1758,22 @@ export class AdminService {
           updateObj[key] = data[key];
         }
       });
-
       if (data.contentCategories) {
         updateObj.categories = data.contentCategories;
       }
-
+      if (image) {
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.GALLERY_IMAGE,
+        });
+        let imageUpload = await this.driveService.uploadAndCreateFile(
+          image,
+          String(admin.drive),
+          Drive.name,
+          admin._id,
+          fileCategory._id,
+        );
+        updateObj.thumbnail = imageUpload.metaData.url;
+      }
       const updatedTemplate = await this.templateModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         {
@@ -2266,6 +2344,52 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in createBusinessUser:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getReportedEvents(page: number, limit: number, status?: string) {
+    try {
+      const query: any = {};
+      if (
+        status &&
+        status !== 'all' &&
+        Object.values(ReportTypes).includes(status as ReportTypes)
+      ) {
+        query.status = status;
+      }
+      const reportedEvents = await this.reportModel
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('user', '_id name')
+        // .populate('event', '_id title')
+        .populate({
+          path: 'event',
+          populate: {
+            path: 'businessProfile',
+            model: Business.name,
+            select: BusinessPopulates.FOREIGN,
+          },
+        });
+
+      const totalReportedEvents = await this.reportModel.countDocuments(query);
+
+      return {
+        success: true,
+        message: 'Reported events fetched successfully',
+        data: reportedEvents,
+        page,
+        limit,
+        total: totalReportedEvents,
+        pages: Math.ceil(totalReportedEvents / limit),
+      };
+    } catch (error) {
+      console.error('Error in getReportedEvents:', error);
       return {
         success: false,
         message: 'Something went wrong.',

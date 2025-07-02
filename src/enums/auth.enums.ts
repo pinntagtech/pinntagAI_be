@@ -37,6 +37,7 @@ export const FileCategoryTypes = {
   ID_PROOF: 'ID Proof',
   INVOICE: 'invoice',
   AUDIO_NOTE: 'Audio Note',
+  CONTENT_QR: 'Content QR',
   OTHER: 'other',
 };
 export const allowedImageMimeTypes = [
