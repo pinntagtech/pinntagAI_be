@@ -46,6 +46,12 @@ export class User {
       'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+user+logo.png',
   })
   profilePhoto: string;
+  @Prop({
+    default:
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+user+logo.png',
+  })
+  thumbnail: string;
+
   @Prop({ unique: true, sparse: true })
   email: string;
   @Prop({ default: false })
@@ -111,7 +117,7 @@ export class User {
   @Prop()
   drive: mongoose.Types.ObjectId;
 
-  @Prop({default: false })
+  @Prop({ default: false })
   privacyConsent: boolean;
 
   @Prop()

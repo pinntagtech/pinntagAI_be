@@ -44,6 +44,11 @@ import { WebhookSnapshot, WebhookSnapshotSchema } from './models/webhook.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { FileSchema } from 'src/drive/models/file.model';
+import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -67,6 +72,10 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Admin.name, schema: AdminSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
       {
         name: WebhookSnapshot.name,
         schema: WebhookSnapshotSchema,
@@ -74,6 +83,6 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService, JwtService, Logger, S3Service, StripeService],
+  providers: [UserService, JwtService, Logger, S3Service, StripeService,DriveService],
 })
 export class UserModule {}

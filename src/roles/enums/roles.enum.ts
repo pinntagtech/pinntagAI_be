@@ -1,4 +1,4 @@
-import { BusinessUser } from "src/business/model/businessUser.model";
+import { BusinessUser } from 'src/business/model/businessUser.model';
 
 export const RoleCreatorType = {
   ADMIN: 'Admin',
@@ -60,7 +60,7 @@ export const ResourceTypes = {
   TAXES: 'taxes',
   ADDRESSES: 'addresses',
   PRIVILEGES: 'privileges',
-  OUTLETS: 'outlets'
+  OUTLETS: 'outlets',
   // PAYMENT_METHODS: 'payment_methods',
   // SHIPPING_METHODS: 'shipping_methods',
   // ORDER_STATUSES: 'order_statuses',
@@ -88,8 +88,19 @@ export const AdminResourceTypes = {
   Content_ETL: 'content etl',
   Reported_Content: 'reported content',
   Analytics: 'analytics',
-}
+};
 
 export const BusinessResourceTypes = {
-  
-}
+  Dashboard: 'dashboard',
+  Content: 'content',
+  Rewards: 'rewards',
+  Storage: 'storage',
+  Locations: 'locations',
+  Regions: 'regions',
+  Departments: 'departments',
+  Roles_and_Privileges: 'roles_and_privileges',
+  Team: 'team',
+  Templates: 'templates',
+  Subscription: 'subscription',
+  Business_Profile: 'business_profile',
+};

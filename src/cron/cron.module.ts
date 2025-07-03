@@ -43,8 +43,20 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { FileSchema } from 'src/drive/models/file.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 
 @Module({
   imports: [
@@ -65,8 +77,13 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: Template.name, schema: TemplateSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
-      { name: BusinessUser.name, schema: BusinessUserSchema},
-      { name: Business.name, schema: BusinessSchema}
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: Business.name, schema: BusinessSchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Admin.name, schema: AdminSchema },
     ]),
   ],
   controllers: [CronController],
@@ -77,6 +94,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
     Logger,
     S3Service,
     StripeService,
+    DriveService,
   ],
 })
 export class CronModule {}

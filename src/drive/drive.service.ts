@@ -23,7 +23,7 @@ import {
   FileType,
   UserTypes,
 } from 'src/enums/auth.enums';
-import { manipulateImageName } from 'src/helpers/upload.helpers';
+import { FileUploadUtils, manipulateImageName } from 'src/helpers/upload.helpers';
 import { S3Service } from 'src/s3.service';
 import { In } from 'typeorm';
 import { File, FileDocument } from './models/file.model';
@@ -83,7 +83,7 @@ export class DriveService {
     let driveDetails = await this.driveModel.findOne({
       owner: new mongoose.Types.ObjectId(parentId),
     });
-
+    file = await FileUploadUtils.compressImage(file);
     const uploadFileName = manipulateImageName(file.originalname);
     console.log('uploadFileName', uploadFileName);
     const uploadResult = await this.s3Service.s3_upload(
@@ -92,7 +92,7 @@ export class DriveService {
       uploadFileName,
       file.mimetype,
     );
-    const thumbnail = this.compressImage(file);
+    const thumbnail = await FileUploadUtils.compressThumbnail(file);
     const thumbnailS3 = await this.s3Service.s3_upload(
       thumbnail,
       process.env.AWS_S3_BUCKET_NAME,
@@ -676,6 +676,7 @@ export class DriveService {
     categoryId: any,
   ) {
     // 1. Upload
+    file = await FileUploadUtils.compressImage(file);
     const s3 = await this.s3Service.s3_upload(
       file.buffer,
       process.env.AWS_S3_BUCKET_NAME,
@@ -683,7 +684,7 @@ export class DriveService {
       file.mimetype,
     );
     //2. Upload thumbnail
-    const thumbnail = await this.compressImage(file);
+    const thumbnail = await FileUploadUtils.compressThumbnail(file);
     const thumbnailS3 = await this.s3Service.s3_upload(
       thumbnail.buffer,
       process.env.AWS_S3_BUCKET_NAME,
@@ -1109,17 +1110,5 @@ export class DriveService {
       console.error('Error while deleting folder:', error);
       return { success: false, message: 'Failed to delete folder' };
     }
-  }
-
-  async compressImage(file: Express.Multer.File): Promise<Express.Multer.File> {
-    const compressedImageBuffer = await sharp(file.buffer)
-      .jpeg({ quality: 70 })
-      .toBuffer();
-    return {
-      ...file,
-      buffer: compressedImageBuffer,
-      mimetype: 'image/jpeg',
-      size: compressedImageBuffer.length,
-    };
   }
 }
