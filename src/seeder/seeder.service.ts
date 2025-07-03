@@ -363,6 +363,7 @@ export class SeederService {
           if (!resourceDoc) {
             resourceDoc = await this.resourceModel.create({
               title: resourceTitle,
+              belongsTo: 'Admin',
             });
           }
 
@@ -521,7 +522,7 @@ export class SeederService {
         if (!findResource) {
           await this.resourceModel.create({
             title: value,
-            belongsTo: 'Business',
+            belongsTo: 'BusinessUser',
           });
         }
       }
@@ -886,6 +887,7 @@ export class SeederService {
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
                 title: ResourceTypes[privilegeKey],
+                belongsTo: 'BusinessUser'
               });
             }
 

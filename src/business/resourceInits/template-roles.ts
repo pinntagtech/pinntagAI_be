@@ -426,7 +426,7 @@ export const DefaultBusinessDepartmentRoles = [
       }
     ]
   }
-]
+];
 
 
 //--------------------------------
