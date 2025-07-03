@@ -73,3 +73,23 @@ export const ResourceTypes = {
   // ORDER_DELIVERIES: 'order_deliveries',
   // ORDER_COMMISSIONS: 'order_commissions',
 };
+
+export const AdminResourceTypes = {
+  Dashboard: 'dashboard',
+  Businesses: 'businesses',
+  Business_Segments: 'business segments',
+  Consumers: 'consumers',
+  Content_Categories: 'content categories',
+  Content_Templates: 'content templates',
+  Explore_Settings: 'explore settings',
+  My_Users: 'my users',
+  Storage: 'storage',
+  Roles_Privileges: 'roles & privileges',
+  Content_ETL: 'content etl',
+  Reported_Content: 'reported content',
+  Analytics: 'analytics',
+}
+
+export const BusinessResourceTypes = {
+  
+}

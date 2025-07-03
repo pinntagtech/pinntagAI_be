@@ -41,6 +41,7 @@ import path from 'path';
 import axios from 'axios';
 import streamifier from 'streamifier';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import sharp from 'sharp';
 
 @Injectable()
 export class DriveService {
@@ -91,11 +92,21 @@ export class DriveService {
       uploadFileName,
       file.mimetype,
     );
+    const thumbnail = this.compressImage(file);
+    const thumbnailS3 = await this.s3Service.s3_upload(
+      thumbnail,
+      process.env.AWS_S3_BUCKET_NAME,
+      `thumbnails/${manipulateImageName(file.originalname)}`,
+      file.mimetype,
+    );
+
     const updatedUrl = this.rewriteS3Url(uploadResult.Location);
+    const thumbnailUrl = this.rewriteS3Url(thumbnailS3.Location);
     let createdFile = await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
         url: updatedUrl,
+        thumbnailUrl: thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
       },
@@ -671,14 +682,24 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
+    //2. Upload thumbnail
+    const thumbnail = await this.compressImage(file);
+    const thumbnailS3 = await this.s3Service.s3_upload(
+      thumbnail.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      `thumbnails/${manipulateImageName(file.originalname)}`,
+      thumbnail.mimetype,
+    );
     const [base, rest] = s3.Location.split('amazonaws');
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+    const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
         url,
+        thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
       },
@@ -1088,5 +1109,17 @@ export class DriveService {
       console.error('Error while deleting folder:', error);
       return { success: false, message: 'Failed to delete folder' };
     }
+  }
+
+  async compressImage(file: Express.Multer.File): Promise<Express.Multer.File> {
+    const compressedImageBuffer = await sharp(file.buffer)
+      .jpeg({ quality: 70 })
+      .toBuffer();
+    return {
+      ...file,
+      buffer: compressedImageBuffer,
+      mimetype: 'image/jpeg',
+      size: compressedImageBuffer.length,
+    };
   }
 }

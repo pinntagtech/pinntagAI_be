@@ -30,6 +30,8 @@ import { Drive, DriveDocument } from 'src/drive/models/drive.model';
 // } from 'src/business-profile/models/businessProfile.model';
 import {
   Actions,
+  AdminResourceTypes,
+  BusinessResourceTypes,
   ResourceTypes,
   RoleBelonging,
   RoleCreatorType,
@@ -503,11 +505,24 @@ export class SeederService {
   async seedResources() {
     const resources = await this.resourceModel.find();
 
-    if (resources.length < Object.values(ResourceTypes).length) {
-      for (let value of Object.values(ResourceTypes)) {
+    if (
+      resources.length <
+      Object.values(AdminResourceTypes).length +
+        Object.values(BusinessResourceTypes).length
+    ) {
+      for (let value of Object.values(AdminResourceTypes)) {
         let findResource = await this.resourceModel.findOne({ title: value });
         if (!findResource) {
-          await this.resourceModel.create({ title: value });
+          await this.resourceModel.create({ title: value, belongsTo: 'Admin' });
+        }
+      }
+      for (let value of Object.values(BusinessResourceTypes)) {
+        let findResource = await this.resourceModel.findOne({ title: value });
+        if (!findResource) {
+          await this.resourceModel.create({
+            title: value,
+            belongsTo: 'Business',
+          });
         }
       }
     }
