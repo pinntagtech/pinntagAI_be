@@ -98,6 +98,8 @@ import {
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Region, RegionDocument } from 'src/business/model/region.model';
+import { OutletCategoryList } from 'src/outlet/outlet.enum';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 
 @Injectable()
 export class SeederService {
@@ -150,6 +152,8 @@ export class SeederService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Region.name)
     private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
   ) {}
@@ -601,7 +605,7 @@ export class SeederService {
       `Business‐Industries: ${inserted} created, ${matched} already existed`,
     );
   }
- 
+
   async seedBusinessCategories() {
     // 1. Fetch super-admin once
     const superAdmin = await this.adminModel
@@ -773,7 +777,7 @@ export class SeederService {
       await this.templateModel.create(createObj);
     }
   }
-  
+
   async seedDashboardConfigs() {
     const dashboardConfigs = await this.dashboardConfigModel.find();
     if (dashboardConfigs.length !== 0) return;
@@ -938,7 +942,7 @@ export class SeederService {
       isEmailVerified: true,
       name: 'Pinntag',
       status: ProfileStatus.EMAIL_VERIFIED,
-      forcePasswordReset: false
+      forcePasswordReset: false,
     };
     let createdUser = await this.businessUserModel.create(createObj);
     let driveDetails = await this.createDrive(
@@ -999,6 +1003,35 @@ export class SeederService {
 
     const createdBusiness = await this.businessModel.create(businessObj);
 
+    //seed 1 default outlet
+
+    let outletObj = {
+      category: OutletCategoryList.PHYSICAL,
+      name: 'PinnTag Head Office',
+      address1: '13 Sounds Lodge',
+      address2: 'Crockenhill',
+      city: 'Swanley',
+      postalCode: 'BR8 8TD',
+      country: 'United Kingdom',
+      state: 'Kent',
+      countryCode: '+44',
+      phone: '7917303330',
+      email: email,
+      isActive: true,
+      creator: new mongoose.Types.ObjectId(createdUser.id),
+      business: new mongoose.Types.ObjectId(createdBusiness._id),
+      latitude: 51.3704,
+      longitude: 0.1702,
+    };
+    const outlet = await this.outletModel.create(outletObj);
+    await this.businessUserModel.updateOne(
+      { _id: createdUser.id },
+      {
+        $addToSet: {
+          outlets: outlet._id,
+        },
+      },
+    );
     this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
       .then(() => console.log('Business roles seeded successfully'))
       .catch((err) => console.error('Error seeding business roles:', err));

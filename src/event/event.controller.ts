@@ -751,7 +751,7 @@ export class EventController {
     if (!limit || limit == '') {
       limit = '10';
     }
-    const result = await this.eventService.getSavedEvents(
+    const result = await this.eventService.getSavedEventsOld(
       user.id,
       type,
       body.latitude ? parseFloat(body.latitude) : 0,
@@ -763,10 +763,10 @@ export class EventController {
       return {
         message: result.message,
         events: result.data,
-        pages: result.pages,
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
+        // pages: result.pages,
+        // total: result.total,
+        // page: result.page,
+        // limit: result.limit,
       };
     } else {
       throw new BadRequestException({

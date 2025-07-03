@@ -102,6 +102,7 @@ import { S3Service } from './s3.service';
 import { Region, RegionSchema } from './business/model/region.model';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { Outlet, OutletSchema } from './outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -165,6 +166,7 @@ import * as redisStore from 'cache-manager-redis-store';
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
     StripeeModule,
     AuthModule,

@@ -2047,7 +2047,7 @@ export class EventService2 {
               createQuery['user'] = new mongoose.Types.ObjectId(user.id);
             }
             console.log('event:', event);
-            let thumbnailURL = (event as any).files[0].metaData.url;
+            let thumbnailURL = (event as any).files?.[0]?.metaData?.url || null;
             console.log('thumbnailURL:', thumbnailURL);
 
             const createdTemplate = await this.templateModel.create({
@@ -2612,161 +2612,161 @@ export class EventService2 {
     }
   }
 
-  // async getSavedEvents(
-  //   userId: string,
-  //   type: string,
-  //   latitude: number,
-  //   longitude: number,
-  //   // page: number,
-  //   // limit: number,
-  // ) {
-  //   const user = await this.userModel.findById(userId);
-  //   if (!user) {
-  //     return {
-  //       success: false,
-  //       message: 'User not found',
-  //     };
-  //   } else {
-  //     let searchQuery = {};
-  //     if (type == 'all') {
-  //       searchQuery = {
-  //         'schedule.date': { $gte: new Date() },
-  //       };
-  //     } else {
-  //       searchQuery = {
-  //         type: type,
-  //         'schedule.date': { $gte: new Date() },
-  //       };
-  //     }
-  //     // {
-  //     //   type: EventTypes.PRIVATE,
-  //     //   user: new mongoose.Types.ObjectId(userId),
-  //     // }
-  //     const events = await this.eventModel
-  //       .find({
-  //         $or: [
-  //           {
-  //             type: EventTypes.PRIVATE,
-  //             user: new mongoose.Types.ObjectId(userId),
-  //             // 'schedule.date': { $gte: new Date() },
-  //           },
-  //           {
-  //             _id: {
-  //               $in: user.savedEvents,
-  //               // 'schedule.date': { $gte: new Date() },
-  //             },
-  //           },
-  //         ],
-  //       })
-  //       .populate('user', UserPopulates.FOREIGN)
-  //       .populate('businessProfile', BusinessPopulates.FOREIGN)
-  //       .populate('images', ImagePopulates.FOREIGN)
-  //       .populate('locations')
-  //       .populate('ageGroupsAllowed', 'name')
-  //       .populate('category', CategoryPopulates.FOREIGN)
-  //       .sort({ createdAt: -1 })
-  //       // .skip((page - 1) * limit)
-  //       // .limit(limit)
-  //       .exec();
-  //     let eventsData = [];
-  //     let offersData = [];
-  //     let privateEvents = [];
-  //     for (let i = 0; i < events.length; i++) {
-  //       const event = JSON.parse(JSON.stringify(events[i]));
-  //       event['distance'] = event.locations.length
-  //         ? haversineDistance(
-  //             latitude,
-  //             longitude,
-  //             event.locations[0].location.coordinates[1],
-  //             event.locations[0].location.coordinates[0],
-  //           )
-  //         : 0;
-  //       const isSaved = await this.userService.isEventSaved(
-  //         events[i].id,
-  //         user.id,
-  //       );
-  //       const isLiked = await this.userService.isEventLiked(
-  //         events[i].id,
-  //         user.id,
-  //       );
-  //       if (events[i].creatorType === 'User') {
-  //         const creator = await this.userModel.findById(
-  //           events[i].user['_id'].toString(),
-  //         );
-  //         const isFollowedByMe = await this.followModel.findOne({
-  //           followerType: User.name,
-  //           follower: new mongoose.Types.ObjectId(user.id),
-  //           followingType: User.name,
-  //           following: creator._id,
-  //           isBlocked: false,
-  //         });
-  //         event['creatorDetails'] = {
-  //           _id: creator._id,
-  //           name: creator.name,
-  //           profilePhoto: creator.profilePhoto,
-  //           email: creator.email,
-  //           bio: '',
-  //           phone: creator.phone,
-  //           website: '',
-  //           followersCount: creator.followersCount,
-  //           profileType: 'User',
-  //           following: isFollowedByMe ? true : false,
-  //           isMe: creator.id == user.id,
-  //         };
-  //       } else {
-  //         const businessProfile = await this.businessProfileModel.findById(
-  //           events[i].businessProfile._id.toString(),
-  //         );
-  //         const isFollowedByMe = await this.followModel.findOne({
-  //           followerType: User.name,
-  //           follower: new mongoose.Types.ObjectId(user.id),
-  //           followingType: BusinessProfile.name,
-  //           following: businessProfile._id,
-  //           isBlocked: false,
-  //         });
-  //         event['creatorDetails'] = {
-  //           _id: businessProfile._id,
-  //           name: businessProfile.name,
-  //           profilePhoto: businessProfile.profilePhoto,
-  //           email: businessProfile.email,
-  //           phone: businessProfile.phone,
-  //           website: businessProfile.website,
-  //           bio: businessProfile.bio,
-  //           followersCount: businessProfile.followersCount,
-  //           profileType: 'BusinessProfile',
-  //           following: isFollowedByMe ? true : false,
-  //           isMe: businessProfile.id == user.id,
-  //         };
-  //       }
-  //       if (
-  //         events[i].type == EventTypes.FORMAL ||
-  //         events[i].type == EventTypes.INFORMAL
-  //       ) {
-  //         eventsData.push({ ...event, isSaved, isLiked });
-  //       } else if (events[i].type == EventTypes.OFFER) {
-  //         offersData.push({ ...event, isSaved, isLiked });
-  //       } else if (events[i].type == EventTypes.PRIVATE) {
-  //         privateEvents.push({ ...event, isSaved, isLiked });
-  //       }
-  //     }
-  // const liked = await this.getLikedEvents(
-  //   userId,
-  //   type,
-  //   latitude,
-  //   longitude,
-  // );
-  //     return {
-  //       success: true,
-  //       message: 'Saved events fetched successfully',
-  //       data: {
-  //         events: eventsData,
-  //         offers: offersData,
-  //         privateEvents: privateEvents,
-  //         liked: liked.events,
-  //       },
-  //     };
-  //   }
-  // }
+  async getSavedEventsOld(
+    userId: string,
+    type: string,
+    latitude: number,
+    longitude: number,
+    page: number,
+    limit: number,
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    } else {
+      let searchQuery = {};
+      if (type == 'all') {
+        searchQuery = {
+          'schedule.date': { $gte: new Date() },
+        };
+      } else {
+        searchQuery = {
+          type: type,
+          'schedule.date': { $gte: new Date() },
+        };
+      }
+      // {
+      //   type: EventTypes.PRIVATE,
+      //   user: new mongoose.Types.ObjectId(userId),
+      // }
+      const events = await this.eventModel
+        .find({
+          $or: [
+            {
+              type: EventTypes.PRIVATE,
+              user: new mongoose.Types.ObjectId(userId),
+              // 'schedule.date': { $gte: new Date() },
+            },
+            {
+              _id: {
+                $in: user.savedEvents,
+                // 'schedule.date': { $gte: new Date() },
+              },
+            },
+          ],
+        })
+        .populate('user', UserPopulates.FOREIGN)
+        .populate('businessProfile', BusinessPopulates.FOREIGN)
+        .populate('files')
+        .populate('locations')
+        .populate('eventSchedule')
+        // .populate('ageGroupsAllowed', 'name')
+        .populate('categories', CategoryPopulates.FOREIGN)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec();
+      let eventsData = [];
+      let offersData = [];
+      let privateEvents = [];
+      for (let i = 0; i < events.length; i++) {
+        const event = JSON.parse(JSON.stringify(events[i]));
+        event['distance'] = event.locations.length
+          ? haversineDistance(
+              latitude,
+              longitude,
+              event.locations[0].location.coordinates[1],
+              event.locations[0].location.coordinates[0],
+            )
+          : 0;
+        const isSaved = await this.userService.isEventSaved(
+          events[i].id,
+          user.id,
+        );
+        const isLiked = await this.userService.isEventLiked(
+          events[i].id,
+          user.id,
+        );
+        if (events[i].creatorType === 'User') {
+          const creator = await this.userModel.findById(
+            events[i].user['_id'].toString(),
+          );
+          const isFollowedByMe = await this.followModel.findOne({
+            followerType: User.name,
+            follower: new mongoose.Types.ObjectId(user.id),
+            followingType: User.name,
+            following: creator._id,
+            isBlocked: false,
+          });
+          event['creatorDetails'] = {
+            _id: creator._id,
+            name: creator.name,
+            profilePhoto: creator.profilePhoto,
+            email: creator.email,
+            bio: '',
+            phone: creator.phone,
+            website: '',
+            followersCount: creator.followersCount,
+            profileType: 'User',
+            following: isFollowedByMe ? true : false,
+            isMe: creator.id == user.id,
+          };
+        } else {
+          const businessProfile = await this.businessModel.findById(
+            events[i].businessProfile._id.toString(),
+          );
+          const isFollowedByMe = await this.followModel.findOne({
+            followerType: User.name,
+            follower: new mongoose.Types.ObjectId(user.id),
+            followingType: 'Business',
+            following: businessProfile._id,
+            isBlocked: false,
+          });
+          event['creatorDetails'] = {
+            _id: businessProfile._id,
+            name: businessProfile.name,
+            profilePhoto: businessProfile.logo,
+            email: businessProfile.email,
+            phone: businessProfile.phone,
+            website: businessProfile.website,
+            bio: businessProfile.bio,
+            followersCount: businessProfile.followersCount,
+            profileType: 'BusinessProfile',
+            following: isFollowedByMe ? true : false,
+            isMe: businessProfile.id == user.id,
+          };
+        }
+        if (events[i].type == EventTypes.FORMAL) {
+          eventsData.push({ ...event, isSaved, isLiked });
+        } else if (events[i].type == EventTypes.OFFER) {
+          offersData.push({ ...event, isSaved, isLiked });
+        } else if (events[i].type == EventTypes.PRIVATE) {
+          privateEvents.push({ ...event, isSaved, isLiked });
+        }
+      }
+      const liked = await this.getLikedEvents(
+        userId,
+        type,
+        latitude,
+        longitude,
+        page,
+        limit,
+      );
+      return {
+        success: true,
+        message: 'Saved events fetched successfully',
+        data: {
+          events: eventsData,
+          offers: offersData,
+          privateEvents: privateEvents,
+          liked: liked.events,
+        },
+      };
+    }
+  }
 
   async getSavedEvents(
     userId: string,
@@ -5378,28 +5378,30 @@ export class EventService2 {
       console.log('eventObj:', createObj);
 
       const event = await this.eventModel.create(createObj);
-      console.log('event:', event);
 
-      const fileCategory = await this.fileCategoryModel.findOne({
-        name: 'Content QR',
-      });
+      // const fileCategory = await this.fileCategoryModel.findOne({
+      //   name: 'Content QR',
+      // });
 
       if (images) {
-        await this.driveService.multiImageUpload(
+        this.driveService.multiImageUpload(
           user.id,
           String(event.drivePath),
           images,
         );
       }
-      await this.businessModel.updateOne(
-        { _id: user.businessProfile },
-        {
-          $set: {
-            onboardingOfferStatus: OfferStatus.CREATED,
-            initialOfferId: event._id,
+      if (!business.isOnboardingOfferDone) {
+        await this.businessModel.updateOne(
+          { _id: user.businessProfile },
+          {
+            $set: {
+              onboardingOfferStatus: OfferStatus.CREATED,
+              initialOfferId: event._id,
+              isOnboardingOfferDone: true,
+            },
           },
-        },
-      );
+        );
+      }
 
       const eventDetails = await this.eventModel
         .findById(event._id)

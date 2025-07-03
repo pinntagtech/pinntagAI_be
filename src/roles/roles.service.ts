@@ -302,7 +302,6 @@ export class RolesService {
         page: page,
         limit: limit,
       };
-
     } catch (error) {
       console.error('Error:', error);
       return {
@@ -467,14 +466,24 @@ export class RolesService {
           {
             role: new mongoose.Types.ObjectId(roleId),
           },
-          { $set: { role: new mongoose.Types.ObjectId(backupRoleId) } },
+          {
+            $set: {
+              $pull: { role: new mongoose.Types.ObjectId(roleId) }, // remove old roleId
+              $addToSet: { role: new mongoose.Types.ObjectId(backupRoleId) },
+            },
+          },
         );
-      } else if (userType == UserTypes.USER) {
-        await this.userModel.updateMany(
+      } else if (userType == UserTypes.BUSINESS) {
+        await this.businessUserModel.updateMany(
           {
             role: new mongoose.Types.ObjectId(roleId),
           },
-          { $set: { role: new mongoose.Types.ObjectId(backupRoleId) } },
+          {
+            $set: {
+              $pull: { role: new mongoose.Types.ObjectId(roleId) }, // remove old roleId
+              $addToSet: { role: new mongoose.Types.ObjectId(backupRoleId) },
+            },
+          },
         );
       }
       return { success: true, message: 'Role deleted successfully' };

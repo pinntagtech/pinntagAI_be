@@ -212,13 +212,16 @@ export class DriveService {
         owner: new mongoose.Types.ObjectId(id),
       });
       console.log('folder data........', folderData);
-      if (folderData.parentDirectory && !isValidObjectId(folderData.parentDirectory)) {
+      if (
+        folderData.parentDirectory &&
+        !isValidObjectId(folderData.parentDirectory)
+      ) {
         return {
           success: false,
           message: 'Invalid ObjectId',
         };
       }
-      if(!folderData.parentDirectory){
+      if (!folderData.parentDirectory) {
         folderData.parentDirectory = driveDetails.id;
       }
       let isDrive = await this.driveModel.findOne({
@@ -276,7 +279,7 @@ export class DriveService {
   ) {
     try {
       const skip = (page - 1) * limit;
-      console.log("limit:",typeof limit);
+      console.log('limit:', typeof limit);
       if (!isValidObjectId(userId))
         return {
           success: false,
@@ -694,9 +697,9 @@ export class DriveService {
     images: Express.Multer.File[],
   ) {
     try {
-      console.log("Location ID:", locationId);
+      console.log('Location ID:', locationId);
       let parentId = userId;
-      console.log("ParentID:",parentId);
+      console.log('ParentID:', parentId);
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
@@ -760,16 +763,6 @@ export class DriveService {
 
       // Run uploads/creates in parallel
       const createdFiles = await Promise.all(tasks);
-
-      const isInEvent = await this.eventModel.findOne({
-        drivePath: new mongoose.Types.ObjectId(locationId),
-      });
-      if (isInEvent) {
-        await this.businessModel.updateOne(
-          { _id: isInEvent.businessProfile },
-          { $set: { onboardingOfferStatus: OfferStatus.GALLERY } },
-        );
-      }
 
       // Deduct used space
       await this.driveModel.updateOne(
@@ -962,16 +955,6 @@ export class DriveService {
       // Run uploads/creates in parallel
       const createdFiles = await Promise.all(tasks);
 
-      const isInEvent = await this.eventModel.findOne({
-        drivePath: new mongoose.Types.ObjectId(locationId),
-      });
-      if (isInEvent) {
-        await this.businessModel.updateOne(
-          { _id: isInEvent.businessProfile },
-          { $set: { onboardingOfferStatus: OfferStatus.GALLERY } },
-        );
-      }
-
       // Deduct used space
       await this.driveModel.updateOne(
         { _id: parentDirectoryId },
@@ -1030,26 +1013,28 @@ export class DriveService {
     return result;
   }
 
-  async deleteFile(
-    id: string,
-    user: DecodedUser,
-  ) {
+  async deleteFile(id: string, user: DecodedUser) {
     try {
       if (!isValidObjectId(id)) {
         return { success: false, message: 'Invalid file ID' };
       }
-      const userDetails = await this.businessUserModel.findById(user.id);
+      let userDetails = null;
+      if (user.userType == UserTypes.BUSINESS) {
+        userDetails = await this.businessUserModel.findById(user.id);
+      } else if (user.userType == UserTypes.ADMIN) {
+        userDetails = await this.adminModel.findById(user.id);
+      }
       const file = await this.fileModel.findById(id);
       if (!file) {
         return { success: false, message: 'File not found' };
       }
       // Delete file from S3
       const fileUrl = file.metaData.url;
-      const fileName = path.basename(fileUrl);
-      await this.s3Service.s3_delete(
-        process.env.AWS_S3_BUCKET_NAME,
-        fileName,
-      );
+      const pathname = new URL(fileUrl).pathname; // Extracts /staging/image_cropper_...
+      const fileName = pathname.startsWith('/') ? pathname.slice(1) : pathname;
+      console.log('File URL:', fileUrl);
+      console.log('File Name:', fileName);
+      await this.s3Service.s3_delete(process.env.AWS_S3_BUCKET_NAME, fileName);
 
       // Delete file document from MongoDB
       await this.fileModel.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
@@ -1061,7 +1046,7 @@ export class DriveService {
       if (driveDetails) {
         await this.driveModel.updateOne(
           { _id: driveDetails._id },
-          { $inc: { AvailableSpace: file.metaData.size } },
+          { $inc: { AvailableSpace: -file.metaData.size } },
         );
       }
 
@@ -1074,5 +1059,34 @@ export class DriveService {
       return { success: false, message: 'Failed to delete file' };
     }
   }
+  async deleteFolder(id: string, user: DecodedUser) {
+    try {
+      if (!isValidObjectId(id)) {
+        return { success: false, message: 'Invalid folder ID' };
+      }
+      let userDetails = null;
+      if (user.userType == UserTypes.BUSINESS) {
+        userDetails = await this.businessUserModel.findById(user.id);
+      } else if (user.userType == UserTypes.ADMIN) {
+        userDetails = await this.adminModel.findById(user.id);
+      }
+      const folder = await this.folderModel.findById(id);
+      if (!folder) {
+        return { success: false, message: 'Folder not found' };
+      }
+      let files = await this.fileModel.find({
+        parentDirectory: new mongoose.Types.ObjectId(id),
+      });
+      let fileIds = files.map((file) => file._id);
+      fileIds.map((fileId) => this.deleteFile(fileId.toString(), user));
 
+      return {
+        success: true,
+        message: 'Folder deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error while deleting folder:', error);
+      return { success: false, message: 'Failed to delete folder' };
+    }
+  }
 }

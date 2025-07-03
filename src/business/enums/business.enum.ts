@@ -13,10 +13,9 @@ export const BusinessStatus = {
 export const OfferStatus = {
   DEFAULT: 0,
   CREATED: 1,
-  GALLERY: 2,
+  SCHEDULE: 2,
   LOCATIONS: 3,
-  SCHEDULE: 4,
-  PUBLISHED: 5,
+  PUBLISHED: 4,
 };
 
 export const ScalabilityFactor = {

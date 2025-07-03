@@ -121,6 +121,7 @@ import { DriveService } from 'src/drive/drive.service';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Region, RegionSchema } from 'src/business/model/region.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -171,6 +172,7 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
