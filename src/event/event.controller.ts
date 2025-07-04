@@ -762,11 +762,10 @@ export class EventController {
     if (result.success) {
       return {
         message: result.message,
-        events: result.data,
-        // pages: result.pages,
-        // total: result.total,
-        // page: result.page,
-        // limit: result.limit,
+        events: result.data.events,
+        offers: result.data.offers,
+        privateEvents: result.data.privateEvents,
+        liked: result.data.liked
       };
     } else {
       throw new BadRequestException({
