@@ -5285,10 +5285,10 @@ export class EventService2 {
     }
   }
 
-  async createOffer(
+   async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
-    images: Express.Multer.File[],
+    image: Express.Multer.File,
   ) {
     try {
       const userId = user.id;
@@ -5298,7 +5298,6 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
-
       const userDetails = await this.businessUserModel.findById(userId);
       if (!userDetails) {
         return {
@@ -5306,7 +5305,6 @@ export class EventService2 {
           message: 'User not found.',
         };
       }
-
       const business = await this.businessModel.findById(user.businessProfile);
       if (!business) {
         return {
@@ -5314,7 +5312,6 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
-
       if (data.categories) {
         let categoriesInObjectId = [];
         data.categories = data.categories.split(',');
@@ -5336,7 +5333,6 @@ export class EventService2 {
         }
         data.categories = categoriesInObjectId;
       }
-
       if (data.minTargetAge && data.maxTargetAge) {
         if (data.minTargetAge > data.maxTargetAge) {
           return {
@@ -5356,13 +5352,11 @@ export class EventService2 {
         data.quantityLimit = Number(data.quantityLimit);
       }
       data.isFree = data.isFree === 'true';
-
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: business.drivePath,
         parentType: Folder.name,
         folderName: data.title,
       });
-
       let createObj: any = {
         ...data,
         type: data.eventType,
@@ -5376,41 +5370,36 @@ export class EventService2 {
         createObj.bookingUrl = bookingUrls;
       }
       console.log('eventObj:', createObj);
-
       const event = await this.eventModel.create(createObj);
-
-      // const fileCategory = await this.fileCategoryModel.findOne({
-      //   name: 'Content QR',
-      // });
-
-      if (images) {
-        this.driveService.multiImageUpload(
-          user.id,
-          String(event.drivePath),
-          images,
-        );
-      }
-      if (!business.isOnboardingOfferDone) {
-        await this.businessModel.updateOne(
-          { _id: user.businessProfile },
+      console.log('event:', event);
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      if (image) {
+        console.log('Image:', image);
+        let qrDetails = await this.driveService.uploadAndCreateFile(image,String(event.drivePath),Folder.name,event._id,fileCategory._id)
+        await this.eventModel.updateOne(
+          { _id: event._id },
           {
             $set: {
-              onboardingOfferStatus: OfferStatus.CREATED,
-              initialOfferId: event._id,
-              isOnboardingOfferDone: true,
+              QR_CODE: qrDetails._id,
             },
           },
         );
       }
-
-      const eventDetails = await this.eventModel
-        .findById(event._id)
-        .populate('files');
-
+      await this.businessModel.updateOne(
+        { _id: user.businessProfile },
+        {
+          $set: {
+            onboardingOfferStatus: OfferStatus.CREATED,
+            initialOfferId: event._id,
+          },
+        },
+      );
       return {
         success: true,
         message: 'Offer created successfully',
-        data: eventDetails,
+        data: event,
       };
     } catch (error) {
       console.log('Error in createOffer:', error);
@@ -5420,6 +5409,8 @@ export class EventService2 {
       };
     }
   }
+
+
 
   async updateOffer(
     offerId: string,
