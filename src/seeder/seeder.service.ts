@@ -349,7 +349,7 @@ export class SeederService {
 
         // 2) For each privilegeKey under this role:
         for (const privilegeKey of Object.keys(roleData.privileges)) {
-          const resourceTitle = ResourceTypes[privilegeKey];
+          const resourceTitle = AdminResourceTypes[privilegeKey];
           // console.log('Resource Title:', resourceTitle);
           if (!resourceTitle) {
             console.warn(`Skipping missing ResourceTypes['${privilegeKey}']`);
@@ -493,7 +493,7 @@ export class SeederService {
     if (!privileges.length) {
       const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
       for (let [key, action] of Object.entries(Actions)) {
-        for (let [resKey, resource] of Object.entries(ResourceTypes)) {
+        for (let [resKey, resource] of Object.entries(AdminResourceTypes)) {
           await this.privilegeModel.create({
             role: new mongoose.Types.ObjectId(superAdmin.role[0]),
             resource: resource,
@@ -881,12 +881,15 @@ export class SeederService {
           const privilegeKeys = Object.keys(roleData.privileges);
           for (const privilegeKey of privilegeKeys) {
             // Get/create resource
+            console.log("privilegeKey:", privilegeKey);
+            console.log("BusinessResourceTypes[privilegeKey]:", BusinessResourceTypes[privilegeKey]);
+
             let resourceDetails = await this.resourceModel.findOne({
-              title: ResourceTypes[privilegeKey],
+              title: BusinessResourceTypes[privilegeKey],
             });
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
-                title: ResourceTypes[privilegeKey],
+                title: BusinessResourceTypes[privilegeKey],
                 belongsTo: 'BusinessUser'
               });
             }

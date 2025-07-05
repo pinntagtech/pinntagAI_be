@@ -765,7 +765,8 @@ export class EventController {
         events: result.data.events,
         offers: result.data.offers,
         privateEvents: result.data.privateEvents,
-        liked: result.data.liked
+        liked: result.data.liked,
+        reported: result.data.reported,
       };
     } else {
       throw new BadRequestException({

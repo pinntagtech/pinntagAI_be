@@ -2738,6 +2738,8 @@ export class EventService2 {
             following: isFollowedByMe ? true : false,
             isMe: businessProfile.id == user.id,
           };
+          event['images'] = events[i]['files'];
+          delete event['files'];
         }
         if (events[i].type == EventTypes.FORMAL) {
           eventsData.push({ ...event, isSaved, isLiked });
@@ -2755,6 +2757,146 @@ export class EventService2 {
         page,
         limit,
       );
+      const aggregationPipeline: any = [
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'event',
+            foreignField: '_id',
+            as: 'event',
+          },
+        },
+        { $unwind: '$event' },
+
+        // Populate event.user
+        {
+  $lookup: {
+    from: 'users',
+    let: { userId: '$event.user' },
+    pipeline: [
+      {
+        $match: {
+          $expr: { $eq: ['$_id', '$$userId'] },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          profilePhoto: 1,
+          followersCount: 1,
+          followingCount: 1,
+        },
+      },
+    ],
+    as: 'event.user',
+  },
+},
+        { $unwind: { path: '$event.user', preserveNullAndEmptyArrays: true } },
+
+        // Populate event.businessProfile
+       {
+  $lookup: {
+    from: 'businesses',
+    let: { businessProfileId: '$event.businessProfile' },
+    pipeline: [
+      {
+        $match: {
+          $expr: { $eq: ['$_id', '$$businessProfileId'] },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          bio: 1,
+          brandColor: 1,
+          profilePhoto: 1,
+          logo: 1,
+          followersCount: 1,
+          countryCode: 1,
+          phone: 1,
+          email: 1,
+          website: 1,
+          isDeleted: 1,
+          instagramPageUrl: 1,
+          twitterPageUrl: 1,
+          facebookPageUrl: 1,
+        },
+      },
+    ],
+    as: 'event.businessProfile',
+  },
+},
+        {
+          $unwind: {
+            path: '$event.businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // Populate locations
+        {
+          $lookup: {
+            from: 'eventlocations',
+            localField: 'event._id',
+            foreignField: 'event',
+            as: 'event.locations',
+          },
+        },
+
+        // Populate schedule
+        {
+          $lookup: {
+            from: 'eventschedules',
+            localField: 'event.eventSchedule',
+            foreignField: '_id',
+            as: 'event.eventSchedule',
+          },
+        },
+
+        // Populate categories
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'event.categories',
+            foreignField: '_id',
+            as: 'event.categories',
+          },
+        },
+
+        // Populate files (images)
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'event.drivePath',
+            foreignField: 'parentDirectory',
+            as: 'event.images',
+          },
+        },
+
+        {
+          $replaceWith: '$event',
+        },
+
+        { $sort: { createdAt: -1 } },
+
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+
+        // Final shape adjustment (optional $project or transformation)
+      ];
+
+      const reportedEvents =
+        await this.reportModel.aggregate(aggregationPipeline);
+
       return {
         success: true,
         message: 'Saved events fetched successfully',
@@ -2763,6 +2905,7 @@ export class EventService2 {
           offers: offersData,
           privateEvents: privateEvents,
           liked: liked.events,
+          reported: reportedEvents,
         },
       };
     }
@@ -4119,11 +4262,11 @@ export class EventService2 {
           },
         },
       ]);
-      let total = events[0].totalCount[0].count;
+      let total = events[0]?.totalCount[0]?.count || 0;
       return {
         success: true,
         message: 'Liked events fetched successfully',
-        events: events[0].data,
+        events: events[0]?.data || [],
         total: total,
         pages: Math.ceil(total / limit),
         page: page,
@@ -5285,7 +5428,7 @@ export class EventService2 {
     }
   }
 
-   async createOffer(
+  async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
     image: Express.Multer.File,
@@ -5377,7 +5520,13 @@ export class EventService2 {
       });
       if (image) {
         console.log('Image:', image);
-        let qrDetails = await this.driveService.uploadAndCreateFile(image,String(event.drivePath),Folder.name,event._id,fileCategory._id)
+        let qrDetails = await this.driveService.uploadAndCreateFile(
+          image,
+          String(event.drivePath),
+          Folder.name,
+          event._id,
+          fileCategory._id,
+        );
         await this.eventModel.updateOne(
           { _id: event._id },
           {
@@ -5409,8 +5558,6 @@ export class EventService2 {
       };
     }
   }
-
-
 
   async updateOffer(
     offerId: string,
