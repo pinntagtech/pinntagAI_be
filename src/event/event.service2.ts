@@ -5425,7 +5425,7 @@ export class EventService2 {
     offerId: string,
     data: UpdateOfferDto,
     user: DecodedUser,
-    image: Express.Multer.File,
+    images: Express.Multer.File[],
   ) {
     try {
       console.log('Data:::::', data);
@@ -5498,40 +5498,131 @@ export class EventService2 {
         { new: true },
       );
 
-      if (image) {
-        const result = await this.s3Service.s3_upload(
-          image.buffer,
-          process.env.AWS_S3_BUCKET_NAME,
-          manipulateImageName(image.originalname),
-          'image/jpeg',
-        );
+      if (data.locations) {
+        if (data.locations.length) {
+          if (!Array.isArray(data.locations)) {
+            data.locations = [data.locations];
+          }
+          for (let i = 0; i < data.locations.length; i++) {
+            if (typeof data.locations[i] == 'string') {
+              if (!mongoose.isValidObjectId(data.locations[i])) {
+                return {
+                  success: false,
+                  message: `Please provide a valid location id, ${data.locations[i]} is not valid`,
+                };
+              }
+            }
+          }
+          await this.eventLocationModel.deleteMany({
+            event: new mongoose.Types.ObjectId(offerId),
+          });
+          await this.eventModel.updateOne(
+            {
+              _id: new mongoose.Types.ObjectId(offerId),
+            },
+            {
+              $set: { locations: [] },
+            },
+          );
+          for (let i = 0; i < data.locations.length; i++) {
+            const location = data.locations[i];
+            if (
+              event.creatorType === BusinessUser.name &&
+              !mongoose.isValidObjectId(location)
+            ) {
+              return {
+                success: false,
+                message: `Please provide a valid location id`,
+              };
+            }
+            if (mongoose.isValidObjectId(location)) {
+              if (event.creatorType === User.name) {
+                return {
+                  success: false,
+                  message: `Please provide valid location object for the event`,
+                };
+              }
+              const outletDoc = await this.outletModel.findById(location);
+              if (!outletDoc) {
+                return {
+                  success: false,
+                  message: `Outlet with id ${location} not found`,
+                };
+              }
+              const createdlocation = await this.eventLocationModel.create({
+                event: new mongoose.Types.ObjectId(offerId),
+                businessLocationId: outletDoc._id,
+                businessProfile: event.businessProfile,
+                location: {
+                  type: 'Point',
+                  coordinates: [outletDoc.longitude, outletDoc.latitude],
+                },
+                accuracy: outletDoc.accuracy,
+                address1: outletDoc.address1,
+                address2: outletDoc.address2 ? outletDoc.address2 : '',
+                city: outletDoc.city,
+                state: outletDoc.state,
+                zip: outletDoc.postalCode,
+                website: outletDoc.website,
+                email: outletDoc.email,
+                phone: outletDoc.phone,
+              });
+              console.log('created-location---->', createdlocation);
+              await this.eventModel.updateOne(
+                {
+                  _id: new mongoose.Types.ObjectId(offerId),
+                },
+                {
+                  $addToSet: { locations: createdlocation._id },
+                },
+              );
+            } else {
+              const locationData: LocationClass =
+                location as unknown as LocationClass;
+              const latitude = locationData.latitude;
+              const longitude = locationData.longitude;
+              delete locationData.latitude;
+              delete locationData.longitude;
+              const locationAddQuery = {
+                event: new mongoose.Types.ObjectId(offerId),
+                location: {
+                  type: 'Point',
+                  coordinates: [longitude, latitude],
+                },
+                businessProfile: event.businessProfile,
+                ...locationData,
+              };
+              const createdlocation =
+                await this.eventLocationModel.create(locationAddQuery);
+              await this.eventModel.updateOne(
+                {
+                  _id: new mongoose.Types.ObjectId(offerId),
+                },
+                {
+                  $addToSet: { locations: createdlocation._id },
+                },
+              );
+              // console.log(`created-location:-------${createdlocation}`);
+            }
+          }
+          delete data.locations;
 
-        const fileCategory = await this.fileCategoryModel.findOne({
-          name: FileCategoryTypes.GALLERY_IMAGE,
-        });
-        const splitIndex = result.Location.indexOf('amazonaws');
-        const part1 = result.Location.slice(0, splitIndex);
-        const part2 = result.Location.slice(splitIndex);
-        const updatedUrl = `${part1}${process.env.AWS_REGION}.${part2}`;
+          await this.businessModel.updateOne(
+            {
+              _id: new mongoose.Types.ObjectId(event.businessProfile),
+            },
+            {
+              $set: { onboardingOfferStatus: OfferStatus.LOCATIONS },
+            },
+          );
+        }
+      }
 
-        const file = await this.fileModel.create({
-          metaData: {
-            mimeType: image.mimetype,
-            url: updatedUrl,
-            size: image.size,
-            originalName: image.originalname,
-          },
-          parentDirectory: new mongoose.Types.ObjectId(event.drivePath),
-          ParentDirectoryType: Folder.name,
-          fileType: FileType.IMAGE,
-          category: fileCategory._id,
-          parent: new mongoose.Types.ObjectId(event._id),
-          parentType: Event.name,
-        });
-
-        await this.eventModel.updateOne(
-          { _id: event._id },
-          { $set: { QR_CODE: file._id } },
+      if (images) {
+        this.driveService.deleteBufferAndMultiImageUpload(
+          user.id,
+          String(event.drivePath),
+          images,
         );
       }
 

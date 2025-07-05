@@ -23,7 +23,10 @@ import {
   FileType,
   UserTypes,
 } from 'src/enums/auth.enums';
-import { FileUploadUtils, manipulateImageName } from 'src/helpers/upload.helpers';
+import {
+  FileUploadUtils,
+  manipulateImageName,
+} from 'src/helpers/upload.helpers';
 import { S3Service } from 'src/s3.service';
 import { In } from 'typeorm';
 import { File, FileDocument } from './models/file.model';
@@ -909,10 +912,25 @@ export class DriveService {
       if (!isValidObjectId(locationId)) {
         return { success: false, message: 'Invalid locationId' };
       }
-      await this.fileModel.deleteMany({
+      const oldFiles = await this.fileModel.find({
         parentDirectory: new mongoose.Types.ObjectId(locationId),
       });
-
+      oldFiles.forEach(async (file) => {
+        // Delete file from S3
+        const fileUrl = file.metaData.url;
+        const pathname = new URL(fileUrl).pathname; // Extracts /staging/image_cropper_...
+        const fileName = pathname.startsWith('/')
+          ? pathname.slice(1)
+          : pathname;
+        await this.s3Service.s3_delete(
+          process.env.AWS_S3_BUCKET_NAME,
+          fileName,
+        );
+        await this.fileModel.deleteOne({
+          _id: new mongoose.Types.ObjectId(file._id),
+        });
+      });
+      
       let parentId = user.id;
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
@@ -1054,8 +1072,6 @@ export class DriveService {
       const fileUrl = file.metaData.url;
       const pathname = new URL(fileUrl).pathname; // Extracts /staging/image_cropper_...
       const fileName = pathname.startsWith('/') ? pathname.slice(1) : pathname;
-      console.log('File URL:', fileUrl);
-      console.log('File Name:', fileName);
       await this.s3Service.s3_delete(process.env.AWS_S3_BUCKET_NAME, fileName);
 
       // Delete file document from MongoDB
