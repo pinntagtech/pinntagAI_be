@@ -2775,66 +2775,66 @@ export class EventService2 {
 
         // Populate event.user
         {
-  $lookup: {
-    from: 'users',
-    let: { userId: '$event.user' },
-    pipeline: [
-      {
-        $match: {
-          $expr: { $eq: ['$_id', '$$userId'] },
+          $lookup: {
+            from: 'users',
+            let: { userId: '$event.user' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$_id', '$$userId'] },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  profilePhoto: 1,
+                  followersCount: 1,
+                  followingCount: 1,
+                },
+              },
+            ],
+            as: 'event.user',
+          },
         },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          phone: 1,
-          profilePhoto: 1,
-          followersCount: 1,
-          followingCount: 1,
-        },
-      },
-    ],
-    as: 'event.user',
-  },
-},
         { $unwind: { path: '$event.user', preserveNullAndEmptyArrays: true } },
 
         // Populate event.businessProfile
-       {
-  $lookup: {
-    from: 'businesses',
-    let: { businessProfileId: '$event.businessProfile' },
-    pipeline: [
-      {
-        $match: {
-          $expr: { $eq: ['$_id', '$$businessProfileId'] },
+        {
+          $lookup: {
+            from: 'businesses',
+            let: { businessProfileId: '$event.businessProfile' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$_id', '$$businessProfileId'] },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  bio: 1,
+                  brandColor: 1,
+                  profilePhoto: 1,
+                  logo: 1,
+                  followersCount: 1,
+                  countryCode: 1,
+                  phone: 1,
+                  email: 1,
+                  website: 1,
+                  isDeleted: 1,
+                  instagramPageUrl: 1,
+                  twitterPageUrl: 1,
+                  facebookPageUrl: 1,
+                },
+              },
+            ],
+            as: 'event.businessProfile',
+          },
         },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          bio: 1,
-          brandColor: 1,
-          profilePhoto: 1,
-          logo: 1,
-          followersCount: 1,
-          countryCode: 1,
-          phone: 1,
-          email: 1,
-          website: 1,
-          isDeleted: 1,
-          instagramPageUrl: 1,
-          twitterPageUrl: 1,
-          facebookPageUrl: 1,
-        },
-      },
-    ],
-    as: 'event.businessProfile',
-  },
-},
         {
           $unwind: {
             path: '$event.businessProfile',
