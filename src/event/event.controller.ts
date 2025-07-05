@@ -429,7 +429,7 @@ export class EventController {
 
   @Post('invitation')
   @UseGuards(JwtGuard2)
-  async getInvitation(
+  async createInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: InviteEventDto,
   ) {
@@ -438,7 +438,7 @@ export class EventController {
         message: 'Invalid event id',
       });
     }
-    const result = await this.eventService.getEventInvitation(body, user);
+    const result = await this.eventService.createInvitation(body, user);
     if (result.success) {
       return {
         message: result.message,

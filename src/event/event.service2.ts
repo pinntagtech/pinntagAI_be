@@ -2073,7 +2073,7 @@ export class EventService2 {
     }
   }
 
-  async getEventInvitation(data: InviteEventDto, user: DecodedUser) {
+  async createInvitation(data: InviteEventDto, user: DecodedUser) {
     const event = await this.eventModel.findById(data.event);
     if (!event) {
       return {
@@ -2150,7 +2150,7 @@ export class EventService2 {
       }
       return {
         success: true,
-        message: 'Event invitations fetched successfully',
+        message: 'Event invitations created successfully.',
         invitation,
       };
     }
