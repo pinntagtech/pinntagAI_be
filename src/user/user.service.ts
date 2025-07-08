@@ -854,7 +854,7 @@ export class UserService {
       })
       .populate(
         'following',
-        'firstName lastName profilePhoto name profileType image isDeleted',
+        'firstName lastName profilePhoto name profileType image isDeleted cover logo',
       );
     // .sort({ createdAt: -1 });
     //Sort following by alphabetical order
