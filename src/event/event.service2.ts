@@ -4514,6 +4514,12 @@ export class EventService2 {
                 },
                 businessId: new mongoose.Types.ObjectId(user.businessProfile),
               };
+              if (data.date_range) {
+                scheduleObj['date_range'] = data.date_range;
+              }
+              if (data.each_date) {
+                scheduleObj['each_date'] = data.each_date;
+              }
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
               scheduleList.push(createdSchedule._id);

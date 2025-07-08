@@ -868,21 +868,33 @@ export class SeederService {
         const deptRoles = [];
         for (const roleData of dept.roles) {
           // Create role under the department
-          const createdRole = await this.roleModel.create({
+          let foundRole = await this.roleModel.findOne({
             name: roleData.name,
-            creator: new mongoose.Types.ObjectId(userId),
-            creatorType: RoleCreatorType.BUSINESS,
             belongsTo: RoleBelonging.BUSINESS,
+            creatorType: RoleCreatorType.BUSINESS,
             business: businessId,
           });
-          deptRoles.push(createdRole._id);
+          if (!foundRole) {
+            foundRole = await this.roleModel.create({
+              name: roleData.name,
+              creator: new mongoose.Types.ObjectId(userId),
+              creatorType: RoleCreatorType.BUSINESS,
+              belongsTo: RoleBelonging.BUSINESS,
+              business: businessId,
+            });
+          }
+
+          deptRoles.push(foundRole._id);
 
           // Privileges
           const privilegeKeys = Object.keys(roleData.privileges);
           for (const privilegeKey of privilegeKeys) {
             // Get/create resource
-            console.log("privilegeKey:", privilegeKey);
-            console.log("BusinessResourceTypes[privilegeKey]:", BusinessResourceTypes[privilegeKey]);
+            console.log('privilegeKey:', privilegeKey);
+            console.log(
+              'BusinessResourceTypes[privilegeKey]:',
+              BusinessResourceTypes[privilegeKey],
+            );
 
             let resourceDetails = await this.resourceModel.findOne({
               title: BusinessResourceTypes[privilegeKey],
@@ -890,7 +902,7 @@ export class SeederService {
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
                 title: BusinessResourceTypes[privilegeKey],
-                belongsTo: 'BusinessUser'
+                belongsTo: 'BusinessUser',
               });
             }
 
@@ -905,12 +917,19 @@ export class SeederService {
                   title: Actions[actionKey],
                 });
               }
-
-              await this.privilegeModel.create({
-                role: createdRole._id,
+              const foundPrivilege = await this.privilegeModel.findOne({
+                role: foundRole._id,
                 resource: resourceDetails.title,
                 action: actionDetails.title,
               });
+              if (!foundPrivilege) {
+                // Create privilege if it doesn't exist
+                await this.privilegeModel.create({
+                  role: foundRole._id,
+                  resource: resourceDetails.title,
+                  action: actionDetails.title,
+                });
+              }
             }
           }
         }

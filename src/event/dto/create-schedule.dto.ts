@@ -106,5 +106,10 @@ export class CreateScheduleDto {
   @ValidateNested()
   @Type(() => RecurringScheduleDataDto)
   recurringSchedule: RecurringScheduleDataDto;
-  // data: any; 
+
+  @IsOptional()
+  date_range: boolean;
+
+  @IsOptional()
+  each_date: boolean; 
 }
