@@ -88,6 +88,7 @@ export const AdminResourceTypes = {
   CONTENT_ETL: 'content etl',
   REPORTED_CONTENT: 'reported content',
   ANALYTICS: 'analytics',
+
 };
 
 export const BusinessResourceTypes = {
