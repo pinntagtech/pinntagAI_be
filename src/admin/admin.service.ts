@@ -99,7 +99,7 @@ import { Drive } from 'src/drive/models/drive.model';
 import { DriveService } from 'src/drive/drive.service';
 import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import {
   Department,
   DepartmentDocument,
@@ -1003,7 +1003,7 @@ export class AdminService {
       };
     }
     let password = await this.authService.autoGeneratePassword();
-    password = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     if (data.role) {
       const role = await this.roleModel.findById(data.role);
       if (!role) {
@@ -1025,20 +1025,21 @@ export class AdminService {
       };
     }
     if (data.profilePhoto === '') {
-      console.log('Is this coming here:');
       delete data.profilePhoto;
     }
 
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(adminId),
-      // isEmailVerified: true,
+      password: hashedPassword,
+      fullPhoneNumber: fullPhoneNumber,
+      isEmailVerified: true,
       ...data,
     });
 
     console.log('created Admin:', createdAdmin.id);
     const loginLink = process.env.PORTAL_URL + 'v1/admin/login';
-    await this.mailService.sendDownlineUserCredentials(
+    this.mailService.sendDownlineUserCredentials(
       createdAdmin.name,
       createdAdmin.email,
       password,
@@ -1700,34 +1701,35 @@ export class AdminService {
       //   data.contentCategories = categoryObjectIds;
       // }
       if (data.contentCategories) {
-  const categories = Array.isArray(data.contentCategories)
-    ? data.contentCategories
-    : [data.contentCategories];
+        const categories = Array.isArray(data.contentCategories)
+          ? data.contentCategories
+          : [data.contentCategories];
 
-  for (let i = 0; i < categories.length; i++) {
-    const categoryId = categories[i];
+        for (let i = 0; i < categories.length; i++) {
+          const categoryId = categories[i];
 
-    // Optionally validate ObjectId format early
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-      return {
-        success: false,
-        message: `Invalid category ID format: ${categoryId}`,
-      };
-    }
+          // Optionally validate ObjectId format early
+          if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return {
+              success: false,
+              message: `Invalid category ID format: ${categoryId}`,
+            };
+          }
 
-    const foundCategory = await this.contentCategoryModel.findById(categoryId);
-    if (!foundCategory) {
-      return {
-        success: false,
-        message: `Category not found with the id provided: ${categoryId}`,
-      };
-    } else {
-      categoryObjectIds.push(foundCategory._id);
-    }
-  }
+          const foundCategory =
+            await this.contentCategoryModel.findById(categoryId);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: `Category not found with the id provided: ${categoryId}`,
+            };
+          } else {
+            categoryObjectIds.push(foundCategory._id);
+          }
+        }
 
-  data.contentCategories = categoryObjectIds;
-}
+        data.contentCategories = categoryObjectIds;
+      }
       let busCategoryObjectIds = [];
       if (data.businessCategories) {
         for (let i = 0; i < data.businessCategories.length; i++) {

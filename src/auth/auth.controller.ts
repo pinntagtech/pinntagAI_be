@@ -554,7 +554,7 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
-    console.log('Entered Controllerrrr!!!');
+   
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
@@ -700,6 +700,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@TokenDecoder() user: DecodedUser) {
+     console.log('Entered Controllerrrr!!!');
     const result = await this.authService.getProfile(user.id, user.userType);
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -707,6 +708,7 @@ export class AuthController {
     return {
       message: result.message,
       user: result.user,
+      resourceAndPrivileges: result.resourceAndPrivileges,
     };
   }
 

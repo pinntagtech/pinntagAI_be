@@ -79,7 +79,11 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Roles } from 'src/roles/enums/roles.enum';
+import {
+  AdminResourceTypes,
+  BusinessResourceTypes,
+  Roles,
+} from 'src/roles/enums/roles.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import {
   BusinessUser,
@@ -98,6 +102,7 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { SavedEvent } from 'src/event/models/savedEvent.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 
 @Injectable()
 export class AuthService {
@@ -135,6 +140,8 @@ export class AuthService {
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -2107,6 +2114,7 @@ export class AuthService {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
             cover: '$businessProfileDetails.cover',
+            logo: '$businessProfileDetails.logo',
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
             followersCount: '$businessProfileDetails.followersCount',
@@ -2175,7 +2183,7 @@ export class AuthService {
           schedules: 1,
         },
       },
-    { $sort: { distance: 1, createdAt: 1, _id: 1 } },
+      { $sort: { distance: 1, createdAt: 1, _id: 1 } },
       {
         $facet: {
           data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -5213,6 +5221,8 @@ export class AuthService {
   async getProfile(userId: string, userType: string) {
     try {
       let userDoc = null;
+      let resourceAndPrivileges = {};
+
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
           .findById(userId)
@@ -5222,6 +5232,41 @@ export class AuthService {
             success: false,
             message: 'Admin not found!',
           };
+        }
+
+        const role = await this.roleModel.findById(userDoc.role);
+        if (!role) {
+          return {
+            success: false,
+            message: 'Role not found!',
+          };
+        }
+        if (role.isSuperAdmin == true) {
+          for (const resource of Object.values(AdminResourceTypes)) {
+            resourceAndPrivileges[resource] = {
+              create: true,
+              read: true,
+              update: true,
+              delete: true,
+            };
+          }
+        } else {
+          const privileges = await this.privilegeModel.find({ role: role._id });
+          if (privileges.length !== 0) {
+            for (const privilege of privileges) {
+              const { resource, action } = privilege;
+              if (!resourceAndPrivileges[resource]) {
+                resourceAndPrivileges[resource] = {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                };
+              }
+
+              resourceAndPrivileges[resource][action] = true;
+            }
+          }
         }
       } else if (userType === UserTypes.USER) {
         userDoc = await this.userModel
@@ -5265,11 +5310,46 @@ export class AuthService {
             message: 'Business User not found!',
           };
         }
+        const role = await this.roleModel.findById(userDoc.role);
+        if (!role) {
+          return {
+            success: false,
+            message: 'Role not found!',
+          };
+        }
+        if (role.isBusinessOwner == true) {
+          for (const resource of Object.values(BusinessResourceTypes)) {
+            resourceAndPrivileges[resource] = {
+              create: true,
+              read: true,
+              update: true,
+              delete: true,
+            };
+          }
+        } else {
+          const privileges = await this.privilegeModel.find({ role: role._id });
+          if (privileges.length !== 0) {
+            for (const privilege of privileges) {
+              const { resource, action } = privilege;
+              if (!resourceAndPrivileges[resource]) {
+                resourceAndPrivileges[resource] = {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                };
+              }
+
+              resourceAndPrivileges[resource][action] = true;
+            }
+          }
+        }
       }
       return {
         success: true,
         message: 'User Profile Fetched Successfully',
         user: userDoc,
+        resourceAndPrivileges: resourceAndPrivileges,
       };
     } catch (error) {
       return { success: false, message: error.message };

@@ -81,7 +81,7 @@ import {
 } from './models/event-schedule.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { BusinessService } from 'src/business/business.service';
-import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilege.model';
 import {
   BusinessIndustry,
   BusinessIndustrySchema,

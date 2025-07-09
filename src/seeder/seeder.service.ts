@@ -37,7 +37,7 @@ import {
   RoleCreatorType,
   Roles,
 } from 'src/roles/enums/roles.enum';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import {

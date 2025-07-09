@@ -75,7 +75,7 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilege.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
@@ -116,7 +116,10 @@ import {
   EventSchedule,
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
-import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import {
+  Department,
+  DepartmentSchema,
+} from 'src/business/model/department.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';

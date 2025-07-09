@@ -61,7 +61,7 @@ import {
   FileCategorySchema,
 } from 'src/drive/models/fileCategory.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
-import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilege.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
 import { OutletType, OutletTypeSchema } from '../outlet/model/outletType.model';
@@ -118,9 +118,15 @@ import {
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
 import { Region, RegionSchema } from './model/region.model';
-import { LocationGroup, LocationGroupSchema } from './model/locationGroup.model';
+import {
+  LocationGroup,
+  LocationGroupSchema,
+} from './model/locationGroup.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
-import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import {
+  UserReward,
+  UserRewardSchema,
+} from 'src/rewards/model/userReward.model';
 
 @Module({
   imports: [
@@ -175,7 +181,6 @@ import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: UserReward.name, schema: UserRewardSchema },
-
     ]),
   ],
   controllers: [BusinessController],

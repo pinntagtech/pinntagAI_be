@@ -47,7 +47,7 @@ import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
 import { RolesModule } from './roles/roles.module';
 import { Role, RoleSchema } from './roles/models/roles.model';
-import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from './roles/models/privilege.model';
 import { Resource, ResourceSchema } from './roles/models/resource.model';
 import { Action, ActionSchema } from './roles/models/actions.model';
 import { BusinessModule } from './business/business.module';
@@ -190,6 +190,6 @@ import { Outlet, OutletSchema } from './outlet/model/outlet.model';
     RewardsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, Logger, SeederService, DriveService,S3Service],
+  providers: [AppService, Logger, SeederService, DriveService, S3Service],
 })
 export class AppModule {}

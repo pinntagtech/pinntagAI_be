@@ -77,10 +77,95 @@ export class AiService {
           },
         ),
       );
+      const cleanDescription = response.data.choices[0].message.content.replace(/\n/g, ' ').replace(/\\"/g, '"').replace(/\"/g, '"').replace(/\s+/g, ' ').trim();
       return {
         success: true,
         message: 'Description generated successfully',
-        data: response.data.choices[0].message.content,
+        data: cleanDescription,
+      };
+    } catch (error) {
+      console.error('Error fetching AI description:', error);
+      return {
+        success: false,
+        message: 'Failed to generate description',
+      };
+    }
+  }
+  async getRewardDescription(
+    businessId: string,
+    rewardType: string,
+    title: string,
+    activityType: string,
+    targetCount: number,
+    startDate: string,
+    endDate: string,
+  ) {
+    try {
+      const business = await this.businessModel
+        .findById(businessId)
+        .select('name businessCategories businessIndustry')
+        .populate('businessIndustry', 'name')
+        .populate('businessCategories', 'name');
+        console.log('BUSINESS:', business);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      const messages = [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant.',
+        },
+        {
+          role: 'user',
+          content: `
+          Generate a compelling, and professionally engaging description for a content item.
+          Business Name: ${business.name}
+          Business Industry: ${business.businessIndustry['name']}
+          Business Category: ${business.businessCategories['name']}
+          Reward Type: ${rewardType}
+          Activity Type: ${activityType}
+          Target Count: ${targetCount}
+          Start Date: ${startDate}
+          End Date: ${endDate}
+          Title: ${title}
+          Guidelines:
+          Keep it under 150 words.
+          Use a professional, friendly, and motivating tone.
+          Make the description relevant to the business category and the activity type.
+          Clearly explain what the user needs to do (based on activity type and target count).
+          Highlight the reward's value and what makes it appealing or worth the effort.
+          Include the date range only if it's relevant to urgency or eligibility (but avoid hype).
+          Avoid generic phrases like “Don't miss out” or “Act fast.”
+          Focus on clarity, motivation, and relevance to the user's experience.
+          Do not include the business name in the description—keep it focused on the reward and activity.
+        `,
+        },
+      ];
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-3.5-turbo',
+            messages: messages,
+            max_tokens: 512,
+            temperature: 0.7,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+      const cleanDescription = response.data.choices[0].message.content.replace(/\n/g, ' ');
+      return {
+        success: true,
+        message: 'Description generated successfully',
+        data: cleanDescription,
       };
     } catch (error) {
       console.error('Error fetching AI description:', error);
@@ -159,10 +244,11 @@ export class AiService {
           },
         ),
       );
+      const cleanDescription = response.data.choices[0].message.content.replace(/\n/g, ' ');
       return {
         success: true,
         message: 'Description generated successfully',
-        data: response.data.choices[0].message.content,
+        data: cleanDescription,
       };
     } catch (error) {
       console.error('Error fetching AI description:', error);

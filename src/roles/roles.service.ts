@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Resource, ResourceDocument } from './models/resource.model';
-import { Privilege, PrivilegeDocument } from './models/privilage.model';
+import { Privilege, PrivilegeDocument } from './models/privilege.model';
 import { Action, ActionDocument } from './models/actions.model';
 import { CreateRoleDto } from './dto/createRole.dto';
 import { UserTypes } from 'src/enums/auth.enums';

@@ -44,7 +44,7 @@ export class CreateAdminDto {
   // @Transform(({ value }) => value.trim())
   // password: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   forcePasswordReset: boolean;
 

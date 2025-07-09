@@ -65,7 +65,7 @@ import {
   RoleBelonging,
   RoleCreatorType,
 } from 'src/roles/enums/roles.enum';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -104,7 +104,10 @@ import {
   UserReward,
   UserRewardDocument,
 } from 'src/rewards/model/userReward.model';
-import { EventLocation, EventLocationDocument } from 'src/event/models/eventLocation.model';
+import {
+  EventLocation,
+  EventLocationDocument,
+} from 'src/event/models/eventLocation.model';
 
 import { instance as logger } from 'src/logger/winston.logger';
 
@@ -149,8 +152,10 @@ export class BusinessService {
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
-    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
-    @InjectModel(EventLocation.name) private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(UserReward.name)
+    private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(EventLocation.name)
+    private readonly eventLocationModel: Model<EventLocationDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -503,13 +508,13 @@ export class BusinessService {
       }
 
       //create business folder in drive
-        logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
+      logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,
       });
-        logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
+      logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
       let createObj = {
         name: data.name,
         email: data.email,
@@ -542,7 +547,7 @@ export class BusinessService {
           },
         );
       }
-        logger.info('OLD ROLES SEEDER');
+      logger.info('OLD ROLES SEEDER');
       // const rolePromises = Object.keys(DefaultBusinessRoles).map(
       //   async (roleName) => {
       //     const roleData = DefaultBusinessRoles[roleName];
@@ -1048,7 +1053,9 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    logger.info(`Winston Log: Validated Business User: ${validatedBusinessUser}`);
+    logger.info(
+      `Winston Log: Validated Business User: ${validatedBusinessUser}`,
+    );
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -1743,7 +1750,7 @@ export class BusinessService {
         isEmailVerified: true,
         status: ProfileStatus.EMAIL_VERIFIED,
       };
-      if(data.forcePasswordReset !== undefined) {
+      if (data.forcePasswordReset !== undefined) {
         createObj['forcePasswordReset'] = data.forcePasswordReset;
       }
       if (data.profilePhoto) {
@@ -1972,7 +1979,9 @@ export class BusinessService {
         };
       }
       const getAllChildUsersIds = await this.getAllChildUserIds2(id);
-      logger.info(`getAllChildUsersIds: ${JSON.stringify(getAllChildUsersIds)}`);
+      logger.info(
+        `getAllChildUsersIds: ${JSON.stringify(getAllChildUsersIds)}`,
+      );
       if (!getAllChildUsersIds.includes(deleteId)) {
         return {
           success: false,
@@ -2514,7 +2523,7 @@ export class BusinessService {
       }
       updateObj['name'] = data.name;
     }
-    
+
     // Validate any new roles
     if (data.users) {
       const userIds = [];
@@ -3053,7 +3062,9 @@ export class BusinessService {
 
   async getDashboardData(user: DecodedUser, limit: number = 10) {
     try {
-      const businessProfileId = new mongoose.Types.ObjectId(user.businessProfile);
+      const businessProfileId = new mongoose.Types.ObjectId(
+        user.businessProfile,
+      );
       const business = await this.businessModel.findById(businessProfileId);
       if (!business) {
         return {
@@ -3061,19 +3072,15 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
-  
-      const [
-        eventLogistics,
-        rewardRedeemptions,
-        typeWiseStats,
-        topEvents,
-      ] = await Promise.all([
-        this.fetchEventLogistics(businessProfileId),
-        this.fetchRewardRedemptions(businessProfileId),
-        this.fetchTypeWiseStats(businessProfileId),
-        this.fetchTopEvents(businessProfileId, limit),
-      ]);
-  
+
+      const [eventLogistics, rewardRedeemptions, typeWiseStats, topEvents] =
+        await Promise.all([
+          this.fetchEventLogistics(businessProfileId),
+          this.fetchRewardRedemptions(businessProfileId),
+          this.fetchTypeWiseStats(businessProfileId),
+          this.fetchTopEvents(businessProfileId, limit),
+        ]);
+
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
@@ -3091,8 +3098,10 @@ export class BusinessService {
       };
     }
   }
-  
-  private async fetchEventLogistics(businessProfileId: mongoose.Types.ObjectId) {
+
+  private async fetchEventLogistics(
+    businessProfileId: mongoose.Types.ObjectId,
+  ) {
     const [result] = await this.eventModel.aggregate([
       {
         $match: {
@@ -3109,16 +3118,20 @@ export class BusinessService {
         },
       },
     ]);
-    return result ?? { totalEvents: 0, totalViewsCount: 0, totalEngagementCount: 0 };
+    return (
+      result ?? { totalEvents: 0, totalViewsCount: 0, totalEngagementCount: 0 }
+    );
   }
-  
-  private async fetchRewardRedemptions(businessProfileId: mongoose.Types.ObjectId) {
+
+  private async fetchRewardRedemptions(
+    businessProfileId: mongoose.Types.ObjectId,
+  ) {
     return this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.CLAIMED,
     });
   }
-  
+
   private async fetchTypeWiseStats(businessProfileId: mongoose.Types.ObjectId) {
     const result = await this.eventModel.aggregate([
       {
@@ -3134,17 +3147,20 @@ export class BusinessService {
         },
       },
     ]);
-  
+
     const defaultTypes = ['business_event', 'offer', 'flashdeal'];
     const typeMap = new Map(result.map(({ _id, count }) => [_id, count]));
-  
-    return defaultTypes.map(type => ({
+
+    return defaultTypes.map((type) => ({
       _id: type,
       count: typeMap.get(type) || 0,
     }));
   }
-  
-  private async fetchTopEvents(businessProfileId: mongoose.Types.ObjectId, limit: number) {
+
+  private async fetchTopEvents(
+    businessProfileId: mongoose.Types.ObjectId,
+    limit: number,
+  ) {
     return this.eventModel.aggregate([
       {
         $match: {
@@ -3183,7 +3199,4 @@ export class BusinessService {
       { $limit: limit },
     ]);
   }
-  
-
-  
 }
