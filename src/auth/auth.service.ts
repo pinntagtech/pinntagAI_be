@@ -2117,6 +2117,7 @@ export class AuthService {
             logo: '$businessProfileDetails.logo',
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
+            description: '$businessProfileDetails.description',
             followersCount: '$businessProfileDetails.followersCount',
             isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
