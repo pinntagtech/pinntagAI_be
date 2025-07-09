@@ -5440,6 +5440,7 @@ export class EventService2 {
     image: Express.Multer.File,
   ) {
     try {
+      console.log('Data in createOffer:', data);
       const userId = user.id;
       if (!user.businessProfile) {
         return {
@@ -5762,7 +5763,8 @@ export class EventService2 {
         }
       }
 
-      if (images) {
+      if (images && images.length > 0) {
+        console.log('Images:', images);
         this.driveService.deleteBufferAndMultiImageUpload(
           user.id,
           String(event.drivePath),
