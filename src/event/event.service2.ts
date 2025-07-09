@@ -5766,7 +5766,7 @@ export class EventService2 {
       if (images && images.length > 0) {
         console.log('Images:', images);
         this.driveService.deleteBufferAndMultiImageUpload(
-          user.id,
+          user,
           String(event.drivePath),
           images,
         );
