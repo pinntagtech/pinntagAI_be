@@ -5287,7 +5287,7 @@ export class AuthService {
       } else if (userType === UserTypes.BUSINESS) {
         userDoc = await this.businessUserModel
           .findById(userId)
-          // .populate('business')
+          // .populate('business  ')
           .populate({
             path: 'business',
             populate: [
@@ -5299,7 +5299,7 @@ export class AuthService {
               {
                 path: 'initialOfferId',
                 model: Event.name,
-                select: '_id title description categories',
+                select: '_id title description categories drivePath',
               },
               {
                 path: 'businessIndustry',
