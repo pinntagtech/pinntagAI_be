@@ -1739,7 +1739,6 @@ export class AuthService {
     endDate: any,
   ) {
     console.log("LATITUDE AND LONGITUDE IN ALGO:", latitude, longitude);
-    longitude = -longitude;
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
