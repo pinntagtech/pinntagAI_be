@@ -4142,7 +4142,7 @@ export class EventService2 {
                 _id: '$_id',
                 email: '$email',
                 phone: '$phone',
-                distance: { $multiply: ['$distance', 0.000621371] },
+                distance: { $divide: ['$distance', 1609.34] }
               },
             },
           },
@@ -4151,9 +4151,7 @@ export class EventService2 {
           $project: {
             _id: 1,
             locationId: 1,
-            distance: {
-              $round: [{ $multiply: ['$distance', 0.000621371] }, 2],
-            },
+             distance: { $divide: ['$distance', 1609.34] },
             title: 1,
             creatorType: 1,
             keywords: 1,

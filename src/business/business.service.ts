@@ -1014,7 +1014,7 @@ export class BusinessService {
 
   //helper
   async validateBusinessUser(email: string, password: string) {
-    logger.info(`email password: ${email} ${password}`);
+    // logger.info(`email password: ${email} ${password}`);
     const user = await this.businessUserModel.findOne({ email });
     // console.log('User::', user);
     if (user) {
