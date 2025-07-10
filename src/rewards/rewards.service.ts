@@ -150,7 +150,7 @@ export class RewardsService {
       }
   
       // Upload images async (fire and forget)
-      this.driveService.multiImageUpload(userId, businessFolder.data.id, images);
+      await this.driveService.multiImageUpload(userId, businessFolder.data.id, images);
   
       // Handle locations if Check-In activity
       let locationIds: mongoose.Types.ObjectId[] = [];
