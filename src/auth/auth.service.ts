@@ -1725,7 +1725,7 @@ export class AuthService {
     return resultArranged; // Return the arranged result
   }
 
-  async fetchEventsV2(
+   async fetchEventsV2(
     userId: mongoose.Types.ObjectId,
     longitude: number,
     latitude: number,
@@ -1738,7 +1738,6 @@ export class AuthService {
     startDate: any,
     endDate: any,
   ) {
-    console.log('LATITUDE AND LONGITUDE IN ALGO:', latitude, longitude);
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
@@ -2188,13 +2187,15 @@ export class AuthService {
       { $sort: { distance: 1, createdAt: 1, _id: 1 } },
       {
         $facet: {
-          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          data: [{ $skip: (page - 1) * limit }, { $limit: 1000 }],
           totalCount: [{ $count: 'count' }],
         },
       },
     ];
-
+    console.log("PIPELINE:", JSON.stringify(basePipeline, null, 2));
     let rows = await this.eventLocationModel.aggregate(basePipeline);
+      
+
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
     // console.log('Data Rows:', dataRows);
@@ -2356,7 +2357,7 @@ export class AuthService {
         } else if (nextSchedule.type === ScheduleTypes.RECURRING) {
           nextScheduleDate = getNextRecurring(nextSchedule.recurringSchedule);
         }
-        console.log('nextScheduleDate::', nextScheduleDate);
+        // console.log('nextScheduleDate::', nextScheduleDate);
         return nextSchedule
           ? new Date(nextScheduleDate).getTime() - currentTzTime.getTime()
           : 0;
@@ -2406,7 +2407,7 @@ export class AuthService {
 
       event.score =
         weightDistance * normalizedDistance + weightTime * normalizedTime;
-      console.log('event.score::', event.score);
+      // console.log('event.score::', event.score);
     });
 
     // Sort by ascending score
@@ -2849,8 +2850,8 @@ export class AuthService {
     //       : 0;
     //   }),
     // );
-    // // console.log('maxDistance.........', maxDistance);
-    // // console.log('maxTimeToEvent.........', maxTimeToEvent);
+    // console.log('maxDistance.........', maxDistance);
+    // console.log('maxTimeToEvent.........', maxTimeToEvent);
 
     // let weightDistance = 0.5;
     // let weightTime = 0.5;
@@ -2880,7 +2881,7 @@ export class AuthService {
     //   event.score =
     //     weightDistance * normalizedDistance + weightTime * normalizedTime;
     // });
-    // // console.log(
+    // console.log(
     // //   'filteredEvents after normalization.........',
     // //   filteredEvents.length,
     // // );
@@ -5414,7 +5415,7 @@ export class AuthService {
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
-    console.log('Match:', match);
+    // console.log('Match:', match);
 
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
