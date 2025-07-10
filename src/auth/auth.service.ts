@@ -1725,7 +1725,7 @@ export class AuthService {
     return resultArranged; // Return the arranged result
   }
 
-   async fetchEventsV2(
+  async fetchEventsV2(
     userId: mongoose.Types.ObjectId,
     longitude: number,
     latitude: number,
@@ -2187,14 +2187,12 @@ export class AuthService {
       { $sort: { distance: 1, createdAt: 1, _id: 1 } },
       {
         $facet: {
-          data: [{ $skip: (page - 1) * limit }, { $limit: 1000 }],
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
           totalCount: [{ $count: 'count' }],
         },
       },
     ];
-    console.log("PIPELINE:", JSON.stringify(basePipeline, null, 2));
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-      
 
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
@@ -4223,23 +4221,28 @@ export class AuthService {
           as: 'categories',
         },
       },
-       ...(data.categories?.length
-    ? [
-        {
-          $addFields: {
-            categories: {
-              $filter: {
-                input: '$categories',
-                as: 'cat',
-                cond: {
-                  $in: ['$$cat._id', data.categories.map((id) => new mongoose.Types.ObjectId(id))],
+      ...(data.categories?.length
+        ? [
+            {
+              $addFields: {
+                categories: {
+                  $filter: {
+                    input: '$categories',
+                    as: 'cat',
+                    cond: {
+                      $in: [
+                        '$$cat._id',
+                        data.categories.map(
+                          (id) => new mongoose.Types.ObjectId(id),
+                        ),
+                      ],
+                    },
+                  },
                 },
               },
             },
-          },
-        },
-      ]
-    : []),
+          ]
+        : []),
       {
         $lookup: {
           from: 'files', // assuming this is the same collection as QR_CODE
