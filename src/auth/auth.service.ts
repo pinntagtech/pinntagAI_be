@@ -1738,14 +1738,12 @@ export class AuthService {
     startDate: any,
     endDate: any,
   ) {
-    console.log('LIMITTTTTTT:::::', limit);
+    console.log("LATITUDE AND LONGITUDE IN ALGO:", latitude, longitude);
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Start Date:', startDate);
-    console.log('End Date:', endDate);
     console.log('Match:', match);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
@@ -2197,11 +2195,10 @@ export class AuthService {
     ];
 
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-    console.log('Row EVENTS:', rows);
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
-    console.log('Data Rows:', dataRows);
-    console.log('Total counts:', totalCount);
+    // console.log('Data Rows:', dataRows);
+    // console.log('Total counts:', totalCount);
     // const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -2365,8 +2362,8 @@ export class AuthService {
           : 0;
       }),
     );
-    console.log('maxDistance:', maxDistance);
-    console.log('maxTimeToEvent:', maxTimeToEvent);
+    // console.log('maxDistance:', maxDistance);
+    // console.log('maxTimeToEvent:', maxTimeToEvent);
 
     const weightDistance = 0.5;
     const weightTime = 0.5;
@@ -2415,7 +2412,7 @@ export class AuthService {
     // Sort by ascending score
     dataRows.sort((a, b) => a.score - b.score);
 
-    console.log('OLD FLOWWWWWWWW::::::');
+    // console.log('OLD FLOWWWWWWWW::::::');
 
     // return { success: true, data: filteredEvents };
 
@@ -5390,7 +5387,6 @@ export class AuthService {
         message: 'Carousel not found',
       };
     }
-    console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -5401,7 +5397,6 @@ export class AuthService {
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
-    console.log('START DATE:', start);
     console.log('Match:', match);
 
     // if (!startDate && !endDate) {
@@ -5536,7 +5531,6 @@ export class AuthService {
     }
     let totalCount = 0;
 
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -5550,7 +5544,6 @@ export class AuthService {
       startDate,
       endDate,
     );
-    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard fetched successfully',
