@@ -462,6 +462,7 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
+    console.log("LATITUDE AND LONGITUDE::::",body.latitude, body.longitude);
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       throw new BadRequestException('Not a valid User');
     }
