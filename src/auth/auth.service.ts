@@ -2364,8 +2364,8 @@ export class AuthService {
     // console.log('maxDistance:', maxDistance);
     // console.log('maxTimeToEvent:', maxTimeToEvent);
 
-    const weightDistance = 0.5;
-    const weightTime = 0.5;
+    const weightDistance = process.env.DISTANCE_WEIGHTAGE ? Number(process.env.DISTANCE_WEIGHTAGE) : 0.5;
+    const weightTime = process.env.TIME_WEIGHTAGE ? Number(process.env.TIME_WEIGHTAGE) : 0.5;
 
     dataRows.forEach((event) => {
       const nearestSchedule = event.schedules.find((s) => {
