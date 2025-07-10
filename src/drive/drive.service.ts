@@ -710,7 +710,7 @@ export class DriveService {
       parentDirectory: new mongoose.Types.ObjectId(parentDirectoryId),
       ParentDirectoryType: parentDirectoryType,
       fileType: FileType.IMAGE,
-      category: categoryId,
+      category: new mongoose.Types.ObjectId(categoryId),
       parent: new mongoose.Types.ObjectId(parentId),
       parentType: Event.name, // or drive/folder parentType as needed
     });

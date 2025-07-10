@@ -265,7 +265,7 @@ export class RewardsService {
   }
   
 
-  async getRewardById(id: string, user: DecodedUser) {
+  async getRewardById(id: string, user: DecodedUser, latitude?: string, longitude?: string) {
     try {
       // const foundReward = await this.rewardModel
       //   .findById(id)
@@ -592,6 +592,7 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      console.log("CONTENT_QRRR:", QR_ImageCategory);
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
@@ -666,7 +667,7 @@ export class RewardsService {
                       {
                         $ne: [
                           '$category',
-                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                          QR_ImageCategory._id,
                         ],
                       },
                     ],

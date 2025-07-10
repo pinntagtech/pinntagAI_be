@@ -110,11 +110,13 @@ export class RewardsController {
   async getRewardById(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
     }
-    const result = await this.rewardService.getRewardById(id, user);
+    const result = await this.rewardService.getRewardById(id, user, latitude, longitude);
     if (result.success) {
       return {
         message: result.message,
