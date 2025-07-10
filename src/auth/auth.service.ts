@@ -4222,6 +4222,23 @@ export class AuthService {
           as: 'categories',
         },
       },
+       ...(data.categories?.length
+    ? [
+        {
+          $addFields: {
+            categories: {
+              $filter: {
+                input: '$categories',
+                as: 'cat',
+                cond: {
+                  $in: ['$$cat._id', data.categories.map((id) => new mongoose.Types.ObjectId(id))],
+                },
+              },
+            },
+          },
+        },
+      ]
+    : []),
       {
         $lookup: {
           from: 'files', // assuming this is the same collection as QR_CODE

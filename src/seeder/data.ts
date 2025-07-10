@@ -134,7 +134,6 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      _id: { $oid: '686e0c9427c18e95a098cd57' },
       title: 'Art & Crafts',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
@@ -144,7 +143,6 @@ export const Seeder = {
       description: 'Art & Crafts',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd58' },
       title: 'Beauty & Spa',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
@@ -154,7 +152,6 @@ export const Seeder = {
       description: 'Beauty & Spa',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd59' },
       title: 'Charity',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/charity.png',
@@ -164,7 +161,6 @@ export const Seeder = {
       description: 'Charity',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5a' },
       title: 'Clubs & Classes',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
@@ -174,7 +170,6 @@ export const Seeder = {
       description: 'Clubs & Classes',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5b' },
       title: 'Days Out',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
@@ -184,7 +179,6 @@ export const Seeder = {
       description: 'Days Out',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5c' },
       title: 'Entertainment',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
@@ -194,7 +188,6 @@ export const Seeder = {
       description: 'Entertainment',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5d' },
       title: 'Food & Drinks',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
@@ -204,7 +197,6 @@ export const Seeder = {
       description: 'Food & Drinks',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5e' },
       title: 'Happy Hour',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
@@ -214,7 +206,6 @@ export const Seeder = {
       description: 'Happy Hour',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd5f' },
       title: 'Health & Fitness',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Health+and+fitness.png',
@@ -224,7 +215,6 @@ export const Seeder = {
       description: 'Health & Fitness',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd60' },
       title: 'Local Attractions',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
@@ -234,7 +224,6 @@ export const Seeder = {
       description: 'Local Attractions',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd61' },
       title: 'Music & Nightlife',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
@@ -244,7 +233,6 @@ export const Seeder = {
       description: 'Music & Nightlife',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd62' },
       title: 'Pets',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/pets.png',
@@ -254,7 +242,6 @@ export const Seeder = {
       description: 'Pets',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd63' },
       title: 'Retail',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
@@ -264,7 +251,6 @@ export const Seeder = {
       description: 'Retail',
     },
     {
-      _id: { $oid: '686e0c9427c18e95a098cd64' },
       title: 'Sports',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/sports.png',
