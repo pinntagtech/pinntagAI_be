@@ -3056,119 +3056,11 @@ export class EventService2 {
             },
           },
         },
-        // {
-        //   $lookup: {
-        //     from: 'users',
-        //     localField: 'event._id',
-        //     foreignField: 'savedEvents',
-        //     as: 'savedEvents',
-        //   },
-        // },
-        // {
-        //   $match: {
-        //     'savedEvents._id': userId,
-        //   },
-        // },
-        // {
-        //   $lookup: {
-        //     from: 'users',
-        //     localField: 'event._id',
-        //     foreignField: 'likedEvents',
-        //     as: 'likedEvents',
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     // isSaved: {
-        //     //   $in: [userId, '$savedEvents._id'],
-        //     // },
-        //     isSaved: true,
-        //     isLiked: {
-        //       $in: [userId, '$likedEvents._id'],
-        //     },
-        //     'event.isFollowedByMe': {
-        //       $cond: {
-        //         if: { $eq: ['$event.creatorType', 'User'] },
-        //         then: {
-        //           $cond: {
-        //             if: {
-        //               $ne: [
-        //                 null,
-        //                 {
-        //                   $first: {
-        //                     $filter: {
-        //                       input: '$event.follows',
-        //                       as: 'follow',
-        //                       cond: {
-        //                         $and: [
-        //                           { $eq: ['$$follow.follower', userId] },
-        //                           { $eq: ['$$follow.followerType', 'User'] },
-        //                           {
-        //                             $eq: [
-        //                               '$$follow.following',
-        //                               '$userDetails._id',
-        //                             ],
-        //                           },
-        //                           { $eq: ['$$follow.followingType', 'User'] },
-        //                           { $eq: ['$$follow.isBlocked', false] },
-        //                         ],
-        //                       },
-        //                     },
-        //                   },
-        //                 },
-        //               ],
-        //             },
-        //             then: true,
-        //             else: false,
-        //           },
-        //         },
-        //         else: {
-        //           $cond: {
-        //             if: {
-        //               $ne: [
-        //                 null,
-        //                 {
-        //                   $first: {
-        //                     $filter: {
-        //                       input: '$event.follows',
-        //                       as: 'follow',
-        //                       cond: {
-        //                         $and: [
-        //                           { $eq: ['$$follow.follower', userId] },
-        //                           { $eq: ['$$follow.followerType', 'User'] },
-        //                           {
-        //                             $eq: [
-        //                               '$$follow.following',
-        //                               '$businessProfileDetails._id',
-        //                             ],
-        //                           },
-        //                           {
-        //                             $eq: [
-        //                               '$$follow.followingType',
-        //                               'BusinessProfile',
-        //                             ],
-        //                           },
-        //                           { $eq: ['$$follow.isBlocked', false] },
-        //                         ],
-        //                       },
-        //                     },
-        //                   },
-        //                 },
-        //               ],
-        //             },
-        //             then: true,
-        //             else: false,
-        //           },
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
         {
           $group: {
             _id: '$event._id',
             locationId: { $first: '$_id' },
-            distance: { $min: '$distance' },
+            distance: { $first: { $divide: ['$distance', 1609.34] } },
             title: { $first: '$event.title' },
             creatorType: { $first: '$event.creatorType' },
             keywords: { $first: '$event.keywords' },
@@ -3191,7 +3083,7 @@ export class EventService2 {
             participants: { $first: '$event.participants' },
             creatorDetails: { $first: '$event.creatorDetails' },
             category: { $first: '$category' },
-            images: { $first: '$images' },
+            files: { $first: '$images' },
             ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
             isSaved: { $first: '$isSaved' },
             isLiked: { $first: '$isLiked' },
@@ -3279,138 +3171,115 @@ export class EventService2 {
             $expr: { $gt: [{ $size: '$schedules' }, 0] },
           },
         },
-        // {
-        //   $project: {
-        //     _id: 1,
-        //     distance: { $divide: ['$distance', 1000] },
-        //     'event._id': 1,
-        //     'event.title': 1,
-        //     'event.creatorType': 1,
-        //     'event.keywords': 1,
-        //     'event.description': 1,
-        //     'event.schedule': 1,
-        //     'event.locations': {
-        //       $map: {
-        //         input: '$locations',
-        //         as: 'location',
-        //         in: {
-        //           _id: '$$location._id',
-        //           location: '$$location.location',
-        //           businessLocationId: '$$location.businessLocationId',
-        //           accuracy: '$$location.accuracy',
-        //           address1: '$$location.address1',
-        //           address2: '$$location.address2',
-        //           city: '$$location.city',
-        //           state: '$$location.state',
-        //           zip: '$$location.zip',
-        //           website: '$$location.website',
-        //           email: '$$location.email',
-        //           phone: '$$location.phone',
-        //         },
-        //       },
-        //     },
-        //     'event.type': 1,
-        //     'event.status': 1,
-        //     'event.targetGenders': 1,
-        //     'event.promotionCode': 1,
-        //     'event.isFree': 1,
-        //     'event.participationCost': 1,
-        //     'event.bookingUrl': 1,
-        //     'event.notifyFollowers': 1,
-        //     'event.RSVP': 1,
-        //     'event.termsApplied': 1,
-        //     'event.termsAndConditions': 1,
-        //     'event.facebookPostId': 1,
-        //     'event.specifyForEachDay': 1,
-        //     'event.participants': 1,
-        //     'event.creatorDetails': {
-        //       $cond: {
-        //         if: { $eq: ['$event.creatorType', 'User'] },
-        //         then: {
-        //           _id: '$userDetails._id',
-        //           name: '$userDetails.name',
-        //           profilePhoto: '$userDetails.profilePhoto',
-        //           email: '$userDetails.email',
-        //           bio: '$userDetails.bio',
-        //           followersCount: '$userDetails.followersCount',
-        //           profileType: 'User',
-        //           phone: '$userDetails.phone',
-        //           website: '',
-        //           isFollowedByMe: '$event.isFollowedByMe',
-        //         },
-        //         else: {
-        //           _id: '$businessProfileDetails._id',
-        //           name: '$businessProfileDetails.name',
-        //           profilePhoto: '$businessProfileDetails.profilePhoto',
-        //           email: '$businessProfileDetails.email',
-        //           bio: '$businessProfileDetails.bio',
-        //           followersCount: '$businessProfileDetails.followersCount',
-        //           profileType: 'BusinessProfile',
-        //           phone: '$businessProfileDetails.phone',
-        //           website: '$businessProfileDetails.website',
-        //           isFollowedByMe: '$event.isFollowedByMe',
-        //         },
-        //       },
-        //     },
-        //     'category._id': 1,
-        //     'category.name': 1,
-        //     'category.image': 1,
-        //     images: { _id: 1, url: 1 },
-        //     ageGroupsAllowed: { _id: 1, name: 1 },
-        //     isSaved: 1,
-        //     isLiked: 1,
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     schedule: {
-        //       $filter: {
-        //         input: '$schedule',
-        //         as: 'sched',
-        //         cond: {
-        //           $or: [
-        //             { $gte: ['$$sched.date', currentDateTz()] }, // today or future
-        //             { $eq: ['$$sched.date', currentDateTz()] }, // explicitly today
-        //           ],
-        //           // $or: [
-        //           //   { $gte: ['$$sched.date', start] },
-        //           // {
-        //           // $and: [
-        //           //   { $gte: ['$$sched.date', currentDateTz()] },
-        //           //   {
-        //           //     $anyElementTrue: {
-        //           //       $map: {
-        //           //         input: '$$sched.durations',
-        //           //         as: 'duration',
-        //           //         in: { $gte: ['$$duration.endTime', currentDateTz()] },
-        //           //       },
-        //           //     },
-        //           //   },
-        //           // ],
-        //           // },
-        //           // ],
-        //         },
-        //       },
-        //     },
-        //     distance: {
-        //       $round: ['$distance', 2],
-        //     },
-        //   },
-        // },
-        // {
-        //   $sort: {
-        //     distance: 1,
-        //     // 'schedule.durations.startTime': 1, // sort by start time in ascending order
-        //     //soonest to latest
-        //     'schedule.0.durations.0.startTime': 1,
-        //   },
-        // },
-        // {
-        //   $skip: !page ? 0 : (page - 1) * limit,
-        // },
-        // {
-        //   $limit: limit,
-        // },
+        {
+          $project: {
+            _id: 1,
+            distance: 1,
+            title: 1,
+            keywords: 1,
+            description: 1,
+            type: 1,
+            status: 1,
+            notifyFollowers: 1,
+            targetGenders: 1,
+            promotionCode: 1,
+            isFree: 1,
+            participationCost: 1,
+            bookingUrl: 1,
+            termsAndConditions: 1,
+            ageGroupsAllowed: {
+              minAge: '$minTargetAge',
+              maxAge: '$maxTargetAge',
+            },
+            categories: {
+              $map: {
+                input: '$categories',
+                as: 'category',
+                in: {
+                  _id: '$$category._id',
+                  name: '$$category.title',
+                  darkIcon: '$$category.darkIcon',
+                  lightIcon: '$$category.lightIcon',
+                  activeColor: '$$category.activeColor',
+                },
+              },
+            },
+            businessProfileDetails: {
+              _id: '$businessProfileDetails._id',
+              name: '$businessProfileDetails.name',
+              cover: '$businessProfileDetails.cover',
+              logo: '$businessProfileDetails.logo',
+              email: '$businessProfileDetails.email',
+              bio: '$businessProfileDetails.bio',
+              description: '$businessProfileDetails.description',
+              followersCount: '$businessProfileDetails.followersCount',
+              isFollowedByMe: '$isFollowedByMe',
+              profileType: 'BusinessProfile',
+              phone: '$businessProfileDetails.phone',
+              website: '$businessProfileDetails.website',
+              facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+              instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+              twitterPageUrl: '$businessProfileDetails.XPageUrl',
+            },
+            // QR_CODE: {
+            //   _id: '$QR_CODE._id',
+            //   url: '$QR_CODE.metaData.url',
+            // },
+            creatorDetails: {
+              $cond: {
+                if: { $eq: ['$creatorType', 'User'] },
+                then: {
+                  _id: '$userDetails._id',
+                  name: '$userDetails.name',
+                  profilePhoto: '$userDetails.profilePhoto',
+                  email: '$userDetails.email',
+                  bio: '$userDetails.bio',
+                  followersCount: '$userDetails.followersCount',
+                  profileType: 'User',
+                  phone: '$userDetails.phone',
+                  website: '',
+                  isFollowedByMe: '$event.isFollowedByMe',
+                  isDeleted: '$userDetails.isDeleted',
+                  isMe: false,
+                },
+                else: {
+                  _id: '$businessProfileDetails._id',
+                  name: '$businessProfileDetails.name',
+                  profilePhoto: '$businessProfileDetails.profilePhoto',
+                  email: '$businessProfileDetails.email',
+                  bio: '$businessProfileDetails.bio',
+                  followersCount: '$businessProfileDetails.followersCount',
+                  profileType: 'BusinessProfile',
+                  phone: '$businessProfileDetails.phone',
+                  website: '$businessProfileDetails.website',
+                  isFollowedByMe: '$event.isFollowedByMe',
+                  description: '$businessProfileDetails.description',
+                  logo: '$businessProfileDetails.logo',
+                  cover: '$businessProfileDetails.cover',
+                  isDeleted: '$businessProfileDetails.isDeleted',
+                  facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                  instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                  twitterPageUrl: '$businessProfileDetails.XPageUrl',
+                  isMe: false,
+                },
+              },
+            },
+            images: {
+              $map: {
+                input: '$files',
+                as: 'file',
+                in: {
+                  _id: '$$file._id',
+                  url: '$$file.metaData.url',
+                },
+              },
+            },
+            creatorType: 1,
+            locations: 1,
+            schedules: 1,
+          },
+        },
+        { $sort: { createdAt: -1, _id: 1 } },
         {
           $facet: {
             data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -3419,124 +3288,32 @@ export class EventService2 {
         },
       ]);
       console.log('result', result);
-      // Post-processing to group events into distance batches and sort them accordingly
-      // result.forEach((event) => {
-      //   event.locations.forEach((location) => {
-      //     location.distance = haversineDistance(
-      //       latitude,
-      //       longitude,
-      //       location.location.coordinates[1],
-      //       location.location.coordinates[0],
-      //     );
-      //   });
-      //   // Sort locations by distance
-      //   event.locations.sort((a, b) => a.distance - b.distance);
-      // });
-      // result.sort((a, b) => {
-      //   if (a.schedule[0] && b.schedule[0]) {
-      //     if (a.schedule[0].durations[0] && b.schedule[0].durations[0]) {
-      //       const aTime = new Date(
-      //         a.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       const bTime = new Date(
-      //         b.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       return aTime - bTime;
-      //     }
-      //   }
-      //   return 0;
-      // });
-      let eventsData = [];
-      let offersData = [];
-      let privateEvents = [];
-      //Remove the schedules from the events that have passed
-      // const events = result.map((event) => {
-      //   const schedule = event.schedule.filter((sched) => {
-      //     const durations = sched.durations.filter((duration) => {
-      //       return new Date(duration.endTime) > currentDateTz();
-      //     });
-      //     return durations.length > 0;
-      //   });
-      //   return {
-      //     ...event,
-      //     schedule,
-      //   };
-      // });
-      // for (let i = 0; i < events.length; i++) {
-      //   const event = events[i];
-      //   if (
-      //     event.type == EventTypes.FORMAL ||
-      //     event.type == EventTypes.INFORMAL
-      //   ) {
-      //     eventsData.push(event);
-      //   } else if (event.type == EventTypes.OFFER) {
-      //     offersData.push(event);
-      //   } else if (event.type == EventTypes.PRIVATE) {
-      //     privateEvents.push(event);
-      //   }
-      // }
-      // privateEvents.sort((a, b) => {
-      //   if (a.schedule[0] && b.schedule[0]) {
-      //     if (a.schedule[0].durations[0] && b.schedule[0].durations[0]) {
-      //       const aTime = new Date(
-      //         a.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       const bTime = new Date(
-      //         b.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       return aTime - bTime;
-      //     }
-      //   }
-      //   return 0;
-      // });
-      // const likedEvents = await this.getLikedEvents(
-      //   userId,
-      //   type,
-      //   latitude,
-      //   longitude,
-      // );
-      // //Sort the liked events by schedule as above logic and store in likedEventsData
-      // const likedEventsData = likedEvents.events.map((event) => {
-      //   const schedule = event.schedule.filter((sched) => {
-      //     const durations = sched.durations.filter((duration) => {
-      //       return new Date(duration.endTime) > currentDateTz();
-      //     });
-      //     return durations.length > 0;
-      //   });
-      //   return {
-      //     ...event,
-      //     schedule,
-      //   };
-      // });
-      // likedEventsData.sort((a, b) => {
-      //   if (a.schedule[0] && b.schedule[0]) {
-      //     if (a.schedule[0].durations[0] && b.schedule[0].durations[0]) {
-      //       const aTime = new Date(
-      //         a.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       const bTime = new Date(
-      //         b.schedule[0].durations[0].startTime,
-      //       ).getTime();
-      //       return aTime - bTime;
-      //     }
-      //   }
-      //   return 0;
-      // });
+
       const total = result[0].totalCount[0]?.count || 0;
+      const eventsData = result[0].data;
+      const liked = await this.getLikedEvents(
+        userId,
+        type,
+        latitude,
+        longitude,
+        page,
+        limit,
+      );
+      const reportedEvents = await this.getReports(userId,page,limit);
+
       return {
         success: true,
         message: 'Saved events fetched successfully',
-        // data: {
-        //   events: result,
-        //   // offers: offersData,
-        //   // privateEvents: privateEvents,
-        //   // liked: likedEvents.events,
-        // },
-        data: result[0].data,
-        total: total,
-        pages: Math.ceil(total / limit),
-        page: page,
-        limit: limit,
+        data: {
+          events: eventsData,
+          liked: liked.events,
+          reported: reportedEvents.reports,
+        },
+        // data: result[0].data,
+        // total: total,
+        // pages: Math.ceil(total / limit),
+        // page: page,
+        // limit: limit,
       };
     }
   }
@@ -4142,7 +3919,7 @@ export class EventService2 {
                 _id: '$_id',
                 email: '$email',
                 phone: '$phone',
-                distance: { $divide: ['$distance', 1609.34] }
+                distance: { $divide: ['$distance', 1609.34] },
               },
             },
           },
@@ -4151,7 +3928,7 @@ export class EventService2 {
           $project: {
             _id: 1,
             locationId: 1,
-             distance: { $divide: ['$distance', 1609.34] },
+            distance: { $divide: ['$distance', 1609.34] },
             title: 1,
             creatorType: 1,
             keywords: 1,
@@ -4178,7 +3955,6 @@ export class EventService2 {
             isSaved: 1,
             isLiked: 1,
             locations: 1,
-            
           },
         },
         {
@@ -4286,7 +4062,8 @@ export class EventService2 {
         {
           $sort: {
             distance: 1,
-            // 'schedule.durations.startTime': 1,
+            createdAt: -1,
+            _id: 1,
           },
         },
         {
@@ -4407,7 +4184,7 @@ export class EventService2 {
     };
   }
 
-  async getReports(userId: string) {
+  async getReports(userId: string, page: number, limit: number) {
     const user = await this.userModel.findById(userId);
     if (!user) {
       return {
@@ -4415,11 +4192,144 @@ export class EventService2 {
         message: 'User not found',
       };
     }
-    const reports = await this.reportModel
-      .find({ user: new mongoose.Types.ObjectId(userId) })
-      .populate('event', '_id title')
-      .sort({ createdAt: -1 })
-      .select({ __v: 0, updatedAt: 0, user: 0 });
+    const aggregationPipeline: any = [
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'event',
+          foreignField: '_id',
+          as: 'event',
+        },
+      },
+      { $unwind: '$event' },
+
+      // Populate event.user
+      {
+        $lookup: {
+          from: 'users',
+          let: { userId: '$event.user' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$userId'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+                phone: 1,
+                profilePhoto: 1,
+                followersCount: 1,
+                followingCount: 1,
+              },
+            },
+          ],
+          as: 'event.user',
+        },
+      },
+      { $unwind: { path: '$event.user', preserveNullAndEmptyArrays: true } },
+
+      // Populate event.businessProfile
+      {
+        $lookup: {
+          from: 'businesses',
+          let: { businessProfileId: '$event.businessProfile' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$businessProfileId'] },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                bio: 1,
+                brandColor: 1,
+                profilePhoto: 1,
+                logo: 1,
+                followersCount: 1,
+                countryCode: 1,
+                phone: 1,
+                email: 1,
+                website: 1,
+                isDeleted: 1,
+                instagramPageUrl: 1,
+                twitterPageUrl: 1,
+                facebookPageUrl: 1,
+              },
+            },
+          ],
+          as: 'event.businessProfile',
+        },
+      },
+      {
+        $unwind: {
+          path: '$event.businessProfile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Populate locations
+      {
+        $lookup: {
+          from: 'eventlocations',
+          localField: 'event._id',
+          foreignField: 'event',
+          as: 'event.locations',
+        },
+      },
+
+      // Populate schedule
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'event.eventSchedule',
+          foreignField: '_id',
+          as: 'event.eventSchedule',
+        },
+      },
+
+      // Populate categories
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'event.categories',
+          foreignField: '_id',
+          as: 'event.categories',
+        },
+      },
+
+      // Populate files (images)
+      {
+        $lookup: {
+          from: 'files',
+          localField: 'event.drivePath',
+          foreignField: 'parentDirectory',
+          as: 'event.images',
+        },
+      },
+
+      {
+        $replaceWith: '$event',
+      },
+
+      { $sort: { createdAt: -1 } },
+
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+
+      // Final shape adjustment (optional $project or transformation)
+    ];
+
+    const reports = await this.reportModel.aggregate(aggregationPipeline);
 
     return {
       success: true,

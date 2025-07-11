@@ -2184,7 +2184,7 @@ export class AuthService {
           schedules: 1,
         },
       },
-      { $sort: { distance: 1, createdAt: 1, _id: 1 } },
+      { $sort: { distance: 1, createdAt: -1, _id: 1 } },
       {
         $facet: {
           data: [{ $skip: (page - 1) * limit }, { $limit: limit }],

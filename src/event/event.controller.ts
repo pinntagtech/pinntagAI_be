@@ -751,7 +751,7 @@ export class EventController {
     if (!limit || limit == '') {
       limit = '10';
     }
-    const result = await this.eventService.getSavedEventsOld(
+    const result = await this.eventService.getSavedEvents(
       user.id,
       type,
       body.latitude ? parseFloat(body.latitude) : 0,
@@ -763,8 +763,8 @@ export class EventController {
       return {
         message: result.message,
         events: result.data.events,
-        offers: result.data.offers,
-        privateEvents: result.data.privateEvents,
+        // offers: result.data.offers,
+        // privateEvents: result.data.privateEvents,
         liked: result.data.liked,
         reported: result.data.reported,
       };
@@ -867,8 +867,10 @@ export class EventController {
 
   @Get('reports')
   @UseGuards(JwtGuard2)
-  async getReports(@TokenDecoder() user: DecodedUser) {
-    const result = await this.eventService.getReports(user.id);
+  async getReports(@TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.eventService.getReports(user.id, pageNumber, limitNumber);
     if (result.success) {
       return {
         message: result.message,
