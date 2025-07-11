@@ -61,6 +61,7 @@ import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/recor
 import { CreateBrandDto } from './dto/create-brand.dto';
 import {
   Actions,
+  BusinessResourceTypes,
   ResourceTypes,
   RoleBelonging,
   RoleCreatorType,
@@ -670,11 +671,12 @@ export class BusinessService {
           for (const privilegeKey of privilegeKeys) {
             // Get/create resource
             let resourceDetails = await this.resourceModel.findOne({
-              title: ResourceTypes[privilegeKey],
+              title: BusinessResourceTypes[privilegeKey],
             });
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
-                title: ResourceTypes[privilegeKey],
+                title: BusinessResourceTypes[privilegeKey],
+                belongsTo: 'BusinessUser',
               });
             }
 

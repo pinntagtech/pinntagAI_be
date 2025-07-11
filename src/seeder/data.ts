@@ -1309,7 +1309,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions:
         'Available for delivery and takeaway only. While supplies last. One offer per order.',
-      businessIndustry: 'Food Services',
+      businessIndustry: 'Food & Drink',
       businessCategories: ['Pizzeria'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Buy+Pizza+Get+Coke.png',

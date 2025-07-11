@@ -769,6 +769,10 @@ export class SeederService {
       let businessIndustry = await this.businessIndustryModel.findOne({
         title: template.businessIndustry,
       });
+      if(!businessIndustry) {
+        console.error(
+          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,)
+      }
       let createObj = {
         creatorType: Admin.name,
         type: template.type,
