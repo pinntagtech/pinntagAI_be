@@ -580,19 +580,11 @@ export class RewardsService {
   ) {
     try {
       const now = new Date();
-      let startDate = data.startDate ? new Date(data.startDate) : now;
-      let endDate = data.endDate
-        ? new Date(data.endDate)
-        : new Date(now.setFullYear(now.getFullYear() + 2));
-      // let query = {};
-      // // if()
       let consumerId = user.id;
-      console.log('Consumer ID:', consumerId);
       let skip = (page - 1) * limit;
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log("CONTENT_QRRR:", QR_ImageCategory);
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
@@ -614,7 +606,6 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
-        { $sort: { 'reward.createdAt': -1 } }, // Sort by creation date of the reward
         {
           $lookup: {
             from: 'userrewards',
@@ -643,6 +634,7 @@ export class RewardsService {
           $match: {
             'reward.status': RewardStatus.PUBLISHED,
             claimed: { $eq: [] },
+            'reward.schedule.endDate': { $gte: now },
           },
         },
         {
@@ -701,6 +693,7 @@ export class RewardsService {
             businessProfile: { $first: '$reward.businessProfile' },
           },
         },
+        { $sort: { createdAt: -1, distance: 1, _id: 1 } },
         {
           $facet: {
             data: [{ $skip: skip }, { $limit: limit }],
