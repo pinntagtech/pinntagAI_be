@@ -49,6 +49,9 @@ export class Reward {
 
   @Prop()
   targetCount: number;
+
+  @Prop()
+  promotionCode: string;
   
   @Prop()
   schedule: Schedule;

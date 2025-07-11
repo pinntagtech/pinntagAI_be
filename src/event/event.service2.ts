@@ -3299,7 +3299,7 @@ export class EventService2 {
         page,
         limit,
       );
-      const reportedEvents = await this.getReports(userId,page,limit);
+      const reportedEvents = await this.getReports(userId, page, limit);
 
       return {
         success: true,
@@ -6296,30 +6296,38 @@ export class EventService2 {
       });
       const [event] = await this.eventModel.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(data.id) } },
+        // {
+        //   $lookup: {
+        //     from: 'files',
+        //     let: { folderId: '$drivePath' }, // expose `drivePath` from eventModel
+        //     pipeline: [
+        //       {
+        //         $match: {
+        //           $expr: {
+        //             $and: [
+        //               { $eq: ['$parentDirectory', '$$folderId'] }, // match parentDirectory with drivePath
+        //               {
+        //                 $ne: [
+        //                   '$category',
+        //                   new mongoose.Types.ObjectId(QR_ImageCategory.id), // exclude this category
+        //                 ],
+        //               },
+        //             ],
+        //           },
+        //         },
+        //       },
+        //     ],
+        //     as: 'files',
+        //   },
+        // },
         {
-          $lookup: {
-            from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$event.drivePath' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$parentDirectory', '$$folderId'] },
-                      {
-                        $ne: [
-                          '$category',
-                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-            ],
+          $lookup:{
+            from: 'files',
+            localField: 'drivePath',
+            foreignField: 'parentDirectory',
             as: 'files',
-          },
-        },
+          }
+        }
       ]);
       if (!event) {
         return {

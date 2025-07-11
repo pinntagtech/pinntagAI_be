@@ -349,6 +349,19 @@ export class RewardsService {
             localField: 'locations',
             foreignField: '_id',
             as: 'locations',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets',
+                  localField: 'businessLocationId',
+                  foreignField: '_id',
+                  as: 'businessLocation',
+                },
+              },
+              {
+                $unwind: { path: '$businessLocation', preserveNullAndEmptyArrays: true }
+              }
+            ]
           },
         },
 
