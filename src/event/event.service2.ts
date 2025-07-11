@@ -5467,7 +5467,7 @@ export class EventService2 {
       const event = await this.eventModel.create(createObj);
       console.log('event:', event);
       const fileCategory = await this.fileCategoryModel.findOne({
-        name: 'Content QR',
+        name: 'gallery image',
       });
       if (image) {
         console.log('Image:', image);
@@ -6294,40 +6294,42 @@ export class EventService2 {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      console.log('QR_ImageCategory:', QR_ImageCategory);
       const [event] = await this.eventModel.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(data.id) } },
+        {
+          $lookup: {
+            from: 'files',
+            let: { folderId: '$drivePath' }, // expose `drivePath` from eventModel
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] }, // match parentDirectory with drivePath
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id), // exclude this category
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'files',
+          },
+        },
         // {
-        //   $lookup: {
+        //   $lookup:{
         //     from: 'files',
         //     let: { folderId: '$drivePath' }, // expose `drivePath` from eventModel
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: {
-        //             $and: [
-        //               { $eq: ['$parentDirectory', '$$folderId'] }, // match parentDirectory with drivePath
-        //               {
-        //                 $ne: [
-        //                   '$category',
-        //                   new mongoose.Types.ObjectId(QR_ImageCategory.id), // exclude this category
-        //                 ],
-        //               },
-        //             ],
-        //           },
-        //         },
-        //       },
-        //     ],
+        //     localField: 'drivePath',
+        //     foreignField: 'parentDirectory',
         //     as: 'files',
-        //   },
-        // },
-        {
-          $lookup:{
-            from: 'files',
-            localField: 'drivePath',
-            foreignField: 'parentDirectory',
-            as: 'files',
-          }
-        }
+        //   }
+        // }
       ]);
       if (!event) {
         return {
