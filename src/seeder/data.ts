@@ -1280,8 +1280,8 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions:
         'Offer valid for dine-in only. One Coke per burger. While supplies last.',
-      businessIndustry: 'Hospitality',
-      businessCategories: ['Fast Food'],
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Free+Coke+With+Burger.png',
       createdAt: null,
@@ -1310,7 +1310,7 @@ export const Seeder = {
       termsAndConditions:
         'Available for delivery and takeaway only. While supplies last. One offer per order.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Pizzeria'],
+      businessCategories: ['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Buy+Pizza+Get+Coke.png',
       createdAt: null,
@@ -1338,8 +1338,8 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions:
         'Offer valid from 12pm–3pm daily. Dine-in and pickup only. No substitutions.',
-      businessIndustry: 'Casual Dining',
-      businessCategories: ['Cafeteria'],
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Coke+Combo+Lunch.png',
       createdAt: null,

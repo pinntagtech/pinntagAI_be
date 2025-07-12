@@ -25,7 +25,7 @@ import { Business, BusinessDocument } from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { OtpTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { FileCategoryTypes, OtpTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
@@ -111,6 +111,7 @@ import {
 } from 'src/event/models/eventLocation.model';
 
 import { instance as logger } from 'src/logger/winston.logger';
+import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
 
 @Injectable()
 export class BusinessService {
@@ -155,8 +156,8 @@ export class BusinessService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(UserReward.name)
     private readonly userRewardModel: Model<UserRewardDocument>,
-    @InjectModel(EventLocation.name)
-    private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(EventLocation.name) private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -927,7 +928,11 @@ export class BusinessService {
     }
   }
 
-  async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
+  async updateBusinessUser(
+    id: string,
+    data: UpdateBusinessUserDto,
+    profilePhoto: Express.Multer.File,
+  ) {
     try {
       logger.info(`updateBusinessUser id: ${id}`);
       logger.info(`updateBusinessUser data: ${JSON.stringify(data)}`);
@@ -937,6 +942,24 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
+      const businessUser = await this.businessUserModel.findById(id);
+      console.log('businessUser:', businessUser);
+      if (profilePhoto) {
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.PROFILE_PICTURE,
+        });
+        console.log('Image:', profilePhoto);
+        let imageDetails = await this.driveService.uploadAndCreateFile(
+          profilePhoto,
+          String(businessUser.drive),
+          Drive.name,
+          businessUser._id,
+          fileCategory._id,
+        );
+        updateObj['profilePhoto'] = imageDetails.metaData.url;
+      }
+      console.log('updateObj:', updateObj);
+
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
         { _id: id },
         {
@@ -3200,5 +3223,42 @@ export class BusinessService {
       },
       { $limit: limit },
     ]);
+  }
+
+  async getFollowers(businessId: string, page: number, limit: number) {
+    try {
+      const businessObjId = new mongoose.Types.ObjectId(businessId);
+      const followers = await this.followModel
+        .find({
+          following: businessObjId,
+          // followerType: BusinessUser.name,
+        })
+        .populate(
+          'follower',
+          '_id firstName lastName profilePhoto name profileType image',
+        )
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const total = await this.followModel.countDocuments({
+        following: businessObjId,
+      });
+
+      return {
+        success: true,
+        message: 'Followers fetched Successfully!',
+        data: followers,
+        total,
+        pages: Math.ceil(total / limit),
+        page,
+        limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 }
