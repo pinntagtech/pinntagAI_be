@@ -2364,8 +2364,12 @@ export class AuthService {
     // console.log('maxDistance:', maxDistance);
     // console.log('maxTimeToEvent:', maxTimeToEvent);
 
-    const weightDistance = process.env.DISTANCE_WEIGHTAGE ? Number(process.env.DISTANCE_WEIGHTAGE) : 0.5;
-    const weightTime = process.env.TIME_WEIGHTAGE ? Number(process.env.TIME_WEIGHTAGE) : 0.5;
+    const weightDistance = process.env.DISTANCE_WEIGHTAGE
+      ? Number(process.env.DISTANCE_WEIGHTAGE)
+      : 0.5;
+    const weightTime = process.env.TIME_WEIGHTAGE
+      ? Number(process.env.TIME_WEIGHTAGE)
+      : 0.5;
 
     dataRows.forEach((event) => {
       const nearestSchedule = event.schedules.find((s) => {
@@ -4514,6 +4518,34 @@ export class AuthService {
         },
       },
       {
+        $lookup: {
+          from: 'reports', // your reportModel collection name
+          let: { eventId: '$_id' }, // assuming _id is the eventId in eventLocation
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$eventId', '$$eventId'] },
+                    { $eq: ['$userId', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'reportDocs',
+        },
+      },
+      {
+        $addFields: {
+          isReported: {
+            $gt: [{ $size: '$reportDocs' }, 0],
+            then: true,
+            else: false,
+          },
+        },
+      },
+      {
         $project: {
           _id: 1,
           distance: 1,
@@ -4621,6 +4653,7 @@ export class AuthService {
           isSaved: 1,
           locations: 1,
           schedules: 1,
+          isReported: 1,
         },
       },
     ]);

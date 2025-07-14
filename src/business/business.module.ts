@@ -127,6 +127,7 @@ import {
   UserReward,
   UserRewardSchema,
 } from 'src/rewards/model/userReward.model';
+import { Rating, RatingSchema } from './model/rating.model';
 
 @Module({
   imports: [
@@ -181,6 +182,7 @@ import {
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: UserReward.name, schema: UserRewardSchema },
+      { name: Rating.name, schema: RatingSchema },
     ]),
   ],
   controllers: [BusinessController],

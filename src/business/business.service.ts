@@ -112,6 +112,7 @@ import {
 
 import { instance as logger } from 'src/logger/winston.logger';
 import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
+import { Rating, RatingDocument } from './model/rating.model';
 
 @Injectable()
 export class BusinessService {
@@ -158,6 +159,7 @@ export class BusinessService {
     private readonly userRewardModel: Model<UserRewardDocument>,
     @InjectModel(EventLocation.name) private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Rating.name) private readonly ratingModel: Model<RatingDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -3253,6 +3255,39 @@ export class BusinessService {
         pages: Math.ceil(total / limit),
         page,
         limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async createReview(
+    userId: string,
+    businessId: string,
+    { rating, comment }: { rating: number; comment: string },
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+ 
+      const result = await this.ratingModel.create({
+        business: new mongoose.Types.ObjectId(businessId),
+        user: new mongoose.Types.ObjectId(userId),
+        rating,
+        comment,
+      });
+      return {
+        success: true,
+        message: 'Review created Successfully!',
+        data: result,
       };
     } catch (error) {
       return {
