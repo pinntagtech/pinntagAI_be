@@ -25,7 +25,12 @@ import { Business, BusinessDocument } from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { FileCategoryTypes, OtpTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  FileCategoryTypes,
+  OtpTypes,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
@@ -111,7 +116,11 @@ import {
 } from 'src/event/models/eventLocation.model';
 
 import { instance as logger } from 'src/logger/winston.logger';
-import { FileCategory, FileCategoryDocument } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
+import { Rating, RatingDocument } from './model/rating.model';
 
 @Injectable()
 export class BusinessService {
@@ -156,8 +165,12 @@ export class BusinessService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(UserReward.name)
     private readonly userRewardModel: Model<UserRewardDocument>,
-    @InjectModel(EventLocation.name) private readonly eventLocationModel: Model<EventLocationDocument>,
-    @InjectModel(FileCategory.name) private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(EventLocation.name)
+    private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Rating.name)
+    private readonly ratingModel: Model<RatingDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -3253,6 +3266,47 @@ export class BusinessService {
         pages: Math.ceil(total / limit),
         page,
         limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async createRating(
+    userId: string,
+    businessId: string,
+    { rating, comment }: { rating: number; comment: string },
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const result = await this.ratingModel.findOneAndUpdate(
+        {
+          business: new mongoose.Types.ObjectId(businessId),
+          user: new mongoose.Types.ObjectId(userId),
+        },
+        {
+          $set: {
+            rating,
+            comment,
+          },
+        },
+        { new: true, upsert: true },
+      );
+
+      return {
+        success: true,
+        message: 'Review created Successfully!',
+        data: result,
       };
     } catch (error) {
       return {

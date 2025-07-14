@@ -4875,6 +4875,41 @@ export class EventService2 {
     }
     return collectedIds;
   }
+   async getAllChildUsersIds2(userId) {
+      const objectId = new mongoose.Types.ObjectId(userId);
+      console.log('objectIdque', objectId);
+      const result = await this.businessUserModel
+        .aggregate([
+          {
+            $match: { _id: objectId },
+          },
+          {
+            $graphLookup: {
+              from: this.businessUserModel.collection.name,
+              startWith: '$_id',
+              connectFromField: '_id',
+              connectToField: 'creator',
+              as: 'descendants',
+              restrictSearchWithMatch: { creatorType:  BusinessUserCreatorType.BUSINESS },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              descendantIds: {
+                $map: {
+                  input: '$descendants',
+                  as: 'd',
+                  in: { $toString: '$$d._id' },
+                },
+              },
+            },
+          },
+        ])
+        .exec();
+  
+      return result[0]?.descendantIds || [];
+    }
   // Utility function to get the next occurrence date from a recurring schedule.
   // (This is a simplified version. In production, you might use a date library such as date-fns or moment.js to handle date arithmetic reliably.)
   private getNextOccurrence(recurringSchedule, currentDate) {
@@ -5230,9 +5265,9 @@ export class EventService2 {
           query = {
             creatorType: BusinessUser.name,
             businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
-            outlets: {
-              $in: outletIds.map((id) => new mongoose.Types.ObjectId(id)),
-            },
+            // outlets: {
+            //   $in: outletIds.map((id) => new mongoose.Types.ObjectId(id)),
+            // },
           };
         }
       } else {
@@ -5245,7 +5280,7 @@ export class EventService2 {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log('QR_ImageCategory:', QR_ImageCategory);
+      console.log("Queryy:", query);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
@@ -5406,6 +5441,7 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
+      let maxCategories = 3;
       if (data.categories) {
         let categoriesInObjectId = [];
         data.categories = data.categories.split(',');
@@ -5423,7 +5459,9 @@ export class EventService2 {
               message: 'Category not found',
             };
           }
-          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+          if (categoriesInObjectId.length < maxCategories) {
+            categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+          }
         }
         data.categories = categoriesInObjectId;
       }

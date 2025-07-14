@@ -1120,4 +1120,35 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('rate/:businessId')
+  @UseGuards(JwtGuard2)
+  async createReview(
+    @TokenDecoder() user: DecodedUser,
+    @Param('businessId') businessId: string,
+    @Body('rating') rating: number,
+    @Body('comment') comment: string,
+  ) {
+    const result = await this.businessService.createRating(
+      user.id,
+      businessId,
+      { rating, comment },
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  
+
+
+
+
+
+
 }
