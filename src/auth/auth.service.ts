@@ -2364,8 +2364,12 @@ export class AuthService {
     // console.log('maxDistance:', maxDistance);
     // console.log('maxTimeToEvent:', maxTimeToEvent);
 
-    const weightDistance = process.env.DISTANCE_WEIGHTAGE ? Number(process.env.DISTANCE_WEIGHTAGE) : 0.5;
-    const weightTime = process.env.TIME_WEIGHTAGE ? Number(process.env.TIME_WEIGHTAGE) : 0.5;
+    const weightDistance = process.env.DISTANCE_WEIGHTAGE
+      ? Number(process.env.DISTANCE_WEIGHTAGE)
+      : 0.5;
+    const weightTime = process.env.TIME_WEIGHTAGE
+      ? Number(process.env.TIME_WEIGHTAGE)
+      : 0.5;
 
     dataRows.forEach((event) => {
       const nearestSchedule = event.schedules.find((s) => {
@@ -4513,7 +4517,7 @@ export class AuthService {
           preserveNullAndEmptyArrays: true,
         },
       },
-       {
+      {
         $lookup: {
           from: 'reports', // your reportModel collection name
           let: { eventId: '$_id' }, // assuming _id is the eventId in eventLocation
@@ -4522,8 +4526,8 @@ export class AuthService {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$eventId', '$$eventId'] },
-                    { $eq: ['$userId', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
+                    { $eq: ['$event', '$$eventId'] },
+                    { $eq: ['$user', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
                   ],
                 },
               },
@@ -4535,9 +4539,11 @@ export class AuthService {
       {
         $addFields: {
           isReported: {
-            $gt: [{ $size: '$reportDocs' }, 0],
-            then: true,
-            else: false,
+            $cond: {
+              if: { $gt: [{ $size: '$reportDocs' }, 0] },
+              then: true,
+              else: false,
+            },
           },
         },
       },
