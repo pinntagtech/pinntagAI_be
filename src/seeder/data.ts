@@ -134,7 +134,7 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Art & Crafts',
+      title: 'Art',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
       darkIcon:
@@ -143,7 +143,7 @@ export const Seeder = {
       description: 'Art & Crafts',
     },
     {
-      title: 'Beauty & Spa',
+      title: 'Grooming',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
       darkIcon:
@@ -161,7 +161,7 @@ export const Seeder = {
       description: 'Charity',
     },
     {
-      title: 'Clubs & Classes',
+      title: 'Clubs',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
       darkIcon:
@@ -188,7 +188,7 @@ export const Seeder = {
       description: 'Entertainment',
     },
     {
-      title: 'Food & Drinks',
+      title: 'Dining',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
       darkIcon:
@@ -206,7 +206,7 @@ export const Seeder = {
       description: 'Happy Hour',
     },
     {
-      title: 'Health & Fitness',
+      title: 'Fitness',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Health+and+fitness.png',
       darkIcon:
@@ -215,7 +215,7 @@ export const Seeder = {
       description: 'Health & Fitness',
     },
     {
-      title: 'Local Attractions',
+      title: 'Local',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
       darkIcon:
@@ -224,7 +224,7 @@ export const Seeder = {
       description: 'Local Attractions',
     },
     {
-      title: 'Music & Nightlife',
+      title: 'Nightlife',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
       darkIcon:

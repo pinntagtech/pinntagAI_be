@@ -128,13 +128,23 @@ export class BusinessController {
   async updateBusiness(
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessDto,
+    @Query('businessId') businessId: string,
   ) {
     if (!isValidObjectId(user.id)) {
       throw new BadRequestException('Invalid ObjectId');
     }
+    let businessProfileId = null;
+    if (businessId) {
+      if (!isValidObjectId(businessId)) {
+        businessProfileId = user.businessProfile;
+      }
+      businessProfileId = businessId;
+    } else {
+      businessProfileId = user.businessProfile;
+    }
     const result = await this.businessService.updateBusiness(
       user.id,
-      user.businessProfile,
+      businessProfileId,
       data,
     );
 
