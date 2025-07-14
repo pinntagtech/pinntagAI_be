@@ -4513,6 +4513,34 @@ export class AuthService {
           preserveNullAndEmptyArrays: true,
         },
       },
+       {
+        $lookup: {
+          from: 'reports', // your reportModel collection name
+          let: { eventId: '$_id' }, // assuming _id is the eventId in eventLocation
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$eventId', '$$eventId'] },
+                    { $eq: ['$userId', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'reportDocs',
+        },
+      },
+      {
+        $addFields: {
+          isReported: {
+            $gt: [{ $size: '$reportDocs' }, 0],
+            then: true,
+            else: false,
+          },
+        },
+      },
       {
         $project: {
           _id: 1,
@@ -4619,6 +4647,7 @@ export class AuthService {
           creatorType: 1,
           isLiked: 1,
           isSaved: 1,
+          isReported: 1,
           locations: 1,
           schedules: 1,
         },
