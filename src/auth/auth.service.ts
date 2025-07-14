@@ -4656,7 +4656,6 @@ export class AuthService {
           isReported: 1,
           locations: 1,
           schedules: 1,
-          isReported: 1,
         },
       },
     ]);
