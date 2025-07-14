@@ -4526,8 +4526,8 @@ export class AuthService {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$eventId', '$$eventId'] },
-                    { $eq: ['$userId', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
+                    { $eq: ['$event', '$$eventId'] },
+                    { $eq: ['$user', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
                   ],
                 },
               },
@@ -4539,9 +4539,11 @@ export class AuthService {
       {
         $addFields: {
           isReported: {
-            $gt: [{ $size: '$reportDocs' }, 0],
-            then: true,
-            else: false,
+            $cond: {
+              if: { $gt: [{ $size: '$reportDocs' }, 0] },
+              then: true,
+              else: false,
+            },
           },
         },
       },
@@ -4651,6 +4653,7 @@ export class AuthService {
           creatorType: 1,
           isLiked: 1,
           isSaved: 1,
+          isReported: 1,
           locations: 1,
           schedules: 1,
           isReported: 1,
