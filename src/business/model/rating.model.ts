@@ -4,10 +4,10 @@ import mongoose from 'mongoose';
 @Schema({ timestamps: true })
 export class Rating {
   @Prop({ required: true })
-  userId: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
 
   @Prop({ required: true })
-  businessId: mongoose.Types.ObjectId;
+  business: mongoose.Types.ObjectId;
 
   @Prop({ required: true, min: 1, max: 5 })
   rating: number;

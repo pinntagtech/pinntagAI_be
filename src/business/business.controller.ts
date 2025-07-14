@@ -1121,7 +1121,7 @@ export class BusinessController {
     }
   }
 
-  @Post('review/:businessId')
+  @Post('rate/:businessId')
   @UseGuards(JwtGuard2)
   async createReview(
     @TokenDecoder() user: DecodedUser,
@@ -1129,7 +1129,7 @@ export class BusinessController {
     @Body('rating') rating: number,
     @Body('comment') comment: string,
   ) {
-    const result = await this.businessService.createReview(
+    const result = await this.businessService.createRating(
       user.id,
       businessId,
       { rating, comment },
