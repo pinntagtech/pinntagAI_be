@@ -1744,6 +1744,7 @@ export class AuthService {
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
     console.log('Match:', match);
+    console.log("DISTANCE:", distance);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
