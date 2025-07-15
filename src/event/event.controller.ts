@@ -635,7 +635,7 @@ export class EventController {
   }
 
   @Delete('template/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async removeTemplate(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
