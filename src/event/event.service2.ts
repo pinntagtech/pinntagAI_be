@@ -4416,35 +4416,42 @@ export class EventService2 {
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
                 const duration = data.fixedSchedule[i].durations[j];
+
                 if (duration) {
-                  const isValid = this.isValidTimeRange(
-                    duration.startHour,
-                    duration.startMinute,
-                    duration.endHour,
-                    duration.endMinute,
+                  const baseDate = new Date(
+                    data.fixedSchedule[i].date.toString(),
                   );
-                  if (!isValid) {
-                    return {
-                      success: false,
-                      message: `Start time cannot be greater than end time for the date ${data.fixedSchedule[i].date} and duration at index ${j}`,
-                    };
-                  }
+                  const originalStart = new Date(duration['startTime']);
+                  const originalEnd = new Date(duration['endTime']);
+
+                  const newStart = new Date(baseDate);
+                  newStart.setHours(
+                    originalStart.getHours(),
+                    originalStart.getMinutes(),
+                    0,
+                    0,
+                  );
+
+                  const newEnd = new Date(baseDate);
+                  newEnd.setHours(
+                    originalEnd.getHours(),
+                    originalEnd.getMinutes(),
+                    0,
+                    0,
+                  );
+                  data.fixedSchedule[i].durations[j]['startTime'] = newStart;
+                  data.fixedSchedule[i].durations[j]['endTime'] = newEnd;
                 }
               }
 
               data.fixedSchedule[i].durations.sort((a, b) => {
-                return (
-                  a.startHour * 60 +
-                  a.startMinute -
-                  (b.startHour * 60 + b.startMinute)
-                );
+                return a['startTime'] - b['startTime'];
               });
             }
             data.fixedSchedule.sort((a, b) => {
-              return a.date - b.date;
+              return new Date(a.date).getTime() - new Date(b.date).getTime();
             });
           }
-          console.log('Fix 1:');
 
           for (let i = 0; i < data.fixedSchedule.length; i++) {
             if (data.fixedSchedule[i].date) {
@@ -4473,10 +4480,8 @@ export class EventService2 {
           data.scheduleType == ScheduleTypes.RECURRING &&
           data.recurringSchedule
         ) {
-          console.log('Check:1');
           // let startDate = new Date(data.recurringSchedule.startDate);
           // let endDate = new Date(data.recurringSchedule.endDate);
-
           // if (startDate < new Date(Date.now())) {
           //   return {
           //     success: false,
@@ -4489,7 +4494,6 @@ export class EventService2 {
           //     message: `End date cannot be in past`,
           //   };
           // }
-
           // data.recurringSchedule.startDate = startDate;
           // data.recurringSchedule.endDate = endDate;
           // console.log('Check:2', startDate, endDate);
@@ -4518,7 +4522,6 @@ export class EventService2 {
           //       let duration = dayObj.durations[j];
           //       // let startTime = duration.startTime;
           //       // let endTime = duration.endTime;
-
           //       let startHour = duration.startHour;
           //       let startMinute = duration.startMinute;
           //       let endHour = duration.endHour;
@@ -4546,7 +4549,6 @@ export class EventService2 {
           //     data.recurringSchedule.weekDays[day] = dayObj;
           //   }
           // }
-
           // let scheduleObj = {
           //   type: data.scheduleType,
           //   event: new mongoose.Types.ObjectId(eventId),
@@ -4875,41 +4877,43 @@ export class EventService2 {
     }
     return collectedIds;
   }
-   async getAllChildUsersIds2(userId) {
-      const objectId = new mongoose.Types.ObjectId(userId);
-      console.log('objectIdque', objectId);
-      const result = await this.businessUserModel
-        .aggregate([
-          {
-            $match: { _id: objectId },
-          },
-          {
-            $graphLookup: {
-              from: this.businessUserModel.collection.name,
-              startWith: '$_id',
-              connectFromField: '_id',
-              connectToField: 'creator',
-              as: 'descendants',
-              restrictSearchWithMatch: { creatorType:  BusinessUserCreatorType.BUSINESS },
+  async getAllChildUsersIds2(userId) {
+    const objectId = new mongoose.Types.ObjectId(userId);
+    console.log('objectIdque', objectId);
+    const result = await this.businessUserModel
+      .aggregate([
+        {
+          $match: { _id: objectId },
+        },
+        {
+          $graphLookup: {
+            from: this.businessUserModel.collection.name,
+            startWith: '$_id',
+            connectFromField: '_id',
+            connectToField: 'creator',
+            as: 'descendants',
+            restrictSearchWithMatch: {
+              creatorType: BusinessUserCreatorType.BUSINESS,
             },
           },
-          {
-            $project: {
-              _id: 0,
-              descendantIds: {
-                $map: {
-                  input: '$descendants',
-                  as: 'd',
-                  in: { $toString: '$$d._id' },
-                },
+        },
+        {
+          $project: {
+            _id: 0,
+            descendantIds: {
+              $map: {
+                input: '$descendants',
+                as: 'd',
+                in: { $toString: '$$d._id' },
               },
             },
           },
-        ])
-        .exec();
-  
-      return result[0]?.descendantIds || [];
-    }
+        },
+      ])
+      .exec();
+
+    return result[0]?.descendantIds || [];
+  }
   // Utility function to get the next occurrence date from a recurring schedule.
   // (This is a simplified version. In production, you might use a date library such as date-fns or moment.js to handle date arithmetic reliably.)
   private getNextOccurrence(recurringSchedule, currentDate) {
@@ -5280,7 +5284,7 @@ export class EventService2 {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log("Queryy:", query);
+      console.log('Queryy:', query);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [

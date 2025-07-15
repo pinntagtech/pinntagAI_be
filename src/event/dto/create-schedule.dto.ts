@@ -100,7 +100,8 @@ export class CreateScheduleDto {
 
   @IsOptional()
   @IsArray()
-  fixedSchedule: Array<ScheduleRequestData> | Array<Schedule>;
+  // fixedSchedule: Array<Schedule> | Array<ScheduleRequestData>;
+   fixedSchedule: Array<Schedule> ;
 
   @IsOptional()
   @ValidateNested()
