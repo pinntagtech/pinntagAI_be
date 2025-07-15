@@ -2336,13 +2336,7 @@ export class AuthService {
     const maxTimeToEvent = Math.max(
       ...dataRows.map((e) => {
         const nextSchedule = e.schedules.find((s) => {
-          console.log('Schedule:', s);
           if (s['type'] === ScheduleTypes.FIXED) {
-            console.log(
-              'Return:',
-              new Date(s.fixedSchedule.date).getTime() >
-                currentTzTime.getTime(),
-            );
             return (
               s.fixedSchedule.durations as Array<{
                 startTime: string;
@@ -2350,7 +2344,6 @@ export class AuthService {
               }>
             ).some((duration) => {
               const endTime = new Date(duration.endTime);
-              console.log('End Time:', endTime);
               return endTime.getTime() > currentTzTime.getTime();
             });
           } else if (s['type'] === ScheduleTypes.RECURRING) {
@@ -2362,9 +2355,7 @@ export class AuthService {
           return false;
         });
 
-        // console.log('nextSchedule::', nextSchedule);
         let nextScheduleDate = null;
-        console.log('nextSchedule:', nextSchedule);
         if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
         } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
