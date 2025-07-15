@@ -1744,7 +1744,7 @@ export class AuthService {
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
     console.log('Match:', match);
-    console.log("DISTANCE:", distance);
+    console.log('DISTANCE:', distance);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -2336,11 +2336,24 @@ export class AuthService {
     const maxTimeToEvent = Math.max(
       ...dataRows.map((e) => {
         const nextSchedule = e.schedules.find((s) => {
-          if (s.type === ScheduleTypes.FIXED) {
-            return (
-              new Date(s.fixedSchedule.date).getTime() > currentTzTime.getTime()
+          console.log('Schedule:', s);
+          if (s['type'] === ScheduleTypes.FIXED) {
+            console.log(
+              'Return:',
+              new Date(s.fixedSchedule.date).getTime() >
+                currentTzTime.getTime(),
             );
-          } else if (s.scheduleType === ScheduleTypes.RECURRING) {
+            return (
+              s.fixedSchedule.durations as Array<{
+                startTime: string;
+                endTime: string;
+              }>
+            ).some((duration) => {
+              const endTime = new Date(duration.endTime);
+              console.log('End Time:', endTime);
+              return endTime.getTime() > currentTzTime.getTime();
+            });
+          } else if (s['type'] === ScheduleTypes.RECURRING) {
             const nextDate = getNextRecurring(s.recurringSchedule);
             return nextDate
               ? nextDate.getTime() > currentTzTime.getTime()
@@ -2351,9 +2364,10 @@ export class AuthService {
 
         // console.log('nextSchedule::', nextSchedule);
         let nextScheduleDate = null;
-        if (nextSchedule.type === ScheduleTypes.FIXED) {
+        console.log('nextSchedule:', nextSchedule);
+        if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
-        } else if (nextSchedule.type === ScheduleTypes.RECURRING) {
+        } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
           nextScheduleDate = getNextRecurring(nextSchedule.recurringSchedule);
         }
         // console.log('nextScheduleDate::', nextScheduleDate);
@@ -5455,6 +5469,15 @@ export class AuthService {
 
     let start = getZeroDateTz(new Date(), timeZone);
     // console.log('Match:', match);
+
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        return {
+          success: false,
+          message: 'Start date cannot be greater than end date',
+        };
+      }
+    }
 
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
