@@ -478,6 +478,7 @@ export class AuthController {
         throw new BadRequestException('Please provide a valid distance value.');
       }
     }
+    console.log("Distance in controller:", distance);
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,
@@ -490,6 +491,7 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
+
     if (!result.success) {
       throw new BadRequestException(result.message);
     }

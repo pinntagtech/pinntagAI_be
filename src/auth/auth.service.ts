@@ -1754,7 +1754,7 @@ export class AuthService {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
           distanceField: 'distance',
-          maxDistance: distance * 1000,
+          maxDistance: distance * 1609.34,
           spherical: true,
         },
       },
