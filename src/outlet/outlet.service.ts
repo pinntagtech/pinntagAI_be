@@ -360,10 +360,7 @@ export class OutletService {
         );
       }
       if (data.category) {
-        updateObj['category'] = new mongoose.Types.ObjectId(data.category);
-      }
-      if (data.type) {
-        updateObj['type'] = new mongoose.Types.ObjectId(data.type);
+        updateObj['category'] = data.category;
       }
       const updatedOutlet = await this.outletModel.findByIdAndUpdate(
         id,
