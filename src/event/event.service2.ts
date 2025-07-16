@@ -403,31 +403,33 @@ export class EventService2 {
         const schedule = await this.scheduleModel.findOne({
           _id: eventInfo.eventSchedule[i],
         });
-        if (schedule.type == ScheduleTypes.FIXED) {
-          if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
-            // requiredSchedule = eventInfo.schedule[i];
-            let durations = schedule.fixedSchedule.durations;
-            for (let j = 0; j < durations.length; j++) {
-              console.log('Durations:', durations[j]);
-              if (new Date(durations[j].startTime) >= new Date()) {
-                console.log('Start time:', durations[j].startTime);
-                requiredSchedule = durations[j].startTime;
-                break;
+        if (schedule) {
+          if (schedule.type == ScheduleTypes.FIXED) {
+            if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
+              // requiredSchedule = eventInfo.schedule[i];
+              let durations = schedule.fixedSchedule.durations;
+              for (let j = 0; j < durations.length; j++) {
+                console.log('Durations:', durations[j]);
+                if (new Date(durations[j].startTime) >= new Date()) {
+                  console.log('Start time:', durations[j].startTime);
+                  requiredSchedule = durations[j].startTime;
+                  break;
+                }
+                // else {
+                //   // return {
+                //   //   success: false,
+                //   //   message: 'No upcoming schedule found for this event',
+                //   // };
+                // }
               }
-              // else {
-              //   // return {
-              //   //   success: false,
-              //   //   message: 'No upcoming schedule found for this event',
-              //   // };
-              // }
             }
+            // else {
+            //   return {
+            //     success: false,
+            //     message: 'No upcoming schedule found for this event',
+            //   };
+            // }
           }
-          // else {
-          //   return {
-          //     success: false,
-          //     message: 'No upcoming schedule found for this event',
-          //   };
-          // }
         }
       }
     }
