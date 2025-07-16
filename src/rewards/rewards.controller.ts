@@ -109,7 +109,29 @@ export class RewardsController {
 
   @Get(':id')
   @UseGuards(JwtGuard2)
-  async getRewardById(
+  async getRewardByIdBusiness(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+    // @Body('latitude') latitude: string,
+    // @Body('longitude') longitude: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid Object ID');
+    }
+    const result = await this.rewardService.getRewardByIdBusiness(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('consumer/:id')
+  @UseGuards(JwtGuard2)
+  async getRewardByIdConsumer(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
     @Body('latitude') latitude: string,
@@ -118,7 +140,12 @@ export class RewardsController {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
     }
-    const result = await this.rewardService.getRewardById(id, user, latitude, longitude);
+    const result = await this.rewardService.getRewardByIdConsumer(
+      id,
+      user,
+      latitude,
+      longitude,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -318,21 +345,18 @@ export class RewardsController {
   }
 
   @Post('generateRewardUrl')
-    @UseGuards(JwtGuard2)
-    async generateRewardUrl(@Body() data: GenerateRewardUrlDto) {
-      const result =
-        await this.rewardService.generateRewardUrl(data);
-      if (result.success) {
-        return {
-          message: result.message,
-          rewardUrl: result.rewardUrl,
-        };
-      } else {
-        return {
-          message: result.message,
-        };
-      }
+  @UseGuards(JwtGuard2)
+  async generateRewardUrl(@Body() data: GenerateRewardUrlDto) {
+    const result = await this.rewardService.generateRewardUrl(data);
+    if (result.success) {
+      return {
+        message: result.message,
+        rewardUrl: result.rewardUrl,
+      };
+    } else {
+      return {
+        message: result.message,
+      };
     }
-
-
+  }
 }
