@@ -123,7 +123,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import { AtlantaData, LubbockData } from './crawledEvents.json';
+import { AtlantaData, ETL_DATA, LubbockData } from './crawledEvents.json';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -461,8 +461,8 @@ export class EventService2 {
     //   });
     //   successResponse.eventUrl = shortLink;
     // }
-    console.log("Title, Description, ImageUrl:", title, description, imageUrl);
-    console.log("Success Response:", successResponse);
+    console.log('Title, Description, ImageUrl:', title, description, imageUrl);
+    console.log('Success Response:', successResponse);
 
     return successResponse;
   }
@@ -4417,37 +4417,41 @@ export class EventService2 {
               }
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
-  const duration = data.fixedSchedule[i].durations[j];
+                const duration = data.fixedSchedule[i].durations[j];
 
-  if (duration) {
-    const baseDate = new Date(data.fixedSchedule[i].date); // base date
-    const originalStart = new Date(duration['startTime']);
-    const originalEnd = new Date(duration['endTime']);
+                if (duration) {
+                  const baseDate = new Date(data.fixedSchedule[i].date); // base date
+                  const originalStart = new Date(duration['startTime']);
+                  const originalEnd = new Date(duration['endTime']);
 
-    const newStart = new Date(Date.UTC(
-      baseDate.getUTCFullYear(),
-      baseDate.getUTCMonth(),
-      baseDate.getUTCDate(),
-      originalStart.getUTCHours(),
-      originalStart.getUTCMinutes(),
-      0,
-      0
-    ));
+                  const newStart = new Date(
+                    Date.UTC(
+                      baseDate.getUTCFullYear(),
+                      baseDate.getUTCMonth(),
+                      baseDate.getUTCDate(),
+                      originalStart.getUTCHours(),
+                      originalStart.getUTCMinutes(),
+                      0,
+                      0,
+                    ),
+                  );
 
-    const newEnd = new Date(Date.UTC(
-      baseDate.getUTCFullYear(),
-      baseDate.getUTCMonth(),
-      baseDate.getUTCDate(),
-      originalEnd.getUTCHours(),
-      originalEnd.getUTCMinutes(),
-      0,
-      0
-    ));
+                  const newEnd = new Date(
+                    Date.UTC(
+                      baseDate.getUTCFullYear(),
+                      baseDate.getUTCMonth(),
+                      baseDate.getUTCDate(),
+                      originalEnd.getUTCHours(),
+                      originalEnd.getUTCMinutes(),
+                      0,
+                      0,
+                    ),
+                  );
 
-    data.fixedSchedule[i].durations[j]['startTime'] = newStart;
-    data.fixedSchedule[i].durations[j]['endTime'] = newEnd;
-  }
-}
+                  data.fixedSchedule[i].durations[j]['startTime'] = newStart;
+                  data.fixedSchedule[i].durations[j]['endTime'] = newEnd;
+                }
+              }
 
               data.fixedSchedule[i].durations.sort((a, b) => {
                 return a['startTime'] - b['startTime'];
@@ -6308,6 +6312,202 @@ export class EventService2 {
 
           await this.driveService.downloadAndUploadImage(
             data.cover.source,
+            businessUser.id,
+            createdEvent.drivePath,
+            fileCategory.id,
+          );
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Business Events Crawled Successfully.',
+        // data: businessDetails,
+      };
+    } catch (error) {
+      console.error('Error in crawlEvents:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async ETL_TRANSFORMER() {
+    try {
+      const businessUser = await this.businessUserModel.findOne({
+        email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+      });
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Pinntag Business user not seeded',
+        };
+      }
+
+      let businessDetails = await this.businessModel.findOne({
+        name: 'Discover Atlanta',
+        email: 'atlantaetl@pinntag.com',
+      });
+
+       const businessIndustry = await this.businessIndustryModel.findOne({
+          title: 'Entertainment',
+        });
+        const businessCategory = await this.businessCategoryModel.findOne({
+          title: 'Local Experiences',
+          industry: businessIndustry._id,
+        });
+      if (!businessDetails) {
+        const businessFolder = await this.driveService.createFolder(
+          businessUser.id,
+          {
+            parentDirectory: businessUser.drive,
+            parentType: Drive.name,
+            folderName: 'Discover Atlanta',
+          },
+        );
+        let businessObj = {
+          creatorType: BusinessUser.name,
+          creator: businessUser._id,
+          name: 'Discover Atlanta',
+          email: 'atlantaetl@pinntag.com',
+          businessIndustry: businessIndustry._id,
+          businessCategories: businessCategory._id,
+          cover:
+            'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
+          isFromCrawler: true,
+          drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        };
+        businessDetails = await this.businessModel.create(businessObj);
+      }
+       await this.businessUserModel.updateOne(
+          { _id: businessUser._id },
+          { $addToSet: { business: businessDetails._id } },
+        );
+
+      for (let data of ETL_DATA) {
+        if (!businessUser || !businessIndustry || !businessCategory) continue;
+
+
+        if (!data.locations[0].location.coordinates) continue;
+
+        let foundOutlet = await this.outletModel.findOne({
+          address1: data.locations[0].address1,
+        });
+
+        if (!foundOutlet) {
+          let outletName = data.locations[0].address1;
+          console.log('Outlet Name:', outletName);
+          foundOutlet = await this.outletModel.create({
+            isFromCrawler: true,
+            businessProfile: businessDetails._id,
+            name: outletName || `Loc-Atlanta City Hall`,
+            category: OutletCategoryList.PHYSICAL,
+            city: data.locations[0].city ?? 'Atlanta',
+            state: data.locations[0].state ?? 'GA',
+            country: 'United States',
+            postalCode: '30303',
+            countryCode: '404',
+            email: 'atlanta@yopmail.com',
+            address1: data.locations[0].address1 ?? null,
+            latitude: data.locations[0].location.coordinates[1],
+            longitude: data.locations[0].location.coordinates[0],
+          });
+        }
+
+        await this.businessModel.updateOne(
+          { _id: businessDetails._id },
+          { $addToSet: { outlets: foundOutlet._id } },
+        );
+
+        const existingEvent = await this.eventModel.findOne({
+          clientRefId: data._id,
+        });
+        if (existingEvent) continue;
+
+        const eventFolder = await this.driveService.createFolder(
+          businessUser.id,
+          {
+            parentDirectory: businessDetails.drivePath,
+            parentType: Folder.name,
+            folderName: data.title,
+          },
+        );
+
+        console.log('CATEGORIES:', data.categories);
+        const cats = await this.categoryModel
+          .find({ title: { $in: data.categories } })
+          .select('_id')
+          .lean();
+        const categoriesInObjectId = cats.map((cat) => cat._id);
+        console.log('CATEGORIES::::', categoriesInObjectId);
+        const createdEvent = await this.eventModel.create({
+          title: data.title,
+          description: data.description,
+          status: EventStatus.PUBLISHED,
+          clientRefId: data._id,
+          type: EventTypes.FORMAL,
+          businessProfile: businessDetails._id,
+          creatorType: BusinessUser.name,
+          user: businessUser._id,
+          categories: categoriesInObjectId,
+          isFromCrawler: true,
+          drivePath: new mongoose.Types.ObjectId(eventFolder.data._id),
+          bookingUrl: [data.bookingUrl[0] || ''],
+          minTargetAge: 18,
+          maxTargetAge: 75,
+        });
+
+        const createdLocation = await this.eventLocationModel.create({
+          event: createdEvent._id,
+          businessLocationId: foundOutlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [foundOutlet.longitude, foundOutlet.latitude],
+          },
+          address1: foundOutlet.address1,
+          city: foundOutlet.city,
+          state: foundOutlet.state,
+          zip: foundOutlet.postalCode,
+          email: foundOutlet.email,
+          isFromCrawler: true,
+          businessProfile: businessDetails._id,
+        });
+
+        await this.eventModel.updateOne(
+          { _id: createdEvent._id },
+          { $addToSet: { locations: createdLocation._id } },
+        );
+
+        for (let time of data.schedules || []) {
+          const startTime = new Date(time.fixedSchedule.durations[0].startTime || Date.now());
+          const endTime = time.fixedSchedule.durations[0].endTime
+            ? new Date(time.fixedSchedule.durations[0].endTime)
+            : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
+          const createdSchedule = await this.eventScheduleModel.create({
+            event: createdEvent._id,
+            type: ScheduleTypes.FIXED,
+            fixedSchedule: {
+              date: new Date(time.fixedSchedule.date),
+              durations: [{ startTime, endTime }],
+            },
+            isFromCrawler: true,
+          });
+
+          await this.eventModel.updateOne(
+            { _id: createdEvent._id },
+            { $addToSet: { eventSchedule: createdSchedule._id } },
+          );
+        }
+
+        if (data.images[0].url) {
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.GALLERY_IMAGE,
+          });
+
+          await this.driveService.downloadAndUploadImage(
+            data.images[0].url,
             businessUser.id,
             createdEvent.drivePath,
             fileCategory.id,
