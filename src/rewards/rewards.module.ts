@@ -75,6 +75,7 @@ import {
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
 import { StripeService } from 'src/stripe/stripe.service';
+import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 
 @Module({
   imports: [
@@ -121,6 +122,7 @@ import { StripeService } from 'src/stripe/stripe.service';
     FirebaseService,
     Logger,
     StripeService,
+    DynamicLinkService,
   ],
 })
 export class RewardsModule {}

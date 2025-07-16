@@ -47,7 +47,7 @@ import { Drive, DriveSchema } from './drive/models/drive.model';
 import { DriveModule } from './drive/drive.module';
 import { RolesModule } from './roles/roles.module';
 import { Role, RoleSchema } from './roles/models/roles.model';
-import { Privilege, PrivilegeSchema } from './roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from './roles/models/privilege.model';
 import { Resource, ResourceSchema } from './roles/models/resource.model';
 import { Action, ActionSchema } from './roles/models/actions.model';
 import { BusinessModule } from './business/business.module';
@@ -102,6 +102,7 @@ import { S3Service } from './s3.service';
 import { Region, RegionSchema } from './business/model/region.model';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { Outlet, OutletSchema } from './outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -165,6 +166,7 @@ import * as redisStore from 'cache-manager-redis-store';
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -188,6 +190,6 @@ import * as redisStore from 'cache-manager-redis-store';
     RewardsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, Logger, SeederService, DriveService,S3Service],
+  providers: [AppService, Logger, SeederService, DriveService, S3Service],
 })
 export class AppModule {}

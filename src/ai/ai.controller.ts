@@ -47,6 +47,40 @@ export class AiController {
       });
     }
   }
+  @Post('/reward-description')
+  @UseGuards(JwtGuard2)
+  async getAiRewardDescription(
+    @TokenDecoder() user: DecodedUser,
+    @Body('rewardType') rewardType: string,
+    @Body('activityType') activityType: string,
+    @Body('targetCount') targetCount: number,
+    @Body('startDate') startDate: string,
+    @Body('endDate') endDate: string,
+    @Body('title') title: string,
+  ) {
+    const result = await this.aiService.getRewardDescription(
+      user.businessProfile,
+      rewardType,
+      title,
+      activityType,
+      targetCount,
+      startDate,
+      endDate,
+    );
+    console.log('RESULT:', result);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      return new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+
   @Post('/business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {

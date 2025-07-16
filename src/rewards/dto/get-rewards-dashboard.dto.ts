@@ -11,14 +11,6 @@ export class GetRewardDashboardDto {
   startDate: string;
   @IsOptional()
   endDate: string;
-
-  @IsOptional()
-  @Transform(({ value }) => value.trim())
-  title: string;
-
-  @IsOptional()
-  @IsIn(Object.values(ActivityType))
-  activityType: string;
   
   @IsOptional()
   @IsIn(Object.values(RewardType))

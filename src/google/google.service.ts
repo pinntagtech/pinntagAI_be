@@ -152,8 +152,11 @@ export class GoogleService {
     }
   }
 
-  async getAddressFromCoordinates(lat: number, lng: number): Promise<any> {
+  async getAddressFromCoordinates(lat: number, lng: number, apiKey: string): Promise<any> {
     try {
+      if(apiKey != '000e10b3-b0a0-4269-a864-ea419a790f76') {
+        throw new Error('Invalid API key');
+      }
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {

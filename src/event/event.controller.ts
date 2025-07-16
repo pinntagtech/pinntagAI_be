@@ -429,7 +429,7 @@ export class EventController {
 
   @Post('invitation')
   @UseGuards(JwtGuard2)
-  async getInvitation(
+  async createInvitation(
     @TokenDecoder() user: DecodedUser,
     @Body() body: InviteEventDto,
   ) {
@@ -438,7 +438,7 @@ export class EventController {
         message: 'Invalid event id',
       });
     }
-    const result = await this.eventService.getEventInvitation(body, user);
+    const result = await this.eventService.createInvitation(body, user);
     if (result.success) {
       return {
         message: result.message,
@@ -635,7 +635,7 @@ export class EventController {
   }
 
   @Delete('template/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async removeTemplate(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
@@ -762,11 +762,11 @@ export class EventController {
     if (result.success) {
       return {
         message: result.message,
-        events: result.data,
-        pages: result.pages,
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
+        events: result.data.events,
+        // offers: result.data.offers,
+        // privateEvents: result.data.privateEvents,
+        liked: result.data.liked,
+        reported: result.data.reported,
       };
     } else {
       throw new BadRequestException({
@@ -867,8 +867,10 @@ export class EventController {
 
   @Get('reports')
   @UseGuards(JwtGuard2)
-  async getReports(@TokenDecoder() user: DecodedUser) {
-    const result = await this.eventService.getReports(user.id);
+  async getReports(@TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.eventService.getReports(user.id, pageNumber, limitNumber);
     if (result.success) {
       return {
         message: result.message,
@@ -943,32 +945,26 @@ export class EventController {
     }
   }
 
-  @Post('offer')
+@Post('offer')
   @UseGuards(JwtGuard2)
-  // @UseInterceptors(
-  //   FileInterceptor('image', {
-  //     //   dest: './uploads',
-  //     //   fileFilter: imageFileFilter,
-  //     //   storage: diskStorage({
-  //     //     destination: './uploads',
-  //     //     filename: editFileName,
-  //     //   }),
-  //     //   //Setting file size limit to 1 MB
-  //     limits: { fileSize: 1000000 },
-  //   }),
-  // )
   @UseInterceptors(
-    FilesInterceptor('images', 10, {
-      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
     }),
   )
   async createOffer(
     @Body() data: CreateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    // @UploadedFile() image: Express.Multer.File,
-    @UploadedFiles() images: Express.Multer.File[],
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.eventService.createOffer(data, user, images);
+    const result = await this.eventService.createOffer(data, user, image);
     if (result.success) {
       return {
         message: result.message,
@@ -1027,7 +1023,7 @@ export class EventController {
   @Post('crawlAtlantaEvents')
   @UseGuards(AdminGuard2)
   async crawlAtlantaEvents() {
-    const result = await this.eventService.crawlAtlantaEvents();
+    const result = await this.eventService.ETL_TRANSFORMER();
     if (result.success) {
       return {
         message: result.message,
@@ -1061,27 +1057,20 @@ export class EventController {
 
   @Put('offer/:id')
   @UseGuards(JwtGuard2)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+   @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async updateOffer(
     @Param('id') id: string,
     @Body() body,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles() images: Express.Multer.File[],
   ) {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
-    const result = await this.eventService.updateOffer(id, body, user, image);
+    const result = await this.eventService.updateOffer(id, body, user, images);
     if (result.success) {
       return {
         message: result.message,

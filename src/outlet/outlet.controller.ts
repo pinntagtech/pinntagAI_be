@@ -171,13 +171,19 @@ export class OutletController {
   @UseGuards(JwtGuard2)
   async fetchCreatedOutlets(
     @TokenDecoder() user: JwtPayload,
+    @Query('search') search: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('type') type: string,
+    @Query('creationDate') creationDate: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.outletService.fetchCreatedOutlets(
       user,
+      search,
+      type,
+      creationDate,
       pageNumber,
       limitNumber,
     );

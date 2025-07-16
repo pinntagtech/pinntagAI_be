@@ -25,7 +25,12 @@ import { Business, BusinessDocument } from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { OtpTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  FileCategoryTypes,
+  OtpTypes,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SeederService } from 'src/seeder/seeder.service';
@@ -61,11 +66,12 @@ import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/recor
 import { CreateBrandDto } from './dto/create-brand.dto';
 import {
   Actions,
+  BusinessResourceTypes,
   ResourceTypes,
   RoleBelonging,
   RoleCreatorType,
 } from 'src/roles/enums/roles.enum';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -104,9 +110,17 @@ import {
   UserReward,
   UserRewardDocument,
 } from 'src/rewards/model/userReward.model';
-import { EventLocation, EventLocationDocument } from 'src/event/models/eventLocation.model';
+import {
+  EventLocation,
+  EventLocationDocument,
+} from 'src/event/models/eventLocation.model';
 
 import { instance as logger } from 'src/logger/winston.logger';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
+import { Rating, RatingDocument } from './model/rating.model';
 
 @Injectable()
 export class BusinessService {
@@ -149,8 +163,14 @@ export class BusinessService {
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
-    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
-    @InjectModel(EventLocation.name) private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(UserReward.name)
+    private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(EventLocation.name)
+    private readonly eventLocationModel: Model<EventLocationDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Rating.name)
+    private readonly ratingModel: Model<RatingDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -503,13 +523,13 @@ export class BusinessService {
       }
 
       //create business folder in drive
-        logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
+      logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: userDetails.drive,
         parentType: Drive.name,
         folderName: data.name,
       });
-        logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
+      logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
       let createObj = {
         name: data.name,
         email: data.email,
@@ -542,7 +562,7 @@ export class BusinessService {
           },
         );
       }
-        logger.info('OLD ROLES SEEDER');
+      logger.info('OLD ROLES SEEDER');
       // const rolePromises = Object.keys(DefaultBusinessRoles).map(
       //   async (roleName) => {
       //     const roleData = DefaultBusinessRoles[roleName];
@@ -665,11 +685,12 @@ export class BusinessService {
           for (const privilegeKey of privilegeKeys) {
             // Get/create resource
             let resourceDetails = await this.resourceModel.findOne({
-              title: ResourceTypes[privilegeKey],
+              title: BusinessResourceTypes[privilegeKey],
             });
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
-                title: ResourceTypes[privilegeKey],
+                title: BusinessResourceTypes[privilegeKey],
+                belongsTo: 'BusinessUser',
               });
             }
 
@@ -920,7 +941,11 @@ export class BusinessService {
     }
   }
 
-  async updateBusinessUser(id: string, data: UpdateBusinessUserDto) {
+  async updateBusinessUser(
+    id: string,
+    data: UpdateBusinessUserDto,
+    profilePhoto: Express.Multer.File,
+  ) {
     try {
       logger.info(`updateBusinessUser id: ${id}`);
       logger.info(`updateBusinessUser data: ${JSON.stringify(data)}`);
@@ -930,6 +955,24 @@ export class BusinessService {
           updateObj[key] = data[key];
         }
       });
+      const businessUser = await this.businessUserModel.findById(id);
+      console.log('businessUser:', businessUser);
+      if (profilePhoto) {
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.PROFILE_PICTURE,
+        });
+        console.log('Image:', profilePhoto);
+        let imageDetails = await this.driveService.uploadAndCreateFile(
+          profilePhoto,
+          String(businessUser.drive),
+          Drive.name,
+          businessUser._id,
+          fileCategory._id,
+        );
+        updateObj['profilePhoto'] = imageDetails.metaData.url;
+      }
+      console.log('updateObj:', updateObj);
+
       const updatedDetails = await this.businessUserModel.findOneAndUpdate(
         { _id: id },
         {
@@ -1009,7 +1052,7 @@ export class BusinessService {
 
   //helper
   async validateBusinessUser(email: string, password: string) {
-    logger.info(`email password: ${email} ${password}`);
+    // logger.info(`email password: ${email} ${password}`);
     const user = await this.businessUserModel.findOne({ email });
     // console.log('User::', user);
     if (user) {
@@ -1048,7 +1091,9 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    logger.info(`Winston Log: Validated Business User: ${validatedBusinessUser}`);
+    logger.info(
+      `Winston Log: Validated Business User: ${validatedBusinessUser}`,
+    );
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
@@ -1743,7 +1788,7 @@ export class BusinessService {
         isEmailVerified: true,
         status: ProfileStatus.EMAIL_VERIFIED,
       };
-      if(data.forcePasswordReset !== undefined) {
+      if (data.forcePasswordReset !== undefined) {
         createObj['forcePasswordReset'] = data.forcePasswordReset;
       }
       if (data.profilePhoto) {
@@ -1972,7 +2017,9 @@ export class BusinessService {
         };
       }
       const getAllChildUsersIds = await this.getAllChildUserIds2(id);
-      logger.info(`getAllChildUsersIds: ${JSON.stringify(getAllChildUsersIds)}`);
+      logger.info(
+        `getAllChildUsersIds: ${JSON.stringify(getAllChildUsersIds)}`,
+      );
       if (!getAllChildUsersIds.includes(deleteId)) {
         return {
           success: false,
@@ -2514,7 +2561,7 @@ export class BusinessService {
       }
       updateObj['name'] = data.name;
     }
-    
+
     // Validate any new roles
     if (data.users) {
       const userIds = [];
@@ -3053,7 +3100,9 @@ export class BusinessService {
 
   async getDashboardData(user: DecodedUser, limit: number = 10) {
     try {
-      const businessProfileId = new mongoose.Types.ObjectId(user.businessProfile);
+      const businessProfileId = new mongoose.Types.ObjectId(
+        user.businessProfile,
+      );
       const business = await this.businessModel.findById(businessProfileId);
       if (!business) {
         return {
@@ -3061,19 +3110,15 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
-  
-      const [
-        eventLogistics,
-        rewardRedeemptions,
-        typeWiseStats,
-        topEvents,
-      ] = await Promise.all([
-        this.fetchEventLogistics(businessProfileId),
-        this.fetchRewardRedemptions(businessProfileId),
-        this.fetchTypeWiseStats(businessProfileId),
-        this.fetchTopEvents(businessProfileId, limit),
-      ]);
-  
+
+      const [eventLogistics, rewardRedeemptions, typeWiseStats, topEvents] =
+        await Promise.all([
+          this.fetchEventLogistics(businessProfileId),
+          this.fetchRewardRedemptions(businessProfileId),
+          this.fetchTypeWiseStats(businessProfileId),
+          this.fetchTopEvents(businessProfileId, limit),
+        ]);
+
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
@@ -3091,8 +3136,10 @@ export class BusinessService {
       };
     }
   }
-  
-  private async fetchEventLogistics(businessProfileId: mongoose.Types.ObjectId) {
+
+  private async fetchEventLogistics(
+    businessProfileId: mongoose.Types.ObjectId,
+  ) {
     const [result] = await this.eventModel.aggregate([
       {
         $match: {
@@ -3109,16 +3156,20 @@ export class BusinessService {
         },
       },
     ]);
-    return result ?? { totalEvents: 0, totalViewsCount: 0, totalEngagementCount: 0 };
+    return (
+      result ?? { totalEvents: 0, totalViewsCount: 0, totalEngagementCount: 0 }
+    );
   }
-  
-  private async fetchRewardRedemptions(businessProfileId: mongoose.Types.ObjectId) {
+
+  private async fetchRewardRedemptions(
+    businessProfileId: mongoose.Types.ObjectId,
+  ) {
     return this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.CLAIMED,
     });
   }
-  
+
   private async fetchTypeWiseStats(businessProfileId: mongoose.Types.ObjectId) {
     const result = await this.eventModel.aggregate([
       {
@@ -3134,17 +3185,20 @@ export class BusinessService {
         },
       },
     ]);
-  
+
     const defaultTypes = ['business_event', 'offer', 'flashdeal'];
     const typeMap = new Map(result.map(({ _id, count }) => [_id, count]));
-  
-    return defaultTypes.map(type => ({
+
+    return defaultTypes.map((type) => ({
       _id: type,
       count: typeMap.get(type) || 0,
     }));
   }
-  
-  private async fetchTopEvents(businessProfileId: mongoose.Types.ObjectId, limit: number) {
+
+  private async fetchTopEvents(
+    businessProfileId: mongoose.Types.ObjectId,
+    limit: number,
+  ) {
     return this.eventModel.aggregate([
       {
         $match: {
@@ -3183,7 +3237,82 @@ export class BusinessService {
       { $limit: limit },
     ]);
   }
-  
 
-  
+  async getFollowers(businessId: string, page: number, limit: number) {
+    try {
+      const businessObjId = new mongoose.Types.ObjectId(businessId);
+      const followers = await this.followModel
+        .find({
+          following: businessObjId,
+          // followerType: BusinessUser.name,
+        })
+        .populate(
+          'follower',
+          '_id firstName lastName profilePhoto name profileType image',
+        )
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      const total = await this.followModel.countDocuments({
+        following: businessObjId,
+      });
+
+      return {
+        success: true,
+        message: 'Followers fetched Successfully!',
+        data: followers,
+        total,
+        pages: Math.ceil(total / limit),
+        page,
+        limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async createRating(
+    userId: string,
+    businessId: string,
+    { rating, comment }: { rating: number; comment: string },
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const result = await this.ratingModel.findOneAndUpdate(
+        {
+          business: new mongoose.Types.ObjectId(businessId),
+          user: new mongoose.Types.ObjectId(userId),
+        },
+        {
+          $set: {
+            rating,
+            comment,
+          },
+        },
+        { new: true, upsert: true },
+      );
+
+      return {
+        success: true,
+        message: 'Review created Successfully!',
+        data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

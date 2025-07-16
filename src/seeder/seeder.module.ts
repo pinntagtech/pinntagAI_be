@@ -21,7 +21,7 @@ import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 //   BusinessProfile,
 //   BusinessProfileSchema,
 // } from 'src/business-profile/models/businessProfile.model';
-import { Privilege, PrivilegeSchema } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeSchema } from 'src/roles/models/privilege.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Action, ActionSchema } from 'src/roles/models/actions.model';
@@ -58,14 +58,21 @@ import {
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
-import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboardConfig.model';
-import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import {
+  DashboardConfig,
+  DashboardConfigSchema,
+} from 'src/auth/models/dashboardConfig.model';
+import {
+  Department,
+  DepartmentSchema,
+} from 'src/business/model/department.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
 import { Region, RegionSchema } from 'src/business/model/region.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -99,9 +106,10 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
+      { name: Outlet.name, schema: OutletSchema },
     ]),
   ],
   controllers: [],
-  providers: [SeederService,DriveService,S3Service],
+  providers: [SeederService, DriveService, S3Service],
 })
 export class SeederModule {}

@@ -63,6 +63,17 @@ import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { S3Service } from 'src/s3.service';
 import { StripeService } from 'src/stripe/stripe.service';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { FileSchema } from 'src/drive/models/file.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { Admin } from 'mongodb';
+import { AdminSchema } from 'src/admin/models/admin.model';
+import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 
 @Module({
   imports: [
@@ -92,9 +103,22 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
-      { name: Business.name, schema: BusinessSchema}
+      { name: Business.name, schema: BusinessSchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: File.name, schema: FileSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Admin.name, schema: AdminSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
     ]),
   ],
-  providers: [SmsService, UserService, Logger, S3Service, StripeService],
+  providers: [
+    SmsService,
+    UserService,
+    Logger,
+    S3Service,
+    StripeService,
+    DriveService,
+  ],
 })
 export class SmsModule {}

@@ -51,9 +51,10 @@ import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { NotificationTypes } from 'src/enums/event.enums';
 import dayjs from 'dayjs';
-import { manipulateImageName } from 'src/helpers/upload.helpers';
+import { FileUploadUtils, manipulateImageName } from 'src/helpers/upload.helpers';
 import { MailService } from 'src/mail/mail.service';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { DriveService } from 'src/drive/drive.service';
 
 @Injectable()
 export class UserService {
@@ -83,11 +84,11 @@ export class UserService {
     private readonly savedEventModel: Model<SavedEventDocument>,
     @InjectModel(Template.name)
     private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(Business.name)
-    private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
+    private readonly driveService: DriveService,
     // private readonly mailerService: MailService,
   ) {}
 
@@ -441,13 +442,26 @@ export class UserService {
         message: 'User not found',
       };
     }
+    profilePhoto = await FileUploadUtils.compressImage(profilePhoto);
     const uploadResult = await this.s3Service.s3_upload(
       profilePhoto.buffer,
       process.env.AWS_S3_BUCKET_NAME,
       manipulateImageName(profilePhoto.originalname),
       'image/jpeg',
     );
-    user.profilePhoto = uploadResult.Location;
+     const [base, rest] = uploadResult.Location.split('amazonaws');
+    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+     const thumbnail = await FileUploadUtils.compressThumbnail(profilePhoto);
+        const thumbnailS3 = await this.s3Service.s3_upload(
+          thumbnail.buffer,
+          process.env.AWS_S3_BUCKET_NAME,
+          `thumbnails/${manipulateImageName(profilePhoto.originalname)}`,
+          thumbnail.mimetype,
+        );
+      const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
+
+    user.profilePhoto = url;
+    user.thumbnail = thumbnailUrl;
     await user.save();
     return {
       success: true,
@@ -840,7 +854,7 @@ export class UserService {
       })
       .populate(
         'following',
-        'firstName lastName profilePhoto name profileType image isDeleted',
+        'firstName lastName profilePhoto name profileType image isDeleted cover logo',
       );
     // .sort({ createdAt: -1 });
     //Sort following by alphabetical order

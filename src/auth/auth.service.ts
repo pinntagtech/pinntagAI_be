@@ -79,7 +79,11 @@ import { PersonDetailDto } from './dto/personalDetail.dto';
 import { SmsService } from 'src/sms/sms.service';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Roles } from 'src/roles/enums/roles.enum';
+import {
+  AdminResourceTypes,
+  BusinessResourceTypes,
+  Roles,
+} from 'src/roles/enums/roles.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import {
   BusinessUser,
@@ -98,6 +102,7 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { SavedEvent } from 'src/event/models/savedEvent.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 
 @Injectable()
 export class AuthService {
@@ -135,6 +140,8 @@ export class AuthService {
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(Privilege.name)
+    private readonly privilegeModel: Model<PrivilegeDocument>,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -1731,15 +1738,13 @@ export class AuthService {
     startDate: any,
     endDate: any,
   ) {
-    console.log('LIMITTTTTTT:::::', limit);
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Start Date:', startDate);
-    console.log('End Date:', endDate);
     console.log('Match:', match);
+    console.log('DISTANCE:', distance);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -1749,7 +1754,7 @@ export class AuthService {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
           distanceField: 'distance',
-          maxDistance: distance * 1000,
+          maxDistance: distance * 1609.34,
           spherical: true,
         },
       },
@@ -1933,7 +1938,6 @@ export class AuthService {
           },
         },
       },
-
       {
         $group: {
           _id: '$event._id', // Group by event._id
@@ -2011,6 +2015,39 @@ export class AuthService {
                             $gte: ['$$schedule.fixedSchedule.date', startDate],
                           },
                           { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                          {
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
+                          },
                         ],
                       },
                     ],
@@ -2107,8 +2144,10 @@ export class AuthService {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
             cover: '$businessProfileDetails.cover',
+            logo: '$businessProfileDetails.logo',
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
+            description: '$businessProfileDetails.description',
             followersCount: '$businessProfileDetails.followersCount',
             isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
@@ -2150,10 +2189,13 @@ export class AuthService {
                 phone: '$businessProfileDetails.phone',
                 website: '$businessProfileDetails.website',
                 isFollowedByMe: '$event.isFollowedByMe',
+                description: '$businessProfileDetails.description',
+                logo: '$businessProfileDetails.logo',
+                cover: '$businessProfileDetails.cover',
                 isDeleted: '$businessProfileDetails.isDeleted',
-                facebookPageUrl: '$businessUserDetails.facebookPageUrl',
-                instagramPageUrl: '$businessUserDetails.instagramPageUrl',
-                twitterPageUrl: '$businessUserDetails.XPageUrl',
+                facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                twitterPageUrl: '$businessProfileDetails.XPageUrl',
                 isMe: false,
               },
             },
@@ -2175,7 +2217,7 @@ export class AuthService {
           schedules: 1,
         },
       },
-      { $sort: { distance: 1 } },
+      { $sort: { distance: 1, createdAt: -1, _id: 1 } },
       {
         $facet: {
           data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -2183,13 +2225,12 @@ export class AuthService {
         },
       },
     ];
-
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-    console.log('Row EVENTS:', rows);
+
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
-    console.log('Data Rows:', dataRows);
-    console.log('Total counts:', totalCount);
+    // console.log('Data Rows:', dataRows);
+    // console.log('Total counts:', totalCount);
     // const eventIds = rows.map((r) => r._id);
     // const schedules = await this.eventScheduleModel
     //   .find({ event: { $in: eventIds } })
@@ -2327,11 +2368,17 @@ export class AuthService {
     const maxTimeToEvent = Math.max(
       ...dataRows.map((e) => {
         const nextSchedule = e.schedules.find((s) => {
-          if (s.type === ScheduleTypes.FIXED) {
+          if (s['type'] === ScheduleTypes.FIXED) {
             return (
-              new Date(s.fixedSchedule.date).getTime() > currentTzTime.getTime()
-            );
-          } else if (s.scheduleType === ScheduleTypes.RECURRING) {
+              s.fixedSchedule.durations as Array<{
+                startTime: string;
+                endTime: string;
+              }>
+            ).some((duration) => {
+              const endTime = new Date(duration.endTime);
+              return endTime.getTime() > currentTzTime.getTime();
+            });
+          } else if (s['type'] === ScheduleTypes.RECURRING) {
             const nextDate = getNextRecurring(s.recurringSchedule);
             return nextDate
               ? nextDate.getTime() > currentTzTime.getTime()
@@ -2340,24 +2387,27 @@ export class AuthService {
           return false;
         });
 
-        // console.log('nextSchedule::', nextSchedule);
         let nextScheduleDate = null;
-        if (nextSchedule.type === ScheduleTypes.FIXED) {
+        if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
-        } else if (nextSchedule.type === ScheduleTypes.RECURRING) {
+        } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
           nextScheduleDate = getNextRecurring(nextSchedule.recurringSchedule);
         }
-        console.log('nextScheduleDate::', nextScheduleDate);
+        // console.log('nextScheduleDate::', nextScheduleDate);
         return nextSchedule
           ? new Date(nextScheduleDate).getTime() - currentTzTime.getTime()
           : 0;
       }),
     );
-    console.log('maxDistance:', maxDistance);
-    console.log('maxTimeToEvent:', maxTimeToEvent);
+    // console.log('maxDistance:', maxDistance);
+    // console.log('maxTimeToEvent:', maxTimeToEvent);
 
-    const weightDistance = 0.5;
-    const weightTime = 0.5;
+    const weightDistance = process.env.DISTANCE_WEIGHTAGE
+      ? Number(process.env.DISTANCE_WEIGHTAGE)
+      : 0.5;
+    const weightTime = process.env.TIME_WEIGHTAGE
+      ? Number(process.env.TIME_WEIGHTAGE)
+      : 0.5;
 
     dataRows.forEach((event) => {
       const nearestSchedule = event.schedules.find((s) => {
@@ -2397,13 +2447,13 @@ export class AuthService {
 
       event.score =
         weightDistance * normalizedDistance + weightTime * normalizedTime;
-      console.log('event.score::', event.score);
+      // console.log('event.score::', event.score);
     });
 
     // Sort by ascending score
     dataRows.sort((a, b) => a.score - b.score);
 
-    console.log('OLD FLOWWWWWWWW::::::');
+    // console.log('OLD FLOWWWWWWWW::::::');
 
     // return { success: true, data: filteredEvents };
 
@@ -2840,8 +2890,8 @@ export class AuthService {
     //       : 0;
     //   }),
     // );
-    // // console.log('maxDistance.........', maxDistance);
-    // // console.log('maxTimeToEvent.........', maxTimeToEvent);
+    // console.log('maxDistance.........', maxDistance);
+    // console.log('maxTimeToEvent.........', maxTimeToEvent);
 
     // let weightDistance = 0.5;
     // let weightTime = 0.5;
@@ -2871,7 +2921,7 @@ export class AuthService {
     //   event.score =
     //     weightDistance * normalizedDistance + weightTime * normalizedTime;
     // });
-    // // console.log(
+    // console.log(
     // //   'filteredEvents after normalization.........',
     // //   filteredEvents.length,
     // // );
@@ -4171,8 +4221,6 @@ export class AuthService {
     const endDate = data.endDate
       ? new Date(data.endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Start Date:', startDate);
-    console.log('End Date:', endDate);
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
@@ -4213,6 +4261,28 @@ export class AuthService {
           as: 'categories',
         },
       },
+      ...(data.categories?.length
+        ? [
+            {
+              $addFields: {
+                categories: {
+                  $filter: {
+                    input: '$categories',
+                    as: 'cat',
+                    cond: {
+                      $in: [
+                        '$$cat._id',
+                        data.categories.map(
+                          (id) => new mongoose.Types.ObjectId(id),
+                        ),
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          ]
+        : []),
       {
         $lookup: {
           from: 'files', // assuming this is the same collection as QR_CODE
@@ -4484,6 +4554,36 @@ export class AuthService {
         },
       },
       {
+        $lookup: {
+          from: 'reports', // your reportModel collection name
+          let: { eventId: '$_id' }, // assuming _id is the eventId in eventLocation
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$event', '$$eventId'] },
+                    { $eq: ['$user', new mongoose.Types.ObjectId(user.id)] }, // pass userId to the function
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'reportDocs',
+        },
+      },
+      {
+        $addFields: {
+          isReported: {
+            $cond: {
+              if: { $gt: [{ $size: '$reportDocs' }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
         $project: {
           _id: 1,
           distance: 1,
@@ -4509,7 +4609,7 @@ export class AuthService {
               as: 'category',
               in: {
                 _id: '$$category._id',
-                name: '$$category.title',
+                title: '$$category.title',
                 darkIcon: '$$category.darkIcon',
                 lightIcon: '$$category.lightIcon',
                 activeColor: '$$category.activeColor',
@@ -4520,8 +4620,10 @@ export class AuthService {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
             cover: '$businessProfileDetails.cover',
+            logo: '$businessProfileDetails.logo',
             email: '$businessProfileDetails.email',
             bio: '$businessProfileDetails.bio',
+            description: '$businessProfileDetails.description',
             followersCount: '$businessProfileDetails.followersCount',
             isFollowedByMe: '$isFollowedByMe',
             profileType: 'BusinessProfile',
@@ -4558,15 +4660,18 @@ export class AuthService {
                 profilePhoto: '$businessProfileDetails.profilePhoto',
                 email: '$businessProfileDetails.email',
                 bio: '$businessProfileDetails.bio',
+                description: '$businessProfileDetails.description',
+                logo: '$businessProfileDetails.logo',
+                cover: '$businessProfileDetails.cover',
                 followersCount: '$businessProfileDetails.followersCount',
                 profileType: 'BusinessProfile',
                 phone: '$businessProfileDetails.phone',
                 website: '$businessProfileDetails.website',
                 isFollowedByMe: '$isFollowedByMe',
                 isDeleted: '$businessProfileDetails.isDeleted',
-                facebookPageUrl: '$businessUserDetails.facebookPageUrl',
-                instagramPageUrl: '$businessUserDetails.instagramPageUrl',
-                twitterPageUrl: '$businessUserDetails.XPageUrl',
+                facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                twitterPageUrl: '$businessProfileDetails.XPageUrl',
                 isMe: false,
               },
             },
@@ -4584,13 +4689,12 @@ export class AuthService {
           creatorType: 1,
           isLiked: 1,
           isSaved: 1,
+          isReported: 1,
           locations: 1,
           schedules: 1,
         },
       },
     ]);
-    console.log('event', event);
-
     if (!event) {
       return {
         success: false,
@@ -5213,6 +5317,8 @@ export class AuthService {
   async getProfile(userId: string, userType: string) {
     try {
       let userDoc = null;
+      let resourceAndPrivileges = {};
+
       if (userType === UserTypes.ADMIN) {
         userDoc = await this.adminModel
           .findById(userId)
@@ -5222,6 +5328,41 @@ export class AuthService {
             success: false,
             message: 'Admin not found!',
           };
+        }
+
+        const role = await this.roleModel.findById(userDoc.role);
+        if (!role) {
+          return {
+            success: false,
+            message: 'Role not found!',
+          };
+        }
+        if (role.isSuperAdmin == true) {
+          for (const resource of Object.values(AdminResourceTypes)) {
+            resourceAndPrivileges[resource] = {
+              create: true,
+              read: true,
+              update: true,
+              delete: true,
+            };
+          }
+        } else {
+          const privileges = await this.privilegeModel.find({ role: role._id });
+          if (privileges.length !== 0) {
+            for (const privilege of privileges) {
+              const { resource, action } = privilege;
+              if (!resourceAndPrivileges[resource]) {
+                resourceAndPrivileges[resource] = {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                };
+              }
+
+              resourceAndPrivileges[resource][action] = true;
+            }
+          }
         }
       } else if (userType === UserTypes.USER) {
         userDoc = await this.userModel
@@ -5236,7 +5377,7 @@ export class AuthService {
       } else if (userType === UserTypes.BUSINESS) {
         userDoc = await this.businessUserModel
           .findById(userId)
-          // .populate('business')
+          // .populate('business  ')
           .populate({
             path: 'business',
             populate: [
@@ -5248,7 +5389,7 @@ export class AuthService {
               {
                 path: 'initialOfferId',
                 model: Event.name,
-                select: '_id title description categories',
+                select: '_id title description categories drivePath',
               },
               {
                 path: 'businessIndustry',
@@ -5265,11 +5406,46 @@ export class AuthService {
             message: 'Business User not found!',
           };
         }
+        const role = await this.roleModel.findById(userDoc.role);
+        if (!role) {
+          return {
+            success: false,
+            message: 'Role not found!',
+          };
+        }
+        if (role.isBusinessOwner == true) {
+          for (const resource of Object.values(BusinessResourceTypes)) {
+            resourceAndPrivileges[resource] = {
+              create: true,
+              read: true,
+              update: true,
+              delete: true,
+            };
+          }
+        } else {
+          const privileges = await this.privilegeModel.find({ role: role._id });
+          if (privileges.length !== 0) {
+            for (const privilege of privileges) {
+              const { resource, action } = privilege;
+              if (!resourceAndPrivileges[resource]) {
+                resourceAndPrivileges[resource] = {
+                  create: false,
+                  read: false,
+                  update: false,
+                  delete: false,
+                };
+              }
+
+              resourceAndPrivileges[resource][action] = true;
+            }
+          }
+        }
       }
       return {
         success: true,
         message: 'User Profile Fetched Successfully',
         user: userDoc,
+        resourceAndPrivileges: resourceAndPrivileges,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -5301,7 +5477,6 @@ export class AuthService {
         message: 'Carousel not found',
       };
     }
-    console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -5312,8 +5487,16 @@ export class AuthService {
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
-    console.log('START DATE:', start);
-    console.log('Match:', match);
+    // console.log('Match:', match);
+
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        return {
+          success: false,
+          message: 'Start date cannot be greater than end date',
+        };
+      }
+    }
 
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
@@ -5447,7 +5630,6 @@ export class AuthService {
     }
     let totalCount = 0;
 
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -5461,7 +5643,6 @@ export class AuthService {
       startDate,
       endDate,
     );
-    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard fetched successfully',

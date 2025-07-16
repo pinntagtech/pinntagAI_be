@@ -462,6 +462,7 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
+    console.log("LATITUDE AND LONGITUDE::::",body.latitude, body.longitude);
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       throw new BadRequestException('Not a valid User');
     }
@@ -477,6 +478,7 @@ export class AuthController {
         throw new BadRequestException('Please provide a valid distance value.');
       }
     }
+    console.log("Distance in controller:", distance);
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,
@@ -489,6 +491,7 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
+
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -554,7 +557,7 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
-    console.log('Entered Controllerrrr!!!');
+   
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
@@ -700,6 +703,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@TokenDecoder() user: DecodedUser) {
+     console.log('Entered Controllerrrr!!!');
     const result = await this.authService.getProfile(user.id, user.userType);
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -707,6 +711,7 @@ export class AuthController {
     return {
       message: result.message,
       user: result.user,
+      resourceAndPrivileges: result.resourceAndPrivileges,
     };
   }
 

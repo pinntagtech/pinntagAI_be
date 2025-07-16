@@ -93,7 +93,7 @@ export class AppService implements OnModuleInit {
         );
       }),
     );
-    if(Number(process.env.START_SEEDER)) await this.seederService.seed();
+    if (Number(process.env.START_SEEDER)) await this.seederService.seed();
   }
 
   async getCategories() {
