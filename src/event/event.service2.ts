@@ -123,7 +123,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import { AtlantaData, ETL_DATA, LubbockData } from './crawledEvents.json';
+import { AtlantaData, CorruptedAtlantaEvents, ETL_DATA, LubbockData } from './crawledEvents.json';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -6634,4 +6634,39 @@ export class EventService2 {
       };
     }
   }
+
+  async corruptedEvents() {
+    try{
+      for(let event of CorruptedAtlantaEvents){
+        const schedule = await this.eventScheduleModel.create({
+          event: new mongoose.Types.ObjectId(event),
+          type: ScheduleTypes.FIXED,
+          fixedSchedule: {
+            date: new Date("2025-12-30T00:00:00.000Z"),
+            durations: [{
+              startTime: new Date("2025-12-30T12:00:00.000Z"),
+              endTime: new Date("2025-12-30T14:00:00.000Z"),
+            }],
+          },
+        });
+        await this.eventModel.updateOne(
+              { _id: new mongoose.Types.ObjectId(event) },
+              {
+                $addToSet: { eventSchedule: schedule._id },
+              },
+            );
+      }
+      return {
+        success: true,
+        message: 'Corrupted events processed successfully.',
+      };
+    }catch(error) {
+      console.error('Error in corruptedEvents:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
 }

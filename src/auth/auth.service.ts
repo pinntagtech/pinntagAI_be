@@ -2033,10 +2033,15 @@ export class AuthService {
                                     },
                                   },
                                   in: {
-                                    $arrayElemAt: [
-                                      '$$durations.endTime',
-                                      '$$lastIndex',
-                                    ],
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
                                   },
                                 },
                               },
