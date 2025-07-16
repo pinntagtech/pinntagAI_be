@@ -461,6 +461,8 @@ export class EventService2 {
     //   });
     //   successResponse.eventUrl = shortLink;
     // }
+    console.log("Title, Description, ImageUrl:", title, description, imageUrl);
+    console.log("Success Response:", successResponse);
 
     return successResponse;
   }

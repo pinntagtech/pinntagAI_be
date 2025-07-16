@@ -32,6 +32,8 @@ import { totalmem } from 'os';
 import { UserTypes } from 'src/enums/auth.enums';
 import { ClaimStatus } from './enums/rewards.enum';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { GenerateEventUrlDto } from 'src/event/dto/generate-event-url.dto';
+import { GenerateRewardUrlDto } from './dto/generate-reward-url.dto';
 
 @Controller('reward')
 export class RewardsController {
@@ -110,8 +112,8 @@ export class RewardsController {
   async getRewardById(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
-    @Query('latitude') latitude: string,
-    @Query('longitude') longitude: string,
+    @Body('latitude') latitude: string,
+    @Body('longitude') longitude: string,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
@@ -312,4 +314,23 @@ export class RewardsController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('generateRewardUrl')
+    @UseGuards(JwtGuard2)
+    async generateRewardUrl(@Body() data: GenerateRewardUrlDto) {
+      const result =
+        await this.rewardService.generateRewardUrl(data);
+      if (result.success) {
+        return {
+          message: result.message,
+          rewardUrl: result.rewardUrl,
+        };
+      } else {
+        return {
+          message: result.message,
+        };
+      }
+    }
+
+
 }

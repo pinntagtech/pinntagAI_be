@@ -4216,8 +4216,6 @@ export class AuthService {
     const endDate = data.endDate
       ? new Date(data.endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Start Date:', startDate);
-    console.log('End Date:', endDate);
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
@@ -4692,8 +4690,6 @@ export class AuthService {
         },
       },
     ]);
-    console.log('event', event);
-
     if (!event) {
       return {
         success: false,
