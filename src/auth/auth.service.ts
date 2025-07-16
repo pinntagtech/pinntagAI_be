@@ -1938,7 +1938,6 @@ export class AuthService {
           },
         },
       },
-
       {
         $group: {
           _id: '$event._id', // Group by event._id
@@ -2016,6 +2015,34 @@ export class AuthService {
                             $gte: ['$$schedule.fixedSchedule.date', startDate],
                           },
                           { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                          {
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $arrayElemAt: [
+                                      '$$durations.endTime',
+                                      '$$lastIndex',
+                                    ],
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
+                          },
                         ],
                       },
                     ],

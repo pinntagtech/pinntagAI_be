@@ -4415,34 +4415,37 @@ export class EventService2 {
               }
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
-                const duration = data.fixedSchedule[i].durations[j];
+  const duration = data.fixedSchedule[i].durations[j];
 
-                if (duration) {
-                  const baseDate = new Date(
-                    data.fixedSchedule[i].date.toString(),
-                  );
-                  const originalStart = new Date(duration['startTime']);
-                  const originalEnd = new Date(duration['endTime']);
+  if (duration) {
+    const baseDate = new Date(data.fixedSchedule[i].date); // base date
+    const originalStart = new Date(duration['startTime']);
+    const originalEnd = new Date(duration['endTime']);
 
-                  const newStart = new Date(baseDate);
-                  newStart.setHours(
-                    originalStart.getHours(),
-                    originalStart.getMinutes(),
-                    0,
-                    0,
-                  );
+    const newStart = new Date(Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth(),
+      baseDate.getUTCDate(),
+      originalStart.getUTCHours(),
+      originalStart.getUTCMinutes(),
+      0,
+      0
+    ));
 
-                  const newEnd = new Date(baseDate);
-                  newEnd.setHours(
-                    originalEnd.getHours(),
-                    originalEnd.getMinutes(),
-                    0,
-                    0,
-                  );
-                  data.fixedSchedule[i].durations[j]['startTime'] = newStart;
-                  data.fixedSchedule[i].durations[j]['endTime'] = newEnd;
-                }
-              }
+    const newEnd = new Date(Date.UTC(
+      baseDate.getUTCFullYear(),
+      baseDate.getUTCMonth(),
+      baseDate.getUTCDate(),
+      originalEnd.getUTCHours(),
+      originalEnd.getUTCMinutes(),
+      0,
+      0
+    ));
+
+    data.fixedSchedule[i].durations[j]['startTime'] = newStart;
+    data.fixedSchedule[i].durations[j]['endTime'] = newEnd;
+  }
+}
 
               data.fixedSchedule[i].durations.sort((a, b) => {
                 return a['startTime'] - b['startTime'];

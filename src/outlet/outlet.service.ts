@@ -448,7 +448,14 @@ export class OutletService {
       };
     }
   }
-  async fetchCreatedOutlets(user: any, page: number, limit: number) {
+  async fetchCreatedOutlets(
+    user: any,
+    search: string,
+    type: string,
+    creationDate: string,
+    page: number,
+    limit: number,
+  ) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -481,10 +488,32 @@ export class OutletService {
       //   getOutletObj['_id'] = { $in: mongoUserIds };
       // }
       // console.log('getOutletObj', getOutletObj);
-      console.log('Creator:', userDetails._id);
-      console.log('Business:', user.businessProfile);
+      let match = {};
+      if (search) {
+        match = {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { address1: { $regex: search, $options: 'i' } },
+            { city: { $regex: search, $options: 'i' } },
+            { state: { $regex: search, $options: 'i' } },
+            { postalCode: { $regex: search, $options: 'i' } },
+            // { category: { $regex: search, $options: 'i' } },
+          ],
+        };
+      }
+      if(type){
+        match['category'] = type;
+      }
+      if (creationDate) {
+        const date = new Date(creationDate);
+        match['createdAt'] = {
+          $gte: new Date(date.setHours(0, 0, 0, 0)),
+          $lt: new Date(date.setHours(23, 59, 59, 999)),
+        };
+      }
       const outlets = await this.outletModel
         .find({
+          ...match,
           creator: new mongoose.Types.ObjectId(userDetails._id),
           business: new mongoose.Types.ObjectId(user.businessProfile),
         })
