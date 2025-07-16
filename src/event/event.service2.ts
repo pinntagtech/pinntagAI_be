@@ -123,7 +123,12 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import { AtlantaData, CorruptedAtlantaEvents, ETL_DATA, LubbockData } from './crawledEvents.json';
+import {
+  AtlantaData,
+  CorruptedAtlantaEvents,
+  ETL_DATA,
+  LubbockData,
+} from './crawledEvents.json';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -6350,13 +6355,13 @@ export class EventService2 {
         email: 'atlantaetl@pinntag.com',
       });
 
-       const businessIndustry = await this.businessIndustryModel.findOne({
-          title: 'Entertainment',
-        });
-        const businessCategory = await this.businessCategoryModel.findOne({
-          title: 'Local Experiences',
-          industry: businessIndustry._id,
-        });
+      const businessIndustry = await this.businessIndustryModel.findOne({
+        title: 'Entertainment',
+      });
+      const businessCategory = await this.businessCategoryModel.findOne({
+        title: 'Local Experiences',
+        industry: businessIndustry._id,
+      });
       if (!businessDetails) {
         const businessFolder = await this.driveService.createFolder(
           businessUser.id,
@@ -6380,14 +6385,13 @@ export class EventService2 {
         };
         businessDetails = await this.businessModel.create(businessObj);
       }
-       await this.businessUserModel.updateOne(
-          { _id: businessUser._id },
-          { $addToSet: { business: businessDetails._id } },
-        );
+      await this.businessUserModel.updateOne(
+        { _id: businessUser._id },
+        { $addToSet: { business: businessDetails._id } },
+      );
 
       for (let data of ETL_DATA) {
         if (!businessUser || !businessIndustry || !businessCategory) continue;
-
 
         if (!data.locations[0].location.coordinates) continue;
 
@@ -6480,7 +6484,9 @@ export class EventService2 {
         );
 
         for (let time of data.schedules || []) {
-          const startTime = new Date(time.fixedSchedule.durations[0].startTime || Date.now());
+          const startTime = new Date(
+            time.fixedSchedule.durations[0].startTime || Date.now(),
+          );
           const endTime = time.fixedSchedule.durations[0].endTime
             ? new Date(time.fixedSchedule.durations[0].endTime)
             : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
@@ -6635,38 +6641,101 @@ export class EventService2 {
     }
   }
 
-  async corruptedEvents() {
-    try{
-      for(let event of CorruptedAtlantaEvents){
-        const schedule = await this.eventScheduleModel.create({
-          event: new mongoose.Types.ObjectId(event),
-          type: ScheduleTypes.FIXED,
-          fixedSchedule: {
-            date: new Date("2025-12-30T00:00:00.000Z"),
-            durations: [{
-              startTime: new Date("2025-12-30T12:00:00.000Z"),
-              endTime: new Date("2025-12-30T14:00:00.000Z"),
-            }],
-          },
-        });
-        await this.eventModel.updateOne(
-              { _id: new mongoose.Types.ObjectId(event) },
-              {
-                $addToSet: { eventSchedule: schedule._id },
-              },
-            );
-      }
-      return {
-        success: true,
-        message: 'Corrupted events processed successfully.',
-      };
-    }catch(error) {
-      console.error('Error in corruptedEvents:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
+  async getRandomDatesBetween(
+    startDateStr: string,
+    endDateStr: string,
+    count: number = 3,
+  ) {
+    const startDate = new Date(startDateStr).getTime();
+    const endDate = new Date(endDateStr).getTime();
+    const dates: Set<number> = new Set();
+
+    while (dates.size < count) {
+      const randomTime = startDate + Math.random() * (endDate - startDate);
+      dates.add(new Date(randomTime).setHours(0, 0, 0, 0)); // strip time part
     }
+
+    return Array.from(dates).map((timestamp) => new Date(timestamp));
   }
 
+  // async corruptedEvents() {
+  //   try {
+  //     for (let event of CorruptedAtlantaEvents) {
+  //       const randomDates = await this.getRandomDatesBetween(
+  //         '2025-07-30',
+  //         '2025-09-01',
+  //       );
+  //       console.log('Random Dates:', randomDates);
+
+  //       const schedule1 = await this.eventScheduleModel.create({
+  //         event: new mongoose.Types.ObjectId(event),
+  //         type: ScheduleTypes.FIXED,
+  //         fixedSchedule: {
+  //           date: new Date(randomDates[0]),
+  //           durations: [
+  //             {
+  //               startTime: new Date(randomDates[0]),
+  //               endTime: new Date(randomDates[0]),
+  //             },
+  //           ],
+  //         },
+  //       });
+  //       const schedule2 = await this.eventScheduleModel.create({
+  //         event: new mongoose.Types.ObjectId(event),
+  //         type: ScheduleTypes.FIXED,
+  //         fixedSchedule: {
+  //           date: new Date(randomDates[1]),
+  //           durations: [
+  //             {
+  //               startTime: new Date(randomDates[1]),
+  //               endTime: new Date(randomDates[1]),
+  //             },
+  //           ],
+  //         },
+  //       });
+  //       const schedule3 = await this.eventScheduleModel.create({
+  //         event: new mongoose.Types.ObjectId(event),
+  //         type: ScheduleTypes.FIXED,
+  //         fixedSchedule: {
+  //           date: new Date(randomDates[2]),
+  //           durations: [
+  //             {
+  //               startTime: new Date(randomDates[2]),
+  //               endTime: new Date(randomDates[2]),
+  //             },
+  //           ],
+  //         },
+  //       });
+  //       await this.eventModel.updateOne(
+  //         { _id: new mongoose.Types.ObjectId(event) },
+  //         {
+  //           $addToSet: { eventSchedule: schedule1._id },
+  //         },
+  //       );
+  //       await this.eventModel.updateOne(
+  //         { _id: new mongoose.Types.ObjectId(event) },
+  //         {
+  //           $addToSet: { eventSchedule: schedule2._id },
+  //         },
+  //       );
+  //       await this.eventModel.updateOne(
+  //         { _id: new mongoose.Types.ObjectId(event) },
+  //         {
+  //           $addToSet: { eventSchedule: schedule3._id },
+  //         },
+  //       );
+      
+  //     }
+  //     return {
+  //       success: true,
+  //       message: 'Corrupted events processed successfully.',
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in corruptedEvents:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  // }
 }

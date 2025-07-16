@@ -1023,7 +1023,7 @@ export class EventController {
   @Post('crawlAtlantaEvents')
   @UseGuards(AdminGuard2)
   async crawlAtlantaEvents() {
-    const result = await this.eventService.corruptedEvents();
+    const result = await this.eventService.ETL_TRANSFORMER();
     if (result.success) {
       return {
         message: result.message,
