@@ -166,6 +166,7 @@ export class RewardsController {
     @Body() data: GetRewardDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
+    @Query('activityType') activityType: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -175,6 +176,7 @@ export class RewardsController {
       user,
       data,
       search,
+      activityType,
       distance ? parseInt(distance) : 1000000000000,
       pageNumber,
       limitNumber,

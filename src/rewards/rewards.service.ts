@@ -766,6 +766,7 @@ export class RewardsService {
     user: DecodedUser,
     data: GetRewardDashboardDto,
     search: string,
+    activityType: string,
     distance: number,
     page: number,
     limit: number,
@@ -777,15 +778,51 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+
+      let match = {};
+      if (search) {
+        // Search matching business profile name
+        const matchingBusinesses = await this.businessModel.find({
+          name: { $regex: search, $options: 'i' },
+        });
+        // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+        const businessProfileIds = matchingBusinesses.map(
+          (business) => business._id,
+        );
+        match['$or'] = [
+          { 'reward.title': { $regex: search, $options: 'i' } },
+          { 'reward.description': { $regex: search, $options: 'i' } },
+          { 'reward.businessProfile': { $in: businessProfileIds } },
+        ];
+      }
+      if (data.startDate) {
+        match['reward.schedule.startDate'] = {
+          $gte: new Date(data.startDate),
+        };
+      }
+      if (data.endDate) {
+        match['reward.schedule.endDate'] = {
+          $lte: new Date(data.endDate),
+        };
+      } else {
+        match['reward.schedule.endDate'] = { $gte: now };
+      }
+      if(activityType){
+        match['reward.activityType'] = activityType;
+      }
+
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
             near: {
               type: 'Point',
-              coordinates: [Number(data.longitude), Number(data.latitude)],
+              coordinates: [
+                parseFloat(data.longitude),
+                parseFloat(data.latitude),
+              ],
             },
             distanceField: 'distance',
-            maxDistance: 100000000 * 1000,
+            maxDistance: distance * 1609.34,
             spherical: true,
           },
         },
@@ -824,9 +861,9 @@ export class RewardsService {
         },
         {
           $match: {
+            ...match,
             'reward.status': RewardStatus.PUBLISHED,
             claimed: { $eq: [] },
-            'reward.schedule.endDate': { $gte: now },
           },
         },
         {
@@ -1580,80 +1617,78 @@ export class RewardsService {
     }
   }
 
-
-   async generateRewardUrl({
-      title,
-      description,
-      imageUrl,
-      rewardId,
-    }: GenerateRewardUrlDto) {
-      if (!mongoose.isValidObjectId(rewardId)) {
-        return {
-          success: false,
-          message: 'Please provide a valid reward id',
-          rewardUrl: undefined,
-        };
-      }
-      const successResponse = {
-        success: true,
-        message: 'rewardUrl successfully generated',
-        rewardUrl: '',
-        rewardDescription: '${title} by ${rewardId} brought to you by PinnTag.',
+  async generateRewardUrl({
+    title,
+    description,
+    imageUrl,
+    rewardId,
+  }: GenerateRewardUrlDto) {
+    if (!mongoose.isValidObjectId(rewardId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid reward id',
+        rewardUrl: undefined,
       };
-
-      const rewardInfo = await this.rewardModel.findById(rewardId);
-      const rewardUrl = `${process.env.EVENT_BASE_URL}${rewardId.toString()}`;
-      let eventDescription = '';
-      
-      //fetch the schedule whose date is greater than or equal to the current date
-      const now = new Date();
-      const todaysDate = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-      ).toISOString();
-  
-      if (rewardInfo.schedule) {
-        let requiredSchedule = rewardInfo.schedule.startDate;
-        eventDescription = getStringDateTzWithTime(new Date(requiredSchedule));
-      }
-      let business = await this.businessModel.findById(
-        rewardInfo.businessProfile)
-      const result = await this.dynamicLinkService.generateShortLink(rewardUrl, {
-        title,
-        description: eventDescription,
-        imageUrl,
-        businessName: business.name,
-      });
-      const { shortLink } = result;
-      await this.rewardModel.findByIdAndUpdate(rewardId, {
-        $set: {
-          rewardUrl: shortLink,
-        },
-      });
-      successResponse.rewardUrl = shortLink;
-
-      // if (eventInfo.eventUrl) {
-      //   console.log(`IS it working ${eventInfo}`);
-      //   successResponse.eventUrl = eventInfo.eventUrl;
-      // } else {
-      //   const eventUrl = `${process.env.EVENT_BASE_URL}${eventId.toString()}`;
-      //   const result = await this.dynamicLinkService.generateShortLink(eventUrl, {
-      //     title: title,
-      //     description: description,
-      //     imageUrl: imageUrl,
-      //   });
-      //   const { shortLink } = result;
-      //   await this.eventModel.findByIdAndUpdate(eventId, {
-      //     $set: {
-      //       eventUrl: shortLink,
-      //     },
-      //   });
-      //   successResponse.eventUrl = shortLink;
-      // }
-      console.log("Title, Description, ImageUrl:", title, description, imageUrl);
-      console.log("Success Response:", successResponse);
-  
-      return successResponse;
     }
+    const successResponse = {
+      success: true,
+      message: 'rewardUrl successfully generated',
+      rewardUrl: '',
+      rewardDescription: '${title} by ${rewardId} brought to you by PinnTag.',
+    };
 
+    const rewardInfo = await this.rewardModel.findById(rewardId);
+    const rewardUrl = `${process.env.EVENT_BASE_URL}${rewardId.toString()}`;
+    let eventDescription = '';
 
+    //fetch the schedule whose date is greater than or equal to the current date
+    const now = new Date();
+    const todaysDate = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    ).toISOString();
+
+    if (rewardInfo.schedule) {
+      let requiredSchedule = rewardInfo.schedule.startDate;
+      eventDescription = getStringDateTzWithTime(new Date(requiredSchedule));
+    }
+    let business = await this.businessModel.findById(
+      rewardInfo.businessProfile,
+    );
+    const result = await this.dynamicLinkService.generateShortLink(rewardUrl, {
+      title,
+      description: eventDescription,
+      imageUrl,
+      businessName: business.name,
+    });
+    const { shortLink } = result;
+    await this.rewardModel.findByIdAndUpdate(rewardId, {
+      $set: {
+        rewardUrl: shortLink,
+      },
+    });
+    successResponse.rewardUrl = shortLink;
+
+    // if (eventInfo.eventUrl) {
+    //   console.log(`IS it working ${eventInfo}`);
+    //   successResponse.eventUrl = eventInfo.eventUrl;
+    // } else {
+    //   const eventUrl = `${process.env.EVENT_BASE_URL}${eventId.toString()}`;
+    //   const result = await this.dynamicLinkService.generateShortLink(eventUrl, {
+    //     title: title,
+    //     description: description,
+    //     imageUrl: imageUrl,
+    //   });
+    //   const { shortLink } = result;
+    //   await this.eventModel.findByIdAndUpdate(eventId, {
+    //     $set: {
+    //       eventUrl: shortLink,
+    //     },
+    //   });
+    //   successResponse.eventUrl = shortLink;
+    // }
+    console.log('Title, Description, ImageUrl:', title, description, imageUrl);
+    console.log('Success Response:', successResponse);
+
+    return successResponse;
+  }
 }

@@ -73,11 +73,6 @@ export class CreateOutletDto {
   @Max(90)
   servingRadius: number;
 
-  // Social Media & Online Presence
-  // @IsOptional()
-  // @IsString()
-  // whatsappNumber?: string;
-
   @IsOptional()
   @IsString()
   website?: string;
