@@ -90,6 +90,7 @@ export class RewardsController {
     @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('status') status: string,  //all active expired
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -101,6 +102,7 @@ export class RewardsController {
     const result = await this.rewardService.getAllRewards(
       user,
       status,
+      search,
       pageNumber,
       limitNumber,
     );

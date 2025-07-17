@@ -51,6 +51,7 @@ import { UserDetail } from 'aws-sdk/clients/iam';
 import { GenerateRewardUrlDto } from './dto/generate-reward-url.dto';
 import { getStringDateTzWithTime } from 'src/helpers/event.helpers';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
+import { from } from 'rxjs';
 
 @Injectable()
 export class RewardsService {
@@ -579,7 +580,7 @@ export class RewardsService {
       //   },
       // ];
 
-      const foundRewardAgg = await this.rewardLocationModel.aggregate(pipeline);
+      const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
 
       if (!foundRewardAgg || foundRewardAgg.length === 0) {
         return {
@@ -918,7 +919,13 @@ export class RewardsService {
     }
   }
 
-  async getAllRewards(user: DecodedUser, status: string,page: number, limit: number) {
+  async getAllRewards(
+    user: DecodedUser,
+    status: string,
+    search: string,
+    page: number,
+    limit: number,
+  ) {
     try {
       const userId = user.id;
       if (!user.businessProfile) {
@@ -954,10 +961,17 @@ export class RewardsService {
         name: 'Content QR',
       });
       let match: any = { businessProfile: business._id };
-      if(status === 'active'){
+      if (status === 'active') {
         match['schedule.endDate'] = { $gte: new Date() };
-      }else if(status === 'expired'){
+      } else if (status === 'expired') {
         match['schedule.endDate'] = { $lt: new Date() };
+      }
+      if (search) {
+        // Search matching business profile name
+        match['$or'] = [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+        ];
       }
       const pipeline: any = [
         { $match: match },
@@ -1048,6 +1062,32 @@ export class RewardsService {
               },
             ],
             as: 'files',
+          },
+        },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: { rewardId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      {
+                        $eq: ['$claimStatus', ClaimStatus.ACTIVE],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'activeRewards',
+          },
+        },
+        {
+          $addFields: {
+            activeParticipants: { $size: '$activeRewards' },
           },
         },
         // {
