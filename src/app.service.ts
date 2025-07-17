@@ -30,6 +30,7 @@ import {
 import { Drive, DriveDocument } from './drive/models/drive.model';
 import { Admin, AdminDocument } from './admin/models/admin.model';
 import { Business, BusinessDocument } from './business/model/business.model';
+import { SeederConfig } from './models/seederConfig.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -50,6 +51,8 @@ export class AppService implements OnModuleInit {
     private readonly platformConfigModel: Model<PlatformConfigDocument>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
+    @InjectModel(SeederConfig.name)
+    private readonly seederConfigModel: Model<SeederConfig>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {
@@ -93,7 +96,17 @@ export class AppService implements OnModuleInit {
         );
       }),
     );
-    if (Number(process.env.START_SEEDER)) await this.seederService.seed();
+    const seederConfig = await this.seederConfigModel.findOne();
+    if (!seederConfig || seederConfig.isSeederEnabled) {
+      await this.seederService.seed();
+      await this.seederConfigModel.findOneAndUpdate(
+        { isSeederEnabled: true },
+        { $set: { isSeederEnabled: false } },
+        { upsert: true, new: true },
+      );
+    } else {
+      console.log('Seeder is disabled, skipping seeding process.');
+    }
   }
 
   async getCategories() {

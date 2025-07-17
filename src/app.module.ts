@@ -103,6 +103,7 @@ import { Region, RegionSchema } from './business/model/region.model';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { Outlet, OutletSchema } from './outlet/model/outlet.model';
+import { SeederConfig, SeederConfigSchema } from './models/seederConfig.model';
 
 @Module({
   imports: [
@@ -167,6 +168,7 @@ import { Outlet, OutletSchema } from './outlet/model/outlet.model';
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: SeederConfig.name, schema: SeederConfigSchema },
     ]),
     StripeeModule,
     AuthModule,
