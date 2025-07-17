@@ -396,37 +396,51 @@ export class EventService2 {
     ).toISOString();
 
     for (let i = 0; i < eventInfo.eventSchedule.length; i++) {
-      if (!requiredSchedule) {
+      if (requiredSchedule) {
+        break;
+      } else {
         const schedule = await this.scheduleModel.findOne({
           _id: eventInfo.eventSchedule[i],
         });
-        if (schedule.type == ScheduleTypes.FIXED) {
-          if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
-            // requiredSchedule = eventInfo.schedule[i];
-            let durations = schedule.fixedSchedule.durations;
-            for (let j = 0; j < durations.length; j++) {
-              console.log('Durations:', durations[j]);
-              if (new Date(durations[j].startTime) >= new Date()) {
-                console.log('Start time:', durations[j].startTime);
-                requiredSchedule = durations[j].startTime;
-                break;
-              } else {
-                return {
-                  success: false,
-                  message: 'No upcoming schedule found for this event',
-                };
+        if (schedule) {
+          if (schedule.type == ScheduleTypes.FIXED) {
+            if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
+              // requiredSchedule = eventInfo.schedule[i];
+              let durations = schedule.fixedSchedule.durations;
+              for (let j = 0; j < durations.length; j++) {
+                console.log('Durations:', durations[j]);
+                if (new Date(durations[j].startTime) >= new Date()) {
+                  console.log('Start time:', durations[j].startTime);
+                  requiredSchedule = durations[j].startTime;
+                  break;
+                }
+                // else {
+                //   // return {
+                //   //   success: false,
+                //   //   message: 'No upcoming schedule found for this event',
+                //   // };
+                // }
               }
             }
-          } else {
-            return {
-              success: false,
-              message: 'No upcoming schedule found for this event',
-            };
+            // else {
+            //   return {
+            //     success: false,
+            //     message: 'No upcoming schedule found for this event',
+            //   };
+            // }
           }
         }
       }
     }
-    console.log('Required schedule:', requiredSchedule);
+    if (!requiredSchedule) {
+      console.log('No upcoming schedule found');
+      return {
+        success: false,
+        message: 'No upcoming schedule found for this event',
+      };
+    } else {
+      console.log('Required schedule:', requiredSchedule);
+    }
     if (eventInfo.eventSchedule.length == 1) {
       eventDescription = getStringDateTzWithTime(new Date(requiredSchedule));
     } else {
@@ -6731,7 +6745,7 @@ export class EventService2 {
   //           $addToSet: { eventSchedule: schedule3._id },
   //         },
   //       );
-      
+
   //     }
   //     return {
   //       success: true,
