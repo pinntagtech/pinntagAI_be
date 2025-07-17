@@ -6,7 +6,7 @@ export class GetRewardDashboardDto {
   @IsNotEmpty()
   latitude: string;
 
-  @IsNotEmpty()ma
+  @IsNotEmpty()
   longitude: string;
 
   @IsOptional()
