@@ -125,7 +125,6 @@ import {
 } from 'src/business/model/businessIndustry.model';
 import {
   AtlantaData,
-  CorruptedAtlantaEvents,
   ETL_DATA,
   LubbockData,
 } from './crawledEvents.json';
@@ -6439,11 +6438,19 @@ export class EventService2 {
         );
 
         console.log('CATEGORIES:', data.categories);
+        const categoryNames = data.categories.map((cat) => cat.name);
+        console.log('Category Names:', categoryNames);
         const cats = await this.categoryModel
-          .find({ title: { $in: data.categories } })
+          .find({ title: { $in: categoryNames } })
           .select('_id')
           .lean();
         const categoriesInObjectId = cats.map((cat) => cat._id);
+        if(categoriesInObjectId.length === 0) {
+          const defaultCategory = await this.categoryModel.findOne({
+            title: 'Entertainment',
+          });
+          categoriesInObjectId.push(defaultCategory._id);
+        }
         console.log('CATEGORIES::::', categoriesInObjectId);
         const createdEvent = await this.eventModel.create({
           title: data.title,

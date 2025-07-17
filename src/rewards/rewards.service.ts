@@ -602,7 +602,7 @@ export class RewardsService {
     }
   }
 
-  async getAllRewards(user: DecodedUser, page: number, limit: number) {
+  async getAllRewards(user: DecodedUser, status: string,page: number, limit: number) {
     try {
       const userId = user.id;
       if (!user.businessProfile) {
@@ -637,8 +637,14 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      let match: any = { businessProfile: business._id };
+      if(status === 'active'){
+        match['schedule.endDate'] = { $gte: new Date() };
+      }else if(status === 'expired'){
+        match['schedule.endDate'] = { $lt: new Date() };
+      }
       const pipeline: any = [
-        { $match: { businessProfile: business._id } },
+        { $match: match },
         { $sort: { createdAt: -1 } },
         // QR_CODE
         {

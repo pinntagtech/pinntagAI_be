@@ -89,11 +89,18 @@ export class RewardsController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('status') status: string,  //all active expired
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
+    
+
+    if (status && !['all', 'active', 'expired'].includes(status)) {
+      status = 'all'; // Default to 'all' if invalid status
+    }
     const result = await this.rewardService.getAllRewards(
       user,
+      status,
       pageNumber,
       limitNumber,
     );
