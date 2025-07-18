@@ -15,8 +15,6 @@ export class GetRewardDashboardDto {
   @IsOptional()
   endDate: string;
 
-
-  
   @IsOptional()
   @IsIn(Object.values(RewardType))
   rewardType: string;

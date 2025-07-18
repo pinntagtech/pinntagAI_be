@@ -2038,7 +2038,10 @@ export class AdminService {
       );
       let businessCategoriesIds = [];
       if (data.businessCategories) {
-        data.businessCategories = data.businessCategories.split(',');
+        // data.businessCategories = data.businessCategories.split(',');
+        if (!Array.isArray(data.businessCategories)) {
+          data.businessCategories = [data.businessCategories];
+        }
         for (let category of data.businessCategories) {
           if (!mongoose.isValidObjectId(category)) {
             return {

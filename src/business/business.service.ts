@@ -1507,7 +1507,7 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-      logger.info(`categories: ${JSON.stringify(categories)}`);
+      // logger.info(`categories: ${JSON.stringify(categories)}`);
       const totalDocs = await this.businessCategoryModel.countDocuments({
         industry: new mongoose.Types.ObjectId(id),
       });
