@@ -9,6 +9,8 @@ import {
   Req,
   UseGuards,
   BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
@@ -18,6 +20,7 @@ import { CreateOutletDto } from './dto/create-outlet.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('outlet')
 export class OutletController {
@@ -214,6 +217,39 @@ export class OutletController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('createOutletsInBulk')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async createOutletsInBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.outletService.createOutletsInBulk(file, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        // data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);

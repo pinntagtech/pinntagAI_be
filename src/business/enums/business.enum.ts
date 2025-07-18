@@ -725,3 +725,9 @@ export const ROLES_IN_ORGANISATION = [
   'Franchise Owner',
   'HR Manager',
 ];
+export const ExpectedDownlineUserHeaders = [
+  'name',
+  'email',
+  'countryCode',
+  'phone',
+]

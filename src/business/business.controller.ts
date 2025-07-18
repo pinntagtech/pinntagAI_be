@@ -1144,6 +1144,40 @@ export class BusinessController {
     }
   }
 
+
+   @Post('uploadDownlineUsersInBulk')
+    @UseGuards(JwtGuard2)
+    @UseInterceptors(
+      FileInterceptor('file', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 1 MB
+        limits: { fileSize: 1000000 },
+      }),
+    )
+    async uploadDownlineUsersInBulk(
+      @UploadedFile() file: Express.Multer.File,
+      @TokenDecoder() user: DecodedUser,
+    ) {
+      if (!file) {
+        throw new BadRequestException('File is required');
+      }
+  
+      const result = await this.businessService.createDownlineUsersInBulk(file, user);
+      if (result.success) {
+        return {
+          message: result.message,
+          data: result.data,
+        };
+      } else {
+        throw new BadRequestException(result.message);
+      }
+    }
+
   
 
 

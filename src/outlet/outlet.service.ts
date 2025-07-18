@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
@@ -21,6 +21,11 @@ import { SubscriptionContextImpl } from 'twilio/lib/rest/events/v1/subscription'
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { OutletCategoryList, VehicleType } from './outlet.enum';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import csv from 'csv-parser';
+import * as streamifier from 'streamifier';
+import { ExpectedOutletHeaders } from './enums/outlet.enum';
+import { GoogleService } from 'src/google/google.service';
 
 @Injectable()
 export class OutletService {
@@ -36,6 +41,7 @@ export class OutletService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
+    private readonly googleService: GoogleService,
   ) {}
   private async getAllChildUsersIds(
     userId: string,
@@ -498,7 +504,7 @@ export class OutletService {
           ],
         };
       }
-      if(type){
+      if (type) {
         match['category'] = type;
       }
       if (creationDate) {
@@ -579,6 +585,122 @@ export class OutletService {
         success: true,
         message: 'Vehicle Types fetched successfully',
         data: vehicleTypes,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+    const rows: any[] = [];
+    const stream = streamifier.createReadStream(file.buffer);
+
+    return new Promise((resolve, reject) => {
+      stream
+        .pipe(csv())
+        .on('headers', (headers: string[]) => {
+          const missing = ExpectedOutletHeaders.filter(
+            (h) => !headers.includes(h),
+          );
+          if (missing.length > 0) {
+            reject(
+              new BadRequestException(`Missing columns: ${missing.join(', ')}`),
+            );
+          }
+        })
+        .on('data', (row) => rows.push(row))
+        .on('end', () => resolve(rows))
+        .on('error', () =>
+          reject(new BadRequestException('CSV parsing error.')),
+        );
+    });
+  }
+
+  async createOutletFromRow(row: any, user: DecodedUser) {
+    try {
+      let address = `${row.address1}, ${row.city}, ${row.state}, ${row.country}, ${row.postalCode}`;
+      let placeList = await this.googleService.googleRecommendation({
+        address: address,
+      });
+      let placeDetails = await this.googleService.getPlaceDetails(
+        placeList.data[0].placePrediction.placeId,
+        placeList.sessionToken,
+        address,
+      );
+      const foundOutlet = await this.outletModel.findOne({
+        refId: row.referenceId,
+      });
+      if (foundOutlet) {
+        throw new BadRequestException(
+          `Outlet with referenceId ${row.referenceId} already exists.`,
+        );
+      }
+
+      let outletObj = {
+        category: row.category,
+        name: row.name,
+        address1: row.address1,
+        address2: row.address2 ? row.address2 : '',
+        city: row.city,
+        postalCode: row.postalCode,
+        country: row.country,
+        state: row.state,
+        countryCode: row.countryCode,
+        phone: row.phone,
+        email: row.email,
+        isActive: true,
+        refId: row.referenceId,
+        creator: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        latitude: placeDetails.data['latitude']
+          ? parseFloat(placeDetails.data['latitude'])
+          : 0,
+        longitude: placeDetails.data['longitude']
+          ? parseFloat(placeDetails.data['longitude'])
+          : 0,
+      };
+      const outlet = await this.outletModel.create(outletObj);
+      console.log('Created Outlet:', outlet);
+      await this.businessUserModel.updateOne(
+        { _id: user.id },
+        {
+          $addToSet: {
+            outlets: outlet._id,
+          },
+        },
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        'Error creating outlet from row: ' + error.message,
+      );
+    }
+  }
+
+  async createOutletsInBulk(file: Express.Multer.File, user: DecodedUser) {
+    try {
+      const businessUser = await this.businessUserModel.findById(user.id);
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!businessUser || !business) {
+        return {
+          success: false,
+          message: 'Business User or Business not found!',
+        };
+      }
+      const rows = await this.parseCsv(file);
+      console.log('Parsed rows:', rows);
+      // for (const row of rows) {
+      //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
+      // }
+
+      await Promise.all(rows.map(row => this.createOutletFromRow(row, user)));
+
+      return {
+        success: true,
+        message: 'Outlets created successfully in bulk.',
+        // data: [], // You can return the created outlets data if needed
       };
     } catch (error) {
       return {

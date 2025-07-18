@@ -1,0 +1,16 @@
+export const ExpectedOutletHeaders = [
+  'category',
+  'name',
+  'address1',
+  'address2',
+  'city',
+  'postalCode',
+  'country',
+  'state',
+  'countryCode',
+  'phone',
+  'email',
+  'referenceId',
+//   'latitude',
+//   'longitude',
+];

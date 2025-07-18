@@ -14,6 +14,7 @@ import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { JwtService } from '@nestjs/jwt';
+import { GoogleService } from 'src/google/google.service';
 
 @Module({
   imports: [
@@ -34,6 +35,6 @@ import { JwtService } from '@nestjs/jwt';
     ])
   ],
   controllers: [OutletController],
-  providers: [OutletService,JwtService]
+  providers: [OutletService,JwtService,GoogleService]
 })
 export class OutletModule {}

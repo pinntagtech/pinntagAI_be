@@ -15,6 +15,7 @@ import {
   BusinessCreatorType,
   BusinessStatus,
   BusinessUserCreatorType,
+  ExpectedDownlineUserHeaders,
   ProfileStatus,
   ROLES_IN_ORGANISATION,
   ScalabilityFactor,
@@ -121,6 +122,9 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { Rating, RatingDocument } from './model/rating.model';
+
+import csv from 'csv-parser';
+import * as streamifier from 'streamifier';
 
 @Injectable()
 export class BusinessService {
@@ -673,8 +677,8 @@ export class BusinessService {
           // Create role under the department
           const createdRole = await this.roleModel.create({
             name: roleData.name,
-            creator: new mongoose.Types.ObjectId(userId),
             creatorType: RoleCreatorType.BUSINESS,
+            creator: new mongoose.Types.ObjectId(userId),
             belongsTo: RoleBelonging.BUSINESS,
             business: businessId,
           });
@@ -3307,6 +3311,133 @@ export class BusinessService {
         success: true,
         message: 'Review created Successfully!',
         data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+    const rows: any[] = [];
+    const stream = streamifier.createReadStream(file.buffer);
+
+    return new Promise((resolve, reject) => {
+      stream
+        .pipe(csv())
+        .on('headers', (headers: string[]) => {
+          const missing = ExpectedDownlineUserHeaders.filter(
+            (h) => !headers.includes(h),
+          );
+          if (missing.length > 0) {
+            reject(
+              new BadRequestException(`Missing columns: ${missing.join(', ')}`),
+            );
+          }
+        })
+        .on('data', (row) => rows.push(row))
+        .on('end', () => resolve(rows))
+        .on('error', () =>
+          reject(new BadRequestException('CSV parsing error.')),
+        );
+    });
+  }
+
+  async createDownlineUserFromRow(row: any, user: DecodedUser) {
+    try {
+        const foundUser = await this.businessUserModel.findOne({
+        email: row.email,
+      });
+
+      if (foundUser) {
+        return {
+          success: false,
+          message: 'Business User already found with this email',
+        };
+      }
+      let password = await this.authService.autoGeneratePassword();
+      const hashedPassword = await bcrypt.hash(password, 10);
+      // if (data.role) {
+      //   if (!isValidObjectId(data.role)) {
+      //     return {
+      //       success: false,
+      //       message: 'Please provide valid Role Id',
+      //     };
+      //   }
+      // }
+      let createObj = {
+        // role: [new mongoose.Types.ObjectId(data.role)],
+        creatorType: BusinessUserCreatorType.BUSINESS,
+        creator: new mongoose.Types.ObjectId(user.id),
+        name: row.name,
+        email: row.email,
+        password: hashedPassword,
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        isEmailVerified: true,
+        status: ProfileStatus.EMAIL_VERIFIED,
+        phone: row.phone,
+        countryCode: row.countryCode,
+      };
+
+      const createdUser = await this.businessUserModel.create(createObj);
+
+      //create drive
+      let driveDetails = await this.seederService.createDrive(
+        createdUser._id,
+        BusinessUser.name,
+      );
+      await this.businessUserModel.updateOne(
+        { _id: createdUser.id },
+        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      );
+
+      // sendEmaillink verification
+      const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
+      this.mailService.sendDownlineUserCredentials(
+        createdUser.name,
+        createdUser.email,
+        password,
+        loginLink,
+      );
+
+
+    } catch (error) {
+      throw new BadRequestException(
+        'Error creating outlet from row: ' + error.message,
+      );
+    }
+  }
+
+  async createDownlineUsersInBulk(
+    file: Express.Multer.File,
+    user: DecodedUser,
+  ) {
+    try {
+      const businessUser = await this.businessUserModel.findById(user.id);
+      const business = await this.businessModel.findById(user.businessProfile);
+
+      if (!businessUser || !business) {
+        return {
+          success: false,
+          message: 'Business User or Business not found!',
+        };
+      }
+      const rows = await this.parseCsv(file);
+      console.log('Parsed rows:', rows);
+      // for (const row of rows) {
+      //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
+      // }
+
+      await Promise.all(
+        rows.map((row) => this.createDownlineUserFromRow(row, user)),
+      );
+
+      return {
+        success: true,
+        message: 'Users created successfully in bulk.',
+        data: [], // You can return the created outlets data if needed
       };
     } catch (error) {
       return {
