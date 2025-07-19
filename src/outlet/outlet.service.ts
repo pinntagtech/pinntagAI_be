@@ -497,6 +497,7 @@ export class OutletService {
           $or: [
             { name: { $regex: search, $options: 'i' } },
             { address1: { $regex: search, $options: 'i' } },
+            { address2: { $regex: search, $options: 'i' } },
             { city: { $regex: search, $options: 'i' } },
             { state: { $regex: search, $options: 'i' } },
             { postalCode: { $regex: search, $options: 'i' } },
@@ -504,7 +505,7 @@ export class OutletService {
           ],
         };
       }
-      if (type) {
+      if (type && type !== 'All') {
         match['category'] = type;
       }
       if (creationDate) {
@@ -695,7 +696,7 @@ export class OutletService {
       //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
       // }
 
-      await Promise.all(rows.map(row => this.createOutletFromRow(row, user)));
+      await Promise.all(rows.map((row) => this.createOutletFromRow(row, user)));
 
       return {
         success: true,
