@@ -41,7 +41,7 @@ export class CreateDownlineBusinessUserDto {
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   forcePasswordReset: boolean;
 

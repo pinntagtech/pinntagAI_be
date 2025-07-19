@@ -12,13 +12,13 @@ export const RedemptionMode = {
   ONLINE: 'Online',
 };
 export enum RewardStatus {
-    DRAFTED = 'drafted',
-    PUBLISHED = 'published',
-    CLOSED = 'closed',
-    BLOCKED = 'blocked',
-  }
-  export const ClaimStatus = {
-    ACTIVE : 'active',
-    CLAIMED : 'claimed',
-    EXPIRED : 'expired',
-  }
+  DRAFTED = 'drafted',
+  PUBLISHED = 'published',
+  CLOSED = 'closed',
+  BLOCKED = 'blocked',
+}
+export const ClaimStatus = {
+  ACTIVE: 'active',
+  CLAIMED: 'claimed',
+  EXPIRED: 'expired',
+};

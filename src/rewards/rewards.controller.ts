@@ -32,6 +32,8 @@ import { totalmem } from 'os';
 import { UserTypes } from 'src/enums/auth.enums';
 import { ClaimStatus } from './enums/rewards.enum';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { GenerateEventUrlDto } from 'src/event/dto/generate-event-url.dto';
+import { GenerateRewardUrlDto } from './dto/generate-reward-url.dto';
 
 @Controller('reward')
 export class RewardsController {
@@ -87,11 +89,20 @@ export class RewardsController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('status') status: string,  //all active expired
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
+    
+
+    if (status && !['all', 'active', 'expired'].includes(status)) {
+      status = 'all'; // Default to 'all' if invalid status
+    }
     const result = await this.rewardService.getAllRewards(
       user,
+      status,
+      search,
       pageNumber,
       limitNumber,
     );
@@ -107,14 +118,43 @@ export class RewardsController {
 
   @Get(':id')
   @UseGuards(JwtGuard2)
-  async getRewardById(
+  async getRewardByIdBusiness(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
+    // @Body('latitude') latitude: string,
+    // @Body('longitude') longitude: string,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
     }
-    const result = await this.rewardService.getRewardById(id, user);
+    const result = await this.rewardService.getRewardByIdBusiness(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('consumer/:id')
+  @UseGuards(JwtGuard2)
+  async getRewardByIdConsumer(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+    @Body('latitude') latitude: string,
+    @Body('longitude') longitude: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid Object ID');
+    }
+    const result = await this.rewardService.getRewardByIdConsumer(
+      id,
+      user,
+      latitude,
+      longitude,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -162,6 +202,7 @@ export class RewardsController {
     @Body() data: GetRewardDashboardDto,
     @Query('search') search: string,
     @Query('distance') distance: string,
+    @Query('activityType') activityType: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -171,6 +212,7 @@ export class RewardsController {
       user,
       data,
       search,
+      activityType,
       distance ? parseInt(distance) : 1000000000000,
       pageNumber,
       limitNumber,
@@ -308,6 +350,22 @@ export class RewardsController {
       return result;
     } else {
       throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('generateRewardUrl')
+  @UseGuards(JwtGuard2)
+  async generateRewardUrl(@Body() data: GenerateRewardUrlDto) {
+    const result = await this.rewardService.generateRewardUrl(data);
+    if (result.success) {
+      return {
+        message: result.message,
+        rewardUrl: result.rewardUrl,
+      };
+    } else {
+      return {
+        message: result.message,
+      };
     }
   }
 }

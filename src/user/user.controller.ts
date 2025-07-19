@@ -158,7 +158,7 @@ export class UserController {
   }
 
   @Post('update/profilePhoto')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   @UseInterceptors(FileInterceptor('profilePhoto'))
   async updateProfilePhoto(
     @Req() req: Request,

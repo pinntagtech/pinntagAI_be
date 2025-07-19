@@ -28,6 +28,9 @@ export class DashboardConfig {
   categories: Array<mongoose.Types.ObjectId>;
 
   @Prop()
+  cardType: string;
+
+  @Prop()
   sortOrder: number;
 }
 

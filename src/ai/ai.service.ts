@@ -42,21 +42,30 @@ export class AiService {
         {
           role: 'user',
           content: `
-          Generate a compelling, and professionally engaging description for a content item.
+          Write a professionally engaging, under-100-word description for the content item, using a friendly, persuasive tone. The description should be:Relevant to the business category and content type
           Business Name: ${business.name}
           Business Category: ${business.businessIndustry['name']}
           Content Type: ${contentType}
           Content Category: ${category}
           Deal Type: ${dealType}
           Title: ${title}
-          Guidelines:
-          Keep it under 100 words.
-          Use a professional yet friendly inviting tone.
-          Make it relevant to the business category and content type.
-          Highlight what makes the content unique or valuable to the audience.
-          Avoid generic filler (e.g., “Don't miss out”, "Welcome to" or “This is the best”).
-          Focus on clarity, persuasion, and specificity.
-          Prefer not to use business name in the description and keep it focused on the content.
+          Tailored to the deal type and category
+          Specific, informative, and value-driven
+          Unique each time — use different phrasings, sentence structures, or angles
+          Avoid using the business name
+          DO NOT use generic phrases like “Don't miss out”, “This is the best”, “Welcome to”, etc.
+          Include subtle creative variation each time it's run (change lead-ins, highlight different benefits, or use analogies when appropriate)
+          Optionally vary the tone slightly within a professional range (e.g., slightly more dynamic, thoughtful, or bold — depending on the content type or category)
+          Example styles to vary between:
+          Focused on benefits
+          Focused on insights or takeaways
+          Emphasizing urgency or timeliness (without clichés)
+          Using a question hook
+          Using a metaphor or comparison
+          Using a stat or data point if contextually relevant
+          Output format:
+          Just the description text.
+          Do not include titles, headers, or repeat the input fields.
         `,
         },
       ];
@@ -77,10 +86,103 @@ export class AiService {
           },
         ),
       );
+      const cleanDescription = response.data.choices[0].message.content
+        .replace(/\n/g, ' ')
+        .replace(/\\"/g, '"')
+        .replace(/\"/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
       return {
         success: true,
         message: 'Description generated successfully',
-        data: response.data.choices[0].message.content,
+        data: cleanDescription,
+      };
+    } catch (error) {
+      console.error('Error fetching AI description:', error);
+      return {
+        success: false,
+        message: 'Failed to generate description',
+      };
+    }
+  }
+  async getRewardDescription(
+    businessId: string,
+    rewardType: string,
+    title: string,
+    activityType: string,
+    targetCount: number,
+    startDate: string,
+    endDate: string,
+  ) {
+    try {
+      const business = await this.businessModel
+        .findById(businessId)
+        .select('name businessCategories businessIndustry')
+        .populate('businessIndustry', 'name')
+        .populate('businessCategories', 'name');
+      console.log('BUSINESS:', business);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      const messages = [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant.',
+        },
+        {
+          role: 'user',
+          content: `
+          Generate a compelling, and professionally engaging description for a content item.
+          Business Name: ${business.name}
+          Business Industry: ${business.businessIndustry['name']}
+          Business Category: ${business.businessCategories['name']}
+          Reward Type: ${rewardType}
+          Activity Type: ${activityType}
+          Target Count: ${targetCount}
+          Start Date: ${startDate}
+          End Date: ${endDate}
+          Title: ${title}
+          Guidelines:
+          Keep it under 150 words.
+          Use a professional, friendly, and motivating tone.
+          Make the description relevant to the business category and the activity type.
+          Clearly explain what the user needs to do (based on activity type and target count).
+          Highlight the reward's value and what makes it appealing or worth the effort.
+          Include the date range only if it's relevant to urgency or eligibility (but avoid hype).
+          Avoid generic phrases like “Don't miss out” or “Act fast.”
+          Focus on clarity, motivation, and relevance to the user's experience.
+          Do not include the business name in the description—keep it focused on the reward and activity.
+        `,
+        },
+      ];
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-3.5-turbo',
+            messages: messages,
+            max_tokens: 512,
+            temperature: 0.7,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+      const cleanDescription = response.data.choices[0].message.content.replace(
+        /\n/g,
+        ' ',
+      );
+      return {
+        success: true,
+        message: 'Description generated successfully',
+        data: cleanDescription,
       };
     } catch (error) {
       console.error('Error fetching AI description:', error);
@@ -159,10 +261,14 @@ export class AiService {
           },
         ),
       );
+      const cleanDescription = response.data.choices[0].message.content.replace(
+        /\n/g,
+        ' ',
+      );
       return {
         success: true,
         message: 'Description generated successfully',
-        data: response.data.choices[0].message.content,
+        data: cleanDescription,
       };
     } catch (error) {
       console.error('Error fetching AI description:', error);

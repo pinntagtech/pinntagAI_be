@@ -1,4 +1,4 @@
-import { UserSchema } from "src/user/models/user.model";
+import { UserSchema } from 'src/user/models/user.model';
 
 export const DefaultBusinessOwnerRole = {
   name: 'Business Owner',
@@ -14,6 +14,120 @@ export const DefaultBusinessOwnerRole = {
   //   COUPONS: ['create', 'read', 'update', 'delete'],
   // },
 };
+export const DefaultAdminRoles = {
+  Sales_User: {
+    name: 'Sales User',
+    privileges: {
+      DASHBOARD: ['READ'],
+      BUSINESSES: ['READ'],
+      CONSUMERS: ['READ'],
+      MY_USERS: ['READ'],
+      ANALYTICS: ['READ'],
+    },
+  },
+  Sales_Manager: {
+    name: 'Sales Manager',
+    privileges: {
+      DASHBOARD: ['READ'],
+      BUSINESSES: ['READ'],
+      CONSUMERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      MY_USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ANALYTICS: ['READ'],
+    },
+  },
+  Support_Executive: {
+    name: 'Support Executive',
+    privileges: {
+      MY_USERS: ['READ', 'UPDATE'],
+      REPORTED_CONTENT: ['READ'],
+      ANALYTICS: ['READ'],
+    },
+  },
+  Support_Manager: {
+    name: 'Support Manager',
+    privileges: {
+      MY_USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REPORTED_CONTENT: ['READ', 'UPDATE'],
+      ANALYTICS: ['READ'],
+    },
+  },
+  Finance_User: {
+    name: 'Finance User',
+    privileges: {
+      ANALYTICS: ['READ'],
+      STORAGE: ['READ'],
+    },
+  },
+  Finance_Manager: {
+    name: 'Finance Manager',
+    privileges: {
+      ANALYTICS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['READ', 'UPDATE'],
+    },
+  },
+  Marketing_User: {
+    name: 'Marketing User',
+    privileges: {
+      CONTENT_CATEGORIES: ['CREATE', 'READ'],
+      CONTENT_TEMPLATES: ['READ'],
+    },
+  },
+  Marketing_Manager: {
+    name: 'Marketing Manager',
+    privileges: {
+      CONTENT_CATEGORIES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      CONTENT_TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REPORTED_CONTENT: ['READ'],
+    },
+  },
+  Product_Admin: {
+    name: 'Product Admin',
+    privileges: {
+      CONTENT_CATEGORIES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      CONTENT_TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      CONTENT_ETL: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+    },
+  },
+  Operations_User: {
+    name: 'Operations User',
+    privileges: {
+      BUSINESSES: ['READ'],
+      STORAGE: ['READ', 'UPDATE'],
+      DASHBOARD: ['READ'],
+    },
+  },
+  Operations_Manager: {
+    name: 'Operations Manager',
+    privileges: {
+      BUSINESSES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      DASHBOARD: ['READ'],
+      ANALYTICS: ['READ'],
+    },
+  },
+  IT_Support: {
+    name: 'IT Support',
+    privileges: {
+      EXPLORE_SETTINGS: ['READ', 'UPDATE'],
+      ROLES_AND_PRIVILEGES: ['READ'],
+    },
+  },
+  IT_Manager: {
+    name: 'IT Manager',
+    privileges: {
+      EXPLORE_SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      // PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE']
+    },
+  },
+  Outlet_Manager: {
+    name: 'Outlet Manager',
+    privileges: {
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+    },
+  },
+};
 export const DefaultBusinessRoles = {
   Store_Manager: {
     name: 'Store Manager',
@@ -22,9 +136,13 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isBusinessOwner: false,
     privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REVIEWS: ['READ'],
+      DASHBOARD: ['READ'],
+      CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEMPLATES: ['CREATE', 'READ'],
     },
   },
   General_Manager: {
@@ -34,9 +152,16 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isBusinessOwner: false,
     privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REVIEWS: ['READ'],
+      DASHBOARD: ['READ'],
+      CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
     },
   },
   Regional_Manager: {
@@ -46,9 +171,14 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isBusinessOwner: false,
     privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REVIEWS: ['READ'],
+      DASHBOARD: ['READ'],
+      CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
   Operational_Manager: {
@@ -58,552 +188,418 @@ export const DefaultBusinessRoles = {
     isSuperAdmin: false,
     isBusinessOwner: false,
     privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REVIEWS: ['READ'],
-    },
-  },
-  Marketing_Manager: {
-    name: 'Marketing Manager',
-    creatorType: 'Business',
-    belongsTo: 'Business',
-    isSuperAdmin: false,
-    isBusinessOwner: false,
-    privileges: {
-      COUPONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      BANNERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      BRANDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-    },
-  },
-  Finance_Manager: {
-    name: 'Finance Manager',
-    creatorType: 'Business',
-    belongsTo: 'Business',
-    isSuperAdmin: false,
-    isBusinessOwner: false,
-    privileges: {
-      PAYMENTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REPORTS: ['READ'],
-    },
-  },
-  Support_Executive: {
-    name: 'Support Executive',
-    creatorType: 'Business',
-    belongsTo: 'Business',
-    isSuperAdmin: false,
-    isBusinessOwner: false,
-    privileges: {
-      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-    },
-  },
-  Franchise_Owner: {
-    name: 'Franchise Owner',
-    creatorType: 'Business',
-    belongsTo: 'Business',
-    isSuperAdmin: false,
-    isBusinessOwner: false,
-    privileges: {
-      ORDERS: ['READ', 'UPDATE'],
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      DASHBOARD: ['READ'],
+      CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      TEMPLATES: ['READ'],
+      BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
     },
   },
 };
 
 export const DefaultBusinessDepartmentRoles = [
   {
-    "name": "Operations",
-    "description": "Manages day-to-day business operations.",
-    "roles": [
+    name: 'Operations',
+    description: 'Manages day-to-day business operations.',
+    roles: [
       {
-        "name": "Store Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Store Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ'],
+        },
       },
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
       },
       {
-        "name": "Regional Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Regional Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
       },
       {
-        "name": "Operations Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'Operations Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['READ'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
+      },
+    ],
   },
+  // {
+  //   name: 'Marketing',
+  //   description:
+  //     'Responsible for promoting products and enhancing brand image.',
+  //   roles: [
+  //     {
+  //       name: 'Marketing Manager',
+  //       creatorType: 'Business',
+  //       belongsTo: 'Business',
+  //       isSuperAdmin: false,
+  //       isBusinessOwner: false,
+  //       privileges: {
+  //         COUPONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //         BANNERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //         BRANDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //       },
+  //     },
+  //   ],
+  // },
+  // {
+  //   name: 'Finance',
+  //   description: 'Handles financial transactions, reporting, and budgeting.',
+  //   roles: [
+  //     {
+  //       name: 'Finance Manager',
+  //       creatorType: 'Business',
+  //       belongsTo: 'Business',
+  //       isSuperAdmin: false,
+  //       isBusinessOwner: false,
+  //       privileges: {
+  //         PAYMENTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //         REPORTS: ['READ'],
+  //       },
+  //     },
+  //   ],
+  // },
+  // {
+  //   name: 'Customer Support',
+  //   description: 'Provides assistance and support to customers.',
+  //   roles: [
+  //     {
+  //       name: 'Support Executive',
+  //       creatorType: 'Business',
+  //       belongsTo: 'Business',
+  //       isSuperAdmin: false,
+  //       isBusinessOwner: false,
+  //       privileges: {
+  //         MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //         NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+  //       },
+  //     },
+  //   ],
+  // },
   {
-    "name": "Marketing",
-    "description": "Responsible for promoting products and enhancing brand image.",
-    "roles": [
+    name: 'Sales',
+    description: 'Drives revenue through customer acquisition and retention.',
+    roles: [
       {
-        "name": "Marketing Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "COUPONS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "BANNERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "BRANDS": ["CREATE", "READ", "UPDATE", "DELETE"]
-        }
-      }
-    ]
-  },
-  {
-    "name": "Finance",
-    "description": "Handles financial transactions, reporting, and budgeting.",
-    "roles": [
-      {
-        "name": "Finance Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "PAYMENTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REPORTS": ["READ"]
-        }
-      }
-    ]
-  },
-  {
-    "name": "Customer Support",
-    "description": "Provides assistance and support to customers.",
-    "roles": [
-      {
-        "name": "Support Executive",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "MESSAGES": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "NOTIFICATIONS": ["CREATE", "READ", "UPDATE", "DELETE"]
-        }
-      }
-    ]
-  },
-  {
-    "name": "Sales",
-    "description": "Drives revenue through customer acquisition and retention.",
-    "roles": [
-      {
-        "name": "Regional Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Regional Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
       },
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
       },
       {
-        "name": "Store Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'Store Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ'],
+        },
+      },
+    ],
   },
   {
-    "name": "Product Management",
-    "description": "Responsible for product planning and development.",
-    "roles": [
+    name: 'Product Management',
+    description: 'Responsible for product planning and development.',
+    roles: [
       {
-        "name": "Operations Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Operations Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['READ'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
       },
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
+      },
+    ],
   },
   {
-    "name": "Human Resources",
-    "description": "Manages recruitment, employee relations, and personnel policies.",
-    "roles": [
+    name: 'Human Resources',
+    description:
+      'Manages recruitment, employee relations, and personnel policies.',
+    roles: [
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
+      },
+    ],
   },
   {
-    "name": "Logistics",
-    "description": "Oversees supply chain, inventory, and product distribution.",
-    "roles": [
+    name: 'Logistics',
+    description: 'Oversees supply chain, inventory, and product distribution.',
+    roles: [
       {
-        "name": "Store Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Store Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ'],
+        },
       },
       {
-        "name": "Operations Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'Operations Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['READ'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
+      },
+    ],
   },
   {
-    "name": "IT and Systems",
-    "description": "Manages IT infrastructure, software, and technical support.",
-    "roles": [
+    name: 'IT and Systems',
+    description: 'Manages IT infrastructure, software, and technical support.',
+    roles: [
       {
-        "name": "Operations Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Operations Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['READ'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
       },
-      {
-        "name": "Support Executive",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "MESSAGES": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "NOTIFICATIONS": ["CREATE", "READ", "UPDATE", "DELETE"]
-        }
-      }
-    ]
+      // {
+      //   name: 'Support Executive',
+      //   creatorType: 'Business',
+      //   belongsTo: 'Business',
+      //   isSuperAdmin: false,
+      //   isBusinessOwner: false,
+      //   privileges: {
+      //     MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      //     NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+      //   },
+      // },
+    ],
   },
   {
-    "name": "Quality Assurance",
-    "description": "Ensures product and service quality through testing and evaluation.",
-    "roles": [
+    name: 'Quality Assurance',
+    description:
+      'Ensures product and service quality through testing and evaluation.',
+    roles: [
       {
-        "name": "Operations Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
+        name: 'Operations Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['READ'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+        },
       },
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
+      },
+    ],
   },
   {
-    "name": "Legal and Compliance",
-    "description": "Ensures adherence to legal regulations and compliance standards.",
-    "roles": [
+    name: 'Legal and Compliance',
+    description:
+      'Ensures adherence to legal regulations and compliance standards.',
+    roles: [
       {
-        "name": "Finance Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "PAYMENTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REPORTS": ["READ"]
-        }
+        name: 'Finance Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          // REPORTS: ['READ'],
+        },
       },
       {
-        "name": "General Manager",
-        "creatorType": "Business",
-        "belongsTo": "Business",
-        "isSuperAdmin": false,
-        "isBusinessOwner": false,
-        "privileges": {
-          "ORDERS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "PRODUCTS": ["CREATE", "READ", "UPDATE", "DELETE"],
-          "REVIEWS": ["READ"]
-        }
-      }
-    ]
-  }
-]
-
-
-//--------------------------------
-
-// export const DefaultAdminRoles = {
-//   Managing_Director: {
-//     name: 'Managing Director',
-//     privileges: {
-//       BUSINESS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       ROLES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       privileges: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       REPORTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//     },
-//   },
-//   Board_Member: {
-//     name: 'Board Member',
-//     privileges: {
-//       BUSINESS: ['READ'],
-//       USERS: ['READ'],
-//       ROLES: ['READ'],
-//       privileges: ['READ'],
-//       REPORTS: ['READ'],
-//       SETTINGS: ['READ'],
-//     },
-//   },
-//   Manager: {
-//     name: 'Manager',
-//     privileges: {
-//       USERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       ORDERS: ['READ'],
-//     },
-//   },
-//   Executive: {
-//     name: 'Executive',
-//     privileges: {
-//       MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//       NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-//     },
-//   },
-// };
-
-export const DefaultAdminRoles = {
-  Sales_User: {
-    name: 'Sales User',
-    privileges: {
-      BUSINESS: ['READ'],
-      REFERRALS: ['CREATE', 'READ'],
-      ORDERS: ['CREATE', 'READ'],
-      PRODUCTS: ['READ'],
-      CATEGORIES: ['READ'],
-      BRANDS: ['READ'],
-      LOCATIONS: ['READ'],
-      MESSAGES: ['READ'],
-      NOTIFICATIONS: ['READ'],
-    },
+        name: 'General Manager',
+        creatorType: 'Business',
+        belongsTo: 'Business',
+        isSuperAdmin: false,
+        isBusinessOwner: false,
+        privileges: {
+          DASHBOARD: ['READ'],
+          CONTENT: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          REWARDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          STORAGE: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          ROLES_AND_PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEAM: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          TEMPLATES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          SUBSCRIPTION: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+          BUSINESS_PROFILE: ['CREATE', 'READ', 'UPDATE'],
+        },
+      },
+    ],
   },
-  Sales_Manager: {
-    name: 'Sales Manager',
-    privileges: {
-      BUSINESS: ['READ'],
-      REFERRALS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRODUCTS: ['READ'],
-      CATEGORIES: ['READ'],
-      BRANDS: ['READ'],
-      REPORTS: ['READ'],
-      LOCATIONS: ['READ'],
-    },
-  },
-  Support_Executive: {
-    name: 'Support Executive',
-    privileges: {
-      ORDERS: ['READ', 'UPDATE'],
-      MESSAGES: ['READ', 'CREATE', 'UPDATE'],
-      NOTIFICATIONS: ['READ', 'UPDATE'],
-      REPORTS: ['READ'],
-      USERS: ['READ'],
-    },
-  },
-  Support_Manager: {
-    name: 'Support Manager',
-    privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE'],
-      MESSAGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      NOTIFICATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REPORTS: ['READ'],
-      USERS: ['READ'],
-    },
-  },
-  Finance_User: {
-    name: 'Finance User',
-    privileges: {
-      PAYMENTS: ['READ'],
-      ORDERS: ['READ'],
-      REPORTS: ['READ'],
-    },
-  },
-  Finance_Manager: {
-    name: 'Finance Manager',
-    privileges: {
-      PAYMENTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REPORTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ORDERS: ['READ'],
-    },
-  },
-  Marketing_User: {
-    name: 'Marketing User',
-    privileges: {
-      PRODUCTS: ['CREATE', 'READ'],
-      BRANDS: ['CREATE', 'READ'],
-      REFERRALS: ['CREATE', 'READ'],
-      CATEGORIES: ['READ'],
-    },
-  },
-  Marketing_Manager: {
-    name: 'Marketing Manager',
-    privileges: {
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      BRANDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REFERRALS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      CATEGORIES: ['READ'],
-    },
-  },
-  Product_Admin: {
-    name: 'Product Admin',
-    privileges: {
-      PRODUCTS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      CATEGORIES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      BRANDS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-    },
-  },
-  Operations_User: {
-    name: 'Operations User',
-    privileges: {
-      ORDERS: ['READ', 'UPDATE'],
-      OUTLETS: ['READ', 'UPDATE'],
-      LOCATIONS: ['READ'],
-    },
-  },
-  Operations_Manager: {
-    name: 'Operations Manager',
-    privileges: {
-      ORDERS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      OUTLETS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      REPORTS: ['READ'],
-    },
-  },
-  IT_Support: {
-    name: 'IT Support',
-    privileges: {
-      SETTINGS: ['READ', 'UPDATE'],
-      PERMISSIONS: ['READ'],
-      ROLES: ['READ'],
-    },
-  },
-  IT_Manager: {
-    name: 'IT Manager',
-    privileges: {
-      SETTINGS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PERMISSIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      ROLES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      PRIVILEGES: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-    },
-  },
-  Outlet_Manager: {
-    name: 'Outlet Manager',
-    privileges: {
-      OUTLETS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-      LOCATIONS: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-    },
-  },
-};
+];

@@ -6,5 +6,7 @@ export type ResourceDocument = Resource & Document;
 export class Resource {
   @Prop({ required: true })
   title: string;
+  @Prop({ required: true, enum: ['BusinessUser','Admin'] })
+  belongsTo: string;
 }
 export const ResourceSchema = SchemaFactory.createForClass(Resource);

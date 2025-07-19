@@ -13,6 +13,7 @@ import {
   Query,
   Param,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -118,8 +119,31 @@ export class AuthController {
     };
   }
 
+  @Put('updateUserConsent')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async updateUserConsent(
+    @Req() req: Request,
+    @Body('privacyConsent')  privacyConsent: boolean,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.authService.updateUserConsent(
+      user.id,
+      privacyConsent,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+    };
+  }
+
   @Post('updatePersonalDetails/:id')
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(JwtGuard2)
   async updatePersonalDetails(
     @Req() req: Request,
     @Body() personalDetailDTO: PersonDetailDto,
@@ -438,6 +462,7 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
+    console.log("LATITUDE AND LONGITUDE::::",body.latitude, body.longitude);
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       throw new BadRequestException('Not a valid User');
     }
@@ -453,6 +478,7 @@ export class AuthController {
         throw new BadRequestException('Please provide a valid distance value.');
       }
     }
+    console.log("Distance in controller:", distance);
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,
@@ -465,6 +491,7 @@ export class AuthController {
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
+
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -530,7 +557,7 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
-    console.log('Entered Controllerrrr!!!');
+   
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
@@ -578,7 +605,7 @@ export class AuthController {
   }
 
   @Delete('delete')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async deleteAccount(@TokenDecoder() user: DecodedUser) {
     const result = await this.authService.deleteAccount(user);
     if (!result.success) {
@@ -676,7 +703,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@TokenDecoder() user: DecodedUser) {
-    console.log('User/Admin in controller:', user);
+     console.log('Entered Controllerrrr!!!');
     const result = await this.authService.getProfile(user.id, user.userType);
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -684,6 +711,7 @@ export class AuthController {
     return {
       message: result.message,
       user: result.user,
+      resourceAndPrivileges: result.resourceAndPrivileges,
     };
   }
 

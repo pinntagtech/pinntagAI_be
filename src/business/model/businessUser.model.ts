@@ -23,7 +23,7 @@ export class BusinessUser {
   @Prop({
     required: true,
     enum: Object.values(ProfileStatus),
-    default: 0,
+    default: ProfileStatus.INITIATED,
   })
   status: number;
 

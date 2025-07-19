@@ -40,12 +40,13 @@ export enum CrawledEventStatus {
 }
 
 export enum ReportTypes {
-  VALIDITY = 'validity',
+  VALIDITY = 'Validity',
   INAPPROPRIATE = 'Inappropriate or offensive content',
   MISLEADING = 'Misleading information',
   HATE_SPEECH = 'Hate speech or harassment',
-  DUPLICATE = 'duplicate or outdated event',
-  OTHER = 'other',
+  SPAM = 'Spam or promotional abuse',
+  DUPLICATE = 'Duplicate or outdated event',
+  OTHER = 'Other',
 }
 
 export const BadWords = [

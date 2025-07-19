@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Privilege } from './privilege.decorator';
-import { PrivilegeDocument } from './models/privilage.model';
+import { PrivilegeDocument } from './models/privilege.model';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 // import {

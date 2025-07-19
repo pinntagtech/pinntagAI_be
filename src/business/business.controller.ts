@@ -15,6 +15,8 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -49,6 +51,7 @@ import {
   UpdateLocationGroupDto,
 } from './dto/create-locationGroup.dto';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('business')
 export class BusinessController {
@@ -125,13 +128,23 @@ export class BusinessController {
   async updateBusiness(
     @TokenDecoder() user: DecodedUser,
     @Body() data: UpdateBusinessDto,
+    @Query('businessId') businessId: string,
   ) {
     if (!isValidObjectId(user.id)) {
       throw new BadRequestException('Invalid ObjectId');
     }
+    let businessProfileId = null;
+    if (businessId) {
+      if (!isValidObjectId(businessId)) {
+        businessProfileId = user.businessProfile;
+      }
+      businessProfileId = businessId;
+    } else {
+      businessProfileId = user.businessProfile;
+    }
     const result = await this.businessService.updateBusiness(
       user.id,
-      user.businessProfile,
+      businessProfileId,
       data,
     );
 
@@ -216,14 +229,27 @@ export class BusinessController {
 
   @Post('user/update')
   @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('profilePhoto', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async updateBusinessUser(
     @TokenDecoder() user: DecodedUser,
+    @UploadedFile() profilePhoto: Express.Multer.File,
     @Body() data: UpdateBusinessUserDto,
   ) {
     if (!isValidObjectId(user.id)) {
       throw new BadRequestException('Invalid ObjectId');
     }
-    const result = await this.businessService.updateBusinessUser(user.id, data);
+    const result = await this.businessService.updateBusinessUser(user.id, data, profilePhoto);
     if (result.success) {
       return {
         message: result.message,
@@ -1052,8 +1078,14 @@ export class BusinessController {
 
   @Get('dashboard')
   @UseGuards(JwtGuard2)
-  async getDashboardData(@TokenDecoder() user: DecodedUser,@Query('limit') limit: string) {
-    const result = await this.businessService.getDashboardData(user,parseInt(limit));
+  async getDashboardData(
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+  ) {
+    const result = await this.businessService.getDashboardData(
+      user,
+      parseInt(limit),
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1063,5 +1095,94 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Get('followers')
+  @UseGuards(JwtGuard2)
+  async getFollowers(
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    const result = await this.businessService.getFollowers(
+      user.businessProfile,
+      parseInt(page),
+      parseInt(limit),
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        pages: result.pages,
+        page: result.page,
+        limit: result.limit,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('rate/:businessId')
+  @UseGuards(JwtGuard2)
+  async createReview(
+    @TokenDecoder() user: DecodedUser,
+    @Param('businessId') businessId: string,
+    @Body('rating') rating: number,
+    @Body('comment') comment: string,
+  ) {
+    const result = await this.businessService.createRating(
+      user.id,
+      businessId,
+      { rating, comment },
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+
+   @Post('uploadDownlineUsersInBulk')
+    @UseGuards(JwtGuard2)
+    @UseInterceptors(
+      FileInterceptor('file', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 1 MB
+        limits: { fileSize: 1000000 },
+      }),
+    )
+    async uploadDownlineUsersInBulk(
+      @UploadedFile() file: Express.Multer.File,
+      @TokenDecoder() user: DecodedUser,
+    ) {
+      if (!file) {
+        throw new BadRequestException('File is required');
+      }
+  
+      const result = await this.businessService.createDownlineUsersInBulk(file, user);
+      if (result.success) {
+        return {
+          message: result.message,
+          data: result.data,
+        };
+      } else {
+        throw new BadRequestException(result.message);
+      }
+    }
+
+  
+
+
+
+
+
 
 }

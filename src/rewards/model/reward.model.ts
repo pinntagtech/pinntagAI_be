@@ -49,6 +49,9 @@ export class Reward {
 
   @Prop()
   targetCount: number;
+
+  @Prop()
+  promotionCode: string;
   
   @Prop()
   schedule: Schedule;
@@ -87,6 +90,9 @@ export class Reward {
 
   @Prop()
   activityQrCode: string;
+
+  @Prop()
+  rewardUrl: string;
 }
 
 export const RewardSchema = SchemaFactory.createForClass(Reward);

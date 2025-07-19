@@ -30,12 +30,14 @@ import { Drive, DriveDocument } from 'src/drive/models/drive.model';
 // } from 'src/business-profile/models/businessProfile.model';
 import {
   Actions,
+  AdminResourceTypes,
+  BusinessResourceTypes,
   ResourceTypes,
   RoleBelonging,
   RoleCreatorType,
   Roles,
 } from 'src/roles/enums/roles.enum';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
 import {
@@ -98,6 +100,8 @@ import {
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Region, RegionDocument } from 'src/business/model/region.model';
+import { OutletCategoryList } from 'src/outlet/outlet.enum';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 
 @Injectable()
 export class SeederService {
@@ -150,6 +154,8 @@ export class SeederService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Region.name)
     private readonly regionModel: Model<RegionDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
   ) {}
@@ -343,7 +349,7 @@ export class SeederService {
 
         // 2) For each privilegeKey under this role:
         for (const privilegeKey of Object.keys(roleData.privileges)) {
-          const resourceTitle = ResourceTypes[privilegeKey];
+          const resourceTitle = AdminResourceTypes[privilegeKey];
           // console.log('Resource Title:', resourceTitle);
           if (!resourceTitle) {
             console.warn(`Skipping missing ResourceTypes['${privilegeKey}']`);
@@ -357,6 +363,7 @@ export class SeederService {
           if (!resourceDoc) {
             resourceDoc = await this.resourceModel.create({
               title: resourceTitle,
+              belongsTo: 'Admin',
             });
           }
 
@@ -486,7 +493,7 @@ export class SeederService {
     if (!privileges.length) {
       const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
       for (let [key, action] of Object.entries(Actions)) {
-        for (let [resKey, resource] of Object.entries(ResourceTypes)) {
+        for (let [resKey, resource] of Object.entries(AdminResourceTypes)) {
           await this.privilegeModel.create({
             role: new mongoose.Types.ObjectId(superAdmin.role[0]),
             resource: resource,
@@ -499,11 +506,24 @@ export class SeederService {
   async seedResources() {
     const resources = await this.resourceModel.find();
 
-    if (resources.length < Object.values(ResourceTypes).length) {
-      for (let value of Object.values(ResourceTypes)) {
+    if (
+      resources.length <
+      Object.values(AdminResourceTypes).length +
+        Object.values(BusinessResourceTypes).length
+    ) {
+      for (let value of Object.values(AdminResourceTypes)) {
         let findResource = await this.resourceModel.findOne({ title: value });
         if (!findResource) {
-          await this.resourceModel.create({ title: value });
+          await this.resourceModel.create({ title: value, belongsTo: 'Admin' });
+        }
+      }
+      for (let value of Object.values(BusinessResourceTypes)) {
+        let findResource = await this.resourceModel.findOne({ title: value });
+        if (!findResource) {
+          await this.resourceModel.create({
+            title: value,
+            belongsTo: 'BusinessUser',
+          });
         }
       }
     }
@@ -601,7 +621,7 @@ export class SeederService {
       `Business‐Industries: ${inserted} created, ${matched} already existed`,
     );
   }
- 
+
   async seedBusinessCategories() {
     // 1. Fetch super-admin once
     const superAdmin = await this.adminModel
@@ -749,6 +769,10 @@ export class SeederService {
       let businessIndustry = await this.businessIndustryModel.findOne({
         title: template.businessIndustry,
       });
+      if(!businessIndustry) {
+        console.error(
+          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,)
+      }
       let createObj = {
         creatorType: Admin.name,
         type: template.type,
@@ -773,7 +797,7 @@ export class SeederService {
       await this.templateModel.create(createObj);
     }
   }
-  
+
   async seedDashboardConfigs() {
     const dashboardConfigs = await this.dashboardConfigModel.find();
     if (dashboardConfigs.length !== 0) return;
@@ -848,25 +872,41 @@ export class SeederService {
         const deptRoles = [];
         for (const roleData of dept.roles) {
           // Create role under the department
-          const createdRole = await this.roleModel.create({
+          let foundRole = await this.roleModel.findOne({
             name: roleData.name,
-            creator: new mongoose.Types.ObjectId(userId),
-            creatorType: RoleCreatorType.BUSINESS,
             belongsTo: RoleBelonging.BUSINESS,
+            creatorType: RoleCreatorType.BUSINESS,
             business: businessId,
           });
-          deptRoles.push(createdRole._id);
+          if (!foundRole) {
+            foundRole = await this.roleModel.create({
+              name: roleData.name,
+              creator: new mongoose.Types.ObjectId(userId),
+              creatorType: RoleCreatorType.BUSINESS,
+              belongsTo: RoleBelonging.BUSINESS,
+              business: businessId,
+            });
+          }
+
+          deptRoles.push(foundRole._id);
 
           // Privileges
           const privilegeKeys = Object.keys(roleData.privileges);
           for (const privilegeKey of privilegeKeys) {
             // Get/create resource
+            console.log('privilegeKey:', privilegeKey);
+            console.log(
+              'BusinessResourceTypes[privilegeKey]:',
+              BusinessResourceTypes[privilegeKey],
+            );
+
             let resourceDetails = await this.resourceModel.findOne({
-              title: ResourceTypes[privilegeKey],
+              title: BusinessResourceTypes[privilegeKey],
             });
             if (!resourceDetails) {
               resourceDetails = await this.resourceModel.create({
-                title: ResourceTypes[privilegeKey],
+                title: BusinessResourceTypes[privilegeKey],
+                belongsTo: 'BusinessUser',
               });
             }
 
@@ -881,12 +921,19 @@ export class SeederService {
                   title: Actions[actionKey],
                 });
               }
-
-              await this.privilegeModel.create({
-                role: createdRole._id,
+              const foundPrivilege = await this.privilegeModel.findOne({
+                role: foundRole._id,
                 resource: resourceDetails.title,
                 action: actionDetails.title,
               });
+              if (!foundPrivilege) {
+                // Create privilege if it doesn't exist
+                await this.privilegeModel.create({
+                  role: foundRole._id,
+                  resource: resourceDetails.title,
+                  action: actionDetails.title,
+                });
+              }
             }
           }
         }
@@ -938,6 +985,7 @@ export class SeederService {
       isEmailVerified: true,
       name: 'Pinntag',
       status: ProfileStatus.EMAIL_VERIFIED,
+      forcePasswordReset: false,
     };
     let createdUser = await this.businessUserModel.create(createObj);
     let driveDetails = await this.createDrive(
@@ -998,6 +1046,35 @@ export class SeederService {
 
     const createdBusiness = await this.businessModel.create(businessObj);
 
+    //seed 1 default outlet
+
+    let outletObj = {
+      category: OutletCategoryList.PHYSICAL,
+      name: 'PinnTag Head Office',
+      address1: '13 Sounds Lodge',
+      address2: 'Crockenhill',
+      city: 'Swanley',
+      postalCode: 'BR8 8TD',
+      country: 'United Kingdom',
+      state: 'Kent',
+      countryCode: '+44',
+      phone: '7917303330',
+      email: email,
+      isActive: true,
+      creator: new mongoose.Types.ObjectId(createdUser.id),
+      business: new mongoose.Types.ObjectId(createdBusiness._id),
+      latitude: 51.3704,
+      longitude: 0.1702,
+    };
+    const outlet = await this.outletModel.create(outletObj);
+    await this.businessUserModel.updateOne(
+      { _id: createdUser.id },
+      {
+        $addToSet: {
+          outlets: outlet._id,
+        },
+      },
+    );
     this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
       .then(() => console.log('Business roles seeded successfully'))
       .catch((err) => console.error('Error seeding business roles:', err));

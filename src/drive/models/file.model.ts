@@ -16,6 +16,8 @@ class MetaData {
   @Prop()
   url: string;
   @Prop()
+  thumbnailUrl: string;
+  @Prop()
   size: number;
   @Prop()
   originalName: string;

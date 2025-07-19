@@ -7,20 +7,17 @@ import {
   IsBoolean,
   IsDateString,
   IsArray,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 import { OutletCategory } from '../model/outletCategory.model';
 import { VehicleType } from '../outlet.enum';
 
 export class UpdateOutletDto {
-  // Outlet Basic Information
   @IsOptional()
   @IsString()
   category: string;
-
-  @IsOptional()
-  @IsString()
-  type: string; // Dropdown based on category
-
 
   @IsOptional()
   @IsString()
@@ -60,89 +57,29 @@ export class UpdateOutletDto {
   @IsEmail()
   email: string;
 
-  // Social Media & Online Presence
   @IsOptional()
-  @IsString()
-  whatsappNumber?: string;
+  latitude: number;
+  @IsOptional()
+  longitude: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(90)
+  servingRadius: number;
 
   @IsOptional()
   @IsString()
   website?: string;
 
-  @IsOptional()
   @IsString()
-  facebook?: string;
-
-  @IsOptional()
-  @IsString()
-  instagram?: string;
+  address1?: string;
 
   @IsOptional()
   @IsString()
-  twitter?: string;
+  address2?: string;
 
-  @IsOptional()
-  @IsString()
-  googleMyBusinessId?: string;
-
-  // /FOR PHYSICAL RETAIL AND OUTLET SERVICE OUTLETS
-
-  @IsOptional()
-  @IsString()
-  addressLine1?: string;
-
-  @IsOptional()
-  @IsString()
-  addressLine2?: string;
-
-  @IsOptional()
-  @IsString()
-  posSystemId?: string;
-
-
-
-  // Mobile & Flexible Outlet Specific Fields
   @IsOptional()
   @IsEnum(VehicleType)
   vehicleType?: string;
-
-  @IsOptional()
-  @IsString()
-  vehicleRegistrationNumber?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  gpsTrackerEnabled?: boolean;
-
-  // Temporary & Event-Based Outlet Specific Fields
-  @IsOptional()
-  @IsString()
-  eventName?: string;
-
-  @IsOptional()
-  @IsDateString()
-  startDate?: Date;
-
-  @IsOptional()
-  @IsDateString()
-  endDate?: Date;
-
-  @IsOptional()
-  @IsString()
-  boothNumber?: string;
-
-  // Online & Delivery-Centric Outlet Specific Fields
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  partneredDeliveryServices?: string[];
-
-  // Specialty & Unconventional Outlet Specific Fields
-  @IsOptional()
-  @IsBoolean()
-  insidePremise?: boolean;
-
-  @IsOptional()
-  @IsString()
-  premiseName?: string; // Name of Hotel, Airport, University, etc.
 }

@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { Resource, ResourceDocument } from './models/resource.model';
-import { Privilege, PrivilegeDocument } from './models/privilage.model';
+import { Privilege, PrivilegeDocument } from './models/privilege.model';
 import { Action, ActionDocument } from './models/actions.model';
 import { CreateRoleDto } from './dto/createRole.dto';
 import { UserTypes } from 'src/enums/auth.enums';
@@ -302,7 +302,6 @@ export class RolesService {
         page: page,
         limit: limit,
       };
-
     } catch (error) {
       console.error('Error:', error);
       return {
@@ -467,14 +466,24 @@ export class RolesService {
           {
             role: new mongoose.Types.ObjectId(roleId),
           },
-          { $set: { role: new mongoose.Types.ObjectId(backupRoleId) } },
+          {
+            $set: {
+              $pull: { role: new mongoose.Types.ObjectId(roleId) }, // remove old roleId
+              $addToSet: { role: new mongoose.Types.ObjectId(backupRoleId) },
+            },
+          },
         );
-      } else if (userType == UserTypes.USER) {
-        await this.userModel.updateMany(
+      } else if (userType == UserTypes.BUSINESS) {
+        await this.businessUserModel.updateMany(
           {
             role: new mongoose.Types.ObjectId(roleId),
           },
-          { $set: { role: new mongoose.Types.ObjectId(backupRoleId) } },
+          {
+            $set: {
+              $pull: { role: new mongoose.Types.ObjectId(roleId) }, // remove old roleId
+              $addToSet: { role: new mongoose.Types.ObjectId(backupRoleId) },
+            },
+          },
         );
       }
       return { success: true, message: 'Role deleted successfully' };

@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 
 export class CreateCategoryDto {
@@ -10,6 +11,8 @@ export class CreateCategoryDto {
   lightIcon: string;
   @IsString()
   darkIcon: string;
+
+  @Transform(({ value }) => typeof value === 'string' ? value.toUpperCase() : value)
   @IsString()
   activeColor: string;
 }

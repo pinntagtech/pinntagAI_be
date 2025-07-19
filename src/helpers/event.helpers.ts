@@ -245,6 +245,7 @@ export const haversineDistance = (
   lat2: number,
   lon2: number,
 ): number => {
+  console.log(`Calculating distance between (${lat1}, ${lon1}) and (${lat2}, ${lon2})`);
   const R = 6371; // Radius of the Earth in kilometers
   const dLat = ((lat2 - lat1) * Math.PI) / 180; // Convert degrees to radians
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -256,7 +257,7 @@ export const haversineDistance = (
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c; // Distance in kilometers
-  return distance;
+  return distance * 0.621371; // in miles
 };
 
 export const calculateDistanceWithGoogle = async (

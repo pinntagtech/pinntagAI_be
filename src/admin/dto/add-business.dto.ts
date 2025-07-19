@@ -89,6 +89,8 @@ export class AddBusinessDto {
   @IsString()
   businessIndustry: string;
 
-  @IsString()
-  businessCategories: any;
+  @Transform(({ value }) => Array.isArray(value) ? value : [value])
+  @IsArray()
+  @IsString({ each: true })
+  businessCategories: string[];
 }

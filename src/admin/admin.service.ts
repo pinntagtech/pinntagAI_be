@@ -20,7 +20,11 @@ import {
 //   BusinessLocation,
 //   BusinessLocationDocument,
 // } from 'src/business-profile/models/businessLocation.model';
-import { CrawledEventStatus, EventStatus } from 'src/enums/event.enums';
+import {
+  CrawledEventStatus,
+  EventStatus,
+  ReportTypes,
+} from 'src/enums/event.enums';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
 import { UpdateCrawledEventDto } from 'src/event/dto/update-crawled-event.dto';
 import {
@@ -95,7 +99,7 @@ import { Drive } from 'src/drive/models/drive.model';
 import { DriveService } from 'src/drive/drive.service';
 import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
-import { Privilege, PrivilegeDocument } from 'src/roles/models/privilage.model';
+import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import {
   Department,
   DepartmentDocument,
@@ -112,6 +116,8 @@ import {
   FileCategory,
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
+import { Report, ReportDocument } from 'src/event/models/reports.model';
+import { BusinessPopulates } from 'src/enums/user.enum';
 
 @Injectable()
 export class AdminService {
@@ -158,6 +164,8 @@ export class AdminService {
     private readonly privilegeModel: Model<PrivilegeDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Report.name)
+    private readonly reportModel: Model<ReportDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly httpService: HttpService,
@@ -994,8 +1002,8 @@ export class AdminService {
         message: 'Admin not found with the id provided.',
       };
     }
-    let password = data.password;
-    data.password = await bcrypt.hash(data.password, 10);
+    let password = await this.authService.autoGeneratePassword();
+    const hashedPassword = await bcrypt.hash(password, 10);
     if (data.role) {
       const role = await this.roleModel.findById(data.role);
       if (!role) {
@@ -1017,20 +1025,21 @@ export class AdminService {
       };
     }
     if (data.profilePhoto === '') {
-      console.log('Is this coming here:');
       delete data.profilePhoto;
     }
 
     const createdAdmin = await this.adminModel.create({
       creatorType: RoleCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(adminId),
-      // isEmailVerified: true,
+      password: hashedPassword,
+      fullPhoneNumber: fullPhoneNumber,
+      isEmailVerified: true,
       ...data,
     });
 
     console.log('created Admin:', createdAdmin.id);
     const loginLink = process.env.PORTAL_URL + 'v1/admin/login';
-    await this.mailService.sendDownlineUserCredentials(
+    this.mailService.sendDownlineUserCredentials(
       createdAdmin.name,
       createdAdmin.email,
       password,
@@ -1658,8 +1667,14 @@ export class AdminService {
       };
     }
   }
-  async updateTemplate(adminId: string, id: string, data: UpdateTemplateDto) {
+  async updateTemplate(
+    adminId: string,
+    id: string,
+    data: UpdateTemplateDto,
+    image: Express.Multer.File,
+  ) {
     try {
+      const admin = await this.adminModel.findById(adminId);
       const template = await this.templateModel.findById(id);
       if (!template) {
         return {
@@ -1669,22 +1684,50 @@ export class AdminService {
       }
 
       let categoryObjectIds = [];
+      // if (data.contentCategories) {
+      //   for (let i = 0; i < data.contentCategories.length; i++) {
+      //     const foundCategory = await this.contentCategoryModel.findById(
+      //       data.contentCategories[i],
+      //     );
+      //     if (!foundCategory) {
+      //       return {
+      //         success: false,
+      //         message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+      //       };
+      //     } else {
+      //       categoryObjectIds.push(foundCategory._id);
+      //     }
+      //   }
+      //   data.contentCategories = categoryObjectIds;
+      // }
       if (data.contentCategories) {
-        console.log('date.contentCategories:', data.contentCategories);
-        for (let i = 0; i < data.contentCategories.length; i++) {
-          console.log('data.categories[i]:', data.contentCategories[i]);
-          const foundCategory = await this.contentCategoryModel.findById(
-            data.contentCategories[i],
-          );
+        const categories = Array.isArray(data.contentCategories)
+          ? data.contentCategories
+          : [data.contentCategories];
+
+        for (let i = 0; i < categories.length; i++) {
+          const categoryId = categories[i];
+
+          // Optionally validate ObjectId format early
+          if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            return {
+              success: false,
+              message: `Invalid category ID format: ${categoryId}`,
+            };
+          }
+
+          const foundCategory =
+            await this.contentCategoryModel.findById(categoryId);
           if (!foundCategory) {
             return {
               success: false,
-              message: `Category not found with the id provided: ${data.contentCategories[i]}`,
+              message: `Category not found with the id provided: ${categoryId}`,
             };
           } else {
             categoryObjectIds.push(foundCategory._id);
           }
         }
+
         data.contentCategories = categoryObjectIds;
       }
       let busCategoryObjectIds = [];
@@ -1702,7 +1745,8 @@ export class AdminService {
             busCategoryObjectIds.push(foundCategory._id);
           }
         }
-        data.businessCategories = categoryObjectIds;
+        console.log('busCategoryObjectIds:', busCategoryObjectIds);
+        data.businessCategories = busCategoryObjectIds;
       }
       if (data.businessIndustry) {
         data.businessIndustry = new mongoose.Types.ObjectId(
@@ -1716,11 +1760,22 @@ export class AdminService {
           updateObj[key] = data[key];
         }
       });
-
       if (data.contentCategories) {
         updateObj.categories = data.contentCategories;
       }
-
+      if (image) {
+        const fileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.GALLERY_IMAGE,
+        });
+        let imageUpload = await this.driveService.uploadAndCreateFile(
+          image,
+          String(admin.drive),
+          Drive.name,
+          admin._id,
+          fileCategory._id,
+        );
+        updateObj.thumbnail = imageUpload.metaData.url;
+      }
       const updatedTemplate = await this.templateModel.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
         {
@@ -1983,7 +2038,10 @@ export class AdminService {
       );
       let businessCategoriesIds = [];
       if (data.businessCategories) {
-        data.businessCategories = data.businessCategories.split(',');
+        // data.businessCategories = data.businessCategories.split(',');
+        if (!Array.isArray(data.businessCategories)) {
+          data.businessCategories = [data.businessCategories];
+        }
         for (let category of data.businessCategories) {
           if (!mongoose.isValidObjectId(category)) {
             return {
@@ -2291,6 +2349,52 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in createBusinessUser:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getReportedEvents(page: number, limit: number, status?: string) {
+    try {
+      const query: any = {};
+      if (
+        status &&
+        status !== 'all' &&
+        Object.values(ReportTypes).includes(status as ReportTypes)
+      ) {
+        query.status = status;
+      }
+      const reportedEvents = await this.reportModel
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('user', '_id name')
+        // .populate('event', '_id title')
+        .populate({
+          path: 'event',
+          populate: {
+            path: 'businessProfile',
+            model: Business.name,
+            select: BusinessPopulates.FOREIGN,
+          },
+        });
+
+      const totalReportedEvents = await this.reportModel.countDocuments(query);
+
+      return {
+        success: true,
+        message: 'Reported events fetched successfully',
+        data: reportedEvents,
+        page,
+        limit,
+        total: totalReportedEvents,
+        pages: Math.ceil(totalReportedEvents / limit),
+      };
+    } catch (error) {
+      console.error('Error in getReportedEvents:', error);
       return {
         success: false,
         message: 'Something went wrong.',

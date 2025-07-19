@@ -95,8 +95,8 @@ export class DriveController {
       fileCategory,
       folderId,
       fileType,
-      page,
-      limit,
+      Number(page),
+      Number(limit),
     );
 
     if (result.success) {
@@ -237,10 +237,7 @@ export class DriveController {
 
   @Delete('deleteFile/:id')
   @UseGuards(JwtGuard2)
-  async deleteFile(
-    @TokenDecoder() user: DecodedUser,
-    @Param('id') id: string,
-  ) {
+  async deleteFile(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid file ID');
     }

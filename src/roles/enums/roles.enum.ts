@@ -1,4 +1,4 @@
-import { BusinessUser } from "src/business/model/businessUser.model";
+import { BusinessUser } from 'src/business/model/businessUser.model';
 
 export const RoleCreatorType = {
   ADMIN: 'Admin',
@@ -60,7 +60,7 @@ export const ResourceTypes = {
   TAXES: 'taxes',
   ADDRESSES: 'addresses',
   PRIVILEGES: 'privileges',
-  OUTLETS: 'outlets'
+  OUTLETS: 'outlets',
   // PAYMENT_METHODS: 'payment_methods',
   // SHIPPING_METHODS: 'shipping_methods',
   // ORDER_STATUSES: 'order_statuses',
@@ -72,4 +72,36 @@ export const ResourceTypes = {
   // ORDER_DETAILS: 'order_details',
   // ORDER_DELIVERIES: 'order_deliveries',
   // ORDER_COMMISSIONS: 'order_commissions',
+};
+
+export const AdminResourceTypes = {
+  DASHBOARD: 'dashboard',
+  BUSINESSES: 'businesses',
+  BUSINESS_SEGMENTS: 'business segments',
+  CONSUMERS: 'consumers',
+  CONTENT_CATEGORIES: 'content categories',
+  CONTENT_TEMPLATES: 'content templates',
+  EXPLORE_SETTINGS: 'explore settings',
+  MY_USERS: 'my users',
+  STORAGE: 'storage',
+  ROLES_AND_PRIVILEGES: 'roles & privileges',
+  CONTENT_ETL: 'content etl',
+  REPORTED_CONTENT: 'reported content',
+  ANALYTICS: 'analytics',
+
+};
+
+export const BusinessResourceTypes = {
+  DASHBOARD: 'dashboard',
+  CONTENT: 'content',
+  REWARDS: 'rewards',
+  STORAGE: 'storage',
+  LOCATIONS: 'locations',
+  REGIONS: 'regions',
+  DEPARTMENTS: 'departments',
+  ROLES_AND_PRIVILEGES: 'roles_and_privileges',
+  TEAM: 'team',
+  TEMPLATES: 'templates',
+  SUBSCRIPTION: 'subscription',
+  BUSINESS_PROFILE: 'business_profile',
 };

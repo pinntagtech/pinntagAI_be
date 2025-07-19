@@ -134,121 +134,128 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Art & Crafts',
+      title: 'Art',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/arts_and_crafts.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Arts+and+craft.svg',
       activeColor: '#F1F3C2',
       description: 'Art & Crafts',
     },
     {
-      title: 'Beauty & Spa',
+      title: 'Grooming',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/beauty_and_spa.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Beauty+n+spa.svg',
       activeColor: '#F7B5CA',
       description: 'Beauty & Spa',
     },
     {
       title: 'Charity',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
-      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/charity.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/charity.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/charity.svg',
       activeColor: '#A1EEBD',
       description: 'Charity',
     },
     {
-      title: 'Clubs & Classes',
+      title: 'Clubs',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/clubs_and_classes.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Club+and+classes.svg',
       activeColor: '#A6D6D6',
       description: 'Clubs & Classes',
     },
     {
       title: 'Days Out',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/days_out.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
       activeColor: '#FFF1D5',
       description: 'Days Out',
     },
     {
       title: 'Entertainment',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/entertainment.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
       activeColor: '#D9EAFD',
       description: 'Entertainment',
     },
     {
-      title: 'Food & Drinks',
+      title: 'Dining',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/food_and_drink.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Food+and+drinks.svg',
       activeColor: '#FFCDB2',
       description: 'Food & Drinks',
     },
     {
       title: 'Happy Hour',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/happy_hour.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
       activeColor: '#FFE1E0',
       description: 'Happy Hour',
     },
     {
-      title: 'Health & Fitness',
+      title: 'Fitness',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Health+and+fitness.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/health_and_fitness.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Health+and+fitness.svg',
       activeColor: '#CDFAD5',
       description: 'Health & Fitness',
     },
     {
-      title: 'Local Attractions',
+      title: 'Local',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/local_attractions.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
       activeColor: '#FFE3E3',
       description: 'Local Attractions',
     },
     {
-      title: 'Music & Nightlife',
+      title: 'Nightlife',
       lightIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
       darkIcon:
-        'https://pinntagbucket.s3.amazonaws.com/categories/music_and_nightlife.svg',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
       activeColor: '#8EACCD',
       description: 'Music & Nightlife',
     },
     {
       title: 'Pets',
-      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
-      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/pets.svg',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/pets.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/pets.svg',
       activeColor: '#D4F6FF',
       description: 'Pets',
     },
     {
       title: 'Retail',
-      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
-      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/retail.svg',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
       activeColor: '#BFD8AF',
       description: 'Retail',
     },
     {
       title: 'Sports',
-      lightIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
-      darkIcon: 'https://pinntagbucket.s3.amazonaws.com/categories/sports.svg',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/sports.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/sports.svg',
       activeColor: '#FFCCEA',
       description: 'Sports',
     },
@@ -1257,6 +1264,93 @@ export const Seeder = {
       type: 'offer',
       user: null,
       discountType: 'PERCENTAGE',
+      discountValue: '100',
+      businessProfile: null,
+      categories: ['Food & Drink'],
+      title: 'Free Coke with Any Burger!',
+      keywords: ['burger', 'fast food', 'coke', 'free drink'],
+      description:
+        'Craving a delicious burger? Now’s the perfect time to indulge! For a limited period, enjoy a refreshing Coca-Cola completely FREE with every burger you purchase at our participating locations. Whether you’re into classic cheeseburgers, spicy chicken, or plant-based patties, each burger meal comes with an ice-cold Coke to complement the flavor and elevate your dining experience. Grab your friends, skip the kitchen, and treat yourself to a combo that satisfies both hunger and thirst without any extra cost. Just mention promo code FREECOKE during your visit. Valid while supplies last – don’t miss this chance to enjoy your favorite burger combo with a chilled Coke on us!',
+      minTargetAge: 15,
+      maxTargetAge: 50,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'FREECOKE',
+      isFree: true,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Offer valid for dine-in only. One Coke per burger. While supplies last.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Free+Coke+With+Burger.png',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
+      discountValue: '50',
+      businessProfile: null,
+      categories: ['Food & Drink'],
+      title: 'Buy 2 Pizzas, Get 2 Cokes Free!',
+      keywords: ['pizza', 'beverage', 'coke', 'combo deal'],
+      description:
+        "Make your next meal a celebration! When you order any two large pizzas, you’ll receive two chilled Coca-Colas absolutely FREE. This combo is perfect for pizza nights with family, gaming marathons with friends, or simply spoiling yourself after a long day. Our pizzas are made fresh using premium ingredients and loaded with bold flavors. Pair them with the crisp fizz of Coke and you've got a match made in food heaven. Use promo code PIZZA+COKE at checkout for delivery or takeaway. A delicious deal that brings joy to your table without extra cost. Hurry — valid for a limited time, one offer per order!",
+      minTargetAge: 18,
+      maxTargetAge: 45,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'PIZZA+COKE',
+      isFree: false,
+      participationCost: '',
+      termsApplied: true,
+      termsAndConditions:
+        'Available for delivery and takeaway only. While supplies last. One offer per order.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Buy+Pizza+Get+Coke.png',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'FIXED',
+      discountValue: '5',
+      businessProfile: null,
+      categories: ['Food & Drink'],
+      title: 'Coke Combo Lunch for Just $5!',
+      keywords: ['lunch', 'combo', 'coke', 'meal deal'],
+      description:
+        "Take your lunch break to the next level with our value-packed $5 Coke Combo Lunch! For just five dollars, enjoy a satisfying meal that includes a hearty sandwich of your choice, a side of crispy golden fries, and an ice-cold Coca-Cola to complete the experience. Whether you're a busy professional, student, or just hungry for great food on a budget, this midday meal is designed to deliver flavor, freshness, and savings. Served fast, enjoyed best between 12pm and 3pm, this combo is your perfect lunch solution. Mention promo code LUNCH5 when ordering in-store or for pickup and enjoy a great lunch without breaking the bank.",
+      minTargetAge: 18,
+      maxTargetAge: 55,
+      targetGenders: ['male', 'female', 'others'],
+      promotionCode: 'LUNCH5',
+      isFree: false,
+      participationCost: '$5',
+      termsApplied: true,
+      termsAndConditions:
+        'Offer valid from 12pm–3pm daily. Dine-in and pickup only. No substitutions.',
+      businessIndustry: 'Food & Drink',
+      businessCategories: ['Restaurant'],
+      thumbnail:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Coke+Combo+Lunch.png',
+      createdAt: null,
+      updatedAt: null,
+      __v: 0,
+    },
+    {
+      creatorType: 'AdminUser',
+      type: 'offer',
+      user: null,
+      discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
       categories: ['Foods & Drink'],
@@ -2051,7 +2145,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: true,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: [
         'Entertainment',
@@ -2067,7 +2161,7 @@ export const Seeder = {
       offersIncluded: false,
       eventsIncluded: false,
       flashOffersIncluded: true,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Food & Drinks', 'Retail', 'Beauty & Spa', 'Happy Hour'],
       sortOrder: 200,
@@ -2093,7 +2187,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Food & Drinks', 'Happy Hour'],
       sortOrder: 400,
@@ -2103,7 +2197,7 @@ export const Seeder = {
       offersIncluded: false,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: [
         'Music & Nightlife',
@@ -2118,7 +2212,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Health & Fitness', 'Clubs & Classes'],
       sortOrder: 600,
@@ -2128,7 +2222,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Charity', 'Local Attractions'],
       sortOrder: 700,
@@ -2138,7 +2232,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Music & Nightlife', 'Happy Hour'],
       sortOrder: 800,
@@ -2148,7 +2242,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: false,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Retail'],
       sortOrder: 900,
@@ -2158,7 +2252,7 @@ export const Seeder = {
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
-      freeIncluded: false,
+      freeIncluded: true,
       limit: 7,
       categories: ['Pets'],
       sortOrder: 1000,
