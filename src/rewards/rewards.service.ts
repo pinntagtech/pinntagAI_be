@@ -264,12 +264,13 @@ export class RewardsService {
             }
 
             await this.notificationModel.create({
+              user: follower.follower['_id'],
+              userType: User.name,
+              message,
               type: NotificationTypes.REWARD,
               reward: reward._id,
-              targetType: Business.name,
-              targetUser: user.businessProfile,
-              message,
-              user: follower.follower['_id'],
+              targetType: User.name,
+              targetUser: new mongoose.Types.ObjectId(user.businessProfile),
             });
           }
         }
@@ -1373,12 +1374,13 @@ export class RewardsService {
       }
 
       await this.notificationModel.create({
-        type: NotificationTypes.REWARD,
-        reward: reward._id,
-        targetType: Business.name,
-        targetUser: reward.businessProfile,
+        user: reward.businessProfile,
+        userType: Business.name,
         message,
-        user: userDetails._id,
+        type: NotificationTypes.REWARD,
+        targetType: Business.name,
+        reward: reward._id,
+        targetUser: new mongoose.Types.ObjectId(userId),
       });
 
       return {
@@ -1615,13 +1617,14 @@ export class RewardsService {
         );
       }
 
-      await this.notificationModel.create({
-        type: NotificationTypes.REWARD,
-        reward: reward._id,
-        targetType: Business.name,
-        targetUser: reward.businessProfile,
+       await this.notificationModel.create({
+        user: reward.businessProfile,
+        userType: Business.name,
         message,
-        user: userDetails._id,
+        type: NotificationTypes.REWARD,
+        targetType: Business.name,
+        reward: reward._id,
+        targetUser: new mongoose.Types.ObjectId(userId),
       });
 
       return {

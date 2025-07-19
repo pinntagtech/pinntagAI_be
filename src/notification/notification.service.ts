@@ -7,6 +7,8 @@ import {
   Notification,
   NotificationDocument,
 } from './models/notification.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { BusinessUser } from 'src/business/model/businessUser.model';
 
 @Injectable()
 export class NotificationService {
@@ -15,8 +17,13 @@ export class NotificationService {
     private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
-  async findAll(userId: string) {
+  async findAll(user: DecodedUser) {
     //Only 30 days notifications
+    let userId = user.id;
+    if(user.userType === BusinessUser.name) {
+      userId = user.businessProfile;
+    }
+
     return await this.notificationModel
       .find({
         user: new mongoose.Types.ObjectId(userId),
@@ -25,10 +32,14 @@ export class NotificationService {
         },
       })
       .sort({ createdAt: -1 })
-      .populate('targetUser', '_id id name profilePhoto');
+      .populate('targetUser', '_id id name profilePhoto, cover, logo');
   }
 
-  async findUnread(userId: string) {
+  async findUnread(user: DecodedUser) {
+    let userId = user.id;
+    if(user.userType === BusinessUser.name) {
+      userId = user.businessProfile;
+    }
     return await this.notificationModel
       .find({
         user: new mongoose.Types.ObjectId(userId),
@@ -38,7 +49,11 @@ export class NotificationService {
       .populate('targetUser', '_id id name profilePhoto');
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(id: string, user: DecodedUser) {
+     let userId = user.id;
+    if(user.userType === BusinessUser.name) {
+      userId = user.businessProfile;
+    }
     const notification = await this.notificationModel
       .findOneAndUpdate(
         {
@@ -61,7 +76,11 @@ export class NotificationService {
     };
   }
 
-  async readAll(userId: string) {
+  async readAll(user: DecodedUser) {
+    let userId = user.id;
+    if(user.userType === BusinessUser.name) {
+      userId = user.businessProfile;
+    }
     await this.notificationModel.updateMany(
       {
         user: new mongoose.Types.ObjectId(userId),
@@ -75,7 +94,11 @@ export class NotificationService {
     };
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: string, user: DecodedUser) {
+     let userId = user.id;
+    if(user.userType === BusinessUser.name) {
+      userId = user.businessProfile;
+    }
     const notification = await this.notificationModel.findOneAndDelete({
       _id: id,
       user: new mongoose.Types.ObjectId(userId),

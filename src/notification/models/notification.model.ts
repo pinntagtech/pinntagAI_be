@@ -9,8 +9,12 @@ import { User } from 'src/user/models/user.model';
 export type NotificationDocument = Notification & Document;
 @Schema({ timestamps: true })
 export class Notification {
-  @Prop({ ref: 'User' })
+  @Prop({ required: true, refPath: 'userType' })
   user: mongoose.Types.ObjectId;
+
+  @Prop({required: true, enum: [User.name, Business.name]})
+  userType: string;
+
   @Prop({
     enum: [
       NotificationTypes.FOLLOW,

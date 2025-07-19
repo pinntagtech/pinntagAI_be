@@ -18,21 +18,21 @@ export class NotificationController {
   @Get('all')
   @UseGuards(JwtGuard2)
   async findAll(@TokenDecoder() user: DecodedUser) {
-    const notifications = await this.notificationService.findAll(user.id);
+    const notifications = await this.notificationService.findAll(user);
     return { notifications };
   }
 
   @Get('unread')
   @UseGuards(JwtGuard2)
   async findUnread(@TokenDecoder() user: DecodedUser) {
-    const notifications = await this.notificationService.findUnread(user.id);
+    const notifications = await this.notificationService.findUnread(user);
     return { notifications, count: notifications.length };
   }
 
   @Get('read/:id')
   @UseGuards(JwtGuard2)
   async findOne(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
-    const result = await this.notificationService.findOne(id, user.id);
+    const result = await this.notificationService.findOne(id, user);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -42,7 +42,7 @@ export class NotificationController {
   @Get('read')
   @UseGuards(JwtGuard2)
   async readAll(@TokenDecoder() user: DecodedUser) {
-    const result = await this.notificationService.readAll(user.id);
+    const result = await this.notificationService.readAll(user);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -52,7 +52,7 @@ export class NotificationController {
   @Delete('remove/:id')
   @UseGuards(JwtGuard2)
   async remove(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
-    const result = await this.notificationService.remove(id, user.id);
+    const result = await this.notificationService.remove(id, user);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
