@@ -21,6 +21,7 @@ import {
 } from '../business/model/businessUser.model';
 import { Admin, AdminDocument } from '../admin/models/admin.model';
 import { GetDashboardDto } from '../auth/dto/getDashboard.dto';
+import { Type } from 'class-transformer';
 
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
@@ -124,7 +125,8 @@ export class SocketGateway
       timeZone?: string;
     },
   ) {
-    const { body, carouselId, search, distance, timeZone } = payload;
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const { body, carouselId, search, distance, timeZone } = data.data;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
     const decodedUser: DecodedUser = {
@@ -169,8 +171,9 @@ export class SocketGateway
       timeZone?: string;
     },
   ) {
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
     const { body, carouselId, search, page, limit, distance, timeZone } =
-      payload;
+      data.data;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
     const decodedUser: DecodedUser = {
@@ -213,7 +216,9 @@ export class SocketGateway
     client: Socket,
     payload: { body: GetDashboardDto; eventId: string },
   ) {
-    const { body, eventId } = payload;
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+
+    const { body, eventId } = data.data;
     if (!isValidObjectId(eventId)) {
       return client.emit('getEventDetailsResponse', {
         message: 'Invalid event id',
