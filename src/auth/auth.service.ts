@@ -1727,7 +1727,7 @@ export class AuthService {
 
   async fetchEventsV2(
     userId: mongoose.Types.ObjectId,
-    longitude: number,
+    longitude: number,  
     latitude: number,
     age: number,
     match: any,
@@ -2399,8 +2399,6 @@ export class AuthService {
           : 0;
       }),
     );
-    // console.log('maxDistance:', maxDistance);
-    // console.log('maxTimeToEvent:', maxTimeToEvent);
 
     const weightDistance = process.env.DISTANCE_WEIGHTAGE
       ? Number(process.env.DISTANCE_WEIGHTAGE)

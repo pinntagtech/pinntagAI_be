@@ -10,9 +10,9 @@ import { join } from 'path';
 import { NextFunction } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: WinstonModule.createLogger({
-      instance: instance,
-    }),
+    // logger: WinstonModule.createLogger({
+    //   instance: instance,
+    // }),
   });
   // app.enableCors({
   //   origin: function (origin, callback) {

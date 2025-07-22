@@ -2026,6 +2026,7 @@ export class EventService2 {
             }
             if (followersRes.count && followersRes.followers.length) {
               const followers = followersRes.followers;
+              console.log("Followers:", followers);
               const message = `${business.name} published a new ${eventType} called ${event.title}`;
               for (let i = 0; i < followers.length; i++) {
                 const fcmTokens = await this.tokenModel.find({

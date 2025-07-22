@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
@@ -8,7 +8,6 @@ import { ConfigModule } from '@nestjs/config';
 import { User, UserSchema } from './user/models/user.model';
 import { Category, CategorySchema } from './models/contentCategory.model';
 import { MailModule } from './mail/mail.module';
-import { Logger } from 'winston';
 import { EventModule } from './event/event.module';
 import { AgeGroup, AgeGroupSchema } from './models/ageGroup.model';
 import { SeederModule } from './seeder/seeder.module';
@@ -104,6 +103,51 @@ import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { Outlet, OutletSchema } from './outlet/model/outlet.model';
 import { SeederConfig, SeederConfigSchema } from './models/seederConfig.model';
+import { SocketGateway } from './socket/socket.gateway';
+import { JwtService } from '@nestjs/jwt';
+import { AuthService } from './auth/auth.service';
+import {
+  GuestSession,
+  GuestSessionSchema,
+} from './auth/models/guestSession.model';
+import { Refferal, RefferalSchema } from './user/models/refferal.model';
+import {
+  EventLocation,
+  EventLocationSchema,
+} from './event/models/eventLocation.model';
+import { Follow, FollowSchema } from './user/models/follow.model';
+import {
+  EventResponse,
+  EventResponseSchema,
+} from './event/models/event-response.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from './event/models/event-schedule.model';
+import { UserService } from './user/user.service';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from './subscription/models/subscription.model';
+import {
+  Notification,
+  NotificationSchema,
+} from './notification/models/notification.model';
+import {
+  Transaction,
+  TransactionSchema,
+} from './user/models/transaction.model';
+import { ContactUs, ContactUsSchema } from './user/models/contact-us.model';
+import { Report, ReportSchema } from './event/models/reports.model';
+import { SavedEvent, SavedEventSchema } from './event/models/savedEvent.model';
+import { SocketModule } from './socket/socket.module';
+import { StripeService } from './stripe/stripe.service';
+import { MailService } from './mail/mail.service';
+import { SmsService } from './sms/sms.service';
+import {
+  WebhookSnapshot,
+  WebhookSnapshotSchema,
+} from './user/models/webhook.model';
 
 @Module({
   imports: [
@@ -169,6 +213,19 @@ import { SeederConfig, SeederConfigSchema } from './models/seederConfig.model';
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: SeederConfig.name, schema: SeederConfigSchema },
+      { name: GuestSession.name, schema: GuestSessionSchema },
+      { name: Refferal.name, schema: RefferalSchema },
+      { name: EventLocation.name, schema: EventLocationSchema },
+      { name: Follow.name, schema: FollowSchema },
+      { name: EventResponse.name, schema: EventResponseSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: Subscription.name, schema: SubscriptionSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: Transaction.name, schema: TransactionSchema },
+      { name: ContactUs.name, schema: ContactUsSchema },
+      { name: Report.name, schema: ReportSchema },
+      { name: SavedEvent.name, schema: SavedEventSchema },
+      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -190,8 +247,21 @@ import { SeederConfig, SeederConfigSchema } from './models/seederConfig.model';
     OutletModule,
     GoogleModule,
     RewardsModule,
+    SocketModule,
   ],
   controllers: [AppController],
-  providers: [AppService, Logger, SeederService, DriveService, S3Service],
+  providers: [
+    AppService,
+    UserService,
+    AuthService,
+    Logger,
+    SeederService,
+    DriveService,
+    S3Service,
+    JwtService,
+    StripeService,
+    MailService,
+    SmsService,
+  ],
 })
 export class AppModule {}
