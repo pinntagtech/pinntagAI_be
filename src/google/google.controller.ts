@@ -21,7 +21,7 @@ export class GoogleController {
 
   @Post()
   @UseGuards(JwtGuard2)
-  @UseGuards(RateLimitGuard)
+  // @UseGuards(RateLimitGuard)
   async googleRecommendation(@Body() data: AddressAutofillDto) {
     const result = await this.googleService.googleRecommendation(data);
 
@@ -38,7 +38,7 @@ export class GoogleController {
 
   @Post('placeDetails')
   @UseGuards(JwtGuard2)
-  @UseGuards(RateLimitGuard)
+  // @UseGuards(RateLimitGuard)
   async getPlaceDetails(
     @Body('placeId') placeId: string,
     @Body('sessionToken') sessionToken: string,

@@ -123,11 +123,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from 'src/business/model/businessIndustry.model';
-import {
-  AtlantaData,
-  ETL_DATA,
-  LubbockData,
-} from './crawledEvents.json';
+import { AtlantaData, ETL_DATA, LubbockData } from './crawledEvents.json';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -2045,12 +2041,13 @@ export class EventService2 {
                   );
                 }
                 await this.notificationModel.create({
+                  user: followers[i].follower['_id'],
+                  userType: User.name,
+                  message,
                   type: NotificationTypes.EVENT,
                   event: new mongoose.Types.ObjectId(id),
-                  targetType: Business.name,
+                  targetType: User.name,
                   targetUser: new mongoose.Types.ObjectId(user.businessProfile),
-                  message,
-                  user: followers[i].follower['_id'],
                 });
               }
             }
@@ -3566,6 +3563,17 @@ export class EventService2 {
             await this.userModel.findByIdAndUpdate(userId, {
               $push: { likedEvents: event._id },
             });
+            let message = `${user.name} liked your event ${event.title}`;
+            await this.notificationModel.create({
+              user: event.businessProfile,
+              userType: Business.name,
+              message,
+              type: NotificationTypes.LIKE,
+              targetType: Business.name,
+              targetUser: new mongoose.Types.ObjectId(userId),
+              isRead: false,
+            });
+
             return {
               success: true,
               message: 'Event added to liked events',
@@ -4193,6 +4201,18 @@ export class EventService2 {
         message: 'Event reported successfully.',
       };
     }
+    let message = `${user.name} reported your event ${event.title}`;
+
+    await this.notificationModel.create({
+      user: event.businessProfile,
+      userType: Business.name,
+      message,
+      type: NotificationTypes.REPORT,
+      targetType: Business.name,
+      event: event._id,
+      targetUser: new mongoose.Types.ObjectId(userId),
+    });
+
     const report = await this.reportModel.create({
       user: new mongoose.Types.ObjectId(userId),
       ...data,
@@ -6459,7 +6479,7 @@ export class EventService2 {
           .select('_id')
           .lean();
         const categoriesInObjectId = cats.map((cat) => cat._id);
-        if(categoriesInObjectId.length === 0) {
+        if (categoriesInObjectId.length === 0) {
           const defaultCategory = await this.categoryModel.findOne({
             title: 'Entertainment',
           });

@@ -730,6 +730,7 @@ export class UserService {
         if (user) {
           await this.notificationModel.create({
             user: user._id,
+            userType: User.name,
             message,
             type: NotificationTypes.FOLLOW,
             targetType,
@@ -740,29 +741,30 @@ export class UserService {
       } else if (followingType == Business.name) {
         const businessProfile = await this.businessModel
           .findById(targetId)
-          .select({ _id: 0, name: 1, createdBy: 1 });
+          .select({ _id: 1, name: 1, createdBy: 1 });
         let message = '';
         let targetType = '';
         if (followerType == User.name) {
           const follower = await this.userModel.findById(userId);
-          message = `${follower.firstName} ${follower.lastName} has started following your business ${businessProfile.name}`;
+          message = `${follower.name} has started following your business ${businessProfile.name}`;
           targetType = User.name;
         } else if (followerType == Business.name) {
           const follower = await this.businessModel.findById(userId);
           message = `${follower.name} has started following your business ${businessProfile.name}`;
           targetType = Business.name;
         }
-        const user = await this.userModel.findById(businessProfile.creator);
-        if (user) {
+        // const user = await this.userModel.findById(businessProfile.creator);
+        // if (user) {
           await this.notificationModel.create({
-            user: user._id,
+            user: businessProfile._id,
+            userType: Business.name,
             message,
             type: NotificationTypes.FOLLOW,
             targetType,
             targetUser: new mongoose.Types.ObjectId(userId),
             isRead: false,
           });
-        }
+        // }
       }
     }
     const resp = followingType == User.name ? 'User' : 'Business';
