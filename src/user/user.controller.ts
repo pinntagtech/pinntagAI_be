@@ -28,6 +28,7 @@ import { ContactUsDto } from './dto/contact-us.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { User } from './models/user.model';
+import { UserTypes } from 'src/enums/auth.enums';
 
 @Controller('user')
 export class UserController {
@@ -260,8 +261,12 @@ export class UserController {
 
   @Get('get/followers')
   @UseGuards(JwtGuard2)
-  async getFollowers(@Req() req: Request) {
-    const result = await this.userService.getFollowers(req.user['_id']);
+  async getFollowers(@Req() req: Request,@TokenDecoder() user: DecodedUser) {
+    let userId = user.id;
+    if (user.userType === UserTypes.BUSINESS) {
+      userId = user.businessProfile;
+    }
+    const result = await this.userService.getFollowers(userId);
     if (result.success) {
       return {
         message: result.message,

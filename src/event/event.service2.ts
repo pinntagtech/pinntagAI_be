@@ -5287,6 +5287,7 @@ export class EventService2 {
     isExpired: boolean,
     page: number,
     limit: number,
+    status: string,
   ) {
     try {
       // 1. Fetch business user and role
@@ -5329,6 +5330,10 @@ export class EventService2 {
           type: EventTypes.PRIVATE,
         };
       }
+      if( status ){
+        if ((Object.values(EventStatus) as string[]).includes(status)) query['status'] = status;
+      }
+
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });

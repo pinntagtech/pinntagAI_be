@@ -17,27 +17,51 @@ export class NotificationService {
     private readonly notificationModel: Model<NotificationDocument>,
   ) {}
 
-  async findAll(user: DecodedUser) {
+  async findAll(user: DecodedUser, page: number = 1, limit: number = 10) {
     //Only 30 days notifications
-    let userId = user.id;
-    if(user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
 
-    return await this.notificationModel
-      .find({
+    try {
+      let userId = user.id;
+
+      if (user.userType === BusinessUser.name) {
+        userId = user.businessProfile;
+      }
+
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const query = {
         user: new mongoose.Types.ObjectId(userId),
-        createdAt: {
-          $gte: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
-        },
-      })
-      .sort({ createdAt: -1 })
-      .populate('targetUser', '_id id name profilePhoto, cover, logo');
+        createdAt: { $gte: thirtyDaysAgo },
+      };
+      console.log("Query for notifications:", query);
+
+      const [notifications, totalCount] = await Promise.all([
+        this.notificationModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate('targetUser', '_id id name profilePhoto cover logo'),
+
+        this.notificationModel.countDocuments(query),
+      ]);
+      console.log("Fetched notifications:", notifications);
+      return {
+        success: true,
+        notifications,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        page,
+        limit,
+      };
+    } catch (error) {
+      throw new Error('Error fetching notifications: ' + error.message);
+    }
   }
 
   async findUnread(user: DecodedUser) {
     let userId = user.id;
-    if(user.userType === BusinessUser.name) {
+    if (user.userType === BusinessUser.name) {
       userId = user.businessProfile;
     }
     return await this.notificationModel
@@ -50,8 +74,8 @@ export class NotificationService {
   }
 
   async findOne(id: string, user: DecodedUser) {
-     let userId = user.id;
-    if(user.userType === BusinessUser.name) {
+    let userId = user.id;
+    if (user.userType === BusinessUser.name) {
       userId = user.businessProfile;
     }
     const notification = await this.notificationModel
@@ -78,7 +102,7 @@ export class NotificationService {
 
   async readAll(user: DecodedUser) {
     let userId = user.id;
-    if(user.userType === BusinessUser.name) {
+    if (user.userType === BusinessUser.name) {
       userId = user.businessProfile;
     }
     await this.notificationModel.updateMany(
@@ -95,8 +119,8 @@ export class NotificationService {
   }
 
   async remove(id: string, user: DecodedUser) {
-     let userId = user.id;
-    if(user.userType === BusinessUser.name) {
+    let userId = user.id;
+    if (user.userType === BusinessUser.name) {
       userId = user.businessProfile;
     }
     const notification = await this.notificationModel.findOneAndDelete({

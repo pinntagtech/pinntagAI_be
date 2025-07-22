@@ -5,6 +5,7 @@ import {
   Param,
   UseGuards,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
@@ -17,9 +18,25 @@ export class NotificationController {
 
   @Get('all')
   @UseGuards(JwtGuard2)
-  async findAll(@TokenDecoder() user: DecodedUser) {
-    const notifications = await this.notificationService.findAll(user);
-    return { notifications };
+  async findAll(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const result = await this.notificationService.findAll(
+      user,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
+    if(result.success) {
+      return {
+        notifications: result.notifications,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
+      };
+    }
   }
 
   @Get('unread')
