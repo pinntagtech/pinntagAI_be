@@ -15,19 +15,22 @@ import { DecodedUser } from '../auth/interfaces/decodedUser.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { User, UserDocument } from '../user/models/user.model';
-import { BusinessUser, BusinessUserDocument } from '../business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from '../business/model/businessUser.model';
 import { Admin, AdminDocument } from '../admin/models/admin.model';
 import { GetDashboardDto } from '../auth/dto/getDashboard.dto';
 
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
-  namespace: '/dashboard-socket',
+  // namespace: '/dashboard-socket',
 })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  @WebSocketServer()
-  server: Server;
+  // @WebSocketServer()
+  // server: Server;
 
   typingUsers: Record<string, string[]> = {};
 
@@ -38,7 +41,7 @@ export class SocketGateway
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    private readonly logger: Logger,
+    // private readonly logger: Logger,
   ) {}
 
   afterInit(server: Server) {
@@ -56,7 +59,7 @@ export class SocketGateway
         }
         (socket as any).userId = decoded.id;
         (socket as any).userType = decoded.userType;
-        this.logger.log(`socket initialized with userId: ${decoded.id}`);
+        // this.logger.log(`socket initialized with userId: ${decoded.id}`);
         next();
       } catch (err) {
         return next(new Error('Authentication error'));
@@ -65,6 +68,7 @@ export class SocketGateway
   }
 
   async handleConnection(client: Socket) {
+    console.log('Client connected:', client.id);
     const userId = (client as any).userId;
     const userType = (client as any).userType;
     try {
@@ -81,7 +85,7 @@ export class SocketGateway
       client.join(userId);
       client.emit('successMessage', 'Connected successfully');
     } catch (err) {
-      this.logger.error('Connection Error:', err);
+      // this.logger.error('Connection Error:', err);
       client.emit('errorMessage', 'Internal server error');
     }
   }
@@ -95,12 +99,14 @@ export class SocketGateway
         client.to(room).emit('typingUsers', this.typingUsers[room]);
       }
     }
-    this.logger.log(`Client ${userId} disconnected`);
+    // this.logger.log(`Client ${userId} disconnected`);
   }
 
   @SubscribeMessage('getDashboardAllConfigs')
   async handleGetDashboardAllConfigs(client: Socket) {
+    console.log('getDashboardAllConfigs called');
     const result = await this.authService.getDashboardAllConfigs();
+    client.emit('successMessage', 'Dashboard configs fetched successfully');
     client.emit('getDashboardAllConfigsResponse', {
       message: result.message,
       data: result.data,
@@ -163,15 +169,8 @@ export class SocketGateway
       timeZone?: string;
     },
   ) {
-    const {
-      body,
-      carouselId,
-      search,
-      page,
-      limit,
-      distance,
-      timeZone,
-    } = payload;
+    const { body, carouselId, search, page, limit, distance, timeZone } =
+      payload;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
     const decodedUser: DecodedUser = {

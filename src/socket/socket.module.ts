@@ -1,16 +1,9 @@
-import { Module, Logger } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { JwtService } from '@nestjs/jwt';
+import { Logger, Module } from '@nestjs/common';
 import { SocketGateway } from './socket.gateway';
-import { AuthModule } from '../auth/auth.module';
-import { User, UserSchema } from '../user/models/user.model';
-import {
-  BusinessUser,
-  BusinessUserSchema,
-} from '../business/model/businessUser.model';
-import { Admin, AdminSchema } from '../admin/models/admin.model';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from 'src/auth/auth.service';
-import { Subscription } from 'rxjs';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import {
   DashboardConfig,
   DashboardConfigSchema,
@@ -43,6 +36,10 @@ import {
   BusinessIndustrySchema,
 } from 'src/business/model/businessIndustry.model';
 import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
+import {
   BusinessDocumentType,
   BusinessDocumentTypeSchema,
 } from 'src/business/model/BussinessDocumentType.model';
@@ -52,7 +49,7 @@ import {
 } from 'src/business/model/department.model';
 import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
-import { File, FileSchema } from 'src/drive/models/file.model';
+import { FileSchema } from 'src/drive/models/file.model';
 import {
   FileCategory,
   FileCategorySchema,
@@ -66,7 +63,7 @@ import {
   EventSchedule,
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
-import { Event, EventSchema } from 'src/event/models/event.model';
+import { EventSchema } from 'src/event/models/event.model';
 import {
   EventLocation,
   EventLocationSchema,
@@ -80,6 +77,10 @@ import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
+import {
+  SeederConfig,
+  SeederConfigSchema,
+} from 'src/models/seederConfig.model';
 import {
   Notification,
   NotificationSchema,
@@ -97,7 +98,10 @@ import { Action, ActionSchema } from 'src/roles/models/actions.model';
 import { Privilege, PrivilegeSchema } from 'src/roles/models/privilege.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
-import { SubscriptionSchema } from 'src/subscription/models/subscription.model';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from 'src/subscription/models/subscription.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
@@ -109,50 +113,41 @@ import {
   Transaction,
   TransactionSchema,
 } from 'src/user/models/transaction.model';
-import {
-  WebhookSnapshot,
-  WebhookSnapshotSchema,
-} from 'src/user/models/webhook.model';
+import { User, UserSchema } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
 import { MailService } from 'src/mail/mail.service';
 import { S3Service } from 'src/s3.service';
 import { StripeService } from 'src/stripe/stripe.service';
-import { DriveService } from 'src/drive/drive.service';
 import { SmsService } from 'src/sms/sms.service';
 import { SeederService } from 'src/seeder/seeder.service';
+import { DriveService } from 'src/drive/drive.service';
+import {
+  WebhookSnapshot,
+  WebhookSnapshotSchema,
+} from 'src/user/models/webhook.model';
+import { SocketService } from './socket.service';
 
 @Module({
   imports: [
-    AuthModule,
     MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: BusinessUser.name, schema: BusinessUserSchema },
-      { name: Admin.name, schema: AdminSchema },
+      {
+        name: User.name,
+        schema: UserSchema,
+      },
       { name: Role.name, schema: RoleSchema },
-      { name: Otp.name, schema: OtpSchema },
-      { name: Token.name, schema: TokenSchema },
-      { name: Follow.name, schema: FollowSchema },
-      { name: GuestSession.name, schema: GuestSessionSchema },
-      { name: Refferal.name, schema: RefferalSchema },
-      { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
-      { name: Subscription.name, schema: SubscriptionSchema },
       { name: Category.name, schema: CategorySchema },
-      { name: Notification.name, schema: NotificationSchema },
-      { name: EventLocation.name, schema: EventLocationSchema },
-      { name: Event.name, schema: EventSchema },
-      { name: Transaction.name, schema: TransactionSchema },
-      { name: ContactUs.name, schema: ContactUsSchema },
-      { name: Report.name, schema: ReportSchema },
-      { name: SavedEvent.name, schema: SavedEventSchema },
-      { name: Template.name, schema: TemplateSchema },
       { name: AgeGroup.name, schema: AgeGroupSchema },
-      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
-      { name: EventResponse.name, schema: EventResponseSchema },
-      { name: DashboardConfig.name, schema: DashboardConfigSchema },
-      { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
       { name: AppVersion.name, schema: AppVersionSchema },
-      { name: Drive.name, schema: DriveSchema },
+      { name: AppVersion.name, schema: AppVersionSchema },
+      { name: Event.name, schema: EventSchema },
+      // { name: BusinessProfile.name, schema: BusinessProfileSchema },
+      { name: Token.name, schema: TokenSchema },
+      { name: Otp.name, schema: OtpSchema },
+      { name: PlatformConfig.name, schema: PlatformConfigSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Admin.name, schema: AdminSchema },
+      { name: Drive.name, schema: DriveSchema },
       { name: Privilege.name, schema: PrivilegeSchema },
       { name: Resource.name, schema: ResourceSchema },
       { name: Action.name, schema: ActionSchema },
@@ -162,18 +157,46 @@ import { SeederService } from 'src/seeder/seeder.service';
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
       { name: BusinessCountry.name, schema: BusinessCountrySchema },
-      { name: Business.name, schema: BusinessSchema },
       { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
       { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
-      { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: Template.name, schema: TemplateSchema },
+      { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: Business.name, schema: BusinessSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: SeederConfig.name, schema: SeederConfigSchema },
+      { name: GuestSession.name, schema: GuestSessionSchema },
+      { name: Refferal.name, schema: RefferalSchema },
+      { name: EventLocation.name, schema: EventLocationSchema },
+      { name: Follow.name, schema: FollowSchema },
+      { name: EventResponse.name, schema: EventResponseSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: Subscription.name, schema: SubscriptionSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: Transaction.name, schema: TransactionSchema },
+      { name: ContactUs.name, schema: ContactUsSchema },
+      { name: Report.name, schema: ReportSchema },
+      { name: SavedEvent.name, schema: SavedEventSchema },
+      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
     ]),
   ],
-  providers: [SocketGateway, JwtService, Logger, AuthService, UserService,MailService,S3Service,StripeService,SmsService, DriveService,SeederService],
-  exports: [SocketGateway],
+  providers: [
+    Logger,
+    SocketGateway,
+    JwtService,
+    AuthService,
+    UserService,
+    MailService,
+    S3Service,
+    StripeService,
+    SmsService,
+    SeederService,
+    DriveService,
+    SocketService,
+  ],
+  exports: [],
 })
 export class SocketModule {}
