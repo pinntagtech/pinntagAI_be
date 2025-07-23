@@ -266,6 +266,15 @@ export class BusinessService {
       // );
 
       //send email otp
+       if (data.fcmToken) {
+            await this.tokenModel.create({
+              token: data.fcmToken,
+              type: TokenTypes.FCM,
+              userType: UserTypes.BUSINESS,
+              user: createdUser._id,
+              deviceType: data.deviceType || 'web',
+            });
+          }
       await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
       const updatedUser = await this.businessUserModel

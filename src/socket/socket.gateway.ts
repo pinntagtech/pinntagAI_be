@@ -26,6 +26,7 @@ import { Type } from 'class-transformer';
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
   // namespace: '/dashboard-socket',
+   path: '/socket.io',
 })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect

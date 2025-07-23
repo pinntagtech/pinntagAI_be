@@ -36,4 +36,11 @@ export class CreateBusinessUserDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   name: string;
+
+  @IsOptional()
+  @IsString()
+  fcmToken: string;
+
+  @IsOptional()
+  deviceType: string;
 }

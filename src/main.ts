@@ -29,7 +29,10 @@ async function bootstrap() {
   //   preflightContinue: false,
   //   optionsSuccessStatus: 204,
   // });
-  app.enableCors();
+  app.enableCors({
+  origin: '*',
+  methods: ['GET', 'POST'],
+});
   // app.use(cookieParser());
   app.use(helmet());
   app.useStaticAssets(join(__dirname, 'uploads'), {

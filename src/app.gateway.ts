@@ -12,6 +12,7 @@ import {
     origin: '*',
     methods: ['GET', 'POST'],
   },
+   path: '/socket.io',
 })
 export class AppGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
