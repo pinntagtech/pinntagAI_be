@@ -51,10 +51,14 @@ import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { NotificationTypes } from 'src/enums/event.enums';
 import dayjs from 'dayjs';
-import { FileUploadUtils, manipulateImageName } from 'src/helpers/upload.helpers';
+import {
+  FileUploadUtils,
+  manipulateImageName,
+} from 'src/helpers/upload.helpers';
 import { MailService } from 'src/mail/mail.service';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Injectable()
 export class UserService {
@@ -84,11 +88,13 @@ export class UserService {
     private readonly savedEventModel: Model<SavedEventDocument>,
     @InjectModel(Template.name)
     private readonly templateModel: Model<TemplateDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
     private readonly driveService: DriveService,
+    private readonly firebaseService: FirebaseService,
     // private readonly mailerService: MailService,
   ) {}
 
@@ -449,16 +455,16 @@ export class UserService {
       manipulateImageName(profilePhoto.originalname),
       'image/jpeg',
     );
-     const [base, rest] = uploadResult.Location.split('amazonaws');
+    const [base, rest] = uploadResult.Location.split('amazonaws');
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
-     const thumbnail = await FileUploadUtils.compressThumbnail(profilePhoto);
-        const thumbnailS3 = await this.s3Service.s3_upload(
-          thumbnail.buffer,
-          process.env.AWS_S3_BUCKET_NAME,
-          `thumbnails/${manipulateImageName(profilePhoto.originalname)}`,
-          thumbnail.mimetype,
-        );
-      const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
+    const thumbnail = await FileUploadUtils.compressThumbnail(profilePhoto);
+    const thumbnailS3 = await this.s3Service.s3_upload(
+      thumbnail.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      `thumbnails/${manipulateImageName(profilePhoto.originalname)}`,
+      thumbnail.mimetype,
+    );
+    const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
 
     user.profilePhoto = url;
     user.thumbnail = thumbnailUrl;
@@ -755,15 +761,29 @@ export class UserService {
         }
         // const user = await this.userModel.findById(businessProfile.creator);
         // if (user) {
-          await this.notificationModel.create({
-            user: businessProfile._id,
-            userType: Business.name,
+        await this.notificationModel.create({
+          user: businessProfile._id,
+          userType: Business.name,
+          message,
+          type: NotificationTypes.FOLLOW,
+          targetType,
+          targetUser: new mongoose.Types.ObjectId(userId),
+          isRead: false,
+        });
+        const fcmTokens = await this.tokenModel.find({
+          user: new mongoose.Types.ObjectId(userId),
+          type: TokenTypes.FCM,
+        });
+
+        console.log('fcmTokens', fcmTokens);
+        for (let j = 0; j < fcmTokens.length; j++) {
+          this.firebaseService.sendNotification(
+            fcmTokens[j].token,
+            'New Follower',
             message,
-            type: NotificationTypes.FOLLOW,
-            targetType,
-            targetUser: new mongoose.Types.ObjectId(userId),
-            isRead: false,
-          });
+            { data: NotificationTypes.FOLLOW },
+          );
+        }
         // }
       }
     }
@@ -792,8 +812,7 @@ export class UserService {
           };
         }
       } else {
-        const businessProfile =
-          await this.businessModel.findById(targetId);
+        const businessProfile = await this.businessModel.findById(targetId);
         if (!businessProfile) {
           return {
             success: false,
@@ -804,9 +823,7 @@ export class UserService {
       await this.followModel.deleteOne({ _id: follow._id });
       //Update following count of user
       await this.updateFollowingCount(
-        follow.followerType == User.name
-          ? this.userModel
-          : this.businessModel,
+        follow.followerType == User.name ? this.userModel : this.businessModel,
         userId,
         -1,
       );
@@ -903,8 +920,7 @@ export class UserService {
           result = user;
         }
       } else {
-        const businessProfile =
-          await this.businessModel.findById(targetId);
+        const businessProfile = await this.businessModel.findById(targetId);
         if (!businessProfile) {
           return {
             success: false,

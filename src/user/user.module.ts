@@ -42,13 +42,20 @@ import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { StripeService } from 'src/stripe/stripe.service';
 import { WebhookSnapshot, WebhookSnapshotSchema } from './models/webhook.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { FileSchema } from 'src/drive/models/file.model';
-import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -83,6 +90,14 @@ import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.
     ]),
   ],
   controllers: [UserController],
-  providers: [UserService, JwtService, Logger, S3Service, StripeService,DriveService],
+  providers: [
+    UserService,
+    JwtService,
+    Logger,
+    S3Service,
+    StripeService,
+    DriveService,
+    FirebaseService,
+  ],
 })
 export class UserModule {}

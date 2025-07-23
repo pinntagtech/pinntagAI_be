@@ -127,6 +127,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Global()
 @Module({
@@ -212,6 +213,7 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
     SmsService,
     SeederService,
     DriveService,
+    FirebaseService,
   ],
 })
 export class MailModule {}

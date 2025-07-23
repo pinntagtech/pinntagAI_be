@@ -1213,8 +1213,17 @@ export class BusinessService {
     });
     const expirationTime = this.calculateExpirationDate(expiresIn);
     logger.info(`Expiration Time: ${expirationTime}`);
-    await this.userService.saveToken2(token, payload.id, type, expirationTime);
+    await this.saveToken(token, payload.id, type, expirationTime);
     return token;
+  }
+   async saveToken(token: string, id: string, type: string, expiresAt: Date) {
+    const createdToken = await this.tokenModel.create({
+      token,
+      userType: UserTypes.BUSINESS,
+      user: new mongoose.Types.ObjectId(id),
+      type,
+      expiresAt: expiresAt,
+    });
   }
   calculateExpirationDate(expiresIn: string): Date {
     const timeUnit = expiresIn.slice(-1); // Get last character (m, h, d)
@@ -1238,15 +1247,6 @@ export class BusinessService {
     return new Date(Date.now() + timeValue * multiplier);
   }
 
-  async saveToken(token: string, id: string, type?: string) {
-    return await this.tokenModel.create({
-      token,
-      userType: UserTypes.USER,
-      user: new mongoose.Types.ObjectId(id),
-      type,
-      expiresAt: new Date(Date.now() + 86400000),
-    });
-  }
 
   async getUsersList(
     id: string,

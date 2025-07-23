@@ -128,6 +128,7 @@ import {
   UserRewardSchema,
 } from 'src/rewards/model/userReward.model';
 import { Rating, RatingSchema } from './model/rating.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Module({
   imports: [
@@ -199,6 +200,7 @@ import { Rating, RatingSchema } from './model/rating.model';
     SmsService,
     DriveService,
     PrivilegeService,
+    FirebaseService,
   ],
 })
 export class BusinessModule {}

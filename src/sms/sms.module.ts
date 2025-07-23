@@ -74,6 +74,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Admin } from 'mongodb';
 import { AdminSchema } from 'src/admin/models/admin.model';
 import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Module({
   imports: [
@@ -119,6 +120,7 @@ import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUse
     S3Service,
     StripeService,
     DriveService,
+    FirebaseService,
   ],
 })
 export class SmsModule {}

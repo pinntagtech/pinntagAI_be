@@ -57,6 +57,7 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
     S3Service,
     StripeService,
     DriveService,
+    FirebaseService,
   ],
 })
 export class CronModule {}

@@ -52,6 +52,13 @@ export class CreateBusinessDto {
   @IsNumber()
   scalabilityFactor: number;
 
+  @IsOptional()
+  @IsString()
+  fcmToken: string;
+
+  @IsOptional()
+  deviceType: string;
+
   // @IsString()
   // brand:string;
 

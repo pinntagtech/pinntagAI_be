@@ -142,6 +142,7 @@ import { FileSchema } from 'src/drive/models/file.model';
 import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Module({
   imports: [
@@ -216,6 +217,7 @@ import { GoogleService } from 'src/google/google.service';
     SmsService,
     DriveService,
     GoogleService,
+    FirebaseService,
   ],
 })
 export class AdminModule {}

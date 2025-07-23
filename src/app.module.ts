@@ -148,6 +148,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from './user/models/webhook.model';
+import { FirebaseService } from './notification/firebase.service';
 
 @Module({
   imports: [
@@ -262,6 +263,7 @@ import {
     StripeService,
     MailService,
     SmsService,
+    FirebaseService,
   ],
 })
 export class AppModule {}

@@ -126,6 +126,7 @@ import {
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
 import { SocketService } from './socket.service';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Module({
   imports: [
@@ -196,6 +197,7 @@ import { SocketService } from './socket.service';
     SeederService,
     DriveService,
     SocketService,
+    FirebaseService,
   ],
   exports: [],
 })

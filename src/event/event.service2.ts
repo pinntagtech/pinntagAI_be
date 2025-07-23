@@ -2030,7 +2030,7 @@ export class EventService2 {
               const message = `${business.name} published a new ${eventType} called ${event.title}`;
               for (let i = 0; i < followers.length; i++) {
                 const fcmTokens = await this.tokenModel.find({
-                  userId: followers[i].follower['_id'],
+                  user: new mongoose.Types.ObjectId(followers[i].follower['_id']),
                   type: TokenTypes.FCM,
                 });
                 for (let j = 0; j < fcmTokens.length; j++) {
