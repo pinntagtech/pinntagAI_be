@@ -2056,4 +2056,29 @@ export class RewardsService {
 
     return successResponse;
   }
+  async deleteReward(rewardId: string,userId: string){
+    try{
+      const result = await this.rewardModel.deleteOne({
+        _id: new mongoose.Types.ObjectId(rewardId),
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+      console.log('Delete Result:', result);
+      if (result.deletedCount === 0) {
+        return {
+          success: false,
+          message: 'Reward not found or you are not authorized to delete it.',
+        };
+      }
+      return {
+        success: true,
+        message: 'Reward deleted successfully.',
+      };
+    }catch(error){
+      console.error('Error deleting reward:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 }

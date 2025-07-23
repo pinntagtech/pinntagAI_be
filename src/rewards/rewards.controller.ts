@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   BadRequestException,
+  Delete,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -34,6 +35,7 @@ import { ClaimStatus } from './enums/rewards.enum';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { GenerateEventUrlDto } from 'src/event/dto/generate-event-url.dto';
 import { GenerateRewardUrlDto } from './dto/generate-reward-url.dto';
+import { DeleteResult } from 'typeorm';
 
 @Controller('reward')
 export class RewardsController {
@@ -346,6 +348,19 @@ export class RewardsController {
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.rewardService.handleScanReward(rewardId, user.id);
+    if (result.success) {
+      return result;
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Delete(':rewardId')
+  @UseGuards(JwtGuard2)
+  async DeleteReward(
+    @Param('rewardId') rewardId: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.rewardService.deleteReward(rewardId, user.id);
     if (result.success) {
       return result;
     } else {
