@@ -125,6 +125,7 @@ import { Rating, RatingDocument } from './model/rating.model';
 
 import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
+import { haversineDistance } from 'src/helpers/event.helpers';
 
 @Injectable()
 export class BusinessService {
@@ -2100,6 +2101,39 @@ export class BusinessService {
       };
     }
   }
+
+  async fetchBusiness(
+    businessId: string,
+    userId: string,
+    latitude: number,
+    longitude: number,
+  ) {
+    try {
+      const business = await this.businessModel
+        .findById(businessId)
+        .populate('outlets', LocationPopulates.FOREIGN);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
+
+      return {
+        success: true,
+        message: 'Business fetched Successfully!',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
   async updateSelectedBusiness(userId: string, businessId: string) {
     try {
       const businessUser = await this.businessUserModel.findById(userId);
@@ -3140,19 +3174,20 @@ export class BusinessService {
         };
       }
 
-      const [eventLogistics, rewardRedeemptions, topEvents] =
-        await Promise.all([
+      const [eventLogistics, activeParticipants, topEvents] = await Promise.all(
+        [
           this.fetchEventLogistics(businessProfileId),
           this.fetchRewardRedemptions(businessProfileId),
           this.fetchTopEvents(businessProfileId, limit),
-        ]);
+        ],
+      );
 
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
         data: {
           eventLogistics,
-          rewardRedeemptions,
+          activeParticipants,
           events: topEvents,
         },
       };
@@ -3201,7 +3236,15 @@ export class BusinessService {
   private async fetchRewardRedemptions(
     businessProfileId: mongoose.Types.ObjectId,
   ) {
-    return this.userRewardModel.countDocuments({
+    const lastMonth = await this.userRewardModel.countDocuments({
+      businessProfile: businessProfileId,
+      claimStatus: ClaimStatus.CLAIMED,
+      createdAt: {
+        $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+      },
+    });
+
+    const currentMonth = await this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.ACTIVE,
     });

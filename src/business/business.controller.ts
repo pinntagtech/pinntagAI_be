@@ -249,7 +249,11 @@ export class BusinessController {
     if (!isValidObjectId(user.id)) {
       throw new BadRequestException('Invalid ObjectId');
     }
-    const result = await this.businessService.updateBusinessUser(user.id, data, profilePhoto);
+    const result = await this.businessService.updateBusinessUser(
+      user.id,
+      data,
+      profilePhoto,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -599,6 +603,31 @@ export class BusinessController {
       user.id,
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get(':id')
+  @UseGuards(JwtGuard2)
+  async fetchBusiness(
+    @Param('id') businessId: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.fetchBusiness(
+      businessId,
+      user.id,
+      parseFloat(latitude),
+      parseFloat(longitude),
     );
 
     if (result.success) {
@@ -1144,45 +1173,39 @@ export class BusinessController {
     }
   }
 
-
-   @Post('uploadDownlineUsersInBulk')
-    @UseGuards(JwtGuard2)
-    @UseInterceptors(
-      FileInterceptor('file', {
-        //   dest: './uploads',
-        //   fileFilter: imageFileFilter,
-        //   storage: diskStorage({
-        //     destination: './uploads',
-        //     filename: editFileName,
-        //   }),
-        //   //Setting file size limit to 1 MB
-        limits: { fileSize: 1000000 },
-      }),
-    )
-    async uploadDownlineUsersInBulk(
-      @UploadedFile() file: Express.Multer.File,
-      @TokenDecoder() user: DecodedUser,
-    ) {
-      if (!file) {
-        throw new BadRequestException('File is required');
-      }
-  
-      const result = await this.businessService.createDownlineUsersInBulk(file, user);
-      if (result.success) {
-        return {
-          message: result.message,
-          data: result.data,
-        };
-      } else {
-        throw new BadRequestException(result.message);
-      }
+  @Post('uploadDownlineUsersInBulk')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async uploadDownlineUsersInBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
     }
 
-  
-
-
-
-
-
-
+    const result = await this.businessService.createDownlineUsersInBulk(
+      file,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

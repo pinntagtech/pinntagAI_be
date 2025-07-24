@@ -121,6 +121,13 @@ export class Business {
   state: string;
   @Prop({ ref: BusinessCountry.name })
   country: mongoose.Types.ObjectId;
+
+  @Prop()
+  latitude: number;
+
+  @Prop()
+  longitude: number;
+
   @Prop()
   county: string;
   @Prop({ default: true })
