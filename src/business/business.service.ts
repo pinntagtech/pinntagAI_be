@@ -266,15 +266,32 @@ export class BusinessService {
       // );
 
       //send email otp
-       if (data.fcmToken) {
-            await this.tokenModel.create({
+
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
               token: data.fcmToken,
-              type: TokenTypes.FCM,
-              userType: UserTypes.BUSINESS,
-              user: createdUser._id,
-              deviceType: data.deviceType || 'web',
-            });
-          }
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
       await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
       const updatedUser = await this.businessUserModel
@@ -1225,7 +1242,7 @@ export class BusinessService {
     await this.saveToken(token, payload.id, type, expirationTime);
     return token;
   }
-   async saveToken(token: string, id: string, type: string, expiresAt: Date) {
+  async saveToken(token: string, id: string, type: string, expiresAt: Date) {
     const createdToken = await this.tokenModel.create({
       token,
       userType: UserTypes.BUSINESS,
@@ -1255,7 +1272,6 @@ export class BusinessService {
 
     return new Date(Date.now() + timeValue * multiplier);
   }
-
 
   async getUsersList(
     id: string,
@@ -3124,11 +3140,10 @@ export class BusinessService {
         };
       }
 
-      const [eventLogistics, rewardRedeemptions, typeWiseStats, topEvents] =
+      const [eventLogistics, rewardRedeemptions, topEvents] =
         await Promise.all([
           this.fetchEventLogistics(businessProfileId),
           this.fetchRewardRedemptions(businessProfileId),
-          this.fetchTypeWiseStats(businessProfileId),
           this.fetchTopEvents(businessProfileId, limit),
         ]);
 
@@ -3138,7 +3153,6 @@ export class BusinessService {
         data: {
           eventLogistics,
           rewardRedeemptions,
-          typeWiseStats,
           events: topEvents,
         },
       };
@@ -3166,11 +3180,21 @@ export class BusinessService {
           totalEvents: { $sum: 1 },
           totalViewsCount: { $sum: '$viewsCount' },
           totalEngagementCount: { $sum: '$engagementCount' },
+          totalLikes: { $sum: '$totalLikes' },
+          totalShares: { $sum: '$totalShares' },
+          totalSaved: { $sum: '$totalSaved' },
         },
       },
     ]);
     return (
-      result ?? { totalEvents: 0, totalViewsCount: 0, totalEngagementCount: 0 }
+      result ?? {
+        totalEvents: 0,
+        totalViewsCount: 0,
+        totalEngagementCount: 0,
+        totalLikes: 0,
+        totalShares: 0,
+        totalSaved: 0,
+      }
     );
   }
 
@@ -3179,7 +3203,7 @@ export class BusinessService {
   ) {
     return this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
-      claimStatus: ClaimStatus.CLAIMED,
+      claimStatus: ClaimStatus.ACTIVE,
     });
   }
 
@@ -3212,6 +3236,9 @@ export class BusinessService {
     businessProfileId: mongoose.Types.ObjectId,
     limit: number,
   ) {
+    const QR_ImageCategory = await this.fileCategoryModel.findOne({
+      name: 'Content QR',
+    });
     return this.eventModel.aggregate([
       {
         $match: {
@@ -3232,12 +3259,38 @@ export class BusinessService {
           as: 'schedules',
         },
       },
-      { $sort: { totalEngagement: -1 } },
+      {
+        $lookup: {
+          from: 'files',
+          let: { folderId: '$drivePath' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$parentDirectory', '$$folderId'] },
+                    {
+                      $ne: [
+                        '$category',
+                        new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'files',
+        },
+      },
+      { $sort: { totalEngagement: -1, createdAt: -1 } },
       {
         $project: {
           _id: 1,
           title: 1,
+          type: 1,
           description: 1,
+          status: 1,
           totalEngagement: 1,
           viewsCount: 1,
           engagementCount: 1,
@@ -3245,6 +3298,8 @@ export class BusinessService {
           totalShares: 1,
           totalSaved: 1,
           schedules: 1,
+          createdAt: 1,
+          files: 1,
         },
       },
       { $limit: limit },
@@ -3356,7 +3411,7 @@ export class BusinessService {
 
   async createDownlineUserFromRow(row: any, user: DecodedUser) {
     try {
-        const foundUser = await this.businessUserModel.findOne({
+      const foundUser = await this.businessUserModel.findOne({
         email: row.email,
       });
 
@@ -3410,8 +3465,6 @@ export class BusinessService {
         password,
         loginLink,
       );
-
-
     } catch (error) {
       throw new BadRequestException(
         'Error creating outlet from row: ' + error.message,

@@ -2060,7 +2060,7 @@ export class RewardsService {
     try{
       const result = await this.rewardModel.deleteOne({
         _id: new mongoose.Types.ObjectId(rewardId),
-        userId: new mongoose.Types.ObjectId(userId),
+        user: new mongoose.Types.ObjectId(userId),
       });
       console.log('Delete Result:', result);
       if (result.deletedCount === 0) {

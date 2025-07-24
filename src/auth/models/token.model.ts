@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { Business } from 'src/business/model/business.model';
 import { DeviceTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 
 export type TokenDocument = Token & mongoose.Document;
@@ -10,6 +11,9 @@ export class Token {
 
   @Prop({ refPath: 'userType', default: null })
   user: mongoose.Types.ObjectId;
+
+  @Prop({ ref: Business.name })
+  businessProfile: mongoose.Types.ObjectId;
 
   @Prop()
   token: string;

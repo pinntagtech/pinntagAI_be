@@ -958,7 +958,6 @@ export class AuthService {
         { $set: { userAgent, ipAddress } },
       );
       if (loginDto.fcmToken) {
-        console.log("loginDto.fcmToken::", loginDto.fcmToken);
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
             type: TokenTypes.FCM,
