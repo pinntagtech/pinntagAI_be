@@ -559,7 +559,7 @@ export class AuthService {
       const foundFcmToken = await this.tokenModel.findOneAndUpdate(
         {
           type: TokenTypes.FCM,
-          userId: user._id,
+          user: user._id,
           deviceType: data.deviceType ? data.deviceType : 'web',
         },
         {
@@ -671,7 +671,7 @@ export class AuthService {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
             type: TokenTypes.FCM,
-            userId: user._id,
+            user: user._id,
             deviceType: data.deviceType ? data.deviceType : 'web',
           },
           {
@@ -859,7 +859,7 @@ export class AuthService {
       };
     }
     const fcmTokenExists = await this.tokenModel.find({
-      userId: foundUser._id,
+      user: foundUser._id,
       type: TokenTypes.FCM,
       deviceType: data.deviceType,
     });
@@ -874,7 +874,7 @@ export class AuthService {
     } else {
       await this.tokenModel.updateMany(
         {
-          userId: foundUser._id,
+          user: foundUser._id,
           type: TokenTypes.FCM,
           deviceType: data.deviceType,
         },
@@ -962,7 +962,7 @@ export class AuthService {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
             type: TokenTypes.FCM,
-            userId: foundUser._id,
+            user: foundUser._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           },
           {
@@ -1282,7 +1282,7 @@ export class AuthService {
       await this.tokenModel.deleteOne({
         token: fcm,
         type: TokenTypes.FCM,
-        userId: new mongoose.Types.ObjectId(user.id),
+        user: new mongoose.Types.ObjectId(user.id),
       });
     }
     // await this.tokenModel.deleteMany({
@@ -5054,7 +5054,7 @@ export class AuthService {
       { _id: foundUser._id },
       { $set: { isDeleted: true } },
     );
-    await this.tokenModel.deleteMany({ userId: foundUser._id });
+    await this.tokenModel.deleteMany({ user: foundUser._id });
     // Schedule a job after 30 days to delete the user
     const date = currentDateTz();
     date.setDate(date.getDate() + 30);

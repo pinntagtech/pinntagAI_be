@@ -123,7 +123,7 @@ export class JwtGuard implements CanActivate {
         if (user) {
           const tokenDoc = await this.tokenModel.findOne({
             token,
-            userId: new mongoose.Types.ObjectId(payload.id),
+            user: new mongoose.Types.ObjectId(payload.id),
             type: TokenTypes.ACCESS,
             isBlacklisted: false,
           });

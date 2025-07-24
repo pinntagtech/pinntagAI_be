@@ -250,7 +250,7 @@ export class RewardsService {
 
           for (const follower of followers) {
             const fcmTokens = await this.tokenModel.find({
-              userId: follower.follower['_id'],
+              user: follower.follower['_id'],
               type: TokenTypes.FCM,
             });
 
@@ -1360,7 +1360,7 @@ export class RewardsService {
       });
       let message = `User ${userDetails.name} enrolled in reward ${reward.title}`;
       const fcmTokens = await this.tokenModel.find({
-        userId: userDetails._id,
+        user: userDetails._id,
         type: TokenTypes.FCM,
       });
 
@@ -1604,7 +1604,7 @@ export class RewardsService {
       });
       let message = `User ${userDetails.name} claimed in reward ${reward.title}`;
       const fcmTokens = await this.tokenModel.find({
-        userId: userDetails._id,
+        user: userDetails._id,
         type: TokenTypes.FCM,
       });
 
