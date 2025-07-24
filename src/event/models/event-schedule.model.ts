@@ -163,12 +163,6 @@ export class EventSchedule {
   @Prop()
   event: mongoose.Types.ObjectId;
 
-  @Prop({ default: false })
-  date_range: boolean;
-
-  @Prop({ default: false })
-  each_date: boolean;
-
   @Prop()
   fixedSchedule: FixedSchedule;
 

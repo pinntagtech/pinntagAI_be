@@ -2026,11 +2026,13 @@ export class EventService2 {
             }
             if (followersRes.count && followersRes.followers.length) {
               const followers = followersRes.followers;
-              console.log("Followers:", followers);
+              console.log('Followers:', followers);
               const message = `${business.name} published a new ${eventType} called ${event.title}`;
               for (let i = 0; i < followers.length; i++) {
                 const fcmTokens = await this.tokenModel.find({
-                  user: new mongoose.Types.ObjectId(followers[i].follower['_id']),
+                  user: new mongoose.Types.ObjectId(
+                    followers[i].follower['_id'],
+                  ),
                   type: TokenTypes.FCM,
                 });
                 for (let j = 0; j < fcmTokens.length; j++) {
@@ -4514,10 +4516,24 @@ export class EventService2 {
                 businessId: new mongoose.Types.ObjectId(user.businessProfile),
               };
               if (data.date_range) {
-                scheduleObj['date_range'] = data.date_range;
+                await this.eventModel.updateOne(
+                  { _id: new mongoose.Types.ObjectId(eventId) },
+                  {
+                    $set: {
+                      date_range: data.date_range,
+                    },
+                  },
+                );
               }
               if (data.each_date) {
-                scheduleObj['each_date'] = data.each_date;
+                await this.eventModel.updateOne(
+                  { _id: new mongoose.Types.ObjectId(eventId) },
+                  {
+                    $set: {
+                      each_date: data.each_date,
+                    },
+                  },
+                );
               }
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
@@ -5288,6 +5304,8 @@ export class EventService2 {
     page: number,
     limit: number,
     status: string,
+    startDate: any,
+    endDate: any,
   ) {
     try {
       // 1. Fetch business user and role
@@ -5299,6 +5317,10 @@ export class EventService2 {
 
       // 2. Build base query depending on business ownership
       const now = new Date();
+      startDate = startDate ? new Date(startDate) : now;
+      endDate = endDate
+        ? new Date(endDate)
+        : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
       let query: any;
 
       if (user.isBusiness) {
@@ -5330,8 +5352,9 @@ export class EventService2 {
           type: EventTypes.PRIVATE,
         };
       }
-      if( status ){
-        if ((Object.values(EventStatus) as string[]).includes(status)) query['status'] = status;
+      if (status) {
+        if ((Object.values(EventStatus) as string[]).includes(status))
+          query['status'] = status;
       }
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
@@ -5350,19 +5373,6 @@ export class EventService2 {
             as: 'schedules',
           },
         },
-        // { $unwind: { path: '$schedules', preserveNullAndEmptyArrays: true } },
-        // {
-        //   $group: {
-        //     _id: '$_id',
-        //     event: { $first: '$$ROOT' },
-        //     schedules: { $push: '$schedules' },
-        //   },
-        // },
-        // {
-        //   $replaceRoot: {
-        //     newRoot: { $mergeObjects: ['$event', { schedules: '$schedules' }] },
-        //   },
-        // },
         {
           $lookup: {
             from: 'categories',
@@ -5382,7 +5392,7 @@ export class EventService2 {
         { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
         {
           $lookup: {
-            from: 'files', // assuming this is the same collection as QR_CODE
+            from: 'files',
             let: { folderId: '$drivePath' },
             pipeline: [
               {
@@ -5404,11 +5414,122 @@ export class EventService2 {
             as: 'files',
           },
         },
-
+        {
+          $addFields: {
+            schedules: {
+              $filter: {
+                input: '$schedules',
+                as: 'schedule',
+                cond: {
+                  $or: isExpired
+                    ? [
+                        {
+                          $and: [
+                            { $eq: ['$$schedule.type', 'fixed'] },
+                            {
+                              $lt: ['$$schedule.fixedSchedule.date', now],
+                            },
+                          ],
+                        },
+                        {
+                          $and: [
+                            { $eq: ['$$schedule.type', 'recurring'] },
+                            {
+                              $lt: [
+                                '$$schedule.recurringSchedule.endDate',
+                                now,
+                              ],
+                            },
+                          ],
+                        },
+                      ]
+                    : [
+                        {
+                          $and: [
+                            { $eq: ['$$schedule.type', 'fixed'] },
+                            {
+                              $and: [
+                                {
+                                  $gte: [
+                                    '$$schedule.fixedSchedule.date',
+                                    startDate,
+                                  ],
+                                },
+                                {
+                                  $lte: [
+                                    '$$schedule.fixedSchedule.date',
+                                    endDate,
+                                  ],
+                                },
+                                {
+                                  $gte: [
+                                    {
+                                      $let: {
+                                        vars: {
+                                          durations:
+                                            '$$schedule.fixedSchedule.durations',
+                                          lastIndex: {
+                                            $subtract: [
+                                              {
+                                                $size:
+                                                  '$$schedule.fixedSchedule.durations',
+                                              },
+                                              1,
+                                            ],
+                                          },
+                                        },
+                                        in: {
+                                          $getField: {
+                                            field: 'endTime',
+                                            input: {
+                                              $arrayElemAt: [
+                                                '$$durations',
+                                                '$$lastIndex',
+                                              ],
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                    new Date(),
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                        {
+                          $and: [
+                            { $eq: ['$$schedule.type', 'recurring'] },
+                            {
+                              $and: [
+                                {
+                                  $gte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    startDate,
+                                  ],
+                                },
+                                {
+                                  $lte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    endDate,
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                },
+              },
+            },
+          },
+        },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ];
+
       const countDocuments = await this.eventModel.countDocuments(query);
       // 4. Execute aggregation
       const events = await this.eventModel.aggregate(pipeline);

@@ -199,6 +199,8 @@ export class EventController {
     @Query('limit') limitCount: string,
     @Query('isExpired') isExpired: string,
     @Query('status') status: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
@@ -226,6 +228,8 @@ export class EventController {
       page,
       limit,
       status,
+      startDate,
+      endDate
     );
     if (result.success) {
       return {
