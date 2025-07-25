@@ -615,21 +615,18 @@ export class BusinessController {
     }
   }
 
-  @Get(':id')
-  @UseGuards(JwtGuard2)
-  async fetchBusiness(
-    @Param('id') businessId: string,
-    @Query('latitude') latitude: string,
-    @Query('longitude') longitude: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.businessService.fetchBusiness(
-      businessId,
-      user.id,
-      parseFloat(latitude),
-      parseFloat(longitude),
-    );
 
+   @Get('dashboard')
+  @UseGuards(JwtGuard2)
+  async getDashboardData(
+    @TokenDecoder() user: DecodedUser,
+    @Query('limit') limit: string,
+  ) {
+    console.log("Inside getDashboardData Controller");
+    const result = await this.businessService.getDashboardData(
+      user,
+      parseInt(limit),
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -639,6 +636,9 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+
+  
 
   @Get('teamSize')
   @UseGuards(RateLimitGuard)
@@ -1104,26 +1104,6 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
-  @Get('dashboard')
-  @UseGuards(JwtGuard2)
-  async getDashboardData(
-    @TokenDecoder() user: DecodedUser,
-    @Query('limit') limit: string,
-  ) {
-    const result = await this.businessService.getDashboardData(
-      user,
-      parseInt(limit),
-    );
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
   @Get('followers')
   @UseGuards(JwtGuard2)
   async getFollowers(
@@ -1208,4 +1188,31 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+
+  @Get(':id')
+  @UseGuards(JwtGuard2)
+  async fetchBusiness(
+    @Param('id') businessId: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.fetchBusiness(
+      businessId,
+      user.id,
+      parseFloat(latitude),
+      parseFloat(longitude),
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }
