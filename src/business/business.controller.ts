@@ -620,9 +620,10 @@ export class BusinessController {
   async getDashboardData(
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
+    @Query('progress') progress: string
   ) {
     const pageLimit = limit ? parseInt(limit) : 20;
-    const result = await this.businessService.getDashboardData(user, pageLimit);
+    const result = await this.businessService.getDashboardData(user, pageLimit, progress);
     if (result.success) {
       return {
         message: result.message,

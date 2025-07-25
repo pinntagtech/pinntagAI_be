@@ -3161,7 +3161,11 @@ export class BusinessService {
   //   }
   // }
 
-  async getDashboardData(user: DecodedUser, limit: number = 10) {
+  async getDashboardData(
+    user: DecodedUser,
+    limit: number = 20,
+    progress: string,
+  ) {
     try {
       const businessProfileId = new mongoose.Types.ObjectId(
         user.businessProfile,
@@ -3174,23 +3178,22 @@ export class BusinessService {
         };
       }
 
-      const [eventLogistics, activeParticipants, topEvents,followersCount] = await Promise.all(
-        [
-          this.fetchEventLogistics(businessProfileId),
-          this.fetchRewardRedemptions(businessProfileId),
+      const [eventLogistics, activeParticipants, topEvents, followersCount] =
+        await Promise.all([
+          this.fetchEventLogistics(businessProfileId, progress),
+          this.fetchRewardRedemptions(businessProfileId, progress),
           this.fetchTopEvents(businessProfileId, limit),
-          this.userService.getFollowers(user.businessProfile)
-        ],
-      );
+          this.userService.getFollowers(user.businessProfile),
+        ]);
 
       const businessDetails = {
         name: business.name,
         logo: business.logo,
         coverImage: business.cover,
         followersCount: followersCount.count,
-      }
+      };
 
-      console.log("Active Participants:", activeParticipants);
+      console.log('Active Participants:', activeParticipants);
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
@@ -3211,8 +3214,49 @@ export class BusinessService {
 
   private async fetchEventLogistics(
     businessProfileId: mongoose.Types.ObjectId,
+    progress: string,
   ) {
-    const [result] = await this.eventModel.aggregate([
+    const now = new Date();
+    let oldDate: Date;
+
+    switch (progress) {
+      case 'daily':
+        oldDate = new Date(now);
+        oldDate.setDate(oldDate.getDate() - 1);
+        break;
+      case 'weekly':
+        oldDate = new Date(now);
+        oldDate.setDate(oldDate.getDate() - 7);
+        break;
+      case 'monthly':
+        oldDate = new Date(now);
+        oldDate.setMonth(oldDate.getMonth() - 1);
+        break;
+      default:
+        throw new Error('Invalid progress type');
+    }
+    console.log('Old Date:', oldDate);
+    let [lastResult] = await this.eventModel.aggregate([
+      {
+        $match: {
+          businessProfile: businessProfileId,
+          status: EventStatus.PUBLISHED,
+          createdAt: { $lte: oldDate },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalEvents: { $sum: 1 },
+          totalViewsCount: { $sum: '$viewsCount' },
+          totalEngagementCount: { $sum: '$engagementCount' },
+          totalLikes: { $sum: '$totalLikes' },
+          totalShares: { $sum: '$totalShares' },
+          totalSaved: { $sum: '$totalSaved' },
+        },
+      },
+    ]);
+    let [result] = await this.eventModel.aggregate([
       {
         $match: {
           businessProfile: businessProfileId,
@@ -3231,6 +3275,38 @@ export class BusinessService {
         },
       },
     ]);
+    if(!lastResult || lastResult === undefined){
+      lastResult = {
+        totalEvents: 0,
+        totalViewsCount: 0,
+        totalEngagementCount: 0,
+        totalLikes: 0,
+        totalShares: 0,
+        totalSaved: 0,
+      };
+    }
+    if(!result || result === undefined){
+      result = {
+        totalEvents: 0,
+        totalViewsCount: 0,
+        totalEngagementCount: 0,
+        totalLikes: 0,
+        totalShares: 0,
+        totalSaved: 0,
+      };
+    }
+    result.percentageChange = {
+      totalEvents: this.percentageChange(lastResult.totalEvents, result.totalEvents),
+      totalViewsCount: this.percentageChange(lastResult.totalViewsCount, result.totalViewsCount),
+      totalEngagementCount: this.percentageChange(lastResult.totalEngagementCount, result.totalEngagementCount),
+      totalLikes: this.percentageChange(lastResult.totalLikes, result.totalLikes),
+      totalShares: this.percentageChange(lastResult.totalShares, result.totalShares),
+      totalSaved: this.percentageChange(lastResult.totalSaved, result.totalSaved),
+    };
+
+    console.log("Last Result:", lastResult);
+    console.log("Current Result:", result);
+
     return (
       result ?? {
         totalEvents: 0,
@@ -3242,24 +3318,53 @@ export class BusinessService {
       }
     );
   }
+  private percentageChange(oldVal: number, newVal: number) {
+    console.log('Old Value:', oldVal, 'New Value:', newVal);
+    if (oldVal === 0) return 0;
+    return ((newVal - oldVal) / oldVal) * 100;
+  }
 
   private async fetchRewardRedemptions(
     businessProfileId: mongoose.Types.ObjectId,
+    progress: string,
   ) {
-    const lastMonth = await this.userRewardModel.countDocuments({
+    const now = new Date();
+    let oldDate: Date;
+
+    switch (progress) {
+      case 'daily':
+        oldDate = new Date(now);
+        oldDate.setDate(oldDate.getDate() - 1);
+        break;
+      case 'weekly':
+        oldDate = new Date(now);
+        oldDate.setDate(oldDate.getDate() - 7);
+        break;
+      case 'monthly':
+        oldDate = new Date(now);
+        oldDate.setMonth(oldDate.getMonth() - 1);
+        break;
+      default:
+        throw new Error('Invalid progress type');
+    }
+
+    // Past progress (CLAIMED up to oldDate)
+    const lastProgress = await this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.CLAIMED,
-      createdAt: {
-        $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-      },
+      createdAt: { $lte: oldDate },
     });
 
-    const currentMonth = await this.userRewardModel.countDocuments({
+    // Current progress (ACTIVE since oldDate)
+    const currentProgress = await this.userRewardModel.countDocuments({
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.ACTIVE,
     });
 
-    return currentMonth;
+    return {
+      activeParticipants: currentProgress,
+      percentageChange: this.percentageChange(lastProgress, currentProgress),
+    };
   }
 
   private async fetchTypeWiseStats(businessProfileId: mongoose.Types.ObjectId) {
