@@ -3174,18 +3174,28 @@ export class BusinessService {
         };
       }
 
-      const [eventLogistics, activeParticipants, topEvents] = await Promise.all(
+      const [eventLogistics, activeParticipants, topEvents,followersCount] = await Promise.all(
         [
           this.fetchEventLogistics(businessProfileId),
           this.fetchRewardRedemptions(businessProfileId),
           this.fetchTopEvents(businessProfileId, limit),
+          this.userService.getFollowers(user.businessProfile)
         ],
       );
 
+      const businessDetails = {
+        name: business.name,
+        logo: business.logo,
+        coverImage: business.cover,
+        followersCount: followersCount.count,
+      }
+
+      console.log("Active Participants:", activeParticipants);
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
         data: {
+          businessDetails,
           eventLogistics,
           activeParticipants,
           events: topEvents,
@@ -3248,6 +3258,8 @@ export class BusinessService {
       businessProfile: businessProfileId,
       claimStatus: ClaimStatus.ACTIVE,
     });
+
+    return currentMonth;
   }
 
   private async fetchTypeWiseStats(businessProfileId: mongoose.Types.ObjectId) {

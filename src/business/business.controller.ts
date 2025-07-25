@@ -615,18 +615,14 @@ export class BusinessController {
     }
   }
 
-
-   @Get('dashboard')
+  @Get('dashboard')
   @UseGuards(JwtGuard2)
   async getDashboardData(
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
   ) {
-    console.log("Inside getDashboardData Controller");
-    const result = await this.businessService.getDashboardData(
-      user,
-      parseInt(limit),
-    );
+    const pageLimit = limit ? parseInt(limit) : 20;
+    const result = await this.businessService.getDashboardData(user, pageLimit);
     if (result.success) {
       return {
         message: result.message,
@@ -636,9 +632,6 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
-
-  
 
   @Get('teamSize')
   @UseGuards(RateLimitGuard)
@@ -1189,7 +1182,6 @@ export class BusinessController {
     }
   }
 
-
   @Get(':id')
   @UseGuards(JwtGuard2)
   async fetchBusiness(
@@ -1214,5 +1206,4 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
 }
