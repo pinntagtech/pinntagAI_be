@@ -3212,112 +3212,125 @@ export class BusinessService {
     }
   }
 
-  private async fetchEventLogistics(
-    businessProfileId: mongoose.Types.ObjectId,
-    progress: string,
-  ) {
-    const now = new Date();
-    let oldDate: Date;
+private async fetchEventLogistics(
+  businessProfileId: mongoose.Types.ObjectId,
+  progress: string,
+) {
+  const now = new Date();
+  const startOfCurrent = new Date(now);
+  let startOfPrevious: Date;
 
-    switch (progress) {
-      case 'daily':
-        oldDate = new Date(now);
-        oldDate.setDate(oldDate.getDate() - 1);
-        break;
-      case 'weekly':
-        oldDate = new Date(now);
-        oldDate.setDate(oldDate.getDate() - 7);
-        break;
-      case 'monthly':
-        oldDate = new Date(now);
-        oldDate.setMonth(oldDate.getMonth() - 1);
-        break;
-      default:
-        throw new Error('Invalid progress type');
-    }
-    console.log('Old Date:', oldDate);
-    let [lastResult] = await this.eventModel.aggregate([
-      {
-        $match: {
-          businessProfile: businessProfileId,
-          status: EventStatus.PUBLISHED,
-          createdAt: { $lte: oldDate },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalEvents: { $sum: 1 },
-          totalViewsCount: { $sum: '$viewsCount' },
-          totalEngagementCount: { $sum: '$engagementCount' },
-          totalLikes: { $sum: '$totalLikes' },
-          totalShares: { $sum: '$totalShares' },
-          totalSaved: { $sum: '$totalSaved' },
-        },
-      },
-    ]);
-    let [result] = await this.eventModel.aggregate([
-      {
-        $match: {
-          businessProfile: businessProfileId,
-          status: EventStatus.PUBLISHED,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalEvents: { $sum: 1 },
-          totalViewsCount: { $sum: '$viewsCount' },
-          totalEngagementCount: { $sum: '$engagementCount' },
-          totalLikes: { $sum: '$totalLikes' },
-          totalShares: { $sum: '$totalShares' },
-          totalSaved: { $sum: '$totalSaved' },
-        },
-      },
-    ]);
-    if(!lastResult || lastResult === undefined){
-      lastResult = {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      };
-    }
-    if(!result || result === undefined){
-      result = {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      };
-    }
-    result.percentageChange = {
-      totalEvents: this.percentageChange(lastResult.totalEvents, result.totalEvents),
-      totalViewsCount: this.percentageChange(lastResult.totalViewsCount, result.totalViewsCount),
-      totalEngagementCount: this.percentageChange(lastResult.totalEngagementCount, result.totalEngagementCount),
-      totalLikes: this.percentageChange(lastResult.totalLikes, result.totalLikes),
-      totalShares: this.percentageChange(lastResult.totalShares, result.totalShares),
-      totalSaved: this.percentageChange(lastResult.totalSaved, result.totalSaved),
-    };
+  switch (progress) {
+    case 'daily':
+      startOfCurrent.setHours(0, 0, 0, 0); // start of today
+      startOfPrevious = new Date(startOfCurrent);
+      startOfPrevious.setDate(startOfPrevious.getDate() - 1);
+      break;
 
-    console.log("Last Result:", lastResult);
-    console.log("Current Result:", result);
+    case 'weekly':
+      const dayOfWeek = startOfCurrent.getDay(); // 0 (Sun) - 6 (Sat)
+      const diffToStartOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      startOfCurrent.setDate(startOfCurrent.getDate() - diffToStartOfWeek);
+      startOfCurrent.setHours(0, 0, 0, 0); // start of this week (Monday)
+      startOfPrevious = new Date(startOfCurrent);
+      startOfPrevious.setDate(startOfPrevious.getDate() - 7); // last week's start
+      break;
 
-    return (
-      result ?? {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      }
-    );
+    case 'monthly':
+      startOfCurrent.setDate(1); // start of this month
+      startOfCurrent.setHours(0, 0, 0, 0);
+      startOfPrevious = new Date(startOfCurrent);
+      startOfPrevious.setMonth(startOfPrevious.getMonth() - 1); // last month's start
+      break;
+
+    default:
+      throw new Error('Invalid progress type');
   }
+
+  const [lastResult] = await this.eventModel.aggregate([
+    {
+      $match: {
+        businessProfile: businessProfileId,
+        status: EventStatus.PUBLISHED,
+        createdAt: {
+          $gte: startOfPrevious,
+          $lt: startOfCurrent,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalEvents: { $sum: 1 },
+        totalViewsCount: { $sum: '$viewsCount' },
+        totalEngagementCount: { $sum: '$engagementCount' },
+        totalLikes: { $sum: '$totalLikes' },
+        totalShares: { $sum: '$totalShares' },
+        totalSaved: { $sum: '$totalSaved' },
+      },
+    },
+  ]);
+
+  const [currentResult] = await this.eventModel.aggregate([
+    {
+      $match: {
+        businessProfile: businessProfileId,
+        status: EventStatus.PUBLISHED,
+        createdAt: {
+          $gte: startOfCurrent,
+          $lte: now,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalEvents: { $sum: 1 },
+        totalViewsCount: { $sum: '$viewsCount' },
+        totalEngagementCount: { $sum: '$engagementCount' },
+        totalLikes: { $sum: '$totalLikes' },
+        totalShares: { $sum: '$totalShares' },
+        totalSaved: { $sum: '$totalSaved' },
+      },
+    },
+  ]);
+
+  const last = lastResult ?? {
+    totalEvents: 0,
+    totalViewsCount: 0,
+    totalEngagementCount: 0,
+    totalLikes: 0,
+    totalShares: 0,
+    totalSaved: 0,
+  };
+
+  const current = currentResult ?? {
+    totalEvents: 0,
+    totalViewsCount: 0,
+    totalEngagementCount: 0,
+    totalLikes: 0,
+    totalShares: 0,
+    totalSaved: 0,
+  };
+
+  current.percentageChange = {
+    totalEvents: this.percentageChange(last.totalEvents, current.totalEvents),
+    totalViewsCount: this.percentageChange(last.totalViewsCount, current.totalViewsCount),
+    totalEngagementCount: this.percentageChange(last.totalEngagementCount, current.totalEngagementCount),
+    totalLikes: this.percentageChange(last.totalLikes, current.totalLikes),
+    totalShares: this.percentageChange(last.totalShares, current.totalShares),
+    totalSaved: this.percentageChange(last.totalSaved, current.totalSaved),
+  };
+
+  console.log("Last Period:", last);
+  console.log("Current Period:", current);
+
+  return current;
+}
+
+
+
+
   private percentageChange(oldVal: number, newVal: number) {
     console.log('Old Value:', oldVal, 'New Value:', newVal);
     if (oldVal === 0) return 0;
