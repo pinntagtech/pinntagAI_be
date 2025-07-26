@@ -805,7 +805,30 @@ export class SeederService {
     const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
     if (!superAdmin) return;
 
-    for (const cfg of Seeder.DashboardConfigs) {
+    for (const cfg of Seeder.DashboardBusinessConfigs) {
+      const cats = await this.businessIndustryModel
+        .find({ title: { $in: cfg.businessIndustries } })
+        .select('_id')
+        .lean();
+
+      const catIds = cats.map((c) => c._id);
+      if (catIds.length !== cfg.businessIndustries.length) {
+        console.warn(
+          `Some business Industries for "${cfg.name}" not found; found ${catIds.length} of ${cfg.businessIndustries.length}`,
+        );
+      }
+
+      await this.dashboardConfigModel.create({
+        name: cfg.name,
+        limit: cfg.limit,
+        businessIndustries: catIds,
+        sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
+      });
+
+    }
+
+     for (const cfg of Seeder.DashboardConfigs) {
       const cats = await this.categoryModel
         .find({ title: { $in: cfg.categories } })
         .select('_id')
@@ -827,15 +850,18 @@ export class SeederService {
         limit: cfg.limit,
         categories: catIds,
         sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
       });
+      
     }
+
   }
 
   async seedDepartments() {
     const departments = await this.departmentModel.find();
     if (departments.length !== 0) return;
 
-    for (const dept of Seeder.Departmens) {
+    for (const dept of Seeder.Departments) {
       const roles = await this.roleModel
         .find({ name: { $in: dept.roles } })
         .select('_id')

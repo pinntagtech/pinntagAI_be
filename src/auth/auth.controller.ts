@@ -313,8 +313,11 @@ export class AuthController {
 
   @Get('dashboard/getAllConfigs')
   @UseGuards(JwtGuard2)
-  async getDashboardAllConfigs() {
-    const result = await this.authService.getDashboardAllConfigs();
+  async getDashboardAllConfigs(@Query('carouselType') carouselType: string) {
+    if (!carouselType) {
+      throw new BadRequestException('Carousel type is required');
+    }
+    const result = await this.authService.getDashboardAllConfigs(carouselType);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }

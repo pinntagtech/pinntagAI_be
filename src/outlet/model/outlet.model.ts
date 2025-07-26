@@ -138,3 +138,4 @@ export class Outlet {
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);
+OutletSchema.index({ location: '2dsphere' });

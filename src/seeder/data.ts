@@ -1,5 +1,6 @@
 import { Admin } from 'src/admin/models/admin.model';
-import { DeviceTypes } from 'src/enums/auth.enums';
+import { Business } from 'src/business/model/business.model';
+import { CarouselType, DeviceTypes } from 'src/enums/auth.enums';
 import { EventTypes } from 'src/enums/event.enums';
 import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
 import { DurationType } from 'src/subscription/models/subscriptionProduct.model';
@@ -215,7 +216,7 @@ export const Seeder = {
       description: 'Health & Fitness',
     },
     {
-      title: 'Local',
+      title: 'Attractions',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
       darkIcon:
@@ -242,7 +243,7 @@ export const Seeder = {
       description: 'Pets',
     },
     {
-      title: 'Retail',
+      title: 'Shopping',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
       darkIcon:
@@ -1266,7 +1267,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '100',
       businessProfile: null,
-      categories: ['Food & Drink'],
+      categories:["Dining"],
       title: 'Free Coke with Any Burger!',
       keywords: ['burger', 'fast food', 'coke', 'free drink'],
       description:
@@ -1281,7 +1282,7 @@ export const Seeder = {
       termsAndConditions:
         'Offer valid for dine-in only. One Coke per burger. While supplies last.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Restaurant'],
+      businessCategories:['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Free+Coke+With+Burger.png',
       createdAt: null,
@@ -1295,7 +1296,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Food & Drink'],
+      categories:["Dining"],
       title: 'Buy 2 Pizzas, Get 2 Cokes Free!',
       keywords: ['pizza', 'beverage', 'coke', 'combo deal'],
       description:
@@ -1310,7 +1311,7 @@ export const Seeder = {
       termsAndConditions:
         'Available for delivery and takeaway only. While supplies last. One offer per order.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Restaurant'],
+      businessCategories :['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Buy+Pizza+Get+Coke.png',
       createdAt: null,
@@ -1324,7 +1325,7 @@ export const Seeder = {
       discountType: 'FIXED',
       discountValue: '5',
       businessProfile: null,
-      categories: ['Food & Drink'],
+      categories:["Dining"],
       title: 'Coke Combo Lunch for Just $5!',
       keywords: ['lunch', 'combo', 'coke', 'meal deal'],
       description:
@@ -1339,7 +1340,7 @@ export const Seeder = {
       termsAndConditions:
         'Offer valid from 12pm–3pm daily. Dine-in and pickup only. No substitutions.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Restaurant'],
+      businessCategories :['Restaurant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Coke/Coke+Combo+Lunch.png',
       createdAt: null,
@@ -1353,7 +1354,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Foods & Drink'],
+      categories:["Dining"],
       title: '15% Off All Vegan Desserts!',
       keywords: ['bakery', 'dessert', 'vegan', 'discount'],
       description:
@@ -1368,7 +1369,7 @@ export const Seeder = {
       termsAndConditions:
         'Offer valid in-store only. Limited to one use per customer.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Bakery', 'Desserts'],
+      businessCategories :['Bakery', 'Desserts'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Vegan+Desserts.jpg',
       createdAt: null,
@@ -1382,7 +1383,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '10',
       businessProfile: null,
-      categories: ['Foods & Drink'],
+      categories:["Dining"],
       title: '10% Off All Breakfast Combos!',
       keywords: ['breakfast', 'cafe', 'morning deal', 'discount'],
       description:
@@ -1396,7 +1397,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid before 11 AM. Dine-in only.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Cafe/Coffee Shop'],
+      businessCategories :['Cafe/Coffee Shop'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Breakfast+Combos+.jpg',
       createdAt: null,
@@ -1410,7 +1411,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Happy Hour'],
+      categories :['Happy Hour'],
       title: '20% Off All Tap Beers!',
       keywords: ['bar', 'beer', 'happy hour', 'drinks'],
       description:
@@ -1425,7 +1426,7 @@ export const Seeder = {
       termsAndConditions:
         'Dine-in only. Valid during happy hour from 6 PM to 9 PM. Must be 21 or older.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Bar'],
+      businessCategories :['Bar'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Tap+beer.jpeg',
       createdAt: null,
@@ -1439,7 +1440,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Happy Hour'],
+      categories :['Happy Hour'],
       title: '20% Off Signature Cocktails!',
       keywords: ['bar', 'cocktails', 'happy hour', 'discount'],
       description:
@@ -1453,7 +1454,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid during happy hour only. Must be 21 or older.',
       businessIndustry: 'Food & Drink',
-      businessCategories: ['Bar'],
+      businessCategories :['Bar'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Signature+Cocktails!+.jpg',
       createdAt: null,
@@ -1467,7 +1468,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Retail'],
+      categories:["Shopping"],
       title: '15% Off All Car Accessories!',
       keywords: ['auto accessories', 'car accessories', 'discount'],
       description:
@@ -1481,7 +1482,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid on selected items only.',
       businessIndustry: 'Automotive Services',
-      businessCategories: ['Auto Accessories'],
+      businessCategories :['Auto Accessories'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Car+Accessories!+.jpg',
       createdAt: null,
@@ -1495,7 +1496,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Retail'],
+      categories:["Shopping"],
       title: 'Save $50 on Custom Paint Jobs!',
       keywords: ['customization', 'paint job', 'auto services'],
       description:
@@ -1509,7 +1510,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for standard color options only.',
       businessIndustry: 'Automotive Services',
-      businessCategories: ['Customization'],
+      businessCategories :['Customization'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Custom+Paint+Jobs!.jpg',
       createdAt: null,
@@ -1523,7 +1524,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '25',
       businessProfile: null,
-      categories: ['Retail'],
+      categories:["Shopping"],
       title: 'Get a $25 Off Premium Car Detailing!',
       keywords: ['detailing', 'car wash', 'premium service'],
       description:
@@ -1537,7 +1538,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for full detailing packages only.',
       businessIndustry: 'Automotive Services',
-      businessCategories: ['Detailing'],
+      businessCategories :['Detailing'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Car+Accessories!+.jpg',
       createdAt: null,
@@ -1552,7 +1553,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Entertainment'],
+      categories :['Entertainment'],
       title: '20% Off Weekend Passes!',
       keywords: ['amusement', 'family fun', 'discount'],
       description:
@@ -1566,7 +1567,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid on Saturdays and Sundays only.',
       businessIndustry: 'Entertainment',
-      businessCategories: ['Amusement Center'],
+      businessCategories :['Amusement Center'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Event+Planning+Packages!+.jpg',
       createdAt: null,
@@ -1580,7 +1581,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '30',
       businessProfile: null,
-      categories: ['Entertainment'],
+      categories :['Entertainment'],
       title: '$30 Off Group Bookings!',
       keywords: ['escape room', 'group activity', 'discount'],
       description:
@@ -1594,7 +1595,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid on bookings of 4 or more. Excludes holidays.',
       businessIndustry: 'Entertainment',
-      businessCategories: ['Escape Room'],
+      businessCategories :['Escape Room'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Group+Bookings!+.jpg',
       createdAt: null,
@@ -1608,7 +1609,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '10',
       businessProfile: null,
-      categories: ['Entertainment'],
+      categories :['Entertainment'],
       title: '10% Off Event Planning Packages!',
       keywords: ['event planning', 'party', 'discount'],
       description:
@@ -1622,7 +1623,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Offer valid for bookings made this month.',
       businessIndustry: 'Entertainment',
-      businessCategories: ['Event Planning'],
+      businessCategories :['Event Planning'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Event+Planning+Packages!+.jpg',
       createdAt: null,
@@ -1636,7 +1637,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '25',
       businessProfile: null,
-      categories: ['Clubs & Classes'],
+      categories :['Clubs'],
       title: '25% Off First Dance Class!',
       keywords: ['dance studio', 'dance classes', 'discount'],
       description:
@@ -1650,7 +1651,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'New members only. Valid for first class.',
       businessIndustry: 'Fitness & Wellness',
-      businessCategories: ['Dance Studio'],
+      businessCategories :['Dance Studio'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/First+Dance+Class!+.jpg',
       createdAt: null,
@@ -1664,7 +1665,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Clubs & Classes'],
+      categories :['Clubs'],
       title: 'Save $20 on Monthly Membership!',
       keywords: ['fitness center', 'gym', 'membership'],
       description:
@@ -1678,7 +1679,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for new memberships only.',
       businessIndustry: 'Fitness & Wellness',
-      businessCategories: ['Fitness Center'],
+      businessCategories :['Fitness Center'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Monthly+Membership!+.jpeg',
       createdAt: null,
@@ -1692,7 +1693,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Clubs & Classes'],
+      categories :['Clubs'],
       title: '15% Off All Yoga Classes!',
       keywords: ['yoga', 'wellness', 'discount'],
       description:
@@ -1706,7 +1707,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid on drop-in classes only.',
       businessIndustry: 'Fitness & Wellness',
-      businessCategories: ['Yoga Studio'],
+      businessCategories :['Yoga Studio'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Yoga+Classes!+.jpg',
       createdAt: null,
@@ -1720,7 +1721,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '30',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: 'Save $30 on Appliance Repair!',
       keywords: ['appliance repair', 'home services', 'discount'],
       description:
@@ -1735,7 +1736,7 @@ export const Seeder = {
       termsAndConditions:
         'Valid for first-time customers only. Excludes parts.',
       businessIndustry: 'Home Services',
-      businessCategories: ['Appliance Repair'],
+      businessCategories :['Appliance Repair'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Appliance+Repair!+.jpg',
       createdAt: null,
@@ -1749,7 +1750,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: '20% Off Deep Cleaning Package!',
       keywords: ['home cleaning', 'deep clean', 'discount'],
       description:
@@ -1763,7 +1764,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Offer valid for full home cleaning packages only.',
       businessIndustry: 'Home Services',
-      businessCategories: ['Home Cleaning'],
+      businessCategories :['Home Cleaning'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Deep+Cleaning+Package!+.jpg',
       createdAt: null,
@@ -1777,7 +1778,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: '$50 Off Emergency Plumbing!',
       keywords: ['plumbing services', 'emergency plumbing', 'discount'],
       description:
@@ -1791,7 +1792,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for emergency calls only. Excludes materials.',
       businessIndustry: 'Home Services',
-      businessCategories: ['Plumbing Services'],
+      businessCategories :['Plumbing Services'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Emergency+Plumbing!+.png',
       createdAt: null,
@@ -1805,7 +1806,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: '15% Off Weekend Stays!',
       keywords: ['bed & breakfast', 'hospitality', 'discount', 'weekend'],
       description:
@@ -1819,7 +1820,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for Friday to Sunday stays. Booking required.',
       businessIndustry: 'Hospitality',
-      businessCategories: ['Bed & Breakfast'],
+      businessCategories :['Bed & Breakfast'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Weekend+Stays!+.png',
       createdAt: null,
@@ -1833,7 +1834,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: '$50 Off Your Next Booking!',
       keywords: ['hotel', 'stay', 'discount', 'booking'],
       description:
@@ -1847,7 +1848,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Offer valid on bookings of 2 nights or more.',
       businessIndustry: 'Hospitality',
-      businessCategories: ['Hotel'],
+      businessCategories :['Hotel'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Weekend+Stays!+.png',
       createdAt: null,
@@ -1861,7 +1862,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Local Attractions'],
+      categories :['Attractions'],
       title: '20% Off Long Stays!',
       keywords: ['vacation rentals', 'hospitality', 'discount', 'long stay'],
       description:
@@ -1875,7 +1876,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for stays of 7 nights or longer.',
       businessIndustry: 'Hospitality',
-      businessCategories: ['Vacation Rentals'],
+      businessCategories :['Vacation Rentals'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Long+Stays!+.jpg',
       createdAt: null,
@@ -1889,7 +1890,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '20% Off Grooming Packages!',
       keywords: ['pet grooming', 'discount', 'dog grooming', 'cat grooming'],
       description:
@@ -1904,7 +1905,7 @@ export const Seeder = {
       termsAndConditions:
         'Valid on full grooming packages only. Appointment required.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Pet Grooming'],
+      businessCategories :['Pet Grooming'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Grooming+Packages!+.jpeg',
       createdAt: null,
@@ -1918,7 +1919,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '$15 Off Weekend Boarding!',
       keywords: ['pet boarding', 'pet care', 'weekend discount'],
       description:
@@ -1932,7 +1933,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for weekend stays only. Limited availability.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Pet Boarding'],
+      businessCategories :['Pet Boarding'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Weekend+Boarding!+.jpg',
       createdAt: null,
@@ -1946,7 +1947,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '10',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '10% Off First Vet Visit!',
       keywords: ['veterinary clinic', 'pet care', 'discount', 'first visit'],
       description:
@@ -1960,7 +1961,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for new patients only. Appointment required.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Veterinary Clinic'],
+      businessCategories :['Veterinary Clinic'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/First+Vet+Visit!+.jpg',
       createdAt: null,
@@ -1974,7 +1975,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '20% Off Grooming Packages!',
       keywords: ['pet grooming', 'discount', 'dog grooming', 'cat grooming'],
       description:
@@ -1989,7 +1990,7 @@ export const Seeder = {
       termsAndConditions:
         'Valid on full grooming packages only. Appointment required.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Pet Grooming'],
+      businessCategories :['Pet Grooming'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Grooming+Packages!+.jpeg',
       createdAt: null,
@@ -2003,7 +2004,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '$15 Off Weekend Boarding!',
       keywords: ['pet boarding', 'pet care', 'weekend discount'],
       description:
@@ -2017,7 +2018,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for weekend stays only. Limited availability.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Pet Boarding'],
+      businessCategories :['Pet Boarding'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Weekend+Boarding!+.jpg',
       createdAt: null,
@@ -2031,7 +2032,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '10',
       businessProfile: null,
-      categories: ['Pets'],
+      categories :['Pets'],
       title: '10% Off First Vet Visit!',
       keywords: ['veterinary clinic', 'pet care', 'discount', 'first visit'],
       description:
@@ -2045,7 +2046,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Valid for new patients only. Appointment required.',
       businessIndustry: 'Pet Services',
-      businessCategories: ['Veterinary Clinic'],
+      businessCategories :['Veterinary Clinic'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/First+Vet+Visit!+.jpg',
       createdAt: null,
@@ -2059,7 +2060,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Retail'],
+            categories:["Shopping"],
       title: '20% Off Tax Consultation!',
       keywords: ['accounting', 'tax', 'consulting', 'discount'],
       description:
@@ -2074,7 +2075,7 @@ export const Seeder = {
       termsAndConditions:
         'Valid for first-time clients only. Appointment required.',
       businessIndustry: 'Professional Services',
-      businessCategories: ['Accounting Consultant'],
+      businessCategories :['Accounting Consultant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Tax+Consultation!+.png',
       createdAt: null,
@@ -2088,7 +2089,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Retail'],
+            categories:["Shopping"],
       title: '$50 Off Business Strategy Session!',
       keywords: ['business consulting', 'strategy', 'discount'],
       description:
@@ -2102,7 +2103,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Offer valid for the first session only.',
       businessIndustry: 'Professional Services',
-      businessCategories: ['Business Consultant'],
+      businessCategories :['Business Consultant'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Business+Strategy+Session!+.jpg',
       createdAt: null,
@@ -2116,7 +2117,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Retail'],
+      categories:["Shopping"],
       title: '15% Off Legal Consultation!',
       keywords: ['legal services', 'lawyer', 'consultation', 'discount'],
       description:
@@ -2130,7 +2131,7 @@ export const Seeder = {
       termsApplied: true,
       termsAndConditions: 'Offer valid for initial consultations only.',
       businessIndustry: 'Professional Services',
-      businessCategories: ['Legal Services'],
+      businessCategories :['Legal Services'],
       thumbnail:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/Legal+Consultation!.jpg',
       createdAt: null,
@@ -2147,14 +2148,9 @@ export const Seeder = {
       flashOffersIncluded: true,
       freeIncluded: true,
       limit: 7,
-      categories: [
-        'Entertainment',
-        'Music & Nightlife',
-        'Sports',
-        'Food & Drinks',
-        'Health & Fitness',
-      ],
+      categories: ['Entertainment', 'Nightlife', 'Sports', 'Dining', 'Fitness'],
       sortOrder: 100,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Flash Deals',
@@ -2163,8 +2159,9 @@ export const Seeder = {
       flashOffersIncluded: true,
       freeIncluded: true,
       limit: 7,
-      categories: ['Food & Drinks', 'Retail', 'Beauty & Spa', 'Happy Hour'],
+      categories: ['Dining', 'Shopping', 'Grooming', 'Happy Hour'],
       sortOrder: 200,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Free Offers',
@@ -2174,13 +2171,14 @@ export const Seeder = {
       freeIncluded: true,
       limit: 7,
       categories: [
-        'Clubs & Classes',
+        'Clubs',
         'Days Out',
         'Entertainment',
-        'Local Attractions',
+        'Attractions',
         'Charity',
       ],
       sortOrder: 300,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Food and Drinks',
@@ -2189,8 +2187,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: ['Food & Drinks', 'Happy Hour'],
+      categories: ['Dining', 'Happy Hour'],
       sortOrder: 400,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Events Near You',
@@ -2199,13 +2198,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: [
-        'Music & Nightlife',
-        'Sports',
-        'Local Attractions',
-        'Entertainment',
-      ],
+      categories: ['Nightlife', 'Sports', 'Attractions', 'Entertainment'],
       sortOrder: 500,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Health and Wellness',
@@ -2214,8 +2209,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: ['Health & Fitness', 'Clubs & Classes'],
+      categories: ['Fitness', 'Clubs'],
       sortOrder: 600,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Charity and Community',
@@ -2224,8 +2220,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: ['Charity', 'Local Attractions'],
+      categories: ['Charity', 'Attractions'],
       sortOrder: 700,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Nightlife and Parties',
@@ -2234,8 +2231,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: ['Music & Nightlife', 'Happy Hour'],
+      categories: ['Nightlife', 'Happy Hour'],
       sortOrder: 800,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Retail and Shopping',
@@ -2244,8 +2242,9 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 7,
-      categories: ['Retail'],
+      categories: ['Shopping'],
       sortOrder: 900,
+      carouselType: CarouselType.Event,
     },
     {
       name: 'Pet Friendly',
@@ -2256,9 +2255,94 @@ export const Seeder = {
       limit: 7,
       categories: ['Pets'],
       sortOrder: 1000,
+      carouselType: CarouselType.Event,
     },
   ],
-  Departmens: [
+  DashboardBusinessConfigs: [
+    {
+      name: 'Popular in Atlanta',
+      limit: 10,
+      businessIndustries: [
+        BusinessIndustries.FOOD_DRINK,
+        BusinessIndustries.ENTERTAINMENT,
+      ],
+      sortOrder: 10,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Black-Owned in ATL',
+      limit: 8,
+      businessIndustries: [
+        BusinessIndustries.RETAIL,
+        BusinessIndustries.HEALTH_BEAUTY,
+      ],
+      sortOrder: 20,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Wellness in Midtown',
+      limit: 7,
+      businessIndustries: [
+        BusinessIndustries.FITNESS_WELLNESS,
+        BusinessIndustries.HEALTH_BEAUTY,
+      ],
+      sortOrder: 30,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Pet-Friendly Spots',
+      limit: 6,
+      businessIndustries: [BusinessIndustries.PET_SERVICES],
+      sortOrder: 40,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Southern Comfort Food',
+      limit: 5,
+      businessIndustries: [BusinessIndustries.FOOD_DRINK],
+      sortOrder: 50,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Home Services in Buckhead',
+      limit: 6,
+      businessIndustries: [BusinessIndustries.HOME_SERVICES],
+      sortOrder: 60,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Date Night Favorites',
+      limit: 7,
+      businessIndustries: [
+        BusinessIndustries.ENTERTAINMENT,
+        BusinessIndustries.HOSPITALITY,
+      ],
+      sortOrder: 70,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Car Care in ATL',
+      limit: 6,
+      businessIndustries: [BusinessIndustries.AUTOMOTIVE_SERVICES],
+      sortOrder: 80,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'Trusted Local Pros',
+      limit: 8,
+      businessIndustries: [BusinessIndustries.PROFESSIONAL_SERVICES],
+      sortOrder: 90,
+      carouselType: CarouselType.Business,
+    },
+    {
+      name: 'ATL Events This Week',
+      limit: 10,
+      businessIndustries: [],
+      sortOrder: 100,
+      carouselType: CarouselType.Business,
+    },
+  ],
+  Departments: [
     {
       name: 'Operations',
       description: 'Manages day-to-day business operations.',

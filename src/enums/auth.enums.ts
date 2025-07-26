@@ -7,6 +7,11 @@ export const UserTypes = {
   GUEST: 'Guest',
 };
 
+export const CarouselType = {
+  Event: 'event',
+  Business: 'business'
+}
+
 export const DeviceTypes = {
   ANDROID: 'android',
   IOS: 'ios',
