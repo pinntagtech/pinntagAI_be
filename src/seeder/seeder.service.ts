@@ -1091,6 +1091,10 @@ export class SeederService {
       business: new mongoose.Types.ObjectId(createdBusiness._id),
       latitude: 51.3704,
       longitude: 0.1702,
+      location: {
+        type: 'Point',
+        coordinates: [0.1702, 51.3704], // [longitude, latitude]
+      },
     };
     const outlet = await this.outletModel.create(outletObj);
     await this.businessUserModel.updateOne(

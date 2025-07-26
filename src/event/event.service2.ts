@@ -6159,6 +6159,13 @@ export class EventService2 {
               address1: data.address.address ?? null,
               latitude: data.address.lat ?? 34,
               longitude: data.address.lng ?? -101,
+              location: {
+                type: 'Point',
+                coordinates: [
+                  data.address.lng ?? -101,
+                  data.address.lat ?? 34,
+                ],
+              }
             };
             foundOutlet = await this.outletModel.create(outletObj);
           }
@@ -6383,6 +6390,10 @@ export class EventService2 {
             address1: data.address.address ?? null,
             latitude: data.address.lat,
             longitude: data.address.lng,
+            location: {
+              type: 'Point',
+              coordinates: [data.address.lng, data.address.lat],
+            },
           });
         }
 
@@ -6576,6 +6587,13 @@ export class EventService2 {
             address1: data.locations[0].address1 ?? null,
             latitude: data.locations[0].location.coordinates[1],
             longitude: data.locations[0].location.coordinates[0],
+            location: {
+              type: 'Point',
+              coordinates: [
+                data.locations[0].location.coordinates[0],
+                data.locations[0].location.coordinates[1],
+              ],
+            },
           });
         }
 

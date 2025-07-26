@@ -2971,15 +2971,15 @@ export class AuthService {
           spherical: true,
         },
       },
-      // {
-      //   $lookup: {
-      //     from: 'businesses',
-      //     localField: 'business',
-      //     foreignField: '_id',
-      //     as: 'businessDetails',
-      //   },
-      // },
-      // { $unwind: '$businessDetails' },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'business',
+          foreignField: '_id',
+          as: 'businessDetails',
+        },
+      },
+      { $unwind: '$businessDetails' },
       // { $sort: { distance: 1 } },
       // {
       //   $group: {

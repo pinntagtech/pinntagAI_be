@@ -284,7 +284,10 @@ export class OutletService {
       });
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
-
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [data.longitude, data.latitude],
+      };
       const outlet = await this.outletModel.create(createObj);
 
       let updateObj: any = {};
@@ -662,6 +665,17 @@ export class OutletService {
         longitude: placeDetails.data['longitude']
           ? parseFloat(placeDetails.data['longitude'])
           : 0,
+        location: {
+          type: 'Point',
+          coordinates: [
+            placeDetails.data['longitude']
+              ? parseFloat(placeDetails.data['longitude'])
+              : 0,
+            placeDetails.data['latitude']
+              ? parseFloat(placeDetails.data['latitude'])
+              : 0,
+          ],
+        },
       };
       const outlet = await this.outletModel.create(outletObj);
       console.log('Created Outlet:', outlet);

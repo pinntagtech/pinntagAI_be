@@ -2241,6 +2241,10 @@ export class AdminService {
       createObj['latitude'] = placeDetails.data['latitude'];
       createObj['longitude'] = placeDetails.data['longitude'];
       createObj['placeId'] = placeDetails.data['placeId'];
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [placeDetails.data['latitude'], placeDetails.data['longitude']],
+      };
 
       const outlet = await this.outletModel.create(createObj);
 
