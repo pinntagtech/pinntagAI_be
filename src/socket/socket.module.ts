@@ -199,6 +199,6 @@ import { FirebaseService } from 'src/notification/firebase.service';
     SocketService,
     FirebaseService,
   ],
-  exports: [],
+  exports: [SocketGateway],
 })
 export class SocketModule {}

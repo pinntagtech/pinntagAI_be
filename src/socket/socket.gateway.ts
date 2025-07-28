@@ -26,13 +26,13 @@ import { Type } from 'class-transformer';
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
   // namespace: '/dashboard-socket',
-   path: '/socket.io',
+  path: '/socket.io',
 })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  // @WebSocketServer()
-  // server: Server;
+  @WebSocketServer()
+  server: Server;
 
   typingUsers: Record<string, string[]> = {};
 
@@ -46,8 +46,8 @@ export class SocketGateway
     // private readonly logger: Logger,
   ) {}
 
-  afterInit(server: Server) {
-    server.use((socket: Socket, next) => {
+  afterInit() {
+    this.server.use((socket: Socket, next) => {
       const token = socket.handshake.query.token as string;
       if (!token) {
         return next(new Error('Authentication error! No token provided.'));
@@ -61,7 +61,6 @@ export class SocketGateway
         }
         (socket as any).userId = decoded.id;
         (socket as any).userType = decoded.userType;
-        // this.logger.log(`socket initialized with userId: ${decoded.id}`);
         next();
       } catch (err) {
         return next(new Error('Authentication error'));
