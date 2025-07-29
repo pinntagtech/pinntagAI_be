@@ -60,7 +60,7 @@ export class Business {
   @Prop({ ref: BusinessCategory.name })
   businessCategories: mongoose.Types.ObjectId[];
 
-  @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId })
+  @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId})
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop()

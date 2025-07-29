@@ -2109,15 +2109,121 @@ export class BusinessService {
     longitude: number,
   ) {
     try {
-      const business = await this.businessModel
-        .findById(businessId)
-        .populate('outlets', LocationPopulates.FOREIGN);
-      if (!business) {
+      // const business = await this.businessModel
+      //   .findById(businessId)
+      //   .populate('outlets', LocationPopulates.FOREIGN);
+      
+
+
+       const basePipeline: any[] = [
+            {
+              $geoNear: {
+                near: { type: 'Point', coordinates: [longitude, latitude] },
+                distanceField: 'distance',
+                maxDistance: 100000000 * 1609.34,
+                spherical: true,
+              },
+            },
+            { 
+              $match: {
+                business: new mongoose.Types.ObjectId(businessId),
+              },
+            },
+            {
+              $lookup: {
+                from: 'businesses',
+                localField: 'business',
+                foreignField: '_id',
+                as: 'businessDetails',
+              },
+            },
+            { $unwind: '$businessDetails' },
+            {
+              $lookup: {
+                from: 'businessindustries',
+                localField: 'businessDetails.businessIndustry',
+                foreignField: '_id',
+                as: 'industryDetails', 
+              },
+            },
+             {
+              $lookup: {
+                from: 'follows', // make sure it's the actual collection name
+                let: {
+                  userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+                  targetId: '$businessDetails._id',
+                  targetType: Business.name,
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$follower', '$$userId'] },
+                          { $eq: ['$followerType', 'User'] },
+                          { $eq: ['$following', '$$targetId'] },
+                          { $eq: ['$followingType', '$$targetType'] },
+                          { $eq: ['$isBlocked', false] },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: 'userFollow',
+              },
+            },
+            {
+              $addFields: {
+                isFollowedByMe: {
+                  $gt: [{ $size: '$userFollow' }, 0],
+                },
+              },
+            },
+            { $sort: { distance: 1 } },
+            {
+              $group: {
+                _id: '$businessDetails._id',
+                name: { $first: '$businessDetails.name' },
+                cover: { $first: '$businessDetails.cover' },
+                logo: { $first: '$businessDetails.logo' },
+                industry: { $first: '$industryDetails' },
+                isFollowedByMe: { $first: '$isFollowedByMe' },
+                locations: {
+                  $push: {
+                    accuracy: '$accuracy',
+                    address1: '$address1',
+                    address2: '$address2',
+                    city: '$city',
+                    state: '$state',
+                    zip: '$postalCode',
+                    website: '$website',
+                    _id: '$_id',
+                    email: '$email',
+                    phone: '$phone',
+                    countryCode: '$countryCode',
+                    distance: { $divide: ['$distance', 1609.34] },
+                  },
+                },
+                
+      
+              },
+            },
+            { $sort: {createdAt: -1, _id: 1 } },
+            
+          ];
+      
+          let [business] = await this.outletModel.aggregate(basePipeline);
+      
+
+          if (!business) {
         return {
           success: false,
           message: 'Business not found with given ID',
         };
       }
+
+
+
 
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 

@@ -145,6 +145,10 @@ export class Outlet {
   accuracy: number;
   @Prop()
   location: LocationType;
+  @Prop()
+  openingTime: Date;
+  @Prop()
+  closingTime: Date;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);

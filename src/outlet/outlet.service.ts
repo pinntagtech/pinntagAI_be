@@ -245,6 +245,8 @@ export class OutletService {
         // vehicleRegistrationNumber,
         vehicleType,
         // gpsTrackerEnabled,
+        openingTime,
+        closingTime,
       } = data;
 
       if (
@@ -288,6 +290,14 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
+      if(data.openingTime) {
+        createObj['openingTime'] = new Date(data.openingTime);
+      }
+
+      if(data.closingTime) {
+        createObj['closingTime'] = new Date(data.closingTime);
+      }
+
       const outlet = await this.outletModel.create(createObj);
 
       let updateObj: any = {};
@@ -370,6 +380,12 @@ export class OutletService {
       }
       if (data.category) {
         updateObj['category'] = data.category;
+      }
+      if (data.openingTime) {
+        updateObj['openingTime'] = new Date(data.openingTime);
+      }
+      if (data.closingTime) {
+        updateObj['closingTime'] = new Date(data.closingTime);
       }
       const updatedOutlet = await this.outletModel.findByIdAndUpdate(
         id,

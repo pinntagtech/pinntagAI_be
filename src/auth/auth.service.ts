@@ -2961,7 +2961,6 @@ export class AuthService {
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
     console.log('Match:', match);
     console.log('DISTANCE:', distance);
-
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -2980,66 +2979,82 @@ export class AuthService {
         },
       },
       { $unwind: '$businessDetails' },
-      // { $sort: { distance: 1 } },
-      // {
-      //   $group: {
-      //     _id: '$businessDetails._id',
-      //     businessDetails: { $first: '$businessDetails' },
-      //     locations: {
-      //       $push: {
-      //         accuracy: '$accuracy',
-      //         address1: '$address1',
-      //         address2: '$address2',
-      //         city: '$city',
-      //         state: '$state',
-      //         zip: '$postalCode',
-      //         website: '$website',
-      //         _id: '$_id',
-      //         email: '$email',
-      //         phone: '$phone',
-      //         countryCode: '$countryCode',
-      //         distance: { $divide: ['$distance', 1609.34] },
-      //       },
-      //     },
-      //   },
-      // },
+      {
+        $lookup: {
+          from: 'businessindustries',
+          localField: 'businessDetails.businessIndustry',
+          foreignField: '_id',
+          as: 'industryDetails', 
+        },
+      },
+       {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            targetId: '$businessDetails._id',
+            targetType: Business.name,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+      { $sort: { distance: 1 } },
+      {
+        $group: {
+          _id: '$businessDetails._id',
+          name: { $first: '$businessDetails.name' },
+          // businessDetails: { $first: '$businessDetails' },
+          cover: { $first: '$businessDetails.cover' },
 
-      // {
-      //   $match: {
-      //     ...match,
-      //     'businessProfileDetails.isDeleted': false,
-      //   },
-      // },
-      // {
-      //   $lookup: {
-      //     from: 'users',
-      //     localField: 'user',
-      //     foreignField: '_id',
-      //     as: 'userDetails',
-      //   },
-      // },
-      // { $unwind: '$userDetails' },
-      // {
-      //   $addFields: {
-      //     isFollowedByMe: {
-      //       $cond: {
-      //         if: { $eq: ['$creatorType', 'User'] },
-      //         then: {
-      //           $in: [
-      //             userId,
-      //             '$userDetails.followers', // Assuming followers is an array of user IDs
-      //           ],
-      //         },
-      //         else: false,
-      //       },
-      //     },
-      //   },
-      // }
+          logo: { $first: '$businessDetails.logo' },
+          industry: { $first: '$industryDetails' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
+          locations: {
+            $push: {
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$postalCode',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              countryCode: '$countryCode',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+
+        },
+      },
+      { $sort: {createdAt: -1, _id: 1 } },
+      
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
-
-    console.log('Business:', eventsResult);
 
     return eventsResult;
   }
@@ -5741,7 +5756,7 @@ export class AuthService {
     let totalCount = 0;
 
     if (carousel.carouselType === CarouselType.Business) {
-      [eventsResult, totalCount] = await this.fetchBusinessListing(
+      eventsResult = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
