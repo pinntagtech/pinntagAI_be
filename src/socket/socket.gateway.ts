@@ -127,6 +127,7 @@ export class SocketGateway
     },
   ) {
     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    console.log("date::",data);
     const { body, carouselId, search, distance, timeZone } = data.data;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
@@ -141,6 +142,7 @@ export class SocketGateway
       profilePhoto: '',
       isBusiness: userType === UserTypes.BUSINESS,
     };
+    console.log('Decoded User:', decodedUser);
     const result = await this.authService.getDashboardCarouselEvent2(
       decodedUser,
       carouselId,
@@ -153,9 +155,10 @@ export class SocketGateway
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
+    console.log('Result:', result);
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
-      ...result.data,
+      data: result.data.eventsResult,
     });
   }
 
