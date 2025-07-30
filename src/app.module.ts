@@ -149,6 +149,7 @@ import {
   WebhookSnapshotSchema,
 } from './user/models/webhook.model';
 import { FirebaseService } from './notification/firebase.service';
+import { Tag, TagSchema } from './models/tags.model';
 
 @Module({
   imports: [
@@ -227,6 +228,7 @@ import { FirebaseService } from './notification/firebase.service';
       { name: Report.name, schema: ReportSchema },
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
     StripeeModule,
     AuthModule,

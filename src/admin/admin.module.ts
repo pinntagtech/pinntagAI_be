@@ -143,6 +143,7 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { GoogleService } from 'src/google/google.service';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { Tag, TagSchema } from 'src/models/tags.model';
 
 @Module({
   imports: [
@@ -199,6 +200,7 @@ import { FirebaseService } from 'src/notification/firebase.service';
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
   ],
   controllers: [AdminController],

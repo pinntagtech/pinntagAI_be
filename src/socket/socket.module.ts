@@ -127,6 +127,7 @@ import {
 } from 'src/user/models/webhook.model';
 import { SocketService } from './socket.service';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { Tag, TagSchema } from 'src/models/tags.model';
 
 @Module({
   imports: [
@@ -182,6 +183,7 @@ import { FirebaseService } from 'src/notification/firebase.service';
       { name: Report.name, schema: ReportSchema },
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
   ],
   providers: [

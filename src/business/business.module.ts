@@ -131,6 +131,7 @@ import { Rating, RatingSchema } from './model/rating.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Menu } from './model/types.model';
 import { MenuSchema } from './model/menu.model';
+import { Tag, TagSchema } from 'src/models/tags.model';
 
 @Module({
   imports: [
@@ -187,6 +188,7 @@ import { MenuSchema } from './model/menu.model';
       { name: UserReward.name, schema: UserRewardSchema },
       { name: Rating.name, schema: RatingSchema },
       { name: Menu.name, schema: MenuSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
   ],
   controllers: [BusinessController],

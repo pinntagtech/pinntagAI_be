@@ -9,7 +9,7 @@ import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { Seeder } from './data';
+import { BusinessIndustries, BusinessIndustryTags, ContentTags, EventCategory, Seeder } from './data';
 import {
   SubscriptionProduct,
   SubscriptionProductDocument,
@@ -102,6 +102,7 @@ import { DriveService } from 'src/drive/drive.service';
 import { Region, RegionDocument } from 'src/business/model/region.model';
 import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
+import { Tag } from 'src/models/tags.model';
 
 @Injectable()
 export class SeederService {
@@ -154,8 +155,8 @@ export class SeederService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Region.name)
     private readonly regionModel: Model<RegionDocument>,
-    @InjectModel(Outlet.name)
-    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
   ) {}
@@ -171,16 +172,15 @@ export class SeederService {
     await this.seedActions();
     await this.seedSuperAdminRole();
     await this.seedSuperAdmin();
-    // await this.seedOutletCategories();
     await this.seedPrivileges(); //super admin privileges are not needed
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
     await this.seedEventTemplates();
-    // await this.seedConstitutions();
     await this.seedDashboardConfigs();
     await this.seedPinntagBusinessProfile();
+    await this.seedTags();
   }
 
   public async seedRoles() {
@@ -1116,5 +1116,69 @@ export class SeederService {
         },
       },
     );
+  }
+
+  async seedTags() {
+    const existingTags = await this.tagModel.countDocuments();
+    if (existingTags > 0) {
+      console.log('Tags already seeded.');
+      return;
+    }
+
+
+    for(const industry of Object.values(BusinessIndustries)){
+      console.log('industry:', industry);
+      const foundIndustry = await this.businessIndustryModel.findOne({
+        title: industry,
+      });
+      if(!foundIndustry) {
+        console.error(`Business industry "${industry}" not found.`);
+        continue;
+      }
+      for(const tag of BusinessIndustryTags[industry]){
+        console.log('tag:', tag);
+        const foundTag = await this.tagModel.findOne({
+          title: tag,
+          relatedId : foundIndustry._id,
+        });
+        if (!foundTag) {
+          await this.tagModel.create({
+            title: tag,
+            relatedId: foundIndustry._id,
+            relatedTo: BusinessIndustry.name,
+          });
+        } else {
+          console.log(`Tag "${tag}" already exists for industry "${industry}".`);
+        }
+      }
+    }
+
+    for(const cat of Object.values(EventCategory)){
+      console.log('category:', cat);
+      const foundCategory = await this.categoryModel.findOne({
+        title: cat,
+      });
+      if(!foundCategory) {
+        console.error(`Event category "${cat}" not found.`);
+        continue;
+      }
+      for(const tag of ContentTags[cat]){
+        console.log('tag:', tag);
+        const foundTag = await this.tagModel.findOne({
+          title: tag,
+          relatedId : foundCategory._id,
+        });
+        if (!foundTag) {
+          await this.tagModel.create({
+            title: tag,
+            relatedId: foundCategory._id,
+            relatedTo: Category.name,
+          });
+        } else {
+          console.log(`Tag "${tag}" already exists for category "${cat}".`);
+        }
+      }
+    }
+
   }
 }

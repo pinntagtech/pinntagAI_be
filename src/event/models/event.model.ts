@@ -157,6 +157,9 @@ export class Event {
   @Prop({ default: false })
   each_date: boolean;
 
+  @Prop({default: false })
+  isDisabled: boolean;
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }
