@@ -1781,6 +1781,7 @@ export class AuthService {
         $match: {
           // 'event._id': new mongoose.Types.ObjectId('682a38a5a85d3ccb755163b0'),
           'event.status': EventStatus.PUBLISHED,
+          'event.isDisabled': false,
           ...match,
         },
       },

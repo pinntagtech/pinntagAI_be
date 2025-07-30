@@ -1267,4 +1267,18 @@ export class AdminController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('disableContent/:id')
+  @UseGuards(AdminGuard2)
+  async disableContent(@Param('id') id: string) {
+    const result = await this.adminService.disableContent(id);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

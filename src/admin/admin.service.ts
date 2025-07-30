@@ -2060,12 +2060,12 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
-      if(!data.businessIndustry){
+      if (!data.businessIndustry) {
         return {
           success: false,
           message: 'Please provide a valid industry id',
         };
-      }else{
+      } else {
         if (!mongoose.isValidObjectId(data.businessIndustry)) {
           return {
             success: false,
@@ -2266,7 +2266,10 @@ export class AdminService {
       createObj['placeId'] = placeDetails.data['placeId'];
       createObj['location'] = {
         type: 'Point',
-        coordinates: [placeDetails.data['latitude'], placeDetails.data['longitude']],
+        coordinates: [
+          placeDetails.data['latitude'],
+          placeDetails.data['longitude'],
+        ],
       };
 
       const outlet = await this.outletModel.create(createObj);
@@ -2422,6 +2425,50 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in getReportedEvents:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async disableContent(contentId: string) {
+    try {
+      if (!mongoose.isValidObjectId(contentId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid content id',
+        };
+      }
+      const content = await this.eventModel.findById(contentId);
+      if (!content) {
+        return {
+          success: false,
+          message: 'Content not found with the id provided.',
+        };
+      }
+      await this.eventModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(contentId) },
+        { $set: { isDisabled: true } },
+      );
+      //send notification to the business that his event have been disabled
+      // const business = await this.businessModel.findById(content.businessProfile);
+      // if (business) {
+      //   await this.notificationService.createNotification({
+      //     user: business.authorisedUser,
+      //     title: 'Content Disabled',
+      //     message: `Your content "${content.title}" has been disabled by the admin.`,
+      //     type: NotificationType.CONTENT_DISABLED,
+      //     contentId: content._id,
+      //     businessProfile: content.businessProfile,
+      //   });
+      // }
+      return {
+        success: true,
+        message: 'Content disabled successfully.',
+      };
+    } catch (error) {
+      console.error('Error in disableContent:', error);
       return {
         success: false,
         message: 'Something went wrong.',
