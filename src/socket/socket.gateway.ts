@@ -160,10 +160,9 @@ export class SocketGateway
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
     );
-    console.log('Result:', result);
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
-      data: result.data.eventsResult,
+      eventsResult: result.data.eventsResult,
     });
   }
 
