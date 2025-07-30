@@ -748,6 +748,7 @@ export class UserService {
         const businessProfile = await this.businessModel
           .findById(targetId)
           .select({ _id: 1, name: 1, createdBy: 1 });
+
         let message = '';
         let targetType = '';
         if (followerType == User.name) {

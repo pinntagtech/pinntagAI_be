@@ -2060,6 +2060,29 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
+      if(!data.businessIndustry){
+        return {
+          success: false,
+          message: 'Please provide a valid industry id',
+        };
+      }else{
+        if (!mongoose.isValidObjectId(data.businessIndustry)) {
+          return {
+            success: false,
+            message: 'Please provide a valid industry id',
+          };
+        }
+        const foundIndustry = await this.industryModel.findById(
+          data.businessIndustry,
+        );
+        if (!foundIndustry) {
+          return {
+            success: false,
+            message: 'Industry not found',
+          };
+        }
+      }
+
       console.log('Business Folder ID:', businessFolder.data._id);
       console.log('UserID:', user.id);
       console.log('Created User ID:', createdUser.id);
@@ -2241,6 +2264,10 @@ export class AdminService {
       createObj['latitude'] = placeDetails.data['latitude'];
       createObj['longitude'] = placeDetails.data['longitude'];
       createObj['placeId'] = placeDetails.data['placeId'];
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [placeDetails.data['latitude'], placeDetails.data['longitude']],
+      };
 
       const outlet = await this.outletModel.create(createObj);
 

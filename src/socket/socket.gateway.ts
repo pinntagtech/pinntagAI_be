@@ -26,7 +26,7 @@ import { Type } from 'class-transformer';
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
   // namespace: '/dashboard-socket',
-   path: '/socket.io',
+  path: '/socket.io',
 })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -105,9 +105,14 @@ export class SocketGateway
   }
 
   @SubscribeMessage('getDashboardAllConfigs')
-  async handleGetDashboardAllConfigs(client: Socket) {
-    console.log('getDashboardAllConfigs called');
-    const result = await this.authService.getDashboardAllConfigs();
+  async handleGetDashboardAllConfigs(
+    client: Socket,
+    payload: { carouselType: string },
+  ) {
+     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const result = await this.authService.getDashboardAllConfigs(
+      data.data.carouselType,
+    );
     client.emit('successMessage', 'Dashboard configs fetched successfully');
     client.emit('getDashboardAllConfigsResponse', {
       message: result.message,

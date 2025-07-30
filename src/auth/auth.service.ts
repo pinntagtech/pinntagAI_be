@@ -15,7 +15,13 @@ import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
-import { OtpTypes, SMSType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  CarouselType,
+  OtpTypes,
+  SMSType,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
 import { GuestLoginDto } from './dto/guestLogin.dto';
@@ -89,7 +95,7 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
-import { Outlet } from 'src/outlet/model/outlet.model';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 import {
@@ -140,9 +146,11 @@ export class AuthService {
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    private readonly userService: UserService,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
-    private readonly userService: UserService,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -832,9 +840,9 @@ export class AuthService {
     }
   }
 
-  async getDashboardAllConfigs() {
+  async getDashboardAllConfigs(carouselType: string) {
     const foundConfig = await this.dashboardConfigModel
-      .find({}, { _id: 1, name: 1 })
+      .find({ carouselType: carouselType }, { _id: 1, name: 1 })
       .sort({ sortOrder: 1 });
     if (!foundConfig) {
       return {
@@ -971,7 +979,7 @@ export class AuthService {
           },
         );
 
-        console.log("foundFcmToken::", foundFcmToken);
+        console.log('foundFcmToken::', foundFcmToken);
         if (!foundFcmToken) {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
@@ -1729,7 +1737,7 @@ export class AuthService {
 
   async fetchEventsV2(
     userId: mongoose.Types.ObjectId,
-    longitude: number,  
+    longitude: number,
     latitude: number,
     age: number,
     match: any,
@@ -2932,6 +2940,123 @@ export class AuthService {
 
     // return filteredEvents; // Return the arranged result
     return [dataRows, totalCount];
+  }
+  async fetchBusinessListing(
+    userId: mongoose.Types.ObjectId,
+    longitude: number,
+    latitude: number,
+    age: number,
+    match: any,
+    page: number,
+    limit: number,
+    start: Date,
+    distance: number,
+    startDate: any,
+    endDate: any,
+  ) {
+    const now = new Date();
+    startDate = startDate ? new Date(startDate) : now;
+    endDate = endDate
+      ? new Date(endDate)
+      : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    console.log('Match:', match);
+    console.log('DISTANCE:', distance);
+    const basePipeline: any[] = [
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: distance * 1609.34,
+          spherical: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'business',
+          foreignField: '_id',
+          as: 'businessDetails',
+        },
+      },
+      { $unwind: '$businessDetails' },
+      {
+        $lookup: {
+          from: 'businessindustries',
+          localField: 'businessDetails.businessIndustry',
+          foreignField: '_id',
+          as: 'industryDetails', 
+        },
+      },
+       {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            targetId: '$businessDetails._id',
+            targetType: Business.name,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+      { $sort: { distance: 1 } },
+      {
+        $group: {
+          _id: '$businessDetails._id',
+          name: { $first: '$businessDetails.name' },
+          // businessDetails: { $first: '$businessDetails' },
+          cover: { $first: '$businessDetails.cover' },
+
+          logo: { $first: '$businessDetails.logo' },
+          industry: { $first: '$industryDetails' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
+          locations: {
+            $push: {
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$postalCode',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              countryCode: '$countryCode',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+
+        },
+      },
+      { $sort: {createdAt: -1, _id: 1 } },
+      
+    ];
+
+    let eventsResult = await this.outletModel.aggregate(basePipeline);
+
+    return eventsResult;
   }
 
   // async getDashboard(
@@ -5630,19 +5755,36 @@ export class AuthService {
     }
     let totalCount = 0;
 
-    [eventsResult, totalCount] = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      age,
-      query,
-      1,
-      config.limit,
-      start,
-      maxDistance,
-      startDate,
-      endDate,
-    );
+    if (carousel.carouselType === CarouselType.Business) {
+      eventsResult = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        age,
+        query,
+        1,
+        config.limit,
+        start,
+        maxDistance,
+        startDate,
+        endDate,
+      );
+    } else if (carousel.carouselType === CarouselType.Event) {
+      [eventsResult, totalCount] = await this.fetchEventsV2(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        age,
+        query,
+        1,
+        config.limit,
+        start,
+        maxDistance,
+        startDate,
+        endDate,
+      );
+    }
+
     return {
       success: true,
       message: 'Dashboard fetched successfully',

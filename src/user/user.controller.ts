@@ -227,6 +227,7 @@ export class UserController {
   @Patch('follow')
   @UseGuards(JwtGuard2)
   async follow(@Req() req: Request, @Body() body: FollowDto) {
+    console.log('Follow request body:', body);
     const { profileType, id } = body;
     if (!ProfileTypes.includes(profileType)) {
       throw new BadRequestException('Invalid profile type');

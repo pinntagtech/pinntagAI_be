@@ -82,4 +82,10 @@ export class UpdateOutletDto {
   @IsOptional()
   @IsEnum(VehicleType)
   vehicleType?: string;
+
+  @IsOptional()
+  openingTime: string;
+
+  @IsOptional()
+  closingTime: string;
 }

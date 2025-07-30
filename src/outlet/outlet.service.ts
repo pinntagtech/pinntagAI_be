@@ -245,6 +245,8 @@ export class OutletService {
         // vehicleRegistrationNumber,
         vehicleType,
         // gpsTrackerEnabled,
+        openingTime,
+        closingTime,
       } = data;
 
       if (
@@ -284,6 +286,17 @@ export class OutletService {
       });
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [data.longitude, data.latitude],
+      };
+      if(data.openingTime) {
+        createObj['openingTime'] = new Date(data.openingTime);
+      }
+
+      if(data.closingTime) {
+        createObj['closingTime'] = new Date(data.closingTime);
+      }
 
       const outlet = await this.outletModel.create(createObj);
 
@@ -367,6 +380,12 @@ export class OutletService {
       }
       if (data.category) {
         updateObj['category'] = data.category;
+      }
+      if (data.openingTime) {
+        updateObj['openingTime'] = new Date(data.openingTime);
+      }
+      if (data.closingTime) {
+        updateObj['closingTime'] = new Date(data.closingTime);
       }
       const updatedOutlet = await this.outletModel.findByIdAndUpdate(
         id,
@@ -662,6 +681,17 @@ export class OutletService {
         longitude: placeDetails.data['longitude']
           ? parseFloat(placeDetails.data['longitude'])
           : 0,
+        location: {
+          type: 'Point',
+          coordinates: [
+            placeDetails.data['longitude']
+              ? parseFloat(placeDetails.data['longitude'])
+              : 0,
+            placeDetails.data['latitude']
+              ? parseFloat(placeDetails.data['latitude'])
+              : 0,
+          ],
+        },
       };
       const outlet = await this.outletModel.create(outletObj);
       console.log('Created Outlet:', outlet);
