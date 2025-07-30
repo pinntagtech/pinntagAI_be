@@ -126,6 +126,7 @@ import { Rating, RatingDocument } from './model/rating.model';
 import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
 import { haversineDistance } from 'src/helpers/event.helpers';
+import { Menu } from './model/menu.model';
 
 @Injectable()
 export class BusinessService {
@@ -176,6 +177,7 @@ export class BusinessService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Rating.name)
     private readonly ratingModel: Model<RatingDocument>,
+    @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -2112,126 +2114,160 @@ export class BusinessService {
       // const business = await this.businessModel
       //   .findById(businessId)
       //   .populate('outlets', LocationPopulates.FOREIGN);
-      
 
-
-       const basePipeline: any[] = [
-            {
-              $geoNear: {
-                near: { type: 'Point', coordinates: [longitude, latitude] },
-                distanceField: 'distance',
-                maxDistance: 100000000 * 1609.34,
-                spherical: true,
-              },
-            },
-            { 
-              $match: {
-                business: new mongoose.Types.ObjectId(businessId),
-              },
-            },
-            {
-              $lookup: {
-                from: 'businesses',
-                localField: 'business',
-                foreignField: '_id',
-                as: 'businessDetails',
-              },
-            },
-            { $unwind: '$businessDetails' },
-            {
-              $lookup: {
-                from: 'businessindustries',
-                localField: 'businessDetails.businessIndustry',
-                foreignField: '_id',
-                as: 'industryDetails', 
-              },
-            },
-             {
-              $lookup: {
-                from: 'follows', // make sure it's the actual collection name
-                let: {
-                  userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
-                  targetId: '$businessDetails._id',
-                  targetType: Business.name,
+      const basePipeline: any[] = [
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [longitude, latitude] },
+            distanceField: 'distance',
+            maxDistance: 100000000 * 1609.34,
+            spherical: true,
+          },
+        },
+        {
+          $match: {
+            business: new mongoose.Types.ObjectId(businessId),
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'business',
+            foreignField: '_id',
+            as: 'businessDetails',
+          },
+        },
+        { $unwind: '$businessDetails' },
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessDetails.businessIndustry',
+            foreignField: '_id',
+            as: 'industryDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$industryDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'menus',
+            localField: 'businessDetails.menus',
+            foreignField: '_id',
+            as: 'menuDetails',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: 'images',
+                  foreignField: '_id',
+                  as: 'imageDetails',
                 },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $and: [
-                          { $eq: ['$follower', '$$userId'] },
-                          { $eq: ['$followerType', 'User'] },
-                          { $eq: ['$following', '$$targetId'] },
-                          { $eq: ['$followingType', '$$targetType'] },
-                          { $eq: ['$isBlocked', false] },
-                        ],
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                  imageDetails: {
+                    $map: {
+                      input: '$imageDetails',
+                      as: 'image',
+                      in: {
+                        _id: '$$image._id',
+                        url: '$$image.metaData.url',
+                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
                       },
                     },
                   },
-                ],
-                as: 'userFollow',
-              },
+                }
+              }
+            ]
+          },
+        },
+        {
+          $lookup: {
+            from: 'follows', // make sure it's the actual collection name
+            let: {
+              userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+              targetId: '$businessDetails._id',
+              targetType: Business.name,
             },
-            {
-              $addFields: {
-                isFollowedByMe: {
-                  $gt: [{ $size: '$userFollow' }, 0],
-                },
-              },
-            },
-            { $sort: { distance: 1 } },
-            {
-              $group: {
-                _id: '$businessDetails._id',
-                name: { $first: '$businessDetails.name' },
-                cover: { $first: '$businessDetails.cover' },
-                logo: { $first: '$businessDetails.logo' },
-                description: { $first: '$businessDetails.description' },
-                email: { $first: '$businessDetails.email' },
-                phone: { $first: '$businessDetails.phone' },
-                countryCode: { $first: '$businessDetails.countryCode' },
-                website: { $first: '$businessDetails.website' },
-                industry: { $first: '$industryDetails' },
-                isFollowedByMe: { $first: '$isFollowedByMe' },
-                locations: {
-                  $push: {
-                    accuracy: '$accuracy',
-                    address1: '$address1',
-                    address2: '$address2',
-                    city: '$city',
-                    state: '$state',
-                    zip: '$postalCode',
-                    website: '$website',
-                    _id: '$_id',
-                    email: '$email',
-                    phone: '$phone',
-                    countryCode: '$countryCode',
-                    opentingTime: '$opentingTime',
-                    closingTime: '$closingTime',
-                    location: '$location',
-                    distance: { $divide: ['$distance', 1609.34] },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', '$$userId'] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', '$$targetType'] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
                   },
                 },
-                
-      
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+        {
+          $addFields: {
+            isFollowedByMe: {
+              $gt: [{ $size: '$userFollow' }, 0],
+            },
+          },
+        },
+        { $sort: { distance: 1 } },
+        {
+          $group: {
+            _id: '$businessDetails._id',
+            name: { $first: '$businessDetails.name' },
+            cover: { $first: '$businessDetails.cover' },
+            logo: { $first: '$businessDetails.logo' },
+            description: { $first: '$businessDetails.description' },
+            email: { $first: '$businessDetails.email' },
+            phone: { $first: '$businessDetails.phone' },
+            countryCode: { $first: '$businessDetails.countryCode' },
+            website: { $first: '$businessDetails.website' },
+            industry: { $first: '$industryDetails' },
+            isFollowedByMe: { $first: '$isFollowedByMe' },
+            menus: { $first: '$menuDetails' },
+            locations: {
+              $push: {
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$postalCode',
+                website: '$website',
+                _id: '$_id',
+                email: '$email',
+                phone: '$phone',
+                countryCode: '$countryCode',
+                opentingTime: '$opentingTime',
+                closingTime: '$closingTime',
+                location: '$location',
+                distance: { $divide: ['$distance', 1609.34] },
               },
             },
-            { $sort: {createdAt: -1, _id: 1 } },
-            
-          ];
-      
-          let [business] = await this.outletModel.aggregate(basePipeline);
-      
+          },
+        },
+        { $sort: { createdAt: -1, _id: 1 } },
+      ];
 
-          if (!business) {
+      let [business] = await this.outletModel.aggregate(basePipeline);
+
+      if (!business) {
         return {
           success: false,
           message: 'Business not found with given ID',
         };
       }
-
-
-
 
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 
@@ -3326,124 +3362,127 @@ export class BusinessService {
     }
   }
 
-private async fetchEventLogistics(
-  businessProfileId: mongoose.Types.ObjectId,
-  progress: string,
-) {
-  const now = new Date();
-  const startOfCurrent = new Date(now);
-  let startOfPrevious: Date;
+  private async fetchEventLogistics(
+    businessProfileId: mongoose.Types.ObjectId,
+    progress: string,
+  ) {
+    const now = new Date();
+    const startOfCurrent = new Date(now);
+    let startOfPrevious: Date;
 
-  switch (progress) {
-    case 'daily':
-      startOfCurrent.setHours(0, 0, 0, 0); // start of today
-      startOfPrevious = new Date(startOfCurrent);
-      startOfPrevious.setDate(startOfPrevious.getDate() - 1);
-      break;
+    switch (progress) {
+      case 'daily':
+        startOfCurrent.setHours(0, 0, 0, 0); // start of today
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setDate(startOfPrevious.getDate() - 1);
+        break;
 
-    case 'weekly':
-      const dayOfWeek = startOfCurrent.getDay(); // 0 (Sun) - 6 (Sat)
-      const diffToStartOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      startOfCurrent.setDate(startOfCurrent.getDate() - diffToStartOfWeek);
-      startOfCurrent.setHours(0, 0, 0, 0); // start of this week (Monday)
-      startOfPrevious = new Date(startOfCurrent);
-      startOfPrevious.setDate(startOfPrevious.getDate() - 7); // last week's start
-      break;
+      case 'weekly':
+        const dayOfWeek = startOfCurrent.getDay(); // 0 (Sun) - 6 (Sat)
+        const diffToStartOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        startOfCurrent.setDate(startOfCurrent.getDate() - diffToStartOfWeek);
+        startOfCurrent.setHours(0, 0, 0, 0); // start of this week (Monday)
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setDate(startOfPrevious.getDate() - 7); // last week's start
+        break;
 
-    case 'monthly':
-      startOfCurrent.setDate(1); // start of this month
-      startOfCurrent.setHours(0, 0, 0, 0);
-      startOfPrevious = new Date(startOfCurrent);
-      startOfPrevious.setMonth(startOfPrevious.getMonth() - 1); // last month's start
-      break;
+      case 'monthly':
+        startOfCurrent.setDate(1); // start of this month
+        startOfCurrent.setHours(0, 0, 0, 0);
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setMonth(startOfPrevious.getMonth() - 1); // last month's start
+        break;
 
-    default:
-      throw new Error('Invalid progress type');
+      default:
+        throw new Error('Invalid progress type');
+    }
+
+    const [lastResult] = await this.eventModel.aggregate([
+      {
+        $match: {
+          businessProfile: businessProfileId,
+          status: EventStatus.PUBLISHED,
+          createdAt: {
+            $gte: startOfPrevious,
+            $lt: startOfCurrent,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalEvents: { $sum: 1 },
+          totalViewsCount: { $sum: '$viewsCount' },
+          totalEngagementCount: { $sum: '$engagementCount' },
+          totalLikes: { $sum: '$totalLikes' },
+          totalShares: { $sum: '$totalShares' },
+          totalSaved: { $sum: '$totalSaved' },
+        },
+      },
+    ]);
+
+    const [currentResult] = await this.eventModel.aggregate([
+      {
+        $match: {
+          businessProfile: businessProfileId,
+          status: EventStatus.PUBLISHED,
+          createdAt: {
+            $gte: startOfCurrent,
+            $lte: now,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalEvents: { $sum: 1 },
+          totalViewsCount: { $sum: '$viewsCount' },
+          totalEngagementCount: { $sum: '$engagementCount' },
+          totalLikes: { $sum: '$totalLikes' },
+          totalShares: { $sum: '$totalShares' },
+          totalSaved: { $sum: '$totalSaved' },
+        },
+      },
+    ]);
+
+    const last = lastResult ?? {
+      totalEvents: 0,
+      totalViewsCount: 0,
+      totalEngagementCount: 0,
+      totalLikes: 0,
+      totalShares: 0,
+      totalSaved: 0,
+    };
+
+    const current = currentResult ?? {
+      totalEvents: 0,
+      totalViewsCount: 0,
+      totalEngagementCount: 0,
+      totalLikes: 0,
+      totalShares: 0,
+      totalSaved: 0,
+    };
+
+    current.percentageChange = {
+      totalEvents: this.percentageChange(last.totalEvents, current.totalEvents),
+      totalViewsCount: this.percentageChange(
+        last.totalViewsCount,
+        current.totalViewsCount,
+      ),
+      totalEngagementCount: this.percentageChange(
+        last.totalEngagementCount,
+        current.totalEngagementCount,
+      ),
+      totalLikes: this.percentageChange(last.totalLikes, current.totalLikes),
+      totalShares: this.percentageChange(last.totalShares, current.totalShares),
+      totalSaved: this.percentageChange(last.totalSaved, current.totalSaved),
+    };
+
+    console.log('Last Period:', last);
+    console.log('Current Period:', current);
+
+    return current;
   }
-
-  const [lastResult] = await this.eventModel.aggregate([
-    {
-      $match: {
-        businessProfile: businessProfileId,
-        status: EventStatus.PUBLISHED,
-        createdAt: {
-          $gte: startOfPrevious,
-          $lt: startOfCurrent,
-        },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalEvents: { $sum: 1 },
-        totalViewsCount: { $sum: '$viewsCount' },
-        totalEngagementCount: { $sum: '$engagementCount' },
-        totalLikes: { $sum: '$totalLikes' },
-        totalShares: { $sum: '$totalShares' },
-        totalSaved: { $sum: '$totalSaved' },
-      },
-    },
-  ]);
-
-  const [currentResult] = await this.eventModel.aggregate([
-    {
-      $match: {
-        businessProfile: businessProfileId,
-        status: EventStatus.PUBLISHED,
-        createdAt: {
-          $gte: startOfCurrent,
-          $lte: now,
-        },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalEvents: { $sum: 1 },
-        totalViewsCount: { $sum: '$viewsCount' },
-        totalEngagementCount: { $sum: '$engagementCount' },
-        totalLikes: { $sum: '$totalLikes' },
-        totalShares: { $sum: '$totalShares' },
-        totalSaved: { $sum: '$totalSaved' },
-      },
-    },
-  ]);
-
-  const last = lastResult ?? {
-    totalEvents: 0,
-    totalViewsCount: 0,
-    totalEngagementCount: 0,
-    totalLikes: 0,
-    totalShares: 0,
-    totalSaved: 0,
-  };
-
-  const current = currentResult ?? {
-    totalEvents: 0,
-    totalViewsCount: 0,
-    totalEngagementCount: 0,
-    totalLikes: 0,
-    totalShares: 0,
-    totalSaved: 0,
-  };
-
-  current.percentageChange = {
-    totalEvents: this.percentageChange(last.totalEvents, current.totalEvents),
-    totalViewsCount: this.percentageChange(last.totalViewsCount, current.totalViewsCount),
-    totalEngagementCount: this.percentageChange(last.totalEngagementCount, current.totalEngagementCount),
-    totalLikes: this.percentageChange(last.totalLikes, current.totalLikes),
-    totalShares: this.percentageChange(last.totalShares, current.totalShares),
-    totalSaved: this.percentageChange(last.totalSaved, current.totalSaved),
-  };
-
-  console.log("Last Period:", last);
-  console.log("Current Period:", current);
-
-  return current;
-}
-
-
-
 
   private percentageChange(oldVal: number, newVal: number) {
     console.log('Old Value:', oldVal, 'New Value:', newVal);
@@ -3787,6 +3826,73 @@ private async fetchEventLogistics(
         success: true,
         message: 'Users created successfully in bulk.',
         data: [], // You can return the created outlets data if needed
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async uploadMenu(
+    files: Express.Multer.File[],
+    user: DecodedUser,
+    name: string,
+    description: string,
+  ) {
+    try {
+      if (!files || files.length === 0) {
+        return {
+          success: false,
+          message: 'No files uploaded',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      let menu = await this.menuModel.create({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        name: name,
+        description: description,
+        createdBy: new mongoose.Types.ObjectId(user.id),
+      });
+
+      const uploadedFiles = await this.driveService.multiImageUpload(
+        user.id,
+        String(business.drivePath),
+        files,
+      );
+
+      console.log('Uploaded Files:', uploadedFiles);
+
+      if (uploadedFiles && uploadedFiles.success && Array.isArray(uploadedFiles.data)) {
+        await this.menuModel.updateOne(
+          { _id: menu._id },
+          {
+            $set: {
+              images: uploadedFiles.data.map((file) => new mongoose.Types.ObjectId(file.id)),
+            },
+          },
+        );
+      }
+      await this.businessModel.updateOne(
+        { _id: user.businessProfile },
+        {
+          $push: {
+            menus: new mongoose.Types.ObjectId(menu.id),
+          },
+        },
+      );
+
+      return {
+        success: true,
+        message: 'Menu files uploaded successfully',
+        data: uploadedFiles,
       };
     } catch (error) {
       return {

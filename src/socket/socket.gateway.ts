@@ -109,9 +109,9 @@ export class SocketGateway
     client: Socket,
     payload: { carouselType: string },
   ) {
-    console.log('getDashboardAllConfigs called');
+     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
     const result = await this.authService.getDashboardAllConfigs(
-      payload.carouselType,
+      data.data.carouselType,
     );
     client.emit('successMessage', 'Dashboard configs fetched successfully');
     client.emit('getDashboardAllConfigsResponse', {

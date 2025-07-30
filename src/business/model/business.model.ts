@@ -14,7 +14,15 @@ import {
   ScalabilityFactor,
 } from '../enums/business.enum';
 import { Event } from 'src/event/models/event.model';
-import { Allergen, Insurance, Menu, OpeningHours, Promotion, Review, TaxDetails } from './types.model';
+import {
+  Allergen,
+  Insurance,
+  OpeningHours,
+  Promotion,
+  Review,
+  TaxDetails,
+} from './types.model';
+import { Menu } from './menu.model';
 
 export class SocialMediaTokenDetails {
   value: string;
@@ -60,7 +68,7 @@ export class Business {
   @Prop({ ref: BusinessCategory.name })
   businessCategories: mongoose.Types.ObjectId[];
 
-  @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId})
+  @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId })
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop()
@@ -144,8 +152,8 @@ export class Business {
   vatNumber: string; // VAT registration number, if applicable
   @Prop()
   foodHygieneRating: number; // Food Standards Agency (FSA) hygiene rating
-  @Prop()
-  menu: Menu[]; // Array of menu items with details
+  @Prop({ ref: Menu.name })
+  menus: Array<mongoose.Types.ObjectId>; // Array of menu items with details
   @Prop()
   allergenInformation: Allergen[]; // Array of allergens present in the dishes
   @Prop()
@@ -246,7 +254,7 @@ export class Business {
   })
   onboardingOfferStatus: number;
 
-  @Prop({default: false})
+  @Prop({ default: false })
   isOnboardingOfferDone: boolean;
 
   @Prop({ ref: 'Event' })
