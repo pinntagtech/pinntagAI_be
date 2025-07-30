@@ -32,6 +32,7 @@ import { Admin, AdminDocument } from './admin/models/admin.model';
 import { Business, BusinessDocument } from './business/model/business.model';
 import { SeederConfig } from './models/seederConfig.model';
 import { Tag } from './models/tags.model';
+import { BusinessIndustry, BusinessIndustryDocument } from './business/model/businessIndustry.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -53,8 +54,8 @@ export class AppService implements OnModuleInit {
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
-    @InjectModel(SeederConfig.name)
-    private readonly seederConfigModel: Model<SeederConfig>,
+    @InjectModel(SeederConfig.name) private readonly seederConfigModel: Model<SeederConfig>,
+    @InjectModel(BusinessIndustry.name) private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {
@@ -117,6 +118,14 @@ export class AppService implements OnModuleInit {
       .find()
       // .sort({ sortOrder: 1 })
       //sort with alphabatical order
+      .sort({ title: 1 })
+      .select({ updatedAt: 0, __v: 0 })
+      .populate('createdBy', '_id name')
+      .exec();
+  }
+  async getBusinessIndustries() {
+    return await this.businessIndustryModel
+      .find()
       .sort({ title: 1 })
       .select({ updatedAt: 0, __v: 0 })
       .populate('createdBy', '_id name')

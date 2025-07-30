@@ -2985,10 +2985,13 @@ export class AuthService {
           from: 'businessindustries',
           localField: 'businessDetails.businessIndustry',
           foreignField: '_id',
-          as: 'industryDetails', 
+          as: 'industryDetails',
         },
       },
-       {
+      {
+        $unwind: { path: '$industryDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
         $lookup: {
           from: 'follows', // make sure it's the actual collection name
           let: {
@@ -3028,7 +3031,6 @@ export class AuthService {
           name: { $first: '$businessDetails.name' },
           // businessDetails: { $first: '$businessDetails' },
           cover: { $first: '$businessDetails.cover' },
-
           logo: { $first: '$businessDetails.logo' },
           industry: { $first: '$industryDetails' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
@@ -3048,11 +3050,10 @@ export class AuthService {
               distance: { $divide: ['$distance', 1609.34] },
             },
           },
-
         },
       },
-      { $sort: {createdAt: -1, _id: 1 } },
-      
+      { $match: { ...match } },
+      { $sort: { createdAt: -1, _id: 1 } },
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
@@ -5589,6 +5590,8 @@ export class AuthService {
     categoryIds?: Array<string>,
     startDate?: any,
     endDate?: any,
+    industries?: Array<string>,
+    isFollowedByMe?: boolean,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -5609,7 +5612,11 @@ export class AuthService {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
-
+    if (industries.length) {
+      match['event.categories'] = {
+        $in: industries.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
@@ -5757,12 +5764,50 @@ export class AuthService {
     let totalCount = 0;
 
     if (carousel.carouselType === CarouselType.Business) {
+      let newQuery = {};
+      if (industries.length) {
+        const matchingIndustries = [];
+        industries.forEach((id) => {
+          if (
+            config.businessIndustries.includes(new mongoose.Types.ObjectId(id))
+          ) {
+            matchingIndustries.push(new mongoose.Types.ObjectId(id));
+          }
+        });
+        if (matchingIndustries.length) {
+          newQuery = {
+            'industry._id': {
+              $in: matchingIndustries,
+            },
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Dashboard fetched successfully',
+            data: {
+              eventsResult,
+            },
+          };
+        }
+      } else {
+        newQuery = {
+          ...newQuery,
+          'industry._id': { $in: config.businessIndustries },
+        };
+      }
+      if (isFollowedByMe) {
+        newQuery = {
+          ...newQuery,
+          isFollowedByMe: isFollowedByMe,
+        };
+      }
+
       eventsResult = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
         age,
-        query,
+        newQuery,
         1,
         config.limit,
         start,
@@ -5831,38 +5876,6 @@ export class AuthService {
     } catch (error) {
       throw new Error(`Error generating password: ${error.message}`);
     }
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const digits = '0123456789';
-    const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const allChars = uppercase + lowercase + digits + special;
-
-    if (length < 4) {
-      throw new Error(
-        'Password length must be at least 4 characters to include required character types.',
-      );
-    }
-
-    const getRandomChar = (chars: string) =>
-      chars[Math.floor(Math.random() * chars.length)];
-
-    // Ensure inclusion of required types
-    let password = [
-      getRandomChar(uppercase),
-      getRandomChar(digits),
-      getRandomChar(special),
-      getRandomChar(lowercase),
-    ];
-
-    // Fill the rest randomly
-    for (let i = password.length; i < length; i++) {
-      password.push(getRandomChar(allChars));
-    }
-
-    // Shuffle the result to avoid predictable order
-    password = password.sort(() => Math.random() - 0.5);
-
-    return password.join('');
   }
 }
 

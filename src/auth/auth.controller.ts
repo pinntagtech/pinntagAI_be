@@ -493,6 +493,8 @@ export class AuthController {
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
+      body.industries ? body.industries : [],
+      body.isFollowedByMe ? body.isFollowedByMe : null,
     );
 
     if (!result.success) {

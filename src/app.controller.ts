@@ -20,6 +20,14 @@ export class AppController {
       categories: result,
     };
   }
+  @Get('businessIndustries')
+  @UseGuards(RateLimitGuard)
+  async getBusinessIndustries() {
+    const result = await this.appService.getBusinessIndustries();
+    return {
+      businessIndustries: result,
+    };
+  }
 
   @Get('ages')
   @UseGuards(RateLimitGuard)

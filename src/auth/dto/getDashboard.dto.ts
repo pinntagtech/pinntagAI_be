@@ -12,4 +12,9 @@ export class GetDashboardDto {
   startDate: string;
   @IsOptional()
   endDate: string;
+  @IsOptional()
+  @IsArray()
+  industries: Array<string>;
+  @IsOptional()
+  isFollowedByMe: boolean;
 }
