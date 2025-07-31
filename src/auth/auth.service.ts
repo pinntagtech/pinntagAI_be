@@ -3024,7 +3024,7 @@ export class AuthService {
           },
         },
       },
-      { $sort: { distance: 1 } },
+      { $sort: { distance: 1, createdAt: -1, _id: 1 } },
       {
         $group: {
           _id: '$businessDetails._id',
@@ -3033,6 +3033,7 @@ export class AuthService {
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
           industry: { $first: '$industryDetails' },
+          description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
           locations: {
             $push: {
@@ -3053,7 +3054,8 @@ export class AuthService {
         },
       },
       { $match: { ...match } },
-      { $sort: { createdAt: -1, _id: 1 } },
+      { $skip: !page ? 0 : (page - 1) * limit },
+      { $limit: limit },
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
@@ -5790,12 +5792,21 @@ export class AuthService {
           'industry._id': { $in: config.businessIndustries },
         };
       }
-      console.log("IsFollowedByMe:", isFollowedByMe);
       if (isFollowedByMe) {
         newQuery = {
           ...newQuery,
           isFollowedByMe: isFollowedByMe,
         };
+      }
+      if (search) {
+        newQuery['$or'] = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { 'locations.address1': { $regex: search, $options: 'i' } },
+          { 'locations.address2': { $regex: search, $options: 'i' } },
+          { 'locations.city': { $regex: search, $options: 'i' } },
+          { 'locations.state': { $regex: search, $options: 'i' } },
+        ];
       }
 
       eventsResult = await this.fetchBusinessListing(
