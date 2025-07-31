@@ -5612,11 +5612,6 @@ export class AuthService {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
-    if (industries.length) {
-      match['event.categories'] = {
-        $in: industries.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
@@ -5765,7 +5760,7 @@ export class AuthService {
 
     if (carousel.carouselType === CarouselType.Business) {
       let newQuery = {};
-      if (industries.length) {
+      if (industries && industries.length) {
         const matchingIndustries = [];
         industries.forEach((id) => {
           if (
@@ -5795,6 +5790,7 @@ export class AuthService {
           'industry._id': { $in: config.businessIndustries },
         };
       }
+      console.log("IsFollowedByMe:", isFollowedByMe);
       if (isFollowedByMe) {
         newQuery = {
           ...newQuery,

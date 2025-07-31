@@ -5,6 +5,7 @@ export enum EventTypes {
   PRIVATE = 'private',
   // LISTING = 'listing',
   FLASHDEAL = 'flashdeal',
+  SPOTLIGHT = 'spotlight',
 }
 
 export enum EventStatus {

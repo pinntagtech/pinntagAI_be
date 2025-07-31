@@ -132,7 +132,6 @@ export class SocketGateway
     },
   ) {
     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
-    console.log("date::",data);
     const { body, carouselId, search, distance, timeZone } = data.data;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
@@ -159,6 +158,9 @@ export class SocketGateway
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
+      body.industries ? body.industries : null,
+      body.isFollowedByMe ? body.isFollowedByMe : null,
+
     );
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
