@@ -118,6 +118,7 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
+import { EventSchedule } from 'src/event/models/event-schedule.model';
 
 @Injectable()
 export class AdminService {
@@ -2405,11 +2406,21 @@ export class AdminService {
         // .populate('event', '_id title')
         .populate({
           path: 'event',
-          populate: {
-            path: 'businessProfile',
-            model: Business.name,
-            select: BusinessPopulates.FOREIGN,
-          },
+          populate: [
+            {
+              path: 'businessProfile',
+              model: Business.name,
+              select: BusinessPopulates.FOREIGN,
+            },
+            {
+              path: 'eventSchedule',
+              model: EventSchedule.name,
+            },
+            {
+              path: 'locations',
+              model: EventLocation.name,
+            }
+          ],
         });
 
       const totalReportedEvents = await this.reportModel.countDocuments(query);
