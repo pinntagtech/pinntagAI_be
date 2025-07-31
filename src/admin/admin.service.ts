@@ -39,7 +39,7 @@ import {
 import { Image, ImageDocument } from 'src/event/models/image.model';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
-import { Category, CategoryDocument } from 'src/models/contentCategory.model';
+import { Category, CategoryDocument, CategorySchema } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { S3Service } from 'src/s3.service';
 import { User, UserDocument } from 'src/user/models/user.model';
@@ -2419,6 +2419,10 @@ export class AdminService {
             {
               path: 'locations',
               model: EventLocation.name,
+            },
+            {
+              path: 'categories',
+              model: Category.name,
             }
           ],
         });
