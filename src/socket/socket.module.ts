@@ -128,6 +128,12 @@ import {
 import { SocketService } from './socket.service';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Tag, TagSchema } from 'src/models/tags.model';
+import { BusinessService } from 'src/business/business.service';
+import { Brand, BrandSchema } from 'src/business/model/brand.model';
+import { LocationGroup, LocationGroupSchema } from 'src/business/model/locationGroup.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import { Rating, RatingSchema } from 'src/business/model/rating.model';
+import { Menu, MenuSchema } from 'src/business/model/menu.model';
 
 @Module({
   imports: [
@@ -184,6 +190,11 @@ import { Tag, TagSchema } from 'src/models/tags.model';
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: Brand.name, schema: BrandSchema },
+      { name: LocationGroup.name, schema: LocationGroupSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+      { name: Rating.name, schema: RatingSchema },
+      { name: Menu.name, schema: MenuSchema },
     ]),
   ],
   providers: [
@@ -200,6 +211,7 @@ import { Tag, TagSchema } from 'src/models/tags.model';
     DriveService,
     SocketService,
     FirebaseService,
+    BusinessService,
   ],
   exports: [],
 })

@@ -40,7 +40,7 @@ export class SocketGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
-    // private readonly businessService: BusinessService,
+    private readonly businessService: BusinessService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
@@ -261,29 +261,29 @@ export class SocketGateway
     });
   }
 
-  // @SubscribeMessage('businessCardView')
-  // async handleBusinessCardView(
-  //   client: Socket,
-  //   payload: { businessId: string, latitude: number, longitude: number }
-  // ){
-  //   const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
-  //   const { businessId, latitude, longitude } = data.data;
-  //   if (!isValidObjectId(businessId)) {
-  //     return client.emit('businessCardViewResponse', {
-  //       message: 'Invalid business id',
-  //       business: null,
-  //     });
-  //   }
-  //   const userId = (client as any).userId;
-  //   const result = await this.businessService.fetchBusiness(
-  //     businessId,
-  //     userId,
-  //     parseFloat(latitude),
-  //     parseFloat(longitude)
-  //   );
-  //   client.emit('businessCardViewResponse', {
-  //     message: result.message,
-  //     data: result.data,
-  //   });
-  // }
+  @SubscribeMessage('businessCardView')
+  async handleBusinessCardView(
+    client: Socket,
+    payload: { businessId: string, latitude: number, longitude: number }
+  ){
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const { businessId, latitude, longitude } = data.data;
+    if (!isValidObjectId(businessId)) {
+      return client.emit('businessCardViewResponse', {
+        message: 'Invalid business id',
+        business: null,
+      });
+    }
+    const userId = (client as any).userId;
+    const result = await this.businessService.fetchBusiness(
+      businessId,
+      userId,
+      parseFloat(latitude),
+      parseFloat(longitude)
+    );
+    client.emit('businessCardViewResponse', {
+      message: result.message,
+      data: result.data,
+    });
+  }
 }
