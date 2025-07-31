@@ -28,6 +28,7 @@ export class Event {
       // EventTypes.LISTING,
       EventTypes.FLASHDEAL,
       EventTypes.SPOTLIGHT,
+      EventTypes.DROPPED_PIN,
     ],
   })
   type: string;

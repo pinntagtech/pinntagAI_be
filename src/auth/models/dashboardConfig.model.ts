@@ -28,7 +28,7 @@ export class DashboardConfig {
   @Prop({  ref: Category.name, default: [] })
   categories: Array<mongoose.Types.ObjectId>;
 
-  @Prop()
+  @Prop({enum: ['xl', 'xxl','zoom','full']})
   cardType: string;
 
   @Prop()

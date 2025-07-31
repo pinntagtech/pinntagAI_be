@@ -24,6 +24,7 @@ import { MapPrivilegeDto } from './dto/mapPrivilege.dto';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { isValidObjectId } from 'mongoose';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Controller('role')
 export class RolesController {
@@ -218,6 +219,32 @@ export class RolesController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Post('delete/:roleId')
+  @Privilege(ResourceTypes.ROLES, Actions.DELETE)
+  @UseGuards(PrivilegeGuard)
+  @UseGuards(JwtGuard2)
+  async deleteRole(
+    @TokenDecoder() user: DecodedUser,
+    @Param('roleId') roleId: string,
+    @Body('backupRoleId') backupRoleId: string,
+  ) {
+    if (!isValidObjectId(roleId)) {
+      throw new BadRequestException('Invalid Token');
+    }
+
+    const result = await this.roleService.deleteRole(
+      roleId,
+      backupRoleId,
+      user.userType,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
       };
     } else {
       throw new BadRequestException(result.message);

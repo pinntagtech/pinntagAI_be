@@ -6,6 +6,7 @@ export enum EventTypes {
   // LISTING = 'listing',
   FLASHDEAL = 'flashdeal',
   SPOTLIGHT = 'spotlight',
+  DROPPED_PIN = 'dropped_pin',
 }
 
 export enum EventStatus {
