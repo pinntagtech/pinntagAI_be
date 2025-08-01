@@ -9,7 +9,13 @@ import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { BusinessIndustries, BusinessIndustryTags, ContentTags, EventCategory, Seeder } from './data';
+import {
+  BusinessIndustries,
+  BusinessIndustryTags,
+  ContentTags,
+  EventCategory,
+  Seeder,
+} from './data';
 import {
   SubscriptionProduct,
   SubscriptionProductDocument,
@@ -155,7 +161,8 @@ export class SeederService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Region.name)
     private readonly regionModel: Model<RegionDocument>,
-    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
@@ -769,9 +776,10 @@ export class SeederService {
       let businessIndustry = await this.businessIndustryModel.findOne({
         title: template.businessIndustry,
       });
-      if(!businessIndustry) {
+      if (!businessIndustry) {
         console.error(
-          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,)
+          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,
+        );
       }
       let createObj = {
         creatorType: Admin.name,
@@ -825,10 +833,9 @@ export class SeederService {
         sortOrder: cfg.sortOrder,
         carouselType: cfg.carouselType,
       });
-
     }
 
-     for (const cfg of Seeder.DashboardConfigs) {
+    for (const cfg of Seeder.DashboardConfigs) {
       const cats = await this.categoryModel
         .find({ title: { $in: cfg.categories } })
         .select('_id')
@@ -852,9 +859,29 @@ export class SeederService {
         sortOrder: cfg.sortOrder,
         carouselType: cfg.carouselType,
       });
-      
     }
 
+    for (const cfg of Seeder.DashboardOnWheelsConfigs) {
+      const cats = await this.categoryModel
+        .find({ title: { $in: cfg.categories } })
+        .select('_id')
+        .lean();
+
+      const catIds = cats.map((c) => c._id);
+      if (catIds.length !== cfg.categories.length) {
+        console.warn(
+          `Some categories for "${cfg.name}" not found; found ${catIds.length} of ${cfg.categories.length}`,
+        );
+      }
+
+      await this.dashboardConfigModel.create({
+        name: cfg.name,
+        limit: cfg.limit,
+        categories: catIds,
+        sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
+      });
+    }
   }
 
   async seedDepartments() {
@@ -1125,21 +1152,20 @@ export class SeederService {
       return;
     }
 
-
-    for(const industry of Object.values(BusinessIndustries)){
+    for (const industry of Object.values(BusinessIndustries)) {
       console.log('industry:', industry);
       const foundIndustry = await this.businessIndustryModel.findOne({
         title: industry,
       });
-      if(!foundIndustry) {
+      if (!foundIndustry) {
         console.error(`Business industry "${industry}" not found.`);
         continue;
       }
-      for(const tag of BusinessIndustryTags[industry]){
+      for (const tag of BusinessIndustryTags[industry]) {
         console.log('tag:', tag);
         const foundTag = await this.tagModel.findOne({
           title: tag,
-          relatedId : foundIndustry._id,
+          relatedId: foundIndustry._id,
         });
         if (!foundTag) {
           await this.tagModel.create({
@@ -1148,25 +1174,27 @@ export class SeederService {
             relatedTo: BusinessIndustry.name,
           });
         } else {
-          console.log(`Tag "${tag}" already exists for industry "${industry}".`);
+          console.log(
+            `Tag "${tag}" already exists for industry "${industry}".`,
+          );
         }
       }
     }
 
-    for(const cat of Object.values(EventCategory)){
+    for (const cat of Object.values(EventCategory)) {
       console.log('category:', cat);
       const foundCategory = await this.categoryModel.findOne({
         title: cat,
       });
-      if(!foundCategory) {
+      if (!foundCategory) {
         console.error(`Event category "${cat}" not found.`);
         continue;
       }
-      for(const tag of ContentTags[cat]){
+      for (const tag of ContentTags[cat]) {
         console.log('tag:', tag);
         const foundTag = await this.tagModel.findOne({
           title: tag,
-          relatedId : foundCategory._id,
+          relatedId: foundCategory._id,
         });
         if (!foundTag) {
           await this.tagModel.create({
@@ -1179,6 +1207,5 @@ export class SeederService {
         }
       }
     }
-
   }
 }

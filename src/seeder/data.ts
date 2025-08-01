@@ -2150,6 +2150,7 @@ export const Seeder = {
       categories: ['Entertainment', 'Nightlife', 'Sports', 'Dining', 'Fitness'],
       sortOrder: 100,
       carouselType: CarouselType.Event,
+      cardType: 'xl',
     },
     {
       name: 'Flash Deals',
@@ -2161,6 +2162,7 @@ export const Seeder = {
       categories: ['Dining', 'Shopping', 'Grooming', 'Happy Hour'],
       sortOrder: 200,
       carouselType: CarouselType.Event,
+      cardType: 'full',
     },
     {
       name: 'Free Offers',
@@ -2178,6 +2180,7 @@ export const Seeder = {
       ],
       sortOrder: 300,
       carouselType: CarouselType.Event,
+      cardType: 'zoom',
     },
     {
       name: 'Food and Drinks',
@@ -2189,6 +2192,7 @@ export const Seeder = {
       categories: ['Dining', 'Happy Hour'],
       sortOrder: 400,
       carouselType: CarouselType.Event,
+      cardType: 'xxl',
     },
     {
       name: 'Events Near You',
@@ -2200,6 +2204,7 @@ export const Seeder = {
       categories: ['Nightlife', 'Sports', 'Attractions', 'Entertainment'],
       sortOrder: 500,
       carouselType: CarouselType.Event,
+      cardType: 'xl',
     },
     {
       name: 'Health and Wellness',
@@ -2211,6 +2216,7 @@ export const Seeder = {
       categories: ['Fitness', 'Clubs'],
       sortOrder: 600,
       carouselType: CarouselType.Event,
+      cardType: 'zoom',
     },
     {
       name: 'Charity and Community',
@@ -2222,6 +2228,7 @@ export const Seeder = {
       categories: ['Charity', 'Attractions'],
       sortOrder: 700,
       carouselType: CarouselType.Event,
+      cardType: 'xxl',
     },
     {
       name: 'Nightlife and Parties',
@@ -2233,6 +2240,7 @@ export const Seeder = {
       categories: ['Nightlife', 'Happy Hour'],
       sortOrder: 800,
       carouselType: CarouselType.Event,
+      cardType: 'full',
     },
     {
       name: 'Retail and Shopping',
@@ -2244,6 +2252,7 @@ export const Seeder = {
       categories: ['Shopping'],
       sortOrder: 900,
       carouselType: CarouselType.Event,
+      cardType: 'xl',
     },
     {
       name: 'Pet Friendly',
@@ -2255,8 +2264,10 @@ export const Seeder = {
       categories: ['Pets'],
       sortOrder: 1000,
       carouselType: CarouselType.Event,
+      cardType: 'zoom',
     },
   ],
+
   DashboardBusinessConfigs: [
     {
       name: 'Popular in Atlanta',
@@ -2267,6 +2278,7 @@ export const Seeder = {
       ],
       sortOrder: 10,
       carouselType: CarouselType.Business,
+      cardType: 'zoom',
     },
     {
       name: 'Black-Owned in ATL',
@@ -2277,6 +2289,7 @@ export const Seeder = {
       ],
       sortOrder: 20,
       carouselType: CarouselType.Business,
+      cardType: 'xxl',
     },
     {
       name: 'Wellness in Midtown',
@@ -2287,6 +2300,7 @@ export const Seeder = {
       ],
       sortOrder: 30,
       carouselType: CarouselType.Business,
+      cardType: 'xl',
     },
     {
       name: 'Pet-Friendly Spots',
@@ -2294,6 +2308,7 @@ export const Seeder = {
       businessIndustries: [BusinessIndustries.PET_SERVICES],
       sortOrder: 40,
       carouselType: CarouselType.Business,
+      cardType: 'full',
     },
     {
       name: 'Southern Comfort Food',
@@ -2301,6 +2316,7 @@ export const Seeder = {
       businessIndustries: [BusinessIndustries.FOOD_DRINK],
       sortOrder: 50,
       carouselType: CarouselType.Business,
+      cardType: 'zoom',
     },
     {
       name: 'Home Services in Buckhead',
@@ -2308,6 +2324,7 @@ export const Seeder = {
       businessIndustries: [BusinessIndustries.HOME_SERVICES],
       sortOrder: 60,
       carouselType: CarouselType.Business,
+      cardType: 'xl',
     },
     {
       name: 'Date Night Favorites',
@@ -2318,6 +2335,7 @@ export const Seeder = {
       ],
       sortOrder: 70,
       carouselType: CarouselType.Business,
+      cardType: 'xxl',
     },
     {
       name: 'Car Care in ATL',
@@ -2325,6 +2343,7 @@ export const Seeder = {
       businessIndustries: [BusinessIndustries.AUTOMOTIVE_SERVICES],
       sortOrder: 80,
       carouselType: CarouselType.Business,
+      cardType: 'full',
     },
     {
       name: 'Trusted Local Pros',
@@ -2332,6 +2351,7 @@ export const Seeder = {
       businessIndustries: [BusinessIndustries.PROFESSIONAL_SERVICES],
       sortOrder: 90,
       carouselType: CarouselType.Business,
+      cardType: 'zoom',
     },
     {
       name: 'ATL Events This Week',
@@ -2339,8 +2359,69 @@ export const Seeder = {
       businessIndustries: [],
       sortOrder: 100,
       carouselType: CarouselType.Business,
+      cardType: 'xl',
     },
   ],
+  DashboardOnWheelsConfigs: [
+  {
+    name: 'Meals on Wheels',
+    limit: 10,
+    categories: [
+      EventCategory.DAYS_OUT,
+      EventCategory.DINING,
+      EventCategory.HAPPY_HOUR,
+      EventCategory.SHOPPING,
+    ],
+    sortOrder: 10,
+    carouselType: CarouselType.OnWheels,
+    cardType: 'full',
+  },
+  {
+    name: 'Quick Bites',
+    limit: 8,
+    categories: [
+      EventCategory.DINING,
+      EventCategory.HAPPY_HOUR,
+    ],
+    sortOrder: 20,
+    carouselType: CarouselType.OnWheels,
+    cardType: 'zoom',
+  },
+  {
+    name: 'Weekend Destinations',
+    limit: 6,
+    categories: [
+      EventCategory.DAYS_OUT,
+      EventCategory.ENTERTAINMENT,
+      EventCategory.ATTRACTIONS,
+    ],
+    sortOrder: 30,
+    carouselType: CarouselType.OnWheels,
+    cardType: 'xl',
+  },
+  {
+    name: 'Shop & Stroll',
+    limit: 9,
+    categories: [
+      EventCategory.SHOPPING,
+      EventCategory.NIGHTLIFE,
+    ],
+    sortOrder: 40,
+    carouselType: CarouselType.OnWheels,
+    cardType: 'xxl',
+  },
+  {
+    name: 'Fitness Fuel',
+    limit: 5,
+    categories: [
+      EventCategory.FITNESS,
+      EventCategory.DINING,
+    ],
+    sortOrder: 50,
+    carouselType: CarouselType.OnWheels,
+    cardType: 'xl',
+  },
+],
   Departments: [
     {
       name: 'Operations',

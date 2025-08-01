@@ -1747,14 +1747,21 @@ export class AuthService {
     distance: number,
     startDate: any,
     endDate: any,
+    carouselType: string,
   ) {
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Match:', match);
-    console.log('DISTANCE:', distance);
+      console.log('DISTANCE:', distance);
+      
+      if (carouselType === CarouselType.Event) {
+        match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL] };
+      } else if (carouselType === CarouselType.OnWheels) {
+        match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
+      }
+      console.log('Match:', match);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -3390,6 +3397,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3403,6 +3411,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
 
     let data = {};
@@ -3481,6 +3490,7 @@ export class AuthService {
         maxDistance,
         startDate,
         endDate,
+        CarouselType.Event
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult[0];
@@ -3611,6 +3621,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -3624,6 +3635,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
     return {
       success: true,
@@ -3803,6 +3815,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
 
     return {
@@ -4001,6 +4014,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      CarouselType.Event
     );
     console.log('Total:::::::', totalCount);
     return {
@@ -5822,7 +5836,8 @@ export class AuthService {
         startDate,
         endDate,
       );
-    } else if (carousel.carouselType === CarouselType.Event) {
+    } else if (carousel.carouselType === CarouselType.Event || carousel.carouselType === CarouselType.OnWheels) {
+      console.log("Carourselll TYPEEE:", carousel.carouselType);
       [eventsResult, totalCount] = await this.fetchEventsV2(
         new mongoose.Types.ObjectId(user.id),
         longitude,
@@ -5835,6 +5850,7 @@ export class AuthService {
         maxDistance,
         startDate,
         endDate,
+        carousel.carouselType,
       );
     }
 

@@ -37,7 +37,7 @@ export class DashboardConfig {
   @Prop()
   businessIndustries: Array<mongoose.Types.ObjectId>;
 
-  @Prop({ enum: [CarouselType.Event, CarouselType.Business], required: true })
+  @Prop({ enum: [CarouselType.Event, CarouselType.Business, CarouselType.OnWheels], required: true })
   carouselType: string;
 }
 
