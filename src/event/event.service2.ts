@@ -132,6 +132,8 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
+import { PinDropDto } from './dto/pinDrop.dto';
+import { GoogleService } from 'src/google/google.service';
 
 @Injectable()
 export class EventService2 {
@@ -194,6 +196,7 @@ export class EventService2 {
     private readonly firebaseService: FirebaseService,
     private readonly dynamicLinkService: DynamicLinkService,
     private readonly driveService: DriveService,
+    private readonly googleService: GoogleService,
   ) {}
   async create(
     createEventDto: CreateEventDto,
@@ -6161,11 +6164,8 @@ export class EventService2 {
               longitude: data.address.lng ?? -101,
               location: {
                 type: 'Point',
-                coordinates: [
-                  data.address.lng ?? -101,
-                  data.address.lat ?? 34,
-                ],
-              }
+                coordinates: [data.address.lng ?? -101, data.address.lat ?? 34],
+              },
             };
             foundOutlet = await this.outletModel.create(outletObj);
           }
@@ -6844,84 +6844,68 @@ export class EventService2 {
     return Array.from(dates).map((timestamp) => new Date(timestamp));
   }
 
-  // async corruptedEvents() {
-  //   try {
-  //     for (let event of CorruptedAtlantaEvents) {
-  //       const randomDates = await this.getRandomDatesBetween(
-  //         '2025-07-30',
-  //         '2025-09-01',
-  //       );
-  //       console.log('Random Dates:', randomDates);
+  async pinDrop(eventId: string, user: DecodedUser, pinDropDto: PinDropDto) {
+    try {
+      let address = await this.googleService.getAddressFromCoordinates(
+        pinDropDto.latitude,
+        pinDropDto.longitude,
+        '000e10b3-b0a0-4269-a864-ea419a790f76',
+      );
+      console.log('Address:', address);
+      const event = await this.eventModel.findById(eventId);
+      if (!event) {
+        return {
+          success: false,
+          message: 'Event not found.',
+        };
+      }
 
-  //       const schedule1 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[0]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[0]),
-  //               endTime: new Date(randomDates[0]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       const schedule2 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[1]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[1]),
-  //               endTime: new Date(randomDates[1]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       const schedule3 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[2]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[2]),
-  //               endTime: new Date(randomDates[2]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule1._id },
-  //         },
-  //       );
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule2._id },
-  //         },
-  //       );
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule3._id },
-  //         },
-  //       );
+      const outlet = await this.outletModel.findById(pinDropDto.outletId);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found.',
+        };
+      }
+      // if (outlet.category !== OutletCategoryList.MOBILE) {
+      //   return {
+      //     success: false,
+      //     message: 'Only Mobile Outlet can be used for pin drop.',
+      //   };
+      // }
 
-  //     }
-  //     return {
-  //       success: true,
-  //       message: 'Corrupted events processed successfully.',
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in corruptedEvents:', error);
-  //     return {
-  //       success: false,
-  //       message: 'Something went wrong.',
-  //     };
-  //   }
-  // }
+      const pinDrop = await this.eventLocationModel.create({
+        event: event._id,
+        businessLocationId: outlet._id,
+        location: {
+          type: 'Point',
+          coordinates: [pinDropDto.longitude, pinDropDto.latitude],
+        },
+        address1: address.data.address1,
+        city: address.data.city,
+        state: address.data.state,
+        zip: address.data.zip,
+        email: outlet.email,
+        isFromCrawler: false,
+        businessProfile: event.businessProfile,
+      });
+
+      await this.eventModel.updateOne(
+        { _id: event._id },
+        { $addToSet: { locations: pinDrop._id } },
+      );
+
+      return {
+        success: true,
+        message: 'Pin drop created successfully.',
+        data: pinDrop,
+      };
+    } catch (error) {
+      console.error('Error in pinDrop:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 }

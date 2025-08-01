@@ -9,7 +9,8 @@ export const UserTypes = {
 
 export const CarouselType = {
   Event: 'event',
-  Business: 'business'
+  Business: 'business',
+  OnWheels: 'onWheels',
 }
 
 export const DeviceTypes = {

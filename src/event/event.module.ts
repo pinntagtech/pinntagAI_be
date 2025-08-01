@@ -102,6 +102,7 @@ import {
 import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { GoogleService } from 'src/google/google.service';
 
 @Module({
   imports: [
@@ -163,6 +164,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
     FirebaseService,
     DynamicLinkService,
     DriveService,
+    GoogleService,
     // BusinessService,
   ],
 })

@@ -41,6 +41,7 @@ import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { PinDropDto } from './dto/pinDrop.dto';
 
 @Controller('event')
 export class EventController {
@@ -1088,4 +1089,30 @@ export class EventController {
       });
     }
   }
+
+  @Post('pinDrop/:id')
+  @UseGuards(JwtGuard2)
+  async pinDrop(
+    @Param('id') id: string,
+    @Body() data: PinDropDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException({
+        message: 'Invalid event id',
+      });
+    }
+    const result = await this.eventService.pinDrop(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
 }
