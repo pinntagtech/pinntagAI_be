@@ -230,7 +230,7 @@ export class EventController {
       limit,
       status,
       startDate,
-      endDate
+      endDate,
     );
     if (result.success) {
       return {
@@ -874,10 +874,18 @@ export class EventController {
 
   @Get('reports')
   @UseGuards(JwtGuard2)
-  async getReports(@TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+  async getReports(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.eventService.getReports(user.id, pageNumber, limitNumber);
+    const result = await this.eventService.getReports(
+      user.id,
+      pageNumber,
+      limitNumber,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -952,7 +960,7 @@ export class EventController {
     }
   }
 
-@Post('offer')
+  @Post('offer')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('image', {
@@ -1064,7 +1072,7 @@ export class EventController {
 
   @Put('offer/:id')
   @UseGuards(JwtGuard2)
-   @UseInterceptors(
+  @UseInterceptors(
     FilesInterceptor('images', 10, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
@@ -1078,6 +1086,34 @@ export class EventController {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
     const result = await this.eventService.updateOffer(id, body, user, images);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('pinDrop')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async createPinDropEvent(
+    @Body() data: CreateOfferDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    const result = await this.eventService.createPinDropEvent(
+      data,
+      user,
+      images,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1114,5 +1150,4 @@ export class EventController {
       });
     }
   }
-
 }
