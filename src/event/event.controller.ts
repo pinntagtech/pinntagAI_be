@@ -42,6 +42,7 @@ import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { PinDropDto } from './dto/pinDrop.dto';
+import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 
 @Controller('event')
 export class EventController {
@@ -1125,8 +1126,38 @@ export class EventController {
       });
     }
   }
-
   @Post('pinDrop/:id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async updatePinDropEvent(
+    @Param('id') id: string,
+    @Body() data: UpdatePinDropDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    const result = await this.eventService.updatePinDropEvent(
+      id,
+      data,
+      user,
+      images,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('pinDrop/location/:id')
   @UseGuards(JwtGuard2)
   async pinDrop(
     @Param('id') id: string,

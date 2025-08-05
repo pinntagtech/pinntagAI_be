@@ -134,6 +134,7 @@ import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
 import { PinDropDto } from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
+import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 
 @Injectable()
 export class EventService2 {
@@ -6903,25 +6904,6 @@ export class EventService2 {
         }
         data.categories = categoriesInObjectId;
       }
-      if (data.minTargetAge && data.maxTargetAge) {
-        if (data.minTargetAge > data.maxTargetAge) {
-          return {
-            success: false,
-            message:
-              'Minimum target age cannot be greater than maximum target age',
-          };
-        }
-        data.minTargetAge = Number(data.minTargetAge);
-        data.maxTargetAge = Number(data.maxTargetAge);
-      }
-      if (data.targetGenders) {
-        let gendersArray = data.targetGenders.split(',');
-        data.targetGenders = gendersArray;
-      }
-      if (data.eventType == EventTypes.FLASHDEAL) {
-        data.quantityLimit = Number(data.quantityLimit);
-      }
-      data.isFree = data.isFree === 'true';
       const businessFolder = await this.driveService.createFolder(userId, {
         parentDirectory: business.drivePath,
         parentType: Folder.name,
@@ -6951,18 +6933,6 @@ export class EventService2 {
           images,
         );
       }
-      if (!business.isOnboardingOfferDone) {
-        await this.businessModel.updateOne(
-          { _id: user.businessProfile },
-          {
-            $set: {
-              onboardingOfferStatus: OfferStatus.CREATED,
-              initialOfferId: event._id,
-              isOnboardingOfferDone: true,
-            },
-          },
-        );
-      }
       const eventDetails = await this.eventModel
         .findById(event._id)
         .populate('files');
@@ -6973,6 +6943,90 @@ export class EventService2 {
       };
     } catch (error) {
       console.log('Error in createPinDropEvent:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async updatePinDropEvent(
+    eventId: string,
+    data: UpdatePinDropDto,
+    user: DecodedUser,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      const userId = user.id;
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      const userDetails = await this.businessUserModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      if (data.categories) {
+        let categoriesInObjectId = [];
+        data.categories = data.categories.split(',');
+        for (let category of data.categories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
+        data.categories = categoriesInObjectId;
+      }
+      const event = await this.eventModel.findById(eventId);
+      if (!event) {
+        return {
+          success: false,
+          message: 'Event not found.',
+        };
+      }
+      let updateObj: any = {
+        ...data,
+      };
+      console.log('eventObj:', updateObj);
+      const updatedEvent = await this.eventModel.updateOne({ _id: eventId }, updateObj);
+      if (images) {
+        this.driveService.deleteBufferAndMultiImageUpload(
+          user.id,
+          String(event.drivePath),
+          images,
+        );
+      }
+      const eventDetails = await this.eventModel
+        .findById(event._id)
+        .populate('files');
+      return {
+        success: true,
+        message: 'Pin Drop updated successfully',
+        data: eventDetails,
+      };
+    } catch (error) {
+      console.log('Error in updatePinDropEvent:', error);
       return {
         success: false,
         message: 'Something went wrong.',
