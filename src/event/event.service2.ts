@@ -135,6 +135,7 @@ import { LocationClass } from 'src/business/model/types.model';
 import { PinDropDto } from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
+import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class EventService2 {
@@ -198,6 +199,7 @@ export class EventService2 {
     private readonly dynamicLinkService: DynamicLinkService,
     private readonly driveService: DriveService,
     private readonly googleService: GoogleService,
+    private readonly businessService: BusinessService,
   ) {}
   async create(
     createEventDto: CreateEventDto,
@@ -4210,20 +4212,25 @@ export class EventService2 {
     }
     let message = `${user.name} reported your event ${event.title}`;
 
-    await this.notificationModel.create({
-      user: event.businessProfile,
-      userType: Business.name,
-      message,
-      type: NotificationTypes.REPORT,
-      targetType: Business.name,
-      event: event._id,
-      targetUser: new mongoose.Types.ObjectId(userId),
-    });
+    // await this.notificationModel.create({
+    //   user: event.businessProfile,
+    //   userType: Business.name,
+    //   message,
+    //   type: NotificationTypes.REPORT,
+    //   targetType: Business.name,
+    //   event: event._id,
+    //   targetUser: new mongoose.Types.ObjectId(userId),
+    // });
 
     const report = await this.reportModel.create({
       user: new mongoose.Types.ObjectId(userId),
       ...data,
     });
+
+    await this.businessService.businessNotification(userId,event.id,NotificationTypes.REPORT,message)
+    
+
+
     return {
       success: true,
       message: 'Event reported successfully',

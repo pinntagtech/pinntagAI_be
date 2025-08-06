@@ -127,6 +127,12 @@ import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
 import { haversineDistance } from 'src/helpers/event.helpers';
 import { Menu } from './model/menu.model';
+import { UserAllowedNotification } from './model/userAllowedNotification.model';
+import {
+  Notification,
+  NotificationDocument,
+} from 'src/notification/models/notification.model';
+import { FirebaseService } from 'src/notification/firebase.service';
 
 @Injectable()
 export class BusinessService {
@@ -178,12 +184,17 @@ export class BusinessService {
     @InjectModel(Rating.name)
     private readonly ratingModel: Model<RatingDocument>,
     @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
+    @InjectModel(UserAllowedNotification.name)
+    private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
     private readonly authService: AuthService,
     private readonly driveService: DriveService,
     private readonly userService: UserService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -2183,9 +2194,9 @@ export class BusinessService {
                       },
                     },
                   },
-                }
-              }
-            ]
+                },
+              },
+            ],
           },
         },
         {
@@ -3870,12 +3881,18 @@ export class BusinessService {
 
       console.log('Uploaded Files:', uploadedFiles);
 
-      if (uploadedFiles && uploadedFiles.success && Array.isArray(uploadedFiles.data)) {
+      if (
+        uploadedFiles &&
+        uploadedFiles.success &&
+        Array.isArray(uploadedFiles.data)
+      ) {
         await this.menuModel.updateOne(
           { _id: menu._id },
           {
             $set: {
-              images: uploadedFiles.data.map((file) => new mongoose.Types.ObjectId(file.id)),
+              images: uploadedFiles.data.map(
+                (file) => new mongoose.Types.ObjectId(file.id),
+              ),
             },
           },
         );
@@ -3893,6 +3910,84 @@ export class BusinessService {
         success: true,
         message: 'Menu files uploaded successfully',
         data: uploadedFiles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async businessNotification(
+    consumerId: string,
+    eventId: string,
+    notificationType: string,
+    message: string,
+  ) {
+    try {
+      const event = await this.eventModel.findById(eventId);
+      if (!event) {
+        return {
+          success: false,
+          message: 'Event not found with given ID',
+        };
+      }
+      const business = await this.businessModel.findById(event.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const downlineUsers = await this.getAllChildUserIds2(
+        business.authorisedUser,
+      );
+      console.log('Downline Users:', downlineUsers);
+      let notifcationEnabledUsers = [];
+      notifcationEnabledUsers.push(business.authorisedUser);
+      for (const user of downlineUsers) {
+        const isUserEnabled = await this.userAllowedNotificationModel.findOne({
+          user: user,
+          notificationType: notificationType,
+        });
+        if (isUserEnabled) {
+          notifcationEnabledUsers.push(user);
+        }
+      }
+
+      console.log('Notification Enabled Users:', notifcationEnabledUsers);
+
+      for (const user of notifcationEnabledUsers) {
+        await this.notificationModel.create({
+          user: user,
+          userType: BusinessUser.name,
+          message,
+          type: notificationType,
+          targetType: Business.name,
+          event: event._id,
+          targetUser: new mongoose.Types.ObjectId(consumerId),
+        });
+
+        const fcmTokens = await this.tokenModel.find({
+          user: new mongoose.Types.ObjectId(user),
+          type: TokenTypes.FCM,
+        });
+
+        console.log('fcmTokens', fcmTokens);
+        for (let j = 0; j < fcmTokens.length; j++) {
+          this.firebaseService.sendNotification(
+            fcmTokens[j].token,
+            'Someone Reported your Content',
+            message,
+            { data: { event: event._id } },
+          );
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Downline users fetched successfully',
+        data: downlineUsers,
       };
     } catch (error) {
       return {

@@ -1203,6 +1203,9 @@ export class BusinessController {
       parseFloat(longitude),
     );
 
+    // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
+
+
     if (result.success) {
       return {
         message: result.message,

@@ -103,6 +103,36 @@ import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { GoogleService } from 'src/google/google.service';
+import {
+  BusinessConstitution,
+  BusinessConstitutionSchema,
+} from 'src/business/model/businessConstitution.model';
+import {
+  BusinessDocumentType,
+  BusinessDocumentTypeSchema,
+} from 'src/business/model/BussinessDocumentType.model';
+import { Brand, BrandSchema } from 'src/business/model/brand.model';
+import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
+import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import { Action } from 'rxjs/internal/scheduler/Action';
+import { ActionSchema } from 'src/roles/models/actions.model';
+import { LocationGroup, LocationGroupSchema } from 'src/business/model/locationGroup.model';
+import { Region, RegionSchema } from 'src/business/model/region.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import { Rating, RatingSchema } from 'src/business/model/rating.model';
+import { MenuSchema } from 'src/business/model/menu.model';
+import { Menu } from 'src/business/model/types.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { MailService } from 'src/mail/mail.service';
+import { SeederService } from 'src/seeder/seeder.service';
+import { AuthService } from 'src/auth/auth.service';
+import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
+import { OutletCategory, OutletCategorySchema } from 'src/outlet/model/outletCategory.model';
+import { OutletType, OutletTypeSchema } from 'src/outlet/model/outletType.model';
+import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboardConfig.model';
+import { Tag, TagSchema } from 'src/models/tags.model';
+import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformConfig.model';
+import { SmsService } from 'src/sms/sms.service';
 
 @Module({
   imports: [
@@ -145,8 +175,27 @@ import { GoogleService } from 'src/google/google.service';
       { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
       { name: BusinessCategory.name, schema: BusinessCategorySchema },
 
+      { name: Privilege.name, schema: PrivilegeSchema },
+      { name: BusinessCountry.name, schema: BusinessCountrySchema },
       { name: Folder.name, schema: FolderSchema },
-      // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
+      { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
+      { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
+      { name: Brand.name, schema: BrandSchema },
+      { name: Resource.name, schema: ResourceSchema },
+      { name: Department.name, schema: DepartmentSchema },
+      { name: Action.name, schema: ActionSchema },
+      { name: LocationGroup.name, schema: LocationGroupSchema },
+      { name: Region.name, schema: RegionSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+      { name: Rating.name, schema: RatingSchema },
+      { name: Menu.name, schema: MenuSchema },
+      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
+      { name: AppVersion.name, schema: AppVersionSchema},
+      { name: OutletCategory.name, schema: OutletCategorySchema },
+      { name: OutletType.name, schema: OutletTypeSchema },
+      { name: DashboardConfig.name, schema: DashboardConfigSchema },
+      { name: Tag.name, schema: TagSchema},
+      { name: PlatformConfig.name, schema: PlatformConfigSchema},
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
@@ -165,6 +214,11 @@ import { GoogleService } from 'src/google/google.service';
     DynamicLinkService,
     DriveService,
     GoogleService,
+    BusinessService,
+    MailService,
+    SeederService,
+    AuthService,
+    SmsService,
     // BusinessService,
   ],
 })

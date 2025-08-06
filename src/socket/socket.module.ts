@@ -134,6 +134,7 @@ import { LocationGroup, LocationGroupSchema } from 'src/business/model/locationG
 import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 import { Rating, RatingSchema } from 'src/business/model/rating.model';
 import { Menu, MenuSchema } from 'src/business/model/menu.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
 
 @Module({
   imports: [
@@ -194,6 +195,7 @@ import { Menu, MenuSchema } from 'src/business/model/menu.model';
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: Rating.name, schema: RatingSchema },
+      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
       { name: Menu.name, schema: MenuSchema },
     ]),
   ],

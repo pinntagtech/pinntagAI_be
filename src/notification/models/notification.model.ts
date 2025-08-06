@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { Business } from 'src/business/model/business.model';
+import { BusinessUser } from 'src/business/model/businessUser.model';
 // import { BusinessProfile } from 'src/business-profile/models/businessProfile.model';
 import { NotificationTypes } from 'src/enums/event.enums';
 import { Reward } from 'src/rewards/model/reward.model';
@@ -12,7 +13,7 @@ export class Notification {
   @Prop({ required: true, refPath: 'userType' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({required: true, enum: [User.name, Business.name]})
+  @Prop({required: true, enum: [User.name, BusinessUser.name]})
   userType: string;
 
   @Prop({

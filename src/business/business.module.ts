@@ -132,6 +132,7 @@ import { FirebaseService } from 'src/notification/firebase.service';
 import { Menu } from './model/types.model';
 import { MenuSchema } from './model/menu.model';
 import { Tag, TagSchema } from 'src/models/tags.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from './model/userAllowedNotification.model';
 
 @Module({
   imports: [
@@ -189,6 +190,7 @@ import { Tag, TagSchema } from 'src/models/tags.model';
       { name: Rating.name, schema: RatingSchema },
       { name: Menu.name, schema: MenuSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
     ]),
   ],
   controllers: [BusinessController],

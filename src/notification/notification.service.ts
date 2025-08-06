@@ -23,9 +23,9 @@ export class NotificationService {
     try {
       let userId = user.id;
 
-      if (user.userType === BusinessUser.name) {
-        userId = user.businessProfile;
-      }
+      // if (user.userType === BusinessUser.name) {
+      //   userId = user.businessProfile;
+      // }
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -61,9 +61,9 @@ export class NotificationService {
 
   async findUnread(user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     return await this.notificationModel
       .find({
         user: new mongoose.Types.ObjectId(userId),
@@ -75,9 +75,9 @@ export class NotificationService {
 
   async findOne(id: string, user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     const notification = await this.notificationModel
       .findOneAndUpdate(
         {
@@ -102,9 +102,9 @@ export class NotificationService {
 
   async readAll(user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     await this.notificationModel.updateMany(
       {
         user: new mongoose.Types.ObjectId(userId),
@@ -120,9 +120,9 @@ export class NotificationService {
 
   async remove(id: string, user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     const notification = await this.notificationModel.findOneAndDelete({
       _id: id,
       user: new mongoose.Types.ObjectId(userId),
