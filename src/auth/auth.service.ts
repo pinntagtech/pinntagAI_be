@@ -4752,7 +4752,7 @@ export class AuthService {
               as: 'category',
               in: {
                 _id: '$$category._id',
-                name: '$$category.title',
+                title: '$$category.title',
                 darkIcon: '$$category.darkIcon',
                 lightIcon: '$$category.lightIcon',
                 activeColor: '$$category.activeColor',
