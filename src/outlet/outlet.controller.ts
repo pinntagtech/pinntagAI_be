@@ -151,11 +151,13 @@ export class OutletController {
     @TokenDecoder() user: JwtPayload,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('type') type: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.outletService.getOutlets(
       user,
+      type,
       pageNumber,
       limitNumber,
     );

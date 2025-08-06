@@ -404,7 +404,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any, page: number, limit: number) {
+  async getOutlets(user: any,type: string, page: number, limit: number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -436,12 +436,14 @@ export class OutletService {
       } else {
         getOutletObj['_id'] = { $in: mongoUserIds };
       }
+      if (type && type !== 'All') {
+        getOutletObj['category'] = type;
+      }
+
       console.log('getOutletObj', getOutletObj);
 
       const outlets = await this.outletModel
         .find(getOutletObj)
-        .populate('category')
-        .populate('type')
         .populate({
           path: 'manager',
           select: 'name email phone countryCode profilePhoto',
