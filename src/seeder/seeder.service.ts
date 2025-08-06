@@ -832,6 +832,7 @@ export class SeederService {
         businessIndustries: catIds,
         sortOrder: cfg.sortOrder,
         carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
       });
     }
 
@@ -858,6 +859,7 @@ export class SeederService {
         categories: catIds,
         sortOrder: cfg.sortOrder,
         carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
       });
     }
 
@@ -880,6 +882,7 @@ export class SeederService {
         categories: catIds,
         sortOrder: cfg.sortOrder,
         carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
       });
     }
   }

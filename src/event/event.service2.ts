@@ -5673,7 +5673,7 @@ export class EventService2 {
         let gendersArray = data.targetGenders.split(',');
         data.targetGenders = gendersArray;
       }
-      if (data.eventType == EventTypes.FLASHDEAL) {
+      if (data.eventType == EventTypes.FLASHDEAL && data.quantityLimit) {
         data.quantityLimit = Number(data.quantityLimit);
       }
       data.isFree = data.isFree === 'true';
