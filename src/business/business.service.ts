@@ -3930,8 +3930,10 @@ export class BusinessService {
     message: string,
   ) {
     try {
+      console.log("BUSINESS NOTIFICATION DATAAAA:",consumerId, contentId, notificationType, message);
       let content = null;
       let business = null;
+      
       if (
         notificationType == NotificationTypes.EVENT ||
         notificationType == NotificationTypes.REPORT

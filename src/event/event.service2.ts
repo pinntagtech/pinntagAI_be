@@ -4460,17 +4460,17 @@ export class EventService2 {
           message: 'You are not authorized to create schedule for this event',
         };
       }
-      await this.scheduleModel.deleteMany({
-        event: new mongoose.Types.ObjectId(eventId),
-      });
-      await this.eventModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(eventId) },
-        {
-          $set: {
-            eventSchedule: [],
-          },
-        },
-      );
+      // await this.scheduleModel.deleteMany({
+      //   event: new mongoose.Types.ObjectId(eventId),
+      // });
+      // await this.eventModel.updateOne(
+      //   { _id: new mongoose.Types.ObjectId(eventId) },
+      //   {
+      //     $set: {
+      //       eventSchedule: [],
+      //     },
+      //   },
+      // );
       let scheduleList = [];
       if (data.scheduleType) {
         if (

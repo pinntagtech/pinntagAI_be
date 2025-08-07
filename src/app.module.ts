@@ -150,6 +150,11 @@ import {
 } from './user/models/webhook.model';
 import { FirebaseService } from './notification/firebase.service';
 import { Tag, TagSchema } from './models/tags.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from './business/model/userAllowedNotification.model';
+import { Reward, RewardSchema } from './rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -229,6 +234,11 @@ import { Tag, TagSchema } from './models/tags.model';
       { name: SavedEvent.name, schema: SavedEventSchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: Reward.name, schema: RewardSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
     ]),
     StripeeModule,
     AuthModule,

@@ -127,6 +127,11 @@ import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Tag, TagSchema } from 'src/models/tags.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from 'src/business/model/userAllowedNotification.model';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -179,6 +184,11 @@ import { Tag, TagSchema } from 'src/models/tags.model';
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: Reward.name, schema: RewardSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

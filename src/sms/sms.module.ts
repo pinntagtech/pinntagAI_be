@@ -73,8 +73,13 @@ import {
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Admin } from 'mongodb';
 import { AdminSchema } from 'src/admin/models/admin.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -111,6 +116,11 @@ import { FirebaseService } from 'src/notification/firebase.service';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: Reward.name, schema: RewardSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
     ]),
   ],
   providers: [

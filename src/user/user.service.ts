@@ -59,6 +59,11 @@ import { MailService } from 'src/mail/mail.service';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { BusinessService } from 'src/business/business.service';
+import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
+import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
+import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import { UserAllowedNotification } from 'src/business/model/userAllowedNotification.model';
 
 @Injectable()
 export class UserService {
@@ -90,9 +95,13 @@ export class UserService {
     private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Reward.name) private readonly rewardModel: Model<RewardDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(UserAllowedNotification.name) private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
+    // private readonly businessService: BusinessService,
     private readonly driveService: DriveService,
     private readonly firebaseService: FirebaseService,
     // private readonly mailerService: MailService,
@@ -762,30 +771,34 @@ export class UserService {
         }
         // const user = await this.userModel.findById(businessProfile.creator);
         // if (user) {
-        await this.notificationModel.create({
-          user: businessProfile._id,
-          userType: Business.name,
-          message,
-          type: NotificationTypes.FOLLOW,
-          targetType,
-          targetUser: new mongoose.Types.ObjectId(userId),
-          isRead: false,
-        });
-        const fcmTokens = await this.tokenModel.find({
-          user: new mongoose.Types.ObjectId(userId),
-          type: TokenTypes.FCM,
-        });
+        // await this.notificationModel.create({
+        //   user: businessProfile._id,
+        //   userType: Business.name,
+        //   message,
+        //   type: NotificationTypes.FOLLOW,
+        //   targetType,
+        //   targetUser: new mongoose.Types.ObjectId(userId),
+        //   isRead: false,
+        // });
+        // const fcmTokens = await this.tokenModel.find({
+        //   user: new mongoose.Types.ObjectId(userId),
+        //   type: TokenTypes.FCM,
+        // });
 
-        console.log('fcmTokens', fcmTokens);
-        for (let j = 0; j < fcmTokens.length; j++) {
-          this.firebaseService.sendNotification(
-            fcmTokens[j].token,
-            'New Follower',
-            message,
-            { data: NotificationTypes.FOLLOW },
-          );
-        }
+        // console.log('fcmTokens', fcmTokens);
+        // for (let j = 0; j < fcmTokens.length; j++) {
+        //   this.firebaseService.sendNotification(
+        //     fcmTokens[j].token,
+        //     'New Follower',
+        //     message,
+        //     { data: NotificationTypes.FOLLOW },
+        //   );
         // }
+        // }
+
+        await this.businessNotification(userId,businessProfile.id,NotificationTypes.FOLLOW,message);
+        
+
       }
     }
     const resp = followingType == User.name ? 'User' : 'Business';
@@ -1128,4 +1141,148 @@ export class UserService {
       message: 'Account deleted successfully',
     };
   }
+
+  async getAllChildUserIds2(userId) {
+      const objectId = new mongoose.Types.ObjectId(userId);
+      const result = await this.businessUserModel
+        .aggregate([
+          {
+            $match: { _id: objectId },
+          },
+          {
+            $graphLookup: {
+              from: this.businessUserModel.collection.name,
+              startWith: '$_id',
+              connectFromField: '_id',
+              connectToField: 'creator',
+              as: 'descendants',
+              restrictSearchWithMatch: {
+                creatorType: BusinessUserCreatorType.BUSINESS,
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              descendantIds: {
+                $map: {
+                  input: '$descendants',
+                  as: 'd',
+                  in: { $toString: '$$d._id' },
+                },
+              },
+            },
+          },
+        ])
+        .exec();
+  
+      return result[0]?.descendantIds || [];
+    }
+
+  async businessNotification(
+      consumerId: string,
+      contentId: string,
+      notificationType: string,
+      message: string,
+    ) {
+      try {
+        console.log("BUSINESS NOTIFICATION DATAAAA:",consumerId, contentId, notificationType, message);
+        let content = null;
+        let business = null;
+        if (
+          notificationType == NotificationTypes.EVENT ||
+          notificationType == NotificationTypes.REPORT
+        ) {
+          content = await this.eventModel.findById(contentId);
+          business = await this.businessModel.findById(
+            content.businessProfile,
+          );
+        } else if (notificationType == NotificationTypes.REWARD) {
+          content = await this.rewardModel.findById(contentId);
+          business = await this.businessModel.findById(
+            content.businessProfile,
+          );
+        }else if( notificationType == NotificationTypes.FOLLOW) {
+          business = await this.businessModel.findById(contentId);
+        }
+  
+        if (!business) {
+          return {
+            success: false,
+            message: 'Business not found with given ID',
+          };
+        }
+  
+        const downlineUsers = await this.getAllChildUserIds2(
+          business.authorisedUser,
+        );
+        console.log('Downline Users:', downlineUsers);
+        let notifcationEnabledUsers = [];
+        notifcationEnabledUsers.push(business.authorisedUser);
+        for (const user of downlineUsers) {
+          const isUserEnabled = await this.userAllowedNotificationModel.findOne({
+            user: user,
+            notificationType: notificationType,
+          });
+          if (isUserEnabled) {
+            notifcationEnabledUsers.push(user);
+          }
+        }
+  
+        console.log('Notification Enabled Users:', notifcationEnabledUsers);
+  
+        for (const user of notifcationEnabledUsers) {
+          let notiObj = {
+            user: user,
+            userType: BusinessUser.name,
+            message,
+            type: notificationType,
+            targetType: Business.name,
+            targetUser: new mongoose.Types.ObjectId(consumerId),
+          };
+          if (
+            notificationType == NotificationTypes.EVENT ||
+            notificationType == NotificationTypes.REPORT
+          ) {
+            notiObj['event'] = new mongoose.Types.ObjectId(contentId);
+          } else if (notificationType == NotificationTypes.REWARD) {
+            notiObj['reward'] = new mongoose.Types.ObjectId(contentId);
+          } else if (notificationType == NotificationTypes.FOLLOW) {
+            notiObj['business'] = new mongoose.Types.ObjectId(contentId);
+          }
+  
+          await this.notificationModel.create({
+            ...notiObj,
+          });
+  
+          const fcmTokens = await this.tokenModel.find({
+            user: new mongoose.Types.ObjectId(user),
+            type: TokenTypes.FCM,
+          });
+  
+          console.log('fcmTokens', fcmTokens);
+          for (let j = 0; j < fcmTokens.length; j++) {
+            this.firebaseService.sendNotification(
+              fcmTokens[j].token,
+              message,
+              message,
+              {
+                data: { content: contentId, notificationType: notificationType },
+              },
+            );
+          }
+        }
+  
+        return {
+          success: true,
+          message: 'Downline users fetched successfully',
+          data: downlineUsers,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    }
 }
