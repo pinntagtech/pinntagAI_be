@@ -20,14 +20,17 @@ export class Notification {
     enum: [
       NotificationTypes.FOLLOW,
       NotificationTypes.EVENT,
+      NotificationTypes.REPORT,
+      NotificationTypes.REWARD,
+
+
+
       NotificationTypes.OFFER,
       NotificationTypes.COMMENT,
       NotificationTypes.LIKE,
       NotificationTypes.SHARE,
       NotificationTypes.MENTION,
       NotificationTypes.REVIEW,
-      NotificationTypes.REPORT,
-      NotificationTypes.REWARD,
     ],
   })
   type: string;
@@ -43,6 +46,8 @@ export class Notification {
   event: mongoose.Types.ObjectId;
   @Prop({ref: Reward.name})
   reward: mongoose.Types.ObjectId;
+  @Prop({ ref: Business.name })
+  business: mongoose.Types.ObjectId;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

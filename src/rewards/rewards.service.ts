@@ -52,6 +52,7 @@ import { GenerateRewardUrlDto } from './dto/generate-reward-url.dto';
 import { getStringDateTzWithTime } from 'src/helpers/event.helpers';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { from } from 'rxjs';
+import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class RewardsService {
@@ -87,6 +88,7 @@ export class RewardsService {
     private readonly userService: UserService,
     private readonly dynamicLinkService: DynamicLinkService,
     private readonly firebaseService: FirebaseService,
+    private readonly businessService: BusinessService,
   ) {}
 
   // Create Offer
@@ -891,6 +893,26 @@ export class RewardsService {
             ],
           },
         },
+
+        //Add a distance key to every object inside locations
+        {
+          $addFields: {
+            locations: {
+              $map: {
+                input: '$locations',
+                as: 'location',
+                in: {
+                  $mergeObjects: [
+                    '$$location',
+                    {
+                      distance: '$distance',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
         {
           $project: {
             'user.password': 0,
@@ -1359,29 +1381,13 @@ export class RewardsService {
         target: reward.targetCount,
       });
       let message = `User ${userDetails.name} enrolled in reward ${reward.title}`;
-      const fcmTokens = await this.tokenModel.find({
-        user: userDetails._id,
-        type: TokenTypes.FCM,
-      });
 
-      for (const token of fcmTokens) {
-        this.firebaseService.sendNotification(
-          token.token,
-          reward.title,
-          message,
-          { data: NotificationTypes.EVENT, id: reward.id },
-        );
-      }
-
-      await this.notificationModel.create({
-        user: reward.businessProfile,
-        userType: Business.name,
+      await this.businessService.businessNotification(
+        user.id,
+        rewardId,
+        NotificationTypes.REWARD,
         message,
-        type: NotificationTypes.REWARD,
-        targetType: Business.name,
-        reward: reward._id,
-        targetUser: new mongoose.Types.ObjectId(userId),
-      });
+      );
 
       return {
         success: true,
@@ -1603,29 +1609,12 @@ export class RewardsService {
         },
       });
       let message = `User ${userDetails.name} claimed in reward ${reward.title}`;
-      const fcmTokens = await this.tokenModel.find({
-        user: userDetails._id,
-        type: TokenTypes.FCM,
-      });
-
-      for (const token of fcmTokens) {
-        this.firebaseService.sendNotification(
-          token.token,
-          reward.title,
-          message,
-          { data: NotificationTypes.EVENT, id: reward.id },
-        );
-      }
-
-       await this.notificationModel.create({
-        user: reward.businessProfile,
-        userType: Business.name,
+      await this.businessService.businessNotification(
+        user.id,
+        reward.id,
+        NotificationTypes.REWARD,
         message,
-        type: NotificationTypes.REWARD,
-        targetType: Business.name,
-        reward: reward._id,
-        targetUser: new mongoose.Types.ObjectId(userId),
-      });
+      );
 
       return {
         success: true,
@@ -2056,8 +2045,8 @@ export class RewardsService {
 
     return successResponse;
   }
-  async deleteReward(rewardId: string,userId: string){
-    try{
+  async deleteReward(rewardId: string, userId: string) {
+    try {
       const result = await this.rewardModel.deleteOne({
         _id: new mongoose.Types.ObjectId(rewardId),
         user: new mongoose.Types.ObjectId(userId),
@@ -2073,7 +2062,7 @@ export class RewardsService {
         success: true,
         message: 'Reward deleted successfully.',
       };
-    }catch(error){
+    } catch (error) {
       console.error('Error deleting reward:', error);
       return {
         success: false,

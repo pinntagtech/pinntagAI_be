@@ -105,7 +105,11 @@ import {
   LocationGroupDocument,
 } from './model/locationGroup.model';
 import { Event, EventDocument } from 'src/event/models/event.model';
-import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import {
+  EventStatus,
+  EventTypes,
+  NotificationTypes,
+} from 'src/enums/event.enums';
 import { ClaimStatus } from 'src/rewards/enums/rewards.enum';
 import {
   UserReward,
@@ -133,6 +137,7 @@ import {
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
 
 @Injectable()
 export class BusinessService {
@@ -181,8 +186,8 @@ export class BusinessService {
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
-    @InjectModel(Rating.name)
-    private readonly ratingModel: Model<RatingDocument>,
+    @InjectModel(Rating.name) private readonly ratingModel: Model<RatingDocument>,
+    @InjectModel(Reward.name) private readonly rewardModel: Model<RewardDocument>,
     @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
     @InjectModel(UserAllowedNotification.name)
     private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
@@ -3920,25 +3925,37 @@ export class BusinessService {
   }
   async businessNotification(
     consumerId: string,
-    eventId: string,
+    contentId: string,
     notificationType: string,
     message: string,
   ) {
     try {
-      const event = await this.eventModel.findById(eventId);
-      if (!event) {
-        return {
-          success: false,
-          message: 'Event not found with given ID',
-        };
+      let content = null;
+      let business = null;
+      if (
+        notificationType == NotificationTypes.EVENT ||
+        notificationType == NotificationTypes.REPORT
+      ) {
+        content = await this.eventModel.findById(contentId);
+        business = await this.businessModel.findById(
+          content.businessProfile,
+        );
+      } else if (notificationType == NotificationTypes.REWARD) {
+        content = await this.rewardModel.findById(contentId);
+        business = await this.businessModel.findById(
+          content.businessProfile,
+        );
+      }else if( notificationType == NotificationTypes.FOLLOW) {
+        business = await this.businessModel.findById(contentId);
       }
-      const business = await this.businessModel.findById(event.businessProfile);
+
       if (!business) {
         return {
           success: false,
           message: 'Business not found with given ID',
         };
       }
+
       const downlineUsers = await this.getAllChildUserIds2(
         business.authorisedUser,
       );
@@ -3958,14 +3975,27 @@ export class BusinessService {
       console.log('Notification Enabled Users:', notifcationEnabledUsers);
 
       for (const user of notifcationEnabledUsers) {
-        await this.notificationModel.create({
+        let notiObj = {
           user: user,
           userType: BusinessUser.name,
           message,
           type: notificationType,
           targetType: Business.name,
-          event: event._id,
           targetUser: new mongoose.Types.ObjectId(consumerId),
+        };
+        if (
+          notificationType == NotificationTypes.EVENT ||
+          notificationType == NotificationTypes.REPORT
+        ) {
+          notiObj['event'] = new mongoose.Types.ObjectId(contentId);
+        } else if (notificationType == NotificationTypes.REWARD) {
+          notiObj['reward'] = new mongoose.Types.ObjectId(contentId);
+        } else if (notificationType == NotificationTypes.FOLLOW) {
+          notiObj['business'] = new mongoose.Types.ObjectId(contentId);
+        }
+
+        await this.notificationModel.create({
+          ...notiObj,
         });
 
         const fcmTokens = await this.tokenModel.find({
@@ -3977,9 +4007,11 @@ export class BusinessService {
         for (let j = 0; j < fcmTokens.length; j++) {
           this.firebaseService.sendNotification(
             fcmTokens[j].token,
-            'Someone Reported your Content',
             message,
-            { data: { event: event._id } },
+            message,
+            {
+              data: { content: contentId, notificationType: notificationType },
+            },
           );
         }
       }

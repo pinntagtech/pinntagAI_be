@@ -2627,6 +2627,14 @@ export class EventService2 {
             await this.userModel.findByIdAndUpdate(userId, {
               $push: { savedEvents: event._id },
             });
+
+            let message = `${user.name} saved your event ${event.title}`;
+            await this.businessService.businessNotification(
+              userId,
+              eventId,
+              NotificationTypes.EVENT,
+              message
+            );
             return {
               success: true,
               message: 'Event added to saved events',
@@ -3573,15 +3581,26 @@ export class EventService2 {
               $push: { likedEvents: event._id },
             });
             let message = `${user.name} liked your event ${event.title}`;
-            await this.notificationModel.create({
-              user: event.businessProfile,
-              userType: Business.name,
-              message,
-              type: NotificationTypes.LIKE,
-              targetType: Business.name,
-              targetUser: new mongoose.Types.ObjectId(userId),
-              isRead: false,
-            });
+            // await this.notificationModel.create({
+            //   user: event.businessProfile,
+            //   userType: Business.name,
+            //   message,
+            //   type: NotificationTypes.LIKE,
+            //   targetType: Business.name,
+            //   targetUser: new mongoose.Types.ObjectId(userId),
+            //   isRead: false,
+            // });
+
+            await this.businessService.businessNotification(
+              userId,
+              eventId,
+              NotificationTypes.EVENT,
+              message
+            );
+
+            
+
+
 
             return {
               success: true,

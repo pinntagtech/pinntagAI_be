@@ -133,6 +133,7 @@ import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboar
 import { Tag, TagSchema } from 'src/models/tags.model';
 import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -196,6 +197,7 @@ import { SmsService } from 'src/sms/sms.service';
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
       { name: Tag.name, schema: TagSchema},
       { name: PlatformConfig.name, schema: PlatformConfigSchema},
+      { name: Reward.name, schema: RewardSchema},
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),

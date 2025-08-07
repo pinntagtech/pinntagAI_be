@@ -135,6 +135,7 @@ import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model
 import { Rating, RatingSchema } from 'src/business/model/rating.model';
 import { Menu, MenuSchema } from 'src/business/model/menu.model';
 import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -197,6 +198,7 @@ import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/busi
       { name: Rating.name, schema: RatingSchema },
       { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
       { name: Menu.name, schema: MenuSchema },
+      { name: Reward.name, schema: RewardSchema },
     ]),
   ],
   providers: [
