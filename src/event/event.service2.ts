@@ -2633,7 +2633,7 @@ export class EventService2 {
               userId,
               eventId,
               NotificationTypes.EVENT,
-              message
+              message,
             );
             return {
               success: true,
@@ -3595,12 +3595,8 @@ export class EventService2 {
               userId,
               eventId,
               NotificationTypes.EVENT,
-              message
+              message,
             );
-
-            
-
-
 
             return {
               success: true,
@@ -4246,9 +4242,12 @@ export class EventService2 {
       ...data,
     });
 
-    await this.businessService.businessNotification(userId,event.id,NotificationTypes.REPORT,message)
-    
-
+    await this.businessService.businessNotification(
+      userId,
+      event.id,
+      NotificationTypes.REPORT,
+      message,
+    );
 
     return {
       success: true,
@@ -4460,17 +4459,6 @@ export class EventService2 {
           message: 'You are not authorized to create schedule for this event',
         };
       }
-      // await this.scheduleModel.deleteMany({
-      //   event: new mongoose.Types.ObjectId(eventId),
-      // });
-      // await this.eventModel.updateOne(
-      //   { _id: new mongoose.Types.ObjectId(eventId) },
-      //   {
-      //     $set: {
-      //       eventSchedule: [],
-      //     },
-      //   },
-      // );
       let scheduleList = [];
       if (data.scheduleType) {
         if (
@@ -4505,6 +4493,29 @@ export class EventService2 {
                   const baseDate = new Date(data.fixedSchedule[i].date); // base date
                   const originalStart = new Date(duration['startTime']);
                   const originalEnd = new Date(duration['endTime']);
+
+                  let fiveMinFromNow = new Date(
+                    new Date().getTime() + 5 * 60 * 1000,
+                  );
+                  if (originalStart.getTime() < fiveMinFromNow.getTime()) {
+                    return {
+                      success: false,
+                      message: `Start time cannot be less than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
+                  if (originalEnd.getTime() <= originalStart.getTime()) {
+                    return {
+                      success: false,
+                      message: `End time should be greater than start time for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
+
+                  if (originalStart.getTime() < baseDate.getTime()) {
+                    return {
+                      success: false,
+                      message: `Start time cannot be in past for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
 
                   const newStart = new Date(
                     Date.UTC(
@@ -4544,6 +4555,18 @@ export class EventService2 {
             });
           }
 
+          await this.scheduleModel.deleteMany({
+            event: new mongoose.Types.ObjectId(eventId),
+          });
+          await this.eventModel.updateOne(
+            { _id: new mongoose.Types.ObjectId(eventId) },
+            {
+              $set: {
+                eventSchedule: [],
+              },
+            },
+          );
+
           for (let i = 0; i < data.fixedSchedule.length; i++) {
             if (data.fixedSchedule[i].date) {
               const date = new Date(data.fixedSchedule[i].date.toString());
@@ -4551,7 +4574,7 @@ export class EventService2 {
                 type: data.scheduleType,
                 event: new mongoose.Types.ObjectId(eventId),
                 fixedSchedule: {
-                  date: new Date(date),
+                  date: new Date(date).setHours(0, 0, 0, 0),
                   durations: data.fixedSchedule[i].durations,
                 },
                 businessId: new mongoose.Types.ObjectId(user.businessProfile),
@@ -4670,8 +4693,8 @@ export class EventService2 {
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
           eventId,
           {
-            $push: {
-              eventSchedule: { $each: scheduleList },
+            $set: {
+              eventSchedule: scheduleList,
             },
           },
           { new: true },
@@ -7035,7 +7058,10 @@ export class EventService2 {
         ...data,
       };
       console.log('eventObj:', updateObj);
-      const updatedEvent = await this.eventModel.updateOne({ _id: eventId }, updateObj);
+      const updatedEvent = await this.eventModel.updateOne(
+        { _id: eventId },
+        updateObj,
+      );
       if (images) {
         this.driveService.deleteBufferAndMultiImageUpload(
           user.id,
