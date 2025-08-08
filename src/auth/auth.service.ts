@@ -97,7 +97,7 @@ import {
 } from 'src/business/model/businessUser.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
-import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
+import { BusinessIndustry, BusinessIndustryDocument } from 'src/business/model/businessIndustry.model';
 import {
   EventSchedule,
   EventScheduleDocument,
@@ -109,6 +109,8 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { SavedEvent } from 'src/event/models/savedEvent.model';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
+import { DashboardSearchDto } from './dto/dashboardSearch.dto';
+import { CommandSucceededEvent } from 'mongodb';
 
 @Injectable()
 export class AuthService {
@@ -149,8 +151,8 @@ export class AuthService {
     private readonly userService: UserService,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
-    @InjectModel(Outlet.name)
-    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(BusinessIndustry.name) private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -1739,22 +1741,21 @@ export class AuthService {
     userId: mongoose.Types.ObjectId,
     longitude: number,
     latitude: number,
-    age: number,
     match: any,
     page: number,
     limit: number,
-    start: Date,
-    distance: number,
-    startDate: any,
-    endDate: any,
     carouselType: string,
+    distance: number,
+    startDate?: any,
+    endDate?: any,
   ) {
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('DISTANCE:', distance);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
 
     if (carouselType === CarouselType.Event) {
       match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL] };
@@ -1762,6 +1763,9 @@ export class AuthService {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
     console.log('Match:', match);
+
+    console.log("START DATE:", startDate);
+    console.log("END DATE:", endDate);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -1786,7 +1790,7 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('682a38a5a85d3ccb755163b0'),
+          // 'event._id': new mongoose.Types.ObjectId('6895bf32840f1dfbe52da304'),
           'event.status': EventStatus.PUBLISHED,
           'event.isDisabled': false,
           ...match,
@@ -2244,7 +2248,6 @@ export class AuthService {
       },
     ];
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
     // console.log('Data Rows:', dataRows);
@@ -2953,14 +2956,12 @@ export class AuthService {
     userId: mongoose.Types.ObjectId,
     longitude: number,
     latitude: number,
-    age: number,
     match: any,
     page: number,
     limit: number,
-    start: Date,
     distance: number,
-    startDate: any,
-    endDate: any,
+    startDate?: any,
+    endDate?: any,
   ) {
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
@@ -3389,29 +3390,25 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       freeEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       privateEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
 
     let data = {};
@@ -3482,15 +3479,13 @@ export class AuthService {
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
-        age,
         query,
         1,
         config.limit,
-        start,
+        CarouselType.Event,
         maxDistance,
         startDate,
         endDate,
-        CarouselType.Event,
       );
       // data.push({ [`${config.name}`]: eventsResult });
       data[`${config.name}`] = eventsResult[0];
@@ -3613,29 +3608,25 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       freeEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
     const privateEvents = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       privateEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
     return {
       success: true,
@@ -3807,15 +3798,13 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       query,
       1,
       config.limit,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
 
     return {
@@ -4006,15 +3995,13 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       query,
       page,
       limit,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
-      CarouselType.Event,
     );
     console.log('Total:::::::', totalCount);
     return {
@@ -5827,11 +5814,9 @@ export class AuthService {
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
-        age,
         newQuery,
         1,
         config.limit,
-        start,
         maxDistance,
         startDate,
         endDate,
@@ -5845,15 +5830,13 @@ export class AuthService {
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
-        age,
         query,
         1,
         config.limit,
-        start,
+        carousel.carouselType,
         maxDistance,
         startDate,
         endDate,
-        carousel.carouselType,
       );
     }
 
@@ -5903,24 +5886,91 @@ export class AuthService {
       throw new Error(`Error generating password: ${error.message}`);
     }
   }
+
+  async dashboardSearch(
+    user: DecodedUser,
+    data: DashboardSearchDto
+  ) {
+    let { search, carouselType, latitude, longitude,distance } = data;
+    let result = null;
+
+   
+
+    if (!carouselType) {
+      return {
+        success: false,
+        message: 'Please provide a valid carousel type',
+      };
+    }
+    if (
+      carouselType === CarouselType.Event ||
+      carouselType === CarouselType.OnWheels
+    ) {
+      const matchingBusinesses = await this.businessModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
+      );
+      let match: any = {};
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+
+      const categories = await this.categoryModel.find();
+      const catIds = categories.map((cat) => cat._id);
+
+      match['event.categories'] = {
+        $in: catIds,
+      };
+
+      result = await this.fetchEventsV2(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        match,
+        1,
+        10,
+        carouselType,
+        distance? distance : 1000000000000, // Default distance if not provided
+      );
+      console.log('Result:', result);
+    }else if (carouselType === CarouselType.Business) {
+      let match: any = {};
+      let industries = await this.businessIndustryModel.find();
+      let IndIds = industries.map((industry) => industry._id);
+      match['industry._id'] = {
+        $in: IndIds,
+      };
+      match['$or'] = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { 'locations.address1': { $regex: search, $options: 'i' } },
+        { 'locations.address2': { $regex: search, $options: 'i' } },
+        { 'locations.city': { $regex: search, $options: 'i' } },
+        { 'locations.state': { $regex: search, $options: 'i' } },
+      ]
+      result = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        match,
+        1,
+        10,
+        distance? distance : 1000000000000, // Default distance if not provided
+      );
+      console.log('Result:', result);
+    }
+
+
+    return {
+      success: true,
+      message: 'Search results fetched successfully',
+      data: result
+    }
+  }
 }
-
-// Relevant-logs:--- {
-//   longitude: 76.9905,
-//   latitude: 29.6857,
-//   match: {
-//     status: 'published',
-//     'schedule.date': { '$gte': 2024-06-22T00:00:00.000Z },
-//     'schedule.durations.endTime': { '$gte': 2024-06-22T12:44:52.314Z }
-//   }
-// }
-
-// Relevant-logs:--- {
-//   longitude: 76.9905,
-//   latitude: 29.6857,
-//   match: {
-//     status: 'published',
-//     'schedule.date': { '$gte': 2024-06-22T00:00:00.000Z },
-//     'schedule.durations.endTime': { '$gte': 2024-06-22T12:45:01.936Z }
-//   }
-// }

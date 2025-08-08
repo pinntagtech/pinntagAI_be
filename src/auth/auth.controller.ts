@@ -41,6 +41,7 @@ import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
+import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -124,7 +125,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async updateUserConsent(
     @Req() req: Request,
-    @Body('privacyConsent')  privacyConsent: boolean,
+    @Body('privacyConsent') privacyConsent: boolean,
     @TokenDecoder() user: DecodedUser,
   ) {
     const userAgent = req.headers['user-agent'];
@@ -465,7 +466,7 @@ export class AuthController {
     @Query('timeZone') timeZone: string,
     @TokenDecoder() user: DecodedUser,
   ) {
-    console.log("LATITUDE AND LONGITUDE::::",body.latitude, body.longitude);
+    console.log('LATITUDE AND LONGITUDE::::', body.latitude, body.longitude);
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       throw new BadRequestException('Not a valid User');
     }
@@ -481,7 +482,7 @@ export class AuthController {
         throw new BadRequestException('Please provide a valid distance value.');
       }
     }
-    console.log("Distance in controller:", distance);
+    console.log('Distance in controller:', distance);
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,
@@ -562,7 +563,6 @@ export class AuthController {
     @Param('id') id: string,
     @Body() body: GetDashboardDto,
   ) {
-   
     if (!mongoose.isValidObjectId(id)) {
       throw new BadRequestException('Invalid event id');
     }
@@ -708,7 +708,7 @@ export class AuthController {
   @Get('getProfile')
   @UseGuards(JwtGuard2)
   async getProfile(@TokenDecoder() user: DecodedUser) {
-     console.log('Entered Controllerrrr!!!');
+    console.log('Entered Controllerrrr!!!');
     const result = await this.authService.getProfile(user.id, user.userType);
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -724,5 +724,22 @@ export class AuthController {
   @UseGuards(JwtGuard2)
   async autoGeneratePassword() {
     return this.authService.autoGeneratePassword();
+  }
+
+  @Post('dashboardSearch')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async dashboardSearch(
+    @Body() data: DashboardSearchDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.authService.dashboardSearch(user, data);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      // ...result.data,
+    };
   }
 }
