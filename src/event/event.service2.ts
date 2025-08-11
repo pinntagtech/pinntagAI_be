@@ -3726,7 +3726,7 @@ export class EventService2 {
         // { $unwind: '$userDetails' },
         {
           $lookup: {
-            from: 'businessprofiles',
+            from: 'businesses',
             localField: 'event.businessProfile',
             foreignField: '_id',
             as: 'businessProfileDetails',
