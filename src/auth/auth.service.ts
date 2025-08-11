@@ -97,7 +97,10 @@ import {
 } from 'src/business/model/businessUser.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
-import { BusinessIndustry, BusinessIndustryDocument } from 'src/business/model/businessIndustry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from 'src/business/model/businessIndustry.model';
 import {
   EventSchedule,
   EventScheduleDocument,
@@ -151,8 +154,10 @@ export class AuthService {
     private readonly userService: UserService,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
-    @InjectModel(Outlet.name) private readonly outletModel: Model<OutletDocument>,
-    @InjectModel(BusinessIndustry.name) private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -1764,8 +1769,8 @@ export class AuthService {
     }
     console.log('Match:', match);
 
-    console.log("START DATE:", startDate);
-    console.log("END DATE:", endDate);
+    console.log('START DATE:', startDate);
+    console.log('END DATE:', endDate);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -2238,7 +2243,7 @@ export class AuthService {
           isSaved: 1,
           locations: 1,
           schedules: 1,
-          createdAt:1,
+          createdAt: 1,
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
@@ -5889,14 +5894,9 @@ export class AuthService {
     }
   }
 
-  async dashboardSearch(
-    user: DecodedUser,
-    data: DashboardSearchDto
-  ) {
-    let { search, carouselType, latitude, longitude,distance } = data;
+  async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
+    let { search, carouselType, latitude, longitude, distance } = data;
     let result = null;
-
-   
 
     if (!carouselType) {
       return {
@@ -5938,10 +5938,10 @@ export class AuthService {
         1,
         10,
         carouselType,
-        distance? distance : 1000000000000, // Default distance if not provided
+        distance ? distance : 1000000000000, // Default distance if not provided
       );
       console.log('Result:', result);
-    }else if (carouselType === CarouselType.Business) {
+    } else if (carouselType === CarouselType.Business) {
       let match: any = {};
       let industries = await this.businessIndustryModel.find();
       let IndIds = industries.map((industry) => industry._id);
@@ -5955,7 +5955,7 @@ export class AuthService {
         { 'locations.address2': { $regex: search, $options: 'i' } },
         { 'locations.city': { $regex: search, $options: 'i' } },
         { 'locations.state': { $regex: search, $options: 'i' } },
-      ]
+      ];
       result = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
@@ -5963,16 +5963,15 @@ export class AuthService {
         match,
         1,
         10,
-        distance? distance : 1000000000000, // Default distance if not provided
+        distance ? distance : 1000000000000, // Default distance if not provided
       );
       console.log('Result:', result);
     }
 
-
     return {
       success: true,
       message: 'Search results fetched successfully',
-      data: result
-    }
+      data: result,
+    };
   }
 }

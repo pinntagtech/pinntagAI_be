@@ -3063,7 +3063,7 @@ export class EventService2 {
         // { $unwind: '$userDetails' },
         {
           $lookup: {
-            from: 'businessprofiles',
+            from: 'businesses',
             localField: 'event.businessProfile',
             foreignField: '_id',
             as: 'businessProfileDetails',
@@ -3075,21 +3075,21 @@ export class EventService2 {
             preserveNullAndEmptyArrays: true,
           },
         },
-        {
-          $match: {
-            $expr: {
-              $cond: {
-                if: {
-                  $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null],
-                },
-                then: {},
-                else: {
-                  $eq: ['$businessProfileDetails.isDeleted', false],
-                },
-              },
-            },
-          },
-        },
+        // {
+        //   $match: {
+        //     $expr: {
+        //       $cond: {
+        //         if: {
+        //           $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null],
+        //         },
+        //         then: {},
+        //         else: {
+        //           $eq: ['$businessProfileDetails.isDeleted', false],
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
         {
           $group: {
             _id: '$event._id',
@@ -3116,7 +3116,7 @@ export class EventService2 {
             specifyForEachDay: { $first: '$event.specifyForEachDay' },
             participants: { $first: '$event.participants' },
             creatorDetails: { $first: '$event.creatorDetails' },
-            category: { $first: '$category' },
+            categories: { $first: '$categories' },
             files: { $first: '$images' },
             ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
             isSaved: { $first: '$isSaved' },
@@ -3136,6 +3136,9 @@ export class EventService2 {
                 phone: '$phone',
                 distance: { $divide: ['$distance', 1609.34] },
               },
+            },
+            businessProfileDetails: {
+              $first: '$businessProfileDetails',
             },
           },
         },
@@ -4498,6 +4501,8 @@ export class EventService2 {
                     new Date().getTime() + 5 * 60 * 1000,
                   );
                   if (originalStart.getTime() < fiveMinFromNow.getTime()) {
+                    console.log('Start time is less than 5 minutes from now');
+
                     return {
                       success: false,
                       message: `Start time cannot be less than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
@@ -4510,12 +4515,13 @@ export class EventService2 {
                     };
                   }
 
-                  if (originalStart.getTime() < baseDate.getTime()) {
-                    return {
-                      success: false,
-                      message: `Start time cannot be in past for the date ${data.fixedSchedule[i].date}`,
-                    };
-                  }
+                  // if (originalStart.getTime() < baseDate.getTime()) {
+                  //    console.log('Start time is less than 5 minutes from now 222222');
+                  //   return {
+                  //     success: false,
+                  //     message: `Start time cannot be in past for the date ${data.fixedSchedule[i].date}`,
+                  //   };
+                  // }
 
                   const newStart = new Date(
                     Date.UTC(
