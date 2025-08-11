@@ -1795,7 +1795,7 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('689842259ee8f299b445eb42'),
+          // 'event._id': new mongoose.Types.ObjectId('6895bf32840f1dfbe52da304'),
           'event.status': EventStatus.PUBLISHED,
           'event.isDisabled': false,
           ...match,
@@ -1990,7 +1990,6 @@ export class AuthService {
           specifyForEachDay: { $first: '$event.specifyForEachDay' },
           participants: { $first: '$event.participants' },
           // creatorDetails: { $first: '$creatorDetails' },
-          createdAt: { $first: '$event.createdAt' },
           creatorType: { $first: '$event.creatorType' },
           categories: { $first: '$categories' },
           businessProfileDetails: { $first: '$businessProfileDetails' },
@@ -2243,7 +2242,6 @@ export class AuthService {
           isSaved: 1,
           locations: 1,
           schedules: 1,
-          createdAt: 1,
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
