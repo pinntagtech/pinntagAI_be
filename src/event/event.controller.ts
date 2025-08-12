@@ -1113,6 +1113,11 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
+    if(images.length<1){
+      throw new BadRequestException({
+        message: 'Please upload at least one image',
+      });
+    }
     const result = await this.eventService.createPinDropEvent(
       data,
       user,

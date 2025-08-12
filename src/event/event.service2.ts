@@ -7081,7 +7081,7 @@ export class EventService2 {
       // const fileCategory = await this.fileCategoryModel.findOne({
       //   name: 'Content QR',
       // });
-      if (images) {
+      if (images.length > 0) {
         await this.driveService.multiImageUpload(
           user.id,
           String(event.drivePath),
@@ -7168,7 +7168,7 @@ export class EventService2 {
         { _id: eventId },
         updateObj,
       );
-      if (images) {
+      if (images.length > 0) {
         await this.driveService.deleteBufferAndMultiImageUpload(
           user.id,
           String(event.drivePath),
