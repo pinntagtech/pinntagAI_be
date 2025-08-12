@@ -1305,6 +1305,47 @@ export class RewardsService {
             distance: { $first: { $divide: ['$distance', 1609.34] } },
           },
         },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            status: 1,
+            title: 1,
+            activityType: 1,
+            rewardType: 1,
+            targetCount: 1,
+            redemptionMode: 1,
+            locations: 1,
+            drivePath: 1,
+            files: 1,
+            QR_CODE: 1,
+            rewardExpiration: 1,
+            description: 1,
+            schedule: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            __v: 1,
+            user: 1,
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
+              businessIndustry: '$businessProfile.businessIndustry'
+            },
+          }
+      },
         { $sort: { createdAt: -1, distance: 1, _id: 1 } },
         {
           $facet: {
