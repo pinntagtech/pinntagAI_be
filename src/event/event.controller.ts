@@ -744,20 +744,20 @@ export class EventController {
     }
   }
 
-  @Get('saved')
+  @Post('saved')
   @UseGuards(JwtGuard2)
   async getSavedEvents(
     @Body() body: SavedEventsDto,
     @TokenDecoder() user: DecodedUser,
     @Query('type') type: string,
-    @Query('page') page: string,
+    // @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
     if (!type || type == '') {
       type = 'all';
     }
-    if (!page || page == '') {
-      page = '1';
+    if (!body.page) {
+      body.page = 1;
     }
     if (!limit || limit == '') {
       limit = '10';
@@ -767,7 +767,7 @@ export class EventController {
       type,
       body.latitude ? parseFloat(body.latitude) : 0,
       body.longitude ? parseFloat(body.longitude) : 0,
-      parseInt(page),
+      body.page,
       parseInt(limit),
     );
     if (result.success) {
