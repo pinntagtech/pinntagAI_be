@@ -1795,7 +1795,7 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('6895bf32840f1dfbe52da304'),
+          // 'event._id': new mongoose.Types.ObjectId('6895c4b3840f1dfbe52db8f9'),
           'event.status': EventStatus.PUBLISHED,
           'event.isDisabled': false,
           ...match,
@@ -2160,7 +2160,7 @@ export class AuthService {
               as: 'category',
               in: {
                 _id: '$$category._id',
-                name: '$$category.title',
+                title: '$$category.title',
                 darkIcon: '$$category.darkIcon',
                 lightIcon: '$$category.lightIcon',
                 activeColor: '$$category.activeColor',

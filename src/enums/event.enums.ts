@@ -1,5 +1,5 @@
 export enum EventTypes {
-  FORMAL = 'event',
+  FORMAL = 'business_event',
   // INFORMAL = 'social_event',
   OFFER = 'offer',
   PRIVATE = 'private',
