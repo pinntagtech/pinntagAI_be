@@ -5392,8 +5392,8 @@ export class EventService2 {
         ? new Date(endDate)
         : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
       let query: any;
-      console.log("startDate:", startDate);
-      console.log("endDate:", endDate);
+      console.log('startDate:', startDate);
+      console.log('endDate:', endDate);
 
       if (user.isBusiness) {
         if (userRole?.isBusinessOwner) {
@@ -5689,10 +5689,10 @@ export class EventService2 {
           },
         },
         {
-        $match: {
-          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+          $match: {
+            $expr: { $gt: [{ $size: '$schedules' }, 0] },
+          },
         },
-      },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -6836,10 +6836,10 @@ export class EventService2 {
 
         for (let time of data.schedules || []) {
           const startTime = new Date(
-            time.fixedSchedule.durations[0].startTime || Date.now(),
+            time.fixedSchedule.startTime || Date.now(),
           );
-          const endTime = time.fixedSchedule.durations[0].endTime
-            ? new Date(time.fixedSchedule.durations[0].endTime)
+          const endTime = time.fixedSchedule.endTime
+            ? new Date(time.fixedSchedule.endTime)
             : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
 
           const createdSchedule = await this.eventScheduleModel.create({
@@ -6858,20 +6858,22 @@ export class EventService2 {
           );
         }
 
-        if (data.images[0].url) {
+        if (data.images) {
           const fileCategory = await this.fileCategoryModel.findOne({
             name: FileCategoryTypes.GALLERY_IMAGE,
           });
 
-          await this.driveService.downloadAndUploadImage(
-            data.images[0].url,
-            businessUser.id,
-            createdEvent.drivePath,
-            fileCategory.id,
-          );
+          for (let image of data.images) {
+            if (!image) continue;
+            await this.driveService.downloadAndUploadImage(
+              image,
+              businessUser.id,
+              createdEvent.drivePath,
+              fileCategory.id,
+            );
+          }
         }
       }
-
       return {
         success: true,
         message: 'Business Events Crawled Successfully.',
