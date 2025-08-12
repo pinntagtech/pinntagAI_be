@@ -443,16 +443,16 @@ export class AuthService {
     userAgent: string,
     ipAddress: string,
   ) {
-    console.log('personalDetailDTO::', personalDetailDTO);
-    await this.userModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          ...personalDetailDTO,
-          status: UserProfileStatus.DETAILS_ADDED,
-        },
-      },
+    const updateObj: Record<string, any> = Object.fromEntries(
+      Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
+
+    // Now include the status
+    updateObj.status = UserProfileStatus.DETAILS_ADDED;
+
+    console.log('updateObj::', updateObj);
+
+    await this.userModel.updateOne({ _id: id }, { $set: updateObj });
 
     return {
       success: true,
