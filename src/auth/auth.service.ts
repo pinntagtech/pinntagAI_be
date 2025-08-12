@@ -510,10 +510,12 @@ export class AuthService {
         const name = data.name.split(' ');
         lastName = name.length > 1 ? name[1] : '';
       }
+      console.log("data from google:",data);
       user = await this.userModel.create({
         role: role._id,
         firstName: data.name ? data.name.split(' ')[0] : '',
         lastName,
+        name: data.name ? data.name : '',
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
         email: validToken.email,
         isEmailVerified: true,
@@ -522,6 +524,7 @@ export class AuthService {
         userAgent,
         ipAddress,
       });
+      console.log('user created from google:', user);
       const customer = await this.stripeService.createCustomer(
         user.email,
         user.name,

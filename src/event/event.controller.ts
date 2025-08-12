@@ -206,21 +206,24 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
-    if (!isExpired) {
-      throw new BadRequestException({
-        message: 'Please provide isExpired query parameter',
-      });
-    } else {
-      if (isExpired != 'true' && isExpired != 'false') {
-        throw new BadRequestException({
-          message: 'Please provide a valid value for isExpired query parameter',
-        });
-      }
-      if (isExpired == 'true') {
-        expired = true;
-      } else {
-        expired = false;
-      }
+    // if (!isExpired) {
+    //   throw new BadRequestException({
+    //     message: 'Please provide isExpired query parameter',
+    //   });
+    // } else {
+    //   if (isExpired != 'true' && isExpired != 'false') {
+    //     throw new BadRequestException({
+    //       message: 'Please provide a valid value for isExpired query parameter',
+    //     });
+    //   }
+    //   if (isExpired == 'true') {
+    //     expired = true;
+    //   } else {
+    //     expired = false;
+    //   }
+    // }
+    if(status && status === 'expired'){
+      expired = true;
     }
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;

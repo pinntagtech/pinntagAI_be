@@ -5392,6 +5392,8 @@ export class EventService2 {
         ? new Date(endDate)
         : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
       let query: any;
+      console.log("startDate:", startDate);
+      console.log("endDate:", endDate);
 
       if (user.isBusiness) {
         if (userRole?.isBusinessOwner) {
@@ -5431,6 +5433,7 @@ export class EventService2 {
         name: 'Content QR',
       });
       console.log('Queryy:', query);
+      console.log('Expired Status:', isExpired);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
@@ -5484,6 +5487,117 @@ export class EventService2 {
             as: 'files',
           },
         },
+        // {
+        //   $addFields: {
+        //     schedules: {
+        //       $filter: {
+        //         input: '$schedules',
+        //         as: 'schedule',
+        //         cond: {
+        //           $or: isExpired
+        //             ? [
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'fixed'] },
+        //                     {
+        //                       $lt: ['$$schedule.fixedSchedule.date', now],
+        //                     },
+        //                   ],
+        //                 },
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'recurring'] },
+        //                     {
+        //                       $lt: [
+        //                         '$$schedule.recurringSchedule.endDate',
+        //                         now,
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //               ]
+        //             : [
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'fixed'] },
+        //                     {
+        //                       $and: [
+        //                         {
+        //                           $gte: [
+        //                             '$$schedule.fixedSchedule.date',
+        //                             startDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $lte: [
+        //                             '$$schedule.fixedSchedule.date',
+        //                             endDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $gte: [
+        //                             {
+        //                               $let: {
+        //                                 vars: {
+        //                                   durations:
+        //                                     '$$schedule.fixedSchedule.durations',
+        //                                   lastIndex: {
+        //                                     $subtract: [
+        //                                       {
+        //                                         $size:
+        //                                           '$$schedule.fixedSchedule.durations',
+        //                                       },
+        //                                       1,
+        //                                     ],
+        //                                   },
+        //                                 },
+        //                                 in: {
+        //                                   $getField: {
+        //                                     field: 'endTime',
+        //                                     input: {
+        //                                       $arrayElemAt: [
+        //                                         '$$durations',
+        //                                         '$$lastIndex',
+        //                                       ],
+        //                                     },
+        //                                   },
+        //                                 },
+        //                               },
+        //                             },
+        //                             new Date(),
+        //                           ],
+        //                         },
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'recurring'] },
+        //                     {
+        //                       $and: [
+        //                         {
+        //                           $gte: [
+        //                             '$$schedule.recurringSchedule.endDate',
+        //                             startDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $lte: [
+        //                             '$$schedule.recurringSchedule.endDate',
+        //                             endDate,
+        //                           ],
+        //                         },
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //               ],
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
         {
           $addFields: {
             schedules: {
@@ -5491,48 +5605,28 @@ export class EventService2 {
                 input: '$schedules',
                 as: 'schedule',
                 cond: {
-                  $or: isExpired
-                    ? [
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'fixed'] },
                         {
                           $and: [
-                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $lt: ['$$schedule.fixedSchedule.date', now],
-                            },
-                          ],
-                        },
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'recurring'] },
-                            {
-                              $lt: [
-                                '$$schedule.recurringSchedule.endDate',
-                                now,
+                              $gte: [
+                                '$$schedule.fixedSchedule.date',
+                                startDate,
                               ],
                             },
-                          ],
-                        },
-                      ]
-                    : [
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $and: [
-                                {
-                                  $gte: [
-                                    '$$schedule.fixedSchedule.date',
-                                    startDate,
-                                  ],
-                                },
-                                {
-                                  $lte: [
-                                    '$$schedule.fixedSchedule.date',
-                                    endDate,
-                                  ],
-                                },
-                                {
-                                  $gte: [
+                              $lte: ['$$schedule.fixedSchedule.date', endDate],
+                            },
+                            {
+                              // Only filter by expiration if expired=true
+                              $cond: {
+                                if: isExpired, // passed in as an aggregation variable
+                                then: {
+                                  // expired schedules → last endTime < now
+                                  $lt: [
                                     {
                                       $let: {
                                         vars: {
@@ -5564,37 +5658,41 @@ export class EventService2 {
                                     new Date(),
                                   ],
                                 },
-                              ],
-                            },
-                          ],
-                        },
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'recurring'] },
-                            {
-                              $and: [
-                                {
-                                  $gte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    startDate,
-                                  ],
-                                },
-                                {
-                                  $lte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    endDate,
-                                  ],
-                                },
-                              ],
+                                else: true, // skip expiration filter → include all
+                              },
                             },
                           ],
                         },
                       ],
+                    },
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'recurring'] },
+                        {
+                          $gte: [
+                            '$$schedule.recurringSchedule.endDate',
+                            startDate,
+                          ],
+                        },
+                        {
+                          $lte: [
+                            '$$schedule.recurringSchedule.endDate',
+                            endDate,
+                          ],
+                        },
+                      ],
+                    },
+                  ],
                 },
               },
             },
           },
         },
+        {
+        $match: {
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+        },
+      },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -5634,23 +5732,23 @@ export class EventService2 {
       };
 
       // 6. Post-filtering by isExpired and schedules
-      const result = events.filter((evt) => {
-        if (evt.isExpired) return false;
-        if (!evt.schedules?.length) return true;
-        evt.schedules = evt.schedules.filter((sch) => {
-          return sch.type === ScheduleTypes.FIXED
-            ? filterFixed(sch)
-            : sch.type === ScheduleTypes.RECURRING
-              ? filterRecurring(sch)
-              : false;
-        });
-        return evt.schedules.length > 0;
-      });
+      // const result = events.filter((evt) => {
+      //   if (evt.isExpired) return false;
+      //   if (!evt.schedules?.length) return true;
+      //   evt.schedules = evt.schedules.filter((sch) => {
+      //     return sch.type === ScheduleTypes.FIXED
+      //       ? filterFixed(sch)
+      //       : sch.type === ScheduleTypes.RECURRING
+      //         ? filterRecurring(sch)
+      //         : false;
+      //   });
+      //   return evt.schedules.length > 0;
+      // });
 
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: result,
+        data: events,
         total: countDocuments,
         page,
         limit,
