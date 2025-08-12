@@ -510,7 +510,6 @@ export class AuthService {
         const name = data.name.split(' ');
         lastName = name.length > 1 ? name[1] : '';
       }
-      console.log("data from google:",data);
       user = await this.userModel.create({
         role: role._id,
         firstName: data.name ? data.name.split(' ')[0] : '',

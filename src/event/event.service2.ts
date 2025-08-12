@@ -7080,7 +7080,7 @@ export class EventService2 {
       //   name: 'Content QR',
       // });
       if (images) {
-        this.driveService.multiImageUpload(
+        await this.driveService.multiImageUpload(
           user.id,
           String(event.drivePath),
           images,
@@ -7167,7 +7167,7 @@ export class EventService2 {
         updateObj,
       );
       if (images) {
-        this.driveService.deleteBufferAndMultiImageUpload(
+        await this.driveService.deleteBufferAndMultiImageUpload(
           user.id,
           String(event.drivePath),
           images,
