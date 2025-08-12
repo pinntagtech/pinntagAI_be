@@ -7170,7 +7170,7 @@ export class EventService2 {
       );
       if (images.length > 0) {
         await this.driveService.deleteBufferAndMultiImageUpload(
-          user.id,
+          user,
           String(event.drivePath),
           images,
         );
