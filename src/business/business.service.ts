@@ -186,8 +186,10 @@ export class BusinessService {
     private readonly eventLocationModel: Model<EventLocationDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
-    @InjectModel(Rating.name) private readonly ratingModel: Model<RatingDocument>,
-    @InjectModel(Reward.name) private readonly rewardModel: Model<RewardDocument>,
+    @InjectModel(Rating.name)
+    private readonly ratingModel: Model<RatingDocument>,
+    @InjectModel(Reward.name)
+    private readonly rewardModel: Model<RewardDocument>,
     @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
     @InjectModel(UserAllowedNotification.name)
     private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
@@ -939,7 +941,7 @@ export class BusinessService {
         };
         delete updateObj.boardMembers;
       }
-      logger.info(`udpateObj: ${JSON.stringify(updateObj)}`);
+      // logger.info(`udpateObj: ${JSON.stringify(updateObj)}`);
       let updatedDetails = await this.businessModel.findByIdAndUpdate(
         businessId,
         {
@@ -953,7 +955,6 @@ export class BusinessService {
           { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
-
       if (updateObj.businessIndustry && updateObj.businessCategories) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
@@ -1848,6 +1849,19 @@ export class BusinessService {
       }
 
       const createdUser = await this.businessUserModel.create(createObj);
+
+      if (data.allowedNotificationTypes) {
+        let allowedNotiTypes = data.allowedNotificationTypes.filter(
+          (type): type is NotificationTypes =>
+            Object.values(NotificationTypes).includes(
+              type as NotificationTypes,
+            ),
+        );
+        await this.userAllowedNotificationModel.create({
+          user: createdUser._id,
+          allowedNotificationTypes: allowedNotiTypes,
+        });
+      }
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
@@ -3930,24 +3944,26 @@ export class BusinessService {
     message: string,
   ) {
     try {
-      console.log("BUSINESS NOTIFICATION DATAAAA:",consumerId, contentId, notificationType, message);
+      console.log(
+        'BUSINESS NOTIFICATION DATAAAA:',
+        consumerId,
+        contentId,
+        notificationType,
+        message,
+      );
       let content = null;
       let business = null;
-      
+
       if (
         notificationType == NotificationTypes.EVENT ||
         notificationType == NotificationTypes.REPORT
       ) {
         content = await this.eventModel.findById(contentId);
-        business = await this.businessModel.findById(
-          content.businessProfile,
-        );
+        business = await this.businessModel.findById(content.businessProfile);
       } else if (notificationType == NotificationTypes.REWARD) {
         content = await this.rewardModel.findById(contentId);
-        business = await this.businessModel.findById(
-          content.businessProfile,
-        );
-      }else if( notificationType == NotificationTypes.FOLLOW) {
+        business = await this.businessModel.findById(content.businessProfile);
+      } else if (notificationType == NotificationTypes.FOLLOW) {
         business = await this.businessModel.findById(contentId);
       }
 

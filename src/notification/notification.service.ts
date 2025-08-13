@@ -138,4 +138,17 @@ export class NotificationService {
       message: 'Notification deleted',
     };
   }
+
+  async countUnread(user: DecodedUser){
+    const unread = await this.notificationModel
+      .find({
+        user: new mongoose.Types.ObjectId(user.id),
+        isRead: false,
+      });
+    return {
+      success: true,
+      message: "Count fetched successfully.",
+      count: unread.length,
+    };
+  }
 }

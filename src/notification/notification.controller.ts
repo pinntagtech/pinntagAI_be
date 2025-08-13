@@ -11,6 +11,7 @@ import { NotificationService } from './notification.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { NotificationTypes } from 'src/enums/event.enums';
 
 @Controller('notification')
 export class NotificationController {
@@ -28,7 +29,7 @@ export class NotificationController {
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
     );
-    if(result.success) {
+    if (result.success) {
       return {
         notifications: result.notifications,
         totalCount: result.totalCount,
@@ -74,5 +75,20 @@ export class NotificationController {
       throw new BadRequestException(result.message);
     }
     return { message: result.message };
+  }
+
+  @Get('unread/count')
+  @UseGuards(JwtGuard2)
+  async countUnread(@TokenDecoder() user: DecodedUser) {
+    const result = await this.notificationService.countUnread(user);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { count: result.count };
+  }
+  @Get('types')
+  async getNotificationTypes() {
+    const types = Object.values(NotificationTypes);
+    return { types };
   }
 }
