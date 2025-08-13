@@ -59,7 +59,7 @@ export class NotificationService {
     }
   }
 
-  async findUnread(user: DecodedUser) {
+  async findUnread(user: DecodedUser, page: number = 1, limit: number = 10) {
     let userId = user.id;
     // if (user.userType === BusinessUser.name) {
     //   userId = user.businessProfile;
@@ -70,7 +70,9 @@ export class NotificationService {
         isRead: false,
       })
       .sort({ createdAt: -1 })
-      .populate('targetUser', '_id id name profilePhoto');
+      .populate('targetUser', '_id id name profilePhoto')
+      .skip((page - 1) * limit)
+      .limit(limit);
   }
 
   async findOne(id: string, user: DecodedUser) {

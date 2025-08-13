@@ -42,8 +42,10 @@ export class NotificationController {
 
   @Get('unread')
   @UseGuards(JwtGuard2)
-  async findUnread(@TokenDecoder() user: DecodedUser) {
-    const notifications = await this.notificationService.findUnread(user);
+  async findUnread(@TokenDecoder() user: DecodedUser, @Query('page') page: string,
+    @Query('limit') limit: string) {
+    const notifications = await this.notificationService.findUnread(user, page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10);
     return { notifications, count: notifications.length };
   }
 
