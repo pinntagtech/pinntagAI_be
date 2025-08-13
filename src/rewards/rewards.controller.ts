@@ -91,12 +91,11 @@ export class RewardsController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
-    @Query('status') status: string,  //all active expired
+    @Query('status') status: string, //all active expired
     @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    
 
     if (status && !['all', 'active', 'expired'].includes(status)) {
       status = 'all'; // Default to 'all' if invalid status
@@ -145,11 +144,18 @@ export class RewardsController {
   async getRewardByIdConsumer(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
-    @Body('latitude') latitude: string,
-    @Body('longitude') longitude: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
+    }
+
+    if (latitude === undefined || latitude === '') {
+      throw new BadRequestException('Invalid latitude');
+    }
+    if (longitude === undefined || longitude === '') {
+      throw new BadRequestException('Invalid longitude');
     }
     const result = await this.rewardService.getRewardByIdConsumer(
       id,
@@ -283,11 +289,13 @@ export class RewardsController {
   async getUserRewardById(
     @TokenDecoder() user: DecodedUser,
     @Param('id') id: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
     }
-    const result = await this.rewardService.getUserRewardById(id, user);
+    const result = await this.rewardService.getUserRewardById(id, user, latitude, longitude);
     if (result.success) {
       return {
         message: result.message,

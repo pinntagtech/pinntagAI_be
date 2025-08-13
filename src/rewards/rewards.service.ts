@@ -13,7 +13,12 @@ import { Folder } from 'src/drive/models/folder.model';
 import { Reward, RewardDocument } from './model/reward.model';
 import { S3Service } from 'src/s3.service';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
-import { ActivityType, ClaimStatus, RewardStatus } from './enums/rewards.enum';
+import {
+  ActivityType,
+  ClaimStatus,
+  RedemptionMode,
+  RewardStatus,
+} from './enums/rewards.enum';
 import {
   EventLocation,
   EventLocationDocument,
@@ -117,6 +122,15 @@ export class RewardsService {
         parentType: Folder.name,
         folderName: data.title,
       });
+      if (new Date(data.startDate) < new Date()) {
+        return { success: false, message: 'Start date must be in the future.' };
+      }
+      if (new Date(data.endDate) < new Date(data.startDate)) {
+        return {
+          success: false,
+          message: 'End date must be after start date.',
+        };
+      }
 
       const createObj = {
         ...data,
@@ -181,6 +195,7 @@ export class RewardsService {
         } else if (Array.isArray(data.locations)) {
           providedLocations = data.locations;
         }
+        providedLocations = [...new Set(providedLocations)];
 
         if (providedLocations.length === 0) {
           return { success: false, message: 'Please provide locations.' };
@@ -199,16 +214,6 @@ export class RewardsService {
           }
         }
 
-        // await this.rewardLocationModel.deleteMany({ reward: reward._id });
-        // await this.rewardModel.updateOne(
-        //           {
-        //             _id: new mongoose.Types.ObjectId(id),
-        //           },
-        //           {
-        //             $set: { locations: [] },
-        //           },
-        //         );
-
         for (const loc of providedLocations) {
           const outletDoc = await this.outletModel.findById(loc);
           if (!outletDoc) {
@@ -217,6 +222,11 @@ export class RewardsService {
               message: `Outlet with id "${loc}" not found.`,
             };
           }
+          // const isLocationExists = await this.rewardLocationModel.findOne({
+          //   reward: reward._id,
+          //   businessLocationId: outletDoc._id,
+          // });
+          // if (isLocationExists) continue;
 
           const createdLocation = await this.rewardLocationModel.create({
             reward: reward._id,
@@ -285,7 +295,7 @@ export class RewardsService {
               );
             }
 
-            await this.notificationModel.create({
+            this.notificationModel.create({
               user: follower.follower['_id'],
               userType: User.name,
               message,
@@ -628,8 +638,8 @@ export class RewardsService {
   async getRewardByIdConsumer(
     id: string,
     user: DecodedUser,
-    latitude?: string,
-    longitude?: string,
+    latitude: string,
+    longitude: string,
   ) {
     try {
       // const foundReward = await this.rewardModel
@@ -1555,6 +1565,7 @@ export class RewardsService {
         {
           $project: {
             _id: 1,
+            rewardId: '$reward._id',
             userId: 1,
             claimStatus: '$reward.claimStatus',
             files: 1,
@@ -1690,27 +1701,56 @@ export class RewardsService {
       };
     }
   }
-  async getUserRewardById(id: string, user: DecodedUser) {
+  async getUserRewardById(
+    id: string,
+    user: DecodedUser,
+    latitude: string,
+    longitude: string,
+  ) {
     try {
+      if (!id || !user) {
+        throw new Error('Invalid parameters');
+      }
+      const userReward = await this.userRewardModel.findOne({
+        userId: new mongoose.Types.ObjectId(user.id),
+        rewardId: new mongoose.Types.ObjectId(id),
+      });
+      if (!userReward) {
+        return {
+          success: false,
+          message: 'Please Enroll first',
+        };
+      }
+
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      const foundReward = await this.userRewardModel.aggregate([
+      console.log('latitde:', latitude, 'longitude:', longitude);
+      let pipeline: PipelineStage[] = [
         {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [parseFloat(longitude), parseFloat(latitude)],
+            },
+            distanceField: 'distance',
+            maxDistance: 100000000 * 1000,
+            spherical: true,
           },
         },
         {
           $lookup: {
-            from: 'rewards', // the collection name for Reward model
-            localField: 'rewardId',
+            from: 'rewards',
+            localField: 'reward',
             foreignField: '_id',
             as: 'reward',
           },
         },
+        { $unwind: '$reward' },
         {
-          $unwind: { path: '$reward' },
+          $match: {
+            'reward._id': new mongoose.Types.ObjectId(id),
+          },
         },
         {
           $lookup: {
@@ -1732,10 +1772,7 @@ export class RewardsService {
                     $and: [
                       { $eq: ['$parentDirectory', '$$folderId'] },
                       {
-                        $ne: [
-                          '$category',
-                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
-                        ],
+                        $ne: ['$category', QR_ImageCategory._id],
                       },
                     ],
                   },
@@ -1746,92 +1783,181 @@ export class RewardsService {
           },
         },
         {
-          $lookup: {
-            from: 'rewardlocations',
-            localField: 'reward.locations',
-            foreignField: '_id',
-            as: 'locations',
+          $group: {
+            _id: '$reward._id',
+            status: { $first: '$reward.status' },
+            title: { $first: '$reward.title' },
+            activityType: { $first: '$reward.activityType' },
+            rewardType: { $first: '$reward.rewardType' },
+            targetCount: { $first: '$reward.targetCount' },
+            redemptionMode: { $first: '$reward.redemptionMode' },
+            locations: { $first: '$reward.locations' },
+            drivePath: { $first: '$reward.drivePath' },
+            files: { $first: '$files' },
+            QR_CODE: { $first: '$QR_CODE' },
+            rewardExpiration: { $first: '$reward.rewardExpiration' },
+            description: { $first: '$reward.description' },
+            schedule: { $first: '$reward.schedule' },
+            createdAt: { $first: '$reward.createdAt' },
+            updatedAt: { $first: '$reward.updatedAt' },
+            __v: { $first: '$reward.__v' },
+            user: { $first: '$reward.user' },
+            businessProfile: { $first: '$reward.businessProfile' },
+            distance: { $first: { $divide: ['$distance', 1609.34] } },
           },
         },
         {
           $lookup: {
-            from: 'businesses',
-            localField: 'reward.businessProfile',
+            from: 'businessusers', // adjust to actual collection name
+            localField: 'user',
             foreignField: '_id',
-            as: 'businessProfile',
+            as: 'user',
+          },
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+
+        // businessProfile
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfileDetails',
           },
         },
         {
           $unwind: {
-            path: '$businessProfile',
+            path: '$businessProfileDetails',
             preserveNullAndEmptyArrays: true,
           },
         },
+
+        // businessIndustry inside businessProfile
         {
           $lookup: {
             from: 'businessindustries',
             localField: 'businessProfile.businessIndustry',
             foreignField: '_id',
-            as: 'businessIndustry',
+            as: 'businessProfile.businessIndustry',
           },
         },
         {
           $unwind: {
-            path: '$businessIndustry',
+            path: '$businessProfile.businessIndustry',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // locations (repeated populate—only include once in aggregation)
+        {
+          $lookup: {
+            from: 'rewardlocations', // adjust to the actual collection name for locations
+            localField: 'locations',
+            foreignField: '_id',
+            as: 'locations',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets',
+                  localField: 'businessLocationId',
+                  foreignField: '_id',
+                  as: 'businessLocation',
+                },
+              },
+              {
+                $unwind: {
+                  path: '$businessLocation',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
+            ],
+          },
+        },
+
+        //Add a distance key to every object inside locations
+        {
+          $addFields: {
+            locations: {
+              $map: {
+                input: '$locations',
+                as: 'location',
+                in: {
+                  $mergeObjects: [
+                    '$$location',
+                    {
+                      distance: '$distance',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+
+        {
+          $lookup: {
+            from: 'userrewards',
+            pipeline: [
+              {
+                $match: {
+                  rewardId: new mongoose.Types.ObjectId(id),
+                  userId: new mongoose.Types.ObjectId(user.id),
+                },
+              },
+            ],
+            as: 'userReward',
+          },
+        },
+        {
+          $unwind: {
+            path: '$userReward',
             preserveNullAndEmptyArrays: true,
           },
         },
         {
           $project: {
-            _id: '$reward._id',
-            status: '$reward.status',
-            claimStatus: '$claimStatus',
-            claimedAt: '$claimedAt',
-            title: '$reward.title',
-            rewardType: '$reward.rewardType',
-            activityType: '$reward.activityType',
-            locations: '$locations',
-            targetCount: '$reward.targetCount',
-            redemptionMode: '$reward.redemptionMode',
-            progress: '$progress',
-            schedule: '$reward.schedule',
-            drivePath: '$reward.drivePath',
-            rewardExpiration: '$reward.rewardExpiration',
-            description: '$reward.description',
-            createdAt: '$reward.createdAt',
-            updatedAt: '$reward.updatedAt',
-            __v: '$reward.__v',
-            rewardSchedule: '$reward.schedule',
-            QR_CODE: {
-              _id: '$QR_CODE._id',
-              metaData: '$QR_CODE.metaData',
+            _id: 1,
+            status: 1,
+            title: 1,
+            activityType: 1,
+            rewardType: 1,
+            targetCount: 1,
+            redemptionMode: 1,
+            locations: 1,
+            files: 1,
+            rewardExpiration: 1,
+            description: 1,
+            schedule: 1,
+            createdAt: 1,
+            distance: 1,
+            businessProfileDetails: {
+              _id: '$businessProfileDetails._id',
+              name: '$businessProfileDetails.name',
+              cover: '$businessProfileDetails.cover',
+              logo: '$businessProfileDetails.logo',
+              email: '$businessProfileDetails.email',
+              phone: '$businessProfileDetails.phone',
+              countryCode: '$businessProfileDetails.countryCode',
+              website: '$businessProfileDetails.website',
             },
-            files: '$files',
-            businessProfile: {
-              _id: '$businessProfile._id',
-              name: '$businessProfile.name',
-              cover: '$businessProfile.cover',
-              logo: '$businessProfile.logo',
-              businessIndustry: {
-                _id: '$businessIndustry._id',
-                title: '$businessIndustry.title',
-                darkIcon: '$businessIndustry.darkIcon',
-                lightIcon: '$businessIndustry.lightIcon',
-              },
-            },
+            progress: '$userReward.progress',
           },
         },
-      ]);
-      if (!foundReward) {
+      ];
+
+      const foundRewardAgg = await this.rewardLocationModel.aggregate(pipeline);
+
+      if (!foundRewardAgg || foundRewardAgg.length === 0) {
         return {
           success: false,
           message: 'Reward not found.',
         };
       }
+
       return {
         success: true,
         message: 'Reward found.',
-        data: foundReward[0],
+        data: foundRewardAgg[0],
       };
     } catch (error) {
       console.log('Error in getRewardById:', error);
@@ -1841,6 +1967,7 @@ export class RewardsService {
       };
     }
   }
+
   async getLogistics(user: DecodedUser) {
     try {
       const userId = user.id;
