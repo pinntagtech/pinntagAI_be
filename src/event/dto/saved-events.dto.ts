@@ -8,7 +8,4 @@ export class SavedEventsDto {
   @IsOptional()
   @IsString()
   longitude: string;
-
-  @IsOptional()
-  page: number;
 }
