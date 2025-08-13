@@ -747,11 +747,13 @@ export class EventController {
   @Get('saved')
   @UseGuards(JwtGuard2)
   async getSavedEvents(
-    @Body() body: SavedEventsDto,
+    // @Body() body: SavedEventsDto,
     @TokenDecoder() user: DecodedUser,
     @Query('type') type: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     if (!type || type == '') {
       type = 'all';
@@ -765,8 +767,8 @@ export class EventController {
     const result = await this.eventService.getSavedEvents(
       user.id,
       type,
-      body.latitude ? parseFloat(body.latitude) : 0,
-      body.longitude ? parseFloat(body.longitude) : 0,
+      latitude ? parseFloat(latitude) : 0,
+      longitude ? parseFloat(longitude) : 0,
       parseInt(page),
       parseInt(limit),
     );
