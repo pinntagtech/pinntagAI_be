@@ -197,6 +197,26 @@ export class RewardsService {
               message: `Outlet with id "${loc}" not found.`,
             };
           }
+        }
+
+        // await this.rewardLocationModel.deleteMany({ reward: reward._id });
+        // await this.rewardModel.updateOne(
+        //           {
+        //             _id: new mongoose.Types.ObjectId(id),
+        //           },
+        //           {
+        //             $set: { locations: [] },
+        //           },
+        //         );
+
+        for (const loc of providedLocations) {
+          const outletDoc = await this.outletModel.findById(loc);
+          if (!outletDoc) {
+            return {
+              success: false,
+              message: `Outlet with id "${loc}" not found.`,
+            };
+          }
 
           const createdLocation = await this.rewardLocationModel.create({
             reward: reward._id,
@@ -1342,10 +1362,10 @@ export class RewardsService {
             businessProfile: {
               _id: '$businessProfile._id',
               name: '$businessProfile.name',
-              businessIndustry: '$businessProfile.businessIndustry'
+              businessIndustry: '$businessProfile.businessIndustry',
             },
-          }
-      },
+          },
+        },
         { $sort: { createdAt: -1, distance: 1, _id: 1 } },
         {
           $facet: {

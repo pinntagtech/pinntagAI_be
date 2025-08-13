@@ -4361,6 +4361,7 @@ export class AuthService {
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
+
     let [event] = await this.eventLocationModel.aggregate([
       {
         $geoNear: {
@@ -4422,13 +4423,14 @@ export class AuthService {
         : []),
       {
         $lookup: {
-          from: 'files', // assuming this is the same collection as QR_CODE
+          from: 'files',
           let: { folderId: '$event.drivePath' },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
+                    { $ne: ['$$folderId', null] },
                     { $eq: ['$parentDirectory', '$$folderId'] },
                     {
                       $ne: [
