@@ -884,6 +884,8 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -891,11 +893,13 @@ export class EventController {
       user.id,
       pageNumber,
       limitNumber,
+      latitude ? parseFloat(latitude) : 0,
+      longitude ? parseFloat(longitude) : 0,
     );
     if (result.success) {
       return {
         message: result.message,
-        reports: result.reports,
+        reports: result.data,
       };
     } else {
       throw new BadRequestException({
