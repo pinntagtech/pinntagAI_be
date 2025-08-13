@@ -107,6 +107,12 @@ export class CreateOutletDto {
   @IsEnum(VehicleType)
   vehicleType?: string;
 
+  @IsOptional()
+  openingTime: string;
+
+  @IsOptional()
+  closingTime: string;
+
   // @IsOptional()
   // @IsString()
   // vehicleRegistrationNumber?: string;

@@ -41,6 +41,8 @@ import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
+import { PinDropDto } from './dto/pinDrop.dto';
+import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 
 @Controller('event')
 export class EventController {
@@ -204,21 +206,24 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
-    if (!isExpired) {
-      throw new BadRequestException({
-        message: 'Please provide isExpired query parameter',
-      });
-    } else {
-      if (isExpired != 'true' && isExpired != 'false') {
-        throw new BadRequestException({
-          message: 'Please provide a valid value for isExpired query parameter',
-        });
-      }
-      if (isExpired == 'true') {
-        expired = true;
-      } else {
-        expired = false;
-      }
+    // if (!isExpired) {
+    //   throw new BadRequestException({
+    //     message: 'Please provide isExpired query parameter',
+    //   });
+    // } else {
+    //   if (isExpired != 'true' && isExpired != 'false') {
+    //     throw new BadRequestException({
+    //       message: 'Please provide a valid value for isExpired query parameter',
+    //     });
+    //   }
+    //   if (isExpired == 'true') {
+    //     expired = true;
+    //   } else {
+    //     expired = false;
+    //   }
+    // }
+    if(status && status === 'expired'){
+      expired = true;
     }
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
@@ -229,7 +234,7 @@ export class EventController {
       limit,
       status,
       startDate,
-      endDate
+      endDate,
     );
     if (result.success) {
       return {
@@ -742,16 +747,18 @@ export class EventController {
   @Get('saved')
   @UseGuards(JwtGuard2)
   async getSavedEvents(
-    @Body() body: SavedEventsDto,
+    // @Body() body: SavedEventsDto,
     @TokenDecoder() user: DecodedUser,
     @Query('type') type: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
   ) {
     if (!type || type == '') {
       type = 'all';
     }
-    if (!page || page == '') {
+    if (!page) {
       page = '1';
     }
     if (!limit || limit == '') {
@@ -760,8 +767,8 @@ export class EventController {
     const result = await this.eventService.getSavedEvents(
       user.id,
       type,
-      body.latitude ? parseFloat(body.latitude) : 0,
-      body.longitude ? parseFloat(body.longitude) : 0,
+      latitude ? parseFloat(latitude) : 0,
+      longitude ? parseFloat(longitude) : 0,
       parseInt(page),
       parseInt(limit),
     );
@@ -873,14 +880,26 @@ export class EventController {
 
   @Get('reports')
   @UseGuards(JwtGuard2)
-  async getReports(@TokenDecoder() user: DecodedUser,@Query('page') page: string, @Query('limit') limit: string) {
+  async getReports(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+  ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    const result = await this.eventService.getReports(user.id, pageNumber, limitNumber);
+    const result = await this.eventService.getReports(
+      user.id,
+      pageNumber,
+      limitNumber,
+      latitude ? parseFloat(latitude) : 0,
+      longitude ? parseFloat(longitude) : 0,
+    );
     if (result.success) {
       return {
         message: result.message,
-        reports: result.reports,
+        reports: result.data,
       };
     } else {
       throw new BadRequestException({
@@ -951,7 +970,7 @@ export class EventController {
     }
   }
 
-@Post('offer')
+  @Post('offer')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('image', {
@@ -1063,7 +1082,7 @@ export class EventController {
 
   @Put('offer/:id')
   @UseGuards(JwtGuard2)
-   @UseInterceptors(
+  @UseInterceptors(
     FilesInterceptor('images', 10, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
@@ -1077,6 +1096,94 @@ export class EventController {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
     const result = await this.eventService.updateOffer(id, body, user, images);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('pinDrop')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async createPinDropEvent(
+    @Body() data: CreateOfferDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    if(images.length<1){
+      throw new BadRequestException({
+        message: 'Please upload at least one image',
+      });
+    }
+    const result = await this.eventService.createPinDropEvent(
+      data,
+      user,
+      images,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  @Post('pinDrop/:id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async updatePinDropEvent(
+    @Param('id') id: string,
+    @Body() data: UpdatePinDropDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    const result = await this.eventService.updatePinDropEvent(
+      id,
+      data,
+      user,
+      images,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('pinDrop/location/:id')
+  @UseGuards(JwtGuard2)
+  async pinDrop(
+    @Param('id') id: string,
+    @Body() data: PinDropDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException({
+        message: 'Invalid event id',
+      });
+    }
+    const result = await this.eventService.pinDrop(id, user, data);
     if (result.success) {
       return {
         message: result.message,

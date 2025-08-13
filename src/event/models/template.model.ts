@@ -24,6 +24,8 @@ export class Template {
       EventTypes.OFFER,
       EventTypes.PRIVATE,
       EventTypes.FLASHDEAL,
+      EventTypes.SPOTLIGHT,
+      EventTypes.DROPPED_PIN,
     ],
   })
   type: string;

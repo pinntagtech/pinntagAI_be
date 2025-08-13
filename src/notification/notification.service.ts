@@ -23,9 +23,9 @@ export class NotificationService {
     try {
       let userId = user.id;
 
-      if (user.userType === BusinessUser.name) {
-        userId = user.businessProfile;
-      }
+      // if (user.userType === BusinessUser.name) {
+      //   userId = user.businessProfile;
+      // }
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -59,25 +59,27 @@ export class NotificationService {
     }
   }
 
-  async findUnread(user: DecodedUser) {
+  async findUnread(user: DecodedUser, page: number = 1, limit: number = 10) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     return await this.notificationModel
       .find({
         user: new mongoose.Types.ObjectId(userId),
         isRead: false,
       })
       .sort({ createdAt: -1 })
-      .populate('targetUser', '_id id name profilePhoto');
+      .populate('targetUser', '_id id name profilePhoto')
+      .skip((page - 1) * limit)
+      .limit(limit);
   }
 
   async findOne(id: string, user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     const notification = await this.notificationModel
       .findOneAndUpdate(
         {
@@ -102,9 +104,9 @@ export class NotificationService {
 
   async readAll(user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     await this.notificationModel.updateMany(
       {
         user: new mongoose.Types.ObjectId(userId),
@@ -120,9 +122,9 @@ export class NotificationService {
 
   async remove(id: string, user: DecodedUser) {
     let userId = user.id;
-    if (user.userType === BusinessUser.name) {
-      userId = user.businessProfile;
-    }
+    // if (user.userType === BusinessUser.name) {
+    //   userId = user.businessProfile;
+    // }
     const notification = await this.notificationModel.findOneAndDelete({
       _id: id,
       user: new mongoose.Types.ObjectId(userId),
@@ -136,6 +138,19 @@ export class NotificationService {
     return {
       success: true,
       message: 'Notification deleted',
+    };
+  }
+
+  async countUnread(user: DecodedUser){
+    const unread = await this.notificationModel
+      .find({
+        user: new mongoose.Types.ObjectId(user.id),
+        isRead: false,
+      });
+    return {
+      success: true,
+      message: "Count fetched successfully.",
+      count: unread.length,
     };
   }
 }

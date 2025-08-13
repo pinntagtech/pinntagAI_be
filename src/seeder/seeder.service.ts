@@ -9,7 +9,13 @@ import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { Seeder } from './data';
+import {
+  BusinessIndustries,
+  BusinessIndustryTags,
+  ContentTags,
+  EventCategory,
+  Seeder,
+} from './data';
 import {
   SubscriptionProduct,
   SubscriptionProductDocument,
@@ -102,6 +108,7 @@ import { DriveService } from 'src/drive/drive.service';
 import { Region, RegionDocument } from 'src/business/model/region.model';
 import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
+import { Tag } from 'src/models/tags.model';
 
 @Injectable()
 export class SeederService {
@@ -156,6 +163,7 @@ export class SeederService {
     private readonly regionModel: Model<RegionDocument>,
     @InjectModel(Outlet.name)
     private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     private readonly driveService: DriveService,
     // private readonly businessService: BusinessService,
   ) {}
@@ -171,16 +179,15 @@ export class SeederService {
     await this.seedActions();
     await this.seedSuperAdminRole();
     await this.seedSuperAdmin();
-    // await this.seedOutletCategories();
     await this.seedPrivileges(); //super admin privileges are not needed
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
     await this.seedCountries();
     await this.seedEventTemplates();
-    // await this.seedConstitutions();
     await this.seedDashboardConfigs();
     await this.seedPinntagBusinessProfile();
+    await this.seedTags();
   }
 
   public async seedRoles() {
@@ -769,9 +776,10 @@ export class SeederService {
       let businessIndustry = await this.businessIndustryModel.findOne({
         title: template.businessIndustry,
       });
-      if(!businessIndustry) {
+      if (!businessIndustry) {
         console.error(
-          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,)
+          `Business industry "${template.businessIndustry}" not found for template "${template.title}"`,
+        );
       }
       let createObj = {
         creatorType: Admin.name,
@@ -805,6 +813,29 @@ export class SeederService {
     const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
     if (!superAdmin) return;
 
+    for (const cfg of Seeder.DashboardBusinessConfigs) {
+      const cats = await this.businessIndustryModel
+        .find({ title: { $in: cfg.businessIndustries } })
+        .select('_id')
+        .lean();
+
+      const catIds = cats.map((c) => c._id);
+      if (catIds.length !== cfg.businessIndustries.length) {
+        console.warn(
+          `Some business Industries for "${cfg.name}" not found; found ${catIds.length} of ${cfg.businessIndustries.length}`,
+        );
+      }
+
+      await this.dashboardConfigModel.create({
+        name: cfg.name,
+        limit: cfg.limit,
+        businessIndustries: catIds,
+        sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
+      });
+    }
+
     for (const cfg of Seeder.DashboardConfigs) {
       const cats = await this.categoryModel
         .find({ title: { $in: cfg.categories } })
@@ -827,6 +858,31 @@ export class SeederService {
         limit: cfg.limit,
         categories: catIds,
         sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
+      });
+    }
+
+    for (const cfg of Seeder.DashboardOnWheelsConfigs) {
+      const cats = await this.categoryModel
+        .find({ title: { $in: cfg.categories } })
+        .select('_id')
+        .lean();
+
+      const catIds = cats.map((c) => c._id);
+      if (catIds.length !== cfg.categories.length) {
+        console.warn(
+          `Some categories for "${cfg.name}" not found; found ${catIds.length} of ${cfg.categories.length}`,
+        );
+      }
+
+      await this.dashboardConfigModel.create({
+        name: cfg.name,
+        limit: cfg.limit,
+        categories: catIds,
+        sortOrder: cfg.sortOrder,
+        carouselType: cfg.carouselType,
+        cardType: cfg.cardType,
       });
     }
   }
@@ -835,7 +891,7 @@ export class SeederService {
     const departments = await this.departmentModel.find();
     if (departments.length !== 0) return;
 
-    for (const dept of Seeder.Departmens) {
+    for (const dept of Seeder.Departments) {
       const roles = await this.roleModel
         .find({ name: { $in: dept.roles } })
         .select('_id')
@@ -1065,6 +1121,10 @@ export class SeederService {
       business: new mongoose.Types.ObjectId(createdBusiness._id),
       latitude: 51.3704,
       longitude: 0.1702,
+      location: {
+        type: 'Point',
+        coordinates: [0.1702, 51.3704], // [longitude, latitude]
+      },
     };
     const outlet = await this.outletModel.create(outletObj);
     await this.businessUserModel.updateOne(
@@ -1086,5 +1146,69 @@ export class SeederService {
         },
       },
     );
+  }
+
+  async seedTags() {
+    const existingTags = await this.tagModel.countDocuments();
+    if (existingTags > 0) {
+      console.log('Tags already seeded.');
+      return;
+    }
+
+    for (const industry of Object.values(BusinessIndustries)) {
+      console.log('industry:', industry);
+      const foundIndustry = await this.businessIndustryModel.findOne({
+        title: industry,
+      });
+      if (!foundIndustry) {
+        console.error(`Business industry "${industry}" not found.`);
+        continue;
+      }
+      for (const tag of BusinessIndustryTags[industry]) {
+        console.log('tag:', tag);
+        const foundTag = await this.tagModel.findOne({
+          title: tag,
+          relatedId: foundIndustry._id,
+        });
+        if (!foundTag) {
+          await this.tagModel.create({
+            title: tag,
+            relatedId: foundIndustry._id,
+            relatedTo: BusinessIndustry.name,
+          });
+        } else {
+          console.log(
+            `Tag "${tag}" already exists for industry "${industry}".`,
+          );
+        }
+      }
+    }
+
+    for (const cat of Object.values(EventCategory)) {
+      console.log('category:', cat);
+      const foundCategory = await this.categoryModel.findOne({
+        title: cat,
+      });
+      if (!foundCategory) {
+        console.error(`Event category "${cat}" not found.`);
+        continue;
+      }
+      for (const tag of ContentTags[cat]) {
+        console.log('tag:', tag);
+        const foundTag = await this.tagModel.findOne({
+          title: tag,
+          relatedId: foundCategory._id,
+        });
+        if (!foundTag) {
+          await this.tagModel.create({
+            title: tag,
+            relatedId: foundCategory._id,
+            relatedTo: Category.name,
+          });
+        } else {
+          console.log(`Tag "${tag}" already exists for category "${cat}".`);
+        }
+      }
+    }
   }
 }

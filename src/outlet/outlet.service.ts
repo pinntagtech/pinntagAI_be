@@ -245,6 +245,8 @@ export class OutletService {
         // vehicleRegistrationNumber,
         vehicleType,
         // gpsTrackerEnabled,
+        openingTime,
+        closingTime,
       } = data;
 
       if (
@@ -284,6 +286,17 @@ export class OutletService {
       });
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [data.longitude, data.latitude],
+      };
+      if(data.openingTime) {
+        createObj['openingTime'] = new Date(data.openingTime);
+      }
+
+      if(data.closingTime) {
+        createObj['closingTime'] = new Date(data.closingTime);
+      }
 
       const outlet = await this.outletModel.create(createObj);
 
@@ -368,6 +381,12 @@ export class OutletService {
       if (data.category) {
         updateObj['category'] = data.category;
       }
+      if (data.openingTime) {
+        updateObj['openingTime'] = new Date(data.openingTime);
+      }
+      if (data.closingTime) {
+        updateObj['closingTime'] = new Date(data.closingTime);
+      }
       const updatedOutlet = await this.outletModel.findByIdAndUpdate(
         id,
         updateObj,
@@ -385,7 +404,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any, page: number, limit: number) {
+  async getOutlets(user: any,type: string, page: number, limit: number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -417,12 +436,14 @@ export class OutletService {
       } else {
         getOutletObj['_id'] = { $in: mongoUserIds };
       }
+      if (type && type !== 'All') {
+        getOutletObj['category'] = type;
+      }
+
       console.log('getOutletObj', getOutletObj);
 
       const outlets = await this.outletModel
         .find(getOutletObj)
-        .populate('category')
-        .populate('type')
         .populate({
           path: 'manager',
           select: 'name email phone countryCode profilePhoto',
@@ -662,6 +683,17 @@ export class OutletService {
         longitude: placeDetails.data['longitude']
           ? parseFloat(placeDetails.data['longitude'])
           : 0,
+        location: {
+          type: 'Point',
+          coordinates: [
+            placeDetails.data['longitude']
+              ? parseFloat(placeDetails.data['longitude'])
+              : 0,
+            placeDetails.data['latitude']
+              ? parseFloat(placeDetails.data['latitude'])
+              : 0,
+          ],
+        },
       };
       const outlet = await this.outletModel.create(outletObj);
       console.log('Created Outlet:', outlet);

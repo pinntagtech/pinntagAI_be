@@ -39,7 +39,7 @@ import {
 import { Image, ImageDocument } from 'src/event/models/image.model';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
-import { Category, CategoryDocument } from 'src/models/contentCategory.model';
+import { Category, CategoryDocument, CategorySchema } from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { S3Service } from 'src/s3.service';
 import { User, UserDocument } from 'src/user/models/user.model';
@@ -118,6 +118,7 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
+import { EventSchedule } from 'src/event/models/event-schedule.model';
 
 @Injectable()
 export class AdminService {
@@ -2060,6 +2061,29 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
+      if (!data.businessIndustry) {
+        return {
+          success: false,
+          message: 'Please provide a valid industry id',
+        };
+      } else {
+        if (!mongoose.isValidObjectId(data.businessIndustry)) {
+          return {
+            success: false,
+            message: 'Please provide a valid industry id',
+          };
+        }
+        const foundIndustry = await this.industryModel.findById(
+          data.businessIndustry,
+        );
+        if (!foundIndustry) {
+          return {
+            success: false,
+            message: 'Industry not found',
+          };
+        }
+      }
+
       console.log('Business Folder ID:', businessFolder.data._id);
       console.log('UserID:', user.id);
       console.log('Created User ID:', createdUser.id);
@@ -2241,6 +2265,13 @@ export class AdminService {
       createObj['latitude'] = placeDetails.data['latitude'];
       createObj['longitude'] = placeDetails.data['longitude'];
       createObj['placeId'] = placeDetails.data['placeId'];
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [
+          placeDetails.data['latitude'],
+          placeDetails.data['longitude'],
+        ],
+      };
 
       const outlet = await this.outletModel.create(createObj);
 
@@ -2375,11 +2406,25 @@ export class AdminService {
         // .populate('event', '_id title')
         .populate({
           path: 'event',
-          populate: {
-            path: 'businessProfile',
-            model: Business.name,
-            select: BusinessPopulates.FOREIGN,
-          },
+          populate: [
+            {
+              path: 'businessProfile',
+              model: Business.name,
+              select: BusinessPopulates.FOREIGN,
+            },
+            {
+              path: 'eventSchedule',
+              model: EventSchedule.name,
+            },
+            {
+              path: 'locations',
+              model: EventLocation.name,
+            },
+            {
+              path: 'categories',
+              model: Category.name,
+            }
+          ],
         });
 
       const totalReportedEvents = await this.reportModel.countDocuments(query);
@@ -2395,6 +2440,50 @@ export class AdminService {
       };
     } catch (error) {
       console.error('Error in getReportedEvents:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async disableContent(contentId: string) {
+    try {
+      if (!mongoose.isValidObjectId(contentId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid content id',
+        };
+      }
+      const content = await this.eventModel.findById(contentId);
+      if (!content) {
+        return {
+          success: false,
+          message: 'Content not found with the id provided.',
+        };
+      }
+      await this.eventModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(contentId) },
+        { $set: { isDisabled: true } },
+      );
+      //send notification to the business that his event have been disabled
+      // const business = await this.businessModel.findById(content.businessProfile);
+      // if (business) {
+      //   await this.notificationService.createNotification({
+      //     user: business.authorisedUser,
+      //     title: 'Content Disabled',
+      //     message: `Your content "${content.title}" has been disabled by the admin.`,
+      //     type: NotificationType.CONTENT_DISABLED,
+      //     contentId: content._id,
+      //     businessProfile: content.businessProfile,
+      //   });
+      // }
+      return {
+        success: true,
+        message: 'Content disabled successfully.',
+      };
+    } catch (error) {
+      console.error('Error in disableContent:', error);
       return {
         success: false,
         message: 'Something went wrong.',

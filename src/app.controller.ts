@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { RateLimitGuard } from './auth/guards/rateLimiter.guard';
@@ -18,6 +18,14 @@ export class AppController {
     const result = await this.appService.getCategories();
     return {
       categories: result,
+    };
+  }
+  @Get('businessIndustries')
+  @UseGuards(RateLimitGuard)
+  async getBusinessIndustries() {
+    const result = await this.appService.getBusinessIndustries();
+    return {
+      businessIndustries: result,
     };
   }
 
@@ -51,5 +59,13 @@ export class AppController {
         error: 'Failed to generate text',
       };
     }
+  }
+  @Get('tags/:id')
+  @UseGuards(RateLimitGuard)
+  async getTags(@Param('id') id: string) {
+    const tags = await this.appService.getTags(id);
+    return {
+      tags,
+    };
   }
 }

@@ -105,7 +105,11 @@ import {
   LocationGroupDocument,
 } from './model/locationGroup.model';
 import { Event, EventDocument } from 'src/event/models/event.model';
-import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import {
+  EventStatus,
+  EventTypes,
+  NotificationTypes,
+} from 'src/enums/event.enums';
 import { ClaimStatus } from 'src/rewards/enums/rewards.enum';
 import {
   UserReward,
@@ -126,6 +130,14 @@ import { Rating, RatingDocument } from './model/rating.model';
 import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
 import { haversineDistance } from 'src/helpers/event.helpers';
+import { Menu } from './model/menu.model';
+import { UserAllowedNotification } from './model/userAllowedNotification.model';
+import {
+  Notification,
+  NotificationDocument,
+} from 'src/notification/models/notification.model';
+import { FirebaseService } from 'src/notification/firebase.service';
+import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
 
 @Injectable()
 export class BusinessService {
@@ -176,12 +188,20 @@ export class BusinessService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(Rating.name)
     private readonly ratingModel: Model<RatingDocument>,
+    @InjectModel(Reward.name)
+    private readonly rewardModel: Model<RewardDocument>,
+    @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
+    @InjectModel(UserAllowedNotification.name)
+    private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
     private readonly authService: AuthService,
     private readonly driveService: DriveService,
     private readonly userService: UserService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -921,7 +941,7 @@ export class BusinessService {
         };
         delete updateObj.boardMembers;
       }
-      logger.info(`udpateObj: ${JSON.stringify(updateObj)}`);
+      // logger.info(`udpateObj: ${JSON.stringify(updateObj)}`);
       let updatedDetails = await this.businessModel.findByIdAndUpdate(
         businessId,
         {
@@ -935,7 +955,6 @@ export class BusinessService {
           { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
-
       if (updateObj.businessIndustry && updateObj.businessCategories) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
@@ -1831,6 +1850,19 @@ export class BusinessService {
 
       const createdUser = await this.businessUserModel.create(createObj);
 
+      if (data.allowedNotificationTypes) {
+        let allowedNotiTypes = data.allowedNotificationTypes.filter(
+          (type): type is NotificationTypes =>
+            Object.values(NotificationTypes).includes(
+              type as NotificationTypes,
+            ),
+        );
+        await this.userAllowedNotificationModel.create({
+          user: createdUser._id,
+          allowedNotificationTypes: allowedNotiTypes,
+        });
+      }
+
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdUser._id,
@@ -2109,9 +2141,157 @@ export class BusinessService {
     longitude: number,
   ) {
     try {
-      const business = await this.businessModel
-        .findById(businessId)
-        .populate('outlets', LocationPopulates.FOREIGN);
+      // const business = await this.businessModel
+      //   .findById(businessId)
+      //   .populate('outlets', LocationPopulates.FOREIGN);
+
+      const basePipeline: any[] = [
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [longitude, latitude] },
+            distanceField: 'distance',
+            maxDistance: 100000000 * 1609.34,
+            spherical: true,
+          },
+        },
+        {
+          $match: {
+            business: new mongoose.Types.ObjectId(businessId),
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'business',
+            foreignField: '_id',
+            as: 'businessDetails',
+          },
+        },
+        { $unwind: '$businessDetails' },
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessDetails.businessIndustry',
+            foreignField: '_id',
+            as: 'industryDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$industryDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'menus',
+            localField: 'businessDetails.menus',
+            foreignField: '_id',
+            as: 'menuDetails',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: 'images',
+                  foreignField: '_id',
+                  as: 'imageDetails',
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                  imageDetails: {
+                    $map: {
+                      input: '$imageDetails',
+                      as: 'image',
+                      in: {
+                        _id: '$$image._id',
+                        url: '$$image.metaData.url',
+                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'follows', // make sure it's the actual collection name
+            let: {
+              userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+              targetId: '$businessDetails._id',
+              targetType: Business.name,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', '$$userId'] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', '$$targetType'] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+        {
+          $addFields: {
+            isFollowedByMe: {
+              $gt: [{ $size: '$userFollow' }, 0],
+            },
+          },
+        },
+        { $sort: { distance: 1 } },
+        {
+          $group: {
+            _id: '$businessDetails._id',
+            name: { $first: '$businessDetails.name' },
+            cover: { $first: '$businessDetails.cover' },
+            logo: { $first: '$businessDetails.logo' },
+            description: { $first: '$businessDetails.description' },
+            email: { $first: '$businessDetails.email' },
+            phone: { $first: '$businessDetails.phone' },
+            countryCode: { $first: '$businessDetails.countryCode' },
+            website: { $first: '$businessDetails.website' },
+            industry: { $first: '$industryDetails' },
+            isFollowedByMe: { $first: '$isFollowedByMe' },
+            menus: { $first: '$menuDetails' },
+            locations: {
+              $push: {
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$postalCode',
+                website: '$website',
+                _id: '$_id',
+                email: '$email',
+                phone: '$phone',
+                countryCode: '$countryCode',
+                opentingTime: '$opentingTime',
+                closingTime: '$closingTime',
+                location: '$location',
+                distance: { $divide: ['$distance', 1609.34] },
+              },
+            },
+          },
+        },
+        { $sort: { createdAt: -1, _id: 1 } },
+      ];
+
+      let [business] = await this.outletModel.aggregate(basePipeline);
+
       if (!business) {
         return {
           success: false,
@@ -3217,31 +3397,45 @@ export class BusinessService {
     progress: string,
   ) {
     const now = new Date();
-    let oldDate: Date;
+    const startOfCurrent = new Date(now);
+    let startOfPrevious: Date;
 
     switch (progress) {
       case 'daily':
-        oldDate = new Date(now);
-        oldDate.setDate(oldDate.getDate() - 1);
+        startOfCurrent.setHours(0, 0, 0, 0); // start of today
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setDate(startOfPrevious.getDate() - 1);
         break;
+
       case 'weekly':
-        oldDate = new Date(now);
-        oldDate.setDate(oldDate.getDate() - 7);
+        const dayOfWeek = startOfCurrent.getDay(); // 0 (Sun) - 6 (Sat)
+        const diffToStartOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        startOfCurrent.setDate(startOfCurrent.getDate() - diffToStartOfWeek);
+        startOfCurrent.setHours(0, 0, 0, 0); // start of this week (Monday)
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setDate(startOfPrevious.getDate() - 7); // last week's start
         break;
+
       case 'monthly':
-        oldDate = new Date(now);
-        oldDate.setMonth(oldDate.getMonth() - 1);
+        startOfCurrent.setDate(1); // start of this month
+        startOfCurrent.setHours(0, 0, 0, 0);
+        startOfPrevious = new Date(startOfCurrent);
+        startOfPrevious.setMonth(startOfPrevious.getMonth() - 1); // last month's start
         break;
+
       default:
         throw new Error('Invalid progress type');
     }
-    console.log('Old Date:', oldDate);
-    let [lastResult] = await this.eventModel.aggregate([
+
+    const [lastResult] = await this.eventModel.aggregate([
       {
         $match: {
           businessProfile: businessProfileId,
           status: EventStatus.PUBLISHED,
-          createdAt: { $lte: oldDate },
+          createdAt: {
+            $gte: startOfPrevious,
+            $lt: startOfCurrent,
+          },
         },
       },
       {
@@ -3256,11 +3450,16 @@ export class BusinessService {
         },
       },
     ]);
-    let [result] = await this.eventModel.aggregate([
+
+    const [currentResult] = await this.eventModel.aggregate([
       {
         $match: {
           businessProfile: businessProfileId,
           status: EventStatus.PUBLISHED,
+          createdAt: {
+            $gte: startOfCurrent,
+            $lte: now,
+          },
         },
       },
       {
@@ -3275,49 +3474,46 @@ export class BusinessService {
         },
       },
     ]);
-    if(!lastResult || lastResult === undefined){
-      lastResult = {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      };
-    }
-    if(!result || result === undefined){
-      result = {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      };
-    }
-    result.percentageChange = {
-      totalEvents: this.percentageChange(lastResult.totalEvents, result.totalEvents),
-      totalViewsCount: this.percentageChange(lastResult.totalViewsCount, result.totalViewsCount),
-      totalEngagementCount: this.percentageChange(lastResult.totalEngagementCount, result.totalEngagementCount),
-      totalLikes: this.percentageChange(lastResult.totalLikes, result.totalLikes),
-      totalShares: this.percentageChange(lastResult.totalShares, result.totalShares),
-      totalSaved: this.percentageChange(lastResult.totalSaved, result.totalSaved),
+
+    const last = lastResult ?? {
+      totalEvents: 0,
+      totalViewsCount: 0,
+      totalEngagementCount: 0,
+      totalLikes: 0,
+      totalShares: 0,
+      totalSaved: 0,
     };
 
-    console.log("Last Result:", lastResult);
-    console.log("Current Result:", result);
+    const current = currentResult ?? {
+      totalEvents: 0,
+      totalViewsCount: 0,
+      totalEngagementCount: 0,
+      totalLikes: 0,
+      totalShares: 0,
+      totalSaved: 0,
+    };
 
-    return (
-      result ?? {
-        totalEvents: 0,
-        totalViewsCount: 0,
-        totalEngagementCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-        totalSaved: 0,
-      }
-    );
+    current.percentageChange = {
+      totalEvents: this.percentageChange(last.totalEvents, current.totalEvents),
+      totalViewsCount: this.percentageChange(
+        last.totalViewsCount,
+        current.totalViewsCount,
+      ),
+      totalEngagementCount: this.percentageChange(
+        last.totalEngagementCount,
+        current.totalEngagementCount,
+      ),
+      totalLikes: this.percentageChange(last.totalLikes, current.totalLikes),
+      totalShares: this.percentageChange(last.totalShares, current.totalShares),
+      totalSaved: this.percentageChange(last.totalSaved, current.totalSaved),
+    };
+
+    console.log('Last Period:', last);
+    console.log('Current Period:', current);
+
+    return current;
   }
+
   private percentageChange(oldVal: number, newVal: number) {
     console.log('Old Value:', oldVal, 'New Value:', newVal);
     if (oldVal === 0) return 0;
@@ -3660,6 +3856,188 @@ export class BusinessService {
         success: true,
         message: 'Users created successfully in bulk.',
         data: [], // You can return the created outlets data if needed
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async uploadMenu(
+    files: Express.Multer.File[],
+    user: DecodedUser,
+    name: string,
+    description: string,
+  ) {
+    try {
+      if (!files || files.length === 0) {
+        return {
+          success: false,
+          message: 'No files uploaded',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      let menu = await this.menuModel.create({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        name: name,
+        description: description,
+        createdBy: new mongoose.Types.ObjectId(user.id),
+      });
+
+      const uploadedFiles = await this.driveService.multiImageUpload(
+        user.id,
+        String(business.drivePath),
+        files,
+      );
+
+      console.log('Uploaded Files:', uploadedFiles);
+
+      if (
+        uploadedFiles &&
+        uploadedFiles.success &&
+        Array.isArray(uploadedFiles.data)
+      ) {
+        await this.menuModel.updateOne(
+          { _id: menu._id },
+          {
+            $set: {
+              images: uploadedFiles.data.map(
+                (file) => new mongoose.Types.ObjectId(file.id),
+              ),
+            },
+          },
+        );
+      }
+      await this.businessModel.updateOne(
+        { _id: user.businessProfile },
+        {
+          $push: {
+            menus: new mongoose.Types.ObjectId(menu.id),
+          },
+        },
+      );
+
+      return {
+        success: true,
+        message: 'Menu files uploaded successfully',
+        data: uploadedFiles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async businessNotification(
+    consumerId: string,
+    contentId: string,
+    notificationType: string,
+    message: string,
+  ) {
+    try {
+      console.log(
+        'BUSINESS NOTIFICATION DATAAAA:',
+        consumerId,
+        contentId,
+        notificationType,
+        message,
+      );
+      let content = null;
+      let business = null;
+
+      if (
+        notificationType == NotificationTypes.EVENT ||
+        notificationType == NotificationTypes.REPORT
+      ) {
+        content = await this.eventModel.findById(contentId);
+        business = await this.businessModel.findById(content.businessProfile);
+      } else if (notificationType == NotificationTypes.REWARD) {
+        content = await this.rewardModel.findById(contentId);
+        business = await this.businessModel.findById(content.businessProfile);
+      } else if (notificationType == NotificationTypes.FOLLOW) {
+        business = await this.businessModel.findById(contentId);
+      }
+
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const downlineUsers = await this.getAllChildUserIds2(
+        business.authorisedUser,
+      );
+      console.log('Downline Users:', downlineUsers);
+      let notifcationEnabledUsers = [];
+      notifcationEnabledUsers.push(business.authorisedUser);
+      for (const user of downlineUsers) {
+        const isUserEnabled = await this.userAllowedNotificationModel.findOne({
+          user: user,
+          notificationType: notificationType,
+        });
+        if (isUserEnabled) {
+          notifcationEnabledUsers.push(user);
+        }
+      }
+
+      console.log('Notification Enabled Users:', notifcationEnabledUsers);
+
+      for (const user of notifcationEnabledUsers) {
+        let notiObj = {
+          user: user,
+          userType: BusinessUser.name,
+          message,
+          type: notificationType,
+          targetType: Business.name,
+          targetUser: new mongoose.Types.ObjectId(consumerId),
+        };
+        if (
+          notificationType == NotificationTypes.EVENT ||
+          notificationType == NotificationTypes.REPORT
+        ) {
+          notiObj['event'] = new mongoose.Types.ObjectId(contentId);
+        } else if (notificationType == NotificationTypes.REWARD) {
+          notiObj['reward'] = new mongoose.Types.ObjectId(contentId);
+        } else if (notificationType == NotificationTypes.FOLLOW) {
+          notiObj['business'] = new mongoose.Types.ObjectId(contentId);
+        }
+
+        await this.notificationModel.create({
+          ...notiObj,
+        });
+
+        const fcmTokens = await this.tokenModel.find({
+          user: new mongoose.Types.ObjectId(user),
+          type: TokenTypes.FCM,
+        });
+
+        console.log('fcmTokens', fcmTokens);
+        for (let j = 0; j < fcmTokens.length; j++) {
+          this.firebaseService.sendNotification(
+            fcmTokens[j].token,
+            message,
+            message,
+            {
+              data: { content: contentId, notificationType: notificationType },
+            },
+          );
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Downline users fetched successfully',
+        data: downlineUsers,
       };
     } catch (error) {
       return {

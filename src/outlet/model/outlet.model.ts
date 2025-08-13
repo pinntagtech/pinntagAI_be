@@ -9,6 +9,14 @@ import { OutletType } from './outletType.model';
 
 export type OutletDocument = Outlet & Document;
 
+class LocationType {
+  type: {
+    type: string;
+  };
+  coordinates: Array<number>;
+}
+
+
 @Schema({ timestamps: true })
 export class Outlet {
   // @Prop({ required: true, ref: OutletCategory.name })
@@ -135,6 +143,13 @@ export class Outlet {
   longitude: number;
   @Prop()
   accuracy: number;
+  @Prop()
+  location: LocationType;
+  @Prop()
+  openingTime: Date;
+  @Prop()
+  closingTime: Date;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);
+OutletSchema.index({ location: '2dsphere' });

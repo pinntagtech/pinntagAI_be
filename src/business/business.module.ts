@@ -129,6 +129,11 @@ import {
 } from 'src/rewards/model/userReward.model';
 import { Rating, RatingSchema } from './model/rating.model';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { Menu } from './model/types.model';
+import { MenuSchema } from './model/menu.model';
+import { Tag, TagSchema } from 'src/models/tags.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from './model/userAllowedNotification.model';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({
   imports: [
@@ -184,6 +189,10 @@ import { FirebaseService } from 'src/notification/firebase.service';
       { name: Outlet.name, schema: OutletSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: Rating.name, schema: RatingSchema },
+      { name: Menu.name, schema: MenuSchema },
+      { name: Tag.name, schema: TagSchema },
+      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
+      { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
     ]),
   ],
   controllers: [BusinessController],

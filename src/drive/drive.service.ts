@@ -915,6 +915,7 @@ export class DriveService {
       const oldFiles = await this.fileModel.find({
         parentDirectory: new mongoose.Types.ObjectId(locationId),
       });
+
       oldFiles.forEach(async (file) => {
         // Delete file from S3
         const fileUrl = file.metaData.url;
@@ -932,6 +933,7 @@ export class DriveService {
       });
       
       let parentId = user.id;
+
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
       }
@@ -949,7 +951,6 @@ export class DriveService {
       if (!fileCategory) {
         return { success: false, message: 'File category not found' };
       }
-
       // Determine target directory type/id
       const locId = locationId || driveDetails._id.toString();
       const [driveLoc, folderLoc] = await Promise.all([

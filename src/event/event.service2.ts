@@ -132,6 +132,10 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
+import { PinDropDto } from './dto/pinDrop.dto';
+import { GoogleService } from 'src/google/google.service';
+import { UpdatePinDropDto } from './dto/update-pindrop.dto';
+import { BusinessService } from 'src/business/business.service';
 
 @Injectable()
 export class EventService2 {
@@ -194,6 +198,8 @@ export class EventService2 {
     private readonly firebaseService: FirebaseService,
     private readonly dynamicLinkService: DynamicLinkService,
     private readonly driveService: DriveService,
+    private readonly googleService: GoogleService,
+    private readonly businessService: BusinessService,
   ) {}
   async create(
     createEventDto: CreateEventDto,
@@ -2621,6 +2627,14 @@ export class EventService2 {
             await this.userModel.findByIdAndUpdate(userId, {
               $push: { savedEvents: event._id },
             });
+
+            let message = `${user.name} saved your event ${event.title}`;
+            await this.businessService.businessNotification(
+              userId,
+              eventId,
+              NotificationTypes.EVENT,
+              message,
+            );
             return {
               success: true,
               message: 'Event added to saved events',
@@ -3049,7 +3063,7 @@ export class EventService2 {
         // { $unwind: '$userDetails' },
         {
           $lookup: {
-            from: 'businessprofiles',
+            from: 'businesses',
             localField: 'event.businessProfile',
             foreignField: '_id',
             as: 'businessProfileDetails',
@@ -3061,21 +3075,21 @@ export class EventService2 {
             preserveNullAndEmptyArrays: true,
           },
         },
-        {
-          $match: {
-            $expr: {
-              $cond: {
-                if: {
-                  $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null],
-                },
-                then: {},
-                else: {
-                  $eq: ['$businessProfileDetails.isDeleted', false],
-                },
-              },
-            },
-          },
-        },
+        // {
+        //   $match: {
+        //     $expr: {
+        //       $cond: {
+        //         if: {
+        //           $eq: [{ $ifNull: ['$businessProfileDetails', null] }, null],
+        //         },
+        //         then: {},
+        //         else: {
+        //           $eq: ['$businessProfileDetails.isDeleted', false],
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
         {
           $group: {
             _id: '$event._id',
@@ -3102,7 +3116,7 @@ export class EventService2 {
             specifyForEachDay: { $first: '$event.specifyForEachDay' },
             participants: { $first: '$event.participants' },
             creatorDetails: { $first: '$event.creatorDetails' },
-            category: { $first: '$category' },
+            categories: { $first: '$categories' },
             files: { $first: '$images' },
             ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
             isSaved: { $first: '$isSaved' },
@@ -3122,6 +3136,9 @@ export class EventService2 {
                 phone: '$phone',
                 distance: { $divide: ['$distance', 1609.34] },
               },
+            },
+            businessProfileDetails: {
+              $first: '$businessProfileDetails',
             },
           },
         },
@@ -3319,7 +3336,7 @@ export class EventService2 {
         page,
         limit,
       );
-      const reportedEvents = await this.getReports(userId, page, limit);
+      const reportedEvents = await this.getReports(userId, page, limit, latitude, longitude);
 
       return {
         success: true,
@@ -3327,7 +3344,7 @@ export class EventService2 {
         data: {
           events: eventsData,
           liked: liked.events,
-          reported: reportedEvents.reports,
+          reported: reportedEvents.data,
         },
         // data: result[0].data,
         // total: total,
@@ -3567,15 +3584,22 @@ export class EventService2 {
               $push: { likedEvents: event._id },
             });
             let message = `${user.name} liked your event ${event.title}`;
-            await this.notificationModel.create({
-              user: event.businessProfile,
-              userType: Business.name,
+            // await this.notificationModel.create({
+            //   user: event.businessProfile,
+            //   userType: Business.name,
+            //   message,
+            //   type: NotificationTypes.LIKE,
+            //   targetType: Business.name,
+            //   targetUser: new mongoose.Types.ObjectId(userId),
+            //   isRead: false,
+            // });
+
+            await this.businessService.businessNotification(
+              userId,
+              eventId,
+              NotificationTypes.EVENT,
               message,
-              type: NotificationTypes.LIKE,
-              targetType: Business.name,
-              targetUser: new mongoose.Types.ObjectId(userId),
-              isRead: false,
-            });
+            );
 
             return {
               success: true,
@@ -3702,7 +3726,7 @@ export class EventService2 {
         // { $unwind: '$userDetails' },
         {
           $lookup: {
-            from: 'businessprofiles',
+            from: 'businesses',
             localField: 'event.businessProfile',
             foreignField: '_id',
             as: 'businessProfileDetails',
@@ -3953,6 +3977,7 @@ export class EventService2 {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
+            businessProfileDetails: { $first: '$businessProfileDetails' }
           },
         },
         {
@@ -3986,6 +4011,23 @@ export class EventService2 {
             isSaved: 1,
             isLiked: 1,
             locations: 1,
+            businessProfileDetails: {
+              _id: '$businessProfileDetails._id',
+              name: '$businessProfileDetails.name',
+              cover: '$businessProfileDetails.cover',
+              logo: '$businessProfileDetails.logo',
+              email: '$businessProfileDetails.email',
+              bio: '$businessProfileDetails.bio',
+              description: '$businessProfileDetails.description',
+              followersCount: '$businessProfileDetails.followersCount',
+              isFollowedByMe: '$isFollowedByMe',
+              profileType: 'BusinessProfile',
+              phone: '$businessProfileDetails.phone',
+              website: '$businessProfileDetails.website',
+              facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+              instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+              twitterPageUrl: '$businessProfileDetails.XPageUrl',
+            },
           },
         },
         {
@@ -4206,20 +4248,28 @@ export class EventService2 {
     }
     let message = `${user.name} reported your event ${event.title}`;
 
-    await this.notificationModel.create({
-      user: event.businessProfile,
-      userType: Business.name,
-      message,
-      type: NotificationTypes.REPORT,
-      targetType: Business.name,
-      event: event._id,
-      targetUser: new mongoose.Types.ObjectId(userId),
-    });
+    // await this.notificationModel.create({
+    //   user: event.businessProfile,
+    //   userType: Business.name,
+    //   message,
+    //   type: NotificationTypes.REPORT,
+    //   targetType: Business.name,
+    //   event: event._id,
+    //   targetUser: new mongoose.Types.ObjectId(userId),
+    // });
 
     const report = await this.reportModel.create({
       user: new mongoose.Types.ObjectId(userId),
       ...data,
     });
+
+    await this.businessService.businessNotification(
+      userId,
+      event.id,
+      NotificationTypes.REPORT,
+      message,
+    );
+
     return {
       success: true,
       message: 'Event reported successfully',
@@ -4227,7 +4277,7 @@ export class EventService2 {
     };
   }
 
-  async getReports(userId: string, page: number, limit: number) {
+  async getReports(userId: string, page: number, limit: number, latitude: number, longitude: number) {
     const user = await this.userModel.findById(userId);
     if (!user) {
       return {
@@ -4235,149 +4285,479 @@ export class EventService2 {
         message: 'User not found',
       };
     }
-    const aggregationPipeline: any = [
-      {
-        $match: {
-          user: new mongoose.Types.ObjectId(userId),
-        },
-      },
-      {
-        $lookup: {
-          from: 'events',
-          localField: 'event',
-          foreignField: '_id',
-          as: 'event',
-        },
-      },
-      { $unwind: '$event' },
+    // const aggregationPipeline: any = [
+    //   {
+    //     $match: {
+    //       user: new mongoose.Types.ObjectId(userId),
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: 'events',
+    //       localField: 'event',
+    //       foreignField: '_id',
+    //       as: 'event',
+    //     },
+    //   },
+    //   { $unwind: '$event' },
 
-      // Populate event.user
-      {
-        $lookup: {
-          from: 'users',
-          let: { userId: '$event.user' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
+    //   // Populate event.user
+    //   {
+    //     $lookup: {
+    //       from: 'users',
+    //       let: { userId: '$event.user' },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: { $eq: ['$_id', '$$userId'] },
+    //           },
+    //         },
+    //         {
+    //           $project: {
+    //             _id: 1,
+    //             name: 1,
+    //             email: 1,
+    //             phone: 1,
+    //             profilePhoto: 1,
+    //             followersCount: 1,
+    //             followingCount: 1,
+    //           },
+    //         },
+    //       ],
+    //       as: 'event.user',
+    //     },
+    //   },
+    //   { $unwind: { path: '$event.user', preserveNullAndEmptyArrays: true } },
+
+    //   // Populate event.businessProfile
+    //   {
+    //     $lookup: {
+    //       from: 'businesses',
+    //       let: { businessProfileId: '$event.businessProfile' },
+    //       pipeline: [
+    //         {
+    //           $match: {
+    //             $expr: { $eq: ['$_id', '$$businessProfileId'] },
+    //           },
+    //         },
+    //         {
+    //           $project: {
+    //             _id: 1,
+    //             name: 1,
+    //             bio: 1,
+    //             brandColor: 1,
+    //             profilePhoto: 1,
+    //             logo: 1,
+    //             followersCount: 1,
+    //             countryCode: 1,
+    //             phone: 1,
+    //             email: 1,
+    //             website: 1,
+    //             isDeleted: 1,
+    //             instagramPageUrl: 1,
+    //             twitterPageUrl: 1,
+    //             facebookPageUrl: 1,
+    //           },
+    //         },
+    //       ],
+    //       as: 'event.businessProfile',
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: '$event.businessProfile',
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+
+    //   // Populate locations
+    //   {
+    //     $lookup: {
+    //       from: 'eventlocations',
+    //       localField: 'event._id',
+    //       foreignField: 'event',
+    //       as: 'event.locations',
+    //     },
+    //   },
+
+    //   // Populate schedule
+    //   {
+    //     $lookup: {
+    //       from: 'eventschedules',
+    //       localField: 'event.eventSchedule',
+    //       foreignField: '_id',
+    //       as: 'event.eventSchedule',
+    //     },
+    //   },
+
+    //   // Populate categories
+    //   {
+    //     $lookup: {
+    //       from: 'categories',
+    //       localField: 'event.categories',
+    //       foreignField: '_id',
+    //       as: 'event.categories',
+    //     },
+    //   },
+
+    //   // Populate files (images)
+    //   {
+    //     $lookup: {
+    //       from: 'files',
+    //       localField: 'event.drivePath',
+    //       foreignField: 'parentDirectory',
+    //       as: 'event.images',
+    //     },
+    //   },
+
+    //   {
+    //     $replaceWith: '$event',
+    //   },
+
+    //   { $sort: { createdAt: -1 } },
+
+    //   { $skip: (page - 1) * limit },
+    //   { $limit: limit },
+
+    //   // Final shape adjustment (optional $project or transformation)
+    // ];
+
+    // const reports = await this.reportModel.aggregate(aggregationPipeline);
+
+     let startDate = new Date();
+    let endDate = new Date(
+      new Date(startDate).setFullYear(startDate.getFullYear() + 2),
+    );
+    
+    const reportedEvents = await this.reportModel.find({user: new mongoose.Types.ObjectId(userId)}).select('_id event');
+
+    const reportedEventsList = reportedEvents.map(event => event.event);
+    console.log('reportedEventsList', reportedEventsList);
+
+    const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+
+    const result = await this.eventLocationModel.aggregate([
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [longitude, latitude] },
+            distanceField: 'distance',
+            maxDistance: 10000000000,
+            spherical: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'event',
+            foreignField: '_id',
+            as: 'event',
+          },
+        },
+        { $unwind: '$event' },
+        {
+          $match: {
+            'event.status': EventStatus.PUBLISHED,
+            'event._id': { $in: reportedEventsList },
+          },
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'event.categories',
+            foreignField: '_id',
+            as: 'categories',
+          },
+        },
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$event.drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: [
+                          '$category',
+                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'images',
+          },
+        },
+        {
+          $lookup: {
+            from: 'eventlocations',
+            localField: 'event.locations',
+            foreignField: '_id',
+            as: 'locations',
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'event.businessProfile',
+            foreignField: '_id',
+            as: 'businessProfileDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfileDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $group: {
+            _id: '$event._id',
+            locationId: { $first: '$_id' },
+            distance: { $first: { $divide: ['$distance', 1609.34] } },
+            title: { $first: '$event.title' },
+            creatorType: { $first: '$event.creatorType' },
+            keywords: { $first: '$event.keywords' },
+            description: { $first: '$event.description' },
+            schedule: { $first: '$event.eventSchedule' },
+            // locations: { $first: '$event.locations' },
+            type: { $first: '$event.type' },
+            status: { $first: '$event.status' },
+            targetGenders: { $first: '$event.targetGenders' },
+            promotionCode: { $first: '$event.promotionCode' },
+            isFree: { $first: '$event.isFree' },
+            participationCost: { $first: '$event.participationCost' },
+            bookingUrl: { $first: '$event.bookingUrl' },
+            notifyFollowers: { $first: '$event.notifyFollowers' },
+            RSVP: { $first: '$event.RSVP' },
+            termsApplied: { $first: '$event.termsApplied' },
+            termsAndConditions: { $first: '$event.termsAndConditions' },
+            facebookPostId: { $first: '$event.facebookPostId' },
+            specifyForEachDay: { $first: '$event.specifyForEachDay' },
+            participants: { $first: '$event.participants' },
+            creatorDetails: { $first: '$event.creatorDetails' },
+            categories: { $first: '$categories' },
+            files: { $first: '$images' },
+            ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
+            isSaved: { $first: '$isSaved' },
+            isLiked: { $first: '$isLiked' },
+            locations: {
+              $push: {
+                location: '$location',
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$zip',
+                website: '$website',
+                _id: '$_id',
+                email: '$email',
+                phone: '$phone',
+                distance: { $divide: ['$distance', 1609.34] },
               },
             },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                phone: 1,
-                profilePhoto: 1,
-                followersCount: 1,
-                followingCount: 1,
+            businessProfileDetails: {
+              $first: '$businessProfileDetails',
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'eventschedules',
+            localField: 'schedule',
+            foreignField: '_id',
+            as: 'schedules',
+          },
+        },
+        {
+          $addFields: {
+            schedules: {
+              $filter: {
+                input: '$schedules',
+                as: 'schedule',
+                cond: {
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'fixed'] },
+                        {
+                          $and: [
+                            {
+                              $gte: [
+                                '$$schedule.fixedSchedule.date',
+                                startDate,
+                              ],
+                            },
+                            {
+                              $lte: ['$$schedule.fixedSchedule.date', endDate],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'recurring'] },
+                        {
+                          $and: [
+                            {
+                              $gte: [
+                                '$$schedule.recurringSchedule.endDate',
+                                startDate,
+                              ],
+                            },
+                            {
+                              $lte: [
+                                '$$schedule.recurringSchedule.endDate',
+                                endDate,
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
               },
             },
-          ],
-          as: 'event.user',
+          },
         },
-      },
-      { $unwind: { path: '$event.user', preserveNullAndEmptyArrays: true } },
-
-      // Populate event.businessProfile
-      {
-        $lookup: {
-          from: 'businesses',
-          let: { businessProfileId: '$event.businessProfile' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$businessProfileId'] },
+        {
+          $match: {
+            $expr: { $gt: [{ $size: '$schedules' }, 0] },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            distance: 1,
+            title: 1,
+            keywords: 1,
+            description: 1,
+            type: 1,
+            status: 1,
+            notifyFollowers: 1,
+            targetGenders: 1,
+            promotionCode: 1,
+            isFree: 1,
+            participationCost: 1,
+            bookingUrl: 1,
+            termsAndConditions: 1,
+            ageGroupsAllowed: {
+              minAge: '$minTargetAge',
+              maxAge: '$maxTargetAge',
+            },
+            categories: {
+              $map: {
+                input: '$categories',
+                as: 'category',
+                in: {
+                  _id: '$$category._id',
+                  name: '$$category.title',
+                  darkIcon: '$$category.darkIcon',
+                  lightIcon: '$$category.lightIcon',
+                  activeColor: '$$category.activeColor',
+                },
               },
             },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                bio: 1,
-                brandColor: 1,
-                profilePhoto: 1,
-                logo: 1,
-                followersCount: 1,
-                countryCode: 1,
-                phone: 1,
-                email: 1,
-                website: 1,
-                isDeleted: 1,
-                instagramPageUrl: 1,
-                twitterPageUrl: 1,
-                facebookPageUrl: 1,
+            businessProfileDetails: {
+              _id: '$businessProfileDetails._id',
+              name: '$businessProfileDetails.name',
+              cover: '$businessProfileDetails.cover',
+              logo: '$businessProfileDetails.logo',
+              email: '$businessProfileDetails.email',
+              bio: '$businessProfileDetails.bio',
+              description: '$businessProfileDetails.description',
+              followersCount: '$businessProfileDetails.followersCount',
+              isFollowedByMe: '$isFollowedByMe',
+              profileType: 'BusinessProfile',
+              phone: '$businessProfileDetails.phone',
+              website: '$businessProfileDetails.website',
+              facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+              instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+              twitterPageUrl: '$businessProfileDetails.XPageUrl',
+            },
+            // QR_CODE: {
+            //   _id: '$QR_CODE._id',
+            //   url: '$QR_CODE.metaData.url',
+            // },
+            creatorDetails: {
+              $cond: {
+                if: { $eq: ['$creatorType', 'User'] },
+                then: {
+                  _id: '$userDetails._id',
+                  name: '$userDetails.name',
+                  profilePhoto: '$userDetails.profilePhoto',
+                  email: '$userDetails.email',
+                  bio: '$userDetails.bio',
+                  followersCount: '$userDetails.followersCount',
+                  profileType: 'User',
+                  phone: '$userDetails.phone',
+                  website: '',
+                  isFollowedByMe: '$event.isFollowedByMe',
+                  isDeleted: '$userDetails.isDeleted',
+                  isMe: false,
+                },
+                else: {
+                  _id: '$businessProfileDetails._id',
+                  name: '$businessProfileDetails.name',
+                  profilePhoto: '$businessProfileDetails.profilePhoto',
+                  email: '$businessProfileDetails.email',
+                  bio: '$businessProfileDetails.bio',
+                  followersCount: '$businessProfileDetails.followersCount',
+                  profileType: 'BusinessProfile',
+                  phone: '$businessProfileDetails.phone',
+                  website: '$businessProfileDetails.website',
+                  isFollowedByMe: '$event.isFollowedByMe',
+                  description: '$businessProfileDetails.description',
+                  logo: '$businessProfileDetails.logo',
+                  cover: '$businessProfileDetails.cover',
+                  isDeleted: '$businessProfileDetails.isDeleted',
+                  facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                  instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                  twitterPageUrl: '$businessProfileDetails.XPageUrl',
+                  isMe: false,
+                },
               },
             },
-          ],
-          as: 'event.businessProfile',
+            images: {
+              $map: {
+                input: '$files',
+                as: 'file',
+                in: {
+                  _id: '$$file._id',
+                  url: '$$file.metaData.url',
+                },
+              },
+            },
+            creatorType: 1,
+            locations: 1,
+            schedules: 1,
+          },
         },
-      },
-      {
-        $unwind: {
-          path: '$event.businessProfile',
-          preserveNullAndEmptyArrays: true,
+        { $sort: { createdAt: -1, _id: 1 } },
+        {
+          $facet: {
+            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
         },
-      },
+      ]);
 
-      // Populate locations
-      {
-        $lookup: {
-          from: 'eventlocations',
-          localField: 'event._id',
-          foreignField: 'event',
-          as: 'event.locations',
-        },
-      },
 
-      // Populate schedule
-      {
-        $lookup: {
-          from: 'eventschedules',
-          localField: 'event.eventSchedule',
-          foreignField: '_id',
-          as: 'event.eventSchedule',
-        },
-      },
 
-      // Populate categories
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'event.categories',
-          foreignField: '_id',
-          as: 'event.categories',
-        },
-      },
-
-      // Populate files (images)
-      {
-        $lookup: {
-          from: 'files',
-          localField: 'event.drivePath',
-          foreignField: 'parentDirectory',
-          as: 'event.images',
-        },
-      },
-
-      {
-        $replaceWith: '$event',
-      },
-
-      { $sort: { createdAt: -1 } },
-
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-
-      // Final shape adjustment (optional $project or transformation)
-    ];
-
-    const reports = await this.reportModel.aggregate(aggregationPipeline);
 
     return {
       success: true,
       message: 'Reports fetched successfully',
-      reports,
+      data: result[0].data
     };
   }
 
@@ -4465,6 +4845,32 @@ export class EventService2 {
                   const originalStart = new Date(duration['startTime']);
                   const originalEnd = new Date(duration['endTime']);
 
+                  let fiveMinFromNow = new Date(
+                    new Date().getTime() + 5 * 60 * 1000,
+                  );
+                  if (originalStart.getTime() < fiveMinFromNow.getTime()) {
+                    console.log('Start time is less than 5 minutes from now');
+
+                    return {
+                      success: false,
+                      message: `Start time cannot be less than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
+                  if (originalEnd.getTime() <= originalStart.getTime()) {
+                    return {
+                      success: false,
+                      message: `End time should be greater than start time for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
+
+                  // if (originalStart.getTime() < baseDate.getTime()) {
+                  //    console.log('Start time is less than 5 minutes from now 222222');
+                  //   return {
+                  //     success: false,
+                  //     message: `Start time cannot be in past for the date ${data.fixedSchedule[i].date}`,
+                  //   };
+                  // }
+
                   const newStart = new Date(
                     Date.UTC(
                       baseDate.getUTCFullYear(),
@@ -4503,6 +4909,18 @@ export class EventService2 {
             });
           }
 
+          await this.scheduleModel.deleteMany({
+            event: new mongoose.Types.ObjectId(eventId),
+          });
+          await this.eventModel.updateOne(
+            { _id: new mongoose.Types.ObjectId(eventId) },
+            {
+              $set: {
+                eventSchedule: [],
+              },
+            },
+          );
+
           for (let i = 0; i < data.fixedSchedule.length; i++) {
             if (data.fixedSchedule[i].date) {
               const date = new Date(data.fixedSchedule[i].date.toString());
@@ -4510,7 +4928,7 @@ export class EventService2 {
                 type: data.scheduleType,
                 event: new mongoose.Types.ObjectId(eventId),
                 fixedSchedule: {
-                  date: new Date(date),
+                  date: new Date(new Date(date).setHours(0, 0, 0, 0)),
                   durations: data.fixedSchedule[i].durations,
                 },
                 businessId: new mongoose.Types.ObjectId(user.businessProfile),
@@ -4629,8 +5047,8 @@ export class EventService2 {
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
           eventId,
           {
-            $push: {
-              eventSchedule: { $each: scheduleList },
+            $set: {
+              eventSchedule: scheduleList,
             },
           },
           { new: true },
@@ -5322,6 +5740,8 @@ export class EventService2 {
         ? new Date(endDate)
         : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
       let query: any;
+      console.log('startDate:', startDate);
+      console.log('endDate:', endDate);
 
       if (user.isBusiness) {
         if (userRole?.isBusinessOwner) {
@@ -5361,6 +5781,7 @@ export class EventService2 {
         name: 'Content QR',
       });
       console.log('Queryy:', query);
+      console.log('Expired Status:', isExpired);
 
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
@@ -5414,6 +5835,117 @@ export class EventService2 {
             as: 'files',
           },
         },
+        // {
+        //   $addFields: {
+        //     schedules: {
+        //       $filter: {
+        //         input: '$schedules',
+        //         as: 'schedule',
+        //         cond: {
+        //           $or: isExpired
+        //             ? [
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'fixed'] },
+        //                     {
+        //                       $lt: ['$$schedule.fixedSchedule.date', now],
+        //                     },
+        //                   ],
+        //                 },
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'recurring'] },
+        //                     {
+        //                       $lt: [
+        //                         '$$schedule.recurringSchedule.endDate',
+        //                         now,
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //               ]
+        //             : [
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'fixed'] },
+        //                     {
+        //                       $and: [
+        //                         {
+        //                           $gte: [
+        //                             '$$schedule.fixedSchedule.date',
+        //                             startDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $lte: [
+        //                             '$$schedule.fixedSchedule.date',
+        //                             endDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $gte: [
+        //                             {
+        //                               $let: {
+        //                                 vars: {
+        //                                   durations:
+        //                                     '$$schedule.fixedSchedule.durations',
+        //                                   lastIndex: {
+        //                                     $subtract: [
+        //                                       {
+        //                                         $size:
+        //                                           '$$schedule.fixedSchedule.durations',
+        //                                       },
+        //                                       1,
+        //                                     ],
+        //                                   },
+        //                                 },
+        //                                 in: {
+        //                                   $getField: {
+        //                                     field: 'endTime',
+        //                                     input: {
+        //                                       $arrayElemAt: [
+        //                                         '$$durations',
+        //                                         '$$lastIndex',
+        //                                       ],
+        //                                     },
+        //                                   },
+        //                                 },
+        //                               },
+        //                             },
+        //                             new Date(),
+        //                           ],
+        //                         },
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //                 {
+        //                   $and: [
+        //                     { $eq: ['$$schedule.type', 'recurring'] },
+        //                     {
+        //                       $and: [
+        //                         {
+        //                           $gte: [
+        //                             '$$schedule.recurringSchedule.endDate',
+        //                             startDate,
+        //                           ],
+        //                         },
+        //                         {
+        //                           $lte: [
+        //                             '$$schedule.recurringSchedule.endDate',
+        //                             endDate,
+        //                           ],
+        //                         },
+        //                       ],
+        //                     },
+        //                   ],
+        //                 },
+        //               ],
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
         {
           $addFields: {
             schedules: {
@@ -5421,48 +5953,28 @@ export class EventService2 {
                 input: '$schedules',
                 as: 'schedule',
                 cond: {
-                  $or: isExpired
-                    ? [
+                  $or: [
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'fixed'] },
                         {
                           $and: [
-                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $lt: ['$$schedule.fixedSchedule.date', now],
-                            },
-                          ],
-                        },
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'recurring'] },
-                            {
-                              $lt: [
-                                '$$schedule.recurringSchedule.endDate',
-                                now,
+                              $gte: [
+                                '$$schedule.fixedSchedule.date',
+                                startDate,
                               ],
                             },
-                          ],
-                        },
-                      ]
-                    : [
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $and: [
-                                {
-                                  $gte: [
-                                    '$$schedule.fixedSchedule.date',
-                                    startDate,
-                                  ],
-                                },
-                                {
-                                  $lte: [
-                                    '$$schedule.fixedSchedule.date',
-                                    endDate,
-                                  ],
-                                },
-                                {
-                                  $gte: [
+                              $lte: ['$$schedule.fixedSchedule.date', endDate],
+                            },
+                            {
+                              // Only filter by expiration if expired=true
+                              $cond: {
+                                if: isExpired, // passed in as an aggregation variable
+                                then: {
+                                  // expired schedules → last endTime < now
+                                  $lt: [
                                     {
                                       $let: {
                                         vars: {
@@ -5494,35 +6006,39 @@ export class EventService2 {
                                     new Date(),
                                   ],
                                 },
-                              ],
-                            },
-                          ],
-                        },
-                        {
-                          $and: [
-                            { $eq: ['$$schedule.type', 'recurring'] },
-                            {
-                              $and: [
-                                {
-                                  $gte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    startDate,
-                                  ],
-                                },
-                                {
-                                  $lte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    endDate,
-                                  ],
-                                },
-                              ],
+                                else: true, // skip expiration filter → include all
+                              },
                             },
                           ],
                         },
                       ],
+                    },
+                    {
+                      $and: [
+                        { $eq: ['$$schedule.type', 'recurring'] },
+                        {
+                          $gte: [
+                            '$$schedule.recurringSchedule.endDate',
+                            startDate,
+                          ],
+                        },
+                        {
+                          $lte: [
+                            '$$schedule.recurringSchedule.endDate',
+                            endDate,
+                          ],
+                        },
+                      ],
+                    },
+                  ],
                 },
               },
             },
+          },
+        },
+        {
+          $match: {
+            $expr: { $gt: [{ $size: '$schedules' }, 0] },
           },
         },
         { $sort: { createdAt: -1 } },
@@ -5564,23 +6080,23 @@ export class EventService2 {
       };
 
       // 6. Post-filtering by isExpired and schedules
-      const result = events.filter((evt) => {
-        if (evt.isExpired) return false;
-        if (!evt.schedules?.length) return true;
-        evt.schedules = evt.schedules.filter((sch) => {
-          return sch.type === ScheduleTypes.FIXED
-            ? filterFixed(sch)
-            : sch.type === ScheduleTypes.RECURRING
-              ? filterRecurring(sch)
-              : false;
-        });
-        return evt.schedules.length > 0;
-      });
+      // const result = events.filter((evt) => {
+      //   if (evt.isExpired) return false;
+      //   if (!evt.schedules?.length) return true;
+      //   evt.schedules = evt.schedules.filter((sch) => {
+      //     return sch.type === ScheduleTypes.FIXED
+      //       ? filterFixed(sch)
+      //       : sch.type === ScheduleTypes.RECURRING
+      //         ? filterRecurring(sch)
+      //         : false;
+      //   });
+      //   return evt.schedules.length > 0;
+      // });
 
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: result,
+        data: events,
         total: countDocuments,
         page,
         limit,
@@ -5658,7 +6174,7 @@ export class EventService2 {
         let gendersArray = data.targetGenders.split(',');
         data.targetGenders = gendersArray;
       }
-      if (data.eventType == EventTypes.FLASHDEAL) {
+      if (data.eventType == EventTypes.FLASHDEAL && data.quantityLimit) {
         data.quantityLimit = Number(data.quantityLimit);
       }
       data.isFree = data.isFree === 'true';
@@ -6159,6 +6675,10 @@ export class EventService2 {
               address1: data.address.address ?? null,
               latitude: data.address.lat ?? 34,
               longitude: data.address.lng ?? -101,
+              location: {
+                type: 'Point',
+                coordinates: [data.address.lng ?? -101, data.address.lat ?? 34],
+              },
             };
             foundOutlet = await this.outletModel.create(outletObj);
           }
@@ -6383,6 +6903,10 @@ export class EventService2 {
             address1: data.address.address ?? null,
             latitude: data.address.lat,
             longitude: data.address.lng,
+            location: {
+              type: 'Point',
+              coordinates: [data.address.lng, data.address.lat],
+            },
           });
         }
 
@@ -6576,6 +7100,13 @@ export class EventService2 {
             address1: data.locations[0].address1 ?? null,
             latitude: data.locations[0].location.coordinates[1],
             longitude: data.locations[0].location.coordinates[0],
+            location: {
+              type: 'Point',
+              coordinates: [
+                data.locations[0].location.coordinates[0],
+                data.locations[0].location.coordinates[1],
+              ],
+            },
           });
         }
 
@@ -6653,10 +7184,10 @@ export class EventService2 {
 
         for (let time of data.schedules || []) {
           const startTime = new Date(
-            time.fixedSchedule.durations[0].startTime || Date.now(),
+            time.fixedSchedule.startTime || Date.now(),
           );
-          const endTime = time.fixedSchedule.durations[0].endTime
-            ? new Date(time.fixedSchedule.durations[0].endTime)
+          const endTime = time.fixedSchedule.endTime
+            ? new Date(time.fixedSchedule.endTime)
             : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
 
           const createdSchedule = await this.eventScheduleModel.create({
@@ -6675,20 +7206,22 @@ export class EventService2 {
           );
         }
 
-        if (data.images[0].url) {
+        if (data.images) {
           const fileCategory = await this.fileCategoryModel.findOne({
             name: FileCategoryTypes.GALLERY_IMAGE,
           });
 
-          await this.driveService.downloadAndUploadImage(
-            data.images[0].url,
-            businessUser.id,
-            createdEvent.drivePath,
-            fileCategory.id,
-          );
+          for (let image of data.images) {
+            if (!image) continue;
+            await this.driveService.downloadAndUploadImage(
+              image,
+              businessUser.id,
+              createdEvent.drivePath,
+              fileCategory.id,
+            );
+          }
         }
       }
-
       return {
         success: true,
         message: 'Business Events Crawled Successfully.',
@@ -6826,84 +7359,249 @@ export class EventService2 {
     return Array.from(dates).map((timestamp) => new Date(timestamp));
   }
 
-  // async corruptedEvents() {
-  //   try {
-  //     for (let event of CorruptedAtlantaEvents) {
-  //       const randomDates = await this.getRandomDatesBetween(
-  //         '2025-07-30',
-  //         '2025-09-01',
-  //       );
-  //       console.log('Random Dates:', randomDates);
+  async createPinDropEvent(
+    data: CreateOfferDto,
+    user: DecodedUser,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      const userId = user.id;
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      const userDetails = await this.businessUserModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      if (data.categories) {
+        let categoriesInObjectId = [];
+        data.categories = data.categories.split(',');
+        for (let category of data.categories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
+        data.categories = categoriesInObjectId;
+      }
+      const businessFolder = await this.driveService.createFolder(userId, {
+        parentDirectory: business.drivePath,
+        parentType: Folder.name,
+        folderName: data.title,
+      });
+      let createObj: any = {
+        ...data,
+        type: data.eventType,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        creatorType: BusinessUser.name,
+        user: new mongoose.Types.ObjectId(userId),
+      };
+      if (data.bookingSite) {
+        let bookingUrls = data.bookingSite.split(',');
+        createObj.bookingUrl = bookingUrls;
+      }
+      console.log('eventObj:', createObj);
+      const event = await this.eventModel.create(createObj);
+      // const fileCategory = await this.fileCategoryModel.findOne({
+      //   name: 'Content QR',
+      // });
+      if (images.length > 0) {
+        await this.driveService.multiImageUpload(
+          user.id,
+          String(event.drivePath),
+          images,
+        );
+      }
+      const eventDetails = await this.eventModel
+        .findById(event._id)
+        .populate('files');
+      return {
+        success: true,
+        message: 'Pin Drop created successfully',
+        data: eventDetails,
+      };
+    } catch (error) {
+      console.log('Error in createPinDropEvent:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async updatePinDropEvent(
+    eventId: string,
+    data: UpdatePinDropDto,
+    user: DecodedUser,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      const userId = user.id;
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      const userDetails = await this.businessUserModel.findById(userId);
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found.',
+        };
+      }
+      if (data.categories) {
+        let categoriesInObjectId = [];
+        data.categories = data.categories.split(',');
+        for (let category of data.categories) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
+        data.categories = categoriesInObjectId;
+      }
+      const event = await this.eventModel.findById(eventId);
+      if (!event) {
+        return {
+          success: false,
+          message: 'Event not found.',
+        };
+      }
+      let updateObj: any = {
+        ...data,
+      };
+      console.log('eventObj:', updateObj);
+      const updatedEvent = await this.eventModel.updateOne(
+        { _id: eventId },
+        updateObj,
+      );
+      if (images.length > 0) {
+        await this.driveService.deleteBufferAndMultiImageUpload(
+          user,
+          String(event.drivePath),
+          images,
+        );
+      }
+      const eventDetails = await this.eventModel
+        .findById(event._id)
+        .populate('files');
+      return {
+        success: true,
+        message: 'Pin Drop updated successfully',
+        data: eventDetails,
+      };
+    } catch (error) {
+      console.log('Error in updatePinDropEvent:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 
-  //       const schedule1 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[0]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[0]),
-  //               endTime: new Date(randomDates[0]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       const schedule2 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[1]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[1]),
-  //               endTime: new Date(randomDates[1]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       const schedule3 = await this.eventScheduleModel.create({
-  //         event: new mongoose.Types.ObjectId(event),
-  //         type: ScheduleTypes.FIXED,
-  //         fixedSchedule: {
-  //           date: new Date(randomDates[2]),
-  //           durations: [
-  //             {
-  //               startTime: new Date(randomDates[2]),
-  //               endTime: new Date(randomDates[2]),
-  //             },
-  //           ],
-  //         },
-  //       });
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule1._id },
-  //         },
-  //       );
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule2._id },
-  //         },
-  //       );
-  //       await this.eventModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(event) },
-  //         {
-  //           $addToSet: { eventSchedule: schedule3._id },
-  //         },
-  //       );
+  async pinDrop(eventId: string, user: DecodedUser, pinDropDto: PinDropDto) {
+    try {
+      let address = await this.googleService.getAddressFromCoordinates(
+        pinDropDto.latitude,
+        pinDropDto.longitude,
+        '000e10b3-b0a0-4269-a864-ea419a790f76',
+      );
+      console.log('Address:', address);
+      const event = await this.eventModel.findById(eventId);
+      if (!event) {
+        return {
+          success: false,
+          message: 'Event not found.',
+        };
+      }
 
-  //     }
-  //     return {
-  //       success: true,
-  //       message: 'Corrupted events processed successfully.',
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in corruptedEvents:', error);
-  //     return {
-  //       success: false,
-  //       message: 'Something went wrong.',
-  //     };
-  //   }
-  // }
+      const outlet = await this.outletModel.findById(pinDropDto.outletId);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found.',
+        };
+      }
+      // if (outlet.category !== OutletCategoryList.MOBILE) {
+      //   return {
+      //     success: false,
+      //     message: 'Only Mobile Outlet can be used for pin drop.',
+      //   };
+      // }
+
+      const pinDrop = await this.eventLocationModel.create({
+        event: event._id,
+        businessLocationId: outlet._id,
+        location: {
+          type: 'Point',
+          coordinates: [pinDropDto.longitude, pinDropDto.latitude],
+        },
+        address1: address.data.address1,
+        city: address.data.city,
+        state: address.data.state,
+        zip: address.data.zip,
+        email: outlet.email,
+        isFromCrawler: false,
+        businessProfile: event.businessProfile,
+      });
+
+      await this.eventModel.updateOne(
+        { _id: event._id },
+        { $addToSet: { locations: pinDrop._id } },
+      );
+
+      return {
+        success: true,
+        message: 'Pin drop created successfully.',
+        data: pinDrop,
+      };
+    } catch (error) {
+      console.error('Error in pinDrop:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 }

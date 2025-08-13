@@ -17,6 +17,7 @@ import {
   BadRequestException,
   UploadedFile,
   UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -51,7 +52,7 @@ import {
   UpdateLocationGroupDto,
 } from './dto/create-locationGroup.dto';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('business')
 export class BusinessController {
@@ -620,10 +621,14 @@ export class BusinessController {
   async getDashboardData(
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
-    @Query('progress') progress: string
+    @Query('progress') progress: string,
   ) {
     const pageLimit = limit ? parseInt(limit) : 20;
-    const result = await this.businessService.getDashboardData(user, pageLimit, progress);
+    const result = await this.businessService.getDashboardData(
+      user,
+      pageLimit,
+      progress,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1198,6 +1203,38 @@ export class BusinessController {
       parseFloat(longitude),
     );
 
+    // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
+
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('uploadMenu')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FilesInterceptor('images', 5, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  async uploadMenu(
+    @UploadedFiles() images: Express.Multer.File[],
+    @TokenDecoder() user: DecodedUser,
+    @Body('name') name: string,
+    @Body('description') description: string,
+  ) {
+    const result = await this.businessService.uploadMenu(
+      images,
+      user,
+      name,
+      description,
+    );
     if (result.success) {
       return {
         message: result.message,

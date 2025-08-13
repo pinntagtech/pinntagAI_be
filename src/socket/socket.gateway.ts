@@ -22,6 +22,7 @@ import {
 import { Admin, AdminDocument } from '../admin/models/admin.model';
 import { GetDashboardDto } from '../auth/dto/getDashboard.dto';
 import { Type } from 'class-transformer';
+import { BusinessService } from 'src/business/business.service';
 
 @WebSocketGateway({
   cors: { origin: '*', methods: ['GET', 'POST'] },
@@ -39,6 +40,7 @@ export class SocketGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
+    private readonly businessService: BusinessService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
@@ -104,9 +106,14 @@ export class SocketGateway
   }
 
   @SubscribeMessage('getDashboardAllConfigs')
-  async handleGetDashboardAllConfigs(client: Socket) {
-    console.log('getDashboardAllConfigs called');
-    const result = await this.authService.getDashboardAllConfigs();
+  async handleGetDashboardAllConfigs(
+    client: Socket,
+    payload: { carouselType: string },
+  ) {
+     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const result = await this.authService.getDashboardAllConfigs(
+      data.data.carouselType,
+    );
     client.emit('successMessage', 'Dashboard configs fetched successfully');
     client.emit('getDashboardAllConfigsResponse', {
       message: result.message,
@@ -140,6 +147,7 @@ export class SocketGateway
       profilePhoto: '',
       isBusiness: userType === UserTypes.BUSINESS,
     };
+    console.log('Decoded User:', decodedUser);
     const result = await this.authService.getDashboardCarouselEvent2(
       decodedUser,
       carouselId,
@@ -151,10 +159,13 @@ export class SocketGateway
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
+      body.industries ? body.industries : null,
+      body.isFollowedByMe ? body.isFollowedByMe : null,
+
     );
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
-      ...result.data,
+      eventsResult: result.data.eventsResult,
     });
   }
 
@@ -246,6 +257,32 @@ export class SocketGateway
     client.emit('getEventDetailsResponse', {
       message: result.message,
       event: result.event,
+    });
+  }
+
+  @SubscribeMessage('businessCardView')
+  async handleBusinessCardView(
+    client: Socket,
+    payload: { businessId: string, latitude: number, longitude: number }
+  ){
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const { businessId, latitude, longitude } = data.data;
+    if (!isValidObjectId(businessId)) {
+      return client.emit('businessCardViewResponse', {
+        message: 'Invalid business id',
+        business: null,
+      });
+    }
+    const userId = (client as any).userId;
+    const result = await this.businessService.fetchBusiness(
+      businessId,
+      userId,
+      parseFloat(latitude),
+      parseFloat(longitude)
+    );
+    client.emit('businessCardViewResponse', {
+      message: result.message,
+      data: result.data,
     });
   }
 }

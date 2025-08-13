@@ -29,7 +29,6 @@ export class PersonDetailDto {
   gender: string;
 
   @IsOptional()
-  @IsEmail()
   @IsString()
   @Transform(({ value }) => value.toLowerCase())
   @Transform(({ value }) => value.trim())

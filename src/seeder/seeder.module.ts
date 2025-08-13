@@ -73,6 +73,7 @@ import { FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
 import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { Tag, TagSchema } from 'src/models/tags.model';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: File.name, schema: FileSchema },
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
+      { name: Tag.name, schema: TagSchema },
     ]),
   ],
   controllers: [],

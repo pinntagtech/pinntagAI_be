@@ -15,7 +15,13 @@ import { JwtService } from '@nestjs/jwt';
 import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
-import { OtpTypes, SMSType, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  CarouselType,
+  OtpTypes,
+  SMSType,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { ResendOtpDto } from './dto/resendOtp.dto';
 import { ResetPaswordDto } from './dto/resetPass.dto';
 import { GuestLoginDto } from './dto/guestLogin.dto';
@@ -89,9 +95,12 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
-import { Outlet } from 'src/outlet/model/outlet.model';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
-import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from 'src/business/model/businessIndustry.model';
 import {
   EventSchedule,
   EventScheduleDocument,
@@ -103,6 +112,8 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { SavedEvent } from 'src/event/models/savedEvent.model';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
+import { DashboardSearchDto } from './dto/dashboardSearch.dto';
+import { CommandSucceededEvent } from 'mongodb';
 
 @Injectable()
 export class AuthService {
@@ -140,9 +151,13 @@ export class AuthService {
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    private readonly userService: UserService,
     @InjectModel(Privilege.name)
     private readonly privilegeModel: Model<PrivilegeDocument>,
-    private readonly userService: UserService,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -428,16 +443,16 @@ export class AuthService {
     userAgent: string,
     ipAddress: string,
   ) {
-    console.log('personalDetailDTO::', personalDetailDTO);
-    await this.userModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          ...personalDetailDTO,
-          status: UserProfileStatus.DETAILS_ADDED,
-        },
-      },
+    const updateObj: Record<string, any> = Object.fromEntries(
+      Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
+
+    // Now include the status
+    updateObj.status = UserProfileStatus.DETAILS_ADDED;
+
+    console.log('updateObj::', updateObj);
+
+    await this.userModel.updateOne({ _id: id }, { $set: updateObj });
 
     return {
       success: true,
@@ -499,6 +514,7 @@ export class AuthService {
         role: role._id,
         firstName: data.name ? data.name.split(' ')[0] : '',
         lastName,
+        name: data.name ? data.name : '',
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
         email: validToken.email,
         isEmailVerified: true,
@@ -507,6 +523,7 @@ export class AuthService {
         userAgent,
         ipAddress,
       });
+      console.log('user created from google:', user);
       const customer = await this.stripeService.createCustomer(
         user.email,
         user.name,
@@ -832,9 +849,9 @@ export class AuthService {
     }
   }
 
-  async getDashboardAllConfigs() {
+  async getDashboardAllConfigs(carouselType: string) {
     const foundConfig = await this.dashboardConfigModel
-      .find({}, { _id: 1, name: 1 })
+      .find({ carouselType: carouselType }, { _id: 1, name: 1, cardType: 1 })
       .sort({ sortOrder: 1 });
     if (!foundConfig) {
       return {
@@ -971,7 +988,7 @@ export class AuthService {
           },
         );
 
-        console.log("foundFcmToken::", foundFcmToken);
+        console.log('foundFcmToken::', foundFcmToken);
         if (!foundFcmToken) {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
@@ -1729,24 +1746,33 @@ export class AuthService {
 
   async fetchEventsV2(
     userId: mongoose.Types.ObjectId,
-    longitude: number,  
+    longitude: number,
     latitude: number,
-    age: number,
     match: any,
     page: number,
     limit: number,
-    start: Date,
+    carouselType: string,
     distance: number,
-    startDate: any,
-    endDate: any,
+    startDate?: any,
+    endDate?: any,
   ) {
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    if (carouselType === CarouselType.Event) {
+      match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL] };
+    } else if (carouselType === CarouselType.OnWheels) {
+      match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
+    }
     console.log('Match:', match);
-    console.log('DISTANCE:', distance);
+
+    console.log('START DATE:', startDate);
+    console.log('END DATE:', endDate);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -1771,8 +1797,9 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('682a38a5a85d3ccb755163b0'),
+          // 'event._id': new mongoose.Types.ObjectId('6895c4b3840f1dfbe52db8f9'),
           'event.status': EventStatus.PUBLISHED,
+          'event.isDisabled': false,
           ...match,
         },
       },
@@ -1949,8 +1976,8 @@ export class AuthService {
           keywords: { $first: '$event.keywords' },
           description: { $first: '$event.description' },
           type: { $first: '$event.type' },
-          status: { $first: '$event.status' },
-          notifyFollowers: { $first: '$event.notifyFollowers' },
+          // status: { $first: '$event.status' },
+          // notifyFollowers: { $first: '$event.notifyFollowers' },
           targetGenders: { $first: '$event.targetGenders' },
           promotionCode: { $first: '$event.promotionCode' },
           isFree: { $first: '$event.isFree' },
@@ -2117,8 +2144,8 @@ export class AuthService {
           keywords: 1,
           description: 1,
           type: 1,
-          status: 1,
-          notifyFollowers: 1,
+          // status: 1,
+          // notifyFollowers: 1,
           targetGenders: 1,
           promotionCode: 1,
           isFree: 1,
@@ -2135,7 +2162,7 @@ export class AuthService {
               as: 'category',
               in: {
                 _id: '$$category._id',
-                name: '$$category.title',
+                title: '$$category.title',
                 darkIcon: '$$category.darkIcon',
                 lightIcon: '$$category.lightIcon',
                 activeColor: '$$category.activeColor',
@@ -2148,16 +2175,16 @@ export class AuthService {
             cover: '$businessProfileDetails.cover',
             logo: '$businessProfileDetails.logo',
             email: '$businessProfileDetails.email',
-            bio: '$businessProfileDetails.bio',
-            description: '$businessProfileDetails.description',
-            followersCount: '$businessProfileDetails.followersCount',
-            isFollowedByMe: '$isFollowedByMe',
-            profileType: 'BusinessProfile',
-            phone: '$businessProfileDetails.phone',
-            website: '$businessProfileDetails.website',
-            facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
-            instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
-            twitterPageUrl: '$businessProfileDetails.XPageUrl',
+            // bio: '$businessProfileDetails.bio',
+            // description: '$businessProfileDetails.description',
+            // followersCount: '$businessProfileDetails.followersCount',
+            // isFollowedByMe: '$isFollowedByMe',
+            // profileType: 'BusinessProfile',
+            // phone: '$businessProfileDetails.phone',
+            // website: '$businessProfileDetails.website',
+            // facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+            // instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+            // twitterPageUrl: '$businessProfileDetails.XPageUrl',
           },
           QR_CODE: {
             _id: '$QR_CODE._id',
@@ -2171,34 +2198,34 @@ export class AuthService {
                 name: '$userDetails.name',
                 profilePhoto: '$userDetails.profilePhoto',
                 email: '$userDetails.email',
-                bio: '$userDetails.bio',
-                followersCount: '$userDetails.followersCount',
-                profileType: 'User',
-                phone: '$userDetails.phone',
-                website: '',
-                isFollowedByMe: '$event.isFollowedByMe',
-                isDeleted: '$userDetails.isDeleted',
-                isMe: false,
+                // bio: '$userDetails.bio',
+                // followersCount: '$userDetails.followersCount',
+                // profileType: 'User',
+                // phone: '$userDetails.phone',
+                // website: '',
+                // isFollowedByMe: '$event.isFollowedByMe',
+                // isDeleted: '$userDetails.isDeleted',
+                // isMe: false,
               },
               else: {
                 _id: '$businessProfileDetails._id',
                 name: '$businessProfileDetails.name',
                 profilePhoto: '$businessProfileDetails.profilePhoto',
                 email: '$businessProfileDetails.email',
-                bio: '$businessProfileDetails.bio',
-                followersCount: '$businessProfileDetails.followersCount',
-                profileType: 'BusinessProfile',
-                phone: '$businessProfileDetails.phone',
-                website: '$businessProfileDetails.website',
-                isFollowedByMe: '$event.isFollowedByMe',
-                description: '$businessProfileDetails.description',
+                // bio: '$businessProfileDetails.bio',
+                // followersCount: '$businessProfileDetails.followersCount',
+                // profileType: 'BusinessProfile',
+                // phone: '$businessProfileDetails.phone',
+                // website: '$businessProfileDetails.website',
+                // isFollowedByMe: '$event.isFollowedByMe',
+                // description: '$businessProfileDetails.description',
                 logo: '$businessProfileDetails.logo',
                 cover: '$businessProfileDetails.cover',
-                isDeleted: '$businessProfileDetails.isDeleted',
-                facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
-                instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
-                twitterPageUrl: '$businessProfileDetails.XPageUrl',
-                isMe: false,
+                // isDeleted: '$businessProfileDetails.isDeleted',
+                // facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                // instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                // twitterPageUrl: '$businessProfileDetails.XPageUrl',
+                // isMe: false,
               },
             },
           },
@@ -2228,7 +2255,6 @@ export class AuthService {
       },
     ];
     let rows = await this.eventLocationModel.aggregate(basePipeline);
-
     const dataRows = rows[0]?.data || [];
     const totalCount = rows[0]?.totalCount?.[0]?.count || 0;
     // console.log('Data Rows:', dataRows);
@@ -2933,6 +2959,124 @@ export class AuthService {
     // return filteredEvents; // Return the arranged result
     return [dataRows, totalCount];
   }
+  async fetchBusinessListing(
+    userId: mongoose.Types.ObjectId,
+    longitude: number,
+    latitude: number,
+    match: any,
+    page: number,
+    limit: number,
+    distance: number,
+    startDate?: any,
+    endDate?: any,
+  ) {
+    const now = new Date();
+    startDate = startDate ? new Date(startDate) : now;
+    endDate = endDate
+      ? new Date(endDate)
+      : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    console.log('Match:', match);
+    console.log('DISTANCE:', distance);
+    const basePipeline: any[] = [
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: distance * 1609.34,
+          spherical: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'business',
+          foreignField: '_id',
+          as: 'businessDetails',
+        },
+      },
+      { $unwind: '$businessDetails' },
+      {
+        $lookup: {
+          from: 'businessindustries',
+          localField: 'businessDetails.businessIndustry',
+          foreignField: '_id',
+          as: 'industryDetails',
+        },
+      },
+      {
+        $unwind: { path: '$industryDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'follows', // make sure it's the actual collection name
+          let: {
+            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            targetId: '$businessDetails._id',
+            targetType: Business.name,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: {
+            $gt: [{ $size: '$userFollow' }, 0],
+          },
+        },
+      },
+      { $sort: { distance: 1, createdAt: -1, _id: 1 } },
+      {
+        $group: {
+          _id: '$businessDetails._id',
+          name: { $first: '$businessDetails.name' },
+          // businessDetails: { $first: '$businessDetails' },
+          cover: { $first: '$businessDetails.cover' },
+          logo: { $first: '$businessDetails.logo' },
+          industry: { $first: '$industryDetails' },
+          description: { $first: '$businessDetails.description' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
+          locations: {
+            $push: {
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$postalCode',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              countryCode: '$countryCode',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+        },
+      },
+      { $match: { ...match } },
+      { $skip: !page ? 0 : (page - 1) * limit },
+      { $limit: limit },
+    ];
+
+    let eventsResult = await this.outletModel.aggregate(basePipeline);
+
+    return eventsResult;
+  }
 
   // async getDashboard(
   //   user: DecodedUser,
@@ -3253,11 +3397,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       freeEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -3266,11 +3409,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       privateEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -3344,11 +3486,10 @@ export class AuthService {
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
-        age,
         query,
         1,
         config.limit,
-        start,
+        CarouselType.Event,
         maxDistance,
         startDate,
         endDate,
@@ -3474,11 +3615,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       freeEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -3487,11 +3627,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       privateEventsMatch,
       1,
       15,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -3666,11 +3805,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       query,
       1,
       config.limit,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -3864,11 +4002,10 @@ export class AuthService {
       new mongoose.Types.ObjectId(user.id),
       longitude,
       latitude,
-      age,
       query,
       page,
       limit,
-      start,
+      CarouselType.Event,
       maxDistance,
       startDate,
       endDate,
@@ -4224,6 +4361,7 @@ export class AuthService {
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
+
     let [event] = await this.eventLocationModel.aggregate([
       {
         $geoNear: {
@@ -4285,13 +4423,14 @@ export class AuthService {
         : []),
       {
         $lookup: {
-          from: 'files', // assuming this is the same collection as QR_CODE
+          from: 'files',
           let: { folderId: '$event.drivePath' },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
+                    { $ne: ['$$folderId', null] },
                     { $eq: ['$parentDirectory', '$$folderId'] },
                     {
                       $ne: [
@@ -5463,6 +5602,8 @@ export class AuthService {
     categoryIds?: Array<string>,
     startDate?: any,
     endDate?: any,
+    industries?: Array<string>,
+    isFollowedByMe?: boolean,
   ) {
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
@@ -5483,7 +5624,6 @@ export class AuthService {
         $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
       };
     }
-
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
@@ -5630,19 +5770,85 @@ export class AuthService {
     }
     let totalCount = 0;
 
-    [eventsResult, totalCount] = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      age,
-      query,
-      1,
-      config.limit,
-      start,
-      maxDistance,
-      startDate,
-      endDate,
-    );
+    if (carousel.carouselType === CarouselType.Business) {
+      let newQuery = {};
+      if (industries && industries.length) {
+        const matchingIndustries = [];
+        industries.forEach((id) => {
+          if (
+            config.businessIndustries.includes(new mongoose.Types.ObjectId(id))
+          ) {
+            matchingIndustries.push(new mongoose.Types.ObjectId(id));
+          }
+        });
+        if (matchingIndustries.length) {
+          newQuery = {
+            'industry._id': {
+              $in: matchingIndustries,
+            },
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Dashboard fetched successfully',
+            data: {
+              eventsResult,
+            },
+          };
+        }
+      } else {
+        newQuery = {
+          ...newQuery,
+          'industry._id': { $in: config.businessIndustries },
+        };
+      }
+      if (isFollowedByMe) {
+        newQuery = {
+          ...newQuery,
+          isFollowedByMe: isFollowedByMe,
+        };
+      }
+      if (search) {
+        newQuery['$or'] = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { 'locations.address1': { $regex: search, $options: 'i' } },
+          { 'locations.address2': { $regex: search, $options: 'i' } },
+          { 'locations.city': { $regex: search, $options: 'i' } },
+          { 'locations.state': { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      eventsResult = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        newQuery,
+        1,
+        config.limit,
+        maxDistance,
+        startDate,
+        endDate,
+      );
+    } else if (
+      carousel.carouselType === CarouselType.Event ||
+      carousel.carouselType === CarouselType.OnWheels
+    ) {
+      console.log('Carourselll TYPEEE:', carousel.carouselType);
+      [eventsResult, totalCount] = await this.fetchEventsV2(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        query,
+        1,
+        config.limit,
+        carousel.carouselType,
+        maxDistance,
+        startDate,
+        endDate,
+      );
+    }
+
     return {
       success: true,
       message: 'Dashboard fetched successfully',
@@ -5688,57 +5894,86 @@ export class AuthService {
     } catch (error) {
       throw new Error(`Error generating password: ${error.message}`);
     }
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const digits = '0123456789';
-    const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const allChars = uppercase + lowercase + digits + special;
+  }
 
-    if (length < 4) {
-      throw new Error(
-        'Password length must be at least 4 characters to include required character types.',
+  async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
+    let { search, carouselType, latitude, longitude, distance } = data;
+    let result = null;
+
+    if (!carouselType) {
+      return {
+        success: false,
+        message: 'Please provide a valid carousel type',
+      };
+    }
+    if (
+      carouselType === CarouselType.Event ||
+      carouselType === CarouselType.OnWheels
+    ) {
+      const matchingBusinesses = await this.businessModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
       );
+      let match: any = {};
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+
+      const categories = await this.categoryModel.find();
+      const catIds = categories.map((cat) => cat._id);
+
+      match['event.categories'] = {
+        $in: catIds,
+      };
+
+      result = await this.fetchEventsV2(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        match,
+        1,
+        10,
+        carouselType,
+        distance ? distance : 1000000000000, // Default distance if not provided
+      );
+      console.log('Result:', result);
+    } else if (carouselType === CarouselType.Business) {
+      let match: any = {};
+      let industries = await this.businessIndustryModel.find();
+      let IndIds = industries.map((industry) => industry._id);
+      match['industry._id'] = {
+        $in: IndIds,
+      };
+      match['$or'] = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { 'locations.address1': { $regex: search, $options: 'i' } },
+        { 'locations.address2': { $regex: search, $options: 'i' } },
+        { 'locations.city': { $regex: search, $options: 'i' } },
+        { 'locations.state': { $regex: search, $options: 'i' } },
+      ];
+      result = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        match,
+        1,
+        10,
+        distance ? distance : 1000000000000, // Default distance if not provided
+      );
+      console.log('Result:', result);
     }
 
-    const getRandomChar = (chars: string) =>
-      chars[Math.floor(Math.random() * chars.length)];
-
-    // Ensure inclusion of required types
-    let password = [
-      getRandomChar(uppercase),
-      getRandomChar(digits),
-      getRandomChar(special),
-      getRandomChar(lowercase),
-    ];
-
-    // Fill the rest randomly
-    for (let i = password.length; i < length; i++) {
-      password.push(getRandomChar(allChars));
-    }
-
-    // Shuffle the result to avoid predictable order
-    password = password.sort(() => Math.random() - 0.5);
-
-    return password.join('');
+    return {
+      success: true,
+      message: 'Search results fetched successfully',
+      data: result,
+    };
   }
 }
-
-// Relevant-logs:--- {
-//   longitude: 76.9905,
-//   latitude: 29.6857,
-//   match: {
-//     status: 'published',
-//     'schedule.date': { '$gte': 2024-06-22T00:00:00.000Z },
-//     'schedule.durations.endTime': { '$gte': 2024-06-22T12:44:52.314Z }
-//   }
-// }
-
-// Relevant-logs:--- {
-//   longitude: 76.9905,
-//   latitude: 29.6857,
-//   match: {
-//     status: 'published',
-//     'schedule.date': { '$gte': 2024-06-22T00:00:00.000Z },
-//     'schedule.durations.endTime': { '$gte': 2024-06-22T12:45:01.936Z }
-//   }
-// }

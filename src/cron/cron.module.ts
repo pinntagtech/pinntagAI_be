@@ -58,6 +58,8 @@ import {
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { FirebaseService } from 'src/notification/firebase.service';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
 
 @Module({
   imports: [
@@ -85,6 +87,11 @@ import { FirebaseService } from 'src/notification/firebase.service';
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: Reward.name, schema: RewardSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
     ]),
   ],
   controllers: [CronController],
