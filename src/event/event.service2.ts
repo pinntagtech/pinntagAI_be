@@ -5735,7 +5735,6 @@ export class EventService2 {
     categoryIds: string[],
     locationIds: string[],
     type: string,
-
   ) {
     try {
       // 1. Fetch business user and role
@@ -5754,9 +5753,6 @@ export class EventService2 {
       let query: any;
       console.log('startDate:', startDate);
       console.log('endDate:', endDate);
-
-
-
 
       if (user.isBusiness) {
         if (userRole?.isBusinessOwner) {
@@ -5791,17 +5787,23 @@ export class EventService2 {
         if ((Object.values(EventStatus) as string[]).includes(status))
           query['status'] = status;
       }
-      if(type && type !== '' ){
-        if(Object.values(EventTypes).includes(type as EventTypes))
+      if (type && type !== '') {
+        if (Object.values(EventTypes).includes(type as EventTypes))
           query['type'] = type;
       }
-      if(categoryIds && categoryIds.length > 0){
-        query['categories'] = { $in: categoryIds.map(id => new mongoose.Types.ObjectId(id)) };
+      if (categoryIds && categoryIds.length > 0) {
+        query['categories'] = {
+          $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+        };
       }
       if (locationIds && locationIds.length > 0) {
-        let mongoLocIds = locationIds.map(id => new mongoose.Types.ObjectId(id));
-        const eventLocations = await this.eventLocationModel.find({ businessLocationId: mongoLocIds }).select({_id: 1});
-        query['locations'] = { $in: eventLocations.map(loc => loc._id) };
+        let mongoLocIds = locationIds.map(
+          (id) => new mongoose.Types.ObjectId(id),
+        );
+        const eventLocations = await this.eventLocationModel
+          .find({ businessLocationId: mongoLocIds })
+          .select({ _id: 1 });
+        query['locations'] = { $in: eventLocations.map((loc) => loc._id) };
       }
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
@@ -5809,7 +5811,6 @@ export class EventService2 {
       });
       console.log('Queryy:', query);
       console.log('Expired Status:', isExpired);
-
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
         { $match: query },
@@ -5865,72 +5866,103 @@ export class EventService2 {
         {
           $addFields: {
             schedules: {
-              $filter: {
-                input: '$schedules',
-                as: 'sched',
-                cond: {
-                  $or: [
-                    {
-                      // Fixed events
-                      $and: [
-                        { $eq: ['$$sched.type', 'fixed'] },
-                        { $gte: ['$$sched.fixedSchedule.date', startDate] },
-                        { $lte: ['$$sched.fixedSchedule.date', endDate] },
+              $cond: {
+                if: { $eq: [isExpired, true] }, // replace `expired` with your variable or field
+                then: {
+                  $filter: {
+                    input: '$schedules',
+                    as: 'schedule',
+                    cond: {
+                      $or: [
                         {
-                          $or: [
-                            { $eq: [isExpired, false] }, // if false, skip expiry check
+                          $and: [
+                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $lt: [
+                              $and: [
                                 {
-                                  $arrayElemAt: [
-                                    '$$sched.fixedSchedule.durations.endTime',
-                                    -1,
+                                  $lt: [
+                                    '$$schedule.fixedSchedule.date',
+                                    startDate,
                                   ],
                                 },
-                                new Date(),
+                                {
+                                  $lt: [
+                                    {
+                                      $let: {
+                                        vars: {
+                                          durations:
+                                            '$$schedule.fixedSchedule.durations',
+                                          lastIndex: {
+                                            $subtract: [
+                                              {
+                                                $size:
+                                                  '$$schedule.fixedSchedule.durations',
+                                              },
+                                              1,
+                                            ],
+                                          },
+                                        },
+                                        in: {
+                                          $getField: {
+                                            field: 'endTime',
+                                            input: {
+                                              $arrayElemAt: [
+                                                '$$durations',
+                                                '$$lastIndex',
+                                              ],
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                    new Date(),
+                                  ],
+                                },
                               ],
                             },
                           ],
                         },
-                      ],
-                    },
-                    {
-                      // Recurring events
-                      $and: [
-                        { $eq: ['$$sched.type', 'recurring'] },
                         {
-                          $gte: [
-                            '$$sched.recurringSchedule.endDate',
-                            startDate,
-                          ],
-                        },
-                        {
-                          $lte: ['$$sched.recurringSchedule.endDate', endDate],
-                        },
-                        {
-                          $or: [
-                            { $eq: [isExpired, false] }, // if false, skip expiry check
+                          $and: [
+                            { $eq: ['$$schedule.type', 'recurring'] },
                             {
-                              $lt: [
-                                '$$sched.recurringSchedule.endDate',
-                                new Date(),
+                              $and: [
+                                {
+                                  $gte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    startDate,
+                                  ],
+                                },
+                                {
+                                  $lte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    endDate,
+                                  ],
+                                },
                               ],
                             },
                           ],
                         },
                       ],
                     },
-                  ],
+                  },
                 },
+                else: '$schedules', // no filtering if expired = false
               },
             },
           },
         },
-        // {
-        //   $match: {
-        //     $expr: { $gt: [{ $size: '$schedules' }, 0] },
-        //   },
-        // },
+        {
+          $match: {
+            $expr: {
+              $cond: [
+                { $eq: [isExpired, true] }, // only when true
+                { $gt: [{ $size: '$schedules' }, 0] },
+                true, // otherwise pass everything
+              ],
+            },
+          },
+        },
         { $sort: { createdAt: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },

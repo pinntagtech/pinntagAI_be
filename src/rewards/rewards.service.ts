@@ -1571,6 +1571,12 @@ export class RewardsService {
           }
         },
         {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             rewardId: '$reward._id',
