@@ -1563,6 +1563,14 @@ export class RewardsService {
           },
         },
         {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          }
+        },
+        {
           $project: {
             _id: 1,
             rewardId: '$reward._id',
@@ -1587,6 +1595,10 @@ export class RewardsService {
                 name: '$QR_CODE.metaData.name',
                 url: '$QR_CODE.metaData.url',
               },
+            },
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
             },
           },
         },
