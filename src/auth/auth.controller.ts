@@ -740,6 +740,9 @@ export class AuthController {
     return {
       message: result.message,
       data: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
     };
   }
 }

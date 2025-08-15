@@ -3008,9 +3008,9 @@ export class AuthService {
       },
       {
         $lookup: {
-          from: 'follows', // make sure it's the actual collection name
+          from: 'follows',
           let: {
-            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            userId: new mongoose.Types.ObjectId(userId),
             targetId: '$businessDetails._id',
             targetType: Business.name,
           },
@@ -3034,9 +3034,7 @@ export class AuthService {
       },
       {
         $addFields: {
-          isFollowedByMe: {
-            $gt: [{ $size: '$userFollow' }, 0],
-          },
+          isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
@@ -3044,7 +3042,6 @@ export class AuthService {
         $group: {
           _id: '$businessDetails._id',
           name: { $first: '$businessDetails.name' },
-          // businessDetails: { $first: '$businessDetails' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
           industry: { $first: '$industryDetails' },
@@ -3069,8 +3066,22 @@ export class AuthService {
         },
       },
       { $match: { ...match } },
-      { $skip: !page ? 0 : (page - 1) * limit },
-      { $limit: limit },
+
+      // Use $facet for both paginated results and total count
+      {
+        $facet: {
+          data: [{ $skip: !page ? 0 : (page - 1) * limit }, { $limit: limit }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+      // Flatten totalCount so it returns a number instead of array
+      {
+        $addFields: {
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
@@ -5819,7 +5830,7 @@ export class AuthService {
         ];
       }
 
-      eventsResult = await this.fetchBusinessListing(
+      [eventsResult, totalCount] = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -5830,6 +5841,7 @@ export class AuthService {
         startDate,
         endDate,
       );
+      eventsResult = eventsResult['data'];
     } else if (
       carousel.carouselType === CarouselType.Event ||
       carousel.carouselType === CarouselType.OnWheels
@@ -5899,6 +5911,7 @@ export class AuthService {
   async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
     let { search, carouselType, latitude, longitude, distance } = data;
     let result = null;
+    let total = 0;
 
     if (!carouselType) {
       return {
@@ -5906,6 +5919,9 @@ export class AuthService {
         message: 'Please provide a valid carousel type',
       };
     }
+
+    let page = data.page ? data.page : 1;
+    let limit = data.limit ? data.limit : 10;
     if (
       carouselType === CarouselType.Event ||
       carouselType === CarouselType.OnWheels
@@ -5937,12 +5953,14 @@ export class AuthService {
         longitude,
         latitude,
         match,
-        1,
-        10,
+        page,
+        limit,
         carouselType,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
       result = result[0];
+      total = result[1];
+
       console.log('Result:', result);
     } else if (carouselType === CarouselType.Business) {
       let match: any = {};
@@ -5964,10 +5982,12 @@ export class AuthService {
         longitude,
         latitude,
         match,
-        1,
-        10,
+        page,
+        limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
+      result = result[0].data;
+      total = result[0].totalCount;
       console.log('Result:', result);
     }
 
@@ -5975,6 +5995,9 @@ export class AuthService {
       success: true,
       message: 'Search results fetched successfully',
       data: result,
+      total: total,
+      page: page,
+      limit: limit,
     };
   }
 }
