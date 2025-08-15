@@ -5867,7 +5867,7 @@ export class EventService2 {
           $addFields: {
             schedules: {
               $cond: {
-                if: { $eq: [isExpired, true] }, // replace `expired` with your variable or field
+                if: { $eq: [isExpired, true] },
                 then: {
                   $filter: {
                     input: '$schedules',
@@ -5947,7 +5947,7 @@ export class EventService2 {
                     },
                   },
                 },
-                else: '$schedules', // no filtering if expired = false
+                else: '$schedules',
               },
             },
           },
@@ -5956,19 +5956,24 @@ export class EventService2 {
           $match: {
             $expr: {
               $cond: [
-                { $eq: [isExpired, true] }, // only when true
+                { $eq: [isExpired, true] },
                 { $gt: [{ $size: '$schedules' }, 0] },
-                true, // otherwise pass everything
+                true,
               ],
             },
           },
         },
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
+        {
+          $facet: {
+            data: [
+              { $sort: { createdAt: -1 } },
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+            ],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
       ];
-
-      const countDocuments = await this.eventModel.countDocuments(query);
       // 4. Execute aggregation
       const events = await this.eventModel.aggregate(pipeline);
 
@@ -6018,8 +6023,8 @@ export class EventService2 {
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: events,
-        total: countDocuments,
+        data: events[0].data,
+        total: events[0].totalCount[0].count,
         page,
         limit,
       };

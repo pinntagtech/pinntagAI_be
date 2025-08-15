@@ -5942,6 +5942,7 @@ export class AuthService {
         carouselType,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
+      result = result[0];
       console.log('Result:', result);
     } else if (carouselType === CarouselType.Business) {
       let match: any = {};
