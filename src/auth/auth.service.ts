@@ -625,6 +625,7 @@ export class AuthService {
         role: role._id,
         firstName: data.name ? data.name.split(' ')[0] : '',
         lastName: data.name ? data.name.split(' ')[1] : '',
+        name: data.name,
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
         email: data.email,
         isEmailVerified: true,
