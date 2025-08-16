@@ -3836,6 +3836,7 @@ export class AuthService {
 
   async getDashboardMapView(
     user: DecodedUser,
+    carouselId: string,
     latitude: number,
     longitude: number,
     maxDistance: number,
@@ -3848,6 +3849,19 @@ export class AuthService {
     startDate?: Date,
     endDate?: Date,
   ) {
+    if (!mongoose.isValidObjectId(carouselId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid id',
+      };
+    }
+    const carousel = await this.dashboardConfigModel.findById(carouselId);
+    if (!carousel) {
+      return {
+        success: false,
+        message: 'Carousel not found',
+      };
+    }
     console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
@@ -3930,9 +3944,145 @@ export class AuthService {
       age = foundUser.age ? foundUser.age : 0;
     }
     let data = {};
+    const config = await this.dashboardConfigModel.findById(carouselId).sort({
+      sortOrder: 1,
+    });
     // if (match['event.categories']) {
     //   delete match['event.categories'];
     // }
+    let query = { ...match };
+    let eventsResult = [];
+    if (categoryIds.length) {
+      const matchingCategories = [];
+      categoryIds.forEach((id) => {
+        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+          matchingCategories.push(new mongoose.Types.ObjectId(id));
+        }
+      });
+      if (matchingCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: matchingCategories,
+          },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
+      }
+    } else {
+      query = {
+        ...query,
+        'event.categories': { $in: config.categories },
+      };
+    }
+
+    if (!config.freeIncluded) {
+      query = {
+        ...query,
+        'event.isFree': false,
+      };
+    }
+    if (config.eventsIncluded && !config.offersIncluded) {
+      query = {
+        ...query,
+        'event.type': { $in: [EventTypes.FORMAL] },
+      };
+    } else if (config.offersIncluded && !config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': EventTypes.OFFER,
+      };
+    } else if (config.offersIncluded && config.eventsIncluded) {
+      query = {
+        ...query,
+        'event.type': {
+          $in: [EventTypes.OFFER, EventTypes.FORMAL],
+        },
+      };
+    }
+    let totalCount = 0;
+
+    console.log('query from carousel dashboard:', query);
+    [eventsResult, totalCount] = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      query,
+      page,
+      limit,
+      CarouselType.Event,
+      maxDistance,
+      startDate,
+      endDate,
+    );
+    console.log('Total:::::::', totalCount);
+    return {
+      success: true,
+      message: 'Dashboard data fetched successfully',
+      events: eventsResult,
+      page,
+      limit,
+      totalCount,
+      pages: Math.ceil(totalCount / limit),
+    };
+  }
+  async getDashboardMap(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    maxDistance: number,
+    search: string,
+    timeZone: string,
+    limit: number,
+    page: number,
+    // type: string,
+    categoryIds?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    console.log('Service Category IDs:', categoryIds);
+    let match = {};
+    if (categoryIds.length) {
+      match['event.categories'] = {
+        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
+
+    const currentDate = currentDateTz(timeZone);
+
+    let start = getZeroDateTz(new Date(), timeZone);
+    console.log('START DATE:', start);
+    console.log('Match:', match);
+
+    if (search) {
+      // Search matching business profile name
+      const matchingBusinesses = await this.businessModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
+      );
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+    }
+
+    let age = 0;
+    if (!user.isGuest) {
+      const foundUser = await this.userModel.findById(user.id);
+      age = foundUser.age ? foundUser.age : 0;
+    }
+    let data = {};
     let query = { ...match };
     let eventsResult = [];
     if (categoryIds.length) {
@@ -3947,15 +4097,23 @@ export class AuthService {
             $in: matchingCategories,
           },
         };
-      } 
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
+      }
     } else {
       const categories = await this.categoryModel.find().select('_id');
-      let categoryIds = categories.map((cat) => cat._id);
       query = {
         ...query,
-        'event.categories': { $in: categoryIds },
+        'event.categories': { $in: categories.map((cat) => cat._id) },
       };
     }
+
     let totalCount = 0;
 
     console.log('query from carousel dashboard:', query);

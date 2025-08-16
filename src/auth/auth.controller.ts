@@ -507,7 +507,7 @@ export class AuthController {
     };
   }
 
-  @Post('dashboard/map-view')
+  @Post('dashboard/map-view/:id')
   @UseGuards(JwtGuard2)
   @HttpCode(HttpStatus.OK)
   async dashboardMapView(
@@ -529,6 +529,54 @@ export class AuthController {
       }
     }
     const result = await this.authService.getDashboardMapView(
+      user,
+      id,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      distance ? parseInt(distance) : 1000000000000,
+      search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
+      limit ? parseInt(limit) : 15,
+      page ? parseInt(page) : 1,
+      // type ? type.toLowerCase() : '',
+      body.categories ? body.categories : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      events: result.events,
+      page: result.page,
+      limit: result.limit,
+      total: result.totalCount,
+      pages: result.pages,
+    };
+  }
+  @Post('dashboard/map')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async dashboardMap(
+    @Body() body: GetDashboardDto,
+    @Param('id') id: string,
+    @Query('search') search: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('distance') distance: string,
+    @Query('timeZone') timeZone: string,
+    // @Query('type') type: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (body.categories && body.categories.length) {
+      for (const cat of body.categories) {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          throw new BadRequestException(`${cat} is not a valid category id.`);
+        }
+      }
+    }
+    const result = await this.authService.getDashboardMap(
       user,
       parseFloat(body.latitude),
       parseFloat(body.longitude),

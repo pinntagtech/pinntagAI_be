@@ -175,6 +175,7 @@ export class SocketGateway
     client: Socket,
     payload: {
       body: GetDashboardDto;
+      carouselId: string;
       search?: string;
       page?: string;
       limit?: string;
@@ -183,7 +184,7 @@ export class SocketGateway
     },
   ) {
     const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
-    const { body, search, page, limit, distance, timeZone } =
+    const { body, carouselId, search, page, limit, distance, timeZone } =
       data.data;
     const userId = (client as any).userId;
     const userType = (client as any).userType;
@@ -200,6 +201,7 @@ export class SocketGateway
     };
     const result = await this.authService.getDashboardMapView(
       decodedUser,
+      carouselId,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
       distance ? parseInt(distance) : 1000000000000,
