@@ -206,6 +206,7 @@ export class EventController {
     @Query('categories') categories: string,
     @Query('locations') locations: string,
     @Query('type') type: string,
+    @Query('search') search: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
@@ -250,6 +251,7 @@ export class EventController {
       categoryIds,
       locationIds,
       type,
+      search,
     );
     if (result.success) {
       return {

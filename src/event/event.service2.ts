@@ -5735,6 +5735,7 @@ export class EventService2 {
     categoryIds: string[],
     locationIds: string[],
     type: string,
+    search: string
   ) {
     try {
       // 1. Fetch business user and role
@@ -5805,6 +5806,14 @@ export class EventService2 {
           .select({ _id: 1 });
         query['locations'] = { $in: eventLocations.map((loc) => loc._id) };
       }
+
+      if (search) {
+      query['$or'] = [
+        { 'title': { $regex: search, $options: 'i' } },
+        { 'description': { $regex: search, $options: 'i' } },
+        { 'keywords': { $regex: search, $options: 'i' } },
+      ];
+    }
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
