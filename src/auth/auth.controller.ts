@@ -595,7 +595,7 @@ export class AuthController {
     }
     return {
       message: result.message,
-      events: result.events,
+      eventsResult: result.events,
       page: result.page,
       limit: result.limit,
       total: result.totalCount,
