@@ -6024,7 +6024,7 @@ export class EventService2 {
         success: true,
         message: 'Events fetched successfully',
         data: events[0].data,
-        total: events[0].totalCount[0].count,
+        total: events[0].totalCount[0]?.count || 0,
         page,
         limit,
       };
