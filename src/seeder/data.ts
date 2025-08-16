@@ -19,20 +19,24 @@ export enum BusinessIndustries {
 }
 
 export enum EventCategory {
-  ART = 'Art',
-  GROOMING = 'Grooming',
-  CHARITY = 'Charity',
-  CLUBS = 'Clubs',
-  DAYS_OUT = 'Days Out',
-  ENTERTAINMENT = 'Entertainment',
-  DINING = 'Dining',
+  FOOD_AND_DRINK = 'Food & Drink',
   HAPPY_HOUR = 'Happy Hour',
-  FITNESS = 'Fitness',
-  ATTRACTIONS = 'Attractions',
-  NIGHTLIFE = 'Nightlife',
-  PETS = 'Pets',
-  SPORTS = 'Sports',
+  MUSIC_AND_NIGHTLIFE = 'Music & Nightlife',
+  FOOD_TRUCKS_AND_POPUPS = 'Food Trucks & Pop-Ups',
+  EVENTS = 'Events',
+  CLUBS_AND_CLASSES = 'Clubs & Classes',
+  SPORTS_AND_FITNESS = 'Sports & Fitness',
+  BEAUTY_AND_SPA = 'Beauty & Spa',
   SHOPPING = 'Shopping',
+  ARTS_AND_CULTURE = 'Arts & Culture',
+  ATTRACTIONS = 'Attractions',
+  FAMILY_FUN = 'Family Fun',
+  LOCAL_SERVICES = 'Local Services',
+  CHARITY_AND_COMMUNITY = 'Charity & Community',
+  PLACES_TO_STAY = 'Places to Stay',
+  PETS = 'Pets',
+  BEER_AND_WINE = 'Beer & Wine',
+  HOLIDAY_SPOTS = 'Holiday Spots'
 }
 
 export enum BusinessSubCategory {
@@ -134,61 +138,7 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Art',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Arts+and+craft.svg',
-      activeColor: '#F1F3C2',
-      description: 'Art & Crafts',
-    },
-    {
-      title: 'Grooming',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Beauty+n+spa.svg',
-      activeColor: '#F7B5CA',
-      description: 'Beauty & Spa',
-    },
-    {
-      title: 'Charity',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/charity.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/charity.svg',
-      activeColor: '#A1EEBD',
-      description: 'Charity',
-    },
-    {
-      title: 'Clubs',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Club+and+classes.svg',
-      activeColor: '#A6D6D6',
-      description: 'Clubs & Classes',
-    },
-    {
-      title: 'Days Out',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
-      activeColor: '#FFF1D5',
-      description: 'Days Out',
-    },
-    {
-      title: 'Entertainment',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
-      activeColor: '#D9EAFD',
-      description: 'Entertainment',
-    },
-    {
-      title: 'Dining',
+      title: 'Food & Drink',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
       darkIcon:
@@ -206,25 +156,7 @@ export const Seeder = {
       description: 'Happy Hour',
     },
     {
-      title: 'Fitness',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Health+and+fitness.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Health+and+fitness.svg',
-      activeColor: '#CDFAD5',
-      description: 'Health & Fitness',
-    },
-    {
-      title: 'Attractions',
-      lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
-      darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
-      activeColor: '#FFE3E3',
-      description: 'Local Attractions',
-    },
-    {
-      title: 'Nightlife',
+      title: 'Music & Nightlife',
       lightIcon:
         'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
       darkIcon:
@@ -233,13 +165,49 @@ export const Seeder = {
       description: 'Music & Nightlife',
     },
     {
-      title: 'Pets',
+      title: 'Food Trucks & Pop-Ups',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/pets.png',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/pets.svg',
-      activeColor: '#D4F6FF',
-      description: 'Pets',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Food+and+drinks.svg',
+      activeColor: '#FFE5B4',
+      description: 'Food Trucks & Pop-Ups',
+    },
+    {
+      title: 'Events',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
+      activeColor: '#D9EAFD',
+      description: 'Events',
+    },
+    {
+      title: 'Clubs & Classes',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Club+and+classes.svg',
+      activeColor: '#A6D6D6',
+      description: 'Clubs & Classes',
+    },
+    {
+      title: 'Sports & Fitness',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/sports.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/sports.svg',
+      activeColor: '#FFCCEA',
+      description: 'Sports & Fitness',
+    },
+    {
+      title: 'Beauty & Spa',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Beauty+n+spa.svg',
+      activeColor: '#F7B5CA',
+      description: 'Beauty & Spa',
     },
     {
       title: 'Shopping',
@@ -251,13 +219,85 @@ export const Seeder = {
       description: 'Retail',
     },
     {
-      title: 'Sports',
+      title: 'Arts & Culture',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/sports.png',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/sports.svg',
-      activeColor: '#FFCCEA',
-      description: 'Sports',
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Arts+and+craft.svg',
+      activeColor: '#F1F3C2',
+      description: 'Arts & Culture',
+    },
+    {
+      title: 'Attractions',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
+      activeColor: '#FFE3E3',
+      description: 'Local Attractions',
+    },
+    {
+      title: 'Family Fun',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+      activeColor: '#FDE5D3',
+      description: 'Family Fun',
+    },
+    {
+      title: 'Local Services',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
+      activeColor: '#C5D7B3',
+      description: 'Local Services',
+    },
+    {
+      title: 'Charity & Community',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/charity.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/charity.svg',
+      activeColor: '#A1EEBD',
+      description: 'Charity & Community',
+    },
+    {
+      title: 'Places to Stay',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+      activeColor: '#D9C8E8',
+      description: 'Places to Stay',
+    },
+    {
+      title: 'Pets',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/pets.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/pets.svg',
+      activeColor: '#D4F6FF',
+      description: 'Pets',
+    },
+    {
+      title: 'Beer & Wine',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+      activeColor: '#E5D0FA',
+      description: 'Beer & Wine',
+    },
+    {
+      title: 'Holiday Spots',
+      lightIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+      darkIcon:
+        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+      activeColor: '#FFEFD5',
+      description: 'Holiday Spots',
     },
   ],
 
@@ -2141,133 +2181,126 @@ export const Seeder = {
 
   DashboardConfigs: [
     {
-      name: 'Trending Now',
-      offersIncluded: true,
-      eventsIncluded: true,
-      flashOffersIncluded: true,
-      freeIncluded: true,
-      limit: 7,
-      categories: ['Entertainment', 'Nightlife', 'Sports', 'Dining', 'Fitness'],
-      sortOrder: 100,
-      carouselType: CarouselType.Event,
-      cardType: 'xl',
-    },
-    {
       name: 'Flash Deals',
       offersIncluded: false,
       eventsIncluded: false,
       flashOffersIncluded: true,
       freeIncluded: true,
       limit: 7,
-      categories: ['Dining', 'Shopping', 'Grooming', 'Happy Hour'],
-      sortOrder: 200,
+      categories: ['Happy Hour', 'Beer & Wine', 'Food & Drink'],
+      sortOrder: 100,
       carouselType: CarouselType.Event,
       cardType: 'full',
     },
     {
-      name: 'Free Offers',
+      name: 'Featured Offers',
       offersIncluded: true,
-      eventsIncluded: true,
+      eventsIncluded: false,
       flashOffersIncluded: false,
       freeIncluded: true,
-      limit: 7,
-      categories: [
-        'Clubs',
-        'Days Out',
-        'Entertainment',
-        'Attractions',
-        'Charity',
-      ],
-      sortOrder: 300,
-      carouselType: CarouselType.Event,
-      cardType: 'zoom',
-    },
-    {
-      name: 'Food and Drinks',
-      offersIncluded: true,
-      eventsIncluded: true,
-      flashOffersIncluded: false,
-      freeIncluded: true,
-      limit: 7,
-      categories: ['Dining', 'Happy Hour'],
-      sortOrder: 400,
+      limit: 5,
+      categories: ['Shopping', 'Beauty & Spa', 'Food Trucks & Pop-Ups'],
+      sortOrder: 200,
       carouselType: CarouselType.Event,
       cardType: 'xxl',
     },
     {
-      name: 'Events Near You',
-      offersIncluded: false,
+      name: 'Food & Drink',
+      offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
       freeIncluded: true,
-      limit: 7,
-      categories: ['Nightlife', 'Sports', 'Attractions', 'Entertainment'],
+      limit: 8,
+      categories: ['Food & Drink'],
+      sortOrder: 300,
+      carouselType: CarouselType.Event,
+      cardType: 'xl',
+    },
+    {
+      name: 'Music & Nightlife',
+      offersIncluded: true,
+      eventsIncluded: true,
+      flashOffersIncluded: false,
+      freeIncluded: true,
+      limit: 8,
+      categories: ['Music & Nightlife'],
+      sortOrder: 400,
+      carouselType: CarouselType.Event,
+      cardType: 'zoom',
+    },
+    {
+      name: 'Weekend Vibes',
+      offersIncluded: true,
+      eventsIncluded: true,
+      flashOffersIncluded: true,
+      freeIncluded: true,
+      limit: 6,
+      categories: ['Events', 'Food & Drink', 'Music & Nightlife'],
       sortOrder: 500,
       carouselType: CarouselType.Event,
       cardType: 'xl',
     },
     {
-      name: 'Health and Wellness',
+      name: 'Travel & Stay',
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
       freeIncluded: true,
-      limit: 7,
-      categories: ['Fitness', 'Clubs'],
+      limit: 6,
+      categories: ['Holiday Spots', 'Places to Stay'],
       sortOrder: 600,
       carouselType: CarouselType.Event,
       cardType: 'zoom',
     },
     {
-      name: 'Charity and Community',
+      name: 'Shopping',
       offersIncluded: true,
-      eventsIncluded: true,
-      flashOffersIncluded: false,
+      eventsIncluded: false,
+      flashOffersIncluded: true,
       freeIncluded: true,
-      limit: 7,
-      categories: ['Charity', 'Attractions'],
+      limit: 10,
+      categories: ['Shopping'],
       sortOrder: 700,
       carouselType: CarouselType.Event,
-      cardType: 'xxl',
+      cardType: 'xl',
     },
     {
-      name: 'Nightlife and Parties',
+      name: 'Active Lifestyle',
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
       freeIncluded: true,
-      limit: 7,
-      categories: ['Nightlife', 'Happy Hour'],
+      limit: 6,
+      categories: ['Sports & Fitness', 'Clubs & Classes'],
       sortOrder: 800,
       carouselType: CarouselType.Event,
       cardType: 'full',
     },
     {
-      name: 'Retail and Shopping',
-      offersIncluded: true,
-      eventsIncluded: false,
-      flashOffersIncluded: false,
-      freeIncluded: true,
-      limit: 7,
-      categories: ['Shopping'],
-      sortOrder: 900,
-      carouselType: CarouselType.Event,
-      cardType: 'xl',
-    },
-    {
-      name: 'Pet Friendly',
+      name: 'Arts & Culture',
       offersIncluded: true,
       eventsIncluded: true,
       flashOffersIncluded: false,
       freeIncluded: true,
-      limit: 7,
-      categories: ['Pets'],
-      sortOrder: 1000,
+      limit: 6,
+      categories: ['Arts & Culture', 'Attractions'],
+      sortOrder: 900,
       carouselType: CarouselType.Event,
       cardType: 'zoom',
     },
+    {
+      name: 'Local Favorites',
+      offersIncluded: true,
+      eventsIncluded: true,
+      flashOffersIncluded: true,
+      freeIncluded: true,
+      limit: 6,
+      categories: ['Local Services', 'Charity & Community', 'Family Fun'],
+      sortOrder: 1000,
+      carouselType: CarouselType.Event,
+      cardType: 'xl',
+    },
   ],
-
   DashboardBusinessConfigs: [
     {
       name: 'Popular in Atlanta',
@@ -2365,50 +2398,53 @@ export const Seeder = {
   DashboardOnWheelsConfigs: [
     {
       name: 'Meals on Wheels',
-      limit: 10,
+      limit: 12,
       categories: [
-        EventCategory.DAYS_OUT,
-        EventCategory.DINING,
-        EventCategory.HAPPY_HOUR,
-        EventCategory.SHOPPING,
+        EventCategory.FOOD_TRUCKS_AND_POPUPS,
+        EventCategory.FOOD_AND_DRINK,
       ],
-      sortOrder: 10,
-      carouselType: CarouselType.OnWheels,
-      cardType: 'full',
-    },
-    {
-      name: 'Quick Bites',
-      limit: 8,
-      categories: [EventCategory.DINING, EventCategory.HAPPY_HOUR],
-      sortOrder: 20,
-      carouselType: CarouselType.OnWheels,
-      cardType: 'zoom',
-    },
-    {
-      name: 'Weekend Destinations',
-      limit: 6,
-      categories: [
-        EventCategory.DAYS_OUT,
-        EventCategory.ENTERTAINMENT,
-        EventCategory.ATTRACTIONS,
-      ],
-      sortOrder: 30,
-      carouselType: CarouselType.OnWheels,
-      cardType: 'xl',
-    },
-    {
-      name: 'Shop & Stroll',
-      limit: 9,
-      categories: [EventCategory.SHOPPING, EventCategory.NIGHTLIFE],
-      sortOrder: 40,
+      sortOrder: 100,
       carouselType: CarouselType.OnWheels,
       cardType: 'xxl',
     },
     {
-      name: 'Fitness Fuel',
-      limit: 5,
-      categories: [EventCategory.FITNESS, EventCategory.DINING],
-      sortOrder: 50,
+      name: 'Happy Hour on Wheels',
+      limit: 8,
+      categories: [EventCategory.HAPPY_HOUR, EventCategory.BEER_AND_WINE],
+      sortOrder: 200,
+      carouselType: CarouselType.OnWheels,
+      cardType: 'full',
+    },
+    {
+      name: 'Sweet Treats on Wheels',
+      limit: 6,
+      categories: [
+        EventCategory.FOOD_TRUCKS_AND_POPUPS,
+        EventCategory.FOOD_AND_DRINK,
+      ],
+      sortOrder: 300,
+      carouselType: CarouselType.OnWheels,
+      cardType: 'xl',
+    },
+    {
+      name: 'Street Dining',
+      limit: 10,
+      categories: [
+        EventCategory.FOOD_AND_DRINK,
+        EventCategory.HOLIDAY_SPOTS, // seasonal food pop-ups
+      ],
+      sortOrder: 400,
+      carouselType: CarouselType.OnWheels,
+      cardType: 'zoom',
+    },
+    {
+      name: 'Local Favorites on Wheels',
+      limit: 6,
+      categories: [
+        EventCategory.FOOD_AND_DRINK,
+        EventCategory.SHOPPING, // local artisanal consumables (coffee, snacks, etc.)
+      ],
+      sortOrder: 500,
       carouselType: CarouselType.OnWheels,
       cardType: 'xl',
     },

@@ -507,7 +507,7 @@ export class AuthController {
     };
   }
 
-  @Post('dashboard/map-view/:id')
+  @Post('dashboard/map-view')
   @UseGuards(JwtGuard2)
   @HttpCode(HttpStatus.OK)
   async dashboardMapView(
@@ -530,7 +530,6 @@ export class AuthController {
     }
     const result = await this.authService.getDashboardMapView(
       user,
-      id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
       distance ? parseInt(distance) : 1000000000000,

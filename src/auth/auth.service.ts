@@ -3836,7 +3836,6 @@ export class AuthService {
 
   async getDashboardMapView(
     user: DecodedUser,
-    carouselId: string,
     latitude: number,
     longitude: number,
     maxDistance: number,
@@ -3849,19 +3848,6 @@ export class AuthService {
     startDate?: Date,
     endDate?: Date,
   ) {
-    if (!mongoose.isValidObjectId(carouselId)) {
-      return {
-        success: false,
-        message: 'Please provide a valid id',
-      };
-    }
-    const carousel = await this.dashboardConfigModel.findById(carouselId);
-    if (!carousel) {
-      return {
-        success: false,
-        message: 'Carousel not found',
-      };
-    }
     console.log('Service Category IDs:', categoryIds);
     let match = {};
     if (categoryIds.length) {
@@ -3944,9 +3930,6 @@ export class AuthService {
       age = foundUser.age ? foundUser.age : 0;
     }
     let data = {};
-    const config = await this.dashboardConfigModel.findById(carouselId).sort({
-      sortOrder: 1,
-    });
     // if (match['event.categories']) {
     //   delete match['event.categories'];
     // }
@@ -3955,9 +3938,7 @@ export class AuthService {
     if (categoryIds.length) {
       const matchingCategories = [];
       categoryIds.forEach((id) => {
-        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
           matchingCategories.push(new mongoose.Types.ObjectId(id));
-        }
       });
       if (matchingCategories.length) {
         query = {
@@ -3966,44 +3947,13 @@ export class AuthService {
             $in: matchingCategories,
           },
         };
-      } else {
-        return {
-          success: true,
-          message: 'Dashboard fetched successfully',
-          data: {
-            eventsResult,
-          },
-        };
-      }
+      } 
     } else {
+      const categories = await this.categoryModel.find().select('_id');
+      let categoryIds = categories.map((cat) => cat._id);
       query = {
         ...query,
-        'event.categories': { $in: config.categories },
-      };
-    }
-
-    if (!config.freeIncluded) {
-      query = {
-        ...query,
-        'event.isFree': false,
-      };
-    }
-    if (config.eventsIncluded && !config.offersIncluded) {
-      query = {
-        ...query,
-        'event.type': { $in: [EventTypes.FORMAL] },
-      };
-    } else if (config.offersIncluded && !config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': EventTypes.OFFER,
-      };
-    } else if (config.offersIncluded && config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': {
-          $in: [EventTypes.OFFER, EventTypes.FORMAL],
-        },
+        'event.categories': { $in: categoryIds },
       };
     }
     let totalCount = 0;

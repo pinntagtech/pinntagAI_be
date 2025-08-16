@@ -1237,7 +1237,7 @@ export class UserService {
             userType: BusinessUser.name,
             message,
             type: notificationType,
-            targetType: Business.name,
+            targetType: User.name,
             targetUser: new mongoose.Types.ObjectId(consumerId),
           };
           if (

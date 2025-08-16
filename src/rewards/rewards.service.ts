@@ -301,7 +301,7 @@ export class RewardsService {
               message,
               type: NotificationTypes.REWARD,
               reward: reward._id,
-              targetType: User.name,
+              targetType: Business.name,
               targetUser: new mongoose.Types.ObjectId(user.businessProfile),
             });
           }
@@ -1568,7 +1568,7 @@ export class RewardsService {
             localField: 'businessProfile',
             foreignField: '_id',
             as: 'businessProfile',
-          }
+          },
         },
         {
           $unwind: {
@@ -1616,12 +1616,6 @@ export class RewardsService {
         userId: new mongoose.Types.ObjectId(userId),
         claimStatus: claimStatus,
       });
-      if (!rewards || rewards.length === 0) {
-        return {
-          success: false,
-          message: 'No rewards found.',
-        };
-      }
       return {
         success: true,
         message: 'Rewards found successfully.',

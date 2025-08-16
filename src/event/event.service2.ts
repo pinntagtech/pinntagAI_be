@@ -2055,7 +2055,7 @@ export class EventService2 {
                   message,
                   type: NotificationTypes.EVENT,
                   event: new mongoose.Types.ObjectId(id),
-                  targetType: User.name,
+                  targetType: Business.name,
                   targetUser: new mongoose.Types.ObjectId(user.businessProfile),
                 });
               }
