@@ -36,7 +36,7 @@ export enum EventCategory {
   PLACES_TO_STAY = 'Places to Stay',
   PETS = 'Pets',
   BEER_AND_WINE = 'Beer & Wine',
-  HOLIDAY_SPOTS = 'Holiday Spots'
+  HOLIDAY_SPOTS = 'Holiday Spots',
 }
 
 export enum BusinessSubCategory {
@@ -138,164 +138,164 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Food & Drink',
+      title: 'Food & Drinks',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food%20%26%20Drinks1755341968418.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Food+and+drinks.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
       activeColor: '#FFCDB2',
       description: 'Food & Drinks',
     },
     {
       title: 'Happy Hour',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Happy%20hour1755342456411.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Happy_hour%28dark%291755343024291.svg',
       activeColor: '#FFE1E0',
       description: 'Happy Hour',
     },
     {
       title: 'Music & Nightlife',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Music%20%26%20Nightlife1755342456407.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Music_and_nightlife%28dark%291755343024293.svg',
       activeColor: '#8EACCD',
       description: 'Music & Nightlife',
     },
     {
       title: 'Food Trucks & Pop-Ups',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Food+and+drinks.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food%20Trucks1755341968415.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Food+and+drinks.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_trucks%28dark%291755342853002.svg',
       activeColor: '#FFE5B4',
       description: 'Food Trucks & Pop-Ups',
     },
     {
       title: 'Events',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/entertainment.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Events1755341968410.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/entertainment.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Events%28dark%291755342852997.svg',
       activeColor: '#D9EAFD',
       description: 'Events',
     },
     {
       title: 'Clubs & Classes',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Club+and+classes.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Club%20and%20classes1755341968406.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Club+and+classes.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Club_and_classes%28dark%291755342853001.svg',
       activeColor: '#A6D6D6',
       description: 'Clubs & Classes',
     },
     {
       title: 'Sports & Fitness',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/sports.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Sports%20%26%20Fitness1755342456417.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/sports.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Sports%20%26%20Fitness1755343024302.svg',
       activeColor: '#FFCCEA',
       description: 'Sports & Fitness',
     },
     {
       title: 'Beauty & Spa',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Beauty+n+spa.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Beauty%20n%20spa1755341968404.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Beauty+n+spa.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Beauty_and_spa%28dark%291755342852994.svg',
       activeColor: '#F7B5CA',
       description: 'Beauty & Spa',
     },
     {
       title: 'Shopping',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Shopping1755342456415.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Shopping1755343024300.svg',
       activeColor: '#BFD8AF',
-      description: 'Retail',
+      description: 'Shopping',
     },
     {
       title: 'Arts & Culture',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Arts+and+craft.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Arts%20and%20Culture1755341968402.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Arts+and+craft.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Arts_and_crafts%28dark%291755342852993.svg',
       activeColor: '#F1F3C2',
       description: 'Arts & Culture',
     },
     {
       title: 'Attractions',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Attractions1755341968400.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Attractions%28dark%291755342852980.svg',
       activeColor: '#FFE3E3',
-      description: 'Local Attractions',
+      description: 'Attractions',
     },
     {
       title: 'Family Fun',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family%20Fun1755341968408.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
       activeColor: '#FDE5D3',
       description: 'Family Fun',
     },
     {
       title: 'Local Services',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/retails.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Local%20Services1755342456408.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/retails.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Local_services%28dark%291755343024289.svg',
       activeColor: '#C5D7B3',
       description: 'Local Services',
     },
     {
       title: 'Charity & Community',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/charity.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Charity%20%26%20Community1755341968412.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/charity.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Charity_and_%20community%28dark%291755342852996.svg',
       activeColor: '#A1EEBD',
       description: 'Charity & Community',
     },
     {
       title: 'Places to Stay',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Places%20to%20Stay1755342456412.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Places_to_stay%28dark%291755343024298.svg',
       activeColor: '#D9C8E8',
       description: 'Places to Stay',
     },
     {
       title: 'Pets',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/pets.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Pets1755342456414.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/pets.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/pets%28dark%291755343024297.svg',
       activeColor: '#D4F6FF',
       description: 'Pets',
     },
     {
       title: 'Beer & Wine',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Beer%20%26%20Wine1755341968385.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Beer_and_wine%28dark%291755342852991.svg',
       activeColor: '#E5D0FA',
       description: 'Beer & Wine',
     },
     {
       title: 'Holiday Spots',
       lightIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Light+Icons/Happy+hour.png',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Holiday%20Spots1755342456405.svg',
       darkIcon:
-        'https://pinntag-assets.s3.us-east-1.amazonaws.com/Content+Category+Icons/Dark+Icons/Happy+hour.svg',
+        'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Holiday_spots%28dark%291755343024292.svg',
       activeColor: '#FFEFD5',
       description: 'Holiday Spots',
     },
