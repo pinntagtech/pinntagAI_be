@@ -2088,6 +2088,10 @@ export class EventService2 {
                 user.businessProfile,
               ),
             });
+            await this.eventModel.updateOne(
+              { _id: new mongoose.Types.ObjectId(data.id) },
+              { isSavedAsTemplate: true },
+            );
           }
           return {
             success: true,
@@ -5735,7 +5739,7 @@ export class EventService2 {
     categoryIds: string[],
     locationIds: string[],
     type: string,
-    search: string
+    search: string,
   ) {
     try {
       // 1. Fetch business user and role
@@ -5808,12 +5812,12 @@ export class EventService2 {
       }
 
       if (search) {
-      query['$or'] = [
-        { 'title': { $regex: search, $options: 'i' } },
-        { 'description': { $regex: search, $options: 'i' } },
-        { 'keywords': { $regex: search, $options: 'i' } },
-      ];
-    }
+        query['$or'] = [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { keywords: { $regex: search, $options: 'i' } },
+        ];
+      }
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
@@ -7262,6 +7266,10 @@ export class EventService2 {
         thumbnail: thumbnailURL,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       });
+      await this.eventModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(data.id) },
+        { isSavedAsTemplate: true },
+      );
 
       return {
         success: true,

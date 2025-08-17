@@ -162,6 +162,9 @@ export class Event {
   @Prop({default: false })
   isDisabled: boolean;
 
+  @Prop({default: false})
+  isSavedAsTemplate: boolean;
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }
