@@ -605,8 +605,8 @@ export class AuthService {
   }
 
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-    const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    console.log("validToken:", validToken);
+    // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    // console.log("validToken:", validToken);
     console.log('Apple Login Data:', data);
     let user = await this.userModel
       .findOne({ email: data.email })
