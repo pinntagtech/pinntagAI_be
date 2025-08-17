@@ -605,16 +605,7 @@ export class AuthService {
   }
 
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-    // let email,
-    //   firstName,
-    //   lastName = '';
-
-    // const decodedObj = await this.jwtService.decode(data.oAuthToken);
-    // if (decodedObj) {
-    //   email = decodedObj['email'];
-    //   firstName = decodedObj['firstName'];
-    //   lastName = decodedObj['lastName'];
-    // }
+    console.log('Apple Login Data:', data);
     let user = await this.userModel
       .findOne({ email: data.email })
       .populate('role', '_id name')
