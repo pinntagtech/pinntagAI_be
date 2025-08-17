@@ -1953,6 +1953,7 @@ export class RewardsService {
               website: '$businessProfileDetails.website',
             },
             progress: '$userReward.progress',
+            claimStatus: '$userReward.claimStatus'
           },
         },
       ];
