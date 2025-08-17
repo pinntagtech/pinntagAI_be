@@ -1952,6 +1952,7 @@ export class RewardsService {
               countryCode: '$businessProfileDetails.countryCode',
               website: '$businessProfileDetails.website',
               followersCount: '$businessProfileDetails.followersCount',
+              description: '$businessProfileDetails.description',
             },
             progress: '$userReward.progress',
             claimStatus: '$userReward.claimStatus'
