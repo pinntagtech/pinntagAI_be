@@ -1951,6 +1951,7 @@ export class RewardsService {
               phone: '$businessProfileDetails.phone',
               countryCode: '$businessProfileDetails.countryCode',
               website: '$businessProfileDetails.website',
+              followersCount: '$businessProfileDetails.followersCount',
             },
             progress: '$userReward.progress',
             claimStatus: '$userReward.claimStatus'
