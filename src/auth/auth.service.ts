@@ -605,16 +605,9 @@ export class AuthService {
   }
 
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-    // let email,
-    //   firstName,
-    //   lastName = '';
-
-    // const decodedObj = await this.jwtService.decode(data.oAuthToken);
-    // if (decodedObj) {
-    //   email = decodedObj['email'];
-    //   firstName = decodedObj['firstName'];
-    //   lastName = decodedObj['lastName'];
-    // }
+    // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    // console.log("validToken:", validToken);
+    console.log('Apple Login Data:', data);
     let user = await this.userModel
       .findOne({ email: data.email })
       .populate('role', '_id name')
@@ -625,6 +618,7 @@ export class AuthService {
         role: role._id,
         firstName: data.name ? data.name.split(' ')[0] : '',
         lastName: data.name ? data.name.split(' ')[1] : '',
+        name: data.name,
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
         email: data.email,
         isEmailVerified: true,
@@ -3008,9 +3002,9 @@ export class AuthService {
       },
       {
         $lookup: {
-          from: 'follows', // make sure it's the actual collection name
+          from: 'follows',
           let: {
-            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+            userId: new mongoose.Types.ObjectId(userId),
             targetId: '$businessDetails._id',
             targetType: Business.name,
           },
@@ -3034,9 +3028,7 @@ export class AuthService {
       },
       {
         $addFields: {
-          isFollowedByMe: {
-            $gt: [{ $size: '$userFollow' }, 0],
-          },
+          isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
@@ -3044,7 +3036,6 @@ export class AuthService {
         $group: {
           _id: '$businessDetails._id',
           name: { $first: '$businessDetails.name' },
-          // businessDetails: { $first: '$businessDetails' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
           industry: { $first: '$industryDetails' },
@@ -3069,8 +3060,22 @@ export class AuthService {
         },
       },
       { $match: { ...match } },
-      { $skip: !page ? 0 : (page - 1) * limit },
-      { $limit: limit },
+
+      // Use $facet for both paginated results and total count
+      {
+        $facet: {
+          data: [{ $skip: !page ? 0 : (page - 1) * limit }, { $limit: limit }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+      // Flatten totalCount so it returns a number instead of array
+      {
+        $addFields: {
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
@@ -3995,6 +4000,114 @@ export class AuthService {
         },
       };
     }
+    let totalCount = 0;
+
+    console.log('query from carousel dashboard:', query);
+    [eventsResult, totalCount] = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      query,
+      page,
+      limit,
+      CarouselType.Event,
+      maxDistance,
+      startDate,
+      endDate,
+    );
+    console.log('Total:::::::', totalCount);
+    return {
+      success: true,
+      message: 'Dashboard data fetched successfully',
+      events: eventsResult,
+      page,
+      limit,
+      totalCount,
+      pages: Math.ceil(totalCount / limit),
+    };
+  }
+  async getDashboardMap(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    maxDistance: number,
+    search: string,
+    timeZone: string,
+    limit: number,
+    page: number,
+    // type: string,
+    categoryIds?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+  ) {
+    console.log('Service Category IDs:', categoryIds);
+    let match = {};
+    if (categoryIds.length) {
+      match['event.categories'] = {
+        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+      };
+    }
+
+    const currentDate = currentDateTz(timeZone);
+
+    let start = getZeroDateTz(new Date(), timeZone);
+    console.log('START DATE:', start);
+    console.log('Match:', match);
+
+    if (search) {
+      // Search matching business profile name
+      const matchingBusinesses = await this.businessModel.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      const businessProfileIds = matchingBusinesses.map(
+        (business) => business._id,
+      );
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+    }
+
+    let age = 0;
+    if (!user.isGuest) {
+      const foundUser = await this.userModel.findById(user.id);
+      age = foundUser.age ? foundUser.age : 0;
+    }
+    let data = {};
+    let query = { ...match };
+    let eventsResult = [];
+    if (categoryIds.length) {
+      const matchingCategories = [];
+      categoryIds.forEach((id) => {
+          matchingCategories.push(new mongoose.Types.ObjectId(id));
+      });
+      if (matchingCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: matchingCategories,
+          },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
+      }
+    } else {
+      const categories = await this.categoryModel.find().select('_id');
+      query = {
+        ...query,
+        'event.categories': { $in: categories.map((cat) => cat._id) },
+      };
+    }
+
     let totalCount = 0;
 
     console.log('query from carousel dashboard:', query);
@@ -5819,7 +5932,7 @@ export class AuthService {
         ];
       }
 
-      eventsResult = await this.fetchBusinessListing(
+      [eventsResult, totalCount] = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -5830,6 +5943,7 @@ export class AuthService {
         startDate,
         endDate,
       );
+      eventsResult = eventsResult['data'];
     } else if (
       carousel.carouselType === CarouselType.Event ||
       carousel.carouselType === CarouselType.OnWheels
@@ -5899,6 +6013,7 @@ export class AuthService {
   async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
     let { search, carouselType, latitude, longitude, distance } = data;
     let result = null;
+    let total = 0;
 
     if (!carouselType) {
       return {
@@ -5906,6 +6021,9 @@ export class AuthService {
         message: 'Please provide a valid carousel type',
       };
     }
+
+    let page = data.page ? data.page : 1;
+    let limit = data.limit ? data.limit : 10;
     if (
       carouselType === CarouselType.Event ||
       carouselType === CarouselType.OnWheels
@@ -5937,11 +6055,14 @@ export class AuthService {
         longitude,
         latitude,
         match,
-        1,
-        10,
+        page,
+        limit,
         carouselType,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
+      result = result[0];
+      total = result[1];
+
       console.log('Result:', result);
     } else if (carouselType === CarouselType.Business) {
       let match: any = {};
@@ -5963,10 +6084,12 @@ export class AuthService {
         longitude,
         latitude,
         match,
-        1,
-        10,
+        page,
+        limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
+      result = result[0].data;
+      total = result[0].totalCount;
       console.log('Result:', result);
     }
 
@@ -5974,6 +6097,9 @@ export class AuthService {
       success: true,
       message: 'Search results fetched successfully',
       data: result,
+      total: total,
+      page: page,
+      limit: limit,
     };
   }
 }

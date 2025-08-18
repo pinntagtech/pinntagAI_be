@@ -203,6 +203,10 @@ export class EventController {
     @Query('status') status: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Query('categories') categories: string,
+    @Query('locations') locations: string,
+    @Query('type') type: string,
+    @Query('search') search: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
@@ -225,6 +229,15 @@ export class EventController {
     if(status && status === 'expired'){
       expired = true;
     }
+    let categoryIds = null;
+    if(categories && categories !== ""){
+      categoryIds = categories.split(',');
+    }
+    let locationIds = null;
+    if(locations && locations !== ""){
+      locationIds = locations.split(',');
+    }
+
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
     const result = await this.eventService.contentManagement(
@@ -235,6 +248,10 @@ export class EventController {
       status,
       startDate,
       endDate,
+      categoryIds,
+      locationIds,
+      type,
+      search,
     );
     if (result.success) {
       return {

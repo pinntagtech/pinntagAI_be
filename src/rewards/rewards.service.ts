@@ -301,7 +301,7 @@ export class RewardsService {
               message,
               type: NotificationTypes.REWARD,
               reward: reward._id,
-              targetType: User.name,
+              targetType: Business.name,
               targetUser: new mongoose.Types.ObjectId(user.businessProfile),
             });
           }
@@ -1563,6 +1563,20 @@ export class RewardsService {
           },
         },
         {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             rewardId: '$reward._id',
@@ -1588,6 +1602,10 @@ export class RewardsService {
                 url: '$QR_CODE.metaData.url',
               },
             },
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
+            },
           },
         },
         { $skip: (page - 1) * limit },
@@ -1598,12 +1616,6 @@ export class RewardsService {
         userId: new mongoose.Types.ObjectId(userId),
         claimStatus: claimStatus,
       });
-      if (!rewards || rewards.length === 0) {
-        return {
-          success: false,
-          message: 'No rewards found.',
-        };
-      }
       return {
         success: true,
         message: 'Rewards found successfully.',
@@ -1939,8 +1951,11 @@ export class RewardsService {
               phone: '$businessProfileDetails.phone',
               countryCode: '$businessProfileDetails.countryCode',
               website: '$businessProfileDetails.website',
+              followersCount: '$businessProfileDetails.followersCount',
+              description: '$businessProfileDetails.description',
             },
             progress: '$userReward.progress',
+            claimStatus: '$userReward.claimStatus'
           },
         },
       ];

@@ -13,7 +13,7 @@ export class Notification {
   @Prop({ required: true, refPath: 'userType' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({required: true, enum: [User.name, BusinessUser.name]})
+  @Prop({ required: true, enum: [User.name, BusinessUser.name] })
   userType: string;
 
   @Prop({
@@ -22,8 +22,6 @@ export class Notification {
       NotificationTypes.EVENT,
       NotificationTypes.REPORT,
       NotificationTypes.REWARD,
-
-
 
       NotificationTypes.OFFER,
       NotificationTypes.COMMENT,
@@ -44,7 +42,7 @@ export class Notification {
   isRead: boolean;
   @Prop({ ref: 'Event' })
   event: mongoose.Types.ObjectId;
-  @Prop({ref: Reward.name})
+  @Prop({ ref: Reward.name })
   reward: mongoose.Types.ObjectId;
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;

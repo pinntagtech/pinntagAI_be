@@ -3,7 +3,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Event, EventDocument } from './models/event.model';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, mongo } from 'mongoose';
 import axios from '@nestjs/axios';
 import { Category, CategoryDocument } from 'src/models/contentCategory.model';
 import { Image, ImageDocument } from './models/image.model';
@@ -2055,7 +2055,7 @@ export class EventService2 {
                   message,
                   type: NotificationTypes.EVENT,
                   event: new mongoose.Types.ObjectId(id),
-                  targetType: User.name,
+                  targetType: Business.name,
                   targetUser: new mongoose.Types.ObjectId(user.businessProfile),
                 });
               }
@@ -2088,6 +2088,10 @@ export class EventService2 {
                 user.businessProfile,
               ),
             });
+            await this.eventModel.updateOne(
+              { _id: new mongoose.Types.ObjectId(data.id) },
+              { isSavedAsTemplate: true },
+            );
           }
           return {
             success: true,
@@ -3336,7 +3340,13 @@ export class EventService2 {
         page,
         limit,
       );
-      const reportedEvents = await this.getReports(userId, page, limit, latitude, longitude);
+      const reportedEvents = await this.getReports(
+        userId,
+        page,
+        limit,
+        latitude,
+        longitude,
+      );
 
       return {
         success: true,
@@ -3977,7 +3987,7 @@ export class EventService2 {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
-            businessProfileDetails: { $first: '$businessProfileDetails' }
+            businessProfileDetails: { $first: '$businessProfileDetails' },
           },
         },
         {
@@ -4277,7 +4287,13 @@ export class EventService2 {
     };
   }
 
-  async getReports(userId: string, page: number, limit: number, latitude: number, longitude: number) {
+  async getReports(
+    userId: string,
+    page: number,
+    limit: number,
+    latitude: number,
+    longitude: number,
+  ) {
     const user = await this.userModel.findById(userId);
     if (!user) {
       return {
@@ -4424,340 +4440,336 @@ export class EventService2 {
 
     // const reports = await this.reportModel.aggregate(aggregationPipeline);
 
-     let startDate = new Date();
+    let startDate = new Date();
     let endDate = new Date(
       new Date(startDate).setFullYear(startDate.getFullYear() + 2),
     );
-    
-    const reportedEvents = await this.reportModel.find({user: new mongoose.Types.ObjectId(userId)}).select('_id event');
 
-    const reportedEventsList = reportedEvents.map(event => event.event);
+    const reportedEvents = await this.reportModel
+      .find({ user: new mongoose.Types.ObjectId(userId) })
+      .select('_id event');
+
+    const reportedEventsList = reportedEvents.map((event) => event.event);
     console.log('reportedEventsList', reportedEventsList);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
-        name: 'Content QR',
-      });
+      name: 'Content QR',
+    });
 
     const result = await this.eventLocationModel.aggregate([
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [longitude, latitude] },
-            distanceField: 'distance',
-            maxDistance: 10000000000,
-            spherical: true,
-          },
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: 10000000000,
+          spherical: true,
         },
-        {
-          $lookup: {
-            from: 'events',
-            localField: 'event',
-            foreignField: '_id',
-            as: 'event',
-          },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'event',
+          foreignField: '_id',
+          as: 'event',
         },
-        { $unwind: '$event' },
-        {
-          $match: {
-            'event.status': EventStatus.PUBLISHED,
-            'event._id': { $in: reportedEventsList },
-          },
+      },
+      { $unwind: '$event' },
+      {
+        $match: {
+          'event.status': EventStatus.PUBLISHED,
+          'event._id': { $in: reportedEventsList },
         },
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'event.categories',
-            foreignField: '_id',
-            as: 'categories',
-          },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'event.categories',
+          foreignField: '_id',
+          as: 'categories',
         },
-        {
-          $lookup: {
-            from: 'files', // assuming this is the same collection as QR_CODE
-            let: { folderId: '$event.drivePath' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$parentDirectory', '$$folderId'] },
-                      {
-                        $ne: [
-                          '$category',
-                          new mongoose.Types.ObjectId(QR_ImageCategory.id),
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: 'images',
-          },
-        },
-        {
-          $lookup: {
-            from: 'eventlocations',
-            localField: 'event.locations',
-            foreignField: '_id',
-            as: 'locations',
-          },
-        },
-        {
-          $lookup: {
-            from: 'businesses',
-            localField: 'event.businessProfile',
-            foreignField: '_id',
-            as: 'businessProfileDetails',
-          },
-        },
-        {
-          $unwind: {
-            path: '$businessProfileDetails',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $group: {
-            _id: '$event._id',
-            locationId: { $first: '$_id' },
-            distance: { $first: { $divide: ['$distance', 1609.34] } },
-            title: { $first: '$event.title' },
-            creatorType: { $first: '$event.creatorType' },
-            keywords: { $first: '$event.keywords' },
-            description: { $first: '$event.description' },
-            schedule: { $first: '$event.eventSchedule' },
-            // locations: { $first: '$event.locations' },
-            type: { $first: '$event.type' },
-            status: { $first: '$event.status' },
-            targetGenders: { $first: '$event.targetGenders' },
-            promotionCode: { $first: '$event.promotionCode' },
-            isFree: { $first: '$event.isFree' },
-            participationCost: { $first: '$event.participationCost' },
-            bookingUrl: { $first: '$event.bookingUrl' },
-            notifyFollowers: { $first: '$event.notifyFollowers' },
-            RSVP: { $first: '$event.RSVP' },
-            termsApplied: { $first: '$event.termsApplied' },
-            termsAndConditions: { $first: '$event.termsAndConditions' },
-            facebookPostId: { $first: '$event.facebookPostId' },
-            specifyForEachDay: { $first: '$event.specifyForEachDay' },
-            participants: { $first: '$event.participants' },
-            creatorDetails: { $first: '$event.creatorDetails' },
-            categories: { $first: '$categories' },
-            files: { $first: '$images' },
-            ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
-            isSaved: { $first: '$isSaved' },
-            isLiked: { $first: '$isLiked' },
-            locations: {
-              $push: {
-                location: '$location',
-                accuracy: '$accuracy',
-                address1: '$address1',
-                address2: '$address2',
-                city: '$city',
-                state: '$state',
-                zip: '$zip',
-                website: '$website',
-                _id: '$_id',
-                email: '$email',
-                phone: '$phone',
-                distance: { $divide: ['$distance', 1609.34] },
-              },
-            },
-            businessProfileDetails: {
-              $first: '$businessProfileDetails',
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: 'eventschedules',
-            localField: 'schedule',
-            foreignField: '_id',
-            as: 'schedules',
-          },
-        },
-        {
-          $addFields: {
-            schedules: {
-              $filter: {
-                input: '$schedules',
-                as: 'schedule',
-                cond: {
-                  $or: [
+      },
+      {
+        $lookup: {
+          from: 'files', // assuming this is the same collection as QR_CODE
+          let: { folderId: '$event.drivePath' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$parentDirectory', '$$folderId'] },
                     {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'fixed'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.fixedSchedule.date',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: ['$$schedule.fixedSchedule.date', endDate],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'recurring'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                endDate,
-                              ],
-                            },
-                          ],
-                        },
+                      $ne: [
+                        '$category',
+                        new mongoose.Types.ObjectId(QR_ImageCategory.id),
                       ],
                     },
                   ],
                 },
               },
             },
-          },
+          ],
+          as: 'images',
         },
-        {
-          $match: {
-            $expr: { $gt: [{ $size: '$schedules' }, 0] },
-          },
+      },
+      {
+        $lookup: {
+          from: 'eventlocations',
+          localField: 'event.locations',
+          foreignField: '_id',
+          as: 'locations',
         },
-        {
-          $project: {
-            _id: 1,
-            distance: 1,
-            title: 1,
-            keywords: 1,
-            description: 1,
-            type: 1,
-            status: 1,
-            notifyFollowers: 1,
-            targetGenders: 1,
-            promotionCode: 1,
-            isFree: 1,
-            participationCost: 1,
-            bookingUrl: 1,
-            termsAndConditions: 1,
-            ageGroupsAllowed: {
-              minAge: '$minTargetAge',
-              maxAge: '$maxTargetAge',
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'event.businessProfile',
+          foreignField: '_id',
+          as: 'businessProfileDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$businessProfileDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$event._id',
+          locationId: { $first: '$_id' },
+          distance: { $first: { $divide: ['$distance', 1609.34] } },
+          title: { $first: '$event.title' },
+          creatorType: { $first: '$event.creatorType' },
+          keywords: { $first: '$event.keywords' },
+          description: { $first: '$event.description' },
+          schedule: { $first: '$event.eventSchedule' },
+          // locations: { $first: '$event.locations' },
+          type: { $first: '$event.type' },
+          status: { $first: '$event.status' },
+          targetGenders: { $first: '$event.targetGenders' },
+          promotionCode: { $first: '$event.promotionCode' },
+          isFree: { $first: '$event.isFree' },
+          participationCost: { $first: '$event.participationCost' },
+          bookingUrl: { $first: '$event.bookingUrl' },
+          notifyFollowers: { $first: '$event.notifyFollowers' },
+          RSVP: { $first: '$event.RSVP' },
+          termsApplied: { $first: '$event.termsApplied' },
+          termsAndConditions: { $first: '$event.termsAndConditions' },
+          facebookPostId: { $first: '$event.facebookPostId' },
+          specifyForEachDay: { $first: '$event.specifyForEachDay' },
+          participants: { $first: '$event.participants' },
+          creatorDetails: { $first: '$event.creatorDetails' },
+          categories: { $first: '$categories' },
+          files: { $first: '$images' },
+          ageGroupsAllowed: { $first: '$ageGroupsAllowed' },
+          isSaved: { $first: '$isSaved' },
+          isLiked: { $first: '$isLiked' },
+          locations: {
+            $push: {
+              location: '$location',
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$zip',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              distance: { $divide: ['$distance', 1609.34] },
             },
-            categories: {
-              $map: {
-                input: '$categories',
-                as: 'category',
-                in: {
-                  _id: '$$category._id',
-                  name: '$$category.title',
-                  darkIcon: '$$category.darkIcon',
-                  lightIcon: '$$category.lightIcon',
-                  activeColor: '$$category.activeColor',
-                },
+          },
+          businessProfileDetails: {
+            $first: '$businessProfileDetails',
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'eventschedules',
+          localField: 'schedule',
+          foreignField: '_id',
+          as: 'schedules',
+        },
+      },
+      {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          {
+                            $lte: ['$$schedule.fixedSchedule.date', endDate],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
               },
             },
-            businessProfileDetails: {
-              _id: '$businessProfileDetails._id',
-              name: '$businessProfileDetails.name',
-              cover: '$businessProfileDetails.cover',
-              logo: '$businessProfileDetails.logo',
-              email: '$businessProfileDetails.email',
-              bio: '$businessProfileDetails.bio',
-              description: '$businessProfileDetails.description',
-              followersCount: '$businessProfileDetails.followersCount',
-              isFollowedByMe: '$isFollowedByMe',
-              profileType: 'BusinessProfile',
-              phone: '$businessProfileDetails.phone',
-              website: '$businessProfileDetails.website',
-              facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
-              instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
-              twitterPageUrl: '$businessProfileDetails.XPageUrl',
-            },
-            // QR_CODE: {
-            //   _id: '$QR_CODE._id',
-            //   url: '$QR_CODE.metaData.url',
-            // },
-            creatorDetails: {
-              $cond: {
-                if: { $eq: ['$creatorType', 'User'] },
-                then: {
-                  _id: '$userDetails._id',
-                  name: '$userDetails.name',
-                  profilePhoto: '$userDetails.profilePhoto',
-                  email: '$userDetails.email',
-                  bio: '$userDetails.bio',
-                  followersCount: '$userDetails.followersCount',
-                  profileType: 'User',
-                  phone: '$userDetails.phone',
-                  website: '',
-                  isFollowedByMe: '$event.isFollowedByMe',
-                  isDeleted: '$userDetails.isDeleted',
-                  isMe: false,
-                },
-                else: {
-                  _id: '$businessProfileDetails._id',
-                  name: '$businessProfileDetails.name',
-                  profilePhoto: '$businessProfileDetails.profilePhoto',
-                  email: '$businessProfileDetails.email',
-                  bio: '$businessProfileDetails.bio',
-                  followersCount: '$businessProfileDetails.followersCount',
-                  profileType: 'BusinessProfile',
-                  phone: '$businessProfileDetails.phone',
-                  website: '$businessProfileDetails.website',
-                  isFollowedByMe: '$event.isFollowedByMe',
-                  description: '$businessProfileDetails.description',
-                  logo: '$businessProfileDetails.logo',
-                  cover: '$businessProfileDetails.cover',
-                  isDeleted: '$businessProfileDetails.isDeleted',
-                  facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
-                  instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
-                  twitterPageUrl: '$businessProfileDetails.XPageUrl',
-                  isMe: false,
-                },
-              },
-            },
-            images: {
-              $map: {
-                input: '$files',
-                as: 'file',
-                in: {
-                  _id: '$$file._id',
-                  url: '$$file.metaData.url',
-                },
-              },
-            },
-            creatorType: 1,
-            locations: 1,
-            schedules: 1,
           },
         },
-        { $sort: { createdAt: -1, _id: 1 } },
-        {
-          $facet: {
-            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
-            totalCount: [{ $count: 'count' }],
-          },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
         },
-      ]);
-
-
-
+      },
+      {
+        $project: {
+          _id: 1,
+          distance: 1,
+          title: 1,
+          keywords: 1,
+          description: 1,
+          type: 1,
+          status: 1,
+          notifyFollowers: 1,
+          targetGenders: 1,
+          promotionCode: 1,
+          isFree: 1,
+          participationCost: 1,
+          bookingUrl: 1,
+          termsAndConditions: 1,
+          ageGroupsAllowed: {
+            minAge: '$minTargetAge',
+            maxAge: '$maxTargetAge',
+          },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                _id: '$$category._id',
+                name: '$$category.title',
+                darkIcon: '$$category.darkIcon',
+                lightIcon: '$$category.lightIcon',
+                activeColor: '$$category.activeColor',
+              },
+            },
+          },
+          businessProfileDetails: {
+            _id: '$businessProfileDetails._id',
+            name: '$businessProfileDetails.name',
+            cover: '$businessProfileDetails.cover',
+            logo: '$businessProfileDetails.logo',
+            email: '$businessProfileDetails.email',
+            bio: '$businessProfileDetails.bio',
+            description: '$businessProfileDetails.description',
+            followersCount: '$businessProfileDetails.followersCount',
+            isFollowedByMe: '$isFollowedByMe',
+            profileType: 'BusinessProfile',
+            phone: '$businessProfileDetails.phone',
+            website: '$businessProfileDetails.website',
+            facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+            instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+            twitterPageUrl: '$businessProfileDetails.XPageUrl',
+          },
+          // QR_CODE: {
+          //   _id: '$QR_CODE._id',
+          //   url: '$QR_CODE.metaData.url',
+          // },
+          creatorDetails: {
+            $cond: {
+              if: { $eq: ['$creatorType', 'User'] },
+              then: {
+                _id: '$userDetails._id',
+                name: '$userDetails.name',
+                profilePhoto: '$userDetails.profilePhoto',
+                email: '$userDetails.email',
+                bio: '$userDetails.bio',
+                followersCount: '$userDetails.followersCount',
+                profileType: 'User',
+                phone: '$userDetails.phone',
+                website: '',
+                isFollowedByMe: '$event.isFollowedByMe',
+                isDeleted: '$userDetails.isDeleted',
+                isMe: false,
+              },
+              else: {
+                _id: '$businessProfileDetails._id',
+                name: '$businessProfileDetails.name',
+                profilePhoto: '$businessProfileDetails.profilePhoto',
+                email: '$businessProfileDetails.email',
+                bio: '$businessProfileDetails.bio',
+                followersCount: '$businessProfileDetails.followersCount',
+                profileType: 'BusinessProfile',
+                phone: '$businessProfileDetails.phone',
+                website: '$businessProfileDetails.website',
+                isFollowedByMe: '$event.isFollowedByMe',
+                description: '$businessProfileDetails.description',
+                logo: '$businessProfileDetails.logo',
+                cover: '$businessProfileDetails.cover',
+                isDeleted: '$businessProfileDetails.isDeleted',
+                facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+                instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+                twitterPageUrl: '$businessProfileDetails.XPageUrl',
+                isMe: false,
+              },
+            },
+          },
+          images: {
+            $map: {
+              input: '$files',
+              as: 'file',
+              in: {
+                _id: '$$file._id',
+                url: '$$file.metaData.url',
+              },
+            },
+          },
+          creatorType: 1,
+          locations: 1,
+          schedules: 1,
+        },
+      },
+      { $sort: { createdAt: -1, _id: 1 } },
+      {
+        $facet: {
+          data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+    ]);
 
     return {
       success: true,
       message: 'Reports fetched successfully',
-      data: result[0].data
+      data: result[0].data,
     };
   }
 
@@ -5724,6 +5736,10 @@ export class EventService2 {
     status: string,
     startDate: any,
     endDate: any,
+    categoryIds: string[],
+    locationIds: string[],
+    type: string,
+    search: string,
   ) {
     try {
       // 1. Fetch business user and role
@@ -5776,13 +5792,38 @@ export class EventService2 {
         if ((Object.values(EventStatus) as string[]).includes(status))
           query['status'] = status;
       }
+      if (type && type !== '') {
+        if (Object.values(EventTypes).includes(type as EventTypes))
+          query['type'] = type;
+      }
+      if (categoryIds && categoryIds.length > 0) {
+        query['categories'] = {
+          $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+        };
+      }
+      if (locationIds && locationIds.length > 0) {
+        let mongoLocIds = locationIds.map(
+          (id) => new mongoose.Types.ObjectId(id),
+        );
+        const eventLocations = await this.eventLocationModel
+          .find({ businessLocationId: mongoLocIds })
+          .select({ _id: 1 });
+        query['locations'] = { $in: eventLocations.map((loc) => loc._id) };
+      }
+
+      if (search) {
+        query['$or'] = [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { keywords: { $regex: search, $options: 'i' } },
+        ];
+      }
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
       console.log('Queryy:', query);
       console.log('Expired Status:', isExpired);
-
       // 3. Build aggregation pipeline
       const pipeline: any[] = [
         { $match: query },
@@ -5835,145 +5876,29 @@ export class EventService2 {
             as: 'files',
           },
         },
-        // {
-        //   $addFields: {
-        //     schedules: {
-        //       $filter: {
-        //         input: '$schedules',
-        //         as: 'schedule',
-        //         cond: {
-        //           $or: isExpired
-        //             ? [
-        //                 {
-        //                   $and: [
-        //                     { $eq: ['$$schedule.type', 'fixed'] },
-        //                     {
-        //                       $lt: ['$$schedule.fixedSchedule.date', now],
-        //                     },
-        //                   ],
-        //                 },
-        //                 {
-        //                   $and: [
-        //                     { $eq: ['$$schedule.type', 'recurring'] },
-        //                     {
-        //                       $lt: [
-        //                         '$$schedule.recurringSchedule.endDate',
-        //                         now,
-        //                       ],
-        //                     },
-        //                   ],
-        //                 },
-        //               ]
-        //             : [
-        //                 {
-        //                   $and: [
-        //                     { $eq: ['$$schedule.type', 'fixed'] },
-        //                     {
-        //                       $and: [
-        //                         {
-        //                           $gte: [
-        //                             '$$schedule.fixedSchedule.date',
-        //                             startDate,
-        //                           ],
-        //                         },
-        //                         {
-        //                           $lte: [
-        //                             '$$schedule.fixedSchedule.date',
-        //                             endDate,
-        //                           ],
-        //                         },
-        //                         {
-        //                           $gte: [
-        //                             {
-        //                               $let: {
-        //                                 vars: {
-        //                                   durations:
-        //                                     '$$schedule.fixedSchedule.durations',
-        //                                   lastIndex: {
-        //                                     $subtract: [
-        //                                       {
-        //                                         $size:
-        //                                           '$$schedule.fixedSchedule.durations',
-        //                                       },
-        //                                       1,
-        //                                     ],
-        //                                   },
-        //                                 },
-        //                                 in: {
-        //                                   $getField: {
-        //                                     field: 'endTime',
-        //                                     input: {
-        //                                       $arrayElemAt: [
-        //                                         '$$durations',
-        //                                         '$$lastIndex',
-        //                                       ],
-        //                                     },
-        //                                   },
-        //                                 },
-        //                               },
-        //                             },
-        //                             new Date(),
-        //                           ],
-        //                         },
-        //                       ],
-        //                     },
-        //                   ],
-        //                 },
-        //                 {
-        //                   $and: [
-        //                     { $eq: ['$$schedule.type', 'recurring'] },
-        //                     {
-        //                       $and: [
-        //                         {
-        //                           $gte: [
-        //                             '$$schedule.recurringSchedule.endDate',
-        //                             startDate,
-        //                           ],
-        //                         },
-        //                         {
-        //                           $lte: [
-        //                             '$$schedule.recurringSchedule.endDate',
-        //                             endDate,
-        //                           ],
-        //                         },
-        //                       ],
-        //                     },
-        //                   ],
-        //                 },
-        //               ],
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
         {
           $addFields: {
             schedules: {
-              $filter: {
-                input: '$schedules',
-                as: 'schedule',
-                cond: {
-                  $or: [
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'fixed'] },
+              $cond: {
+                if: { $eq: [isExpired, true] },
+                then: {
+                  $filter: {
+                    input: '$schedules',
+                    as: 'schedule',
+                    cond: {
+                      $or: [
                         {
                           $and: [
+                            { $eq: ['$$schedule.type', 'fixed'] },
                             {
-                              $gte: [
-                                '$$schedule.fixedSchedule.date',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: ['$$schedule.fixedSchedule.date', endDate],
-                            },
-                            {
-                              // Only filter by expiration if expired=true
-                              $cond: {
-                                if: isExpired, // passed in as an aggregation variable
-                                then: {
-                                  // expired schedules → last endTime < now
+                              $and: [
+                                {
+                                  $lt: [
+                                    '$$schedule.fixedSchedule.date',
+                                    startDate,
+                                  ],
+                                },
+                                {
                                   $lt: [
                                     {
                                       $let: {
@@ -6006,47 +5931,62 @@ export class EventService2 {
                                     new Date(),
                                   ],
                                 },
-                                else: true, // skip expiration filter → include all
-                              },
+                              ],
+                            },
+                          ],
+                        },
+                        {
+                          $and: [
+                            { $eq: ['$$schedule.type', 'recurring'] },
+                            {
+                              $and: [
+                                {
+                                  $gte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    startDate,
+                                  ],
+                                },
+                                {
+                                  $lte: [
+                                    '$$schedule.recurringSchedule.endDate',
+                                    endDate,
+                                  ],
+                                },
+                              ],
                             },
                           ],
                         },
                       ],
                     },
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'recurring'] },
-                        {
-                          $gte: [
-                            '$$schedule.recurringSchedule.endDate',
-                            startDate,
-                          ],
-                        },
-                        {
-                          $lte: [
-                            '$$schedule.recurringSchedule.endDate',
-                            endDate,
-                          ],
-                        },
-                      ],
-                    },
-                  ],
+                  },
                 },
+                else: '$schedules',
               },
             },
           },
         },
         {
           $match: {
-            $expr: { $gt: [{ $size: '$schedules' }, 0] },
+            $expr: {
+              $cond: [
+                { $eq: [isExpired, true] },
+                { $gt: [{ $size: '$schedules' }, 0] },
+                true,
+              ],
+            },
           },
         },
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * limit },
-        { $limit: limit },
+        {
+          $facet: {
+            data: [
+              { $sort: { createdAt: -1 } },
+              { $skip: (page - 1) * limit },
+              { $limit: limit },
+            ],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
       ];
-
-      const countDocuments = await this.eventModel.countDocuments(query);
       // 4. Execute aggregation
       const events = await this.eventModel.aggregate(pipeline);
 
@@ -6096,8 +6036,8 @@ export class EventService2 {
       return {
         success: true,
         message: 'Events fetched successfully',
-        data: events,
-        total: countDocuments,
+        data: events[0].data,
+        total: events[0].totalCount[0]?.count || 0,
         page,
         limit,
       };
@@ -7326,6 +7266,10 @@ export class EventService2 {
         thumbnail: thumbnailURL,
         businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       });
+      await this.eventModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(data.id) },
+        { isSavedAsTemplate: true },
+      );
 
       return {
         success: true,

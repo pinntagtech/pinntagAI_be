@@ -17,6 +17,12 @@ export class DashboardSearchDto {
   search: string;
 
   @IsOptional()
+  page: number;
+
+  @IsOptional()
+  limit: number;
+
+  @IsOptional()
   distance?: number;
 
 }
