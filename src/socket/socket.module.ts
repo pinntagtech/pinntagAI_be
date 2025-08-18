@@ -217,6 +217,6 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
     FirebaseService,
     BusinessService,
   ],
-  exports: [],
+  exports: [SocketGateway],
 })
 export class SocketModule {}
