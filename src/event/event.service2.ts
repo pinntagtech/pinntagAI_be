@@ -7006,6 +7006,7 @@ export class EventService2 {
             'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
           isFromCrawler: true,
           drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+          description: "Discover Atlanta is the official city guide operated by the Atlanta Convention & Visitors Bureau (ACVB), the nonprofit destination marketing organization established in 1913 to promote Atlanta as a premier travel and convention hub. Serving both visitors and locals, Discover Atlanta offers curated guides to attractions, events, restaurants, hotels, neighborhoods, and cultural experiences across the city. Its website and mobile app highlight seasonal activities, themed itineraries, and community-driven stories featuring arts, history, Black-owned businesses, and LGBTQ+ spots."
         };
         businessDetails = await this.businessModel.create(businessObj);
       }
@@ -7018,9 +7019,16 @@ export class EventService2 {
         if (!businessUser || !businessIndustry || !businessCategory) continue;
 
         if (!data.locations[0].location.coordinates) continue;
+        
+         let address = await this.googleService.getAddressFromCoordinates(
+        data.locations[0].location.coordinates[1],
+        data.locations[0].location.coordinates[0],
+        '000e10b3-b0a0-4269-a864-ea419a790f76',
+      );
+
 
         let foundOutlet = await this.outletModel.findOne({
-          address1: data.locations[0].address1,
+          address1:  address.data.address1,
         });
 
         if (!foundOutlet) {
@@ -7037,7 +7045,7 @@ export class EventService2 {
             postalCode: '30303',
             countryCode: '404',
             email: 'atlanta@yopmail.com',
-            address1: data.locations[0].address1 ?? null,
+            address1:  address.data.address1 ?? null,
             latitude: data.locations[0].location.coordinates[1],
             longitude: data.locations[0].location.coordinates[0],
             location: {

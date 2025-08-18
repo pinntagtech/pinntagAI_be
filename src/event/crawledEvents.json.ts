@@ -20794,7 +20794,7 @@ export const AtlantaData = [
     name: 'Thompson Tastes',
     title: 'Thompson Tastes',
     description: 'NA',
-    category: 'Food & Drinks',
+    category: 'Food & Drink',
     startTime: '2025-06-22T17:00:00.000Z',
     endTime: '2025-06-27T18:00:00.000Z',
     eventTimes: [
@@ -20840,7 +20840,7 @@ export const AtlantaData = [
     venue: 'Thompson Buckhead Hotel',
     organizerEmail: '',
     attendingCount: 0,
-    categories: ['Food & Drinks'],
+    categories: ['Food & Drink'],
     ticketInfo: [],
     eventTimesText: [],
     timestamp: '2025-05-22T17:00:00.000Z',
@@ -21653,7 +21653,7 @@ export const AtlantaData = [
     title: 'Barks and Bites: Doggie Crawl on the Beltline',
     description:
       "Treat your dog to a day out on the Atlanta Beltline with dining, shopping, and socializing at dog-friendly spots! On this unique crawl, your furry foodie can savor gourmet meals crafted just for them at some of Atlanta's most dog-friendly restaurants, and enjoy puptail hour with 'Barkaritas'. You'll also stop at pet boutiques so your fur baby can pick out toys and treats, take home swag bags filled with goodies, and support local animal rescues with each ticket. It's the perfect way to return your pup's unconditional love with a day of fun and pampering. Celebrating your dog's birthday? Choose the 'Barkday Pawty Pack' when booking for a fun, personalized experience.",
-    category: 'Food & Drinks',
+    category: 'Food & Drink',
     startTime: '2025-06-01T11:00:00.000Z',
     endTime: '2025-12-14T14:00:00.000Z',
     timezone: 'EST',
@@ -21668,7 +21668,7 @@ export const AtlantaData = [
       'Atlanta Beltline East Side Trail, 700 Lake Avenue NE, Atlanta, GA 30307',
     organizerEmail: '',
     attendingCount: 0,
-    categories: ['Food & Drinks'],
+    categories: ['Food & Drink'],
     ticketInfo: [],
     eventTimesText: [],
     timestamp: '2025-06-01T11:00:00.000Z',
@@ -21726,7 +21726,7 @@ export const AtlantaData = [
     title: 'Endless Sunday Brunch Buffet',
     description:
       'Starting Sunday, May 18th, 5Church Midtown launches its Endless Sunday Brunch Buffet—an all-you-can-eat experience for $45 adults / $20 kids. Enjoy chef-attended carving stations, made-to-order omelets, fresh salads, pastries, and more in our stylish main dining room. Add bottomless mimosas for $30. Served Sundays with a 2-hour limit per table. Dine-in only—no to-go. Reservations strongly encouraged via Resy. Brunch season starts now—join us every Sunday!',
-    category: 'Food & Drinks',
+    category: 'Food & Drink',
     startTime: '2025-05-25T10:00:00.000Z',
     endTime: '2025-12-21T16:00:00.000Z',
     timezone: 'EST',
@@ -21740,7 +21740,7 @@ export const AtlantaData = [
     venue: '5Church Restaurant, 1197 Peachtree Street NE, Marietta, GA 30361',
     organizerEmail: '',
     attendingCount: 0,
-    categories: ['Food & Drinks'],
+    categories: ['Food & Drink'],
     ticketInfo: [],
     eventTimesText: [],
     timestamp: '2025-05-25T10:00:00.000Z',
@@ -22150,7 +22150,7 @@ export const AtlantaData = [
     title: 'Toast to Her',
     description:
       "This inspiring event is a toast to the strength, brilliance, and achievements of women. Enjoy an evening of connection, empowerment, and celebration with signature cocktails by Edmond's Honor, delicious light bites, and an uplifting atmosphere. Plus, this month will feature DJ La Bonita, setting the perfect vibe for the occasion. Bring a plus one for a chance to win a complimentary stay at Thompson Atlanta, Buckhead. This event is free, but RSVPs are required. Reserve your spot online.",
-    category: 'Food & Drinks',
+    category: 'Food & Drink',
     startTime: '2025-05-22T17:00:00.000Z',
     endTime: '2025-06-29T20:00:00.000Z',
     timezone: 'EST',
@@ -22166,7 +22166,7 @@ export const AtlantaData = [
     organizerEmail: '',
     phone: '404-574-1234',
     attendingCount: 0,
-    categories: ['Food & Drinks'],
+    categories: ['Food & Drink'],
     ticketInfo: [],
     eventTimesText: [],
     timestamp: '2025-05-22T17:00:00.000Z',
@@ -23430,7 +23430,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -25336,8 +25336,8 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
-        darkIcon:
+        name: 'Food & Drink',
+        darkIco:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food%20%26%20Drinks1755341968418.svg',
