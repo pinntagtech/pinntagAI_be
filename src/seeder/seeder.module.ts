@@ -7,7 +7,7 @@ import { SeederService } from './seeder.service';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';

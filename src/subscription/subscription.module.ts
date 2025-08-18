@@ -6,12 +6,12 @@ import { Subscription, SubscriptionSchema } from './models/subscription.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from './models/subscriptionProduct.model';
+} from './models/subscription-product.model';
 import { Role, RoleSchema } from 'src/roles/models/roles.model';
 import {
   GuestSession,

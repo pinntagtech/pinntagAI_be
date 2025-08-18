@@ -42,8 +42,11 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+} from 'src/subscription/models/subscription-product.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   EventInvitation,
   EventInvitationSchema,
@@ -51,7 +54,7 @@ import {
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { Report, ReportSchema } from './models/reports.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { SavedEvent, SavedEventSchema } from './models/savedEvent.model';
@@ -113,25 +116,49 @@ import {
 } from 'src/business/model/BussinessDocumentType.model';
 import { Brand, BrandSchema } from 'src/business/model/brand.model';
 import { Resource, ResourceSchema } from 'src/roles/models/resource.model';
-import { Department, DepartmentSchema } from 'src/business/model/department.model';
+import {
+  Department,
+  DepartmentSchema,
+} from 'src/business/model/department.model';
 import { Action } from 'rxjs/internal/scheduler/Action';
 import { ActionSchema } from 'src/roles/models/actions.model';
-import { LocationGroup, LocationGroupSchema } from 'src/business/model/locationGroup.model';
+import {
+  LocationGroup,
+  LocationGroupSchema,
+} from 'src/business/model/locationGroup.model';
 import { Region, RegionSchema } from 'src/business/model/region.model';
-import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import {
+  UserReward,
+  UserRewardSchema,
+} from 'src/rewards/model/userReward.model';
 import { Rating, RatingSchema } from 'src/business/model/rating.model';
 import { MenuSchema } from 'src/business/model/menu.model';
 import { Menu } from 'src/business/model/types.model';
-import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from 'src/business/model/userAllowedNotification.model';
 import { MailService } from 'src/mail/mail.service';
 import { SeederService } from 'src/seeder/seeder.service';
 import { AuthService } from 'src/auth/auth.service';
 import { AppVersion, AppVersionSchema } from 'src/models/appVersion.model';
-import { OutletCategory, OutletCategorySchema } from 'src/outlet/model/outletCategory.model';
-import { OutletType, OutletTypeSchema } from 'src/outlet/model/outletType.model';
-import { DashboardConfig, DashboardConfigSchema } from 'src/auth/models/dashboardConfig.model';
+import {
+  OutletCategory,
+  OutletCategorySchema,
+} from 'src/outlet/model/outletCategory.model';
+import {
+  OutletType,
+  OutletTypeSchema,
+} from 'src/outlet/model/outletType.model';
+import {
+  DashboardConfig,
+  DashboardConfigSchema,
+} from 'src/auth/models/dashboardConfig.model';
 import { Tag, TagSchema } from 'src/models/tags.model';
-import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformConfig.model';
+import {
+  PlatformConfig,
+  PlatformConfigSchema,
+} from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
@@ -190,14 +217,17 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
       { name: UserReward.name, schema: UserRewardSchema },
       { name: Rating.name, schema: RatingSchema },
       { name: Menu.name, schema: MenuSchema },
-      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
-      { name: AppVersion.name, schema: AppVersionSchema},
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
+      { name: AppVersion.name, schema: AppVersionSchema },
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
-      { name: Tag.name, schema: TagSchema},
-      { name: PlatformConfig.name, schema: PlatformConfigSchema},
-      { name: Reward.name, schema: RewardSchema},
+      { name: Tag.name, schema: TagSchema },
+      { name: PlatformConfig.name, schema: PlatformConfigSchema },
+      { name: Reward.name, schema: RewardSchema },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),

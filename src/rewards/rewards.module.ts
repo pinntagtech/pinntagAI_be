@@ -57,12 +57,15 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+} from 'src/subscription/models/subscription-product.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import {
@@ -140,8 +143,14 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { SmsService } from 'src/sms/sms.service';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
-import { EventResponse, EventResponseSchema } from 'src/event/models/event-response.model';
-import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
+import {
+  EventResponse,
+  EventResponseSchema,
+} from 'src/event/models/event-response.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
 
 @Module({
   imports: [

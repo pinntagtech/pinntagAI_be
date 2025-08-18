@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 // import { BusinessProfile } from '../../business-profile/models/businessProfile.model';
 import { Event } from 'src/event/models/event.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
-import { Refferal } from './refferal.model';
+import { Refferal } from '../../subscription/models/refferal.model';
 import { Drive } from 'src/drive/models/drive.model';
 import { Role } from 'src/roles/models/roles.model';
 import { UserProfileStatus } from 'src/enums/user.enum';

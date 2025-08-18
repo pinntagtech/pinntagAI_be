@@ -18,9 +18,12 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import { Subscription } from 'rxjs';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   EventLocation,
   EventLocationSchema,
@@ -58,7 +61,7 @@ import { Event, EventSchema } from 'src/event/models/event.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { S3Service } from 'src/s3.service';
 import { StripeService } from 'src/stripe/stripe.service';
@@ -78,7 +81,10 @@ import {
   BusinessUserSchema,
 } from 'src/business/model/businessUser.model';
 import { FirebaseService } from 'src/notification/firebase.service';
-import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 
 @Module({

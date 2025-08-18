@@ -10,7 +10,7 @@ import mongoose, { isValidObjectId, Model } from 'mongoose';
 import { Category, CategoryDocument } from './models/contentCategory.model';
 import { AgeGroup, AgeGroupDocument } from './models/ageGroup.model';
 import { SeederService } from './seeder/seeder.service';
-import { SubscriptionProduct } from './subscription/models/subscriptionProduct.model';
+import { SubscriptionProduct } from './subscription/models/subscription-product.model';
 import { AppVersion, AppVersionDocument } from './models/appVersion.model';
 import { User, UserDocument } from './user/models/user.model';
 import { EventTypes } from './enums/event.enums';
@@ -32,7 +32,10 @@ import { Admin, AdminDocument } from './admin/models/admin.model';
 import { Business, BusinessDocument } from './business/model/business.model';
 import { SeederConfig } from './models/seederConfig.model';
 import { Tag } from './models/tags.model';
-import { BusinessIndustry, BusinessIndustryDocument } from './business/model/businessIndustry.model';
+import {
+  BusinessIndustry,
+  BusinessIndustryDocument,
+} from './business/model/businessIndustry.model';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -54,8 +57,10 @@ export class AppService implements OnModuleInit {
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
-    @InjectModel(SeederConfig.name) private readonly seederConfigModel: Model<SeederConfig>,
-    @InjectModel(BusinessIndustry.name) private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
+    @InjectModel(SeederConfig.name)
+    private readonly seederConfigModel: Model<SeederConfig>,
+    @InjectModel(BusinessIndustry.name)
+    private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
     private readonly seederService: SeederService,
   ) {}
   async onModuleInit() {

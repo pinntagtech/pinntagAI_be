@@ -19,18 +19,24 @@ import { Follow, FollowSchema } from './models/follow.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionSchema,
 } from 'src/subscription/models/subscription.model';
-import { Refferal, RefferalSchema } from './models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from '../subscription/models/refferal.model';
 import { S3Service } from 'src/s3.service';
 import {
   Notification,
   NotificationSchema,
 } from 'src/notification/models/notification.model';
-import { Transaction, TransactionSchema } from './models/transaction.model';
+import {
+  Transaction,
+  TransactionSchema,
+} from '../subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from './models/contact-us.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
@@ -165,7 +171,7 @@ import { SmsService } from 'src/sms/sms.service';
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema},
+      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Reward.name, schema: RewardSchema },
       {
         name: UserAllowedNotification.name,

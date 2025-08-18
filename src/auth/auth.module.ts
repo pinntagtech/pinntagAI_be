@@ -17,11 +17,14 @@ import { Token, TokenSchema } from './models/token.model';
 // } from 'src/business-profile/models/businessProfile.model';
 import { GuestSession, GuestSessionSchema } from './models/guestSession.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionSchema,
@@ -40,7 +43,7 @@ import { Event, EventSchema } from 'src/event/models/event.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';

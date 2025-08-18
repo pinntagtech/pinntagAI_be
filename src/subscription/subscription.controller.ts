@@ -16,10 +16,29 @@ import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { UserGuard } from 'src/auth/guards/user.guard';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
+import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
+import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 
 @Controller('subscription')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
+
+  @Post('product')
+  @UseGuards(AdminGuard2)
+  async createSubscriptionProduct(
+    @TokenDecoder() user: DecodedUser,
+    @Body() body: CreateSubscriptionProductDto,
+  ) {
+    const result = await this.subscriptionService.createProduct(user, body);
+    if (result.success) {
+      return {
+        message: 'Subscription product created successfully',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Get('products')
   @UseGuards(UserGuard)

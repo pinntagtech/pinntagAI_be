@@ -19,7 +19,7 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductDocument,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import { AppVersion, AppVersionDocument } from 'src/models/appVersion.model';
 import * as bcrypt from 'bcrypt';
 import { Event, EventDocument } from 'src/event/models/event.model';

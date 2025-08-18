@@ -40,12 +40,15 @@ import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionSchema,
 } from 'src/subscription/models/subscription.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   Notification,
   NotificationSchema,
@@ -53,7 +56,7 @@ import {
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import {

@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { InjectStripe } from 'nestjs-stripe';
-import { TransactionStatus } from 'src/enums/auth.enums';
-import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
 import {
-  Transaction,
-  TransactionDocument,
-} from 'src/user/models/transaction.model';
+  SubscriptionServiceTypes,
+  TransactionStatus,
+} from 'src/enums/auth.enums';
+import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
+import { Transaction } from 'src/subscription/models/transaction.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import Stripe from 'stripe';
 // import {
@@ -25,6 +29,7 @@ import {
   WebhookSnapshotDocument,
 } from 'src/user/models/webhook.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Injectable()
 export class StripeService {
@@ -32,13 +37,28 @@ export class StripeService {
     @InjectStripe() private readonly stripeClient: Stripe,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Transaction.name)
-    private readonly transactionModel: Model<TransactionDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    private readonly transactionModel: Model<Transaction>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(WebhookSnapshot.name)
-    private readonly webhhokSnapshotModel: Model<WebhookSnapshotDocument>,
+    private readonly webhookSnapshotModel: Model<WebhookSnapshotDocument>,
   ) {}
+
+  public constructEventFromPayload(
+    payload: Buffer,
+    signature: string,
+    endpointSecret: string,
+  ): Stripe.Event {
+    try {
+      return Stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+    } catch (err: any) {
+      throw new Error(
+        `⚠️  Webhook signature verification failed: ${err.message}`,
+      );
+    }
+  }
 
   async createCustomer(email: string, name: string) {
     return await this.stripeClient.customers.create({
@@ -64,6 +84,16 @@ export class StripeService {
     return await this.stripeClient.paymentMethods.detach(paymentMethodId);
   }
 
+  async findAllSubscriptions(): Promise<Subscription[]> {
+    return this.subscriptionModel
+      .find()
+      .populate('user')
+      .populate('businessProfile')
+      .populate('product')
+      .populate('transaction')
+      .exec();
+  }
+
   async getSubscriptionProducts() {
     const products = await this.stripeClient.products.list({
       active: true,
@@ -79,6 +109,276 @@ export class StripeService {
           prices: prices.data,
         };
       }),
+    );
+  }
+
+  async getProducts(): Promise<Stripe.Product[]> {
+    const products = await this.stripeClient.products.list({
+      active: true,
+      limit: 100,
+      expand: ['data.default_price'],
+    });
+    return products.data;
+  }
+
+  /** Ensure Stripe customer exists for the business */
+  private async ensureStripeCustomer(businessId: string): Promise<string> {
+    const business = await this.businessModel.findById(businessId);
+    if (!business) {
+      throw new Error(`Business with ID ${businessId} not found`);
+    }
+    if (business.stripeCustomerId) return business.stripeCustomerId;
+
+    const customer = await this.stripeClient.customers.create({
+      name: business.name ?? undefined,
+      email: business.email || business.email || undefined,
+      metadata: { businessId: String(business._id) },
+    });
+
+    business.stripeCustomerId = customer.id;
+    await business.save();
+    return customer.id;
+  }
+
+  /** Create a hosted Checkout session (mode: subscription) */
+  async createCheckoutSession(params: {
+    businessId: string;
+    priceId: string;
+    successUrl: string;
+    cancelUrl: string;
+    couponId?: string;
+    promotionCode?: string;
+  }): Promise<{ url: string }> {
+    const {
+      businessId,
+      priceId,
+      successUrl,
+      cancelUrl,
+      couponId,
+      promotionCode,
+    } = params;
+
+    const business = await this.businessModel.findById(businessId);
+    if (!business) throw new NotFoundException('Business not found');
+
+    const customerId = await this.ensureStripeCustomer(business.id);
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      discounts: params.couponId ? [{ coupon: params.couponId }] : [],
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
+      metadata: {
+        businessId: String(business._id),
+      },
+    };
+
+    // Apply server-side discount if provided
+    if (couponId) {
+      sessionParams.discounts = [{ coupon: couponId }];
+    } else if (promotionCode) {
+      sessionParams.discounts = [{ promotion_code: promotionCode }];
+    }
+
+    try {
+      const session =
+        await this.stripeClient.checkout.sessions.create(sessionParams);
+      if (!session.url)
+        throw new InternalServerErrorException(
+          'Stripe returned no session URL',
+        );
+      return { url: session.url };
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Stripe session error: ${err.message}`,
+      );
+    }
+  }
+
+  /** Webhook: verify signature, store snapshot, fan-out handling */
+  async handleStripeWebhook(event: Stripe.Event) {
+    // Save raw snapshot (optional but recommended for audit)
+    await this.webhookSnapshotModel.create({
+      source: 'stripe',
+      data: event,
+    });
+
+    // Route by event type
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await this.onCheckoutCompleted(session);
+        break;
+      }
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await this.onInvoicePaid(invoice);
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await this.onInvoiceFailed(invoice);
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const sub = event.data.object as Stripe.Subscription;
+        await this.onSubscriptionUpdated(sub);
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        await this.onSubscriptionDeleted(sub);
+        break;
+      }
+      default:
+        // noop
+        break;
+    }
+  }
+
+  /** When hosted checkout completes */
+  private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
+    const customerId = session.customer as string | null;
+    const subscriptionId = session.subscription as string | null;
+    const businessId = session.metadata?.businessId;
+
+    if (!customerId || !subscriptionId || !businessId) return;
+
+    // Find or create our internal Subscription record
+    // Map Stripe price -> internal product/price if needed (you have that mapping).
+    const stripeSub =
+      await this.stripeClient.subscriptions.retrieve(subscriptionId);
+
+    const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
+    if (!priceId) return;
+
+    // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
+    const internalSub = await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: subscriptionId },
+      {
+        businessProfile: businessId,
+        status: SubscriptionStatus.ACTIVE,
+        startDate: new Date((stripeSub.current_period_start || 0) * 1000),
+        endDate: new Date((stripeSub.current_period_end || 0) * 1000),
+        stripeSubscriptionId: subscriptionId,
+        // Optionally also store stripe customer on Business (already done in ensure)
+      },
+      { upsert: true, new: true },
+    );
+    const invoice = await this.stripeClient.invoices.retrieve(
+      stripeSub.latest_invoice as string,
+    );
+    // Upsert by stripeInvoiceId to make it idempotent
+    await this.transactionModel.updateOne(
+      { stripeInvoiceId: invoice.id }, // unique key
+      {
+        $setOnInsert: {
+          description: `Initial invoice (pending) for subscription ${subscriptionId}`,
+          amountMinor: invoice.total, // prefer storing minor units; or amount: invoice.total/100
+          currency: invoice.currency?.toUpperCase(), // normalize 'usd' -> 'USD'
+          quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+          business: new mongoose.Types.ObjectId(businessId),
+          status: TransactionStatus.PENDING,
+          subscription: internalSub._id, // <-- use internal subscription _id
+          provider: SubscriptionServiceTypes.STRIPE,
+          transactionDate: new Date(
+            (invoice.created ?? Date.now() / 1000) * 1000,
+          ),
+          success: false,
+          startDate: invoice.lines?.data?.[0]?.period?.start
+            ? new Date(invoice.lines.data[0].period.start * 1000)
+            : undefined,
+          endDate: invoice.lines?.data?.[0]?.period?.end
+            ? new Date(invoice.lines.data[0].period.end * 1000)
+            : undefined,
+          stripeInvoiceId: invoice.id,
+          stripeSubscriptionId: subscriptionId,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  private async onInvoicePaid(invoice: Stripe.Invoice) {
+    // invoice.subscription, invoice.customer, invoice.total, invoice.currency, invoice.id
+    const subscriptionId = invoice.subscription as string | null;
+    if (!subscriptionId) return;
+
+    await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: subscriptionId },
+      {
+        status: SubscriptionStatus.ACTIVE,
+        endDate: invoice.lines?.data?.[0]?.period?.end
+          ? new Date(invoice.lines.data[0].period.end * 1000)
+          : undefined,
+      },
+    );
+
+    await this.transactionModel.updateOne(
+      { stripeInvoiceId: invoice.id },
+      {
+        $set: {
+          description: `Invoice paid for subscription ${subscriptionId}`,
+          amountMinor: invoice.total, // or amount: invoice.total/100
+          currency: invoice.currency?.toUpperCase(),
+          quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+          status: TransactionStatus.SUCCESS, // mark success now
+          success: true,
+          transactionDate: invoice.status_transitions?.paid_at
+            ? new Date(invoice.status_transitions.paid_at * 1000)
+            : new Date(),
+          startDate: invoice.lines?.data?.[0]?.period?.start
+            ? new Date(invoice.lines.data[0].period.start * 1000)
+            : undefined,
+          endDate: invoice.lines?.data?.[0]?.period?.end
+            ? new Date(invoice.lines.data[0].period.end * 1000)
+            : undefined,
+        },
+        $setOnInsert: {
+          provider: SubscriptionServiceTypes.STRIPE,
+          stripeSubscriptionId: subscriptionId,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  private async onInvoiceFailed(invoice: Stripe.Invoice) {
+    const subscriptionId = invoice.subscription as string | null;
+    if (!subscriptionId) return;
+
+    await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: subscriptionId },
+      { status: SubscriptionStatus.PAST_DUE },
+    );
+    // Optionally notify the business to update payment method
+  }
+
+  private async onSubscriptionDeleted(sub: Stripe.Subscription) {
+    await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: sub.id },
+      { status: SubscriptionStatus.EXPIRED, endDate: new Date() },
+    );
+  }
+
+  private async onSubscriptionUpdated(sub: Stripe.Subscription) {
+    await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: sub.id },
+      {
+        status:
+          sub.status === 'active'
+            ? SubscriptionStatus.ACTIVE
+            : sub.status === 'past_due'
+              ? SubscriptionStatus.PAST_DUE
+              : sub.status === 'canceled'
+                ? SubscriptionStatus.CANCELLED
+                : SubscriptionStatus.EXPIRED,
+        endDate: sub.current_period_end
+          ? new Date(sub.current_period_end * 1000)
+          : undefined,
+      },
     );
   }
 
@@ -358,7 +658,7 @@ export class StripeService {
 
   async webhook(event: Stripe.Event) {
     console.log(`Received event: `, event);
-    await this.webhhokSnapshotModel.create({
+    await this.webhookSnapshotModel.create({
       snapshot: event,
     });
     try {
@@ -536,17 +836,16 @@ export class StripeService {
               if (!dbSubscription) {
                 break;
               }
-              const { user, businessProfile } = dbSubscription;
+              const { business } = dbSubscription;
 
               console.log(
                 `db subs, user, businesProfile`,
                 dbSubscription,
-                user,
-                businessProfile,
+                business,
               );
-              if (user && businessProfile) {
+              if (business) {
                 await this.businessModel.updateOne(
-                  { _id: new mongoose.Types.ObjectId(businessProfile) },
+                  { _id: new mongoose.Types.ObjectId(business) },
                   {
                     $set: { locationCount: Number(quantity) },
                   },

@@ -32,7 +32,10 @@ import {
 import { JwtPayload } from './interfaces/tokenPayload.interface';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { Token, TokenDocument } from './models/token.model';
-import { Refferal, RefferalDocument } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalDocument,
+} from 'src/subscription/models/refferal.model';
 // import {
 //   BusinessProfile,
 //   BusinessProfileDocument,

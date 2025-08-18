@@ -16,7 +16,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from './subscription/models/subscriptionProduct.model';
+} from './subscription/models/subscription-product.model';
 import { NotificationModule } from './notification/notification.module';
 import { AppVersion, AppVersionSchema } from './models/appVersion.model';
 import { StripeModule } from 'nestjs-stripe';
@@ -110,7 +110,7 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from './auth/models/guestSession.model';
-import { Refferal, RefferalSchema } from './user/models/refferal.model';
+import { Refferal, RefferalSchema } from './subscription/models/refferal.model';
 import {
   EventLocation,
   EventLocationSchema,
@@ -136,7 +136,7 @@ import {
 import {
   Transaction,
   TransactionSchema,
-} from './user/models/transaction.model';
+} from './subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from './user/models/contact-us.model';
 import { Report, ReportSchema } from './event/models/reports.model';
 import { SavedEvent, SavedEventSchema } from './event/models/savedEvent.model';

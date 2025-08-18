@@ -3,7 +3,7 @@ import { Business } from 'src/business/model/business.model';
 import { CarouselType, DeviceTypes } from 'src/enums/auth.enums';
 import { EventTypes } from 'src/enums/event.enums';
 import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
-import { DurationType } from 'src/subscription/models/subscriptionProduct.model';
+import { DurationType } from 'src/subscription/models/subscription-product.model';
 
 export enum BusinessIndustries {
   FOOD_DRINK = 'Food & Drink',

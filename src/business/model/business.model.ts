@@ -263,6 +263,9 @@ export class Business {
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
 
+  @Prop()
+  stripeCustomerId: string;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }
