@@ -554,6 +554,7 @@ export class OutletService {
         //   match: { _id: { $ne: '' } },
         // })
         .populate('business', 'name email phone countryCode logo')
+        .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
 
