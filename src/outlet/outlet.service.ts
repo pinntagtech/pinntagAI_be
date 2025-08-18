@@ -290,11 +290,11 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
-      if(data.openingTime) {
+      if (data.openingTime) {
         createObj['openingTime'] = new Date(data.openingTime);
       }
 
-      if(data.closingTime) {
+      if (data.closingTime) {
         createObj['closingTime'] = new Date(data.closingTime);
       }
 
@@ -404,7 +404,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any,type: string, page: number, limit: number) {
+  async getOutlets(user: any, type: string, page: number, limit: number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -539,7 +539,7 @@ export class OutletService {
       const outlets = await this.outletModel
         .find({
           ...match,
-          creator: new mongoose.Types.ObjectId(userDetails._id),
+          // creator: new mongoose.Types.ObjectId(userDetails._id),
           business: new mongoose.Types.ObjectId(user.businessProfile),
         })
         .populate({
