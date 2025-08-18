@@ -212,15 +212,16 @@ export class RolesService {
     return result[0]?.descendantIds || [];
   }
 
-  async fetchRoles(id: string, userType: string, page: number, limit: number) {
+  async fetchRoles(user: DecodedUser, page: number, limit: number) {
     try {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
-      let allAdminIds = await this.getAllChildAdminIds2(id, userType);
+      let allAdminIds = await this.getAllChildAdminIds2(user.id, user.userType);
       console.log('allAdminIds:', allAdminIds);
       console.log('allAdminIds111:', allAdminIds);
       let ownerRole = null;
-      if (userType === UserTypes.ADMIN) {
-        const findAdminUser = await this.adminModel.findById(id);
+      let query = {};
+      if (user.userType === UserTypes.ADMIN) {
+        const findAdminUser = await this.adminModel.findById(user.id);
         if (!findAdminUser) {
           return {
             success: false,
@@ -228,8 +229,8 @@ export class RolesService {
           };
         }
         ownerRole = findAdminUser.role;
-      } else if (userType === UserTypes.BUSINESS) {
-        const findBusinessUser = await this.businessUserModel.findById(id);
+      } else if (user.userType === UserTypes.BUSINESS) {
+        const findBusinessUser = await this.businessUserModel.findById(user.id);
         if (!findBusinessUser) {
           return {
             success: false,
@@ -237,28 +238,28 @@ export class RolesService {
           };
         }
         ownerRole = findBusinessUser.role[0];
+        query = { business: new mongoose.Types.ObjectId(user.businessProfile)}
       }
-      console.log('businessUser:', userType);
+      console.log('businessUser:', user.userType);
       console.log('allAdminIds:', allAdminIds);
       const allAdminObjectIds = allAdminIds.map(
         (id) => new mongoose.Types.ObjectId(id),
       );
+
+      query = { ...query, _id: { $in: allAdminObjectIds, $ne: ownerRole } };
       const roles = await this.roleModel
-        .find({
-          _id: { $in: allAdminObjectIds, $ne: ownerRole },
-          // creatorType: userType,
-        })
+        .find(query)
         .populate({
           path: 'creator',
           select: 'name',
-          model: userType,
+          model: user.userType,
         })
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
       const total = await this.roleModel.countDocuments({
         _id: { $in: allAdminObjectIds, $ne: ownerRole },
-        creatorType: userType,
+        creatorType: user.userType,
       });
 
       // const roles = await this.roleModel.aggregate([

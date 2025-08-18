@@ -109,15 +109,14 @@ export class RolesController {
   @UseGuards(PrivilegeGuard)
   @UseGuards(JwtGuard2)
   async fetchRoles(
-    @TokenDecoder() user: any,
+    @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
     const pageNumber = parseInt(page) || 1;
     const limitNumber = parseInt(limit) || 10;
     const result = await this.roleService.fetchRoles(
-      user.id,
-      user.userType,
+      user,
       pageNumber,
       limitNumber,
     );
