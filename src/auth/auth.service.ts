@@ -4082,7 +4082,7 @@ export class AuthService {
     if (categoryIds.length) {
       const matchingCategories = [];
       categoryIds.forEach((id) => {
-          matchingCategories.push(new mongoose.Types.ObjectId(id));
+        matchingCategories.push(new mongoose.Types.ObjectId(id));
       });
       if (matchingCategories.length) {
         query = {
@@ -4729,59 +4729,59 @@ export class AuthService {
           as: 'schedules',
         },
       },
-      {
-        $addFields: {
-          schedules: {
-            $filter: {
-              input: '$schedules',
-              as: 'schedule',
-              cond: {
-                $or: [
-                  {
-                    $and: [
-                      { $eq: ['$$schedule.type', 'fixed'] },
-                      {
-                        $and: [
-                          {
-                            $gte: ['$$schedule.fixedSchedule.date', startDate],
-                          },
-                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
-                        ],
-                      },
-                    ],
-                  },
-                  {
-                    $and: [
-                      { $eq: ['$$schedule.type', 'recurring'] },
-                      {
-                        $and: [
-                          {
-                            $gte: [
-                              '$$schedule.recurringSchedule.endDate',
-                              startDate,
-                            ],
-                          },
-                          {
-                            $lte: [
-                              '$$schedule.recurringSchedule.endDate',
-                              endDate,
-                            ],
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-      {
-        $match: {
-          $expr: { $gt: [{ $size: '$schedules' }, 0] },
-        },
-      },
+      // {
+      //   $addFields: {
+      //     schedules: {
+      //       $filter: {
+      //         input: '$schedules',
+      //         as: 'schedule',
+      //         cond: {
+      //           $or: [
+      //             {
+      //               $and: [
+      //                 { $eq: ['$$schedule.type', 'fixed'] },
+      //                 {
+      //                   $and: [
+      //                     {
+      //                       $gte: ['$$schedule.fixedSchedule.date', startDate],
+      //                     },
+      //                     { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+      //                   ],
+      //                 },
+      //               ],
+      //             },
+      //             {
+      //               $and: [
+      //                 { $eq: ['$$schedule.type', 'recurring'] },
+      //                 {
+      //                   $and: [
+      //                     {
+      //                       $gte: [
+      //                         '$$schedule.recurringSchedule.endDate',
+      //                         startDate,
+      //                       ],
+      //                     },
+      //                     {
+      //                       $lte: [
+      //                         '$$schedule.recurringSchedule.endDate',
+      //                         endDate,
+      //                       ],
+      //                     },
+      //                   ],
+      //                 },
+      //               ],
+      //             },
+      //           ],
+      //         },
+      //       },
+      //     },
+      //   },
+      // },
+      // {
+      //   $match: {
+      //     $expr: { $gt: [{ $size: '$schedules' }, 0] },
+      //   },
+      // },
       {
         $lookup: {
           from: 'users',
