@@ -728,6 +728,7 @@ export class BusinessService {
             creator: new mongoose.Types.ObjectId(userId),
             belongsTo: RoleBelonging.BUSINESS,
             business: businessId,
+            department: createdDepartment._id,
           });
           deptRoles.push(createdRole._id);
 
