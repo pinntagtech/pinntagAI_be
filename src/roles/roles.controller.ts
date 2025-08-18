@@ -155,8 +155,9 @@ export class RolesController {
   }
 
   @Get('resourcesList')
-  async reourcesList() {
-    const result = await this.roleService.resourcesList();
+  @UseGuards(JwtGuard2)
+  async resourcesList( @TokenDecoder() user: DecodedUser) {
+    const result = await this.roleService.resourcesList(user);
     if (result.success) {
       return {
         message: result.message,

@@ -16,6 +16,7 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Injectable()
 export class RolesService {
@@ -356,9 +357,15 @@ export class RolesService {
     }
   }
 
-  async resourcesList() {
+  async resourcesList(user: DecodedUser) {
     try {
-      const resources = await this.resourceModel.find();
+      let belongsTo = null;
+      if(user.userType == UserTypes.BUSINESS) {
+        belongsTo = "BusinessUser";
+      }else if(user.userType == UserTypes.ADMIN) {
+        belongsTo = "Admin";
+      }
+      const resources = await this.resourceModel.find({ belongsTo });
       return {
         success: true,
         message: 'Resources Fetched Successfully!',
