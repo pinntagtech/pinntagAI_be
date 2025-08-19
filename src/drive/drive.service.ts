@@ -194,6 +194,8 @@ export class DriveService {
         fileType = FileType.AUDIO;
       else fileType = FileType.OTHER;
 
+      console.log('fileType:', fileType);
+
       if (!driveDetails) {
         return {
           success: false,
@@ -202,13 +204,24 @@ export class DriveService {
       }
 
       // let createdFile = await this.saveFileInDB(file,parentId,locationId,fileCategoryId,parentDirectoryType,fileType,parentType);
-      let createdFile = await this.uploadAndCreateFile(
-        file,
-        locationId,
-        parentDirectoryType,
-        parentId,
-        fileCategoryId,
-      );
+      let createdFile = null;
+      if ((fileType === FileType.IMAGE)) {
+        createdFile = await this.uploadAndCreateImage(
+          file,
+          locationId,
+          parentDirectoryType,
+          parentId,
+          fileCategoryId,
+        );
+      } else {
+        createdFile = await this.uploadAndCreateFile(
+          file,
+          locationId,
+          parentDirectoryType,
+          parentId,
+          fileCategoryId,
+        );
+      }
 
       return {
         success: true,
@@ -679,6 +692,42 @@ export class DriveService {
     categoryId: any,
   ) {
     // 1. Upload
+    console.log("File:", file);
+    const s3 = await this.s3Service.s3_upload(
+      file.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      manipulateImageName(file.originalname),
+      file.mimetype,
+    );
+    //2. Upload thumbnail
+    const [base, rest] = s3.Location.split('amazonaws');
+    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+
+    // 2. Persist File doc
+    return await this.fileModel.create({
+      metaData: {
+        mimeType: file.mimetype,
+        url,
+        thumbnailUrl: '',
+        size: file.size,
+        originalName: file.originalname,
+      },
+      parentDirectory: new mongoose.Types.ObjectId(parentDirectoryId),
+      ParentDirectoryType: parentDirectoryType,
+      fileType: FileType.IMAGE,
+      category: new mongoose.Types.ObjectId(categoryId),
+      parent: new mongoose.Types.ObjectId(parentId),
+      parentType: Event.name, // or drive/folder parentType as needed
+    });
+  }
+  async uploadAndCreateImage(
+    file: Express.Multer.File,
+    parentDirectoryId: string,
+    parentDirectoryType: string,
+    parentId: any,
+    categoryId: any,
+  ) {
+    // 1. Upload
     file = await FileUploadUtils.compressImage(file);
     const s3 = await this.s3Service.s3_upload(
       file.buffer,
@@ -931,7 +980,7 @@ export class DriveService {
           _id: new mongoose.Types.ObjectId(file._id),
         });
       });
-      
+
       let parentId = user.id;
 
       if (!isValidObjectId(parentId)) {

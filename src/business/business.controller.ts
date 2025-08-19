@@ -1169,6 +1169,7 @@ export class BusinessController {
   async uploadDownlineUsersInBulk(
     @UploadedFile() file: Express.Multer.File,
     @TokenDecoder() user: DecodedUser,
+      @Res({ passthrough: true }) res: Response
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -1181,7 +1182,7 @@ export class BusinessController {
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        file: result.file,
       };
     } else {
       throw new BadRequestException(result.message);

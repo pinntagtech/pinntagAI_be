@@ -138,7 +138,7 @@ export const PinntagBusinessSeeder = {
 export const Seeder = {
   ContentCategories: [
     {
-      title: 'Food & Drinks',
+      title: 'Food & Drink',
       lightIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food%20%26%20Drinks1755341968418.svg',
       darkIcon:

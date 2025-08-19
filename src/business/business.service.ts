@@ -138,6 +138,8 @@ import {
 } from 'src/notification/models/notification.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
+import { createObjectCsvStringifier } from 'csv-writer';
+import { Readable } from 'stream';
 
 @Injectable()
 export class BusinessService {
@@ -3773,10 +3775,13 @@ export class BusinessService {
       });
 
       if (foundUser) {
-        return {
-          success: false,
-          message: 'Business User already found with this email',
-        };
+        // return {
+        //   success: false,
+        //   message: 'Business User already found with this email',
+        // };
+        throw new BadRequestException(
+          'Business User already found with this email',
+        );
       }
       let password = await this.authService.autoGeneratePassword();
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -3844,19 +3849,77 @@ export class BusinessService {
         };
       }
       const rows = await this.parseCsv(file);
-      console.log('Parsed rows:', rows);
-      // for (const row of rows) {
-      //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
-      // }
-
-      await Promise.all(
-        rows.map((row) => this.createDownlineUserFromRow(row, user)),
+      let failure = 0;
+      let result = null;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createDownlineUserFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
       );
+      console.log('Failure:', failure);
+      if (failure > 0) {
+        const failedRecords = results.filter(r => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'email', title: 'Email' },
+              { id: 'name', title: 'Name' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'ErrorMessage' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            email: r.email,
+            name: r.name,
+            phone: r.phone,
+            countryCode: r.countryCode,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'downline_users_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'downline_users_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            businessUser.id,
+            String(business.drivePath),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (err) {
+          console.log('Error:', err);
+        }
+      }
 
       return {
         success: true,
         message: 'Users created successfully in bulk.',
-        data: [], // You can return the created outlets data if needed
+        file: result, // You can return the created outlets data if needed
       };
     } catch (error) {
       return {

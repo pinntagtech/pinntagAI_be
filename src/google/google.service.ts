@@ -129,7 +129,6 @@ export class GoogleService {
       };
       const url = `https://places.googleapis.com/v1/places/${placeId}`;
       const response = await axios.get(url, { params });
-      console.log('response:', response.data);
       let address = this.mapGoogleAddressToSchema(
         response.data.addressComponents,
       );
@@ -138,7 +137,6 @@ export class GoogleService {
       if(selectedAddress){
         address['selectedAddress'] = selectedAddress;
       }
-      console.log('address:', address);
       address['fullAddressString'] = response.data.formattedAddress;
 
       return {
@@ -184,7 +182,6 @@ export class GoogleService {
       // );
       // const postalCode = postalCodeComponent?.long_name || null;
 
-      console.log('Address Object:', addressObj.address_components);
       const address = this.mapGoogleAddressToSchema(
         addressObj.address_components,
       );

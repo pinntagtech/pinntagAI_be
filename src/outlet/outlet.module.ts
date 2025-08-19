@@ -15,6 +15,13 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleService } from 'src/google/google.service';
+import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { Event, EventSchema } from 'src/event/models/event.model';
+import { File, FileSchema } from 'src/drive/models/file.model';
+import { S3Service } from 'src/s3.service';
 
 @Module({
   imports: [
@@ -30,11 +37,15 @@ import { GoogleService } from 'src/google/google.service';
       { name: Token.name, schema: TokenSchema },
       { name: Admin.name, schema: AdminSchema },
       { name: Business.name, schema: BusinessSchema },
-      
+      { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: File.name, schema: FileSchema}
 
     ])
   ],
   controllers: [OutletController],
-  providers: [OutletService,JwtService,GoogleService]
+  providers: [OutletService,JwtService,GoogleService,DriveService, S3Service]
 })
 export class OutletModule {}

@@ -57,6 +57,7 @@
     "cors": "^2.8.5",
     "css-inline": "^0.11.2",
     "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
     "dayjs": "^1.11.11",
     "exceljs": "^4.4.0",
     "firebase-admin": "^12.0.0",

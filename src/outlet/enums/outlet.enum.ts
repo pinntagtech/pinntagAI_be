@@ -10,7 +10,7 @@ export const ExpectedOutletHeaders = [
   'countryCode',
   'phone',
   'email',
+  'latitude',
+  'longitude',
   'referenceId',
-//   'latitude',
-//   'longitude',
 ];
