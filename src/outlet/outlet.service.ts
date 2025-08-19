@@ -653,6 +653,29 @@ export class OutletService {
     });
   }
 
+  async getDistanceInMeters(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = (val: number) => (val * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // distance in meters
+  }
+
   async createOutletFromRow(row: any, user: DecodedUser) {
     try {
       let address = `${row.address1}, ${row.city}, ${row.state}, ${row.country}, ${row.postalCode}`;
@@ -672,9 +695,9 @@ export class OutletService {
           `Outlet with referenceId ${row.referenceId} already exists.`,
         );
       }
-      console.log("Place Details:", placeDetails);
+      console.log('Place Details:', placeDetails);
 
-      if(!placeDetails || !placeDetails.data) {
+      if (!placeDetails || !placeDetails.data) {
         throw new BadRequestException(
           `No place details found for address: ${address}`,
         );
@@ -685,9 +708,25 @@ export class OutletService {
       let googleLng = placeDetails.data['longitude']
         ? parseFloat(placeDetails.data['longitude'])
         : 0;
+      let givenLat = row.latitude ? parseFloat(row.latitude) : googleLat;
+      let givenLng = row.longitude ? parseFloat(row.longitude) : googleLng;
 
-      let givenLat = row.latitude? parseFloat(row.latitude) : googleLat;
-      let givenLng = row.longitude? parseFloat(row.longitude) : googleLng;
+      if (row.latitude && row.longitude) {
+        const distance = await this.getDistanceInMeters(
+          googleLat,
+          googleLng,
+          givenLat,
+          givenLng,
+        );
+
+        if (distance > 500) {
+          throw new Error(
+            `Provided latitude/longitude is not within 500 meters of calculated location (distance: ${distance.toFixed(
+              2,
+            )}m).`,
+          );
+        }
+      }
 
       let outletObj = {
         category: row.category,
@@ -713,10 +752,7 @@ export class OutletService {
           : 0,
         location: {
           type: 'Point',
-          coordinates: [
-            givenLng,
-            givenLat,
-          ],
+          coordinates: [givenLng, givenLat],
         },
       };
       const outlet = await this.outletModel.create(outletObj);
