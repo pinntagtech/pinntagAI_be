@@ -26822,7 +26822,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -27068,7 +27068,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -30290,7 +30290,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -37431,7 +37431,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -41758,7 +41758,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -45530,7 +45530,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
@@ -49466,7 +49466,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44a3',
-        name: 'Food & Drinks',
+        name: 'Food & Drink',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food_and_drinks%28dark%291755342853004.svg',
         lightIcon:
