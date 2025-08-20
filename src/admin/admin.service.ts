@@ -465,6 +465,20 @@ export class AdminService {
         }
       }
     }
+    if (data.industries.length) {
+      for (let i = 0; i < data.industries.length; i++) {
+        const foundIndustry = await this.industryModel
+          .findById(data.industries[i])
+          .exec();
+        if (!foundIndustry) {
+          return {
+            message: `Industry not found with the id provided: ${data.industries[i]}`,
+          };
+        } else {
+          data.industries[i] = foundIndustry._id;
+        }
+      }
+    }
     const createdConfiguration = await this.dashboardConfigModel.create(data);
     return {
       success: true,

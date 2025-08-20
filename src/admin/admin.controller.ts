@@ -214,6 +214,15 @@ export class AdminController {
         }
       });
     }
+    if (body.industries && body.industries.length) {
+      body.industries.forEach((ind) => {
+        if (!mongoose.Types.ObjectId.isValid(ind)) {
+          return new BadRequestException({
+            message: `${ind} is not a valid industry id.`,
+          });
+        }
+      });
+    }
     const result = await this.adminService.addDashboardConfiguration(body);
     if (result.success) {
       return {

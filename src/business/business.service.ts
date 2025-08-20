@@ -1350,6 +1350,20 @@ export class BusinessService {
           $unwind: '$creator',
         },
         {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             isBlocked: 1,
@@ -1377,6 +1391,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+            allowedNotifications: '$allowedNotifications.allowedNotifications'
           },
         },
         { $skip: (page - 1) * limit },
@@ -1854,15 +1869,23 @@ export class BusinessService {
       const createdUser = await this.businessUserModel.create(createObj);
 
       if (data.allowedNotificationTypes) {
+        console.log("Allowed Notification Types:", data.allowedNotificationTypes);
         let allowedNotiTypes = data.allowedNotificationTypes.filter(
           (type): type is NotificationTypes =>
             Object.values(NotificationTypes).includes(
               type as NotificationTypes,
             ),
         );
+        console.log("Filtered Allowed Notification Types:", allowedNotiTypes);
+        if(allowedNotiTypes.length === 0) {
+          return {
+            success: false,
+            message: 'Please provide at least one valid notification type.',
+          };
+        }
         await this.userAllowedNotificationModel.create({
           user: createdUser._id,
-          allowedNotificationTypes: allowedNotiTypes,
+          allowedNotifications: allowedNotiTypes,
         });
       }
 
@@ -1909,6 +1932,20 @@ export class BusinessService {
             as: 'role',
           },
         },
+         {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             _id: 1,
@@ -1931,6 +1968,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+             allowedNotifications: '$allowedNotifications.allowedNotifications'
           },
         },
       ]);

@@ -5342,6 +5342,11 @@ export class AuthService {
         '',
       );
       console.log('File Key:', fileKey);
+
+      // const url = new URL(privateURL);
+      // const fileKey = url.pathname.substring(1); // remove leading "/"
+      console.log('File Key:', fileKey);
+
       const presignedUrl = await this.s3Service.getPresignedUrl(fileKey);
       console.log('Presigned URL:', presignedUrl);
       return { success: true, url: presignedUrl };
