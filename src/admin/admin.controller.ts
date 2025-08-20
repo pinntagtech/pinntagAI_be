@@ -517,7 +517,7 @@ export class AdminController {
     @Query('limit') limit: string,
   ) {
     let pageNumber = page ? parseInt(page) : 1;
-    let limitNumber = limit ? parseInt(limit) : 10;
+    let limitNumber = limit ? parseInt(limit) : 20;
     const result = await this.adminService.getCategories(
       pageNumber,
       limitNumber,
