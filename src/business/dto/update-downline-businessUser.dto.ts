@@ -46,4 +46,7 @@ export class UpdateDownlineBusinessUserDto {
   @IsOptional()
   @IsString()
   phone: string;
+
+  @IsOptional()
+  allowedNotificationTypes: Array<string>;
 }

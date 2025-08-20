@@ -1391,7 +1391,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
-            allowedNotifications: '$allowedNotifications.allowedNotifications'
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
         { $skip: (page - 1) * limit },
@@ -1869,24 +1869,23 @@ export class BusinessService {
       const createdUser = await this.businessUserModel.create(createObj);
 
       if (data.allowedNotificationTypes) {
-        console.log("Allowed Notification Types:", data.allowedNotificationTypes);
+        console.log(
+          'Allowed Notification Types:',
+          data.allowedNotificationTypes,
+        );
         let allowedNotiTypes = data.allowedNotificationTypes.filter(
           (type): type is NotificationTypes =>
             Object.values(NotificationTypes).includes(
               type as NotificationTypes,
             ),
         );
-        console.log("Filtered Allowed Notification Types:", allowedNotiTypes);
-        if(allowedNotiTypes.length === 0) {
-          return {
-            success: false,
-            message: 'Please provide at least one valid notification type.',
-          };
+        console.log('Filtered Allowed Notification Types:', allowedNotiTypes);
+        if (allowedNotiTypes.length !== 0) {
+          await this.userAllowedNotificationModel.create({
+            user: createdUser._id,
+            allowedNotifications: allowedNotiTypes,
+          });
         }
-        await this.userAllowedNotificationModel.create({
-          user: createdUser._id,
-          allowedNotifications: allowedNotiTypes,
-        });
       }
 
       //create drive
@@ -1932,7 +1931,7 @@ export class BusinessService {
             as: 'role',
           },
         },
-         {
+        {
           $lookup: {
             from: 'userallowednotifications',
             localField: '_id',
@@ -1968,7 +1967,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
-             allowedNotifications: '$allowedNotifications.allowedNotifications'
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
       ]);
@@ -2018,7 +2017,21 @@ export class BusinessService {
         { $set: updateObj },
         { new: true },
       );
-      logger.info(`updatedUser: ${JSON.stringify(updatedUser)}`);
+      if (data.allowedNotificationTypes) {
+        let allowedNotiTypes = data.allowedNotificationTypes.filter(
+          (type): type is NotificationTypes =>
+            Object.values(NotificationTypes).includes(
+              type as NotificationTypes,
+            ),
+        );
+        if (allowedNotiTypes.length === 0) {
+          await this.userAllowedNotificationModel.create({
+            user: updatedUser._id,
+            allowedNotifications: allowedNotiTypes,
+          });
+        }
+      }
+
       // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
       const updatedUserDetails = await this.businessUserModel.aggregate([
         {
@@ -2036,6 +2049,20 @@ export class BusinessService {
           $unwind: {
             path: '$role',
             preserveNullAndEmptyArrays: true, // Optional, keeps result even if no role is found
+          },
+        },
+        {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
           },
         },
         {
@@ -2061,6 +2088,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
       ]);
@@ -3902,7 +3930,7 @@ export class BusinessService {
       );
       console.log('Failure:', failure);
       if (failure > 0) {
-        const failedRecords = results.filter(r => r.status === 'Failed');
+        const failedRecords = results.filter((r) => r.status === 'Failed');
         try {
           const csvStringifier = createObjectCsvStringifier({
             header: [

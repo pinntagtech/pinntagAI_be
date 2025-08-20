@@ -53,7 +53,10 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
@@ -1009,16 +1012,16 @@ export class AdminController {
   @Post('create/template')
   @UseGuards(AdminGuard2)
   @UseInterceptors(
-      FileInterceptor('image', {
-        limits: { fileSize: 1000000 },
-      }),
-    )
+    FileInterceptor('image', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async createTemplate(
     @Body() data: CreateTemplateDto,
     @TokenDecoder() user: DecodedUser,
-     @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.createTemplate(user.id, data,image);
+    const result = await this.adminService.createTemplate(user.id, data, image);
     if (result.success) {
       return {
         message: result.message,
@@ -1034,17 +1037,22 @@ export class AdminController {
   @Post('update/template/:id')
   @UseGuards(AdminGuard2)
   @UseInterceptors(
-      FileInterceptor('image', {
-        limits: { fileSize: 1000000 },
-      }),
-    )
+    FileInterceptor('image', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async updateTemplate(
     @Param('id') id: string,
     @Body() data: UpdateTemplateDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.updateTemplate(user.id, id, data,image);
+    const result = await this.adminService.updateTemplate(
+      user.id,
+      id,
+      data,
+      image,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1238,7 +1246,7 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Body() data: CreateBusinessUserDto,
   ) {
-    const result = await this.adminService.createBusinessUser(user,data);
+    const result = await this.adminService.createBusinessUser(user, data);
 
     if (result.success) {
       return {
@@ -1261,7 +1269,7 @@ export class AdminController {
     const result = await this.adminService.getReportedEvents(
       pageNumber,
       limitNumber,
-      status
+      status,
     );
     if (result.success) {
       return {
@@ -1289,5 +1297,4 @@ export class AdminController {
       throw new BadRequestException(result.message);
     }
   }
-
 }
