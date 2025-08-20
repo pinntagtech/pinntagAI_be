@@ -266,8 +266,17 @@ export class AdminController {
         message: 'Invalid id',
       });
     }
-    if (body.categories && body.categories.length) {
+    if (body.categories && body.categories.length>=0) {
       body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          throw new BadRequestException({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+     if (body.industries && body.industries.length>=0) {
+      body.industries.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
           throw new BadRequestException({
             message: `${cat} is not a valid category id.`,

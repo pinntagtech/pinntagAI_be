@@ -71,7 +71,7 @@ export class Business {
   @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId })
   businessIndustry: mongoose.Types.ObjectId;
 
-  @Prop()
+  @Prop({ default: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg'})
   cover: string;
 
   @Prop({ ref: BusinessConstitution.name })

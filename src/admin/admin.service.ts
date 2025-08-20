@@ -49,7 +49,7 @@ import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { FileCategoryTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import { CarouselType, FileCategoryTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import {
@@ -119,6 +119,7 @@ import {
 import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
 import { EventSchedule } from 'src/event/models/event-schedule.model';
+import { create } from 'domain';
 
 @Injectable()
 export class AdminService {
@@ -451,7 +452,20 @@ export class AdminService {
   }
 
   async addDashboardConfiguration(data: ConfigureDashboardDto) {
-    if (data.categories.length) {
+
+    const foundCarousel = await this.dashboardConfigModel.findOne({name: data.name});
+
+    if(foundCarousel) {
+      return {
+        success: false,
+        message: 'Dashboard configuration with this name already exists.',
+      };
+    }
+
+    let createObj = {...data};
+    delete createObj.industries;
+    delete createObj.categories;
+    if ((data.carouselType === CarouselType.OnWheels || data.carouselType === CarouselType.Event) && data.categories && data.categories.length >= 0) {
       for (let i = 0; i < data.categories.length; i++) {
         const foundCategory = await this.contentCategoryModel
           .findById(data.categories[i])
@@ -463,9 +477,11 @@ export class AdminService {
         } else {
           data.categories[i] = foundCategory._id;
         }
+        createObj['categories'] = data.categories;
       }
     }
-    if (data.industries.length) {
+
+    if (data.carouselType === CarouselType.Business && data.industries && data.industries.length >= 0) {
       for (let i = 0; i < data.industries.length; i++) {
         const foundIndustry = await this.industryModel
           .findById(data.industries[i])
@@ -477,9 +493,10 @@ export class AdminService {
         } else {
           data.industries[i] = foundIndustry._id;
         }
+        createObj['businessIndustries'] = data.industries;
       }
     }
-    const createdConfiguration = await this.dashboardConfigModel.create(data);
+    const createdConfiguration = await this.dashboardConfigModel.create(createObj);
     return {
       success: true,
       message: 'Dashboard configuration added successfully',
@@ -491,6 +508,7 @@ export class AdminService {
     const foundConfig = await this.dashboardConfigModel
       .find()
       .populate('categories')
+      .populate('businessIndustries')
       .sort({ sortOrder: 1 });
     if (!foundConfig) {
       return {
