@@ -2633,7 +2633,7 @@ export class EventService2 {
             });
 
             let message = `${user.name} saved your event ${event.title}`;
-            await this.businessService.businessNotification(
+            this.businessService.businessNotification(
               userId,
               eventId,
               NotificationTypes.EVENT,
@@ -3604,7 +3604,7 @@ export class EventService2 {
             //   isRead: false,
             // });
 
-            await this.businessService.businessNotification(
+            this.businessService.businessNotification(
               userId,
               eventId,
               NotificationTypes.EVENT,
@@ -4273,7 +4273,7 @@ export class EventService2 {
       ...data,
     });
 
-    await this.businessService.businessNotification(
+    this.businessService.businessNotification(
       userId,
       event.id,
       NotificationTypes.REPORT,

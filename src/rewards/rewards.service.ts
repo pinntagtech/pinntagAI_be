@@ -1453,7 +1453,7 @@ export class RewardsService {
       });
       let message = `User ${userDetails.name} enrolled in reward ${reward.title}`;
 
-      await this.businessService.businessNotification(
+      this.businessService.businessNotification(
         user.id,
         rewardId,
         NotificationTypes.REWARD,
@@ -1693,7 +1693,7 @@ export class RewardsService {
         },
       });
       let message = `User ${userDetails.name} claimed in reward ${reward.title}`;
-      await this.businessService.businessNotification(
+      this.businessService.businessNotification(
         user.id,
         reward.id,
         NotificationTypes.REWARD,

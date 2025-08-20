@@ -796,7 +796,7 @@ export class UserService {
         // }
         // }
 
-        await this.businessNotification(userId,businessProfile.id,NotificationTypes.FOLLOW,message);
+        this.businessNotification(userId,businessProfile.id,NotificationTypes.FOLLOW,message);
         
 
       }
