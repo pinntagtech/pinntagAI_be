@@ -1101,6 +1101,10 @@ export class SeederService {
     };
 
     const createdBusiness = await this.businessModel.create(businessObj);
+    await this.roleModel.updateOne(
+      { _id: ownerRole.id },
+      { $set: { business: createdBusiness._id } },
+    );
 
     //seed 1 default outlet
 

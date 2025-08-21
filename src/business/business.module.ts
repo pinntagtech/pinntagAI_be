@@ -134,6 +134,7 @@ import { MenuSchema } from './model/menu.model';
 import { Tag, TagSchema } from 'src/models/tags.model';
 import { UserAllowedNotification, UserAllowedNotificationSchema } from './model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -193,6 +194,7 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
       { name: Tag.name, schema: TagSchema },
       { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
       { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   controllers: [BusinessController],

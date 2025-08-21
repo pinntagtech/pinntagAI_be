@@ -131,6 +131,7 @@ import { FirebaseService } from 'src/notification/firebase.service';
 import { Tag, TagSchema } from 'src/models/tags.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Global()
 @Module({
@@ -189,6 +190,7 @@ import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/busi
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
     MailerModule.forRoot({
       transport: {

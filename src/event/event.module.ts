@@ -134,6 +134,7 @@ import { Tag, TagSchema } from 'src/models/tags.model';
 import { PlatformConfig, PlatformConfigSchema } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -198,6 +199,7 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
       { name: Tag.name, schema: TagSchema},
       { name: PlatformConfig.name, schema: PlatformConfigSchema},
       { name: Reward.name, schema: RewardSchema},
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),

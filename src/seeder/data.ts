@@ -27,16 +27,16 @@ export enum EventCategory {
   CLUBS_AND_CLASSES = 'Clubs & Classes',
   SPORTS_AND_FITNESS = 'Sports & Fitness',
   BEAUTY_AND_SPA = 'Beauty & Spa',
-  SHOPPING = 'Shopping',
+  SHOPPING_AND_MARKETS = 'Shopping & Markets',
   ARTS_AND_CULTURE = 'Arts & Culture',
   ATTRACTIONS = 'Attractions',
-  FAMILY_FUN = 'Family Fun',
+  FAMILY_AND_KIDS = 'Family & Kids',
   LOCAL_SERVICES = 'Local Services',
   CHARITY_AND_COMMUNITY = 'Charity & Community',
   PLACES_TO_STAY = 'Places to Stay',
   PETS = 'Pets',
   BEER_AND_WINE = 'Beer & Wine',
-  HOLIDAY_SPOTS = 'Holiday Spots',
+  EXPERIENCES = 'Experiences ',
 }
 
 export enum BusinessSubCategory {
@@ -210,13 +210,13 @@ export const Seeder = {
       description: 'Beauty & Spa',
     },
     {
-      title: 'Shopping',
+      title: 'Shopping & Markets',
       lightIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Shopping1755342456415.svg',
       darkIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Shopping1755343024300.svg',
       activeColor: '#BFD8AF',
-      description: 'Shopping',
+      description: 'Shopping & Markets',
     },
     {
       title: 'Arts & Culture',
@@ -237,13 +237,13 @@ export const Seeder = {
       description: 'Attractions',
     },
     {
-      title: 'Family Fun',
+      title: 'Family & Kids',
       lightIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family%20Fun1755341968408.svg',
       darkIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
       activeColor: '#FDE5D3',
-      description: 'Family Fun',
+      description: 'Family & Kids',
     },
     {
       title: 'Local Services',
@@ -291,13 +291,13 @@ export const Seeder = {
       description: 'Beer & Wine',
     },
     {
-      title: 'Holiday Spots',
+      title: 'Experiences ',
       lightIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Holiday%20Spots1755342456405.svg',
       darkIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Holiday_spots%28dark%291755343024292.svg',
       activeColor: '#FFEFD5',
-      description: 'Holiday Spots',
+      description: 'Experiences ',
     },
   ],
 
@@ -1507,7 +1507,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '15',
       businessProfile: null,
-      categories: ['Shopping'],
+      categories: ['Shopping & Markets'],
       title: '15% Off All Car Accessories!',
       keywords: ['auto accessories', 'car accessories', 'discount'],
       description:
@@ -1535,7 +1535,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '50',
       businessProfile: null,
-      categories: ['Shopping'],
+      categories: ['Shopping & Markets'],
       title: 'Save $50 on Custom Paint Jobs!',
       keywords: ['customization', 'paint job', 'auto services'],
       description:
@@ -1563,7 +1563,7 @@ export const Seeder = {
       discountType: 'FLAT',
       discountValue: '25',
       businessProfile: null,
-      categories: ['Shopping'],
+      categories: ['Shopping & Markets'],
       title: 'Get a $25 Off Premium Car Detailing!',
       keywords: ['detailing', 'car wash', 'premium service'],
       description:
@@ -2099,7 +2099,7 @@ export const Seeder = {
       discountType: 'PERCENTAGE',
       discountValue: '20',
       businessProfile: null,
-      categories: ['Shopping'],
+      categories: ['Shopping & Markets'],
       title: '20% Off Tax Consultation!',
       keywords: ['accounting', 'tax', 'consulting', 'discount'],
       description:
@@ -2235,7 +2235,7 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 6,
-      categories: ['Holiday Spots', 'Places to Stay'],
+      categories: ['Experiences ', 'Places to Stay'],
       sortOrder: 600,
       carouselType: CarouselType.Event,
       cardType: 'zoom',
@@ -2247,7 +2247,7 @@ export const Seeder = {
       flashOffersIncluded: true,
       freeIncluded: true,
       limit: 10,
-      categories: ['Shopping'],
+      categories: ['Shopping & Markets'],
       sortOrder: 700,
       carouselType: CarouselType.Event,
       cardType: 'xl',
@@ -2283,7 +2283,7 @@ export const Seeder = {
       flashOffersIncluded: true,
       freeIncluded: true,
       limit: 6,
-      categories: ['Local Services', 'Charity & Community', 'Family Fun'],
+      categories: ['Local Services', 'Charity & Community', 'Family & Kids'],
       sortOrder: 1000,
       carouselType: CarouselType.Event,
       cardType: 'xl',
@@ -2419,7 +2419,7 @@ export const Seeder = {
       limit: 10,
       categories: [
         EventCategory.FOOD_AND_DRINK,
-        EventCategory.HOLIDAY_SPOTS, // seasonal food pop-ups
+        EventCategory.ATTRACTIONS, // seasonal food pop-ups
       ],
       sortOrder: 400,
       carouselType: CarouselType.OnWheels,
@@ -2430,7 +2430,7 @@ export const Seeder = {
       limit: 6,
       categories: [
         EventCategory.FOOD_AND_DRINK,
-        EventCategory.SHOPPING, // local artisanal consumables (coffee, snacks, etc.)
+        EventCategory.SHOPPING_AND_MARKETS, // local artisanal consumables (coffee, snacks, etc.)
       ],
       sortOrder: 500,
       carouselType: CarouselType.OnWheels,

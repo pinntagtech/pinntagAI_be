@@ -22,6 +22,7 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -41,7 +42,8 @@ import { S3Service } from 'src/s3.service';
       { name: Drive.name, schema: DriveSchema },
       { name: Folder.name, schema: FolderSchema },
       { name: Event.name, schema: EventSchema },
-      { name: File.name, schema: FileSchema}
+      { name: File.name, schema: FileSchema},
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
 
     ])
   ],

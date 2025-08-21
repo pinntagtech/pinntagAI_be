@@ -155,6 +155,7 @@ import {
   UserAllowedNotificationSchema,
 } from './business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from './rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -239,6 +240,7 @@ import { Reward, RewardSchema } from './rewards/model/reward.model';
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
     StripeeModule,
     AuthModule,

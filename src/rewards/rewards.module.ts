@@ -142,6 +142,7 @@ import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { EventResponse, EventResponseSchema } from 'src/event/models/event-response.model';
 import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -207,6 +208,7 @@ import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-sched
       { name: AgeGroup.name, schema: AgeGroupSchema },
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   controllers: [RewardsController],

@@ -22530,7 +22530,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -22650,7 +22650,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -22990,11 +22990,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.400466+00:00',
-          startTime: '2025-09-18T10:13:57.400466+00:00',
-          endTime: '2025-09-18T13:13:57.400466+00:00',
-          startDate: '2025-09-18T10:13:57.400466+00:00',
-          endDate: '2025-09-18T13:13:57.400466+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T00:00:00+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T00:00:00+00:00',
         },
       },
     ],
@@ -23027,6 +23027,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Live music', 'Food vendors', 'Family-friendly activities'],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: grant park summer fest experience a weekend of excitement in grant park on august 23-24, 2025!...',
+    },
   },
   {
     _id: 'a8c5300e-18cb-4bd2-8230-e3ad7364c7c3',
@@ -23868,7 +23876,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -25323,11 +25331,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.403255+00:00',
-          startTime: '2025-09-18T10:13:57.403255+00:00',
-          endTime: '2025-09-18T13:13:57.403255+00:00',
-          startDate: '2025-09-18T10:13:57.403255+00:00',
-          endDate: '2025-09-18T13:13:57.403255+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T00:00:00+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T00:00:00+00:00',
         },
       },
     ],
@@ -25364,6 +25372,14 @@ export const ETL_DATA = [
       'HBCU pride and culture',
       'Fun for the whole family',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: 2025 hbcu cricket fest celebrate hbcu spirit on august 23 at center parc stadium with the meac/swac ...',
+    },
   },
   {
     _id: '440e3a28-910d-4de3-8ad3-88b1f0d18c66',
@@ -25908,11 +25924,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.403816+00:00',
-          startTime: '2025-09-18T10:13:57.403816+00:00',
-          endTime: '2025-09-18T13:13:57.403816+00:00',
-          startDate: '2025-09-18T10:13:57.403816+00:00',
-          endDate: '2025-09-18T13:13:57.403816+00:00',
+          date: '2025-09-21T00:00:00+00:00',
+          startTime: '2025-09-21T00:00:00+00:00',
+          endTime: '2025-09-21T23:59:59+00:00',
+          startDate: '2025-09-21T00:00:00+00:00',
+          endDate: '2025-09-21T23:59:59+00:00',
         },
       },
     ],
@@ -25949,6 +25965,14 @@ export const ETL_DATA = [
       'Engaging panels',
       'Community events',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: out on film: atlanta lgbtq festival celebrate lgbtq cinema in atlanta from september 21 to october 1...',
+    },
   },
   {
     _id: '3c622e40-365d-49a7-8d58-751c027d96c2',
@@ -26023,11 +26047,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.403921+00:00',
-          startTime: '2025-09-18T10:13:57.403921+00:00',
-          endTime: '2025-09-18T13:13:57.403921+00:00',
-          startDate: '2025-09-18T10:13:57.403921+00:00',
-          endDate: '2025-09-18T13:13:57.403921+00:00',
+          date: '2025-10-02T00:00:00+00:00',
+          startTime: '2025-10-02T00:00:00+00:00',
+          endTime: '2025-10-02T00:00:00+00:00',
+          startDate: '2025-10-02T00:00:00+00:00',
+          endDate: '2025-10-02T00:00:00+00:00',
         },
       },
     ],
@@ -26064,6 +26088,14 @@ export const ETL_DATA = [
       'Engaging panels',
       'Networking opportunities',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: georgia latino film fest celebrate latino cinema from october 2-5, 2025!...',
+    },
   },
   {
     _id: '9403b76a-d73b-44c1-a769-6915dd1c5a7c',
@@ -26150,11 +26182,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.404030+00:00',
-          startTime: '2025-09-18T10:13:57.404030+00:00',
-          endTime: '2025-09-18T13:13:57.404030+00:00',
-          startDate: '2025-09-18T10:13:57.404030+00:00',
-          endDate: '2025-09-18T13:13:57.404030+00:00',
+          date: '2025-12-06T00:00:00+00:00',
+          startTime: '2025-12-06T00:00:00+00:00',
+          endTime: '2025-12-06T00:00:00+00:00',
+          startDate: '2025-12-06T00:00:00+00:00',
+          endDate: '2025-12-06T00:00:00+00:00',
         },
       },
     ],
@@ -26191,6 +26223,14 @@ export const ETL_DATA = [
       'Top teams compete',
       'Unforgettable atmosphere',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: 2025 sec championship experience the excitement of the sec football championship at mercedes-benz st...',
+    },
   },
   {
     _id: 'a855802f-a671-4193-8834-44103cdd130c',
@@ -26401,11 +26441,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.404227+00:00',
-          startTime: '2025-09-18T10:13:57.404227+00:00',
-          endTime: '2025-09-18T13:13:57.404227+00:00',
-          startDate: '2025-09-18T10:13:57.404227+00:00',
-          endDate: '2025-09-18T13:13:57.404227+00:00',
+          date: '2025-08-26T00:00:00+00:00',
+          startTime: '2025-08-26T00:00:00+00:00',
+          endTime: '2025-08-26T00:00:00+00:00',
+          startDate: '2025-08-26T00:00:00+00:00',
+          endDate: '2025-08-26T00:00:00+00:00',
         },
       },
     ],
@@ -26442,6 +26482,14 @@ export const ETL_DATA = [
       'Exquisite wine tasting',
       'Every Tuesday evening',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: blues & wine night enjoy live blues and fine wine every tuesday until 08/26/2025....',
+    },
   },
   {
     _id: '4067cf3e-a942-46db-a1d7-1199a1681697',
@@ -26528,11 +26576,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.404316+00:00',
-          startTime: '2025-09-18T10:13:57.404316+00:00',
-          endTime: '2025-09-18T13:13:57.404316+00:00',
-          startDate: '2025-09-18T10:13:57.404316+00:00',
-          endDate: '2025-09-18T13:13:57.404316+00:00',
+          date: '2025-08-20T00:00:00+00:00',
+          startTime: '2025-08-20T00:00:00+00:00',
+          endTime: '2025-08-20T00:00:00+00:00',
+          startDate: '2025-08-20T00:00:00+00:00',
+          endDate: '2025-08-20T00:00:00+00:00',
         },
       },
     ],
@@ -26569,6 +26617,14 @@ export const ETL_DATA = [
       'Curated by Chef Patric Good',
       'An unforgettable evening',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: babylonstoren wine experience join us on august 20 for a delightful evening of babylonstoren wines c...',
+    },
   },
   {
     _id: '9223d292-b2b3-4d07-a217-60172de2487d',
@@ -26655,11 +26711,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.404428+00:00',
-          startTime: '2025-09-18T10:13:57.404428+00:00',
-          endTime: '2025-09-18T13:13:57.404428+00:00',
-          startDate: '2025-09-18T10:13:57.404428+00:00',
-          endDate: '2025-09-18T13:13:57.404428+00:00',
+          date: '2025-08-20T00:00:00+00:00',
+          startTime: '2025-08-20T00:00:00+00:00',
+          endTime: '2025-08-20T00:00:00+00:00',
+          startDate: '2025-08-20T00:00:00+00:00',
+          endDate: '2025-08-20T00:00:00+00:00',
         },
       },
     ],
@@ -26696,6 +26752,14 @@ export const ETL_DATA = [
       'Elegant dining experience',
       'Limited seating available',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: five-course dinner at c&s seafood & oyster bar indulge in a gourmet five-course dinner at c&s seafoo...',
+    },
   },
   {
     _id: 'b51d1cae-2be7-4047-a27f-ebfc794ffd0e',
@@ -27398,11 +27462,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.405162+00:00',
-          startTime: '2025-09-18T10:13:57.405162+00:00',
-          endTime: '2025-09-18T13:13:57.405162+00:00',
-          startDate: '2025-09-18T10:13:57.405162+00:00',
-          endDate: '2025-09-18T13:13:57.405162+00:00',
+          date: '2025-08-21T00:00:00+00:00',
+          startTime: '2025-08-21T00:00:00+00:00',
+          endTime: '2025-08-21T00:00:00+00:00',
+          startDate: '2025-08-21T00:00:00+00:00',
+          endDate: '2025-08-21T00:00:00+00:00',
         },
       },
     ],
@@ -27439,6 +27503,14 @@ export const ETL_DATA = [
       'Unique storytelling',
       'Unforgettable entertainment',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        "Rule-based extraction from: baldur's gay: a burlesque extravaganza experience a captivating burlesque show at dragoncon, running...",
+    },
   },
   {
     _id: 'cf8d87f9-439b-4f54-baaa-e7120abb46ec',
@@ -27493,9 +27565,9 @@ export const ETL_DATA = [
       {
         location: {
           type: 'Point',
-          coordinates: [-84.383528, 33.781916],
+          coordinates: [-97.0814, 32.7471],
         },
-        address1: 'Event Location',
+        address1: 'Globe Life Field',
         address2: '',
         city: 'Atlanta',
         state: 'GA',
@@ -27565,6 +27637,13 @@ export const ETL_DATA = [
       'Family-friendly fun',
       'Join us for a night of adventure',
     ],
+    location_extraction: {
+      confidence: 0.7,
+      venue_name: 'Globe Life Field',
+      coordinates: [-97.0814, 32.7471],
+      extraction_method: 'Rules',
+      geocoding_used: false,
+    },
   },
   {
     _id: 'ad67c113-3d13-4d21-95d8-eb3586297a2b',
@@ -30154,11 +30233,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.407751+00:00',
-          startTime: '2025-09-18T10:13:57.407751+00:00',
-          endTime: '2025-09-18T13:13:57.407751+00:00',
-          startDate: '2025-09-18T10:13:57.407751+00:00',
-          endDate: '2025-09-18T13:13:57.407751+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T00:00:00+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T00:00:00+00:00',
         },
       },
     ],
@@ -30191,6 +30270,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: [],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: hatch chile fest celebrate the return of hatch chile fest at fox bros. bar-b-q on august 23!...',
+    },
   },
   {
     _id: '7a5102b0-d529-46fc-9675-f568d706adc4',
@@ -30774,11 +30861,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.408383+00:00',
-          startTime: '2025-09-18T10:13:57.408383+00:00',
-          endTime: '2025-09-18T13:13:57.408383+00:00',
-          startDate: '2025-09-18T10:13:57.408383+00:00',
-          endDate: '2025-09-18T13:13:57.408383+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T00:00:00+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T00:00:00+00:00',
         },
       },
     ],
@@ -30815,6 +30902,14 @@ export const ETL_DATA = [
       'Delicious dinner',
       'Interactive experience',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: murder mystery dinner experience an immersive true crime dinner from august 23 to september 13, 2025...',
+    },
   },
   {
     _id: '5d282ec3-155c-4438-a812-dca6ecf5fea1',
@@ -34055,7 +34150,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -36534,9 +36629,9 @@ export const ETL_DATA = [
       {
         location: {
           type: 'Point',
-          coordinates: [-84.402106, 33.754577],
+          coordinates: [-97.0928, 32.7473],
         },
-        address1: 'Event Location',
+        address1: 'AT&T Stadium',
         address2: '',
         city: 'Atlanta',
         state: 'GA',
@@ -36606,6 +36701,13 @@ export const ETL_DATA = [
       'Exciting matchup',
       'Live at Mercedes-Benz Stadium',
     ],
+    location_extraction: {
+      confidence: 0.7,
+      venue_name: 'AT&T Stadium',
+      coordinates: [-97.0928, 32.7473],
+      extraction_method: 'Rules',
+      geocoding_used: false,
+    },
   },
   {
     _id: '034288d3-7e07-4b9c-8d0c-cd77edcd853e',
@@ -37180,11 +37282,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.414134+00:00',
-          startTime: '2025-09-18T10:13:57.414134+00:00',
-          endTime: '2025-09-18T13:13:57.414134+00:00',
-          startDate: '2025-09-18T10:13:57.414134+00:00',
-          endDate: '2025-09-18T13:13:57.414134+00:00',
+          date: '2025-09-09T00:00:00+00:00',
+          startTime: '2025-09-09T00:00:00+00:00',
+          endTime: '2025-09-09T23:59:59+00:00',
+          startDate: '2025-09-09T00:00:00+00:00',
+          endDate: '2025-09-09T23:59:59+00:00',
         },
       },
     ],
@@ -37221,6 +37323,14 @@ export const ETL_DATA = [
       'Hit songs from her latest album',
       'Unforgettable night of music',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: tate mcrae: miss possessive tour catch tate mcrae live in atlanta on september 9th!...',
+    },
   },
   {
     _id: 'ae43bcec-65b8-47cf-a308-7ef95c099bb0',
@@ -37422,11 +37532,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.414357+00:00',
-          startTime: '2025-09-18T10:13:57.414357+00:00',
-          endTime: '2025-09-18T13:13:57.414357+00:00',
-          startDate: '2025-09-18T10:13:57.414357+00:00',
-          endDate: '2025-09-18T13:13:57.414357+00:00',
+          date: '2025-09-10T00:00:00+00:00',
+          startTime: '2025-09-10T00:00:00+00:00',
+          endTime: '2025-09-10T00:00:00+00:00',
+          startDate: '2025-09-10T00:00:00+00:00',
+          endDate: '2025-09-10T00:00:00+00:00',
         },
       },
     ],
@@ -37459,6 +37569,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Trendy apparel', 'Affordable prices', 'Sustainable shopping'],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: marietta fashion resale shop stylish finds from september 10-13, 2025!...',
+    },
   },
   {
     _id: '44913da7-5338-45ba-916d-84a026a652cb',
@@ -38148,11 +38266,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.415725+00:00',
-          startTime: '2025-09-18T10:13:57.415725+00:00',
-          endTime: '2025-09-18T13:13:57.415725+00:00',
-          startDate: '2025-09-18T10:13:57.415725+00:00',
-          endDate: '2025-09-18T13:13:57.415725+00:00',
+          date: '2025-09-12T00:00:00+00:00',
+          startTime: '2025-09-12T00:00:00+00:00',
+          endTime: '2025-09-12T00:00:00+00:00',
+          startDate: '2025-09-12T00:00:00+00:00',
+          endDate: '2025-09-12T00:00:00+00:00',
         },
       },
     ],
@@ -38189,6 +38307,14 @@ export const ETL_DATA = [
       'Cultural performances',
       'Art and cuisine showcases',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: latin culture fest experience the vibrancy of latin culture from september 12 to october 17, 2025....',
+    },
   },
   {
     _id: 'e62538da-7be6-4c57-8356-6833e36fdcaa',
@@ -39020,11 +39146,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.416549+00:00',
-          startTime: '2025-09-18T10:13:57.416549+00:00',
-          endTime: '2025-09-18T13:13:57.416549+00:00',
-          startDate: '2025-09-18T10:13:57.416549+00:00',
-          endDate: '2025-09-18T13:13:57.416549+00:00',
+          date: '2025-09-13T00:00:00+00:00',
+          startTime: '2025-09-13T00:00:00+00:00',
+          endTime: '2025-09-13T23:59:59+00:00',
+          startDate: '2025-09-13T00:00:00+00:00',
+          endDate: '2025-09-13T23:59:59+00:00',
         },
       },
     ],
@@ -39061,6 +39187,14 @@ export const ETL_DATA = [
       'Refreshing craft brews',
       'Live entertainment',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: taste & brews festival savor a weekend of flavors and brews on september 13-14, 2025!...',
+    },
   },
   {
     _id: 'cd164497-189d-404e-91db-2dfd9dac3dc4',
@@ -39771,7 +39905,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -39887,11 +40021,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.417365+00:00',
-          startTime: '2025-09-18T10:13:57.417365+00:00',
-          endTime: '2025-09-18T13:13:57.417365+00:00',
-          startDate: '2025-09-18T10:13:57.417365+00:00',
-          endDate: '2025-09-18T13:13:57.417365+00:00',
+          date: '2025-09-15T00:00:00+00:00',
+          startTime: '2025-09-15T00:00:00+00:00',
+          endTime: '2025-09-15T00:00:00+00:00',
+          startDate: '2025-09-15T00:00:00+00:00',
+          endDate: '2025-09-15T00:00:00+00:00',
         },
       },
     ],
@@ -39928,6 +40062,14 @@ export const ETL_DATA = [
       'Network with fellow golfers',
       'Enjoy a fun day on the course',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: 25th meals on wheels golf classic join us on september 15 for a day of golf to combat senior hunger....',
+    },
   },
   {
     _id: '560f56ff-b87f-4289-9d5d-fac89514ce1e',
@@ -40644,11 +40786,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.418022+00:00',
-          startTime: '2025-09-18T10:13:57.418022+00:00',
-          endTime: '2025-09-18T13:13:57.418022+00:00',
-          startDate: '2025-09-18T10:13:57.418022+00:00',
-          endDate: '2025-09-18T13:13:57.418022+00:00',
+          date: '2025-09-17T00:00:00+00:00',
+          startTime: '2025-09-17T00:00:00+00:00',
+          endTime: '2025-09-17T00:00:00+00:00',
+          startDate: '2025-09-17T00:00:00+00:00',
+          endDate: '2025-09-17T00:00:00+00:00',
         },
       },
     ],
@@ -40685,6 +40827,14 @@ export const ETL_DATA = [
       'Fresh seafood delicacies',
       'Elegant dining experience',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: c&s seafood & oyster bar wine dinner indulge in a delightful wine dinner at c&s seafood and oyster b...',
+    },
   },
   {
     _id: 'fe6a644a-8b36-4cd3-a2bf-8d8782d1a69c',
@@ -42022,11 +42172,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.419284+00:00',
-          startTime: '2025-09-18T10:13:57.419284+00:00',
-          endTime: '2025-09-18T13:13:57.419284+00:00',
-          startDate: '2025-09-18T10:13:57.419284+00:00',
-          endDate: '2025-09-18T13:13:57.419284+00:00',
+          date: '2025-09-20T00:00:00+00:00',
+          startTime: '2025-09-20T00:00:00+00:00',
+          endTime: '2025-09-20T00:00:00+00:00',
+          startDate: '2025-09-20T00:00:00+00:00',
+          endDate: '2025-09-20T00:00:00+00:00',
         },
       },
     ],
@@ -42063,6 +42213,14 @@ export const ETL_DATA = [
       'Exciting match-up',
       'Community festivities',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: latin heritage night: atlanta united vs. san diego join us on september 20th for latin heritage nigh...',
+    },
   },
   {
     _id: 'e35200e7-68b0-4723-ac85-a40794e931cb',
@@ -42407,7 +42565,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -45160,11 +45318,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.421348+00:00',
-          startTime: '2025-09-18T10:13:57.421348+00:00',
-          endTime: '2025-09-18T13:13:57.421348+00:00',
-          startDate: '2025-09-18T10:13:57.421348+00:00',
-          endDate: '2025-09-18T13:13:57.421348+00:00',
+          date: '2025-09-27T09:00:00+00:00',
+          startTime: '2025-09-27T09:00:00+00:00',
+          endTime: '2025-09-27T00:00:00+00:00',
+          startDate: '2025-09-27T09:00:00+00:00',
+          endDate: '2025-09-27T00:00:00+00:00',
         },
       },
     ],
@@ -45201,6 +45359,14 @@ export const ETL_DATA = [
       'September 27 event',
       '9 AM start time',
     ],
+    schedule_extraction: {
+      confidence: 0.7,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: fall plant sale at oakland cemetery discover a vibrant selection of fall plants on september 27 at o...',
+    },
   },
   {
     _id: '0283af74-ea7f-438d-b680-6744daab2ae2',
@@ -45256,9 +45422,9 @@ export const ETL_DATA = [
       {
         location: {
           type: 'Point',
-          coordinates: [-84.40083, 33.72099],
+          coordinates: [-97.0814, 32.7471],
         },
-        address1: 'Event Location',
+        address1: 'Globe Life Field',
         address2: '',
         city: 'Atlanta',
         state: 'GA',
@@ -45324,6 +45490,13 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Live music', 'Community fun', 'Exciting soccer matches'],
+    location_extraction: {
+      confidence: 0.7,
+      venue_name: 'Globe Life Field',
+      coordinates: [-97.0814, 32.7471],
+      extraction_method: 'Rules',
+      geocoding_used: false,
+    },
   },
   {
     _id: 'cd5ce8b1-a7c4-4e5c-b877-dfa9be73caf2',
@@ -45727,9 +45900,9 @@ export const ETL_DATA = [
       {
         location: {
           type: 'Point',
-          coordinates: [-84.402106, 33.754577],
+          coordinates: [-97.0928, 32.7473],
         },
-        address1: 'Event Location',
+        address1: 'AT&T Stadium',
         address2: '',
         city: 'Atlanta',
         state: 'GA',
@@ -45799,6 +45972,13 @@ export const ETL_DATA = [
       'Live at Mercedes-Benz Stadium',
       "Don't miss the action!",
     ],
+    location_extraction: {
+      confidence: 0.7,
+      venue_name: 'AT&T Stadium',
+      coordinates: [-97.0928, 32.7473],
+      extraction_method: 'Rules',
+      geocoding_used: false,
+    },
   },
   {
     _id: '94b6bd5f-c32e-4014-b67a-c0f3bb21ca05',
@@ -55283,11 +55463,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.427000+00:00',
-          startTime: '2025-09-18T10:13:57.427000+00:00',
-          endTime: '2025-09-18T13:13:57.427000+00:00',
-          startDate: '2025-09-18T10:13:57.427000+00:00',
-          endDate: '2025-09-18T13:13:57.427000+00:00',
+          date: '2025-01-17T00:00:00+00:00',
+          startTime: '2025-01-17T00:00:00+00:00',
+          endTime: '2025-01-17T00:00:00+00:00',
+          startDate: '2025-01-17T00:00:00+00:00',
+          endDate: '2025-01-17T00:00:00+00:00',
         },
       },
     ],
@@ -55324,6 +55504,14 @@ export const ETL_DATA = [
       'Iconic hits and fan favorites',
       'Unforgettable atmosphere',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: morrissey live: a night to remember experience the iconic morrissey on january 17 for an unforgettab...',
+    },
   },
   {
     _id: 'bd53b991-335b-4c0f-bded-8929f03ed505',
@@ -57227,11 +57415,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.428372+00:00',
-          startTime: '2025-09-18T10:13:57.428372+00:00',
-          endTime: '2025-09-18T13:13:57.428372+00:00',
-          startDate: '2025-09-18T10:13:57.428372+00:00',
-          endDate: '2025-09-18T13:13:57.428372+00:00',
+          date: '2025-08-19T00:00:00+00:00',
+          startTime: '2025-08-19T00:00:00+00:00',
+          endTime: '2025-08-19T23:59:59+00:00',
+          startDate: '2025-08-19T00:00:00+00:00',
+          endDate: '2025-08-19T23:59:59+00:00',
         },
       },
     ],
@@ -57264,6 +57452,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Local vendors', 'Fresh produce', 'Live entertainment'],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: main street market experience the vibrant market series from august 19 to october 1, 2025!...',
+    },
   },
   {
     _id: '44bfb71c-6e58-4d6b-9d9d-9d1c95240b54',
@@ -58070,11 +58266,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.429013+00:00',
-          startTime: '2025-09-18T10:13:57.429013+00:00',
-          endTime: '2025-09-18T13:13:57.429013+00:00',
-          startDate: '2025-09-18T10:13:57.429013+00:00',
-          endDate: '2025-09-18T13:13:57.429013+00:00',
+          date: '2025-08-19T00:00:00+00:00',
+          startTime: '2025-08-19T00:00:00+00:00',
+          endTime: '2025-08-19T00:00:00+00:00',
+          startDate: '2025-08-19T00:00:00+00:00',
+          endDate: '2025-08-19T00:00:00+00:00',
         },
       },
     ],
@@ -58111,6 +58307,14 @@ export const ETL_DATA = [
       'Special adoption fees',
       'Meet adorable cats',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: cat adoption extravaganza adopt your new feline friend from august 19 to 31!...',
+    },
   },
   {
     _id: '94d7a352-e22c-48ff-8812-28ad3c17bc7d',
@@ -58691,7 +58895,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -58816,7 +59020,7 @@ export const ETL_DATA = [
     categories: [
       {
         _id: '68a176fb15ee3362d03f44ae',
-        name: 'Family Fun',
+        name: 'Family & Kids',
         darkIcon:
           'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Family_fun%28dark%291755342852999.svg',
         lightIcon:
@@ -58934,9 +59138,9 @@ export const ETL_DATA = [
         fixedSchedule: {
           date: '2025-08-26T00:00:00+00:00',
           startTime: '2025-08-26T00:00:00+00:00',
-          endTime: '2025-08-26T03:00:00+00:00',
+          endTime: '2025-08-26T00:00:00+00:00',
           startDate: '2025-08-26T00:00:00+00:00',
-          endDate: '2025-08-26T03:00:00+00:00',
+          endDate: '2025-08-26T00:00:00+00:00',
         },
       },
     ],
@@ -58969,6 +59173,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Live blues music', 'Wine tasting', 'Every Tuesday night'],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: blues & wine night enjoy live blues and wine tasting every tuesday until 08/26/2025....',
+    },
   },
   {
     _id: '35323a8b-9b89-4384-b7b9-132defb246f2',
@@ -59179,11 +59391,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.431454+00:00',
-          startTime: '2025-09-18T10:13:57.431454+00:00',
-          endTime: '2025-09-18T13:13:57.431454+00:00',
-          startDate: '2025-09-18T10:13:57.431454+00:00',
-          endDate: '2025-09-18T13:13:57.431454+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T23:59:59+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T23:59:59+00:00',
         },
       },
     ],
@@ -59220,6 +59432,14 @@ export const ETL_DATA = [
       'Family-friendly fun',
       'Unique holiday displays',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: georgia festival of trees celebrate the season at the brick fan expo in duluth on august 23-24, 2025...',
+    },
   },
   {
     _id: '403a2522-21f0-4ed4-a997-3bad67809fdc',
@@ -59916,11 +60136,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.432690+00:00',
-          startTime: '2025-09-18T10:13:57.432690+00:00',
-          endTime: '2025-09-18T13:13:57.432690+00:00',
-          startDate: '2025-09-18T10:13:57.432690+00:00',
-          endDate: '2025-09-18T13:13:57.432690+00:00',
+          date: '2025-10-12T00:00:00+00:00',
+          startTime: '2025-10-12T00:00:00+00:00',
+          endTime: '2025-10-12T23:59:59+00:00',
+          startDate: '2025-10-12T00:00:00+00:00',
+          endDate: '2025-10-12T23:59:59+00:00',
         },
       },
     ],
@@ -59957,6 +60177,14 @@ export const ETL_DATA = [
       'Daily events until 10/12/2025',
       'Visit our website for details',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: atlanta pride festival join us in celebrating love and diversity at the atlanta pride festival, happ...',
+    },
   },
   {
     _id: 'e1897d14-0c6e-4d21-a812-e2a7425d647a',
@@ -60043,11 +60271,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.432975+00:00',
-          startTime: '2025-09-18T10:13:57.432975+00:00',
-          endTime: '2025-09-18T13:13:57.432975+00:00',
-          startDate: '2025-09-18T10:13:57.432975+00:00',
-          endDate: '2025-09-18T13:13:57.432975+00:00',
+          date: '2025-08-23T00:00:00+00:00',
+          startTime: '2025-08-23T00:00:00+00:00',
+          endTime: '2025-08-23T23:59:59+00:00',
+          startDate: '2025-08-23T00:00:00+00:00',
+          endDate: '2025-08-23T23:59:59+00:00',
         },
       },
     ],
@@ -60084,6 +60312,14 @@ export const ETL_DATA = [
       'Live music and entertainment',
       'Delicious food and local vendors',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: grant park summer shade festival join us for the lively grant park summer shade festival on august 2...',
+    },
   },
   {
     _id: 'c8d5cf8e-5c84-46eb-9ac3-bb04ffa8da8a',
@@ -60930,11 +61166,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.435312+00:00',
-          startTime: '2025-09-18T10:13:57.435312+00:00',
-          endTime: '2025-09-18T13:13:57.435312+00:00',
-          startDate: '2025-09-18T10:13:57.435312+00:00',
-          endDate: '2025-09-18T13:13:57.435312+00:00',
+          date: '2025-08-30T00:00:00+00:00',
+          startTime: '2025-08-30T00:00:00+00:00',
+          endTime: '2025-08-30T00:00:00+00:00',
+          startDate: '2025-08-30T00:00:00+00:00',
+          endDate: '2025-08-30T00:00:00+00:00',
         },
       },
     ],
@@ -60971,6 +61207,14 @@ export const ETL_DATA = [
       'Family-friendly fun',
       'Visit our website for details',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: labor day laser show join us for an electrifying laser show from august 30 to september 1, 2025!...',
+    },
   },
   {
     _id: '68334718-45cd-48af-8db2-de401d1ab187',
@@ -61057,11 +61301,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.435990+00:00',
-          startTime: '2025-09-18T10:13:57.435990+00:00',
-          endTime: '2025-09-18T13:13:57.435990+00:00',
-          startDate: '2025-09-18T10:13:57.435990+00:00',
-          endDate: '2025-09-18T13:13:57.435990+00:00',
+          date: '2025-09-10T00:00:00+00:00',
+          startTime: '2025-09-10T00:00:00+00:00',
+          endTime: '2025-09-10T00:00:00+00:00',
+          startDate: '2025-09-10T00:00:00+00:00',
+          endDate: '2025-09-10T00:00:00+00:00',
         },
       },
     ],
@@ -61098,6 +61342,14 @@ export const ETL_DATA = [
       'Trendy selections',
       'Limited-time event',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: marietta fashion resale shop incredible deals from september 10-13, 2025! visit our website for deta...',
+    },
   },
   {
     _id: 'badd55f3-9f9a-4cf7-9e45-0beb1d7a4c40',
@@ -61183,11 +61435,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.436354+00:00',
-          startTime: '2025-09-18T10:13:57.436354+00:00',
-          endTime: '2025-09-18T13:13:57.436354+00:00',
-          startDate: '2025-09-18T10:13:57.436354+00:00',
-          endDate: '2025-09-18T13:13:57.436354+00:00',
+          date: '2025-09-12T00:00:00+00:00',
+          startTime: '2025-09-12T00:00:00+00:00',
+          endTime: '2025-09-12T00:00:00+00:00',
+          startDate: '2025-09-12T00:00:00+00:00',
+          endDate: '2025-09-12T00:00:00+00:00',
         },
       },
     ],
@@ -61224,6 +61476,14 @@ export const ETL_DATA = [
       'Art from diverse Latin artists',
       'Engaging community events',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: placita latina exhibition join us for the vibrant placita latina exhibition from september 12 to oct...',
+    },
   },
   {
     _id: 'd6a1724a-0967-41b0-964e-adb9ea0f90cb',
@@ -61562,11 +61822,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.437678+00:00',
-          startTime: '2025-09-18T10:13:57.437678+00:00',
-          endTime: '2025-09-18T13:13:57.437678+00:00',
-          startDate: '2025-09-18T10:13:57.437678+00:00',
-          endDate: '2025-09-18T13:13:57.437678+00:00',
+          date: '2025-10-08T00:00:00+00:00',
+          startTime: '2025-10-08T00:00:00+00:00',
+          endTime: '2025-10-08T23:59:59+00:00',
+          startDate: '2025-10-08T00:00:00+00:00',
+          endDate: '2025-10-08T23:59:59+00:00',
         },
       },
     ],
@@ -61603,6 +61863,14 @@ export const ETL_DATA = [
       'Inspirational speakers',
       'Networking opportunities',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: fte discernment festival join us from october 8-11, 2025, for the fte discernment festival. visit ou...',
+    },
   },
   {
     _id: '5b1e2d28-18c4-4a9e-af3b-af118adb16b2',
@@ -61816,11 +62084,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.438654+00:00',
-          startTime: '2025-09-18T10:13:57.438654+00:00',
-          endTime: '2025-09-18T13:13:57.438654+00:00',
-          startDate: '2025-09-18T10:13:57.438654+00:00',
-          endDate: '2025-09-18T13:13:57.438654+00:00',
+          date: '2025-08-19T00:00:00+00:00',
+          startTime: '2025-08-19T00:00:00+00:00',
+          endTime: '2025-08-19T00:00:00+00:00',
+          startDate: '2025-08-19T00:00:00+00:00',
+          endDate: '2025-08-19T00:00:00+00:00',
         },
       },
     ],
@@ -61853,6 +62121,14 @@ export const ETL_DATA = [
       isMe: false,
     },
     highlights: ['Vibrant atmosphere', 'Local vendors', 'Delicious food'],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: main street market join us for the lively main street market from august 19 to october 1, 2025!...',
+    },
   },
   {
     _id: '65fa7404-5334-45c1-8584-793d76d57458',
@@ -62825,11 +63101,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.442908+00:00',
-          startTime: '2025-09-18T10:13:57.442908+00:00',
-          endTime: '2025-09-18T13:13:57.442908+00:00',
-          startDate: '2025-09-18T10:13:57.442908+00:00',
-          endDate: '2025-09-18T13:13:57.442908+00:00',
+          date: '2025-09-10T00:00:00+00:00',
+          startTime: '2025-09-10T00:00:00+00:00',
+          endTime: '2025-09-10T00:00:00+00:00',
+          startDate: '2025-09-10T00:00:00+00:00',
+          endDate: '2025-09-10T00:00:00+00:00',
         },
       },
     ],
@@ -62866,6 +63142,14 @@ export const ETL_DATA = [
       'Sustainable shopping',
       'Exclusive deals',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: statemint marietta resale fashion event discover amazing fashion finds at the statemint marietta res...',
+    },
   },
   {
     _id: 'afbe5e7d-c7b0-4846-89ef-f3b5653a9261',
@@ -62951,11 +63235,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.443154+00:00',
-          startTime: '2025-09-18T10:13:57.443154+00:00',
-          endTime: '2025-09-18T13:13:57.443154+00:00',
-          startDate: '2025-09-18T10:13:57.443154+00:00',
-          endDate: '2025-09-18T13:13:57.443154+00:00',
+          date: '2025-09-12T00:00:00+00:00',
+          startTime: '2025-09-12T00:00:00+00:00',
+          endTime: '2025-09-12T00:00:00+00:00',
+          startDate: '2025-09-12T00:00:00+00:00',
+          endDate: '2025-09-12T00:00:00+00:00',
         },
       },
     ],
@@ -62992,6 +63276,14 @@ export const ETL_DATA = [
       'Art installations',
       'Interactive experiences',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: false,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: placita latina exhibition explore the vibrant placita latina exhibition from september 12 to october...',
+    },
   },
   {
     _id: 'a81e04d5-7f88-4dab-8934-3ca3ba0b422e',
@@ -63331,11 +63623,11 @@ export const ETL_DATA = [
       {
         scheduleType: 'Fixed Schedule',
         fixedSchedule: {
-          date: '2025-09-18T10:13:57.444202+00:00',
-          startTime: '2025-09-18T10:13:57.444202+00:00',
-          endTime: '2025-09-18T13:13:57.444202+00:00',
-          startDate: '2025-09-18T10:13:57.444202+00:00',
-          endDate: '2025-09-18T13:13:57.444202+00:00',
+          date: '2025-10-08T00:00:00+00:00',
+          startTime: '2025-10-08T00:00:00+00:00',
+          endTime: '2025-10-08T23:59:59+00:00',
+          startDate: '2025-10-08T00:00:00+00:00',
+          endDate: '2025-10-08T23:59:59+00:00',
         },
       },
     ],
@@ -63372,6 +63664,14 @@ export const ETL_DATA = [
       'Engaging workshops',
       'Networking opportunities',
     ],
+    schedule_extraction: {
+      confidence: 0.5,
+      is_multi_day: true,
+      duration_days: 1,
+      extraction_method: 'Rules',
+      raw_text_analyzed:
+        'Rule-based extraction from: fte discernment festival experience transformation at the fte discernment festival, october 8-11, 20...',
+    },
   },
   {
     _id: '213c9640-bbf0-46e2-9ce0-fd75e654e643',

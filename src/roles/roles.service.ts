@@ -33,7 +33,7 @@ export class RolesService {
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
   ) {}
-  async createRole(user: any, createRoleDto: CreateRoleDto) {
+  async createRole(user: DecodedUser, createRoleDto: CreateRoleDto) {
     try {
       const isAdmin = user.userType === UserTypes.ADMIN;
       const isBusiness = user.userType === UserTypes.BUSINESS;
@@ -66,6 +66,7 @@ export class RolesService {
           name: createRoleDto.name,
           creatorType: RoleCreatorType.BUSINESS,
           creator: new mongoose.Types.ObjectId(user.id),
+          business: new mongoose.Types.ObjectId(user.businessProfile),
         };
       }
       const findRole = await this.roleModel.findOne(findQuery);
@@ -76,14 +77,16 @@ export class RolesService {
         };
       }
       const { name, description } = createRoleDto;
-      const roleData = {
+      let roleData = {
         name,
         description,
         creator: new mongoose.Types.ObjectId(user.id),
         creatorType: isAdmin ? RoleCreatorType.ADMIN : RoleCreatorType.BUSINESS,
         belongsTo: isAdmin ? RoleBelonging.SYSTEM : RoleBelonging.BUSINESS,
-        // business:
       };
+      if(isBusiness){
+        roleData['business'] = new mongoose.Types.ObjectId(user.businessProfile);
+      }
 
       const existingRole = await this.roleModel.findOne({
         creator: new mongoose.Types.ObjectId(user.id),

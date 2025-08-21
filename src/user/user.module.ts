@@ -138,6 +138,7 @@ import {
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
 import { SmsService } from 'src/sms/sms.service';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -167,40 +168,11 @@ import { SmsService } from 'src/sms/sms.service';
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema},
       { name: Reward.name, schema: RewardSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
-
-      // { name: BusinessIndustry.name, schema: BusinessIndustrySchema },
-      // { name: BusinessCategory.name, schema: BusinessCategorySchema },
-
-      // { name: Privilege.name, schema: PrivilegeSchema },
-      // { name: BusinessCountry.name, schema: BusinessCountrySchema },
-      // { name: Folder.name, schema: FolderSchema },
-      // { name: BusinessConstitution.name, schema: BusinessConstitutionSchema },
-      // { name: BusinessDocumentType.name, schema: BusinessDocumentTypeSchema },
-      // { name: Brand.name, schema: BrandSchema },
-      // { name: Resource.name, schema: ResourceSchema },
-      // { name: Department.name, schema: DepartmentSchema },
-      // { name: Action.name, schema: ActionSchema },
-      // { name: LocationGroup.name, schema: LocationGroupSchema },
-      // { name: Region.name, schema: RegionSchema },
-      // { name: UserReward.name, schema: UserRewardSchema },
-      // { name: Rating.name, schema: RatingSchema },
-      // { name: Menu.name, schema: MenuSchema },
-      // { name: AppVersion.name, schema: AppVersionSchema },
-      // { name: OutletCategory.name, schema: OutletCategorySchema },
-      // { name: OutletType.name, schema: OutletTypeSchema },
-      // { name: DashboardConfig.name, schema: DashboardConfigSchema },
-      // { name: Tag.name, schema: TagSchema },
-      // { name: PlatformConfig.name, schema: PlatformConfigSchema },
-      // { name: Outlet.name, schema: OutletSchema },
-      // { name: EventLocation.name, schema: EventLocationSchema },
-      // { name: Category.name, schema: CategorySchema },
-      // { name: AgeGroup.name, schema: AgeGroupSchema },
-      // { name: EventResponse.name, schema: EventResponseSchema },
-      // { name: EventSchedule.name, schema: EventScheduleSchema },
     ]),
   ],
   controllers: [UserController],

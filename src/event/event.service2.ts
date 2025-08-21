@@ -7006,7 +7006,8 @@ export class EventService2 {
             'https://pinntag-assets.s3.us-east-1.amazonaws.com/Brand+Kit/PinnTag+Cover.png',
           isFromCrawler: true,
           drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
-          description: "Discover Atlanta is the official city guide operated by the Atlanta Convention & Visitors Bureau (ACVB), the nonprofit destination marketing organization established in 1913 to promote Atlanta as a premier travel and convention hub. Serving both visitors and locals, Discover Atlanta offers curated guides to attractions, events, restaurants, hotels, neighborhoods, and cultural experiences across the city. Its website and mobile app highlight seasonal activities, themed itineraries, and community-driven stories featuring arts, history, Black-owned businesses, and LGBTQ+ spots."
+          description:
+            'Discover Atlanta is the official city guide operated by the Atlanta Convention & Visitors Bureau (ACVB), the nonprofit destination marketing organization established in 1913 to promote Atlanta as a premier travel and convention hub. Serving both visitors and locals, Discover Atlanta offers curated guides to attractions, events, restaurants, hotels, neighborhoods, and cultural experiences across the city. Its website and mobile app highlight seasonal activities, themed itineraries, and community-driven stories featuring arts, history, Black-owned businesses, and LGBTQ+ spots.',
         };
         businessDetails = await this.businessModel.create(businessObj);
       }
@@ -7019,16 +7020,15 @@ export class EventService2 {
         if (!businessUser || !businessIndustry || !businessCategory) continue;
 
         if (!data.locations[0].location.coordinates) continue;
-        
-         let address = await this.googleService.getAddressFromCoordinates(
-        data.locations[0].location.coordinates[1],
-        data.locations[0].location.coordinates[0],
-        '000e10b3-b0a0-4269-a864-ea419a790f76',
-      );
 
+        let address = await this.googleService.getAddressFromCoordinates(
+          data.locations[0].location.coordinates[1],
+          data.locations[0].location.coordinates[0],
+          '000e10b3-b0a0-4269-a864-ea419a790f76',
+        );
 
         let foundOutlet = await this.outletModel.findOne({
-          address1:  address.data.address1,
+          address1: address.data.address1,
         });
 
         if (!foundOutlet) {
@@ -7045,7 +7045,7 @@ export class EventService2 {
             postalCode: '30303',
             countryCode: '404',
             email: 'atlanta@yopmail.com',
-            address1:  address.data.address1 ?? null,
+            address1: address.data.address1 ?? null,
             latitude: data.locations[0].location.coordinates[1],
             longitude: data.locations[0].location.coordinates[0],
             location: {
@@ -7153,21 +7153,45 @@ export class EventService2 {
             { $addToSet: { eventSchedule: createdSchedule._id } },
           );
         }
+        //to download images from open url and upload to drive
+        // if (data.images) {
+        //   const fileCategory = await this.fileCategoryModel.findOne({
+        //     name: FileCategoryTypes.GALLERY_IMAGE,
+        //   });
 
-        if (data.images) {
-          const fileCategory = await this.fileCategoryModel.findOne({
-            name: FileCategoryTypes.GALLERY_IMAGE,
-          });
+        //   for (let image of data.images) {
+        //     if (!image) continue;
+        //     await this.driveService.downloadAndUploadImage(
+        //       image,
+        //       businessUser.id,
+        //       createdEvent.drivePath,
+        //       fileCategory.id,
+        //     );
+        //   }
+        // }
 
-          for (let image of data.images) {
-            if (!image) continue;
-            await this.driveService.downloadAndUploadImage(
-              image,
-              businessUser.id,
+        // to save cloudfare image url in drive
+        let fileCategoryId = await this.fileCategoryModel.findOne({
+          name: 'gallery image',
+        });
+        for (let image of data.images) {
+          await this.fileModel.create({
+            metaData: {
+              mimeType: 'image/jpeg',
+              url: image,
+              thumbnailUrl: '',
+              size: 25579,
+              originalName: 'cloudfareImage',
+            },
+            parentDirectory: new mongoose.Types.ObjectId(
               createdEvent.drivePath,
-              fileCategory.id,
-            );
-          }
+            ),
+            ParentDirectoryType: 'Folder',
+            fileType: FileType.IMAGE,
+            category: fileCategoryId._id,
+            parent: businessUser._id,
+            parentType: Event.name, // or drive/folder parentType as needed
+          });
         }
       }
       return {

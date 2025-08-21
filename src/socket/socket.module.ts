@@ -136,6 +136,7 @@ import { Rating, RatingSchema } from 'src/business/model/rating.model';
 import { Menu, MenuSchema } from 'src/business/model/menu.model';
 import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -199,6 +200,7 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
       { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
       { name: Menu.name, schema: MenuSchema },
       { name: Reward.name, schema: RewardSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   providers: [

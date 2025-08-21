@@ -60,6 +60,7 @@ import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/busi
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   controllers: [CronController],
