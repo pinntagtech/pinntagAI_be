@@ -644,7 +644,7 @@ export class EventController {
   }
 
   @Get('template/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getTemplate(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,

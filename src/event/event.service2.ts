@@ -369,7 +369,7 @@ export class EventService2 {
         message: 'Please provide a valid event id',
         eventUrl: undefined,
       };
-    }
+    } 
     const successResponse = {
       success: true,
       message: 'eventUrl successfully generated',
@@ -2521,9 +2521,7 @@ export class EventService2 {
     } else {
       const template = await this.templateModel
         .findById(id)
-        .populate('images', ImagePopulates.FOREIGN)
-        .populate('ageGroupsAllowed', 'name')
-        .populate('category', CategoryPopulates.FOREIGN)
+        .populate('categories', CategoryPopulates.FOREIGN)
         .populate('user', UserPopulates.FOREIGN)
         .populate('businessProfile', BusinessPopulates.FOREIGN);
       if (!template) {
