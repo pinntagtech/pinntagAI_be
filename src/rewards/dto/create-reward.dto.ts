@@ -66,3 +66,55 @@ export class CreateRewardDto {
   @IsDateString({}, { message: 'endDate must be a valid ISO 8601 date string' })
   endDate: string;
 }
+export class UpdateRewardDto {
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  @IsIn(Object.values(RewardType))
+  rewardType: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  @IsIn(Object.values(RedemptionMode))
+  redemptionMode: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  @IsIn(Object.values(ActivityType))
+  activityType: string;
+
+  @IsOptional()
+  @IsString()
+  locations: any;
+
+  @IsOptional()
+  targetCount: string;
+
+  @IsOptional()
+  rewardExpiration: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  promotionCode: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  description: string;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'startDate must be a valid ISO 8601 date string' })
+  startDate: string;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'endDate must be a valid ISO 8601 date string' })
+  endDate: string;
+}

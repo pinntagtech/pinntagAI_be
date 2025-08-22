@@ -6073,6 +6073,13 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
+      if(business.outlets && business.outlets.length === 0){
+        return {
+          success: false,
+          message: 'Business has no outlets.',
+        };
+      }
+
       let maxCategories = 3;
       if (data.categories) {
         let categoriesInObjectId = [];

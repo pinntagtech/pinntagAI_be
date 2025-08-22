@@ -1112,7 +1112,7 @@ export class DriveService {
   }
 
   async deleteBufferAndMultiImageUpload(
-    user: any,
+    user: DecodedUser,
     locationId: string,
     images: Express.Multer.File[],
   ) {
@@ -1124,7 +1124,7 @@ export class DriveService {
       const oldFiles = await this.fileModel.find({
         parentDirectory: new mongoose.Types.ObjectId(locationId),
       });
-
+      console.log("Old files:", oldFiles);
       oldFiles.forEach(async (file) => {
         // Delete file from S3
         const fileUrl = file.metaData.url;
@@ -1142,6 +1142,7 @@ export class DriveService {
       });
 
       let parentId = user.id;
+      console.log('parentId:', parentId);
 
       if (!isValidObjectId(parentId)) {
         return { success: false, message: 'Invalid parentId' };
