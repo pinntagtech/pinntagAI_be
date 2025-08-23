@@ -711,6 +711,9 @@ export class OutletService {
       let givenLat = row.latitude ? parseFloat(row.latitude) : googleLat;
       let givenLng = row.longitude ? parseFloat(row.longitude) : googleLng;
 
+      console.log("Given Coordinates:", { givenLat, givenLng });
+      console.log("Google Coordinates:", { googleLat, googleLng });
+
       if (row.latitude && row.longitude) {
         const distance = await this.getDistanceInMeters(
           googleLat,
@@ -719,9 +722,9 @@ export class OutletService {
           givenLng,
         );
 
-        if (distance > 500) {
+        if (distance > 1000) {
           throw new Error(
-            `Provided latitude/longitude is not within 500 meters of calculated location (distance: ${distance.toFixed(
+            `Provided latitude/longitude is not within 1000 meters of calculated location (distance: ${distance.toFixed(
               2,
             )}m).`,
           );

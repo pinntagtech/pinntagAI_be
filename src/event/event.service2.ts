@@ -2041,6 +2041,7 @@ export class EventService2 {
                   ),
                   type: TokenTypes.FCM,
                 });
+                console.log("FCM Tokens:", fcmTokens);
                 for (let j = 0; j < fcmTokens.length; j++) {
                   this.firebaseService.sendNotification(
                     fcmTokens[j].token,
