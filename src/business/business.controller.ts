@@ -74,6 +74,31 @@ export class BusinessController {
       return {
         message: result.message,
         data: result.data,
+        // token: result.token,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('verify/:id')
+  @UseGuards(JwtGuard2)
+  async verifyBusiness(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') businessId: string,
+    @Body('emailOtp') emailOtp: string,
+    @Body('mobileOtp') mobileOtp: string,
+  ) {
+    const result = await this.businessService.verifyBusiness(
+      user,
+      businessId,
+      emailOtp,
+      mobileOtp,
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
         token: result.token,
       };
     } else {

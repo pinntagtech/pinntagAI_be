@@ -708,26 +708,32 @@ export class OutletService {
       let googleLng = placeDetails.data['longitude']
         ? parseFloat(placeDetails.data['longitude'])
         : 0;
-      let givenLat = row.latitude ? parseFloat(row.latitude) : googleLat;
-      let givenLng = row.longitude ? parseFloat(row.longitude) : googleLng;
-
-      console.log("Given Coordinates:", { givenLat, givenLng });
-      console.log("Google Coordinates:", { googleLat, googleLng });
-
+      let lat = googleLat;
+      let long = googleLng;
       if (row.latitude && row.longitude) {
-        const distance = await this.getDistanceInMeters(
-          googleLat,
-          googleLng,
-          givenLat,
-          givenLng,
-        );
+        lat = row.latitude ? parseFloat(row.latitude) : googleLat;
+        long = row.longitude ? parseFloat(row.longitude) : googleLng;
+        let givenLat = row.latitude ? parseFloat(row.latitude) : googleLat;
+        let givenLng = row.longitude ? parseFloat(row.longitude) : googleLng;
 
-        if (distance > 1000) {
-          throw new Error(
-            `Provided latitude/longitude is not within 1000 meters of calculated location (distance: ${distance.toFixed(
-              2,
-            )}m).`,
+        console.log('Given Coordinates:', { givenLat, givenLng });
+        console.log('Google Coordinates:', { googleLat, googleLng });
+
+        if (row.latitude && row.longitude) {
+          const distance = await this.getDistanceInMeters(
+            googleLat,
+            googleLng,
+            givenLat,
+            givenLng,
           );
+
+          if (distance > 1000) {
+            throw new Error(
+              `Provided latitude/longitude is not within 1000 meters of calculated location (distance: ${distance.toFixed(
+                2,
+              )}m).`,
+            );
+          }
         }
       }
 
@@ -747,15 +753,11 @@ export class OutletService {
         refId: row.referenceId,
         creator: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
-        latitude: placeDetails.data['latitude']
-          ? parseFloat(placeDetails.data['latitude'])
-          : 0,
-        longitude: placeDetails.data['longitude']
-          ? parseFloat(placeDetails.data['longitude'])
-          : 0,
+        latitude: lat,
+        longitude: long,
         location: {
           type: 'Point',
-          coordinates: [givenLng, givenLat],
+          coordinates: [long, lat],
         },
       };
       const outlet = await this.outletModel.create(outletObj);

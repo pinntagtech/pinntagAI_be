@@ -7042,7 +7042,7 @@ export class EventService2 {
           console.log('Outlet Name:', outletName);
           foundOutlet = await this.outletModel.create({
             isFromCrawler: true,
-            businessProfile: businessDetails._id,
+            business: businessDetails._id,
             name: outletName || `Loc-Atlanta City Hall`,
             category: OutletCategoryList.PHYSICAL,
             city: data.locations[0].city ?? 'Atlanta',

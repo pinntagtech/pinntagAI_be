@@ -1028,8 +1028,8 @@ export class SeederService {
     const user = await this.adminModel.findOne({ isSuperAdmin: true });
     const ownerRole = await this.roleModel.create({
       name: 'Owner',
-      creator: new mongoose.Types.ObjectId(user.id),
-      creatorType: RoleCreatorType.ADMIN,
+      creator: '',
+      creatorType: RoleCreatorType.SYSTEM,
       belongsTo: RoleBelonging.BUSINESS,
       isBusinessOwner: true,
     });

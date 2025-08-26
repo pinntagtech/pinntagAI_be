@@ -1,5 +1,9 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +12,8 @@ import { LoginDto } from 'src/admin/dto/login.dto';
 import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
 import * as fs from 'fs';
+import * as streamifier from 'streamifier';
+import csv from 'csv-parser';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -39,7 +45,11 @@ import {
 import { Image, ImageDocument } from 'src/event/models/image.model';
 import { manipulateImageName } from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
-import { Category, CategoryDocument, CategorySchema } from 'src/models/contentCategory.model';
+import {
+  Category,
+  CategoryDocument,
+  CategorySchema,
+} from 'src/models/contentCategory.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { S3Service } from 'src/s3.service';
 import { User, UserDocument } from 'src/user/models/user.model';
@@ -49,7 +59,12 @@ import { UserService } from 'src/user/user.service';
 import { Admin, AdminDocument } from './models/admin.model';
 // import { AdminRole, AdminRoleDocument } from './models/adminRole.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { CarouselType, FileCategoryTypes, TokenTypes, UserTypes } from 'src/enums/auth.enums';
+import {
+  CarouselType,
+  FileCategoryTypes,
+  TokenTypes,
+  UserTypes,
+} from 'src/enums/auth.enums';
 import { MailService } from 'src/mail/mail.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import {
@@ -89,6 +104,7 @@ import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import {
   BusinessCreatorType,
   BusinessUserCreatorType,
+  ProfileStatus,
 } from 'src/business/enums/business.enum';
 import {
   BusinessUser,
@@ -120,6 +136,9 @@ import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
 import { EventSchedule } from 'src/event/models/event-schedule.model';
 import { create } from 'domain';
+import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
+import { createObjectCsvStringifier } from 'csv-writer';
+import { Readable } from 'stream';
 
 @Injectable()
 export class AdminService {
@@ -452,20 +471,26 @@ export class AdminService {
   }
 
   async addDashboardConfiguration(data: ConfigureDashboardDto) {
+    const foundCarousel = await this.dashboardConfigModel.findOne({
+      name: data.name,
+    });
 
-    const foundCarousel = await this.dashboardConfigModel.findOne({name: data.name});
-
-    if(foundCarousel) {
+    if (foundCarousel) {
       return {
         success: false,
         message: 'Dashboard configuration with this name already exists.',
       };
     }
 
-    let createObj = {...data};
+    let createObj = { ...data };
     delete createObj.industries;
     delete createObj.categories;
-    if ((data.carouselType === CarouselType.OnWheels || data.carouselType === CarouselType.Event) && data.categories && data.categories.length >= 0) {
+    if (
+      (data.carouselType === CarouselType.OnWheels ||
+        data.carouselType === CarouselType.Event) &&
+      data.categories &&
+      data.categories.length >= 0
+    ) {
       for (let i = 0; i < data.categories.length; i++) {
         const foundCategory = await this.contentCategoryModel
           .findById(data.categories[i])
@@ -481,7 +506,11 @@ export class AdminService {
       }
     }
 
-    if (data.carouselType === CarouselType.Business && data.industries && data.industries.length >= 0) {
+    if (
+      data.carouselType === CarouselType.Business &&
+      data.industries &&
+      data.industries.length >= 0
+    ) {
       for (let i = 0; i < data.industries.length; i++) {
         const foundIndustry = await this.industryModel
           .findById(data.industries[i])
@@ -496,7 +525,8 @@ export class AdminService {
         createObj['businessIndustries'] = data.industries;
       }
     }
-    const createdConfiguration = await this.dashboardConfigModel.create(createObj);
+    const createdConfiguration =
+      await this.dashboardConfigModel.create(createObj);
     return {
       success: true,
       message: 'Dashboard configuration added successfully',
@@ -1088,6 +1118,202 @@ export class AdminService {
       message: 'Admin created successfully',
       data: adminDoc,
     };
+  }
+
+  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+    const rows: any[] = [];
+    const stream = streamifier.createReadStream(file.buffer);
+
+    return new Promise((resolve, reject) => {
+      stream
+        .pipe(csv())
+        .on('headers', (headers: string[]) => {
+          const missing = ExpectedDownlineAdminHeaders.filter(
+            (h) => !headers.includes(h),
+          );
+          if (missing.length > 0) {
+            reject(
+              new BadRequestException(`Missing columns: ${missing.join(', ')}`),
+            );
+          }
+        })
+        .on('data', (row) => rows.push(row))
+        .on('end', () => resolve(rows))
+        .on('error', () =>
+          reject(new BadRequestException('CSV parsing error.')),
+        );
+    });
+  }
+
+  async createDownlineAdminFromRow(row: any, user: DecodedUser) {
+    try {
+      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+      const foundUser = await this.adminModel.findOne({
+        email: row.email,
+      });
+
+      if (foundUser) {
+        throw new BadRequestException('Admin already found with this email');
+      }
+      let password = await this.authService.autoGeneratePassword();
+      const hashedPassword = await bcrypt.hash(password, 10);
+      let role = null;
+      if (row.role) {
+        role = await this.roleModel.findOne({
+          name: row.role,
+          creator: superAdmin._id,
+        });
+        if (!role) {
+          throw new BadRequestException('Please provide valid Role.');
+        }
+      } else {
+        throw new BadRequestException('Please provide valid Role.');
+      }
+      let fullPhoneNumber = row.countryCode + row.phone;
+      const existingAdmin = await this.adminModel.findOne({
+        $or: [{ email: row.email }, { fullPhoneNumber: fullPhoneNumber }],
+      });
+      if (existingAdmin) {
+        throw new BadRequestException(
+          'Admin with this email or phone number already exists.',
+        );
+      }
+
+      let createObj = {
+        role: [new mongoose.Types.ObjectId(role._id)],
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        countryCode: row.countryCode,
+        creatorType: RoleCreatorType.ADMIN,
+        creator: new mongoose.Types.ObjectId(superAdmin._id),
+        password: hashedPassword,
+        fullPhoneNumber: fullPhoneNumber,
+        isEmailVerified: true,
+      };
+
+      const createdAdmin = await this.adminModel.create(createObj);
+
+      //create drive
+      let driveDetails = await this.seederService.createDrive(
+        createdAdmin._id,
+        Admin.name,
+      );
+      await this.adminModel.updateOne(
+        { _id: createdAdmin.id },
+        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      );
+
+      // sendEmaillink verification
+      const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
+      this.mailService.sendDownlineUserCredentials(
+        createdAdmin.name,
+        createdAdmin.email,
+        password,
+        loginLink,
+      );
+    } catch (error) {
+      throw new BadRequestException(
+        'Error creating outlet from row: ' + error.message,
+      );
+    }
+  }
+
+  async createDownlineAdminsInBulk(
+    file: Express.Multer.File,
+    user: DecodedUser,
+  ) {
+    try {
+      const admin = await this.adminModel.findById(user.id);
+      if (!admin) {
+        throw new BadRequestException('admin not found');
+      }
+      if (!admin.isSuperAdmin) {
+        throw new BadRequestException(
+          'Only super admin can create use this functionality',
+        );
+      }
+      const rows = await this.parseCsv(file);
+      let failure = 0;
+      let result = null;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createDownlineAdminFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
+      );
+      console.log('Failure:', failure);
+      if (failure > 0) {
+        const failedRecords = results.filter((r) => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'email', title: 'Email' },
+              { id: 'name', title: 'Name' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'role', title: 'Role' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'ErrorMessage' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            email: r.email,
+            name: r.name,
+            phone: r.phone,
+            countryCode: r.countryCode,
+            role: r.role,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'downline_users_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'downline_users_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            admin.id,
+            String(admin.drive),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (err) {
+          console.log('Error:', err);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Users created successfully in bulk.',
+        file: result, // You can return the created outlets data if needed
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
   }
 
   async assignRoleToAdmin(data: AssignRoleDto) {
@@ -2455,7 +2681,7 @@ export class AdminService {
             {
               path: 'categories',
               model: Category.name,
-            }
+            },
           ],
         });
 

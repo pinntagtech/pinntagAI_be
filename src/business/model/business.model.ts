@@ -113,6 +113,13 @@ export class Business {
   phone: string;
   @Prop()
   email: string;
+
+  @Prop()
+  isEmailVerified: boolean;
+
+  @Prop()
+  isPhoneVerified: boolean;
+
   @Prop()
   website: string;
   @Prop()

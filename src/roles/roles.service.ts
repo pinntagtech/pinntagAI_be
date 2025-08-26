@@ -220,7 +220,6 @@ export class RolesService {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
       let allAdminIds = await this.getAllChildAdminIds2(user.id, user.userType);
       console.log('allAdminIds:', allAdminIds);
-      console.log('allAdminIds111:', allAdminIds);
       let ownerRole = null;
       let query = {};
       if (user.userType === UserTypes.ADMIN) {

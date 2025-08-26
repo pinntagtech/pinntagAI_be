@@ -29,6 +29,7 @@ import { Token, TokenDocument } from 'src/auth/models/token.model';
 import {
   FileCategoryTypes,
   OtpTypes,
+  SMSType,
   TokenTypes,
   UserTypes,
 } from 'src/enums/auth.enums';
@@ -140,6 +141,10 @@ import { FirebaseService } from 'src/notification/firebase.service';
 import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
+import { MailerService } from '@nestjs-modules/mailer';
+import parsePhoneNumberFromString from 'libphonenumber-js';
+import { SmsService } from 'src/sms/sms.service';
+import { messaging } from 'firebase-admin';
 
 @Injectable()
 export class BusinessService {
@@ -204,6 +209,7 @@ export class BusinessService {
     private readonly driveService: DriveService,
     private readonly userService: UserService,
     private readonly firebaseService: FirebaseService,
+    private readonly smsService: SmsService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -552,6 +558,7 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
+
       let userDetails = await this.businessUserModel
         .findById(userId)
         .select({ password: 0 });
@@ -561,6 +568,13 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
+      const phoneNumber = parsePhoneNumberFromString(
+        `${data.countryCode}${data.phone}`,
+      );
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return { success: false, message: 'Invalid phone number' };
+      }
+
       if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
         return {
           success: false,
@@ -665,40 +679,26 @@ export class BusinessService {
       // );
       // await Promise.all(rolePromises);
 
+      //shoot. otps
+      this.mailService.sendBusinessVerificationMail(createdBusiness._id);
+      //shoot mobile otp
+
+      const fullPhoneNumber = phoneNumber.format('E.164');
+      this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP);
+
       this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
         .then(() => logger.info('Business roles seeded successfully'))
         .catch((err) => logger.error('Error seeding business roles:', err));
 
       logger.info(`businessId: ${createdBusiness.id}`);
 
-      const updatedToken = await this.jwtService.signAsync(
-        {
-          id: userId,
-          userType: UserTypes.BUSINESS,
-          role: userDetails.role[0].toString(),
-          businessProfile: createdBusiness.id,
-        },
-        {
-          secret: process.env.JWT_SECRET,
-          expiresIn: '1d',
-        },
-      );
-      logger.info(`udpatedToken: ${updatedToken}`);
-
-      await this.tokenModel.findOneAndUpdate(
-        { token },
-        {
-          $set: {
-            token: updatedToken,
-          },
-        },
-      );
+      
 
       return {
         success: true,
         message: 'Business Created Successfully!',
         data: createdBusiness,
-        token: updatedToken,
+        // token: updatedToken,
       };
     } catch (error) {
       logger.error('Error:', error);
@@ -708,6 +708,102 @@ export class BusinessService {
       };
     }
   }
+
+   async verifyBusiness(user: DecodedUser,businessId: string, emailOtp: string, mobileOtp: string) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      const business = await this.businessModel.findOne({ _id: new mongoose.Types.ObjectId(businessId) });
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      // if (user.isEmailVerified) {
+      //   return {
+      //     success: false,
+      //     message: 'Email already verified!',
+      //   };
+      // }
+      const foundEmailOtp = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(businessId),
+        type: OtpTypes.EMAIL,
+      });
+      const foundMobileOtp = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(businessId),
+        type: OtpTypes.MOBILE,
+      });
+      if (!foundEmailOtp) {
+        return {
+          success: false,
+          message: 'Otp Expired, Please resend.',
+        };
+      }
+      if(!foundMobileOtp) {
+        return {
+          success: false,
+          message: 'Mobile Otp Expired, Please resend.'
+        }
+      }
+
+      if (foundEmailOtp.otp !== Number(emailOtp)) {
+        return {
+          success: false,
+          message: 'Invalid Email Otp',
+        };
+      }
+      if (foundMobileOtp.otp !== Number(mobileOtp)) {
+        return {
+          success: false,
+          message: 'Invalid Mobile Otp',
+        };
+      }
+      await this.otpModel.deleteOne({ _id: foundEmailOtp.id });
+      await this.otpModel.deleteOne({ _id: foundMobileOtp.id });
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(businessId) },
+        {
+          $set: { isEmailVerified: true, isPhoneVerified: true },
+        },
+      );
+      const updatedToken = await this.jwtService.signAsync(
+        {
+          id: user.id,
+          userType: UserTypes.BUSINESS,
+          role: userDetails.role[0].toString(),
+          businessProfile: businessId,
+        },
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '1d',
+        },
+      );
+      logger.info(`udpatedToken: ${updatedToken}`);
+
+      await this.tokenModel.findOneAndUpdate(
+        { token:user.token },
+        {
+          $set: {
+            token: updatedToken,
+          },
+        },
+      );
+
+
+      return {
+        success: true,
+        message: 'Email Verified Successfully!',
+        token: updatedToken,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+
   async seedBusinessDepartmentRoles(
     userId: string,
     businessId: mongoose.Types.ObjectId,
@@ -2213,7 +2309,7 @@ export class BusinessService {
       // const business = await this.businessModel
       //   .findById(businessId)
       //   .populate('outlets', LocationPopulates.FOREIGN);
-      console.log("BusinessID:", businessId);
+      console.log('BusinessID:', businessId);
       const basePipeline: any[] = [
         {
           $geoNear: {

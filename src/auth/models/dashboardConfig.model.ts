@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 import { CarouselType } from 'src/enums/auth.enums';
 import { Category } from 'src/models/contentCategory.model';
 
@@ -34,7 +35,7 @@ export class DashboardConfig {
   @Prop()
   sortOrder: number;
 
-  @Prop()
+  @Prop({ ref: BusinessIndustry.name, default: [] })
   businessIndustries: Array<mongoose.Types.ObjectId>;
 
   @Prop({ enum: [CarouselType.Event, CarouselType.Business, CarouselType.OnWheels], required: true })

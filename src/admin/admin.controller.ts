@@ -628,6 +628,37 @@ export class AdminController {
     }
   }
 
+    @Post('uploadDownlineAdminsInBulk')
+    @UseGuards(AdminGuard2)
+    @UseInterceptors(
+      FileInterceptor('file', {
+        limits: { fileSize: 1000000 },
+      }),
+    )
+    async uploadDownlineAdminsInBulk(
+      @UploadedFile() file: Express.Multer.File,
+      @TokenDecoder() user: DecodedUser,
+        @Res({ passthrough: true }) res: Response
+    ) {
+      if (!file) {
+        throw new BadRequestException('File is required');
+      }
+  
+      const result = await this.adminService.createDownlineAdminsInBulk(
+        file,
+        user,
+      );
+      if (result.success) {
+        return {
+          message: result.message,
+          file: result.file,
+        };
+      } else {
+        throw new BadRequestException(result.message);
+      }
+    }
+
+
   @Get('user/:id')
   @Privilege(ResourceTypes.ADMIN, Actions.READ)
   @UseGuards(PrivilegeGuard)

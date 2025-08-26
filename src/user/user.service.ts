@@ -572,7 +572,7 @@ export class UserService {
       user: new mongoose.Types.ObjectId(id),
       type,
     });
-    this.logger.log(`Otp saved successfully ${savedOtpDoc}`);
+    // this.logger.log(`Otp saved successfully ${savedOtpDoc}`);
   }
 
   async validateOtp(data: VerifyOtpDto) {

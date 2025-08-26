@@ -1,9 +1,10 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 import {
   BusinessUser,
   BusinessUserDocument,
@@ -17,8 +18,8 @@ export class MailService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessUser.name)
-    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
     private readonly mailerService: MailerService,
     private readonly userService: UserService,
   ) {}
@@ -70,6 +71,25 @@ export class MailService {
     const profile = await this.businessUserModel.findOne({ _id: userId });
     const otp = await this.userService.saveOtp({
       user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: profile.email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: {
+        name: profile.name,
+        otp,
+        otpExpiry: '5 minutes',
+      },
+    });
+  }
+  async sendBusinessVerificationMail(businessId: any) {
+    // const user = await this.userService.getUserById(userId);
+    const profile = await this.businessModel.findOne({ _id: new mongoose.Types.ObjectId(businessId) });
+    const otp = await this.userService.saveOtp({
+      user: businessId,
       type: OtpTypes.EMAIL,
     });
     await this.mailerService.sendMail({
