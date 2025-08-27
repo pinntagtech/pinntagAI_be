@@ -404,10 +404,10 @@ export class SeederService {
   public async seedCategories() {
     const categories = await this.categoryModel.find();
     if (!categories.length) {
-      await this.categoryModel
-        .insertMany(Seeder.ContentCategories)
-        .then(() => console.log('Categories created.'));
-    }
+      // await this.categoryModel
+      //   .insertMany(Seeder.ContentCategories)
+      //   .then(() => console.log('Categories created.'));
+    
 
     // 1. Fetch super-admin once
     const superAdmin = await this.adminModel
@@ -445,6 +445,7 @@ export class SeederService {
     console.log(
       `Content-Category: ${inserted} created, ${matched} already existed`,
     );
+  }
   }
 
   public async seedAgeGroups() {

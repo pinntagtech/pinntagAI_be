@@ -1529,10 +1529,21 @@ export class AdminService {
     }
   }
 
-  async getBusinessesList(page: number, limit: number) {
+  async getBusinessesList(page: number, limit: number, search: string) {
     try {
+      const query: any = {};
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { addressLine1: { $regex: search, $options: 'i' } },
+          { addressLine2: { $regex: search, $options: 'i' } },
+          { city: { $regex: search, $options: 'i' } },
+          { state: { $regex: search, $options: 'i' } },
+        ];
+      }
       const businesses = await this.businessModel
-        .find()
+        .find(query)
         .select({
           password: 0,
           updatedAt: 0,
@@ -1541,15 +1552,15 @@ export class AdminService {
         .limit(limit)
         .skip((page - 1) * limit)
         .populate('creator', '_id name');
-      const totalBusinesses = await this.businessModel.find();
+      const totalBusinesses = await this.businessModel.countDocuments(query);
       return {
         success: true,
         message: 'Businesses fetched successfully',
         data: businesses,
         page,
         limit,
-        total: totalBusinesses.length,
-        pages: Math.ceil(totalBusinesses.length / limit),
+        total: totalBusinesses,
+        pages: Math.ceil(totalBusinesses / limit),
       };
     } catch (error) {
       return {
@@ -2229,7 +2240,6 @@ export class AdminService {
     try {
       let password = await this.authService.autoGeneratePassword();
       const hashedPassword = await bcrypt.hash(password, 10);
-      console.log('password', password);
       const foundUser = await this.businessUserModel.findOne({
         email: data.email,
       });
@@ -2246,6 +2256,7 @@ export class AdminService {
         belongsTo: RoleBelonging.BUSINESS,
         isBusinessOwner: true,
       });
+
       let createObj = {
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.ADMIN,
@@ -2266,7 +2277,7 @@ export class AdminService {
       );
 
       const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
-      await this.mailService.sendDownlineUserCredentials(
+      this.mailService.sendDownlineUserCredentials(
         createdUser.name,
         createdUser.email,
         password,
@@ -2319,6 +2330,7 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
+      console.log("businessCategories:",businessCategoriesIds);
       if (!data.businessIndustry) {
         return {
           success: false,
@@ -2342,14 +2354,10 @@ export class AdminService {
         }
       }
 
-      console.log('Business Folder ID:', businessFolder.data._id);
-      console.log('UserID:', user.id);
-      console.log('Created User ID:', createdUser.id);
-
       let businessObj = {
         name: data.businessName,
         email: data.businessEmail,
-        businessCategory: businessCategoriesIds,
+        businessCategories: businessCategoriesIds,
         businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
         phone: data.phone,
         countryCode: data.countryCode,
@@ -2367,6 +2375,15 @@ export class AdminService {
       };
       if (data.website) businessObj['website'] = data.website;
       if (data.addressLine2) businessObj['addressLine2'] = data.addressLine2;
+
+      if(logo){
+         let logoUrl = await this.driveService.noDriveUpload(logo[0]);
+         businessObj['logo'] = logoUrl;
+      }
+      if(cover){
+         let coverUrl = await this.driveService.noDriveUpload(cover[0]);
+         businessObj['cover'] = coverUrl;
+      }
 
       const createdBusiness = await this.businessModel.create(businessObj);
       await this.businessUserModel.updateOne(

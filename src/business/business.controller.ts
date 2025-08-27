@@ -328,12 +328,14 @@ export class BusinessController {
   async industryList(
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.businessService.industryList(
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {
@@ -355,6 +357,7 @@ export class BusinessController {
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -365,6 +368,7 @@ export class BusinessController {
       id,
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {

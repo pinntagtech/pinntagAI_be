@@ -804,12 +804,14 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.adminService.getBusinessesList(
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {

@@ -237,6 +237,21 @@ export class DriveService {
       return { success: false, message: 'Failed to upload media' };
     }
   }
+
+  async noDriveUpload(file: Express.Multer.File){
+    console.log("file::",file);
+     const s3 = await this.s3Service.s3_upload(
+      file.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      manipulateImageName(file.originalname),
+      file.mimetype,
+    );
+    const [base, rest] = s3.Location.split('amazonaws');
+    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+    return url;
+  }
+
+
   async createFolder(id: string, folderData: Partial<any>) {
     try {
       let driveDetails = await this.driveModel.findOne({

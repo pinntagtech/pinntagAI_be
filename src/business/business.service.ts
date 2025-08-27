@@ -692,8 +692,6 @@ export class BusinessService {
 
       logger.info(`businessId: ${createdBusiness.id}`);
 
-      
-
       return {
         success: true,
         message: 'Business Created Successfully!',
@@ -709,10 +707,17 @@ export class BusinessService {
     }
   }
 
-   async verifyBusiness(user: DecodedUser,businessId: string, emailOtp: string, mobileOtp: string) {
+  async verifyBusiness(
+    user: DecodedUser,
+    businessId: string,
+    emailOtp: string,
+    mobileOtp: string,
+  ) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
-      const business = await this.businessModel.findOne({ _id: new mongoose.Types.ObjectId(businessId) });
+      const business = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(businessId),
+      });
       if (!business) {
         return {
           success: false,
@@ -739,11 +744,11 @@ export class BusinessService {
           message: 'Otp Expired, Please resend.',
         };
       }
-      if(!foundMobileOtp) {
+      if (!foundMobileOtp) {
         return {
           success: false,
-          message: 'Mobile Otp Expired, Please resend.'
-        }
+          message: 'Mobile Otp Expired, Please resend.',
+        };
       }
 
       if (foundEmailOtp.otp !== Number(emailOtp)) {
@@ -781,14 +786,13 @@ export class BusinessService {
       logger.info(`udpatedToken: ${updatedToken}`);
 
       await this.tokenModel.findOneAndUpdate(
-        { token:user.token },
+        { token: user.token },
         {
           $set: {
             token: updatedToken,
           },
         },
       );
-
 
       return {
         success: true,
@@ -802,7 +806,6 @@ export class BusinessService {
       };
     }
   }
-
 
   async seedBusinessDepartmentRoles(
     userId: string,
@@ -1406,7 +1409,6 @@ export class BusinessService {
     limit?: number;
   }> {
     try {
-      logger.info(`check 1: ${id}`);
       const user = await this.businessUserModel.findById(id);
       if (!user) {
         return {
@@ -1415,8 +1417,6 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
-      logger.info(`ALL USERE IDS: ${JSON.stringify(allUserIds)}`);
-
       const users = await this.businessUserModel.aggregate([
         {
           $match: {
@@ -1575,7 +1575,7 @@ export class BusinessService {
       };
     }
   }
-  async industryList(page: number, limit: number) {
+  async industryList(page: number, limit: number, search: string) {
     try {
       // const industries = await this.businessIndModel
       //   .find()
@@ -1602,6 +1602,11 @@ export class BusinessService {
           $unwind: {
             path: '$result',
           },
+        },
+        {
+          $match: search
+            ? { $or: [{ 'result.title': { $regex: search, $options: 'i' } }] }
+            : {},
         },
         {
           $lookup: {
@@ -1658,22 +1663,29 @@ export class BusinessService {
       };
     }
   }
-  async businessCategoryList(id: string, page: number, limit: number) {
+  async businessCategoryList(
+    id: string,
+    page: number,
+    limit: number,
+    search: string,
+  ) {
     try {
-      logger.info(`ID: ${id}`);
+      const query: any = {
+        industry: new mongoose.Types.ObjectId(id),
+        isDeleted: false,
+      };
+
+      if (search) {
+        query.title = { $regex: search, $options: 'i' };
+      }
+
       const categories = await this.businessCategoryModel
-        .find({
-          industry: new mongoose.Types.ObjectId(id),
-          isDeleted: false,
-        })
+        .find(query)
         .sort({ title: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-      // logger.info(`categories: ${JSON.stringify(categories)}`);
-      const totalDocs = await this.businessCategoryModel.countDocuments({
-        industry: new mongoose.Types.ObjectId(id),
-      });
+      const totalDocs = await this.businessCategoryModel.countDocuments(query);
       return {
         success: true,
         message: 'Categories fetched Successfully!',
