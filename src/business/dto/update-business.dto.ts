@@ -34,6 +34,9 @@ export class UpdateBusinessDto {
   continueJourney?: boolean;
 
   @IsOptional()
+  tags: string[];
+
+  @IsOptional()
   @IsString()
   logo?: string;
 

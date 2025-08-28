@@ -37,7 +37,7 @@ export class DriveController {
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
+      limits: { fileSize: 20 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
     }),
   )
   async uploadFile(

@@ -86,13 +86,13 @@ export class BusinessController {
   async verifyBusiness(
     @TokenDecoder() user: DecodedUser,
     @Param('id') businessId: string,
-    @Body('emailOtp') emailOtp: string,
+    // @Body('emailOtp') emailOtp: string,
     @Body('mobileOtp') mobileOtp: string,
   ) {
     const result = await this.businessService.verifyBusiness(
       user,
       businessId,
-      emailOtp,
+      // emailOtp,
       mobileOtp,
     );
 

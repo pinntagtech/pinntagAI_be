@@ -58,6 +58,7 @@ import { getStringDateTzWithTime } from 'src/helpers/event.helpers';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { from } from 'rxjs';
 import { BusinessService } from 'src/business/business.service';
+import { File, FileDocument } from 'src/drive/models/file.model';
 
 @Injectable()
 export class RewardsService {
@@ -84,6 +85,7 @@ export class RewardsService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
 
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
@@ -380,13 +382,13 @@ export class RewardsService {
               };
             }
           }
-           await this.rewardLocationModel.deleteMany({
-              reward: reward._id,
-            });
-            await this.rewardModel.updateOne(
-              { _id: reward._id },
-              { $set: { locations: [] } },
-            );
+          await this.rewardLocationModel.deleteMany({
+            reward: reward._id,
+          });
+          await this.rewardModel.updateOne(
+            { _id: reward._id },
+            { $set: { locations: [] } },
+          );
 
           for (const loc of providedLocations) {
             const outletDoc = await this.outletModel.findById(loc);
@@ -446,7 +448,7 @@ export class RewardsService {
 
       // Upload images async (fire and forget)
       if (images) {
-        console.log("Updating Images:::");
+        console.log('Updating Images:::');
         await this.driveService.deleteBufferAndMultiImageUpload(
           user,
           reward.drivePath.toString(),
@@ -2398,17 +2400,32 @@ export class RewardsService {
   }
   async deleteReward(rewardId: string, userId: string) {
     try {
-      const result = await this.rewardModel.deleteOne({
-        _id: new mongoose.Types.ObjectId(rewardId),
-        user: new mongoose.Types.ObjectId(userId),
-      });
-      console.log('Delete Result:', result);
-      if (result.deletedCount === 0) {
+      if (!mongoose.isValidObjectId(rewardId)) {
         return {
           success: false,
-          message: 'Reward not found or you are not authorized to delete it.',
+          message: 'Please provide a valid reward id',
         };
       }
+      const reward = await this.rewardModel.findById(rewardId);
+
+      if (!reward) {
+        return {
+          success: false,
+          message: 'Reward not found',
+        };
+      }
+      const result = await this.rewardModel.deleteOne({
+        _id: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.rewardLocationModel.deleteMany({
+        reward: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.userRewardModel.deleteMany({
+        rewardId: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.fileModel.deleteMany({
+        parentDirectory: new mongoose.Types.ObjectId(reward.drivePath),
+      });
       return {
         success: true,
         message: 'Reward deleted successfully.',

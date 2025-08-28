@@ -680,7 +680,7 @@ export class BusinessService {
       // await Promise.all(rolePromises);
 
       //shoot. otps
-      this.mailService.sendBusinessVerificationMail(createdBusiness._id);
+      // this.mailService.sendBusinessVerificationMail(createdBusiness._id);
       //shoot mobile otp
 
       const fullPhoneNumber = phoneNumber.format('E.164');
@@ -710,7 +710,7 @@ export class BusinessService {
   async verifyBusiness(
     user: DecodedUser,
     businessId: string,
-    emailOtp: string,
+    // emailOtp: string,
     mobileOtp: string,
   ) {
     try {
@@ -730,20 +730,20 @@ export class BusinessService {
       //     message: 'Email already verified!',
       //   };
       // }
-      const foundEmailOtp = await this.otpModel.findOne({
-        user: new mongoose.Types.ObjectId(businessId),
-        type: OtpTypes.EMAIL,
-      });
+      // const foundEmailOtp = await this.otpModel.findOne({
+      //   user: new mongoose.Types.ObjectId(businessId),
+      //   type: OtpTypes.EMAIL,
+      // });
       const foundMobileOtp = await this.otpModel.findOne({
         user: new mongoose.Types.ObjectId(businessId),
         type: OtpTypes.MOBILE,
       });
-      if (!foundEmailOtp) {
-        return {
-          success: false,
-          message: 'Otp Expired, Please resend.',
-        };
-      }
+      // if (!foundEmailOtp) {
+      //   return {
+      //     success: false,
+      //     message: 'Otp Expired, Please resend.',
+      //   };
+      // }
       if (!foundMobileOtp) {
         return {
           success: false,
@@ -751,24 +751,24 @@ export class BusinessService {
         };
       }
 
-      if (foundEmailOtp.otp !== Number(emailOtp)) {
-        return {
-          success: false,
-          message: 'Invalid Email Otp',
-        };
-      }
+      // if (foundEmailOtp.otp !== Number(emailOtp)) {
+      //   return {
+      //     success: false,
+      //     message: 'Invalid Email Otp',
+      //   };
+      // }
       if (foundMobileOtp.otp !== Number(mobileOtp)) {
         return {
           success: false,
           message: 'Invalid Mobile Otp',
         };
       }
-      await this.otpModel.deleteOne({ _id: foundEmailOtp.id });
+      // await this.otpModel.deleteOne({ _id: foundEmailOtp.id });
       await this.otpModel.deleteOne({ _id: foundMobileOtp.id });
       await this.businessModel.updateOne(
         { _id: new mongoose.Types.ObjectId(businessId) },
         {
-          $set: { isEmailVerified: true, isPhoneVerified: true },
+          $set: { isPhoneVerified: true, status: BusinessStatus.VERIFIED },
         },
       );
       const updatedToken = await this.jwtService.signAsync(
@@ -1074,6 +1074,12 @@ export class BusinessService {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.COVER_ADDED } },
+        );
+      }
+      if(updateObj.tags && updateObj.tags.length>0){
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.TAGS } },
         );
       }
 
