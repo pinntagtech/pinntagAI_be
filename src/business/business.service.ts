@@ -145,6 +145,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { SmsService } from 'src/sms/sms.service';
 import { messaging } from 'firebase-admin';
+import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 
 @Injectable()
 export class BusinessService {
@@ -416,6 +417,41 @@ export class BusinessService {
         };
       }
       await this.mailService.sendBusinessUserVerificationMail(user.id);
+      return {
+        success: true,
+        message: 'Otp resent successfully!',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+  async businessResendOtp(data: ResendOtpDto) {
+    try {
+      const business = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(data.user),
+      });
+      console.log("Business:", business.email);
+      console.log("Business MOBILE:", business.phone);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      if (data.type === OtpTypes.EMAIL) {
+        console.log("In MAILLLL:");
+        await this.mailService.sendBusinessVerificationMail(business.id);
+      } else {
+        const phoneNumber = parsePhoneNumberFromString(
+          `${business.countryCode}${business.phone}`,
+        );
+        const fullPhoneNumber = phoneNumber.format('E.164');
+        this.smsService.sendSMS(business.id, fullPhoneNumber, SMSType.OTP);
+      }
+
       return {
         success: true,
         message: 'Otp resent successfully!',
@@ -1076,7 +1112,7 @@ export class BusinessService {
           { $set: { status: BusinessStatus.COVER_ADDED } },
         );
       }
-      if(updateObj.tags && updateObj.tags.length>0){
+      if (updateObj.tags && updateObj.tags.length > 0) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.TAGS } },

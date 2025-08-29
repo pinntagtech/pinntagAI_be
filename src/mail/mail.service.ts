@@ -18,8 +18,10 @@ export class MailService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
-    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly mailerService: MailerService,
     private readonly userService: UserService,
   ) {}
@@ -67,7 +69,6 @@ export class MailService {
   }
 
   async sendBusinessUserVerificationMail(userId: string) {
-    // const user = await this.userService.getUserById(userId);
     const profile = await this.businessUserModel.findOne({ _id: userId });
     const otp = await this.userService.saveOtp({
       user: userId,
@@ -78,16 +79,15 @@ export class MailService {
       subject: 'Verify your email',
       template:
         process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
-      context: {
-        name: profile.name,
-        otp,
-        otpExpiry: '5 minutes',
-      },
+      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
     });
   }
+
   async sendBusinessVerificationMail(businessId: any) {
     // const user = await this.userService.getUserById(userId);
-    const profile = await this.businessModel.findOne({ _id: new mongoose.Types.ObjectId(businessId) });
+    const profile = await this.businessModel.findOne({
+      _id: new mongoose.Types.ObjectId(businessId),
+    });
     const otp = await this.userService.saveOtp({
       user: businessId,
       type: OtpTypes.EMAIL,

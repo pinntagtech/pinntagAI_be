@@ -53,6 +53,7 @@ import {
 } from './dto/create-locationGroup.dto';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -223,6 +224,20 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('resendOtp')
+  @UseGuards(JwtGuard2)
+  async BusinessResendOtp(@Body() data: ResendOtpDto) {
+    console.log("Controller:")
+    const result = await this.businessService.businessResendOtp(data);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 
   @Get('users')
   @UseGuards(JwtGuard2)
