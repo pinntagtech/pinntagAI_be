@@ -27,6 +27,7 @@ export enum NotificationTypes {
   MENTION = 'mention',
   REVIEW = 'review',
   REPORT = 'report',
+  BROADCAST = 'broadcast',
 }
 
 export const RSVPTypes = {

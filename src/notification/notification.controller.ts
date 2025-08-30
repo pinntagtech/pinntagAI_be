@@ -6,12 +6,15 @@ import {
   UseGuards,
   BadRequestException,
   Query,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { NotificationTypes } from 'src/enums/event.enums';
+import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 
 @Controller('notification')
 export class NotificationController {
@@ -93,4 +96,17 @@ export class NotificationController {
     const types = Object.values(NotificationTypes);
     return { types };
   }
+
+  @Post('broadcast')
+  @UseGuards(JwtGuard2)
+  async createBroadcast(@TokenDecoder() user: DecodedUser, @Body() data: CreateBroadcastDto) {
+    const result = await this.notificationService.createBroadcast(user, data);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message };
+  }
+
+
+
 }

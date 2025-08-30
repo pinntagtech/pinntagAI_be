@@ -20,19 +20,17 @@ export class Broadcast extends Document {
   users: Array<mongoose.Types.ObjectId>;
 
   @Prop({ ref: Business.name })
-  businesses: Array<mongoose.Types.ObjectId>;
+  business: mongoose.Types.ObjectId;
 
   @Prop({ ref: BusinessUser.name })
-  createdBy: mongoose.Types.ObjectId;
+  creator: mongoose.Types.ObjectId;
 
   @Prop()
   schedule: Date;
 
-  @Prop({
-    enum: ['pending', 'scheduled', 'sent', 'failed'],
-    default: 'pending',
-  })
-  status: string;
+  @Prop()
+  isDeleted: boolean;
+
 }
 
 export const BroadcastSchema = SchemaFactory.createForClass(Broadcast);

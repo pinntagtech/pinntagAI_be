@@ -15,6 +15,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { Broadcast, BroadcastSchema } from './models/broadcast.model';
+import { FirebaseService } from './firebase.service';
 
 @Module({
   imports: [
@@ -28,9 +30,10 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: Admin.name, schema: AdminSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: Broadcast.name, schema: BroadcastSchema },
     ]),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, JwtService],
+  providers: [NotificationService, JwtService, FirebaseService],
 })
 export class NotificationModule {}
