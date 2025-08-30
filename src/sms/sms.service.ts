@@ -37,7 +37,6 @@ export class SmsService {
     templateData?: string,
   ) {
     try {
-      console.log("TOOOO:", to);
       let messageBody = '';
       if (!Object.values(SMSTemplateType).includes(type as SMSTemplateType)) {
         throw new Error('Invalid SMS template type');

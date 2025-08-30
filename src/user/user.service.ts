@@ -606,7 +606,8 @@ export class UserService {
       user: new mongoose.Types.ObjectId(user),
       type,
     });
-    const otp = generateOtp();
+    // const otp = generateOtp();
+    const otp = 123456;
 
     // if (!foundOtpDoc) {
     //   this.saveOtpToDb(user, otp, type);

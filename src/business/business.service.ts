@@ -757,7 +757,7 @@ export class BusinessService {
       if (!business) {
         return {
           success: false,
-          message: 'Business User not found!',
+          message: 'Business not found!',
         };
       }
       // if (user.isEmailVerified) {
