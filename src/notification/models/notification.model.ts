@@ -29,11 +29,18 @@ export class Notification {
       NotificationTypes.SHARE,
       NotificationTypes.MENTION,
       NotificationTypes.REVIEW,
+      NotificationTypes.BROADCAST,
     ],
   })
   type: string;
   @Prop()
+  title: string;
+  @Prop()
   message: string;
+
+  @Prop()
+  image: string;
+
   @Prop({ enum: [User.name, Business.name] })
   targetType: string;
   @Prop({ refPath: 'targetType' })
