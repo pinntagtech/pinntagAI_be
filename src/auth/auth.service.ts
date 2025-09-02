@@ -198,6 +198,7 @@ export class AuthService {
     const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
       signupAuthDto;
 
+      console.log("Signup DTO:", signupAuthDto);
     if (!phone && !email) {
       return {
         success: false,
@@ -908,6 +909,7 @@ export class AuthService {
   ) {
     try {
       const { email, phone, countryCode, signupMethod } = loginDto;
+      console.log('loginDto::', loginDto);
       let foundUser;
       if (!email && !phone) {
         return {

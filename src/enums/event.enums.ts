@@ -30,6 +30,14 @@ export enum NotificationTypes {
   BROADCAST = 'broadcast',
 }
 
+export const BroadcastStatus = {
+  SCHEDULED: 'scheduled',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  FAILED: 'failed',
+};
+
 export const RSVPTypes = {
   GOING: 'going',
   MAYBE: 'maybe',

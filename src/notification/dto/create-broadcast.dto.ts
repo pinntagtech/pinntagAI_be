@@ -18,7 +18,7 @@ export class CreateBroadcastDto {
   @IsOptional()
   schedule: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   isScheduled: string;
 
 

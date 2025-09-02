@@ -13,10 +13,33 @@ import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { JwtService } from '@nestjs/jwt';
 // import { BusinessProfile, BusinessProfileSchema } from 'src/business-profile/models/businessProfile.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
-import { BusinessUser, BusinessUserSchema } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { Broadcast, BroadcastSchema } from './models/broadcast.model';
 import { FirebaseService } from './firebase.service';
+import { RedisBullService } from './redisBull.service';
+import { DriveService } from 'src/drive/drive.service';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { Subscription } from 'rxjs';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { Otp, OtpSchema } from 'src/auth/models/otp.model';
+import { FileSchema } from 'src/drive/models/file.model';
+import { Folder, FolderSchema } from 'src/drive/models/folder.model';
+import { EventSchema } from 'src/event/models/event.model';
+import { Report, ReportSchema } from 'src/event/models/reports.model';
+import { SavedEvent, SavedEventSchema } from 'src/event/models/savedEvent.model';
+import { Template, TemplateSchema } from 'src/event/models/template.model';
+import { SubscriptionSchema } from 'src/subscription/models/subscription.model';
+import { SubscriptionProduct, SubscriptionProductSchema } from 'src/subscription/models/subscriptionProduct.model';
+import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
+import { Follow, FollowSchema } from 'src/user/models/follow.model';
+import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+import { Transaction,TransactionSchema } from 'src/user/models/transaction.model';
+import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import { S3Service } from 'src/s3.service';
 
 @Module({
   imports: [
@@ -31,9 +54,41 @@ import { FirebaseService } from './firebase.service';
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
       { name: Broadcast.name, schema: BroadcastSchema },
+      { name: Drive.name, schema: DriveSchema },
+      { name: Folder.name, schema: FolderSchema },
+      { name: User.name, schema: UserSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Role.name, schema: RoleSchema },
+      { name: Otp.name, schema: OtpSchema },
+      { name: Follow.name, schema: FollowSchema },
+      { name: GuestSession.name, schema: GuestSessionSchema },
+      { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
+      { name: Subscription.name, schema: SubscriptionSchema },
+      { name: Refferal.name, schema: RefferalSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: Transaction.name, schema: TransactionSchema },
+      { name: ContactUs.name, schema: ContactUsSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: Report.name, schema: ReportSchema },
+      { name: SavedEvent.name, schema: SavedEventSchema },
+      { name: Template.name, schema: TemplateSchema },
+      { name: Admin.name, schema: AdminSchema },
+      { name: File.name, schema: FileSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
+      { name: Business.name, schema: BusinessSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: FileCategory.name, schema: FileCategorySchema },
+
     ]),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, JwtService, FirebaseService],
+  providers: [
+    NotificationService,
+    JwtService,
+    FirebaseService,
+    RedisBullService,
+    DriveService,
+    S3Service,
+  ],
 })
 export class NotificationModule {}
