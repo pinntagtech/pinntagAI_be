@@ -72,5 +72,5 @@ export class UpdateOfferDto {
   locations: Array<string> | Array<Location>;
 
   @IsOptional()
-  tags?: string[];
+  tags?: any;
 }

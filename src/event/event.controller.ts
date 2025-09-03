@@ -1106,7 +1106,7 @@ export class EventController {
   )
   async updateOffer(
     @Param('id') id: string,
-    @Body() body,
+    @Body() body: UpdateOfferDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
