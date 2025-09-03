@@ -70,4 +70,7 @@ export class UpdateOfferDto {
   @IsOptional()
   @IsArray()
   locations: Array<string> | Array<Location>;
+
+  @IsOptional()
+  tags?: string[];
 }

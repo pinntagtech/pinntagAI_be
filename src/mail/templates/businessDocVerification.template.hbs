@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Business Document Verification</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 20px;
+            color: #222222;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Business Documentation Request</h1>
+        <p>Dear Admin,</p>
+        <p>
+            A new document verification request has been submitted by 
+            <span class="highlight">{{name}}</span>.
+        </p>
+        <p>
+            <strong>Document Type:</strong> {{documentType}} <br>
+            <strong>Business ID:</strong> {{businessId}}
+        </p>
+        <p>
+            Please review the submitted document and take the necessary action.
+        </p>
+        <p>Best regards,<br>Pinntag System</p>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

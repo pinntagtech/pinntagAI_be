@@ -143,6 +143,7 @@ import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { EventResponse, EventResponseSchema } from 'src/event/models/event-response.model';
 import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
 
 @Module({
   imports: [
@@ -209,6 +210,7 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
     ]),
   ],
   controllers: [RewardsController],

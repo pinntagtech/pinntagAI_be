@@ -526,6 +526,9 @@ export const Seeder = {
       name: 'Content QR',
     },
     {
+      name: 'Verification Document',
+    },
+    {
       name: 'other',
     },
   ],

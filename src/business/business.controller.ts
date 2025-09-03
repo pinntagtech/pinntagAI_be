@@ -227,7 +227,7 @@ export class BusinessController {
   @Post('resendOtp')
   @UseGuards(JwtGuard2)
   async BusinessResendOtp(@Body() data: ResendOtpDto) {
-    console.log("Controller:")
+    console.log('Controller:');
     const result = await this.businessService.businessResendOtp(data);
     if (result.success) {
       return {
@@ -237,7 +237,6 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
 
   @Get('users')
   @UseGuards(JwtGuard2)
@@ -1213,7 +1212,7 @@ export class BusinessController {
   async uploadDownlineUsersInBulk(
     @UploadedFile() file: Express.Multer.File,
     @TokenDecoder() user: DecodedUser,
-      @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -1250,7 +1249,6 @@ export class BusinessController {
 
     // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
 
-
     if (result.success) {
       return {
         message: result.message,
@@ -1279,6 +1277,59 @@ export class BusinessController {
       user,
       name,
       description,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Post('ownershipTransfer/:id')
+  @UseGuards(JwtGuard2)
+  async transferOwnership(
+    @Param('id') businessId: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body('newOwnerEmail') newOwnerEmail: string,
+  ) {
+    const result = await this.businessService.ownershipTransfer(
+      user.id,
+      businessId,
+      newOwnerEmail,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('upload-address-verification-doc')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+      FileInterceptor('image', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 1 MB
+        limits: { fileSize: 1000000 },
+      }),
+    )
+  async uploadAddressVerificationDoc(
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.businessService.uploadAddressVerificationDoc(
+      user,
+      image
     );
     if (result.success) {
       return {

@@ -23,6 +23,7 @@ import {
   TaxDetails,
 } from './types.model';
 import { Menu } from './menu.model';
+import { Admin } from 'src/admin/models/admin.model';
 
 export class SocialMediaTokenDetails {
   value: string;
@@ -272,6 +273,15 @@ export class Business {
 
   @Prop()
   tags: string[];
+
+  @Prop()
+  addressVerificationDoc: string;
+
+  @Prop()
+  isAddressVerified: boolean;
+
+  @Prop({ref: Admin.name})
+  addressVerificationAdmin: mongoose.Types.ObjectId;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

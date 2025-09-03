@@ -165,6 +165,9 @@ export class Event {
   @Prop({default: false})
   isSavedAsTemplate: boolean;
 
+  @Prop()
+  tags: string[];
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }

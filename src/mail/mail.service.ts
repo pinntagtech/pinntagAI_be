@@ -1,5 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
@@ -198,6 +198,23 @@ export class MailService {
       template:
         process.cwd() + '/src/mail/templates/dowlineUserMail.template.hbs',
       context: { name, email, password, loginLink },
+    });
+  }
+
+  async businessDocVerificationRequest(
+    businessId: string,
+    documentType: string,
+  ) {
+    const business = await this.businessModel.findById(businessId);
+    if (!business) throw new BadRequestException('Business not found');
+
+    await this.mailerService.sendMail({
+      to: business.email,
+      subject: 'Document Verification',
+      template:
+        process.cwd() +
+        '/src/mail/templates/businessDocVerification.template.hbs',
+      context: { name: business.name, documentType, businessId: business.id },
     });
   }
 }

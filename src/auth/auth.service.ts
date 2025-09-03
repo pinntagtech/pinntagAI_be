@@ -3035,7 +3035,6 @@ export class AuthService {
           isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
         },
       },
-      { $sort: { distance: 1, createdAt: -1, _id: 1 } },
       {
         $group: {
           _id: '$businessDetails._id',
@@ -3061,10 +3060,11 @@ export class AuthService {
               distance: { $divide: ['$distance', 1609.34] },
             },
           },
+          distance: { $min: { $divide: ['$distance', 1609.34] } },
         },
       },
       { $match: { ...match } },
-
+      { $sort: { distance: 1, _id: 1 } },
       // Use $facet for both paginated results and total count
       {
         $facet: {

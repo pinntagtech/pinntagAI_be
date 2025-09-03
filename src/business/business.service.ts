@@ -13,6 +13,7 @@ import {
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessCreatorType,
+  BusinessDocumentTypesList,
   BusinessStatus,
   BusinessUserCreatorType,
   ExpectedDownlineUserHeaders,
@@ -146,6 +147,7 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 import { SmsService } from 'src/sms/sms.service';
 import { messaging } from 'firebase-admin';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
+import { BusinessDocVerificationLeads } from 'src/admin/models/BusinessDocVerificationLeads.model';
 
 @Injectable()
 export class BusinessService {
@@ -201,8 +203,8 @@ export class BusinessService {
     @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
     @InjectModel(UserAllowedNotification.name)
     private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
-    @InjectModel(Notification.name)
-    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(Notification.name) private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(BusinessDocVerificationLeads.name) private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -433,8 +435,8 @@ export class BusinessService {
       const business = await this.businessModel.findOne({
         _id: new mongoose.Types.ObjectId(data.user),
       });
-      console.log("Business:", business.email);
-      console.log("Business MOBILE:", business.phone);
+      console.log('Business:', business.email);
+      console.log('Business MOBILE:', business.phone);
       if (!business) {
         return {
           success: false,
@@ -442,7 +444,7 @@ export class BusinessService {
         };
       }
       if (data.type === OtpTypes.EMAIL) {
-        console.log("In MAILLLL:");
+        console.log('In MAILLLL:');
         await this.mailService.sendBusinessVerificationMail(business.id);
       } else {
         const phoneNumber = parsePhoneNumberFromString(
@@ -4318,6 +4320,93 @@ export class BusinessService {
         success: true,
         message: 'Downline users fetched successfully',
         data: downlineUsers,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async ownershipTransfer(
+    userId: string,
+    businessId: string,
+    newOwnerEmail: string,
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      if (userId != business.authorisedUser.toString()) {
+        return {
+          success: false,
+          message: 'You are not authorized to transfer ownership',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Ownership transferred successfully',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async uploadAddressVerificationDoc(
+    user: DecodedUser,
+    image: Express.Multer.File,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+
+      // Upload the image to a cloud storage or local storage
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.VERIFICATION_DOCUMENT,
+      });
+      const uploadResult = await this.driveService.uploadFile(
+        user.id,
+        business.drivePath.toString(),
+        fileCategory.id,
+        image,
+      );
+      if (!uploadResult.success) {
+        return {
+          success: false,
+          message: 'Failed to upload image',
+        };
+      }
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        { addressVerificationDoc: uploadResult.data.metaData.url },
+      );
+      await this.businessDocVerificationLeadsModel.create({
+        businessId: business._id,
+        userId: new mongoose.Types.ObjectId(user.id),
+        documentUrl: uploadResult.data.metaData.url,
+        documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        isVerified: false,
+      });
+      await this.mailService.businessDocVerificationRequest(business.id,BusinessDocumentTypesList.ADDRESS_VERIFICATION);
+
+      return {
+        success: true,
+        message: 'Address verification document uploaded successfully',
+        data: business,
       };
     } catch (error) {
       return {

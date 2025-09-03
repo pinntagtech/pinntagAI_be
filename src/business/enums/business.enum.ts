@@ -20,6 +20,13 @@ export const OfferStatus = {
   PUBLISHED: 4,
 };
 
+export const OwnershipTransferStatus = {
+  INITIATED: 0,
+  IN_PROGRESS: 1,
+  COMPLETED: 2,
+  CANCELLED: 3,
+};
+
 export const ScalabilityFactor = {
   SINGLE: 0,
   MULTIPLE: 1,
@@ -733,3 +740,12 @@ export const ExpectedDownlineUserHeaders = [
   'countryCode',
   'phone',
 ]
+
+export const BusinessDocumentTypesList = {
+  TAX: 'Tax Document',
+  REGISTRATION: 'Registration Document',
+  LICENSE: 'Business License',
+  OWNERSHIP: 'Proof of Ownership',
+  ADDRESS_VERIFICATION: 'Address Verification Document',
+  OTHER: 'Other',
+}
