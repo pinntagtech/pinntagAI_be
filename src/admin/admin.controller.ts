@@ -266,7 +266,7 @@ export class AdminController {
         message: 'Invalid id',
       });
     }
-    if (body.categories && body.categories.length>=0) {
+    if (body.categories && body.categories.length >= 0) {
       body.categories.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
           throw new BadRequestException({
@@ -275,7 +275,7 @@ export class AdminController {
         }
       });
     }
-     if (body.industries && body.industries.length>=0) {
+    if (body.industries && body.industries.length >= 0) {
       body.industries.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
           throw new BadRequestException({
@@ -628,36 +628,35 @@ export class AdminController {
     }
   }
 
-    @Post('uploadDownlineAdminsInBulk')
-    @UseGuards(AdminGuard2)
-    @UseInterceptors(
-      FileInterceptor('file', {
-        limits: { fileSize: 1000000 },
-      }),
-    )
-    async uploadDownlineAdminsInBulk(
-      @UploadedFile() file: Express.Multer.File,
-      @TokenDecoder() user: DecodedUser,
-        @Res({ passthrough: true }) res: Response
-    ) {
-      if (!file) {
-        throw new BadRequestException('File is required');
-      }
-  
-      const result = await this.adminService.createDownlineAdminsInBulk(
-        file,
-        user,
-      );
-      if (result.success) {
-        return {
-          message: result.message,
-          file: result.file,
-        };
-      } else {
-        throw new BadRequestException(result.message);
-      }
+  @Post('uploadDownlineAdminsInBulk')
+  @UseGuards(AdminGuard2)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async uploadDownlineAdminsInBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenDecoder() user: DecodedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
     }
 
+    const result = await this.adminService.createDownlineAdminsInBulk(
+      file,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        file: result.file,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Get('user/:id')
   @Privilege(ResourceTypes.ADMIN, Actions.READ)
@@ -1334,6 +1333,46 @@ export class AdminController {
     if (result.success) {
       return {
         message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('doc-verification-leads')
+  @UseGuards(AdminGuard2)
+  async getDocVerificationLeads(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getDocVerificationLeads(
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('doc-verification-lead/:id')
+  @UseGuards(AdminGuard2)
+  async getDocVerificationLead(@Param('id') id: string) {
+    const result = await this.adminService.getDocVerificationLead(id);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);

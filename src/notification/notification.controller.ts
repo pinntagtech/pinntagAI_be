@@ -142,6 +142,17 @@ export class NotificationController {
     }
     return { message: result.message, data: result.data };
   }
+
+  @Get('broadcasts')
+  @UseGuards(JwtGuard2)
+  async getBroadcasts(@Query('page') page: string, @Query('limit') limit: string) {
+    const result = await this.notificationService.getBroadcasts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 10);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message, data: result.data };
+  }
+
   @Post('broadcast/cancel/:id')
   @UseGuards(JwtGuard2)
   async cancelBroadcast(@Param('id') id: string) {

@@ -72,7 +72,10 @@ export class Business {
   @Prop({ ref: BusinessIndustry.name, type: mongoose.Types.ObjectId })
   businessIndustry: mongoose.Types.ObjectId;
 
-  @Prop({ default: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg'})
+  @Prop({
+    default:
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg',
+  })
   cover: string;
 
   @Prop({ ref: BusinessConstitution.name })
@@ -280,11 +283,48 @@ export class Business {
   @Prop()
   isAddressVerified: boolean;
 
-  @Prop({ref: Admin.name})
+  @Prop({ ref: Admin.name })
   addressVerificationAdmin: mongoose.Types.ObjectId;
+
+  @Prop()
+  uniqueId: string;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);
+
+export const generateRandomCode = (): string => {
+  const getRandomDigit = () => Math.floor(Math.random() * 10).toString();
+  const getRandomLetter = () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+
+  const digits1 = Array.from({ length: 4 }, getRandomDigit).join('');
+  const letters = Array.from({ length: 4 }, getRandomLetter).join('');
+  const digits2 = Array.from({ length: 4 }, getRandomDigit).join('');
+
+  return `${digits1}-${letters}-${digits2}`;
+};
+const generateNamePrefix = (name: string): string => {
+  const upperName = (name || '').toUpperCase();
+  const needed = 4 - upperName.length;
+  if (needed > 0) {
+    // pad with random letters
+    const randomLetters = Array.from({ length: needed }, () =>
+      String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+    ).join('');
+    return upperName + randomLetters;
+  }
+  return upperName.substring(0, 4);
+};
+
+// pre-save hook
+BusinessSchema.pre<BusinessDocument>('save', function (next) {
+  if (!this.uniqueId) {
+    const prefix = generateNamePrefix(this.name);
+    const code = generateRandomCode();
+    this.uniqueId = `${prefix}-${code}`;
+  }
+  next();
+});

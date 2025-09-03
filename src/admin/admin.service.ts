@@ -139,6 +139,7 @@ import { create } from 'domain';
 import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
+import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
 
 @Injectable()
 export class AdminService {
@@ -189,6 +190,8 @@ export class AdminService {
     private readonly reportModel: Model<ReportDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(BusinessDocVerificationLeads.name)
+    private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -2330,7 +2333,7 @@ export class AdminService {
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
         }
       }
-      console.log("businessCategories:",businessCategoriesIds);
+      console.log('businessCategories:', businessCategoriesIds);
       if (!data.businessIndustry) {
         return {
           success: false,
@@ -2376,13 +2379,13 @@ export class AdminService {
       if (data.website) businessObj['website'] = data.website;
       if (data.addressLine2) businessObj['addressLine2'] = data.addressLine2;
 
-      if(logo){
-         let logoUrl = await this.driveService.noDriveUpload(logo[0]);
-         businessObj['logo'] = logoUrl;
+      if (logo) {
+        let logoUrl = await this.driveService.noDriveUpload(logo[0]);
+        businessObj['logo'] = logoUrl;
       }
-      if(cover){
-         let coverUrl = await this.driveService.noDriveUpload(cover[0]);
-         businessObj['cover'] = coverUrl;
+      if (cover) {
+        let coverUrl = await this.driveService.noDriveUpload(cover[0]);
+        businessObj['cover'] = coverUrl;
       }
 
       const createdBusiness = await this.businessModel.create(businessObj);
@@ -2765,4 +2768,81 @@ export class AdminService {
       };
     }
   }
+
+  async getDocVerificationLeads(page: number, limit: number) {
+    try {
+      const leads = await this.docVerificationLeadModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const total = await this.docVerificationLeadModel.countDocuments();
+      return {
+        success: true,
+        message: 'Doc verification leads fetched successfully',
+        data: leads,
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      console.error('Error in getDocVerificationLeads:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getDocVerificationLead(id: string){
+    try{
+      const lead = await this.docVerificationLeadModel.findById(id);
+      if(!lead){
+        return {
+          success: false,
+          message: 'Lead not found',
+        };
+      }
+      return {
+        success: true,
+        message: 'Lead fetched successfully',
+        data: lead,
+      };
+    }catch(error){
+      console.error('Error in getDocVerificationLead:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async verifyDocument(id: string,adminId:string,status: boolean) {
+    try {
+      const lead = await this.docVerificationLeadModel.findById(id);
+      if (!lead) {
+        return {
+          success: false,
+          message: 'Lead not found',
+        };
+      }
+      // Perform verification logic here
+      await this.docVerificationLeadModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: { isVerified: status, verifiedBy: new mongoose.Types.ObjectId(adminId) } },
+      );
+      
+      return {
+        success: true,
+        message: 'Document verified successfully',
+      };
+    } catch (error) {
+      console.error('Error in verifyDocument:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
 }

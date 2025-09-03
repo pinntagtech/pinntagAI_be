@@ -10,19 +10,15 @@ export class CreateBroadcastDto {
   @IsString()
   message: string;
 
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  @IsArray()
-  @IsString({ each: true })
-  users: string[];
+  // @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  // @IsArray()
+  @IsNotEmpty()
+  @IsString()
+  users: string;
 
   @IsOptional()
   schedule: string;
 
   @IsOptional()
   isScheduled: string;
-
-
-
-
-
 }

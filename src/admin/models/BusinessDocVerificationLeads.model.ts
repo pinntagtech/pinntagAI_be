@@ -22,6 +22,9 @@ export class BusinessDocVerificationLeads extends Document {
     @Prop({default: false})
     isVerified: boolean;
 
+    // @Prop({default: false})
+    // isObserved: boolean;
+
     @Prop({ref: Admin.name})
     verifiedBy: mongoose.Types.ObjectId;
 }

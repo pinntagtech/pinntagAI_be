@@ -194,8 +194,9 @@ export class NotificationService {
       creator: new mongoose.Types.ObjectId(user.id),
       business: new mongoose.Types.ObjectId(user.businessProfile),
     };
-    if (data.users && data.users.length > 0) {
-      broadcastObj['users'] = data.users.map(
+    if (data.users && data.users !== '') {
+      let users = data.users.split(',').map((id) => id.trim());
+      broadcastObj['users'] = users.map(
         (userId) => new mongoose.Types.ObjectId(userId),
       );
     }
@@ -235,6 +236,22 @@ export class NotificationService {
       success: true,
       message: 'Broadcast status fetched successfully',
       data: broadcast,
+    };
+  }
+  async getBroadcasts(page:number,limit:number) {
+    const broadcasts = await this.broadcastModel.find().skip((page - 1) * limit).limit(limit);
+    const totalCount = await this.broadcastModel.countDocuments();
+    if (!broadcasts || broadcasts.length === 0) {
+      return {
+        success: false,
+        message: 'Broadcast not found',
+      };
+    }
+    return {
+      success: true,
+      message: 'Broadcast status fetched successfully',
+      data: broadcasts,
+      total: totalCount,
     };
   }
 

@@ -150,6 +150,7 @@ import {
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './models/sampleDocuments.model';
+import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from './models/BusinessDocVerificationLeads.model';
 
 @Module({
   imports: [
@@ -213,6 +214,7 @@ import { SampleDocument, SampleDocumentSchema } from './models/sampleDocuments.m
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
     ]),
   ],
   controllers: [AdminController],

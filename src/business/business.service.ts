@@ -203,8 +203,10 @@ export class BusinessService {
     @InjectModel(Menu.name) private readonly menuModel: Model<Menu>,
     @InjectModel(UserAllowedNotification.name)
     private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
-    @InjectModel(Notification.name) private readonly notificationModel: Model<NotificationDocument>,
-    @InjectModel(BusinessDocVerificationLeads.name) private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(BusinessDocVerificationLeads.name)
+    private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -4373,7 +4375,8 @@ export class BusinessService {
           message: 'Business not found',
         };
       }
-
+      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+      let email = 'sahil456q@gmail.com';
       // Upload the image to a cloud storage or local storage
       const fileCategory = await this.fileCategoryModel.findOne({
         name: FileCategoryTypes.VERIFICATION_DOCUMENT,
@@ -4401,7 +4404,11 @@ export class BusinessService {
         documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
         isVerified: false,
       });
-      await this.mailService.businessDocVerificationRequest(business.id,BusinessDocumentTypesList.ADDRESS_VERIFICATION);
+      await this.mailService.businessDocVerificationRequest(
+        email,
+        business.uniqueId ? business.uniqueId : business.id,
+        BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+      );
 
       return {
         success: true,

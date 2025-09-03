@@ -202,6 +202,7 @@ export class MailService {
   }
 
   async businessDocVerificationRequest(
+    email: string,
     businessId: string,
     documentType: string,
   ) {
@@ -209,7 +210,7 @@ export class MailService {
     if (!business) throw new BadRequestException('Business not found');
 
     await this.mailerService.sendMail({
-      to: business.email,
+      to: email,
       subject: 'Document Verification',
       template:
         process.cwd() +
