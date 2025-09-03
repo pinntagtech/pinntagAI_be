@@ -103,6 +103,7 @@ import { AddBusinessDto } from './dto/add-business.dto';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import {
   BusinessCreatorType,
+  BusinessDocumentTypesList,
   BusinessUserCreatorType,
   ProfileStatus,
 } from 'src/business/enums/business.enum';
@@ -2794,10 +2795,10 @@ export class AdminService {
     }
   }
 
-  async getDocVerificationLead(id: string){
-    try{
+  async getDocVerificationLead(id: string) {
+    try {
       const lead = await this.docVerificationLeadModel.findById(id);
-      if(!lead){
+      if (!lead) {
         return {
           success: false,
           message: 'Lead not found',
@@ -2808,7 +2809,7 @@ export class AdminService {
         message: 'Lead fetched successfully',
         data: lead,
       };
-    }catch(error){
+    } catch (error) {
       console.error('Error in getDocVerificationLead:', error);
       return {
         success: false,
@@ -2817,7 +2818,7 @@ export class AdminService {
     }
   }
 
-  async verifyDocument(id: string,adminId:string,status: boolean) {
+  async verifyDocument(id: string, adminId: string, status: boolean) {
     try {
       const lead = await this.docVerificationLeadModel.findById(id);
       if (!lead) {
@@ -2829,9 +2830,28 @@ export class AdminService {
       // Perform verification logic here
       await this.docVerificationLeadModel.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
-        { $set: { isVerified: status, verifiedBy: new mongoose.Types.ObjectId(adminId) } },
+        {
+          $set: {
+            isVerified: status,
+            verifiedBy: new mongoose.Types.ObjectId(adminId),
+          },
+        },
       );
-      
+
+      if (
+        lead.documentType === BusinessDocumentTypesList.ADDRESS_VERIFICATION
+      ) {
+        await this.businessModel.updateOne(
+          { _id: lead.businessId },
+          {
+            $set: {
+              addressVerifiedBy: new mongoose.Types.ObjectId(adminId),
+              isAddressVerified: status,
+            },
+          },
+        );
+      }
+
       return {
         success: true,
         message: 'Document verified successfully',
@@ -2844,5 +2864,4 @@ export class AdminService {
       };
     }
   }
-
 }

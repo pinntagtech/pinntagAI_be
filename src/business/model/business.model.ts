@@ -284,7 +284,7 @@ export class Business {
   isAddressVerified: boolean;
 
   @Prop({ ref: Admin.name })
-  addressVerificationAdmin: mongoose.Types.ObjectId;
+  addressVerifiedBy: mongoose.Types.ObjectId;
 
   @Prop()
   uniqueId: string;
