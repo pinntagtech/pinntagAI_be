@@ -4422,4 +4422,25 @@ export class BusinessService {
       };
     }
   }
+  async searchUser(email: string){
+    try {
+      const user = await this.businessUserModel.findOne({ email });
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+      return {
+        success: true,
+        message: 'User found',
+        data: user,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

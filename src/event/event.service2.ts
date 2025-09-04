@@ -6074,7 +6074,8 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
-      if(business.outlets && business.outlets.length === 0){
+      const outlets = await this.outletModel.find({business: new mongoose.Types.ObjectId(business._id)});
+      if(outlets && outlets.length === 0){
         return {
           success: false,
           message: 'Business has no outlets.',

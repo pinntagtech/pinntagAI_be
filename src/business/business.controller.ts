@@ -1340,4 +1340,22 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Get('search/user')
+  @UseGuards(JwtGuard2)
+  async searchUser(
+    @Query('email') email: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.searchUser(email);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }
