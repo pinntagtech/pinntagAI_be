@@ -148,6 +148,7 @@ import { SmsService } from 'src/sms/sms.service';
 import { messaging } from 'firebase-admin';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { BusinessDocVerificationLeads } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord } from './model/ownershipTransferRecords.model';
 
 @Injectable()
 export class BusinessService {
@@ -207,6 +208,8 @@ export class BusinessService {
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(BusinessDocVerificationLeads.name)
     private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
+    @InjectModel(OwnershipTransferRecord.name)
+    private readonly ownershipTransferRecordModel: Model<OwnershipTransferRecord>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -4331,23 +4334,59 @@ export class BusinessService {
     }
   }
   async ownershipTransfer(
-    userId: string,
-    businessId: string,
+    user: DecodedUser,
+    otp: string,
     newOwnerEmail: string,
   ) {
     try {
-      const business = await this.businessModel.findById(businessId);
+      const business = await this.businessModel.findById(user.businessProfile);
       if (!business) {
         return {
           success: false,
           message: 'Business not found',
         };
       }
-      if (userId != business.authorisedUser.toString()) {
+      if (user.id != business.authorisedUser.toString()) {
         return {
           success: false,
           message: 'You are not authorized to transfer ownership',
         };
+      }
+
+      const foundOtpDoc = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(user.id),
+        type: OtpTypes.EMAIL,
+      });
+      if (!foundOtpDoc) {
+        return {
+          success: false,
+          message: 'Otp Expired, Please resend.',
+        };
+      } else if (foundOtpDoc.otp !== Number(otp)) {
+        return {
+          success: false,
+          message: 'Invalid Otp',
+        };
+      }
+      await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+
+      const newOwner = await this.businessUserModel.findOne({
+        email: newOwnerEmail,
+      });
+
+      if (newOwner) {
+        // transfer ownership
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          { authorisedUser: newOwner._id },
+        );
+      } else {
+        // send an invitation to newOwnerEmail and once accepted, transfer ownership via
+        await this.ownershipTransferRecordModel.create({
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+          user: new mongoose.Types.ObjectId(user.id),
+          email: newOwnerEmail,
+        });
       }
 
       return {
@@ -4422,7 +4461,7 @@ export class BusinessService {
       };
     }
   }
-  async searchUser(email: string){
+  async searchUser(email: string) {
     try {
       const user = await this.businessUserModel.findOne({ email });
       if (!user) {
@@ -4435,6 +4474,28 @@ export class BusinessService {
         success: true,
         message: 'User found',
         data: user,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async businessTransferOtp(userId: string) {
+    try {
+      const owner = await this.businessUserModel.findById(userId);
+      if (!owner) {
+        return {
+          success: false,
+          message: 'Owner not found',
+        };
+      }
+      // Generate OTP and send email
+      await this.mailService.sendBusinessTransferOtp(owner.email, userId);
+      return {
+        success: true,
+        message: 'OTP sent successfully',
       };
     } catch (error) {
       return {

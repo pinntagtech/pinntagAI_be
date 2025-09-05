@@ -1287,16 +1287,16 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-  @Post('ownershipTransfer/:id')
+  @Post('ownershipTransfer')
   @UseGuards(JwtGuard2)
   async transferOwnership(
-    @Param('id') businessId: string,
     @TokenDecoder() user: DecodedUser,
+    @Body('otp') otp: string,
     @Body('newOwnerEmail') newOwnerEmail: string,
   ) {
     const result = await this.businessService.ownershipTransfer(
-      user.id,
-      businessId,
+      user,
+      otp,
       newOwnerEmail,
     );
     if (result.success) {
@@ -1352,6 +1352,21 @@ export class BusinessController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Post('transfer/otp')
+  @UseGuards(JwtGuard2)
+  async transferOtp(
+    @Body('email') email: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.businessTransferOtp(user.id);
+    if (result.success) {
+      return {
+        message: result.message,
       };
     } else {
       throw new BadRequestException(result.message);

@@ -57,9 +57,9 @@ export class MailService {
     });
     this.mailerService.sendMail({
       to: user.email,
-      subject: 'Verify your email',
+      subject: 'Two-Factor Authentication',
       template:
-        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+        process.cwd() + '/src/mail/templates/2fa.template.hbs',
       context: {
         name: user.firstName,
         otp,
@@ -76,6 +76,21 @@ export class MailService {
     });
     await this.mailerService.sendMail({
       to: profile.email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
+    });
+  }
+
+  async sendBusinessTransferOtp(email: string, userId: string) {
+    const profile = await this.businessUserModel.findOne({ _id: userId });
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: email,
       subject: 'Verify your email',
       template:
         process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
@@ -218,4 +233,5 @@ export class MailService {
       context: { name: business.name, documentType, businessId: business.id },
     });
   }
+
 }
