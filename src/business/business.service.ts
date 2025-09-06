@@ -4346,6 +4346,8 @@ export class BusinessService {
           message: 'Business not found',
         };
       }
+      const businessUser = await this.businessUserModel.findById(user.id);
+
       if (user.id != business.authorisedUser.toString()) {
         return {
           success: false,
@@ -4378,7 +4380,33 @@ export class BusinessService {
         // transfer ownership
         await this.businessModel.updateOne(
           { _id: business._id },
-          { authorisedUser: newOwner._id },
+          {
+            $set: { authorisedUser: new mongoose.Types.ObjectId(newOwner.id) },
+          },
+        );
+        await this.businessUserModel.updateOne(
+          {
+            _id: newOwner._id,
+          },
+          {
+            $addToSet: {
+              business: new mongoose.Types.ObjectId(business._id),
+            },
+            $set: {
+              selectedBusiness: new mongoose.Types.ObjectId(business._id),
+            },
+             $pull: { business: business._id },
+          },
+        );
+        await this.businessUserModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(user.id),
+          },
+          {
+            $set: {
+              selectedBusiness: '',
+            },
+          },
         );
       } else {
         // send an invitation to newOwnerEmail and once accepted, transfer ownership via
@@ -4387,6 +4415,9 @@ export class BusinessService {
           user: new mongoose.Types.ObjectId(user.id),
           email: newOwnerEmail,
         });
+
+        await this.mailService.sendBusinessUserInvitation(newOwnerEmail, businessUser.name);
+
       }
 
       return {

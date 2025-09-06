@@ -1287,6 +1287,8 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  //3
   @Post('ownershipTransfer')
   @UseGuards(JwtGuard2)
   async transferOwnership(
@@ -1340,7 +1342,7 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
+ //1
   @Get('search/user')
   @UseGuards(JwtGuard2)
   async searchUser(
@@ -1357,10 +1359,10 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  //2
   @Post('transfer/otp')
   @UseGuards(JwtGuard2)
   async transferOtp(
-    @Body('email') email: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.businessService.businessTransferOtp(user.id);

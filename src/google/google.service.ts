@@ -110,7 +110,10 @@ export class GoogleService {
       address2:
         `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(), // You can optionally include floor/unit if available
       city:
-        getComponentValue('locality') || getComponentValue('sublocality') || '',
+        getComponentValue('locality') ||
+        getComponentValue('sublocality') ||
+        getComponentValue('postal_town') ||
+        '',
       state:
         getComponentValue('administrative_area_level_1') ||
         getComponentValue('administrative_area_level_2') ||
@@ -120,7 +123,11 @@ export class GoogleService {
     };
   }
 
-  async getPlaceDetails(placeId: string, sessionToken: string,selectedAddress: string) {
+  async getPlaceDetails(
+    placeId: string,
+    sessionToken: string,
+    selectedAddress: string,
+  ) {
     try {
       const params = {
         key: this.GOOGLE_API_KEY,
@@ -134,7 +141,7 @@ export class GoogleService {
       );
       address['latitude'] = response.data.location.latitude;
       address['longitude'] = response.data.location.longitude;
-      if(selectedAddress){
+      if (selectedAddress) {
         address['selectedAddress'] = selectedAddress;
       }
       address['fullAddressString'] = response.data.formattedAddress;
@@ -150,9 +157,13 @@ export class GoogleService {
     }
   }
 
-  async getAddressFromCoordinates(lat: number, lng: number, apiKey: string): Promise<any> {
+  async getAddressFromCoordinates(
+    lat: number,
+    lng: number,
+    apiKey: string,
+  ): Promise<any> {
     try {
-      if(apiKey != '000e10b3-b0a0-4269-a864-ea419a790f76') {
+      if (apiKey != '000e10b3-b0a0-4269-a864-ea419a790f76') {
         throw new Error('Invalid API key');
       }
       const response = await axios.get(

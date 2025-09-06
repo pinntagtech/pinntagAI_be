@@ -4798,6 +4798,7 @@ export class EventService2 {
     user: DecodedUser,
   ) {
     try {
+      console.log("SCHEDULE DATA:", data);
       let profile = null;
       if (user.userType === UserTypes.USER) {
         profile = await this.userModel.findById(user.id);

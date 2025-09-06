@@ -98,6 +98,18 @@ export class MailService {
     });
   }
 
+  async sendBusinessUserInvitation(email: string,name: string,){
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'You have been invited to join a business',
+      template: process.cwd() + '/src/mail/templates/businessUserInvitation.template.hbs',
+      context: {
+        inviterName: name,
+        inviteLink: 'https://dev.business.pinntag.com'
+      },
+    });
+  }
+
   async sendBusinessVerificationMail(businessId: any) {
     // const user = await this.userService.getUserById(userId);
     const profile = await this.businessModel.findOne({
