@@ -144,6 +144,7 @@ import { EventResponse, EventResponseSchema } from 'src/event/models/event-respo
 import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
 
 @Module({
   imports: [
@@ -211,6 +212,7 @@ import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
     ]),
   ],
   controllers: [RewardsController],

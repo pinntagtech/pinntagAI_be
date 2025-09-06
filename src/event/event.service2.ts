@@ -136,6 +136,7 @@ import { PinDropDto } from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { BusinessService } from 'src/business/business.service';
+import { CreateTemplateDto } from './dto/create-template.dto';
 
 @Injectable()
 export class EventService2 {
@@ -369,7 +370,7 @@ export class EventService2 {
         message: 'Please provide a valid event id',
         eventUrl: undefined,
       };
-    } 
+    }
     const successResponse = {
       success: true,
       message: 'eventUrl successfully generated',
@@ -2041,7 +2042,7 @@ export class EventService2 {
                   ),
                   type: TokenTypes.FCM,
                 });
-                console.log("FCM Tokens:", fcmTokens);
+                console.log('FCM Tokens:', fcmTokens);
                 for (let j = 0; j < fcmTokens.length; j++) {
                   this.firebaseService.sendNotification(
                     fcmTokens[j].token,
@@ -6074,8 +6075,10 @@ export class EventService2 {
           message: 'Business not found.',
         };
       }
-      const outlets = await this.outletModel.find({business: new mongoose.Types.ObjectId(business._id)});
-      if(outlets && outlets.length === 0){
+      const outlets = await this.outletModel.find({
+        business: new mongoose.Types.ObjectId(business._id),
+      });
+      if (outlets && outlets.length === 0) {
         return {
           success: false,
           message: 'Business has no outlets.',
@@ -7584,6 +7587,72 @@ export class EventService2 {
       };
     } catch (error) {
       console.error('Error in pinDrop:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async createTemplate(
+    user: DecodedUser,
+    data: CreateTemplateDto,
+    thumbnail: Express.Multer.File,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+
+      let categoriesInObjectId = [];
+      if (data.categories) {
+        let splitted = [];
+        splitted = data.categories.split(',');
+        for (let category of splitted) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+            categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+        }
+      }
+
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+
+      let file = await this.driveService.uploadFile(
+        user.id,
+        business.drivePath.toString(),
+        fileCategory.id,
+        thumbnail,
+      );
+
+      const template = await this.templateModel.create({
+        ...data,
+        categories: categoriesInObjectId,
+        businessProfile: user.businessProfile,
+        businessIndustry: business.businessIndustry,
+        businessCategories: business.businessCategories,
+        creatorType: BusinessUser.name,
+        user: new mongoose.Types.ObjectId(user.id),
+        thumbnail: file.data.metaData.url,
+      });
+
+      return {
+        success: true,
+        message: 'Template created successfully.',
+        data: template,
+      };
+    } catch (error) {
+      console.error('Error in createTemplate:', error);
       return {
         success: false,
         message: 'Something went wrong.',

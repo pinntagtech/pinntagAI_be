@@ -20,7 +20,7 @@ export const TokenDecoder = createParamDecorator(
     //     sessionId: request.sessionId,
     //   };
     // }
-    console.log('Request user:', request.user);
+    // console.log('Request user:', request.user);
     const user: any = {
       isGuest: false,
       role: request.user?.role[0],
