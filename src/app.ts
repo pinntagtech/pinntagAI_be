@@ -12,6 +12,6 @@ const app: Application = express();
 app.use(express.json());
 
 // Routes
-// app.use("/api/etl", ETLRoutes);
+app.use("/api", require("./routes/routes").default);
 
 export default app;
