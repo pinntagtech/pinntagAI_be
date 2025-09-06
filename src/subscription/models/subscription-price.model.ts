@@ -4,8 +4,8 @@ import { SubscriptionProduct } from './subscription-product.model';
 import { CurrencyTypes } from 'src/enums/user.enum';
 
 export enum BillingInterval {
-  MONTH = 'month',
-  YEAR = 'year',
+  ANNUAL = 'annual',
+  MONTHLY = 'monthly',
 }
 
 @Schema({ timestamps: true })

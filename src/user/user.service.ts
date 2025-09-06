@@ -20,11 +20,7 @@ import { ChangePasswordDto } from './dto/changePassword.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/updateProfile.dto';
 import { Follow, FollowDocument } from './models/follow.model';
-import {
-  DurationType,
-  SubscriptionProduct,
-  SubscriptionProductDocument,
-} from 'src/subscription/models/subscription-product.model';
+import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionDocument,
@@ -39,10 +35,7 @@ import {
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import {
-  Transaction,
-  TransactionDocument,
-} from '../subscription/models/transaction.model';
+import { Transaction } from '../subscription/models/transaction.model';
 import { ContactUs, ContactUsDocument } from './models/contact-us.model';
 import { ContactUsDto } from './dto/contact-us.dto';
 import { Event, EventDocument } from 'src/event/models/event.model';
@@ -84,7 +77,7 @@ export class UserService {
     private readonly followModel: Model<FollowDocument>,
     // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(SubscriptionProduct.name)
-    private readonly subscriptionProductModel: Model<SubscriptionProductDocument>,
+    private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(Refferal.name)
@@ -92,7 +85,7 @@ export class UserService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Transaction.name)
-    private readonly transactionModel: Model<TransactionDocument>,
+    private readonly transactionModel: Model<Transaction>,
     @InjectModel(ContactUs.name)
     private readonly contactUsModel: Model<ContactUsDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
@@ -237,7 +230,9 @@ export class UserService {
         startDate: new Date(subscription.current_period_start * 1000),
         endDate: new Date(subscription.current_period_end * 1000),
       });
-      createdSubscription.transaction = createdTransaction._id;
+      createdSubscription.transaction = new mongoose.Types.ObjectId(
+        createdTransaction.id,
+      );
       await createdSubscription.save();
 
       // update subscription metadata

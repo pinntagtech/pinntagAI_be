@@ -112,6 +112,15 @@ export class StripeService {
     );
   }
 
+  async createProduct(name: string, description?: string, metadata = {}) {
+    return await this.stripeClient.products.create({
+      name,
+      description,
+      active: true,
+      metadata,
+    });
+  }
+
   async getProducts(): Promise<Stripe.Product[]> {
     const products = await this.stripeClient.products.list({
       active: true,

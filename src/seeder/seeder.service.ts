@@ -16,10 +16,7 @@ import {
   EventCategory,
   Seeder,
 } from './data';
-import {
-  SubscriptionProduct,
-  SubscriptionProductDocument,
-} from 'src/subscription/models/subscription-product.model';
+import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import { AppVersion, AppVersionDocument } from 'src/models/appVersion.model';
 import * as bcrypt from 'bcrypt';
 import { Event, EventDocument } from 'src/event/models/event.model';
@@ -120,7 +117,7 @@ export class SeederService {
     @InjectModel(AgeGroup.name)
     private readonly ageGroupModel: Model<AgeGroupDocument>,
     @InjectModel(SubscriptionProduct.name)
-    private readonly subscriptionProductModel: Model<SubscriptionProductDocument>,
+    private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(AppVersion.name)
     private readonly appVersionModel: Model<AppVersionDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,

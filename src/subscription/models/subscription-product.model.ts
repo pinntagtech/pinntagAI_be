@@ -13,7 +13,11 @@ export class SubscriptionProduct extends Document {
   @Prop({ required: false })
   stripeProductId?: string;
 
-  @Prop({ type: [mongoose.Types.ObjectId], default: [] })
+  @Prop({
+    type: [mongoose.Types.ObjectId],
+    default: [],
+    ref: FeatureLimit.name,
+  })
   features: mongoose.Types.ObjectId[];
 
   @Prop({ default: false })

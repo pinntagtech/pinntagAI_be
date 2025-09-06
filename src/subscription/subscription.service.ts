@@ -13,6 +13,7 @@ import { User, UserDocument } from 'src/user/models/user.model';
 import { TransactionPopulates } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
+import { StripeService } from 'src/stripe/stripe.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -26,6 +27,7 @@ export class SubscriptionService {
     private readonly transactionModel: Model<Transaction>,
     @InjectModel(FeatureLimit.name)
     private readonly featureLimitModel: Model<FeatureLimit>,
+    private readonly stripeService: StripeService,
   ) {}
 
   async createProduct(user: DecodedUser, data: CreateSubscriptionProductDto) {
@@ -41,7 +43,18 @@ export class SubscriptionService {
         createdBy: new mongoose.Types.ObjectId(user.id),
         features: await Promise.all(featureLimits),
       });
-      return { success: true, data: createdProduct };
+      const createdStripeProduct = await this.stripeService.createProduct(
+        data.name,
+        data.description,
+        data.features ? { features: data.features } : {},
+      );
+      const updatedProduct =
+        await this.subscriptionProductModel.findByIdAndUpdate(
+          createdProduct._id,
+          { stripeProductId: createdStripeProduct.id },
+          { new: true },
+        );
+      return { success: true, data: updatedProduct };
     } catch (error) {
       return { success: false, message: error.message };
     }
