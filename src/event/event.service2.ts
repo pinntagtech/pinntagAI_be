@@ -4798,7 +4798,7 @@ export class EventService2 {
     user: DecodedUser,
   ) {
     try {
-      console.log("SCHEDULE DATA:", data);
+      console.log("SCHEDULE DATA:", JSON.stringify(data));
       let profile = null;
       if (user.userType === UserTypes.USER) {
         profile = await this.userModel.findById(user.id);
@@ -4840,19 +4840,19 @@ export class EventService2 {
               data.fixedSchedule[i].date = new Date(
                 data.fixedSchedule[i].date.toString(),
               );
-              if (
-                new Date(data.fixedSchedule[i].date.toString()).setHours(
-                  0,
-                  0,
-                  0,
-                  0,
-                ) < new Date().setHours(0, 0, 0, 0)
-              ) {
-                return {
-                  success: false,
-                  message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
-                };
-              }
+              // if (
+              //   new Date(data.fixedSchedule[i].date.toString()).setHours(
+              //     0,
+              //     0,
+              //     0,
+              //     0,
+              //   ) < new Date().setHours(0, 0, 0, 0)
+              // ) {
+              //   return {
+              //     success: false,
+              //     message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
+              //   };
+              // }
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
                 const duration = data.fixedSchedule[i].durations[j];
