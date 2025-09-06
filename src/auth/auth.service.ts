@@ -198,7 +198,7 @@ export class AuthService {
     const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
       signupAuthDto;
 
-      console.log("Signup DTO:", signupAuthDto);
+    console.log('Signup DTO:', signupAuthDto);
     if (!phone && !email) {
       return {
         success: false,
@@ -2111,6 +2111,7 @@ export class AuthService {
           $expr: { $gt: [{ $size: '$schedules' }, 0] },
         },
       },
+
       {
         $lookup: {
           from: 'users',
@@ -2241,7 +2242,12 @@ export class AuthService {
           isLiked: 1,
           isSaved: 1,
           locations: 1,
-          schedules: 1,
+          schedules: {
+            $sortArray: {
+              input: '$schedules',
+              sortBy: { 'fixedSchedule.date': 1 }, // ascending order
+            },
+          },
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },

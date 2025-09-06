@@ -138,6 +138,10 @@ import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { BusinessService } from 'src/business/business.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 
+import csv from 'csv-parser';
+import * as streamifier from 'streamifier';
+import { ExpectedOutletHeaders } from 'src/outlet/enums/outlet.enum';
+
 @Injectable()
 export class EventService2 {
   constructor(
@@ -6975,7 +6979,32 @@ export class EventService2 {
     }
   }
 
-  async ETL_TRANSFORMER() {
+  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+    const rows: any[] = [];
+    const stream = streamifier.createReadStream(file.buffer);
+
+    return new Promise((resolve, reject) => {
+      stream
+        .pipe(csv())
+        .on('headers', (headers: string[]) => {
+          const missing = ExpectedOutletHeaders.filter(
+            (h) => !headers.includes(h),
+          );
+          if (missing.length > 0) {
+            reject(
+              new BadRequestException(`Missing columns: ${missing.join(', ')}`),
+            );
+          }
+        })
+        .on('data', (row) => rows.push(row))
+        .on('end', () => resolve(rows))
+        .on('error', () =>
+          reject(new BadRequestException('CSV parsing error.')),
+        );
+    });
+  }
+
+  async ETL_TRANSFORMER(userId: string, file: Express.Multer.File) {
     try {
       const businessUser = await this.businessUserModel.findOne({
         email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
@@ -7620,7 +7649,7 @@ export class EventService2 {
               message: 'Category not found',
             };
           }
-            categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
+          categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
         }
       }
 

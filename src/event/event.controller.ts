@@ -1063,10 +1063,22 @@ export class EventController {
       });
     }
   }
-  @Post('crawlAtlantaEvents')
+  @Post('ETL')
   @UseGuards(AdminGuard2)
-  async crawlAtlantaEvents() {
-    const result = await this.eventService.ETL_TRANSFORMER();
+    @UseInterceptors(
+      FileInterceptor('file', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 10 MB
+        limits: { fileSize: 10000000 },
+      }),
+    )
+  async ETL(user:DecodedUser,@UploadedFile() file: Express.Multer.File) {
+    const result = await this.eventService.ETL_TRANSFORMER(user.id, file);
     if (result.success) {
       return {
         message: result.message,
