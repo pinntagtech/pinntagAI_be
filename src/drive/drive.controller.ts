@@ -196,19 +196,22 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
-    const result = await this.driveService.deleteBufferAndMultiImageUpload(
+    const result = this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
       images,
     );
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
+    // if (result.success) {
+    //   return {
+    //     message: result.message,
+    //     data: result.data,
+    //   };
+    // } else {
+    //   throw new BadRequestException(result.message);
+    // }
+    return {
+      message: 'Files uploaded successfully',
+    };
   }
 
   @Post('updateFile/:id')

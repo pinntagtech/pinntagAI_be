@@ -449,7 +449,7 @@ export class RewardsService {
       // Upload images async (fire and forget)
       if (images) {
         console.log('Updating Images:::');
-        await this.driveService.deleteBufferAndMultiImageUpload(
+        this.driveService.deleteBufferAndMultiImageUpload(
           user,
           reward.drivePath.toString(),
           images,

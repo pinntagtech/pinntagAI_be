@@ -7535,7 +7535,7 @@ export class EventService2 {
         updateObj,
       );
       if (images.length > 0) {
-        await this.driveService.deleteBufferAndMultiImageUpload(
+        this.driveService.deleteBufferAndMultiImageUpload(
           user,
           String(event.drivePath),
           images,
@@ -7667,7 +7667,7 @@ export class EventService2 {
       const template = await this.templateModel.create({
         ...data,
         categories: categoriesInObjectId,
-        businessProfile: user.businessProfile,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
         businessIndustry: business.businessIndustry,
         businessCategories: business.businessCategories,
         creatorType: BusinessUser.name,
