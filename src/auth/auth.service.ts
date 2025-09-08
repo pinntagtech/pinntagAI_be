@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -114,6 +114,7 @@ import { SavedEvent } from 'src/event/models/savedEvent.model';
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { CommandSucceededEvent } from 'mongodb';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -164,6 +165,8 @@ export class AuthService {
     private readonly stripeService: StripeService,
     private readonly smsService: SmsService,
     private readonly seederService: SeederService,
+
+     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     const clientID = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_SECRET;
@@ -1754,6 +1757,13 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
+
+    const cached = await this.cacheManager.get<[any[], number]>('fetchEventsV2');
+    if (cached) {
+      console.log('Cache hit for fetchEventsV2');
+      return cached;
+    }
+
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
     endDate = endDate
@@ -2961,6 +2971,8 @@ export class AuthService {
     // return result; // Return the arranged result
 
     // return filteredEvents; // Return the arranged result
+    
+    await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], 86400);
     return [dataRows, totalCount];
   }
   async fetchBusinessListing(

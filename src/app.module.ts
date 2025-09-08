@@ -156,22 +156,26 @@ import {
 } from './business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from './rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     // ServeStaticModule.forRoot({
     //   rootPath: join(__dirname, '..', 'uploads'),
     // }),
-    // CacheModule.register({
-    //   store: redisStore,
-    //   host: 'localhost', // or use process.env.REDIS_HOST
-    //   port: 6379,
-    //   ttl: 86400, // cache for 1 day
-    //   isGlobal: true,
-    // }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: './.env',
+    }),
+     CacheModule.registerAsync({
+      isGlobal: true, // makes cache available everywhere
+      useFactory: async () => ({
+        store: redisStore,
+        host: process.env.REDIS_HOST || 'localhost',
+        port: process.env.REDIS_PORT || 6379,
+        ttl: 60, // default cache time = 60 seconds
+      }),
     }),
     MulterModule.register({
       dest: './uploads',
