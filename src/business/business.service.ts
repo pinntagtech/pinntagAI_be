@@ -2444,76 +2444,76 @@ export class BusinessService {
         //     ],
         //   },
         // },
-        // {
-        //   $lookup: {
-        //     from: 'follows', // make sure it's the actual collection name
-        //     let: {
-        //       userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
-        //       targetId: '$businessDetails._id',
-        //       targetType: Business.name,
-        //     },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: {
-        //             $and: [
-        //               { $eq: ['$follower', '$$userId'] },
-        //               { $eq: ['$followerType', 'User'] },
-        //               { $eq: ['$following', '$$targetId'] },
-        //               { $eq: ['$followingType', '$$targetType'] },
-        //               { $eq: ['$isBlocked', false] },
-        //             ],
-        //           },
-        //         },
-        //       },
-        //     ],
-        //     as: 'userFollow',
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     isFollowedByMe: {
-        //       $gt: [{ $size: '$userFollow' }, 0],
-        //     },
-        //   },
-        // },
-        // { $sort: { distance: 1 } },
-        // {
-        //   $group: {
-        //     _id: '$businessDetails._id',
-        //     name: { $first: '$businessDetails.name' },
-        //     cover: { $first: '$businessDetails.cover' },
-        //     logo: { $first: '$businessDetails.logo' },
-        //     description: { $first: '$businessDetails.description' },
-        //     email: { $first: '$businessDetails.email' },
-        //     phone: { $first: '$businessDetails.phone' },
-        //     countryCode: { $first: '$businessDetails.countryCode' },
-        //     website: { $first: '$businessDetails.website' },
-        //     industry: { $first: '$industryDetails' },
-        //     isFollowedByMe: { $first: '$isFollowedByMe' },
-        //     menus: { $first: '$menuDetails' },
-        //     locations: {
-        //       $push: {
-        //         accuracy: '$accuracy',
-        //         address1: '$address1',
-        //         address2: '$address2',
-        //         city: '$city',
-        //         state: '$state',
-        //         zip: '$postalCode',
-        //         website: '$website',
-        //         _id: '$_id',
-        //         email: '$email',
-        //         phone: '$phone',
-        //         countryCode: '$countryCode',
-        //         opentingTime: '$opentingTime',
-        //         closingTime: '$closingTime',
-        //         location: '$location',
-        //         distance: { $divide: ['$distance', 1609.34] },
-        //       },
-        //     },
-        //   },
-        // },
-        // { $sort: { createdAt: -1, _id: 1 } },
+        {
+          $lookup: {
+            from: 'follows', // make sure it's the actual collection name
+            let: {
+              userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+              targetId: '$businessDetails._id',
+              targetType: Business.name,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', '$$userId'] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', '$$targetType'] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+        {
+          $addFields: {
+            isFollowedByMe: {
+              $gt: [{ $size: '$userFollow' }, 0],
+            },
+          },
+        },
+        { $sort: { distance: 1 } },
+        {
+          $group: {
+            _id: '$businessDetails._id',
+            name: { $first: '$businessDetails.name' },
+            cover: { $first: '$businessDetails.cover' },
+            logo: { $first: '$businessDetails.logo' },
+            description: { $first: '$businessDetails.description' },
+            email: { $first: '$businessDetails.email' },
+            phone: { $first: '$businessDetails.phone' },
+            countryCode: { $first: '$businessDetails.countryCode' },
+            website: { $first: '$businessDetails.website' },
+            industry: { $first: '$industryDetails' },
+            isFollowedByMe: { $first: '$isFollowedByMe' },
+            menus: { $first: '$menuDetails' },
+            locations: {
+              $push: {
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$postalCode',
+                website: '$website',
+                _id: '$_id',
+                email: '$email',
+                phone: '$phone',
+                countryCode: '$countryCode',
+                opentingTime: '$opentingTime',
+                closingTime: '$closingTime',
+                location: '$location',
+                distance: { $divide: ['$distance', 1609.34] },
+              },
+            },
+          },
+        },
+        { $sort: { createdAt: -1, _id: 1 } },
       ];
 
       let [business] = await this.outletModel.aggregate(basePipeline);
@@ -4395,7 +4395,7 @@ export class BusinessService {
             $set: {
               selectedBusiness: new mongoose.Types.ObjectId(business._id),
             },
-             $pull: { business: business._id },
+            $pull: { business: business._id },
           },
         );
         await this.businessUserModel.updateOne(
@@ -4416,8 +4416,10 @@ export class BusinessService {
           email: newOwnerEmail,
         });
 
-        await this.mailService.sendBusinessUserInvitation(newOwnerEmail, businessUser.name);
-
+        await this.mailService.sendBusinessUserInvitation(
+          newOwnerEmail,
+          businessUser.name,
+        );
       }
 
       return {
