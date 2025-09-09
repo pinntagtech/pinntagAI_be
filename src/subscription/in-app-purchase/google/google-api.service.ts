@@ -1,0 +1,58 @@
+import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
+import { Injectable } from '@nestjs/common';
+import { androidpublisher_v3, auth } from '@googleapis/androidpublisher';
+import { GOOGLE_SERVICE_ACCOUNT } from '../iap.config';
+
+@Injectable()
+export class GoogleApiService {
+  private androidPublisher: androidpublisher_v3.Androidpublisher;
+  private authClient: any;
+
+  constructor() {
+    // Initialize Google API auth client using a service account key
+    // this.authClient = new google.auth.GoogleAuth({
+    //   credentials: require(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
+    //   scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+    // }).getClient();
+    // // Bind the auth client to all googleapis calls
+    // google.options({ auth: this.authClient });
+    this.androidPublisher = new androidpublisher_v3.Androidpublisher({
+      auth: new auth.GoogleAuth({
+        credentials: GOOGLE_SERVICE_ACCOUNT,
+        scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+      }),
+    });
+    this.authClient = this.androidPublisher.context._options.auth;
+  }
+
+  /** Verify a subscription purchase and retrieve its latest status */
+  async getSubscriptionStatus(
+    packageName: string,
+    subscriptionId: string,
+    purchaseToken: string,
+  ) {
+    const res = await this.androidPublisher.purchases.subscriptions.get({
+      packageName,
+      subscriptionId,
+      token: purchaseToken,
+    });
+    return res.data;
+  }
+
+  /** Verify a one-time in-app product purchase (if needed) */
+  async getProductPurchaseStatus(
+    packageName: string,
+    productId: string,
+    purchaseToken: string,
+  ) {
+    const res = await this.androidPublisher.purchases.products.get({
+      packageName,
+      productId,
+      token: purchaseToken,
+    });
+    return res.data;
+  }
+
+  // ... you can add more methods if needed (acknowledge purchase, etc.)
+}

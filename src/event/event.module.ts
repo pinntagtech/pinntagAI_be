@@ -58,7 +58,7 @@ import {
 import { Report, ReportSchema } from './models/reports.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { SavedEvent, SavedEventSchema } from './models/savedEvent.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import { CrawledEvent, CrawledEventSchema } from './models/crawled-event.model';
 import { FirebaseService } from 'src/notification/firebase.service';

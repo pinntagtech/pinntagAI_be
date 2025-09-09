@@ -61,7 +61,7 @@ import {
   getZeroDateTz,
   haversineDistance,
 } from 'src/helpers/event.helpers';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { GetDashboardDto } from './dto/getDashboard.dto';
 import { manipulateImageName } from 'src/helpers/upload.helpers';

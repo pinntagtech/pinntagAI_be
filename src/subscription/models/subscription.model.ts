@@ -58,6 +58,21 @@ export class Subscription extends Document {
 
   @Prop()
   stripeCustomerId?: string; // Stripe Customer ID (if Stripe subscription)
+
+  @Prop()
+  iapPlatform: string; // e.g., 'apple' or 'google'
+
+  @Prop()
+  originalTransactionId?: string;
+
+  @Prop()
+  purchaseToken?: string;
+
+  @Prop()
+  productId: string;
+
+  @Prop()
+  autoRenew?: boolean;
 }
 
 export type SubscriptionDocument = Subscription & Document;

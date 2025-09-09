@@ -45,7 +45,7 @@ import {
   SavedEventDocument,
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { NotificationTypes } from 'src/enums/event.enums';

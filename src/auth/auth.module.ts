@@ -51,7 +51,7 @@ import {
   SavedEvent,
   SavedEventSchema,
 } from 'src/event/models/savedEvent.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import {
   WebhookSnapshot,

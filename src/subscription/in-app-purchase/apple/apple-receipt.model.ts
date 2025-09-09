@@ -1,14 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { SchemaTypes } from 'mongoose';
-import { Subscription } from 'rxjs';
+import mongoose, { Document, SchemaTypes } from 'mongoose';
 import { ReceiptStatus } from 'src/enums/user.enum';
 
 @Schema({ timestamps: true })
 export class AppleReceipt extends Document {
   @Prop({ type: mongoose.Types.ObjectId, ref: 'Subscription', required: true })
-  subscription: Subscription; // The Subscription this receipt corresponds to
+  subscription: mongoose.Types.ObjectId; // The Subscription this receipt corresponds to
 
-  @Prop({ required: true })
+  @Prop({ unique: true })
   originalTransactionId: string; // Apple original_transaction_id for this subscription:contentReference[oaicite:9]{index=9}
 
   @Prop({ required: true })
@@ -31,6 +30,15 @@ export class AppleReceipt extends Document {
 
   @Prop()
   environment?: string; // "Sandbox" or "Production" environment as returned by Apple
+
+  @Prop()
+  latestReceipt?: string; // (Optional) latest_receipt string returned by Apple (if updated)
+
+  @Prop()
+  latestExpiresDate: Date; // (Optional) latest expiration date from latest_receipt_info (if available)
+
+  @Prop()
+  lastNotificationType?: string; // (Optional) last notification_type received from Apple server notifications
 }
 
 export const AppleReceiptSchema = SchemaFactory.createForClass(AppleReceipt);

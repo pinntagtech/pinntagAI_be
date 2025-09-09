@@ -120,7 +120,7 @@ import { User, UserSchema } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
 import { MailService } from 'src/mail/mail.service';
 import { S3Service } from 'src/s3.service';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { SmsService } from 'src/sms/sms.service';
 import { SeederService } from 'src/seeder/seeder.service';
 import { DriveService } from 'src/drive/drive.service';

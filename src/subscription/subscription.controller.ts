@@ -9,6 +9,11 @@ import {
   UseGuards,
   HttpStatus,
   BadRequestException,
+  HttpCode,
+  RawBodyRequest,
+  Req,
+  HttpException,
+  Headers,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
@@ -18,10 +23,17 @@ import { UserGuard } from 'src/auth/guards/user.guard';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
+import Stripe from 'stripe';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('subscription')
 export class SubscriptionController {
-  constructor(private readonly subscriptionService: SubscriptionService) {}
+  constructor(
+    private readonly subscriptionService: SubscriptionService,
+    private readonly stripeService: StripeService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Post('product')
   @UseGuards(AdminGuard2)
@@ -73,16 +85,43 @@ export class SubscriptionController {
     }
   }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateSubscriptionDto: UpdateSubscriptionDto,
+  @Post('stripe/webhooks')
+  @HttpCode(200)
+  async handleStripeWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
   ) {
-    return this.subscriptionService.update(+id, updateSubscriptionDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subscriptionService.remove(+id);
+    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    if (!secret)
+      throw new HttpException(
+        'Webhook secret not configured',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    const payload = req.rawBody;
+    let event: Stripe.Event;
+    const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    try {
+      // Verify webhook signature using Stripe SDK
+      event = this.stripeService.constructEventFromPayload(
+        payload,
+        signature,
+        endpointSecret,
+      );
+    } catch (err) {
+      console.error(
+        `⚠️  Webhook signature verification failed: ${err.message}`,
+      );
+      throw new BadRequestException('Invalid webhook signature');
+    }
+    try {
+      // req.body is Buffer because of raw body middleware in main.ts
+      await this.stripeService.handleStripeWebhook(event);
+      return { received: true };
+    } catch (e: any) {
+      throw new HttpException(
+        `Webhook Error: ${e.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }

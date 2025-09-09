@@ -77,7 +77,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { BusinessService } from 'src/business/business.service';
 import {

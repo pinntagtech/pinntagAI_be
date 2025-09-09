@@ -13,7 +13,7 @@ import { User, UserDocument } from 'src/user/models/user.model';
 import { TransactionPopulates } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -32,31 +32,47 @@ export class SubscriptionService {
 
   async createProduct(user: DecodedUser, data: CreateSubscriptionProductDto) {
     try {
-      const featureLimits = data.features.map(async (feature) => {
-        const createdFeatureLimit = await this.featureLimitModel.create({
-          ...feature,
-        });
-        return createdFeatureLimit._id;
-      });
       const createdProduct = await this.subscriptionProductModel.create({
-        ...data,
+        name: data.name,
+        description: data.description,
         createdBy: new mongoose.Types.ObjectId(user.id),
-        features: await Promise.all(featureLimits),
       });
       const createdStripeProduct = await this.stripeService.createProduct(
         data.name,
+        data.features,
         data.description,
-        data.features ? { features: data.features } : {},
       );
+      console.log('Created Stripe Product:', createdStripeProduct);
+      // const featureLimits = data.features.map(async (feature) => {
+      //   const createdFeatureLimit = await this.featureLimitModel.create({
+      //     ...feature,
+      //     product: createdProduct._id,
+      //   });
+      //   return createdFeatureLimit._id;
+      // });
+      // const createdFeatureLimits = await Promise.all(featureLimits);
+      let featureLimits = [];
+      for (const feature of data.features) {
+        const createdFeatureLimit = await this.featureLimitModel.create({
+          ...feature,
+          product: createdProduct._id,
+        });
+        featureLimits.push(createdFeatureLimit._id);
+      }
+      const createdFeatureLimits = featureLimits;
       const updatedProduct =
         await this.subscriptionProductModel.findByIdAndUpdate(
           createdProduct._id,
-          { stripeProductId: createdStripeProduct.id },
+          {
+            stripeProductId: createdStripeProduct.id,
+            features: createdFeatureLimits,
+          },
           { new: true },
         );
       return { success: true, data: updatedProduct };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error('Error creating product:', error);
+      return { success: false, message: 'Something went wrong' };
     }
   }
 

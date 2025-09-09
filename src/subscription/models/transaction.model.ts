@@ -69,6 +69,33 @@ export class Transaction extends Document {
 
   @Prop()
   googleOrderId?: string; // Google Order ID of this transaction (if available)
+
+  @Prop()
+  platform: string; // 'stripe' | 'apple' | 'google'
+
+  @Prop()
+  purchaseToken?: string; // Google purchaseToken or Stripe charge ID
+
+  @Prop()
+  notificationUUID?: string; // Apple notificationUUID
+
+  @Prop()
+  eventTime?: number; // Google event timestamp (ms)
+
+  @Prop()
+  type: string; // e.g., INITIAL_BUY, SUBSCRIPTION_RENEWED, etc.
+
+  @Prop()
+  subtype?: string;
+
+  @Prop()
+  productId?: string;
+
+  @Prop()
+  purchaseDate?: Date;
+
+  @Prop()
+  processedAt: Date;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

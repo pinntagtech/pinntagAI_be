@@ -20,8 +20,8 @@ import {
 import { NotificationModule } from './notification/notification.module';
 import { AppVersion, AppVersionSchema } from './models/appVersion.model';
 import { StripeModule } from 'nestjs-stripe';
-import { StripeeModule } from './stripe/stripe.module';
-import { InAppPurchaseModule } from './in-app-purchase/in-app-purchase.module';
+import { StripeeModule } from './subscription/stripe/stripe.module';
+import { InAppPurchaseModule } from './subscription/in-app-purchase/iap.module';
 import { Event, EventSchema } from './event/models/event.model';
 // import {
 //   BusinessProfile,
@@ -141,7 +141,7 @@ import { ContactUs, ContactUsSchema } from './user/models/contact-us.model';
 import { Report, ReportSchema } from './event/models/reports.model';
 import { SavedEvent, SavedEventSchema } from './event/models/savedEvent.model';
 import { SocketModule } from './socket/socket.module';
-import { StripeService } from './stripe/stripe.service';
+import { StripeService } from './subscription/stripe/stripe.service';
 import { MailService } from './mail/mail.service';
 import { SmsService } from './sms/sms.service';
 import {

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpException,
@@ -46,45 +47,6 @@ export class StripeController {
   }
 
   // Stripe webhook endpoint — must receive RAW body
-  @Post('webhooks/stripe')
-  @HttpCode(200)
-  async handleStripeWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers('stripe-signature') signature: string,
-  ) {
-    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
-    if (!secret)
-      throw new HttpException(
-        'Webhook secret not configured',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    const payload = req.rawBody;
-    let event: Stripe.Event;
-    const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
-    try {
-      // Verify webhook signature using Stripe SDK
-      event = this.stripeService.constructEventFromPayload(
-        payload,
-        signature,
-        endpointSecret,
-      );
-    } catch (err) {
-      console.error(
-        `⚠️  Webhook signature verification failed: ${err.message}`,
-      );
-      throw new BadRequestException('Invalid webhook signature');
-    }
-    try {
-      // req.body is Buffer because of raw body middleware in main.ts
-      await this.stripeService.handleStripeWebhook(event);
-      return { received: true };
-    } catch (e: any) {
-      throw new HttpException(
-        `Webhook Error: ${e.message}`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
 
   // @Post('webhooks/stripe')
   // async handleWebhook(

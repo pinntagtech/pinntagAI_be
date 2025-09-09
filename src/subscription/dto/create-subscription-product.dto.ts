@@ -22,7 +22,7 @@ export class CreateSubscriptionProductDto {
   name: string; // e.g. "Pro", "Mobile", "Custom"
 
   @IsNotEmpty()
-  @IsArray({ each: true })
+  @IsArray()
   @Validate(FeatureLimitData, { each: true })
   features: FeatureLimitData[];
 

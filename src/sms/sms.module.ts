@@ -64,7 +64,7 @@ import {
 } from 'src/subscription/models/transaction.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import { S3Service } from 'src/s3.service';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
 import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';

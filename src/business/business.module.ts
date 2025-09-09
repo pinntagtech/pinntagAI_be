@@ -50,7 +50,7 @@ import {
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { S3Service } from 'src/s3.service';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import {
   WebhookSnapshot,
   WebhookSnapshotSchema,

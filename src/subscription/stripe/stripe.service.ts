@@ -30,6 +30,7 @@ import {
 } from 'src/user/models/webhook.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { FeatureLimitData } from 'src/subscription/dto/create-subscription-product.dto';
 
 @Injectable()
 export class StripeService {
@@ -112,12 +113,16 @@ export class StripeService {
     );
   }
 
-  async createProduct(name: string, description?: string, metadata = {}) {
+  async createProduct(
+    name: string,
+    features: FeatureLimitData[],
+    description?: string,
+  ) {
     return await this.stripeClient.products.create({
       name,
       description,
       active: true,
-      metadata,
+      features: features.map((f) => ({ name: f.key + ' - ' + f.value })),
     });
   }
 

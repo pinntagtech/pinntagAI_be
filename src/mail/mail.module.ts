@@ -53,7 +53,7 @@ import {
   SavedEventSchema,
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
 import {
   WebhookSnapshot,

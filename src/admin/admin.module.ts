@@ -72,7 +72,7 @@ import {
   EventResponse,
   EventResponseSchema,
 } from 'src/event/models/event-response.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { Admin, AdminSchema } from './models/admin.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 // import { Permission, PermissionSchema } from './models/permission.model';

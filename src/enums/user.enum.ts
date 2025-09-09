@@ -70,6 +70,11 @@ export enum SubscriptionStatus {
   EXPIRED = 'expired', // fully expired (no longer active)
   PAUSED = 'paused', // subscription is paused
   CANCELLED = 'cancelled', // subscription is cancelled
+  REFUNDED = 'refunded', // subscription was refunded
+  ON_HOLD = 'on_hold', // subscription is on hold (Google-specific)
+  IN_GRACE_PERIOD = 'in_grace_period', // subscription is in grace period (Apple-specific)
+  FULFILLED = 'fulfilled', // one-time purchase fulfilled (if we track one-time purchases as subscriptions)
+  VOIDED = 'voided', // purchase was voided (refund)
 }
 
 export enum SubscriptionSource {
