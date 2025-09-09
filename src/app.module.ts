@@ -156,6 +156,7 @@ import {
 } from './business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from './rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
+import { EtlModule } from './etl/etl.module';
 
 @Module({
   imports: [
@@ -263,6 +264,7 @@ import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocum
     GoogleModule,
     RewardsModule,
     SocketModule,
+    EtlModule,
   ],
   controllers: [AppController],
   providers: [
