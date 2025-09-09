@@ -7,12 +7,21 @@ import { Model } from 'mongoose';
 import { CreateEtlSourceDto, UpdateEtlSourceDto } from './dto/ETL-sources.dto';
 import { ETL_Source_Group, ETL_Source_GroupDocument } from './models/etl-source-groups.model';
 import { CreateEtlSourceGroupDto, UpdateEtlSourceGroupDto } from './dto/ETL-source-group.dto';
+import { Admin } from 'mongodb';
+import { AdminDocument } from 'src/admin/models/admin.model';
+import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import { Role, RoleDocument } from 'src/roles/models/roles.model';
+import { PrivilegeService } from 'src/roles/privilege.service';
 
 @Injectable()
 export class EtlService {
   constructor(
     @InjectModel(ETL_Source.name) private readonly etlURLModel: Model<ETL_SourceDocument>,
     @InjectModel(ETL_Source_Group.name) private readonly etlUrlGroupModel: Model<ETL_Source_GroupDocument>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
+    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    private readonly privilegeService: PrivilegeService,
   ) {}
   // create(createEtlDto: CreateEtlDto) {
   //   return 'This action adds a new etl';
