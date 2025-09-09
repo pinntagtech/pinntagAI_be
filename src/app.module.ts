@@ -158,6 +158,7 @@ import { Reward, RewardSchema } from './rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { EtlModule } from './etl/etl.module';
 
 @Module({
   imports: [
@@ -267,6 +268,7 @@ import { join } from 'path';
     GoogleModule,
     RewardsModule,
     SocketModule,
+    EtlModule,
   ],
   controllers: [AppController],
   providers: [
