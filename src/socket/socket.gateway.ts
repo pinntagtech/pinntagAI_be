@@ -165,7 +165,7 @@ export class SocketGateway
     );
     client.emit('getDashboardCarouselEvent2Response', {
       message: result.message,
-      eventsResult: result.data.eventsResult,
+      eventsResult: result.data,
     });
   }
 

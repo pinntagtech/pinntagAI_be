@@ -521,7 +521,7 @@ export class AuthController {
     }
     return {
       message: result.message,
-      ...result.data,
+      eventsResult: result.data,
     };
   }
 

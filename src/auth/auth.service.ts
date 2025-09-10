@@ -170,7 +170,7 @@ export class AuthService {
     private readonly smsService: SmsService,
     private readonly seederService: SeederService,
 
-     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     const clientID = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_SECRET;
@@ -1761,7 +1761,6 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
-
     // const cached = await this.cacheManager.get<[any[], number]>('fetchEventsV2');
     // if (cached) {
     //   console.log('Cache hit for fetchEventsV2');
@@ -2255,7 +2254,7 @@ export class AuthService {
           creatorType: 1,
           isLiked: 1,
           isSaved: 1,
-          locations: { $slice: ["$locations", 1] },
+          locations: { $slice: ['$locations', 1] },
           schedules: {
             $sortArray: {
               input: '$schedules',
@@ -2975,10 +2974,13 @@ export class AuthService {
     // return result; // Return the arranged result
 
     // return filteredEvents; // Return the arranged result
-    
+
     // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
     return [dataRows, totalCount];
   }
+
+
+  
   async fetchBusinessListing(
     userId: mongoose.Types.ObjectId,
     longitude: number,
@@ -5749,213 +5751,276 @@ export class AuthService {
     industries?: Array<string>,
     isFollowedByMe?: boolean,
   ) {
+    // Early validation
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
         success: false,
         message: 'Please provide a valid id',
       };
     }
-    const carousel = await this.dashboardConfigModel.findById(carouselId);
+
+    // Validate date range early
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return {
+        success: false,
+        message: 'Start date cannot be greater than end date',
+      };
+    }
+
+    // Fetch carousel config once with lean() for better performance
+    const carousel = await this.dashboardConfigModel
+      .findById(carouselId)
+      .lean()
+      .exec();
+
     if (!carousel) {
       return {
         success: false,
         message: 'Carousel not found',
       };
     }
-    let match = {};
-    if (categoryIds.length) {
-      match['event.categories'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+
+    // Initialize empty result early for quick returns
+    const emptyResult = {
+      success: true,
+      message: 'Dashboard fetched successfully',
+      data: { eventsResult: [] },
+    };
+
+    // Build base query object
+    let query = await this.buildBaseQuery(
+      carousel,
+      categoryIds,
+      industries,
+      search,
+      user,
+    );
+
+    // Early return if no matching categories/industries
+    if (query === null) {
+      return emptyResult;
+    }
+
+    // Handle different carousel types
+    let eventsResult = [];
+    let totalCount = 0;
+
+    try {
+      switch (carousel.carouselType) {
+        case CarouselType.Business:
+          const businessQuery = await this.buildBusinessQuery(
+            carousel,
+            industries,
+            search,
+            isFollowedByMe,
+          );
+
+          if (businessQuery === null) {
+            return emptyResult;
+          }
+
+          [eventsResult, totalCount] = await this.fetchBusinessListing(
+            new mongoose.Types.ObjectId(user.id),
+            longitude,
+            latitude,
+            businessQuery,
+            1,
+            carousel.limit,
+            maxDistance,
+            startDate,
+            endDate,
+          );
+          eventsResult = eventsResult['data'];
+          break;
+
+        case CarouselType.Event:
+        case CarouselType.OnWheels:
+          [eventsResult, totalCount] = await this.fetchEventsV2(
+            new mongoose.Types.ObjectId(user.id),
+            longitude,
+            latitude,
+            query,
+            1,
+            carousel.limit,
+            carousel.carouselType,
+            maxDistance,
+            startDate,
+            endDate,
+          );
+          break;
+
+        default:
+          return emptyResult;
+      }
+
+      return {
+        success: true,
+        message: 'Dashboard fetched successfully',
+        data:  eventsResult ,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard carousel:', error);
+      return {
+        success: false,
+        message: 'An error occurred while fetching dashboard data',
+        data: { eventsResult: [] },
       };
     }
-    const currentDate = currentDateTz(timeZone);
+  }
 
-    let start = getZeroDateTz(new Date(), timeZone);
-    // console.log('Match:', match);
+  // Helper method to build base query
+  private async buildBaseQuery(
+    carousel: any,
+    categoryIds?: Array<string>,
+    industries?: Array<string>,
+    search?: string,
+    user?: DecodedUser,
+  ) {
+    let query: any = {};
 
-    if (startDate && endDate) {
-      if (new Date(startDate) > new Date(endDate)) {
-        return {
-          success: false,
-          message: 'Start date cannot be greater than end date',
-        };
+    // Handle categories filtering
+    if (categoryIds?.length) {
+      const validCategoryIds = categoryIds
+        .filter((id) => mongoose.isValidObjectId(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      const matchingCategories = validCategoryIds.filter((id) =>
+        carousel.categories.some((catId: any) => catId.equals(id)),
+      );
+
+      if (!matchingCategories.length) {
+        return null; // No matching categories
       }
+
+      query['event.categories'] = { $in: matchingCategories };
+    } else {
+      query['event.categories'] = { $in: carousel.categories };
     }
 
+    // Handle search with optimized business profile lookup
     if (search) {
-      // Search matching business profile name
-      const matchingBusinesses = await this.businessModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
-      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
-      match['$or'] = [
-        { 'event.title': { $regex: search, $options: 'i' } },
-        { 'event.description': { $regex: search, $options: 'i' } },
-        { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+      const searchRegex = { $regex: search, $options: 'i' };
+
+      // Use aggregation pipeline for better performance
+      const businessProfileIds = await this.businessModel
+        .find({ name: searchRegex })
+        .select('_id')
+        .lean()
+        .exec()
+        .then((businesses) => businesses.map((b) => b._id));
+
+      query.$or = [
+        { 'event.title': searchRegex },
+        { 'event.description': searchRegex },
+        { 'event.keywords': searchRegex },
+        ...(businessProfileIds.length
+          ? [{ 'event.businessProfile': { $in: businessProfileIds } }]
+          : []),
       ];
     }
 
-    let age = 0;
-    if (!user.isGuest) {
-      const foundUser = await this.userModel.findById(user.id);
-      age = foundUser.age ? foundUser.age : 0;
+    // Handle free/paid events
+    if (!carousel.freeIncluded) {
+      query['event.isFree'] = false;
     }
-    let data = {};
-    const config = await this.dashboardConfigModel.findById(carouselId).sort({
-      sortOrder: 1,
-    });
-    // if (match['event.categories']) {
-    //   delete match['event.categories'];
-    // }
-    let query = { ...match };
-    let eventsResult = [];
-    if (categoryIds.length) {
-      const matchingCategories = [];
-      categoryIds.forEach((id) => {
-        if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-          matchingCategories.push(new mongoose.Types.ObjectId(id));
-        }
-      });
-      if (matchingCategories.length) {
-        query = {
-          ...query,
-          'event.categories': {
-            $in: matchingCategories,
-          },
-        };
-      } else {
-        return {
-          success: true,
-          message: 'Dashboard fetched successfully',
-          data: {
-            eventsResult,
-          },
-        };
+
+    // Handle event types
+    const eventTypes = this.getEventTypes(carousel);
+    if (eventTypes.length) {
+      query['event.type'] =
+        eventTypes.length === 1 ? eventTypes[0] : { $in: eventTypes };
+    }
+
+    return query;
+  }
+
+  // Helper method to determine event types
+  private getEventTypes(carousel: any) {
+    const types = [];
+
+    if (carousel.eventsIncluded && carousel.offersIncluded) {
+      return [EventTypes.OFFER, EventTypes.FORMAL];
+    }
+
+    if (carousel.eventsIncluded) {
+      types.push(EventTypes.FORMAL);
+    }
+
+    if (carousel.offersIncluded) {
+      types.push(EventTypes.OFFER);
+    }
+
+    return types;
+  }
+
+  // Helper method to build business-specific query
+  private async buildBusinessQuery(
+    carousel: any,
+    industries?: Array<string>,
+    search?: string,
+    isFollowedByMe?: boolean,
+  ) {
+    let query: any = {};
+
+    // Handle industries filtering
+    if (industries?.length) {
+      const validIndustryIds = industries
+        .filter((id) => mongoose.isValidObjectId(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      const matchingIndustries = validIndustryIds.filter((id) =>
+        carousel.businessIndustries.some((indId: any) => indId.equals(id)),
+      );
+
+      if (!matchingIndustries.length) {
+        return null; // No matching industries
       }
+
+      query['industry._id'] = { $in: matchingIndustries };
     } else {
-      query = {
-        ...query,
-        'event.categories': { $in: config.categories },
-      };
+      query['industry._id'] = { $in: carousel.businessIndustries };
     }
 
-    if (!config.freeIncluded) {
-      query = {
-        ...query,
-        'event.isFree': false,
-      };
-    }
-    if (config.eventsIncluded && !config.offersIncluded) {
-      query = {
-        ...query,
-        'event.type': { $in: [EventTypes.FORMAL] },
-      };
-    } else if (config.offersIncluded && !config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': EventTypes.OFFER,
-      };
-    } else if (config.offersIncluded && config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': {
-          $in: [EventTypes.OFFER, EventTypes.FORMAL],
-        },
-      };
-    }
-    let totalCount = 0;
-
-    if (carousel.carouselType === CarouselType.Business) {
-      let newQuery = {};
-      if (industries && industries.length) {
-        const matchingIndustries = [];
-        industries.forEach((id) => {
-          if (
-            config.businessIndustries.includes(new mongoose.Types.ObjectId(id))
-          ) {
-            matchingIndustries.push(new mongoose.Types.ObjectId(id));
-          }
-        });
-        if (matchingIndustries.length) {
-          newQuery = {
-            'industry._id': {
-              $in: matchingIndustries,
-            },
-          };
-        } else {
-          return {
-            success: true,
-            message: 'Dashboard fetched successfully',
-            data: {
-              eventsResult,
-            },
-          };
-        }
-      } else {
-        newQuery = {
-          ...newQuery,
-          'industry._id': { $in: config.businessIndustries },
-        };
-      }
-      if (isFollowedByMe) {
-        newQuery = {
-          ...newQuery,
-          isFollowedByMe: isFollowedByMe,
-        };
-      }
-      if (search) {
-        newQuery['$or'] = [
-          { name: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-          { 'locations.address1': { $regex: search, $options: 'i' } },
-          { 'locations.address2': { $regex: search, $options: 'i' } },
-          { 'locations.city': { $regex: search, $options: 'i' } },
-          { 'locations.state': { $regex: search, $options: 'i' } },
-        ];
-      }
-
-      [eventsResult, totalCount] = await this.fetchBusinessListing(
-        new mongoose.Types.ObjectId(user.id),
-        longitude,
-        latitude,
-        newQuery,
-        1,
-        config.limit,
-        maxDistance,
-        startDate,
-        endDate,
-      );
-      eventsResult = eventsResult['data'];
-    } else if (
-      carousel.carouselType === CarouselType.Event ||
-      carousel.carouselType === CarouselType.OnWheels
-    ) {
-      console.log('Carourselll TYPEEE:', carousel.carouselType);
-      [eventsResult, totalCount] = await this.fetchEventsV2(
-        new mongoose.Types.ObjectId(user.id),
-        longitude,
-        latitude,
-        query,
-        1,
-        config.limit,
-        carousel.carouselType,
-        maxDistance,
-        startDate,
-        endDate,
-      );
+    // Handle followed businesses
+    if (isFollowedByMe) {
+      query.isFollowedByMe = true;
     }
 
-    return {
-      success: true,
-      message: 'Dashboard fetched successfully',
-      data: {
-        eventsResult,
-      },
-    };
+    // Handle search for business queries
+    if (search) {
+      const searchRegex = { $regex: search, $options: 'i' };
+      query.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+        { 'locations.address1': searchRegex },
+        { 'locations.address2': searchRegex },
+        { 'locations.city': searchRegex },
+        { 'locations.state': searchRegex },
+      ];
+    }
+
+    return query;
+  }
+
+  // Optional: Add caching helper for frequently accessed carousels
+  private async getCarouselWithCache(carouselId: string) {
+    const cacheKey = `carousel:${carouselId}`;
+
+    // Check cache first (implement your caching strategy)
+    // const cached = await this.cacheService.get(cacheKey);
+    // if (cached) return cached;
+
+    const carousel = await this.dashboardConfigModel
+      .findById(carouselId)
+      .lean()
+      .exec();
+
+    // Cache for future use (e.g., 5 minutes)
+    // if (carousel) {
+    //   await this.cacheService.set(cacheKey, carousel, 300);
+    // }
+
+    return carousel;
   }
   async autoGeneratePassword(length: number = 12) {
     try {
