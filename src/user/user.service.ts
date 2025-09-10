@@ -20,23 +20,22 @@ import { ChangePasswordDto } from './dto/changePassword.dto';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/updateProfile.dto';
 import { Follow, FollowDocument } from './models/follow.model';
-import {
-  DurationType,
-  SubscriptionProduct,
-  SubscriptionProductDocument,
-} from 'src/subscription/models/subscriptionProduct.model';
+import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionDocument,
 } from 'src/subscription/models/subscription.model';
-import { Refferal, RefferalDocument } from './models/refferal.model';
+import {
+  Refferal,
+  RefferalDocument,
+} from '../subscription/models/refferal.model';
 import { S3Service } from 'src/s3.service';
 import {
   Notification,
   NotificationDocument,
 } from 'src/notification/models/notification.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { Transaction, TransactionDocument } from './models/transaction.model';
+import { Transaction } from '../subscription/models/transaction.model';
 import { ContactUs, ContactUsDocument } from './models/contact-us.model';
 import { ContactUsDto } from './dto/contact-us.dto';
 import { Event, EventDocument } from 'src/event/models/event.model';
@@ -46,7 +45,7 @@ import {
   SavedEventDocument,
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { NotificationTypes } from 'src/enums/event.enums';
@@ -62,7 +61,10 @@ import { FirebaseService } from 'src/notification/firebase.service';
 import { BusinessService } from 'src/business/business.service';
 import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
-import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 import { UserAllowedNotification } from 'src/business/model/userAllowedNotification.model';
 
 @Injectable()
@@ -75,7 +77,7 @@ export class UserService {
     private readonly followModel: Model<FollowDocument>,
     // @InjectModel(BusinessProfile.name) private readonly businessProfileModel: Model<BusinessProfileDocument>,
     @InjectModel(SubscriptionProduct.name)
-    private readonly subscriptionProductModel: Model<SubscriptionProductDocument>,
+    private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(Refferal.name)
@@ -83,7 +85,7 @@ export class UserService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Transaction.name)
-    private readonly transactionModel: Model<TransactionDocument>,
+    private readonly transactionModel: Model<Transaction>,
     @InjectModel(ContactUs.name)
     private readonly contactUsModel: Model<ContactUsDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
@@ -95,9 +97,12 @@ export class UserService {
     private readonly templateModel: Model<TemplateDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
-    @InjectModel(Reward.name) private readonly rewardModel: Model<RewardDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
-    @InjectModel(UserAllowedNotification.name) private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
+    @InjectModel(Reward.name)
+    private readonly rewardModel: Model<RewardDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(UserAllowedNotification.name)
+    private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
     private readonly logger: Logger,
     private readonly s3Service: S3Service,
     private readonly stripeService: StripeService,
@@ -225,7 +230,9 @@ export class UserService {
         startDate: new Date(subscription.current_period_start * 1000),
         endDate: new Date(subscription.current_period_end * 1000),
       });
-      createdSubscription.transaction = createdTransaction._id;
+      createdSubscription.transaction = new mongoose.Types.ObjectId(
+        createdTransaction.id,
+      );
       await createdSubscription.save();
 
       // update subscription metadata
@@ -797,9 +804,12 @@ export class UserService {
         // }
         // }
 
-        this.businessNotification(userId,businessProfile.id,NotificationTypes.FOLLOW,message);
-        
-
+        this.businessNotification(
+          userId,
+          businessProfile.id,
+          NotificationTypes.FOLLOW,
+          message,
+        );
       }
     }
     const resp = followingType == User.name ? 'User' : 'Business';
@@ -1144,146 +1154,148 @@ export class UserService {
   }
 
   async getAllChildUserIds2(userId) {
-      const objectId = new mongoose.Types.ObjectId(userId);
-      const result = await this.businessUserModel
-        .aggregate([
-          {
-            $match: { _id: objectId },
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const result = await this.businessUserModel
+      .aggregate([
+        {
+          $match: { _id: objectId },
+        },
+        {
+          $graphLookup: {
+            from: this.businessUserModel.collection.name,
+            startWith: '$_id',
+            connectFromField: '_id',
+            connectToField: 'creator',
+            as: 'descendants',
+            restrictSearchWithMatch: {
+              creatorType: BusinessUserCreatorType.BUSINESS,
+            },
           },
-          {
-            $graphLookup: {
-              from: this.businessUserModel.collection.name,
-              startWith: '$_id',
-              connectFromField: '_id',
-              connectToField: 'creator',
-              as: 'descendants',
-              restrictSearchWithMatch: {
-                creatorType: BusinessUserCreatorType.BUSINESS,
+        },
+        {
+          $project: {
+            _id: 0,
+            descendantIds: {
+              $map: {
+                input: '$descendants',
+                as: 'd',
+                in: { $toString: '$$d._id' },
               },
             },
           },
-          {
-            $project: {
-              _id: 0,
-              descendantIds: {
-                $map: {
-                  input: '$descendants',
-                  as: 'd',
-                  in: { $toString: '$$d._id' },
-                },
-              },
-            },
-          },
-        ])
-        .exec();
-  
-      return result[0]?.descendantIds || [];
-    }
+        },
+      ])
+      .exec();
+
+    return result[0]?.descendantIds || [];
+  }
 
   async businessNotification(
-      consumerId: string,
-      contentId: string,
-      notificationType: string,
-      message: string,
-    ) {
-      try {
-        console.log("BUSINESS NOTIFICATION DATAAAA:",consumerId, contentId, notificationType, message);
-        let content = null;
-        let business = null;
+    consumerId: string,
+    contentId: string,
+    notificationType: string,
+    message: string,
+  ) {
+    try {
+      console.log(
+        'BUSINESS NOTIFICATION DATAAAA:',
+        consumerId,
+        contentId,
+        notificationType,
+        message,
+      );
+      let content = null;
+      let business = null;
+      if (
+        notificationType == NotificationTypes.EVENT ||
+        notificationType == NotificationTypes.REPORT
+      ) {
+        content = await this.eventModel.findById(contentId);
+        business = await this.businessModel.findById(content.businessProfile);
+      } else if (notificationType == NotificationTypes.REWARD) {
+        content = await this.rewardModel.findById(contentId);
+        business = await this.businessModel.findById(content.businessProfile);
+      } else if (notificationType == NotificationTypes.FOLLOW) {
+        business = await this.businessModel.findById(contentId);
+      }
+
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const downlineUsers = await this.getAllChildUserIds2(
+        business.authorisedUser,
+      );
+      console.log('Downline Users:', downlineUsers);
+      let notifcationEnabledUsers = [];
+      notifcationEnabledUsers.push(business.authorisedUser);
+      for (const user of downlineUsers) {
+        const isUserEnabled = await this.userAllowedNotificationModel.findOne({
+          user: user,
+          notificationType: notificationType,
+        });
+        if (isUserEnabled) {
+          notifcationEnabledUsers.push(user);
+        }
+      }
+
+      console.log('Notification Enabled Users:', notifcationEnabledUsers);
+
+      for (const user of notifcationEnabledUsers) {
+        let notiObj = {
+          user: user,
+          userType: BusinessUser.name,
+          message,
+          type: notificationType,
+          targetType: Business.name,
+          targetUser: new mongoose.Types.ObjectId(consumerId),
+        };
         if (
           notificationType == NotificationTypes.EVENT ||
           notificationType == NotificationTypes.REPORT
         ) {
-          content = await this.eventModel.findById(contentId);
-          business = await this.businessModel.findById(
-            content.businessProfile,
-          );
+          notiObj['event'] = new mongoose.Types.ObjectId(contentId);
         } else if (notificationType == NotificationTypes.REWARD) {
-          content = await this.rewardModel.findById(contentId);
-          business = await this.businessModel.findById(
-            content.businessProfile,
-          );
-        }else if( notificationType == NotificationTypes.FOLLOW) {
-          business = await this.businessModel.findById(contentId);
+          notiObj['reward'] = new mongoose.Types.ObjectId(contentId);
+        } else if (notificationType == NotificationTypes.FOLLOW) {
+          notiObj['business'] = new mongoose.Types.ObjectId(contentId);
         }
-  
-        if (!business) {
-          return {
-            success: false,
-            message: 'Business not found with given ID',
-          };
-        }
-  
-        const downlineUsers = await this.getAllChildUserIds2(
-          business.authorisedUser,
-        );
-        console.log('Downline Users:', downlineUsers);
-        let notifcationEnabledUsers = [];
-        notifcationEnabledUsers.push(business.authorisedUser);
-        for (const user of downlineUsers) {
-          const isUserEnabled = await this.userAllowedNotificationModel.findOne({
-            user: user,
-            notificationType: notificationType,
-          });
-          if (isUserEnabled) {
-            notifcationEnabledUsers.push(user);
-          }
-        }
-  
-        console.log('Notification Enabled Users:', notifcationEnabledUsers);
-  
-        for (const user of notifcationEnabledUsers) {
-          let notiObj = {
-            user: user,
-            userType: BusinessUser.name,
+
+        await this.notificationModel.create({
+          ...notiObj,
+        });
+
+        const fcmTokens = await this.tokenModel.find({
+          user: new mongoose.Types.ObjectId(user),
+          type: TokenTypes.FCM,
+        });
+
+        console.log('fcmTokens', fcmTokens);
+        for (let j = 0; j < fcmTokens.length; j++) {
+          this.firebaseService.sendNotification(
+            fcmTokens[j].token,
             message,
-            type: notificationType,
-            targetType: User.name,
-            targetUser: new mongoose.Types.ObjectId(consumerId),
-          };
-          if (
-            notificationType == NotificationTypes.EVENT ||
-            notificationType == NotificationTypes.REPORT
-          ) {
-            notiObj['event'] = new mongoose.Types.ObjectId(contentId);
-          } else if (notificationType == NotificationTypes.REWARD) {
-            notiObj['reward'] = new mongoose.Types.ObjectId(contentId);
-          } else if (notificationType == NotificationTypes.FOLLOW) {
-            notiObj['business'] = new mongoose.Types.ObjectId(contentId);
-          }
-  
-          await this.notificationModel.create({
-            ...notiObj,
-          });
-  
-          const fcmTokens = await this.tokenModel.find({
-            user: new mongoose.Types.ObjectId(user),
-            type: TokenTypes.FCM,
-          });
-  
-          console.log('fcmTokens', fcmTokens);
-          for (let j = 0; j < fcmTokens.length; j++) {
-            this.firebaseService.sendNotification(
-              fcmTokens[j].token,
-              message,
-              message,
-              {
-                data: { content: contentId, notificationType: notificationType },
-              },
-            );
-          }
+            message,
+            {
+              data: { content: contentId, notificationType: notificationType },
+            },
+          );
         }
-  
-        return {
-          success: true,
-          message: 'Downline users fetched successfully',
-          data: downlineUsers,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: error.message,
-        };
       }
+
+      return {
+        success: true,
+        message: 'Downline users fetched successfully',
+        data: downlineUsers,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
+  }
 }

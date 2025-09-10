@@ -19,18 +19,24 @@ import { Follow, FollowSchema } from './models/follow.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import {
   Subscription,
   SubscriptionSchema,
 } from 'src/subscription/models/subscription.model';
-import { Refferal, RefferalSchema } from './models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from '../subscription/models/refferal.model';
 import { S3Service } from 'src/s3.service';
 import {
   Notification,
   NotificationSchema,
 } from 'src/notification/models/notification.model';
-import { Transaction, TransactionSchema } from './models/transaction.model';
+import {
+  Transaction,
+  TransactionSchema,
+} from '../subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from './models/contact-us.model';
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
@@ -39,7 +45,7 @@ import {
   SavedEventSchema,
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { WebhookSnapshot, WebhookSnapshotSchema } from './models/webhook.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import {
@@ -166,7 +172,7 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
       { name: Folder.name, schema: FolderSchema },
       { name: File.name, schema: FileSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema},
+      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Reward.name, schema: RewardSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       {

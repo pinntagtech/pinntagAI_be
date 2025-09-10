@@ -3,7 +3,7 @@ import { Business } from 'src/business/model/business.model';
 import { CarouselType, DeviceTypes } from 'src/enums/auth.enums';
 import { EventTypes } from 'src/enums/event.enums';
 import { RoleBelonging, Roles } from 'src/roles/enums/roles.enum';
-import { DurationType } from 'src/subscription/models/subscriptionProduct.model';
+import { BillingInterval } from 'src/subscription/models/subscription-price.model';
 
 export enum BusinessIndustries {
   FOOD_DRINK = 'Food & Drink',
@@ -441,7 +441,7 @@ export const Seeder = {
       name: 'Annual',
       description: 'Pay annually and save 25%',
       price: 479.99,
-      durationType: DurationType.ANNUAL,
+      interval: BillingInterval.ANNUAL,
       duration: 1,
       isRecommended: true,
       stripeProductId: 'price_1PD5hKDkH0yJD0lhyKPKC1in',
@@ -450,7 +450,7 @@ export const Seeder = {
       name: 'Monthly',
       description: 'Pay monthly',
       price: 49.99,
-      durationType: DurationType.MONTHLY,
+      interval: BillingInterval.MONTHLY,
       duration: 1,
       isRecommended: false,
       stripeProductId: 'price_1PD5epDkH0yJD0lhkeroy5jp',
@@ -459,7 +459,7 @@ export const Seeder = {
       name: 'Free',
       description: 'Free subscription for 30 days',
       price: 0.0,
-      durationType: DurationType.MONTHLY,
+      interval: BillingInterval.MONTHLY,
       duration: 1,
       isRecommended: false,
     },

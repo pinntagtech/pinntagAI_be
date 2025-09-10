@@ -24,22 +24,40 @@ import { RedisBullService } from './redisBull.service';
 import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 import { Subscription } from 'rxjs';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { FileSchema } from 'src/drive/models/file.model';
 import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { EventSchema } from 'src/event/models/event.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
-import { SavedEvent, SavedEventSchema } from 'src/event/models/savedEvent.model';
+import {
+  SavedEvent,
+  SavedEventSchema,
+} from 'src/event/models/savedEvent.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
 import { SubscriptionSchema } from 'src/subscription/models/subscription.model';
-import { SubscriptionProduct, SubscriptionProductSchema } from 'src/subscription/models/subscriptionProduct.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
-import { Transaction,TransactionSchema } from 'src/user/models/transaction.model';
-import { FileCategory, FileCategorySchema } from 'src/drive/models/fileCategory.model';
+import {
+  FileCategory,
+  FileCategorySchema,
+} from 'src/drive/models/fileCategory.model';
 import { S3Service } from 'src/s3.service';
+import {
+  Transaction,
+  TransactionSchema,
+} from 'src/subscription/models/transaction.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
+import {
+  SubscriptionProduct,
+  SubscriptionProductSchema,
+} from 'src/subscription/models/subscription-product.model';
 
 @Module({
   imports: [
@@ -78,7 +96,6 @@ import { S3Service } from 'src/s3.service';
       { name: Business.name, schema: BusinessSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
-
     ]),
   ],
   controllers: [NotificationController],

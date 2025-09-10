@@ -33,7 +33,10 @@ import {
 import { JwtPayload } from './interfaces/tokenPayload.interface';
 import { DecodedUser } from './interfaces/decodedUser.interface';
 import { Token, TokenDocument } from './models/token.model';
-import { Refferal, RefferalDocument } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalDocument,
+} from 'src/subscription/models/refferal.model';
 // import {
 //   BusinessProfile,
 //   BusinessProfileDocument,
@@ -59,7 +62,7 @@ import {
   getZeroDateTz,
   haversineDistance,
 } from 'src/helpers/event.helpers';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import { GetDashboardDto } from './dto/getDashboard.dto';
 import { manipulateImageName } from 'src/helpers/upload.helpers';

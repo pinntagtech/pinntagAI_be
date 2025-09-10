@@ -105,19 +105,22 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
+} from 'src/subscription/models/subscription-product.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { User, UserSchema } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
 import { MailService } from 'src/mail/mail.service';
 import { S3Service } from 'src/s3.service';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { SmsService } from 'src/sms/sms.service';
 import { SeederService } from 'src/seeder/seeder.service';
 import { DriveService } from 'src/drive/drive.service';
@@ -130,11 +133,20 @@ import { FirebaseService } from 'src/notification/firebase.service';
 import { Tag, TagSchema } from 'src/models/tags.model';
 import { BusinessService } from 'src/business/business.service';
 import { Brand, BrandSchema } from 'src/business/model/brand.model';
-import { LocationGroup, LocationGroupSchema } from 'src/business/model/locationGroup.model';
-import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import {
+  LocationGroup,
+  LocationGroupSchema,
+} from 'src/business/model/locationGroup.model';
+import {
+  UserReward,
+  UserRewardSchema,
+} from 'src/rewards/model/userReward.model';
 import { Rating, RatingSchema } from 'src/business/model/rating.model';
 import { Menu, MenuSchema } from 'src/business/model/menu.model';
-import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
@@ -199,7 +211,10 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
       { name: LocationGroup.name, schema: LocationGroupSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: Rating.name, schema: RatingSchema },
-      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
       { name: Menu.name, schema: MenuSchema },
       { name: Reward.name, schema: RewardSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },

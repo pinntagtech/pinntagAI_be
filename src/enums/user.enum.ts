@@ -3,8 +3,6 @@ import { User } from 'src/user/models/user.model';
 import { Business } from 'src/business/model/business.model';
 import { LocationClass } from 'src/business/model/types.model';
 
-
-
 export const BusinessProfileStatus = {
   ACTIVE: 0,
   VERIFIED: 1,
@@ -14,7 +12,7 @@ export const BusinessProfileStatus = {
 export const UserProfileStatus = {
   INITIATED: 0,
   DETAILS_ADDED: 1,
-}
+};
 
 export const FollowingStatus = {
   PENDING: 0,
@@ -64,8 +62,35 @@ export const ExmpLocKeys = Object.keys(Loc);
 
 export const ProfileTypes = ['User', Business.name];
 
-export const SubscriptionStatus = {
-  ACTIVE: 0,
-  PAUSED: 1,
-  PENDING_PAYMENT: 2,
-};
+export enum SubscriptionStatus {
+  ACTIVE = 'active',
+  TRIAL = 'trial', // in trial period
+  PAST_DUE = 'past_due', // payment failed, in grace period
+  CANCELED = 'canceled', // canceled (will not renew, but might still be active until expiry)
+  EXPIRED = 'expired', // fully expired (no longer active)
+  PAUSED = 'paused', // subscription is paused
+  CANCELLED = 'cancelled', // subscription is cancelled
+  REFUNDED = 'refunded', // subscription was refunded
+  ON_HOLD = 'on_hold', // subscription is on hold (Google-specific)
+  IN_GRACE_PERIOD = 'in_grace_period', // subscription is in grace period (Apple-specific)
+  FULFILLED = 'fulfilled', // one-time purchase fulfilled (if we track one-time purchases as subscriptions)
+  VOIDED = 'voided', // purchase was voided (refund)
+}
+
+export enum SubscriptionSource {
+  STRIPE = 'stripe',
+  APPLE = 'apple',
+  GOOGLE = 'google',
+}
+
+export enum ReceiptStatus {
+  PENDING = 'pending', // not yet validated or pending action
+  VALID = 'valid', // successfully validated and active
+  EXPIRED = 'expired', // subscription receipt expired/lapsed
+  INVALID = 'invalid', // invalid or failed verification
+}
+
+export enum CurrencyTypes {
+  USD = 'USD',
+  EUR = 'EUR',
+}

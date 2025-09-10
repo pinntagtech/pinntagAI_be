@@ -8,7 +8,7 @@ import { User, UserSchema } from 'src/user/models/user.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 // import {
 //   BusinessProfile,
 //   BusinessProfileSchema,

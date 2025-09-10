@@ -57,12 +57,15 @@ import {
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from 'src/subscription/models/subscriptionProduct.model';
-import { Refferal, RefferalSchema } from 'src/user/models/refferal.model';
+} from 'src/subscription/models/subscription-product.model';
+import {
+  Refferal,
+  RefferalSchema,
+} from 'src/subscription/models/refferal.model';
 import {
   Transaction,
   TransactionSchema,
-} from 'src/user/models/transaction.model';
+} from 'src/subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Report, ReportSchema } from 'src/event/models/reports.model';
 import {
@@ -74,7 +77,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
-import { StripeService } from 'src/stripe/stripe.service';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { BusinessService } from 'src/business/business.service';
 import {
@@ -140,11 +143,26 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { SmsService } from 'src/sms/sms.service';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
-import { EventResponse, EventResponseSchema } from 'src/event/models/event-response.model';
-import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
-import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
+import {
+  EventResponse,
+  EventResponseSchema,
+} from 'src/event/models/event-response.model';
+import {
+  EventSchedule,
+  EventScheduleSchema,
+} from 'src/event/models/event-schedule.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from 'src/admin/models/BusinessDocVerificationLeads.model';
+import {
+  OwnershipTransferRecord,
+  OwnershipTransferRecordSchema,
+} from 'src/business/model/ownershipTransferRecords.model';
 
 @Module({
   imports: [
@@ -211,8 +229,14 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
     ]),
   ],
   controllers: [RewardsController],

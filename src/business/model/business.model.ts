@@ -275,6 +275,9 @@ export class Business {
   scalabilityFactor: number;
 
   @Prop()
+  stripeCustomerId: string;
+
+  @Prop()
   tags: string[];
 
   @Prop()

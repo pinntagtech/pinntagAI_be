@@ -16,12 +16,12 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
-} from './subscription/models/subscriptionProduct.model';
+} from './subscription/models/subscription-product.model';
 import { NotificationModule } from './notification/notification.module';
 import { AppVersion, AppVersionSchema } from './models/appVersion.model';
 import { StripeModule } from 'nestjs-stripe';
-import { StripeeModule } from './stripe/stripe.module';
-import { InAppPurchaseModule } from './in-app-purchase/in-app-purchase.module';
+import { StripeeModule } from './subscription/stripe/stripe.module';
+import { InAppPurchaseModule } from './subscription/in-app-purchase/iap.module';
 import { Event, EventSchema } from './event/models/event.model';
 // import {
 //   BusinessProfile,
@@ -110,7 +110,7 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from './auth/models/guestSession.model';
-import { Refferal, RefferalSchema } from './user/models/refferal.model';
+import { Refferal, RefferalSchema } from './subscription/models/refferal.model';
 import {
   EventLocation,
   EventLocationSchema,
@@ -136,12 +136,12 @@ import {
 import {
   Transaction,
   TransactionSchema,
-} from './user/models/transaction.model';
+} from './subscription/models/transaction.model';
 import { ContactUs, ContactUsSchema } from './user/models/contact-us.model';
 import { Report, ReportSchema } from './event/models/reports.model';
 import { SavedEvent, SavedEventSchema } from './event/models/savedEvent.model';
 import { SocketModule } from './socket/socket.module';
-import { StripeService } from './stripe/stripe.service';
+import { StripeService } from './subscription/stripe/stripe.service';
 import { MailService } from './mail/mail.service';
 import { SmsService } from './sms/sms.service';
 import {
@@ -158,6 +158,7 @@ import { Reward, RewardSchema } from './rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { EtlModule } from './etl/etl.module';
 
 @Module({
   imports: [
@@ -267,6 +268,7 @@ import { join } from 'path';
     GoogleModule,
     RewardsModule,
     SocketModule,
+    EtlModule,
   ],
   controllers: [AppController],
   providers: [

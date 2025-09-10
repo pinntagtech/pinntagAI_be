@@ -61,6 +61,8 @@ export const ResourceTypes = {
   ADDRESSES: 'addresses',
   PRIVILEGES: 'privileges',
   OUTLETS: 'outlets',
+  ETL_Source: 'etl_source',
+  ETL_Source_Group: 'etl_source_group',
   // PAYMENT_METHODS: 'payment_methods',
   // SHIPPING_METHODS: 'shipping_methods',
   // ORDER_STATUSES: 'order_statuses',
