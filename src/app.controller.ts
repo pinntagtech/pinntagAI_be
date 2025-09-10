@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { RateLimitGuard } from './auth/guards/rateLimiter.guard';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { REDIS_TTL } from './enums/auth.enums';
 
 class GPTRequestDto {
   @IsString()
@@ -38,7 +39,7 @@ export class AppController {
     const result = await this.appService.getCategories();
 
     // 3. Save result in Redis with TTL of 1 day
-    await this.cacheManager.set('categories', result, 86400);
+    await this.cacheManager.set('categories', result, REDIS_TTL.ONEDAY);
 
     console.log('📦 Cached categories in Redis');
     return { categories: result };

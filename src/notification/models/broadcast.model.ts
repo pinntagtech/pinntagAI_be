@@ -37,6 +37,7 @@ export class Broadcast extends Document {
 
   @Prop({ enum: Object.values(BroadcastStatus), default: BroadcastStatus.IN_PROGRESS })
   status: string;
+  
 
 }
 

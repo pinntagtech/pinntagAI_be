@@ -18,6 +18,7 @@ import { UserService } from 'src/user/user.service';
 import {
   CarouselType,
   OtpTypes,
+  REDIS_TTL,
   SMSType,
   TokenTypes,
   UserTypes,
@@ -1758,11 +1759,11 @@ export class AuthService {
     endDate?: any,
   ) {
 
-    const cached = await this.cacheManager.get<[any[], number]>('fetchEventsV2');
-    if (cached) {
-      console.log('Cache hit for fetchEventsV2');
-      return cached;
-    }
+    // const cached = await this.cacheManager.get<[any[], number]>('fetchEventsV2');
+    // if (cached) {
+    //   console.log('Cache hit for fetchEventsV2');
+    //   return cached;
+    // }
 
     const now = new Date();
     startDate = startDate ? new Date(startDate) : now;
@@ -2972,7 +2973,7 @@ export class AuthService {
 
     // return filteredEvents; // Return the arranged result
     
-    await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], 86400);
+    // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
     return [dataRows, totalCount];
   }
   async fetchBusinessListing(

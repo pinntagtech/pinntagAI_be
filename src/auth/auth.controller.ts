@@ -14,6 +14,7 @@ import {
   Param,
   BadRequestException,
   Put,
+  Inject,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -36,16 +37,20 @@ import { RefreshFcmDto } from './dto/refreshFcm.dto';
 import { SignupAuthDto } from './dto/signup-auth.dto';
 import { PersonDetailDto } from './dto/personalDetail.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import { UserTypes } from 'src/enums/auth.enums';
+import { REDIS_TTL, UserTypes } from 'src/enums/auth.enums';
 import { JwtGuard2 } from './guards2/jwt2.guard';
 import { ResetPasswordGuard } from './guards2/resetPassword.guard';
 import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
 import { DashboardSearchDto } from './dto/dashboardSearch.dto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   @Post('upload/photo')
   @UseGuards(UserGuard)
@@ -318,7 +323,17 @@ export class AuthController {
     if (!carouselType) {
       throw new BadRequestException('Carousel type is required');
     }
+    const cached = await this.cacheManager.get('getAllConfigs');
+    if( cached) {
+      console.log('✅ Returning getAllConfigs from Redis');
+      return { 
+        message: 'Carousels fetched successfully',
+        data: cached
+      };
+    }
+    
     const result = await this.authService.getDashboardAllConfigs(carouselType);
+    await this.cacheManager.set('getAllConfigs', result, REDIS_TTL.ONEDAY);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -483,6 +498,9 @@ export class AuthController {
       }
     }
     console.log('Distance in controller:', distance);
+
+    
+
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
       id,

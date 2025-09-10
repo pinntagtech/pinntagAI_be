@@ -53,6 +53,9 @@ export class Notification {
   reward: mongoose.Types.ObjectId;
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;
+
+  @Prop()
+  broadcast: mongoose.Types.ObjectId;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

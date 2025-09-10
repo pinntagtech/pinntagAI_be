@@ -102,6 +102,7 @@ export class RedisBullService {
           type: NotificationTypes.BROADCAST,
           targetType: Business.name,
           targetUser: new mongoose.Types.ObjectId(broadcast.business),
+          broadcast: new mongoose.Types.ObjectId(broadcast.id),
         });
       }
       await this.broadcastModel.updateOne(
