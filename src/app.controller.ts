@@ -1,7 +1,16 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { RateLimitGuard } from './auth/guards/rateLimiter.guard';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 class GPTRequestDto {
   @IsString()
@@ -10,15 +19,29 @@ class GPTRequestDto {
 }
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   @Get('categories')
   @UseGuards(RateLimitGuard)
   async getCategories() {
+    console.log('Inside Controller');
+    const cached = await this.cacheManager.get('categories');
+    if (cached) {
+      console.log('✅ Returning categories from Redis');
+      return { categories: cached };
+    }
+
+    // 2. If not in Redis, call the service
     const result = await this.appService.getCategories();
-    return {
-      categories: result,
-    };
+
+    // 3. Save result in Redis with TTL of 1 day
+    await this.cacheManager.set('categories', result, 86400);
+
+    console.log('📦 Cached categories in Redis');
+    return { categories: result };
   }
   @Get('businessIndustries')
   @UseGuards(RateLimitGuard)

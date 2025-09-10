@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Two-Factor Authentication</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 22px;
+            color: #222222;
+        }
+        .otp {
+            display: inline-block;
+            margin: 15px 0;
+            padding: 12px 20px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #ffffff;
+            background-color: #007bff;
+            border-radius: 6px;
+        }
+        .footer {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #777777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Two-Factor Authentication</h1>
+        <p>Hi {{name}},</p>
+        <p>
+            To verify yourself, please enter the One-Time Password (OTP) below:
+        </p>
+        <div class="otp">{{otp}}</div>
+        <p>This OTP is valid for <strong>{{otpExpiry}}</strong>.</p>
+        <p>If you did not attempt to log in, please ignore this email or secure your account immediately.</p>
+        <p>Best regards,<br>Pinntag Security Team</p>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

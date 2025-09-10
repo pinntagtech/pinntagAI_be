@@ -55,6 +55,7 @@ import {
   BusinessUserSchema,
 } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
       { name: File.name, schema: FileSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Business.name, schema: BusinessSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   controllers: [DriveController],

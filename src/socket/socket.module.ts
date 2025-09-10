@@ -148,6 +148,9 @@ import {
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
 
 @Module({
   imports: [
@@ -214,6 +217,9 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
       },
       { name: Menu.name, schema: MenuSchema },
       { name: Reward.name, schema: RewardSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
     ]),
   ],
   providers: [

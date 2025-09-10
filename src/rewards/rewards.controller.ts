@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   BadRequestException,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -23,7 +24,7 @@ import {
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
-import { CreateRewardDto } from './dto/create-reward.dto';
+import { CreateRewardDto, UpdateRewardDto } from './dto/create-reward.dto';
 import { Response } from 'express';
 import { RewardsService } from './rewards.service';
 import { isValidObjectId } from 'mongoose';
@@ -70,6 +71,40 @@ export class RewardsController {
       throw new BadRequestException('Cover Image is required');
     }
     const result = await this.rewardService.createReward(
+      data,
+      user,
+      files.images,
+      files.qrCode,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Patch(':id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 1 },
+      { name: 'qrCode', maxCount: 1 },
+    ]),
+  )
+  async updateReward(
+    @Param('id') id: string,
+    @Body() data: UpdateRewardDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFiles()
+    files: { images?: Express.Multer.File[]; qrCode?: Express.Multer.File },
+  ) {
+    if (user.userType !== UserTypes.BUSINESS) {
+      throw new BadRequestException('Unauthorized');
+    }
+    const result = await this.rewardService.updateReward(
+      id,
       data,
       user,
       files.images,

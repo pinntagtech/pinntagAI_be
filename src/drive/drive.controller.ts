@@ -26,6 +26,8 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { Token } from 'src/auth/models/token.model';
 import { DirectoryService } from 'aws-sdk';
+import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
+import { CreateSampleDocumentDto } from './dto/createSampleDocument.dto';
 
 @Controller('drive')
 export class DriveController {
@@ -35,7 +37,7 @@ export class DriveController {
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
+      limits: { fileSize: 20 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
     }),
   )
   async uploadFile(
@@ -194,19 +196,22 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
-    const result = await this.driveService.deleteBufferAndMultiImageUpload(
+    const result = this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
       images,
     );
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
+    // if (result.success) {
+    //   return {
+    //     message: result.message,
+    //     data: result.data,
+    //   };
+    // } else {
+    //   throw new BadRequestException(result.message);
+    // }
+    return {
+      message: 'Files uploaded successfully',
+    };
   }
 
   @Post('updateFile/:id')
@@ -265,4 +270,38 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
-}
+
+  @Post('uploadSampleDocument')
+  @UseGuards(AdminGuard2)
+    @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
+    }),
+  )
+  async uploadSampleDocument(@Body() data: CreateSampleDocumentDto, @TokenDecoder() user: DecodedUser, @UploadedFile() file: Express.Multer.File) {
+    const result = await this.driveService.uploadSampleDocument(data, user, file);
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('sampleDocument')
+  @UseGuards(JwtGuard2)
+  async getSampleDocuments(@Query('document')document: string) {
+    const result = await this.driveService.getSampleDocuments(document);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  }

@@ -74,6 +74,7 @@ import { S3Service } from 'src/s3.service';
 import { Region, RegionSchema } from 'src/business/model/region.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { Tag, TagSchema } from 'src/models/tags.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { Tag, TagSchema } from 'src/models/tags.model';
       { name: Region.name, schema: RegionSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
   ],
   controllers: [],

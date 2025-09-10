@@ -13,6 +13,7 @@ import {
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import {
   BusinessCreatorType,
+  BusinessDocumentTypesList,
   BusinessStatus,
   BusinessUserCreatorType,
   ExpectedDownlineUserHeaders,
@@ -29,6 +30,7 @@ import { Token, TokenDocument } from 'src/auth/models/token.model';
 import {
   FileCategoryTypes,
   OtpTypes,
+  SMSType,
   TokenTypes,
   UserTypes,
 } from 'src/enums/auth.enums';
@@ -138,6 +140,15 @@ import {
 } from 'src/notification/models/notification.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Reward, RewardDocument } from 'src/rewards/model/reward.model';
+import { createObjectCsvStringifier } from 'csv-writer';
+import { Readable } from 'stream';
+import { MailerService } from '@nestjs-modules/mailer';
+import parsePhoneNumberFromString from 'libphonenumber-js';
+import { SmsService } from 'src/sms/sms.service';
+import { messaging } from 'firebase-admin';
+import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
+import { BusinessDocVerificationLeads } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord } from './model/ownershipTransferRecords.model';
 
 @Injectable()
 export class BusinessService {
@@ -195,6 +206,10 @@ export class BusinessService {
     private readonly userAllowedNotificationModel: Model<UserAllowedNotification>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(BusinessDocVerificationLeads.name)
+    private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
+    @InjectModel(OwnershipTransferRecord.name)
+    private readonly ownershipTransferRecordModel: Model<OwnershipTransferRecord>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -202,6 +217,7 @@ export class BusinessService {
     private readonly driveService: DriveService,
     private readonly userService: UserService,
     private readonly firebaseService: FirebaseService,
+    private readonly smsService: SmsService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -419,6 +435,41 @@ export class BusinessService {
       };
     }
   }
+  async businessResendOtp(data: ResendOtpDto) {
+    try {
+      const business = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(data.user),
+      });
+      console.log('Business:', business.email);
+      console.log('Business MOBILE:', business.phone);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      if (data.type === OtpTypes.EMAIL) {
+        console.log('In MAILLLL:');
+        await this.mailService.sendBusinessVerificationMail(business.id);
+      } else {
+        const phoneNumber = parsePhoneNumberFromString(
+          `${business.countryCode}${business.phone}`,
+        );
+        const fullPhoneNumber = phoneNumber.format('E.164');
+        this.smsService.sendSMS(business.id, fullPhoneNumber, SMSType.OTP);
+      }
+
+      return {
+        success: true,
+        message: 'Otp resent successfully!',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
   // async addBusinessType(userId: string, data: TypeDataDto) {
   //   try {
   //     const findUser = await this.businessUserModel.findById(userId);
@@ -550,6 +601,7 @@ export class BusinessService {
           message: 'Please provide valid Business User Id',
         };
       }
+
       let userDetails = await this.businessUserModel
         .findById(userId)
         .select({ password: 0 });
@@ -559,6 +611,13 @@ export class BusinessService {
           message: 'Business User not found with given ID',
         };
       }
+      const phoneNumber = parsePhoneNumberFromString(
+        `${data.countryCode}${data.phone}`,
+      );
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return { success: false, message: 'Invalid phone number' };
+      }
+
       if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
         return {
           success: false,
@@ -663,40 +722,24 @@ export class BusinessService {
       // );
       // await Promise.all(rolePromises);
 
+      //shoot. otps
+      // this.mailService.sendBusinessVerificationMail(createdBusiness._id);
+      //shoot mobile otp
+
+      const fullPhoneNumber = phoneNumber.format('E.164');
+      this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP);
+
       this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
         .then(() => logger.info('Business roles seeded successfully'))
         .catch((err) => logger.error('Error seeding business roles:', err));
 
       logger.info(`businessId: ${createdBusiness.id}`);
 
-      const updatedToken = await this.jwtService.signAsync(
-        {
-          id: userId,
-          userType: UserTypes.BUSINESS,
-          role: userDetails.role[0].toString(),
-          businessProfile: createdBusiness.id,
-        },
-        {
-          secret: process.env.JWT_SECRET,
-          expiresIn: '1d',
-        },
-      );
-      logger.info(`udpatedToken: ${updatedToken}`);
-
-      await this.tokenModel.findOneAndUpdate(
-        { token },
-        {
-          $set: {
-            token: updatedToken,
-          },
-        },
-      );
-
       return {
         success: true,
         message: 'Business Created Successfully!',
         data: createdBusiness,
-        token: updatedToken,
+        // token: updatedToken,
       };
     } catch (error) {
       logger.error('Error:', error);
@@ -706,6 +749,107 @@ export class BusinessService {
       };
     }
   }
+
+  async verifyBusiness(
+    user: DecodedUser,
+    businessId: string,
+    // emailOtp: string,
+    mobileOtp: string,
+  ) {
+    try {
+      const userDetails = await this.businessUserModel.findById(user.id);
+      const business = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(businessId),
+      });
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      // if (user.isEmailVerified) {
+      //   return {
+      //     success: false,
+      //     message: 'Email already verified!',
+      //   };
+      // }
+      // const foundEmailOtp = await this.otpModel.findOne({
+      //   user: new mongoose.Types.ObjectId(businessId),
+      //   type: OtpTypes.EMAIL,
+      // });
+      const foundMobileOtp = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(businessId),
+        type: OtpTypes.MOBILE,
+      });
+      // if (!foundEmailOtp) {
+      //   return {
+      //     success: false,
+      //     message: 'Otp Expired, Please resend.',
+      //   };
+      // }
+      if (!foundMobileOtp) {
+        return {
+          success: false,
+          message: 'Mobile Otp Expired, Please resend.',
+        };
+      }
+
+      // if (foundEmailOtp.otp !== Number(emailOtp)) {
+      //   return {
+      //     success: false,
+      //     message: 'Invalid Email Otp',
+      //   };
+      // }
+      if (foundMobileOtp.otp !== Number(mobileOtp)) {
+        return {
+          success: false,
+          message: 'Invalid Mobile Otp',
+        };
+      }
+      // await this.otpModel.deleteOne({ _id: foundEmailOtp.id });
+      await this.otpModel.deleteOne({ _id: foundMobileOtp.id });
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(businessId) },
+        {
+          $set: { isPhoneVerified: true, status: BusinessStatus.VERIFIED },
+        },
+      );
+      const updatedToken = await this.jwtService.signAsync(
+        {
+          id: user.id,
+          userType: UserTypes.BUSINESS,
+          role: userDetails.role[0].toString(),
+          businessProfile: businessId,
+        },
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '1d',
+        },
+      );
+      logger.info(`udpatedToken: ${updatedToken}`);
+
+      await this.tokenModel.findOneAndUpdate(
+        { token: user.token },
+        {
+          $set: {
+            token: updatedToken,
+          },
+        },
+      );
+
+      return {
+        success: true,
+        message: 'Email Verified Successfully!',
+        token: updatedToken,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
   async seedBusinessDepartmentRoles(
     userId: string,
     businessId: mongoose.Types.ObjectId,
@@ -728,6 +872,7 @@ export class BusinessService {
             creator: new mongoose.Types.ObjectId(userId),
             belongsTo: RoleBelonging.BUSINESS,
             business: businessId,
+            department: createdDepartment._id,
           });
           deptRoles.push(createdRole._id);
 
@@ -972,6 +1117,12 @@ export class BusinessService {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.COVER_ADDED } },
+        );
+      }
+      if (updateObj.tags && updateObj.tags.length > 0) {
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          { $set: { status: BusinessStatus.TAGS } },
         );
       }
 
@@ -1307,7 +1458,6 @@ export class BusinessService {
     limit?: number;
   }> {
     try {
-      logger.info(`check 1: ${id}`);
       const user = await this.businessUserModel.findById(id);
       if (!user) {
         return {
@@ -1316,8 +1466,6 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
-      logger.info(`ALL USERE IDS: ${JSON.stringify(allUserIds)}`);
-
       const users = await this.businessUserModel.aggregate([
         {
           $match: {
@@ -1347,6 +1495,20 @@ export class BusinessService {
           $unwind: '$creator',
         },
         {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             isBlocked: 1,
@@ -1374,6 +1536,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
         { $skip: (page - 1) * limit },
@@ -1461,7 +1624,7 @@ export class BusinessService {
       };
     }
   }
-  async industryList(page: number, limit: number) {
+  async industryList(page: number, limit: number, search: string) {
     try {
       // const industries = await this.businessIndModel
       //   .find()
@@ -1488,6 +1651,11 @@ export class BusinessService {
           $unwind: {
             path: '$result',
           },
+        },
+        {
+          $match: search
+            ? { $or: [{ 'result.title': { $regex: search, $options: 'i' } }] }
+            : {},
         },
         {
           $lookup: {
@@ -1544,22 +1712,29 @@ export class BusinessService {
       };
     }
   }
-  async businessCategoryList(id: string, page: number, limit: number) {
+  async businessCategoryList(
+    id: string,
+    page: number,
+    limit: number,
+    search: string,
+  ) {
     try {
-      logger.info(`ID: ${id}`);
+      const query: any = {
+        industry: new mongoose.Types.ObjectId(id),
+        isDeleted: false,
+      };
+
+      if (search) {
+        query.title = { $regex: search, $options: 'i' };
+      }
+
       const categories = await this.businessCategoryModel
-        .find({
-          industry: new mongoose.Types.ObjectId(id),
-          isDeleted: false,
-        })
+        .find(query)
         .sort({ title: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .populate('createdBy', '_id name');
-      // logger.info(`categories: ${JSON.stringify(categories)}`);
-      const totalDocs = await this.businessCategoryModel.countDocuments({
-        industry: new mongoose.Types.ObjectId(id),
-      });
+      const totalDocs = await this.businessCategoryModel.countDocuments(query);
       return {
         success: true,
         message: 'Categories fetched Successfully!',
@@ -1851,16 +2026,23 @@ export class BusinessService {
       const createdUser = await this.businessUserModel.create(createObj);
 
       if (data.allowedNotificationTypes) {
+        console.log(
+          'Allowed Notification Types:',
+          data.allowedNotificationTypes,
+        );
         let allowedNotiTypes = data.allowedNotificationTypes.filter(
           (type): type is NotificationTypes =>
             Object.values(NotificationTypes).includes(
               type as NotificationTypes,
             ),
         );
-        await this.userAllowedNotificationModel.create({
-          user: createdUser._id,
-          allowedNotificationTypes: allowedNotiTypes,
-        });
+        console.log('Filtered Allowed Notification Types:', allowedNotiTypes);
+        if (allowedNotiTypes.length !== 0) {
+          await this.userAllowedNotificationModel.create({
+            user: createdUser._id,
+            allowedNotifications: allowedNotiTypes,
+          });
+        }
       }
 
       //create drive
@@ -1907,6 +2089,20 @@ export class BusinessService {
           },
         },
         {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             isBlocked: 1,
@@ -1928,6 +2124,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
       ]);
@@ -1977,7 +2174,21 @@ export class BusinessService {
         { $set: updateObj },
         { new: true },
       );
-      logger.info(`updatedUser: ${JSON.stringify(updatedUser)}`);
+      if (data.allowedNotificationTypes) {
+        let allowedNotiTypes = data.allowedNotificationTypes.filter(
+          (type): type is NotificationTypes =>
+            Object.values(NotificationTypes).includes(
+              type as NotificationTypes,
+            ),
+        );
+        if (allowedNotiTypes.length === 0) {
+          await this.userAllowedNotificationModel.create({
+            user: updatedUser._id,
+            allowedNotifications: allowedNotiTypes,
+          });
+        }
+      }
+
       // const updatedUser = await this.businessUserModel.findOne({_id:createdUser.id}).select({ _id:1,isBlocked:1,role });
       const updatedUserDetails = await this.businessUserModel.aggregate([
         {
@@ -1995,6 +2206,20 @@ export class BusinessService {
           $unwind: {
             path: '$role',
             preserveNullAndEmptyArrays: true, // Optional, keeps result even if no role is found
+          },
+        },
+        {
+          $lookup: {
+            from: 'userallowednotifications',
+            localField: '_id',
+            foreignField: 'user',
+            as: 'allowedNotifications',
+          },
+        },
+        {
+          $unwind: {
+            path: '$allowedNotifications',
+            preserveNullAndEmptyArrays: true,
           },
         },
         {
@@ -2020,6 +2245,7 @@ export class BusinessService {
             createdAt: 1,
             updatedAt: 1,
             outlets: 1,
+            allowedNotifications: '$allowedNotifications.allowedNotifications',
           },
         },
       ]);
@@ -2144,7 +2370,7 @@ export class BusinessService {
       // const business = await this.businessModel
       //   .findById(businessId)
       //   .populate('outlets', LocationPopulates.FOREIGN);
-
+      console.log('BusinessID:', businessId);
       const basePipeline: any[] = [
         {
           $geoNear: {
@@ -2182,42 +2408,42 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
-        {
-          $lookup: {
-            from: 'menus',
-            localField: 'businessDetails.menus',
-            foreignField: '_id',
-            as: 'menuDetails',
-            pipeline: [
-              {
-                $lookup: {
-                  from: 'files',
-                  localField: 'images',
-                  foreignField: '_id',
-                  as: 'imageDetails',
-                },
-              },
-              {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  description: 1,
-                  imageDetails: {
-                    $map: {
-                      input: '$imageDetails',
-                      as: 'image',
-                      in: {
-                        _id: '$$image._id',
-                        url: '$$image.metaData.url',
-                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
-                      },
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        },
+        // {
+        //   $lookup: {
+        //     from: 'menus',
+        //     localField: 'businessDetails.menus',
+        //     foreignField: '_id',
+        //     as: 'menuDetails',
+        //     pipeline: [
+        //       {
+        //         $lookup: {
+        //           from: 'files',
+        //           localField: 'images',
+        //           foreignField: '_id',
+        //           as: 'imageDetails',
+        //         },
+        //       },
+        //       {
+        //         $project: {
+        //           _id: 1,
+        //           name: 1,
+        //           description: 1,
+        //           imageDetails: {
+        //             $map: {
+        //               input: '$imageDetails',
+        //               as: 'image',
+        //               in: {
+        //                 _id: '$$image._id',
+        //                 url: '$$image.metaData.url',
+        //                 thumbnailUrl: '$$image.metaData.thumbnailUrl',
+        //               },
+        //             },
+        //           },
+        //         },
+        //       },
+        //     ],
+        //   },
+        // },
         {
           $lookup: {
             from: 'follows', // make sure it's the actual collection name
@@ -3772,10 +3998,13 @@ export class BusinessService {
       });
 
       if (foundUser) {
-        return {
-          success: false,
-          message: 'Business User already found with this email',
-        };
+        // return {
+        //   success: false,
+        //   message: 'Business User already found with this email',
+        // };
+        throw new BadRequestException(
+          'Business User already found with this email',
+        );
       }
       let password = await this.authService.autoGeneratePassword();
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -3843,19 +4072,77 @@ export class BusinessService {
         };
       }
       const rows = await this.parseCsv(file);
-      console.log('Parsed rows:', rows);
-      // for (const row of rows) {
-      //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
-      // }
-
-      await Promise.all(
-        rows.map((row) => this.createDownlineUserFromRow(row, user)),
+      let failure = 0;
+      let result = null;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createDownlineUserFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
       );
+      console.log('Failure:', failure);
+      if (failure > 0) {
+        const failedRecords = results.filter((r) => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'email', title: 'Email' },
+              { id: 'name', title: 'Name' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'ErrorMessage' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            email: r.email,
+            name: r.name,
+            phone: r.phone,
+            countryCode: r.countryCode,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'downline_users_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'downline_users_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            businessUser.id,
+            String(business.drivePath),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (err) {
+          console.log('Error:', err);
+        }
+      }
 
       return {
         success: true,
         message: 'Users created successfully in bulk.',
-        data: [], // You can return the created outlets data if needed
+        file: result, // You can return the created outlets data if needed
       };
     } catch (error) {
       return {
@@ -4038,6 +4325,210 @@ export class BusinessService {
         success: true,
         message: 'Downline users fetched successfully',
         data: downlineUsers,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async ownershipTransfer(
+    user: DecodedUser,
+    otp: string,
+    newOwnerEmail: string,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      const businessUser = await this.businessUserModel.findById(user.id);
+
+      if (user.id != business.authorisedUser.toString()) {
+        return {
+          success: false,
+          message: 'You are not authorized to transfer ownership',
+        };
+      }
+
+      const foundOtpDoc = await this.otpModel.findOne({
+        user: new mongoose.Types.ObjectId(user.id),
+        type: OtpTypes.EMAIL,
+      });
+      if (!foundOtpDoc) {
+        return {
+          success: false,
+          message: 'Otp Expired, Please resend.',
+        };
+      } else if (foundOtpDoc.otp !== Number(otp)) {
+        return {
+          success: false,
+          message: 'Invalid Otp',
+        };
+      }
+      await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+
+      const newOwner = await this.businessUserModel.findOne({
+        email: newOwnerEmail,
+      });
+
+      if (newOwner) {
+        // transfer ownership
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: { authorisedUser: new mongoose.Types.ObjectId(newOwner.id) },
+          },
+        );
+        await this.businessUserModel.updateOne(
+          {
+            _id: newOwner._id,
+          },
+          {
+            $addToSet: {
+              business: new mongoose.Types.ObjectId(business._id),
+            },
+            $set: {
+              selectedBusiness: new mongoose.Types.ObjectId(business._id),
+            },
+            $pull: { business: business._id },
+          },
+        );
+        await this.businessUserModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(user.id),
+          },
+          {
+            $set: {
+              selectedBusiness: '',
+            },
+          },
+        );
+      } else {
+        // send an invitation to newOwnerEmail and once accepted, transfer ownership via
+        await this.ownershipTransferRecordModel.create({
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+          user: new mongoose.Types.ObjectId(user.id),
+          email: newOwnerEmail,
+        });
+
+        await this.mailService.sendBusinessUserInvitation(
+          newOwnerEmail,
+          businessUser.name,
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Ownership transferred successfully',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async uploadAddressVerificationDoc(
+    user: DecodedUser,
+    image: Express.Multer.File,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+      let email = 'sahil456q@gmail.com';
+      // Upload the image to a cloud storage or local storage
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.VERIFICATION_DOCUMENT,
+      });
+      const uploadResult = await this.driveService.uploadFile(
+        user.id,
+        business.drivePath.toString(),
+        fileCategory.id,
+        image,
+      );
+      if (!uploadResult.success) {
+        return {
+          success: false,
+          message: 'Failed to upload image',
+        };
+      }
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        { addressVerificationDoc: uploadResult.data.metaData.url },
+      );
+      await this.businessDocVerificationLeadsModel.create({
+        businessId: business._id,
+        userId: new mongoose.Types.ObjectId(user.id),
+        documentUrl: uploadResult.data.metaData.url,
+        documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        isVerified: false,
+      });
+      await this.mailService.businessDocVerificationRequest(
+        email,
+        business.uniqueId ? business.uniqueId : business.id,
+        BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+      );
+
+      return {
+        success: true,
+        message: 'Address verification document uploaded successfully',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async searchUser(email: string) {
+    try {
+      const user = await this.businessUserModel.findOne({ email });
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+      return {
+        success: true,
+        message: 'User found',
+        data: user,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async businessTransferOtp(userId: string) {
+    try {
+      const owner = await this.businessUserModel.findById(userId);
+      if (!owner) {
+        return {
+          success: false,
+          message: 'Owner not found',
+        };
+      }
+      // Generate OTP and send email
+      await this.mailService.sendBusinessTransferOtp(owner.email, userId);
+      return {
+        success: true,
+        message: 'OTP sent successfully',
       };
     } catch (error) {
       return {

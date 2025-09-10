@@ -2,8 +2,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpStatus,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -99,4 +101,29 @@ export class AiController {
       });
     }
   }
-}
+  @Get('title/suggestions')
+  @UseGuards(JwtGuard2)
+  async getAiTitleSuggestions(
+    @TokenDecoder() user: DecodedUser,
+    @Query('contentType') contentType: string,
+    @Query('category') category: string,
+    @Query('dealType') dealType: string,
+  ) {
+    const result = await this.aiService.getTitleSuggestions(
+      contentType,
+      category,
+      dealType,
+    );
+    console.log('RESULT:', result);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      return new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+  }

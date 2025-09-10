@@ -6,12 +6,19 @@ import {
   UseGuards,
   BadRequestException,
   Query,
+  Post,
+  Body,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { NotificationTypes } from 'src/enums/event.enums';
+import { CreateBroadcastDto } from './dto/create-broadcast.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { isValidObjectId } from 'mongoose';
 
 @Controller('notification')
 export class NotificationController {
@@ -42,10 +49,16 @@ export class NotificationController {
 
   @Get('unread')
   @UseGuards(JwtGuard2)
-  async findUnread(@TokenDecoder() user: DecodedUser, @Query('page') page: string,
-    @Query('limit') limit: string) {
-    const notifications = await this.notificationService.findUnread(user, page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 10);
+  async findUnread(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const notifications = await this.notificationService.findUnread(
+      user,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
     return { notifications, count: notifications.length };
   }
 
@@ -92,5 +105,64 @@ export class NotificationController {
   async getNotificationTypes() {
     const types = Object.values(NotificationTypes);
     return { types };
+  }
+
+  @Post('broadcast')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async createBroadcast(
+    @Body() data: CreateBroadcastDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    console.log('BROADCAST DATA:', data);
+    const result = await this.notificationService.createBroadcast(user, data,image);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message, data: result.data };
+  }
+  @Get('broadcast/:id')
+  @UseGuards(JwtGuard2)
+  async getBroadcast(@Param('id') id: string) {
+    const result = await this.notificationService.getBroadcast(id);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message, data: result.data };
+  }
+
+  @Get('broadcasts')
+  @UseGuards(JwtGuard2)
+  async getBroadcasts(@Query('page') page: string, @Query('limit') limit: string) {
+    const result = await this.notificationService.getBroadcasts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 10);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message, data: result.data };
+  }
+
+  @Post('broadcast/cancel/:id')
+  @UseGuards(JwtGuard2)
+  async cancelBroadcast(@Param('id') id: string) {
+    if(!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid broadcast ID');
+    }
+    const result = await this.notificationService.cancelBroadcast(id);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message };
   }
 }

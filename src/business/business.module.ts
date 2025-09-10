@@ -140,6 +140,9 @@ import {
   UserAllowedNotificationSchema,
 } from './model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/ownershipTransferRecords.model';
 
 @Module({
   imports: [
@@ -202,6 +205,9 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
         schema: UserAllowedNotificationSchema,
       },
       { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
     ]),
   ],
   controllers: [BusinessController],

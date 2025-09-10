@@ -53,6 +53,7 @@ import {
 } from './dto/create-locationGroup.dto';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -74,6 +75,31 @@ export class BusinessController {
       return {
         message: result.message,
         data: result.data,
+        // token: result.token,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('verify/:id')
+  @UseGuards(JwtGuard2)
+  async verifyBusiness(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') businessId: string,
+    // @Body('emailOtp') emailOtp: string,
+    @Body('mobileOtp') mobileOtp: string,
+  ) {
+    const result = await this.businessService.verifyBusiness(
+      user,
+      businessId,
+      // emailOtp,
+      mobileOtp,
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
         token: result.token,
       };
     } else {
@@ -198,6 +224,19 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('resendOtp')
+  @UseGuards(JwtGuard2)
+  async BusinessResendOtp(@Body() data: ResendOtpDto) {
+    console.log('Controller:');
+    const result = await this.businessService.businessResendOtp(data);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Get('users')
   @UseGuards(JwtGuard2)
@@ -303,12 +342,14 @@ export class BusinessController {
   async industryList(
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.businessService.industryList(
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {
@@ -330,6 +371,7 @@ export class BusinessController {
     @Param('id') id: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -340,6 +382,7 @@ export class BusinessController {
       id,
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {
@@ -1169,6 +1212,7 @@ export class BusinessController {
   async uploadDownlineUsersInBulk(
     @UploadedFile() file: Express.Multer.File,
     @TokenDecoder() user: DecodedUser,
+    @Res({ passthrough: true }) res: Response,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -1181,7 +1225,7 @@ export class BusinessController {
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        file: result.file,
       };
     } else {
       throw new BadRequestException(result.message);
@@ -1204,7 +1248,6 @@ export class BusinessController {
     );
 
     // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
-
 
     if (result.success) {
       return {
@@ -1244,4 +1287,92 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  //3
+  @Post('ownershipTransfer')
+  @UseGuards(JwtGuard2)
+  async transferOwnership(
+    @TokenDecoder() user: DecodedUser,
+    @Body('otp') otp: string,
+    @Body('newOwnerEmail') newOwnerEmail: string,
+  ) {
+    const result = await this.businessService.ownershipTransfer(
+      user,
+      otp,
+      newOwnerEmail,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('upload-address-verification-doc')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+      FileInterceptor('image', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 1 MB
+        limits: { fileSize: 1000000 },
+      }),
+    )
+  async uploadAddressVerificationDoc(
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.businessService.uploadAddressVerificationDoc(
+      user,
+      image
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+ //1
+  @Get('search/user')
+  @UseGuards(JwtGuard2)
+  async searchUser(
+    @Query('email') email: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.searchUser(email);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  //2
+  @Post('transfer/otp')
+  @UseGuards(JwtGuard2)
+  async transferOtp(
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.businessTransferOtp(user.id);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

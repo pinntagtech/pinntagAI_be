@@ -251,7 +251,7 @@ export class OutletController {
     if (result.success) {
       return {
         message: result.message,
-        // data: result.data,
+        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);

@@ -43,6 +43,7 @@ import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { PinDropDto } from './dto/pinDrop.dto';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
+import { CreateTemplateDto } from './dto/create-template.dto';
 
 @Controller('event')
 export class EventController {
@@ -203,6 +204,10 @@ export class EventController {
     @Query('status') status: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Query('categories') categories: string,
+    @Query('locations') locations: string,
+    @Query('type') type: string,
+    @Query('search') search: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     let expired = false;
@@ -222,9 +227,18 @@ export class EventController {
     //     expired = false;
     //   }
     // }
-    if(status && status === 'expired'){
+    if (status && status === 'expired') {
       expired = true;
     }
+    let categoryIds = null;
+    if (categories && categories !== '') {
+      categoryIds = categories.split(',');
+    }
+    let locationIds = null;
+    if (locations && locations !== '') {
+      locationIds = locations.split(',');
+    }
+
     const page = pageNo ? parseInt(pageNo) : 1;
     const limit = limitCount ? parseInt(limitCount) : 100;
     const result = await this.eventService.contentManagement(
@@ -235,6 +249,10 @@ export class EventController {
       status,
       startDate,
       endDate,
+      categoryIds,
+      locationIds,
+      type,
+      search,
     );
     if (result.success) {
       return {
@@ -627,7 +645,7 @@ export class EventController {
   }
 
   @Get('template/:id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard2)
   async getTemplate(
     @Param('id') id: string,
     @TokenDecoder() user: DecodedUser,
@@ -1045,10 +1063,22 @@ export class EventController {
       });
     }
   }
-  @Post('crawlAtlantaEvents')
+  @Post('ETL')
   @UseGuards(AdminGuard2)
-  async crawlAtlantaEvents() {
-    const result = await this.eventService.ETL_TRANSFORMER();
+    @UseInterceptors(
+      FileInterceptor('file', {
+        //   dest: './uploads',
+        //   fileFilter: imageFileFilter,
+        //   storage: diskStorage({
+        //     destination: './uploads',
+        //     filename: editFileName,
+        //   }),
+        //   //Setting file size limit to 10 MB
+        limits: { fileSize: 10000000 },
+      }),
+    )
+  async ETL(user:DecodedUser,@UploadedFile() file: Express.Multer.File) {
+    const result = await this.eventService.ETL_TRANSFORMER(user.id, file);
     if (result.success) {
       return {
         message: result.message,
@@ -1089,7 +1119,7 @@ export class EventController {
   )
   async updateOffer(
     @Param('id') id: string,
-    @Body() body,
+    @Body() body: UpdateOfferDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
@@ -1119,7 +1149,7 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
-    if(images.length<1){
+    if (images.length < 1) {
       throw new BadRequestException({
         message: 'Please upload at least one image',
       });
@@ -1184,6 +1214,38 @@ export class EventController {
       });
     }
     const result = await this.eventService.pinDrop(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('template')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async createTemplate(
+    @Body() data: CreateTemplateDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.eventService.createTemplate(user, data, image);
     if (result.success) {
       return {
         message: result.message,

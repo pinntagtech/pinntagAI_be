@@ -17,6 +17,12 @@ export class Otp {
   otp: number;
   @Prop({ required: true, ref: User.name })
   user: mongoose.Types.ObjectId;
+
+  @Prop()
+  createdAt?: Date;
+
+  @Prop()
+  updatedAt?: Date;
 }
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);

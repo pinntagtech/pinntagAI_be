@@ -13,7 +13,7 @@ export class Notification {
   @Prop({ required: true, refPath: 'userType' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({required: true, enum: [User.name, BusinessUser.name]})
+  @Prop({ required: true, enum: [User.name, BusinessUser.name] })
   userType: string;
 
   @Prop({
@@ -23,19 +23,24 @@ export class Notification {
       NotificationTypes.REPORT,
       NotificationTypes.REWARD,
 
-
-
       NotificationTypes.OFFER,
       NotificationTypes.COMMENT,
       NotificationTypes.LIKE,
       NotificationTypes.SHARE,
       NotificationTypes.MENTION,
       NotificationTypes.REVIEW,
+      NotificationTypes.BROADCAST,
     ],
   })
   type: string;
   @Prop()
+  title: string;
+  @Prop()
   message: string;
+
+  @Prop()
+  image: string;
+
   @Prop({ enum: [User.name, Business.name] })
   targetType: string;
   @Prop({ refPath: 'targetType' })
@@ -44,7 +49,7 @@ export class Notification {
   isRead: boolean;
   @Prop({ ref: 'Event' })
   event: mongoose.Types.ObjectId;
-  @Prop({ref: Reward.name})
+  @Prop({ ref: Reward.name })
   reward: mongoose.Types.ObjectId;
   @Prop({ ref: Business.name })
   business: mongoose.Types.ObjectId;

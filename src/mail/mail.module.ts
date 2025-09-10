@@ -137,6 +137,10 @@ import {
   UserAllowedNotification,
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
 
 @Global()
 @Module({
@@ -195,6 +199,7 @@ import {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
     ]),
     MailerModule.forRoot({
       transport: {

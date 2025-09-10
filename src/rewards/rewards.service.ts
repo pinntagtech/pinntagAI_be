@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateRewardDto } from './dto/create-reward.dto';
+import { CreateRewardDto, UpdateRewardDto } from './dto/create-reward.dto';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -58,6 +58,7 @@ import { getStringDateTzWithTime } from 'src/helpers/event.helpers';
 import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { from } from 'rxjs';
 import { BusinessService } from 'src/business/business.service';
+import { File, FileDocument } from 'src/drive/models/file.model';
 
 @Injectable()
 export class RewardsService {
@@ -84,6 +85,7 @@ export class RewardsService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
 
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
@@ -252,10 +254,6 @@ export class RewardsService {
 
       const updateRewardObj: any = {
         locations: locationIds,
-        rewardSchedule: {
-          startDate: new Date(data.startDate),
-          endDate: new Date(data.endDate),
-        },
         status: RewardStatus.PUBLISHED,
         QR_CODE: QRCodeDetails?._id || null,
       };
@@ -301,7 +299,7 @@ export class RewardsService {
               message,
               type: NotificationTypes.REWARD,
               reward: reward._id,
-              targetType: User.name,
+              targetType: Business.name,
               targetUser: new mongoose.Types.ObjectId(user.businessProfile),
             });
           }
@@ -315,6 +313,158 @@ export class RewardsService {
       };
     } catch (error) {
       console.error('Error in createReward:', error);
+      return { success: false, message: 'Something went wrong.' };
+    }
+  }
+
+  async updateReward(
+    id: string,
+    data: UpdateRewardDto,
+    user: DecodedUser,
+    images: Express.Multer.File[],
+    qrCode: Express.Multer.File,
+  ) {
+    try {
+      console.log('Update Reward data:', data);
+      const reward = await this.rewardModel.findById(id);
+      if (!reward) return { success: false, message: 'Reward not found.' };
+
+      let updateObj = {
+        ...data,
+      };
+
+      if (data.startDate && data.endDate) {
+        if (new Date(data.startDate) < new Date()) {
+          return {
+            success: false,
+            message: 'Start date must be in the future.',
+          };
+        }
+        if (new Date(data.endDate) < new Date(data.startDate)) {
+          return {
+            success: false,
+            message: 'End date must be after start date.',
+          };
+        }
+        updateObj['schedule'] = {
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+        };
+      }
+
+      if (data.locations) {
+        let locationIds: mongoose.Types.ObjectId[] = [];
+        if (reward.activityType === ActivityType.CHECK_IN) {
+          let providedLocations: string[] = [];
+
+          if (typeof data.locations === 'string') {
+            providedLocations = data.locations
+              .split(',')
+              .map((id) => id.trim())
+              .filter(Boolean);
+          } else if (Array.isArray(data.locations)) {
+            providedLocations = data.locations;
+          }
+          providedLocations = [...new Set(providedLocations)];
+
+          for (const loc of providedLocations) {
+            if (!mongoose.isValidObjectId(loc)) {
+              return {
+                success: false,
+                message: `Invalid location id: "${loc}"`,
+              };
+            }
+            const outletDoc = await this.outletModel.findById(loc);
+            if (!outletDoc) {
+              return {
+                success: false,
+                message: `Outlet with id "${loc}" not found.`,
+              };
+            }
+          }
+          await this.rewardLocationModel.deleteMany({
+            reward: reward._id,
+          });
+          await this.rewardModel.updateOne(
+            { _id: reward._id },
+            { $set: { locations: [] } },
+          );
+
+          for (const loc of providedLocations) {
+            const outletDoc = await this.outletModel.findById(loc);
+            if (!outletDoc) {
+              return {
+                success: false,
+                message: `Outlet with id "${loc}" not found.`,
+              };
+            }
+
+            const createdLocation = await this.rewardLocationModel.create({
+              reward: reward._id,
+              businessLocationId: outletDoc._id,
+              location: {
+                type: 'Point',
+                coordinates: [outletDoc.longitude, outletDoc.latitude],
+              },
+              accuracy: outletDoc.accuracy,
+              address1: outletDoc.address1,
+              address2: outletDoc.address2 || '',
+              city: outletDoc.city,
+              state: outletDoc.state,
+              zip: outletDoc.postalCode,
+              website: outletDoc.website,
+              email: outletDoc.email,
+              phone: outletDoc.phone,
+            });
+
+            locationIds.push(createdLocation._id);
+          }
+        }
+        updateObj['locations'] = locationIds;
+      }
+      console.log('Update Obj:::', updateObj);
+
+      const updatedReward = await this.rewardModel.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: updateObj },
+        { new: true },
+      );
+
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+
+      // Handle QR Code upload (if any)
+      let QRCodeDetails = null;
+      if (qrCode) {
+        QRCodeDetails = await this.driveService.uploadAndCreateFile(
+          qrCode[0],
+          String(reward.drivePath),
+          Folder.name,
+          user.id,
+          QR_ImageCategory._id,
+        );
+      }
+
+      // Upload images async (fire and forget)
+      if (images) {
+        console.log('Updating Images:::');
+        this.driveService.deleteBufferAndMultiImageUpload(
+          user,
+          reward.drivePath.toString(),
+          images,
+        );
+      }
+
+      // Handle locations if Check-In activity
+
+      return {
+        success: true,
+        message: 'Reward updated successfully',
+        data: updatedReward,
+      };
+    } catch (error) {
+      console.error('Error in updateReward:', error);
       return { success: false, message: 'Something went wrong.' };
     }
   }
@@ -1453,7 +1603,7 @@ export class RewardsService {
       });
       let message = `User ${userDetails.name} enrolled in reward ${reward.title}`;
 
-      await this.businessService.businessNotification(
+      this.businessService.businessNotification(
         user.id,
         rewardId,
         NotificationTypes.REWARD,
@@ -1563,6 +1713,20 @@ export class RewardsService {
           },
         },
         {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $project: {
             _id: 1,
             rewardId: '$reward._id',
@@ -1588,6 +1752,10 @@ export class RewardsService {
                 url: '$QR_CODE.metaData.url',
               },
             },
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
+            },
           },
         },
         { $skip: (page - 1) * limit },
@@ -1598,12 +1766,6 @@ export class RewardsService {
         userId: new mongoose.Types.ObjectId(userId),
         claimStatus: claimStatus,
       });
-      if (!rewards || rewards.length === 0) {
-        return {
-          success: false,
-          message: 'No rewards found.',
-        };
-      }
       return {
         success: true,
         message: 'Rewards found successfully.',
@@ -1681,7 +1843,7 @@ export class RewardsService {
         },
       });
       let message = `User ${userDetails.name} claimed in reward ${reward.title}`;
-      await this.businessService.businessNotification(
+      this.businessService.businessNotification(
         user.id,
         reward.id,
         NotificationTypes.REWARD,
@@ -1939,8 +2101,11 @@ export class RewardsService {
               phone: '$businessProfileDetails.phone',
               countryCode: '$businessProfileDetails.countryCode',
               website: '$businessProfileDetails.website',
+              followersCount: '$businessProfileDetails.followersCount',
+              description: '$businessProfileDetails.description',
             },
             progress: '$userReward.progress',
+            claimStatus: '$userReward.claimStatus',
           },
         },
       ];
@@ -2235,17 +2400,32 @@ export class RewardsService {
   }
   async deleteReward(rewardId: string, userId: string) {
     try {
-      const result = await this.rewardModel.deleteOne({
-        _id: new mongoose.Types.ObjectId(rewardId),
-        user: new mongoose.Types.ObjectId(userId),
-      });
-      console.log('Delete Result:', result);
-      if (result.deletedCount === 0) {
+      if (!mongoose.isValidObjectId(rewardId)) {
         return {
           success: false,
-          message: 'Reward not found or you are not authorized to delete it.',
+          message: 'Please provide a valid reward id',
         };
       }
+      const reward = await this.rewardModel.findById(rewardId);
+
+      if (!reward) {
+        return {
+          success: false,
+          message: 'Reward not found',
+        };
+      }
+      const result = await this.rewardModel.deleteOne({
+        _id: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.rewardLocationModel.deleteMany({
+        reward: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.userRewardModel.deleteMany({
+        rewardId: new mongoose.Types.ObjectId(rewardId),
+      });
+      await this.fileModel.deleteMany({
+        parentDirectory: new mongoose.Types.ObjectId(reward.drivePath),
+      });
       return {
         success: true,
         message: 'Reward deleted successfully.',

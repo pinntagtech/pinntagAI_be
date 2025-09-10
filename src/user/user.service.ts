@@ -579,7 +579,7 @@ export class UserService {
       user: new mongoose.Types.ObjectId(id),
       type,
     });
-    this.logger.log(`Otp saved successfully ${savedOtpDoc}`);
+    // this.logger.log(`Otp saved successfully ${savedOtpDoc}`);
   }
 
   async validateOtp(data: VerifyOtpDto) {
@@ -614,6 +614,7 @@ export class UserService {
       type,
     });
     const otp = generateOtp();
+    // const otp = 123456;
 
     // if (!foundOtpDoc) {
     //   this.saveOtpToDb(user, otp, type);
@@ -803,7 +804,7 @@ export class UserService {
         // }
         // }
 
-        await this.businessNotification(
+        this.businessNotification(
           userId,
           businessProfile.id,
           NotificationTypes.FOLLOW,

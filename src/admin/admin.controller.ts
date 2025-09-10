@@ -53,7 +53,10 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { AddBusinessDto } from './dto/add-business.dto';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
@@ -214,6 +217,15 @@ export class AdminController {
         }
       });
     }
+    if (body.industries && body.industries.length) {
+      body.industries.forEach((ind) => {
+        if (!mongoose.Types.ObjectId.isValid(ind)) {
+          return new BadRequestException({
+            message: `${ind} is not a valid industry id.`,
+          });
+        }
+      });
+    }
     const result = await this.adminService.addDashboardConfiguration(body);
     if (result.success) {
       return {
@@ -254,8 +266,17 @@ export class AdminController {
         message: 'Invalid id',
       });
     }
-    if (body.categories && body.categories.length) {
+    if (body.categories && body.categories.length >= 0) {
       body.categories.forEach((cat) => {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          throw new BadRequestException({
+            message: `${cat} is not a valid category id.`,
+          });
+        }
+      });
+    }
+    if (body.industries && body.industries.length >= 0) {
+      body.industries.forEach((cat) => {
         if (!mongoose.Types.ObjectId.isValid(cat)) {
           throw new BadRequestException({
             message: `${cat} is not a valid category id.`,
@@ -508,7 +529,7 @@ export class AdminController {
     @Query('limit') limit: string,
   ) {
     let pageNumber = page ? parseInt(page) : 1;
-    let limitNumber = limit ? parseInt(limit) : 10;
+    let limitNumber = limit ? parseInt(limit) : 20;
     const result = await this.adminService.getCategories(
       pageNumber,
       limitNumber,
@@ -604,6 +625,36 @@ export class AdminController {
           message: result.message,
         });
       }
+    }
+  }
+
+  @Post('uploadDownlineAdminsInBulk')
+  @UseGuards(AdminGuard2)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async uploadDownlineAdminsInBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenDecoder() user: DecodedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.adminService.createDownlineAdminsInBulk(
+      file,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        file: result.file,
+      };
+    } else {
+      throw new BadRequestException(result.message);
     }
   }
 
@@ -752,12 +803,14 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.adminService.getBusinessesList(
       pageNumber,
       limitNumber,
+      search,
     );
     if (result.success) {
       return {
@@ -1000,16 +1053,16 @@ export class AdminController {
   @Post('create/template')
   @UseGuards(AdminGuard2)
   @UseInterceptors(
-      FileInterceptor('image', {
-        limits: { fileSize: 1000000 },
-      }),
-    )
+    FileInterceptor('image', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async createTemplate(
     @Body() data: CreateTemplateDto,
     @TokenDecoder() user: DecodedUser,
-     @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.createTemplate(user.id, data,image);
+    const result = await this.adminService.createTemplate(user.id, data, image);
     if (result.success) {
       return {
         message: result.message,
@@ -1025,17 +1078,22 @@ export class AdminController {
   @Post('update/template/:id')
   @UseGuards(AdminGuard2)
   @UseInterceptors(
-      FileInterceptor('image', {
-        limits: { fileSize: 1000000 },
-      }),
-    )
+    FileInterceptor('image', {
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async updateTemplate(
     @Param('id') id: string,
     @Body() data: UpdateTemplateDto,
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.adminService.updateTemplate(user.id, id, data,image);
+    const result = await this.adminService.updateTemplate(
+      user.id,
+      id,
+      data,
+      image,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1229,7 +1287,7 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Body() data: CreateBusinessUserDto,
   ) {
-    const result = await this.adminService.createBusinessUser(user,data);
+    const result = await this.adminService.createBusinessUser(user, data);
 
     if (result.success) {
       return {
@@ -1252,7 +1310,7 @@ export class AdminController {
     const result = await this.adminService.getReportedEvents(
       pageNumber,
       limitNumber,
-      status
+      status,
     );
     if (result.success) {
       return {
@@ -1281,4 +1339,43 @@ export class AdminController {
     }
   }
 
+  @Get('doc-verification-leads')
+  @UseGuards(AdminGuard2)
+  async getDocVerificationLeads(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+    const result = await this.adminService.getDocVerificationLeads(
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        pages: result.pages,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('doc-verification-lead/:id')
+  @UseGuards(AdminGuard2)
+  async getDocVerificationLead(@Param('id') id: string) {
+    const result = await this.adminService.getDocVerificationLead(id);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

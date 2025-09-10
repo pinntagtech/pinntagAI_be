@@ -119,6 +119,8 @@ export class AppService implements OnModuleInit {
   }
 
   async getCategories() {
+
+    console.log("Inside Service");
     return await this.categoryModel
       .find()
       // .sort({ sortOrder: 1 })

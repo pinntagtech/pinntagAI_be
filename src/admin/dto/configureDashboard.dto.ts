@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
 } from 'class-validator';
 import mongoose from 'mongoose';
@@ -12,23 +13,35 @@ export class ConfigureDashboardDto {
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   offersIncluded: boolean;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   eventsIncluded: boolean;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsBoolean()
   freeIncluded: boolean;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
   categories: Array<string | mongoose.Types.ObjectId>;
+
+  @IsOptional()
+  @IsArray()
+  industries: Array<string | mongoose.Types.ObjectId>;
+
+  @IsNotEmpty()
+  @IsString()
+  carouselType: string;
 
   @IsNotEmpty()
   @IsNumber()
   sortOrder: number;
+
+  @IsNotEmpty()
+  @IsString()
+  cardType: string;
 }

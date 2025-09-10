@@ -16,6 +16,7 @@ import {
   BusinessUser,
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Injectable()
 export class RolesService {
@@ -32,7 +33,7 @@ export class RolesService {
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
   ) {}
-  async createRole(user: any, createRoleDto: CreateRoleDto) {
+  async createRole(user: DecodedUser, createRoleDto: CreateRoleDto) {
     try {
       const isAdmin = user.userType === UserTypes.ADMIN;
       const isBusiness = user.userType === UserTypes.BUSINESS;
@@ -65,6 +66,7 @@ export class RolesService {
           name: createRoleDto.name,
           creatorType: RoleCreatorType.BUSINESS,
           creator: new mongoose.Types.ObjectId(user.id),
+          business: new mongoose.Types.ObjectId(user.businessProfile),
         };
       }
       const findRole = await this.roleModel.findOne(findQuery);
@@ -75,14 +77,16 @@ export class RolesService {
         };
       }
       const { name, description } = createRoleDto;
-      const roleData = {
+      let roleData = {
         name,
         description,
         creator: new mongoose.Types.ObjectId(user.id),
         creatorType: isAdmin ? RoleCreatorType.ADMIN : RoleCreatorType.BUSINESS,
         belongsTo: isAdmin ? RoleBelonging.SYSTEM : RoleBelonging.BUSINESS,
-        // business:
       };
+      if(isBusiness){
+        roleData['business'] = new mongoose.Types.ObjectId(user.businessProfile);
+      }
 
       const existingRole = await this.roleModel.findOne({
         creator: new mongoose.Types.ObjectId(user.id),
@@ -211,15 +215,15 @@ export class RolesService {
     return result[0]?.descendantIds || [];
   }
 
-  async fetchRoles(id: string, userType: string, page: number, limit: number) {
+  async fetchRoles(user: DecodedUser, page: number, limit: number) {
     try {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
-      let allAdminIds = await this.getAllChildAdminIds2(id, userType);
+      let allAdminIds = await this.getAllChildAdminIds2(user.id, user.userType);
       console.log('allAdminIds:', allAdminIds);
-      console.log('allAdminIds111:', allAdminIds);
       let ownerRole = null;
-      if (userType === UserTypes.ADMIN) {
-        const findAdminUser = await this.adminModel.findById(id);
+      let query = {};
+      if (user.userType === UserTypes.ADMIN) {
+        const findAdminUser = await this.adminModel.findById(user.id);
         if (!findAdminUser) {
           return {
             success: false,
@@ -227,8 +231,8 @@ export class RolesService {
           };
         }
         ownerRole = findAdminUser.role;
-      } else if (userType === UserTypes.BUSINESS) {
-        const findBusinessUser = await this.businessUserModel.findById(id);
+      } else if (user.userType === UserTypes.BUSINESS) {
+        const findBusinessUser = await this.businessUserModel.findById(user.id);
         if (!findBusinessUser) {
           return {
             success: false,
@@ -236,28 +240,28 @@ export class RolesService {
           };
         }
         ownerRole = findBusinessUser.role[0];
+        query = { business: new mongoose.Types.ObjectId(user.businessProfile)}
       }
-      console.log('businessUser:', userType);
+      console.log('businessUser:', user.userType);
       console.log('allAdminIds:', allAdminIds);
       const allAdminObjectIds = allAdminIds.map(
         (id) => new mongoose.Types.ObjectId(id),
       );
+
+      query = { ...query, _id: { $in: allAdminObjectIds, $ne: ownerRole } };
       const roles = await this.roleModel
-        .find({
-          _id: { $in: allAdminObjectIds, $ne: ownerRole },
-          // creatorType: userType,
-        })
+        .find(query)
         .populate({
           path: 'creator',
           select: 'name',
-          model: userType,
+          model: user.userType,
         })
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
       const total = await this.roleModel.countDocuments({
         _id: { $in: allAdminObjectIds, $ne: ownerRole },
-        creatorType: userType,
+        creatorType: user.userType,
       });
 
       // const roles = await this.roleModel.aggregate([
@@ -356,9 +360,15 @@ export class RolesService {
     }
   }
 
-  async resourcesList() {
+  async resourcesList(user: DecodedUser) {
     try {
-      const resources = await this.resourceModel.find();
+      let belongsTo = null;
+      if(user.userType == UserTypes.BUSINESS) {
+        belongsTo = "BusinessUser";
+      }else if(user.userType == UserTypes.ADMIN) {
+        belongsTo = "Admin";
+      }
+      const resources = await this.resourceModel.find({ belongsTo });
       return {
         success: true,
         message: 'Resources Fetched Successfully!',

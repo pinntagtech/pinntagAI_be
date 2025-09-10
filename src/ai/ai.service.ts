@@ -278,4 +278,58 @@ export class AiService {
       };
     }
   }
+  async getTitleSuggestions(
+    contentType: string,
+    category: string,
+    dealType: string,
+  ) {
+    try {
+      const messages = [
+        {
+          role: 'user',
+          content: `
+          Suggest only 4 catchy titles for a ${contentType} in the ${category} category, specifically for the ${dealType} deal type.I want them to be creative and engaging.
+        `.trim(),
+        },
+      ];
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            model: 'gpt-3.5-turbo',
+            messages: messages,
+            max_tokens: 512,
+            temperature: 0.7,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+      let suggestions = response.data.choices[0].message.content
+        .split('\n')
+        .map((line) =>
+          line
+            .trim()
+            .replace(/^\d+[\).\s-]+/, '')
+            .replace(/^"(.*)"$/, '$1'),
+        )
+        .filter(Boolean);
+      console.log('SUGGESTIONS:', suggestions);
+      return {
+        success: true,
+        message: 'Title suggestions generated successfully',
+        data: suggestions,
+      };
+    } catch (error) {
+      console.error('Error fetching AI title suggestions:', error);
+      return {
+        success: false,
+        message: 'Failed to generate title suggestions',
+      };
+    }
+  }
 }

@@ -4,10 +4,12 @@ export const ProfileStatus = {
 };
 export const BusinessStatus = {
   CREATED: 0, //-> Business Created
-  ADDRESS_ADDED: 1, //-> Business Address Added
-  TYPE_ADDED: 2, //-> Business Type Added
-  DESCRIPTION_ADDED: 3,
-  COVER_ADDED: 4,
+  VERIFIED: 1,
+  ADDRESS_ADDED: 2, //-> Business Address Added
+  TYPE_ADDED: 3, //-> Business Type Added
+  TAGS: 4, //-> Business Tags Added
+  DESCRIPTION_ADDED: 5, //-> Business Description Added
+  COVER_ADDED: 6, //-> Business Cover Added
 };
 
 export const OfferStatus = {
@@ -16,6 +18,13 @@ export const OfferStatus = {
   SCHEDULE: 2,
   LOCATIONS: 3,
   PUBLISHED: 4,
+};
+
+export const OwnershipTransferStatus = {
+  INITIATED: 0,
+  IN_PROGRESS: 1,
+  COMPLETED: 2,
+  CANCELLED: 3,
 };
 
 export const ScalabilityFactor = {
@@ -731,3 +740,12 @@ export const ExpectedDownlineUserHeaders = [
   'countryCode',
   'phone',
 ]
+
+export const BusinessDocumentTypesList = {
+  TAX: 'Tax Document',
+  REGISTRATION: 'Registration Document',
+  LICENSE: 'Business License',
+  OWNERSHIP: 'Proof of Ownership',
+  ADDRESS_VERIFICATION: 'Address Verification Document',
+  OTHER: 'Other',
+}

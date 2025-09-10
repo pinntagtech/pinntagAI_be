@@ -1,4 +1,5 @@
-import { BusinessUser } from "src/business/model/businessUser.model";
+import { ADDRCONFIG } from 'dns';
+import { BusinessUser } from 'src/business/model/businessUser.model';
 
 export const UserTypes = {
   USER: 'Consumer',
@@ -11,7 +12,7 @@ export const CarouselType = {
   Event: 'event',
   Business: 'business',
   OnWheels: 'onWheels',
-}
+};
 
 export const DeviceTypes = {
   ANDROID: 'android',
@@ -44,6 +45,7 @@ export const FileCategoryTypes = {
   INVOICE: 'invoice',
   AUDIO_NOTE: 'Audio Note',
   CONTENT_QR: 'Content QR',
+  VERIFICATION_DOCUMENT: 'Verification Document',
   OTHER: 'other',
 };
 export const allowedImageMimeTypes = [

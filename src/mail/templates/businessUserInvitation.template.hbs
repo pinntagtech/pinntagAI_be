@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>You're Invited to Pinntag</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 22px;
+            color: #222222;
+        }
+        .invite-btn {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #28a745;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .footer {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #777777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>You're Invited to Join Pinntag!</h1>
+        <p>Hi,</p>
+        <p>
+            {{inviterName}} has invited you to join <strong>Pinntag</strong>, a platform to discover real-time deals, events, and promotions from local businesses.
+        </p>
+        <p>
+            Click the button below to accept your invitation and create your account:
+        </p>
+        <a href="{{inviteLink}}" class="invite-btn">Accept Invitation</a>
+        <p>
+            If the button above does not work, you can also copy and paste the following link into your browser:
+        </p>
+        <p><a href="{{inviteLink}}">{{inviteLink}}</a></p>
+        <p>We look forward to having you on Pinntag!</p>
+        <p>Best regards,<br>Pinntag Team</p>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

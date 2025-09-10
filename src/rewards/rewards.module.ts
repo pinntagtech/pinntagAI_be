@@ -143,6 +143,7 @@ import { SeederService } from 'src/seeder/seeder.service';
 import { SmsService } from 'src/sms/sms.service';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { AgeGroup, AgeGroupSchema } from 'src/models/ageGroup.model';
+<<<<<<< HEAD
 import {
   EventResponse,
   EventResponseSchema,
@@ -151,6 +152,13 @@ import {
   EventSchedule,
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
+=======
+import { EventResponse, EventResponseSchema } from 'src/event/models/event-response.model';
+import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
+import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
+import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
+>>>>>>> 1f8dc0d02d08cf2747e0df737530c9409a82940f
 
 @Module({
   imports: [
@@ -216,6 +224,9 @@ import {
       { name: AgeGroup.name, schema: AgeGroupSchema },
       { name: EventResponse.name, schema: EventResponseSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema },
+      { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
     ]),
   ],
   controllers: [RewardsController],

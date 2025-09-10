@@ -26,6 +26,14 @@ import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
 import { ExpectedOutletHeaders } from './enums/outlet.enum';
 import { GoogleService } from 'src/google/google.service';
+import { createObjectCsvStringifier } from 'csv-writer';
+import { FileCategoryTypes } from 'src/enums/auth.enums';
+import { Readable } from 'stream';
+import {
+  FileCategory,
+  FileCategoryDocument,
+} from 'src/drive/models/fileCategory.model';
+import { DriveService } from 'src/drive/drive.service';
 
 @Injectable()
 export class OutletService {
@@ -41,7 +49,10 @@ export class OutletService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(Business.name)
     private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(FileCategory.name)
+    private readonly fileCategoryModel: Model<FileCategoryDocument>,
     private readonly googleService: GoogleService,
+    private readonly driveService: DriveService,
   ) {}
   private async getAllChildUsersIds(
     userId: string,
@@ -290,11 +301,11 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
-      if(data.openingTime) {
+      if (data.openingTime) {
         createObj['openingTime'] = new Date(data.openingTime);
       }
 
-      if(data.closingTime) {
+      if (data.closingTime) {
         createObj['closingTime'] = new Date(data.closingTime);
       }
 
@@ -404,7 +415,7 @@ export class OutletService {
       };
     }
   }
-  async getOutlets(user: any,type: string, page: number, limit: number) {
+  async getOutlets(user: any, type: string, page: number, limit: number) {
     try {
       const userDetails = await this.businessUserModel.findById(user.id);
       if (!userDetails) {
@@ -539,7 +550,7 @@ export class OutletService {
       const outlets = await this.outletModel
         .find({
           ...match,
-          creator: new mongoose.Types.ObjectId(userDetails._id),
+          // creator: new mongoose.Types.ObjectId(userDetails._id),
           business: new mongoose.Types.ObjectId(user.businessProfile),
         })
         .populate({
@@ -554,6 +565,7 @@ export class OutletService {
         //   match: { _id: { $ne: '' } },
         // })
         .populate('business', 'name email phone countryCode logo')
+        .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
 
@@ -641,6 +653,29 @@ export class OutletService {
     });
   }
 
+  async getDistanceInMeters(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = (val: number) => (val * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // distance in meters
+  }
+
   async createOutletFromRow(row: any, user: DecodedUser) {
     try {
       let address = `${row.address1}, ${row.city}, ${row.state}, ${row.country}, ${row.postalCode}`;
@@ -660,6 +695,47 @@ export class OutletService {
           `Outlet with referenceId ${row.referenceId} already exists.`,
         );
       }
+      console.log('Place Details:', placeDetails);
+
+      if (!placeDetails || !placeDetails.data) {
+        throw new BadRequestException(
+          `No place details found for address: ${address}`,
+        );
+      }
+      let googleLat = placeDetails.data['latitude']
+        ? parseFloat(placeDetails.data['latitude'])
+        : 0;
+      let googleLng = placeDetails.data['longitude']
+        ? parseFloat(placeDetails.data['longitude'])
+        : 0;
+      let lat = googleLat;
+      let long = googleLng;
+      if (row.latitude && row.longitude) {
+        lat = row.latitude ? parseFloat(row.latitude) : googleLat;
+        long = row.longitude ? parseFloat(row.longitude) : googleLng;
+        let givenLat = row.latitude ? parseFloat(row.latitude) : googleLat;
+        let givenLng = row.longitude ? parseFloat(row.longitude) : googleLng;
+
+        console.log('Given Coordinates:', { givenLat, givenLng });
+        console.log('Google Coordinates:', { googleLat, googleLng });
+
+        if (row.latitude && row.longitude) {
+          const distance = await this.getDistanceInMeters(
+            googleLat,
+            googleLng,
+            givenLat,
+            givenLng,
+          );
+
+          if (distance > 1000) {
+            throw new Error(
+              `Provided latitude/longitude is not within 1000 meters of calculated location (distance: ${distance.toFixed(
+                2,
+              )}m).`,
+            );
+          }
+        }
+      }
 
       let outletObj = {
         category: row.category,
@@ -677,22 +753,11 @@ export class OutletService {
         refId: row.referenceId,
         creator: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
-        latitude: placeDetails.data['latitude']
-          ? parseFloat(placeDetails.data['latitude'])
-          : 0,
-        longitude: placeDetails.data['longitude']
-          ? parseFloat(placeDetails.data['longitude'])
-          : 0,
+        latitude: lat,
+        longitude: long,
         location: {
           type: 'Point',
-          coordinates: [
-            placeDetails.data['longitude']
-              ? parseFloat(placeDetails.data['longitude'])
-              : 0,
-            placeDetails.data['latitude']
-              ? parseFloat(placeDetails.data['latitude'])
-              : 0,
-          ],
+          coordinates: [long, lat],
         },
       };
       const outlet = await this.outletModel.create(outletObj);
@@ -723,17 +788,97 @@ export class OutletService {
         };
       }
       const rows = await this.parseCsv(file);
-      console.log('Parsed rows:', rows);
-      // for (const row of rows) {
-      //   await this.createOutletFromRow(row, user); // Your own outlet creation logic
-      // }
+      let failure = 0;
+      let result = null;
 
-      await Promise.all(rows.map((row) => this.createOutletFromRow(row, user)));
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createOutletFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
+      );
+      console.log('failure:', failure);
 
+      if (failure > 0) {
+        const failedRecords = results.filter((r) => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'category', title: 'Category' },
+              { id: 'name', title: 'Name' },
+              { id: 'address1', title: 'Address1' },
+              { id: 'address2', title: 'Address2' },
+              { id: 'city', title: 'City' },
+              { id: 'postalCode', title: 'PostalCode' },
+              { id: 'country', title: 'Country' },
+              { id: 'state', title: 'State' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'email', title: 'Email' },
+              { id: 'latitude', title: 'Latitude' },
+              { id: 'longitude', title: 'Longitude' },
+              { id: 'referenceId', title: 'ReferenceId' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'Message' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            category: r.category,
+            name: r.name,
+            address1: r.address1,
+            address2: r.address2,
+            city: r.city,
+            postalCode: r.postalCode,
+            country: r.country,
+            state: r.state,
+            countryCode: r.countryCode,
+            phone: r.phone,
+            email: r.email,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            referenceId: r.referenceId,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'downline_users_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'downline_users_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            businessUser.id,
+            String(business.drivePath),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (error) {
+          console.error('Error while creating CSV for failed records:', error);
+        }
+      }
       return {
         success: true,
         message: 'Outlets created successfully in bulk.',
-        // data: [], // You can return the created outlets data if needed
+        data: result, // You can return the created outlets data if needed
       };
     } catch (error) {
       return {

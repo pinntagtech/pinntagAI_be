@@ -31,4 +31,16 @@ export class UpdateConfigureDashboardDto {
   @IsOptional()
   @IsNumber()
   sortOrder: number;
+
+  @IsOptional()
+  @IsArray()
+  industries: Array<string> | Array<mongoose.Types.ObjectId>;
+
+  @IsOptional()
+  @IsString()
+  cardType: string;
+
+  @IsOptional()
+  @IsString()
+  carouselType: string;
 }

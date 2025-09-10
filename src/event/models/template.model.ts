@@ -29,7 +29,7 @@ export class Template {
     ],
   })
   type: string;
-x
+
   @Prop({ refPath: 'creatorType' })
   user: mongoose.Types.ObjectId;
 

@@ -1,9 +1,10 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 import {
   BusinessUser,
   BusinessUserDocument,
@@ -19,6 +20,8 @@ export class MailService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
     private readonly mailerService: MailerService,
     private readonly userService: UserService,
   ) {}
@@ -54,9 +57,9 @@ export class MailService {
     });
     this.mailerService.sendMail({
       to: user.email,
-      subject: 'Verify your email',
+      subject: 'Two-Factor Authentication',
       template:
-        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+        process.cwd() + '/src/mail/templates/2fa.template.hbs',
       context: {
         name: user.firstName,
         otp,
@@ -66,10 +69,54 @@ export class MailService {
   }
 
   async sendBusinessUserVerificationMail(userId: string) {
-    // const user = await this.userService.getUserById(userId);
     const profile = await this.businessUserModel.findOne({ _id: userId });
     const otp = await this.userService.saveOtp({
       user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: profile.email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
+    });
+  }
+
+  async sendBusinessTransferOtp(email: string, userId: string) {
+    const profile = await this.businessUserModel.findOne({ _id: userId });
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.EMAIL,
+    });
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Verify your email',
+      template:
+        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
+    });
+  }
+
+  async sendBusinessUserInvitation(email: string,name: string,){
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'You have been invited to join a business',
+      template: process.cwd() + '/src/mail/templates/businessUserInvitation.template.hbs',
+      context: {
+        inviterName: name,
+        inviteLink: 'https://dev.business.pinntag.com'
+      },
+    });
+  }
+
+  async sendBusinessVerificationMail(businessId: any) {
+    // const user = await this.userService.getUserById(userId);
+    const profile = await this.businessModel.findOne({
+      _id: new mongoose.Types.ObjectId(businessId),
+    });
+    const otp = await this.userService.saveOtp({
+      user: businessId,
       type: OtpTypes.EMAIL,
     });
     await this.mailerService.sendMail({
@@ -180,4 +227,23 @@ export class MailService {
       context: { name, email, password, loginLink },
     });
   }
+
+  async businessDocVerificationRequest(
+    email: string,
+    businessId: string,
+    documentType: string,
+  ) {
+    const business = await this.businessModel.findById(businessId);
+    if (!business) throw new BadRequestException('Business not found');
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Document Verification',
+      template:
+        process.cwd() +
+        '/src/mail/templates/businessDocVerification.template.hbs',
+      context: { name: business.name, documentType, businessId: business.id },
+    });
+  }
+
 }
