@@ -2190,7 +2190,7 @@ export class AuthService {
             // bio: '$businessProfileDetails.bio',
             // description: '$businessProfileDetails.description',
             // followersCount: '$businessProfileDetails.followersCount',
-            // isFollowedByMe: '$isFollowedByMe',
+            isFollowedByMe: '$isFollowedByMe',
             // profileType: 'BusinessProfile',
             // phone: '$businessProfileDetails.phone',
             // website: '$businessProfileDetails.website',
@@ -2979,8 +2979,10 @@ export class AuthService {
     return [dataRows, totalCount];
   }
 
+ 
 
-  
+
+
   async fetchBusinessListing(
     userId: mongoose.Types.ObjectId,
     longitude: number,
@@ -5737,202 +5739,202 @@ export class AuthService {
     }
   }
 
-  async getDashboardCarouselEvent2(
-    user: DecodedUser,
-    carouselId: string,
-    latitude: number,
-    longitude: number,
-    maxDistance: number,
-    search: string,
-    timeZone: string,
-    categoryIds?: Array<string>,
-    startDate?: any,
-    endDate?: any,
-    industries?: Array<string>,
-    isFollowedByMe?: boolean,
-  ) {
-    // Early validation
-    if (!mongoose.isValidObjectId(carouselId)) {
-      return {
-        success: false,
-        message: 'Please provide a valid id',
-      };
-    }
-
-    // Validate date range early
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      return {
-        success: false,
-        message: 'Start date cannot be greater than end date',
-      };
-    }
-
-    // Fetch carousel config once with lean() for better performance
-    const carousel = await this.dashboardConfigModel
-      .findById(carouselId)
-      .lean()
-      .exec();
-
-    if (!carousel) {
-      return {
-        success: false,
-        message: 'Carousel not found',
-      };
-    }
-
-    // Initialize empty result early for quick returns
-    const emptyResult = {
-      success: true,
-      message: 'Dashboard fetched successfully',
-      data: { eventsResult: [] },
-    };
-
-    // Build base query object
-    let query = await this.buildBaseQuery(
-      carousel,
-      categoryIds,
-      industries,
-      search,
-      user,
-    );
-
-    // Early return if no matching categories/industries
-    if (query === null) {
-      return emptyResult;
-    }
-
-    // Handle different carousel types
-    let eventsResult = [];
-    let totalCount = 0;
-
-    try {
-      switch (carousel.carouselType) {
-        case CarouselType.Business:
-          const businessQuery = await this.buildBusinessQuery(
-            carousel,
-            industries,
-            search,
-            isFollowedByMe,
-          );
-
-          if (businessQuery === null) {
-            return emptyResult;
-          }
-
-          [eventsResult, totalCount] = await this.fetchBusinessListing(
-            new mongoose.Types.ObjectId(user.id),
-            longitude,
-            latitude,
-            businessQuery,
-            1,
-            carousel.limit,
-            maxDistance,
-            startDate,
-            endDate,
-          );
-          eventsResult = eventsResult['data'];
-          break;
-
-        case CarouselType.Event:
-        case CarouselType.OnWheels:
-          [eventsResult, totalCount] = await this.fetchEventsV2(
-            new mongoose.Types.ObjectId(user.id),
-            longitude,
-            latitude,
-            query,
-            1,
-            carousel.limit,
-            carousel.carouselType,
-            maxDistance,
-            startDate,
-            endDate,
-          );
-          break;
-
-        default:
-          return emptyResult;
+    async getDashboardCarouselEvent2(
+      user: DecodedUser,
+      carouselId: string,
+      latitude: number,
+      longitude: number,
+      maxDistance: number,
+      search: string,
+      timeZone: string,
+      categoryIds?: Array<string>,
+      startDate?: any,
+      endDate?: any,
+      industries?: Array<string>,
+      isFollowedByMe?: boolean,
+    ) {
+      // Early validation
+      if (!mongoose.isValidObjectId(carouselId)) {
+        return {
+          success: false,
+          message: 'Please provide a valid id',
+        };
       }
 
-      return {
+      // Validate date range early
+      if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+        return {
+          success: false,
+          message: 'Start date cannot be greater than end date',
+        };
+      }
+
+      // Fetch carousel config once with lean() for better performance
+      const carousel = await this.dashboardConfigModel
+        .findById(carouselId)
+        .lean()
+        .exec();
+
+      if (!carousel) {
+        return {
+          success: false,
+          message: 'Carousel not found',
+        };
+      }
+
+      // Initialize empty result early for quick returns
+      const emptyResult = {
         success: true,
         message: 'Dashboard fetched successfully',
-        data:  eventsResult ,
-      };
-    } catch (error) {
-      console.error('Error fetching dashboard carousel:', error);
-      return {
-        success: false,
-        message: 'An error occurred while fetching dashboard data',
         data: { eventsResult: [] },
       };
-    }
-  }
 
-  // Helper method to build base query
-  private async buildBaseQuery(
-    carousel: any,
-    categoryIds?: Array<string>,
-    industries?: Array<string>,
-    search?: string,
-    user?: DecodedUser,
-  ) {
-    let query: any = {};
-
-    // Handle categories filtering
-    if (categoryIds?.length) {
-      const validCategoryIds = categoryIds
-        .filter((id) => mongoose.isValidObjectId(id))
-        .map((id) => new mongoose.Types.ObjectId(id));
-
-      const matchingCategories = validCategoryIds.filter((id) =>
-        carousel.categories.some((catId: any) => catId.equals(id)),
+      // Build base query object
+      let query = await this.buildBaseQuery(
+        carousel,
+        categoryIds,
+        industries,
+        search,
+        user,
       );
 
-      if (!matchingCategories.length) {
-        return null; // No matching categories
+      // Early return if no matching categories/industries
+      if (query === null) {
+        return emptyResult;
       }
 
-      query['event.categories'] = { $in: matchingCategories };
-    } else {
-      query['event.categories'] = { $in: carousel.categories };
+      // Handle different carousel types
+      let eventsResult = [];
+      let totalCount = 0;
+
+      try {
+        switch (carousel.carouselType) {
+          case CarouselType.Business:
+            const businessQuery = await this.buildBusinessQuery(
+              carousel,
+              industries,
+              search,
+              isFollowedByMe,
+            );
+
+            if (businessQuery === null) {
+              return emptyResult;
+            }
+
+            [eventsResult, totalCount] = await this.fetchBusinessListing(
+              new mongoose.Types.ObjectId(user.id),
+              longitude,
+              latitude,
+              businessQuery,
+              1,
+              carousel.limit,
+              maxDistance,
+              startDate,
+              endDate,
+            );
+            eventsResult = eventsResult['data'];
+            break;
+
+          case CarouselType.Event:
+          case CarouselType.OnWheels:
+            [eventsResult, totalCount] = await this.fetchEventsV2(
+              new mongoose.Types.ObjectId(user.id),
+              longitude,
+              latitude,
+              query,
+              1,
+              carousel.limit,
+              carousel.carouselType,
+              maxDistance,
+              startDate,
+              endDate,
+            );
+            break;
+
+          default:
+            return emptyResult;
+        }
+
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data:  eventsResult ,
+        };
+      } catch (error) {
+        console.error('Error fetching dashboard carousel:', error);
+        return {
+          success: false,
+          message: 'An error occurred while fetching dashboard data',
+          data: { eventsResult: [] },
+        };
+      }
     }
 
-    // Handle search with optimized business profile lookup
-    if (search) {
-      const searchRegex = { $regex: search, $options: 'i' };
+    // Helper method to build base query
+    private async buildBaseQuery(
+      carousel: any,
+      categoryIds?: Array<string>,
+      industries?: Array<string>,
+      search?: string,
+      user?: DecodedUser,
+    ) {
+      let query: any = {};
 
-      // Use aggregation pipeline for better performance
-      const businessProfileIds = await this.businessModel
-        .find({ name: searchRegex })
-        .select('_id')
-        .lean()
-        .exec()
-        .then((businesses) => businesses.map((b) => b._id));
+      // Handle categories filtering
+      if (categoryIds?.length) {
+        const validCategoryIds = categoryIds
+          .filter((id) => mongoose.isValidObjectId(id))
+          .map((id) => new mongoose.Types.ObjectId(id));
 
-      query.$or = [
-        { 'event.title': searchRegex },
-        { 'event.description': searchRegex },
-        { 'event.keywords': searchRegex },
-        ...(businessProfileIds.length
-          ? [{ 'event.businessProfile': { $in: businessProfileIds } }]
-          : []),
-      ];
+        const matchingCategories = validCategoryIds.filter((id) =>
+          carousel.categories.some((catId: any) => catId.equals(id)),
+        );
+
+        if (!matchingCategories.length) {
+          return null; // No matching categories
+        }
+
+        query['event.categories'] = { $in: matchingCategories };
+      } else {
+        query['event.categories'] = { $in: carousel.categories };
+      }
+
+      // Handle search with optimized business profile lookup
+      if (search) {
+        const searchRegex = { $regex: search, $options: 'i' };
+
+        // Use aggregation pipeline for better performance
+        const businessProfileIds = await this.businessModel
+          .find({ name: searchRegex })
+          .select('_id')
+          .lean()
+          .exec()
+          .then((businesses) => businesses.map((b) => b._id));
+
+        query.$or = [
+          { 'event.title': searchRegex },
+          { 'event.description': searchRegex },
+          { 'event.keywords': searchRegex },
+          ...(businessProfileIds.length
+            ? [{ 'event.businessProfile': { $in: businessProfileIds } }]
+            : []),
+        ];
+      }
+
+      // Handle free/paid events
+      if (!carousel.freeIncluded) {
+        query['event.isFree'] = false;
+      }
+
+      // Handle event types
+      const eventTypes = this.getEventTypes(carousel);
+      if (eventTypes.length) {
+        query['event.type'] =
+          eventTypes.length === 1 ? eventTypes[0] : { $in: eventTypes };
+      }
+
+      return query;
     }
-
-    // Handle free/paid events
-    if (!carousel.freeIncluded) {
-      query['event.isFree'] = false;
-    }
-
-    // Handle event types
-    const eventTypes = this.getEventTypes(carousel);
-    if (eventTypes.length) {
-      query['event.type'] =
-        eventTypes.length === 1 ? eventTypes[0] : { $in: eventTypes };
-    }
-
-    return query;
-  }
 
   // Helper method to determine event types
   private getEventTypes(carousel: any) {
