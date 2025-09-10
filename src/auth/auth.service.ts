@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -3342,6 +3342,9 @@ export class AuthService {
     startDate?: any,
     endDate?: any,
   ) {
+    if (!latitude || !longitude) {
+      throw new BadRequestException('Latitude and Longitude are required');
+    }
     let match = {};
     if (categoryIds.length) {
       match['event.categories'] = {
@@ -5753,6 +5756,10 @@ export class AuthService {
     industries?: Array<string>,
     isFollowedByMe?: boolean,
   ) {
+
+     if (!latitude || !longitude) {
+      throw new BadRequestException('Latitude and Longitude are required');
+    }
     if (!mongoose.isValidObjectId(carouselId)) {
       return {
         success: false,

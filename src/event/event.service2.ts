@@ -4298,6 +4298,9 @@ export class EventService2 {
     latitude: number,
     longitude: number,
   ) {
+    if (!latitude || !longitude) {
+      throw new BadRequestException('Latitude and Longitude are required');
+    }
     const user = await this.userModel.findById(userId);
     if (!user) {
       return {
@@ -4798,7 +4801,7 @@ export class EventService2 {
     user: DecodedUser,
   ) {
     try {
-      console.log("SCHEDULE DATA:", JSON.stringify(data));
+      console.log('SCHEDULE DATA:', JSON.stringify(data));
       let profile = null;
       if (user.userType === UserTypes.USER) {
         profile = await this.userModel.findById(user.id);

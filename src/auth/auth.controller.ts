@@ -15,6 +15,7 @@ import {
   BadRequestException,
   Put,
   Inject,
+  ExecutionContext,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
@@ -49,7 +50,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @Post('upload/photo')
@@ -319,18 +320,23 @@ export class AuthController {
 
   @Get('dashboard/getAllConfigs')
   @UseGuards(JwtGuard2)
-  async getDashboardAllConfigs(@Query('carouselType') carouselType: string) {
+  async getDashboardAllConfigs(
+    @Query('carouselType') carouselType: string,
+    @Req() request: Request,
+  ) {
     if (!carouselType) {
       throw new BadRequestException('Carousel type is required');
     }
-    // const cached = await this.cacheManager.get('getAllConfigs');
-    // if( cached) {
-    //   console.log('✅ Returning getAllConfigs from Redis');
-    //   return cached;
-    // }
-    
+    const key = request.originalUrl;
+    console.log('Cache Key:', key);
+    const cached = await this.cacheManager.get(key);
+    if (cached) {
+      console.log('✅ Returning getAllConfigs from Redis');
+      return cached;
+    }
+
     const result = await this.authService.getDashboardAllConfigs(carouselType);
-    // await this.cacheManager.set('getAllConfigs', result, REDIS_TTL.ONEDAY);
+    await this.cacheManager.set(key, result, REDIS_TTL.ONEDAY);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -495,8 +501,6 @@ export class AuthController {
       }
     }
     console.log('Distance in controller:', distance);
-
-    
 
     const result = await this.authService.getDashboardCarouselEvent2(
       user,
