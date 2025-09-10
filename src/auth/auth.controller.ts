@@ -323,14 +323,14 @@ export class AuthController {
     if (!carouselType) {
       throw new BadRequestException('Carousel type is required');
     }
-    const cached = await this.cacheManager.get('getAllConfigs');
-    if( cached) {
-      console.log('✅ Returning getAllConfigs from Redis');
-      return cached;
-    }
+    // const cached = await this.cacheManager.get('getAllConfigs');
+    // if( cached) {
+    //   console.log('✅ Returning getAllConfigs from Redis');
+    //   return cached;
+    // }
     
     const result = await this.authService.getDashboardAllConfigs(carouselType);
-    await this.cacheManager.set('getAllConfigs', result, REDIS_TTL.ONEDAY);
+    // await this.cacheManager.set('getAllConfigs', result, REDIS_TTL.ONEDAY);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
