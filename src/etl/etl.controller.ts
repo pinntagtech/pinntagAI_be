@@ -23,19 +23,19 @@ import { EtlService } from './etl.service';
 // import { CreateEtlDto } from './dto/create-etl.dto';
 // import { UpdateEtlDto } from './dto/update-etl.dto';
 import { UpdateEtlSourceDto, CreateEtlSourceDto } from './dto/ETL-sources.dto';
-import { CreateEtlSourceGroupDto, UpdateEtlSourceGroupDto } from './dto/ETL-source-group.dto';
+import {
+  CreateEtlSourceGroupDto,
+  UpdateEtlSourceGroupDto,
+} from './dto/ETL-source-group.dto';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
 import { Privilege } from 'src/roles/privilege.decorator';
 import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 
-
 @Controller('etl')
 export class EtlController {
-  constructor(private readonly etlService: EtlService) {
-
-  }
+  constructor(private readonly etlService: EtlService) {}
 
   // @Post()
   // create(@Body() createEtlDto: CreateEtlDto) {
@@ -66,7 +66,7 @@ export class EtlController {
   @Post('etl-source')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source, Actions.CREATE)
   async createUrl(@Body() createEtlUrlDto: CreateEtlSourceDto) {
     const response = await this.etlService.createUrl(createEtlUrlDto);
@@ -76,7 +76,7 @@ export class EtlController {
       return {
         status: HttpStatus.CREATED,
         data: response,
-        message: 'ETL source created successfully'
+        message: 'ETL source created successfully',
       };
     }
   }
@@ -84,7 +84,7 @@ export class EtlController {
   @Get('etl-sources')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source, Actions.READ)
   async findAllUrls(@Req() req: Request, @Res() res: Response) {
     const response = await this.etlService.findAllUrls();
@@ -94,7 +94,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL sources retrieved successfully'
+        message: 'ETL sources retrieved successfully',
       });
     }
   }
@@ -102,35 +102,39 @@ export class EtlController {
   @Get('etl-source/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source, Actions.READ)
   async findOneUrl(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.findOneUrl(id);
     if (!response) {
       throw new BadRequestException('ETL source not found');
     } else {
-    return res.send({
-      status: HttpStatus.OK,
-      data: response,
-      message: 'ETL source retrieved successfully'
-    });
+      return res.send({
+        status: HttpStatus.OK,
+        data: response,
+        message: 'ETL source retrieved successfully',
+      });
     }
   }
 
   @Patch('etl-source/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source, Actions.UPDATE)
-  async updateUrl(@Param('id') id: string, @Body() updateEtlUrlDto: UpdateEtlSourceDto, @Res() res) {
+  async updateUrl(
+    @Param('id') id: string,
+    @Body() updateEtlUrlDto: UpdateEtlSourceDto,
+    @Res() res,
+  ) {
     const response = await this.etlService.updateUrl(id, updateEtlUrlDto);
     if (!response) {
       throw new BadRequestException('ETL source not found');
-    }else{
+    } else {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source updated successfully'
+        message: 'ETL source updated successfully',
       });
     }
   }
@@ -138,17 +142,17 @@ export class EtlController {
   @Delete('etl-source/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source, Actions.DELETE)
   async removeUrl(@Param('id') id: string, @Res() res) {
     const response = await this.etlService.removeUrl(id);
     if (!response) {
       throw new BadRequestException('ETL source not found');
-    }else{
+    } else {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source removed successfully'
+        message: 'ETL source removed successfully',
       });
     }
   }
@@ -157,9 +161,12 @@ export class EtlController {
   @Post('etl-source-group')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.CREATE)
-  async createUrlGroup(@Body() createEtlUrlGroupDto: CreateEtlSourceGroupDto, @Res() res: Response) {
+  async createUrlGroup(
+    @Body() createEtlUrlGroupDto: CreateEtlSourceGroupDto,
+    @Res() res: Response,
+  ) {
     const response = await this.etlService.createUrlGroup(createEtlUrlGroupDto);
     if (!response) {
       throw new BadRequestException('ETL source group not found');
@@ -167,7 +174,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.CREATED,
         data: response,
-        message: 'ETL source group created successfully'
+        message: 'ETL source group created successfully',
       });
     }
   }
@@ -175,7 +182,7 @@ export class EtlController {
   @Get('etl-source-group')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.READ)
   async findAllUrlGroups(@Res() res: Response) {
     const response = await this.etlService.findAllUrlGroups();
@@ -185,7 +192,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source groups retrieved successfully'
+        message: 'ETL source groups retrieved successfully',
       });
     }
   }
@@ -193,7 +200,7 @@ export class EtlController {
   @Get('etl-source-group/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.READ)
   async findOneUrlGroup(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.findOneUrlGroup(id);
@@ -203,7 +210,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source group retrieved successfully'
+        message: 'ETL source group retrieved successfully',
       });
     }
   }
@@ -211,17 +218,24 @@ export class EtlController {
   @Patch('etl-source-group/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.UPDATE)
-  async updateUrlGroup(@Param('id') id: string, @Body() updateEtlUrlGroupDto: UpdateEtlSourceGroupDto, @Res() res: Response) {
-    const response = await this.etlService.updateUrlGroup(id, updateEtlUrlGroupDto);
+  async updateUrlGroup(
+    @Param('id') id: string,
+    @Body() updateEtlUrlGroupDto: UpdateEtlSourceGroupDto,
+    @Res() res: Response,
+  ) {
+    const response = await this.etlService.updateUrlGroup(
+      id,
+      updateEtlUrlGroupDto,
+    );
     if (!response) {
       throw new BadRequestException('ETL source group not found');
     } else {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source group updated successfully'
+        message: 'ETL source group updated successfully',
       });
     }
   }
@@ -229,7 +243,7 @@ export class EtlController {
   @Delete('etl-source-group/:id')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.DELETE)
   async removeUrlGroup(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.removeUrlGroup(id);
@@ -239,7 +253,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL source group removed successfully'
+        message: 'ETL source group removed successfully',
       });
     }
   }
@@ -252,7 +266,7 @@ export class EtlController {
   @Post('etl-source-group/:id/start')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.UPDATE)
   async startEtlProcess(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.startEtlProcess(id);
@@ -262,7 +276,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL process started successfully'
+        message: 'ETL process started successfully',
       });
     }
   }
@@ -270,7 +284,7 @@ export class EtlController {
   @Post('etl-source-group/:id/pause')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.UPDATE)
   async pauseEtlProcess(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.pauseEtlProcess(id);
@@ -280,7 +294,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL process paused successfully'
+        message: 'ETL process paused successfully',
       });
     }
   }
@@ -288,7 +302,7 @@ export class EtlController {
   @Get('etl-source-group/:id/status')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.READ)
   async getEtlStatus(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.getEtlStatus(id);
@@ -298,15 +312,15 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL process status retrieved successfully'
+        message: 'ETL process status retrieved successfully',
       });
-    } 
+    }
   }
 
   @Get('etl-source-group/:id/logs')
   @UseGuards(RateLimitGuard)
   @UseGuards(AdminGuard2)
-  @UseGuards(PrivilegeGuard)
+  // @UseGuards(PrivilegeGuard)
   @Privilege(ResourceTypes.ETL_Source_Group, Actions.READ)
   async getEtlLogs(@Param('id') id: string, @Res() res: Response) {
     const response = await this.etlService.getEtlLogs(id);
@@ -316,7 +330,7 @@ export class EtlController {
       return res.send({
         status: HttpStatus.OK,
         data: response,
-        message: 'ETL process logs retrieved successfully'
+        message: 'ETL process logs retrieved successfully',
       });
     }
   }
