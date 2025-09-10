@@ -1946,39 +1946,39 @@ export class AuthService {
           },
         },
       },
-      {
-        $lookup: {
-          from: 'follows', // make sure it's the actual collection name
-          let: {
-            userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
-            targetId: '$followingTarget',
-            targetType: '$followingTargetType',
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ['$follower', '$$userId'] },
-                    { $eq: ['$followerType', 'User'] },
-                    { $eq: ['$following', '$$targetId'] },
-                    { $eq: ['$followingType', '$$targetType'] },
-                    { $eq: ['$isBlocked', false] },
-                  ],
-                },
-              },
-            },
-          ],
-          as: 'userFollow',
-        },
-      },
-      {
-        $addFields: {
-          isFollowedByMe: {
-            $gt: [{ $size: '$userFollow' }, 0],
-          },
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: 'follows', // make sure it's the actual collection name
+      //     let: {
+      //       userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
+      //       targetId: '$followingTarget',
+      //       targetType: '$followingTargetType',
+      //     },
+      //     pipeline: [
+      //       {
+      //         $match: {
+      //           $expr: {
+      //             $and: [
+      //               { $eq: ['$follower', '$$userId'] },
+      //               { $eq: ['$followerType', 'User'] },
+      //               { $eq: ['$following', '$$targetId'] },
+      //               { $eq: ['$followingType', '$$targetType'] },
+      //               { $eq: ['$isBlocked', false] },
+      //             ],
+      //           },
+      //         },
+      //       },
+      //     ],
+      //     as: 'userFollow',
+      //   },
+      // },
+      // {
+      //   $addFields: {
+      //     isFollowedByMe: {
+      //       $gt: [{ $size: '$userFollow' }, 0],
+      //     },
+      //   },
+      // },
       {
         $group: {
           _id: '$event._id', // Group by event._id
@@ -2011,7 +2011,7 @@ export class AuthService {
           QR_CODE: { $first: '$QR_CODE' },
           isLiked: { $first: '$isLiked' },
           isSaved: { $first: '$isSaved' },
-          isFollowedByMe: { $first: '$isFollowedByMe' },
+          // isFollowedByMe: { $first: '$isFollowedByMe' },
           locations: {
             $push: {
               location: '$location',
@@ -2126,68 +2126,68 @@ export class AuthService {
         },
       },
 
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'event.user',
-          foreignField: '_id',
-          as: 'userDetails',
-        },
-      },
-      {
-        $lookup: {
-          from: 'businessusers',
-          localField: 'event.user',
-          foreignField: '_id',
-          as: 'businessUserDetails',
-        },
-      },
-      { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
-      {
-        $unwind: {
-          path: '$businessUserDetails',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: 'users',
+      //     localField: 'event.user',
+      //     foreignField: '_id',
+      //     as: 'userDetails',
+      //   },
+      // },
+      // {
+      //   $lookup: {
+      //     from: 'businessusers',
+      //     localField: 'event.user',
+      //     foreignField: '_id',
+      //     as: 'businessUserDetails',
+      //   },
+      // },
+      // { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+      // {
+      //   $unwind: {
+      //     path: '$businessUserDetails',
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
       {
         $project: {
           _id: 1,
           distance: 1,
           title: 1,
-          keywords: 1,
-          description: 1,
+          // keywords: 1,
+          // description: 1,
           type: 1,
           // status: 1,
           // notifyFollowers: 1,
-          targetGenders: 1,
-          promotionCode: 1,
-          isFree: 1,
-          participationCost: 1,
-          bookingUrl: 1,
-          termsAndConditions: 1,
-          ageGroupsAllowed: {
-            minAge: '$minTargetAge',
-            maxAge: '$maxTargetAge',
-          },
-          categories: {
-            $map: {
-              input: '$categories',
-              as: 'category',
-              in: {
-                _id: '$$category._id',
-                title: '$$category.title',
-                darkIcon: '$$category.darkIcon',
-                lightIcon: '$$category.lightIcon',
-                activeColor: '$$category.activeColor',
-              },
-            },
-          },
+          // targetGenders: 1,
+          // promotionCode: 1,
+          // isFree: 1,
+          // participationCost: 1,
+          // bookingUrl: 1,
+          // termsAndConditions: 1,
+          // ageGroupsAllowed: {
+          //   minAge: '$minTargetAge',
+          //   maxAge: '$maxTargetAge',
+          // },
+          // categories: {
+          //   $map: {
+          //     input: '$categories',
+          //     as: 'category',
+          //     in: {
+          //       _id: '$$category._id',
+          //       title: '$$category.title',
+          //       darkIcon: '$$category.darkIcon',
+          //       lightIcon: '$$category.lightIcon',
+          //       activeColor: '$$category.activeColor',
+          //     },
+          //   },
+          // },
           businessProfileDetails: {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
             cover: '$businessProfileDetails.cover',
             logo: '$businessProfileDetails.logo',
-            email: '$businessProfileDetails.email',
+            // email: '$businessProfileDetails.email',
             // bio: '$businessProfileDetails.bio',
             // description: '$businessProfileDetails.description',
             // followersCount: '$businessProfileDetails.followersCount',
@@ -2199,49 +2199,49 @@ export class AuthService {
             // instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
             // twitterPageUrl: '$businessProfileDetails.XPageUrl',
           },
-          QR_CODE: {
-            _id: '$QR_CODE._id',
-            url: '$QR_CODE.metaData.url',
-          },
-          creatorDetails: {
-            $cond: {
-              if: { $eq: ['$creatorType', 'User'] },
-              then: {
-                _id: '$userDetails._id',
-                name: '$userDetails.name',
-                profilePhoto: '$userDetails.profilePhoto',
-                email: '$userDetails.email',
-                // bio: '$userDetails.bio',
-                // followersCount: '$userDetails.followersCount',
-                // profileType: 'User',
-                // phone: '$userDetails.phone',
-                // website: '',
-                // isFollowedByMe: '$event.isFollowedByMe',
-                // isDeleted: '$userDetails.isDeleted',
-                // isMe: false,
-              },
-              else: {
-                _id: '$businessProfileDetails._id',
-                name: '$businessProfileDetails.name',
-                profilePhoto: '$businessProfileDetails.profilePhoto',
-                email: '$businessProfileDetails.email',
-                // bio: '$businessProfileDetails.bio',
-                // followersCount: '$businessProfileDetails.followersCount',
-                // profileType: 'BusinessProfile',
-                // phone: '$businessProfileDetails.phone',
-                // website: '$businessProfileDetails.website',
-                // isFollowedByMe: '$event.isFollowedByMe',
-                // description: '$businessProfileDetails.description',
-                logo: '$businessProfileDetails.logo',
-                cover: '$businessProfileDetails.cover',
-                // isDeleted: '$businessProfileDetails.isDeleted',
-                // facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
-                // instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
-                // twitterPageUrl: '$businessProfileDetails.XPageUrl',
-                // isMe: false,
-              },
-            },
-          },
+          // QR_CODE: {
+          //   _id: '$QR_CODE._id',
+          //   url: '$QR_CODE.metaData.url',
+          // },
+          // creatorDetails: {
+          //   $cond: {
+          //     if: { $eq: ['$creatorType', 'User'] },
+          //     then: {
+          //       _id: '$userDetails._id',
+          //       name: '$userDetails.name',
+          //       profilePhoto: '$userDetails.profilePhoto',
+          //       email: '$userDetails.email',
+          //       // bio: '$userDetails.bio',
+          //       // followersCount: '$userDetails.followersCount',
+          //       // profileType: 'User',
+          //       // phone: '$userDetails.phone',
+          //       // website: '',
+          //       // isFollowedByMe: '$event.isFollowedByMe',
+          //       // isDeleted: '$userDetails.isDeleted',
+          //       // isMe: false,
+          //     },
+          //     else: {
+          //       _id: '$businessProfileDetails._id',
+          //       name: '$businessProfileDetails.name',
+          //       profilePhoto: '$businessProfileDetails.profilePhoto',
+          //       email: '$businessProfileDetails.email',
+          //       // bio: '$businessProfileDetails.bio',
+          //       // followersCount: '$businessProfileDetails.followersCount',
+          //       // profileType: 'BusinessProfile',
+          //       // phone: '$businessProfileDetails.phone',
+          //       // website: '$businessProfileDetails.website',
+          //       // isFollowedByMe: '$event.isFollowedByMe',
+          //       // description: '$businessProfileDetails.description',
+          //       logo: '$businessProfileDetails.logo',
+          //       cover: '$businessProfileDetails.cover',
+          //       // isDeleted: '$businessProfileDetails.isDeleted',
+          //       // facebookPageUrl: '$businessProfileDetails.facebookPageUrl',
+          //       // instagramPageUrl: '$businessProfileDetails.instagramPageUrl',
+          //       // twitterPageUrl: '$businessProfileDetails.XPageUrl',
+          //       // isMe: false,
+          //     },
+          //   },
+          // },
           images: {
             $map: {
               input: '$files',
@@ -2255,7 +2255,7 @@ export class AuthService {
           creatorType: 1,
           isLiked: 1,
           isSaved: 1,
-          locations: 1,
+          locations: { $slice: ["$locations", 1] },
           schedules: {
             $sortArray: {
               input: '$schedules',
@@ -5781,51 +5781,6 @@ export class AuthService {
         };
       }
     }
-
-    // if (!startDate && !endDate) {
-    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-    //   match['event.schedule.date'] = { $gte: start };
-    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    // } else if (startDate && endDate) {
-    //   start = getZeroBodyDateTz(startDate);
-    //   const end = getZeroBodyDateTz(endDate);
-    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-    //     if (
-    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-    //     ) {
-    //       console.log('start is equals to current');
-    //       // If the requested query is for today only then the end time should be greater than the current time
-    //       match['event.schedule.date'] = getZeroDateTz(new Date());
-    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-    //     } else {
-    //       console.log('start is not equals to current');
-    //       // If the start and end date are the same e.g. 2024-06-01
-    //       match['event.schedule.date'] = start;
-    //     }
-    //   } else if (end > start) {
-    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-    //       match['event.schedule.durations'] = {
-    //         $elemMatch: {
-    //           startTime: { $lte: end },
-    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-    //         },
-    //       };
-    //     } else {
-    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-    //       match['event.schedule.durations'] = {
-    //         $elemMatch: {
-    //           startTime: { $lte: end },
-    //           endTime: { $gte: start },
-    //         },
-    //       };
-    //     }
-    //   } else {
-    //     // If the request date is in past
-    //     match['event.schedule.date'] = { $gte: currentDate };
-    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-    //   }
-    // }
 
     if (search) {
       // Search matching business profile name
