@@ -15,7 +15,7 @@ import { Request, Response } from 'express';
 import { GooglePubSubMessageDto } from './google/google-pub-sub.dto';
 
 // iap-webhook.controller.ts
-@Controller('webhooks/iap')
+@Controller('iap/webhooks')
 export class IapWebhookController {
   constructor(
     private readonly appleService: AppleIAPService,
@@ -44,6 +44,7 @@ export class IapWebhookController {
     @Res() res: Response,
   ) {
     // The incoming body is a Pub/Sub message wrapper; extract the actual notification data
+    console.log('Received Google Pub/Sub message:', body);
     const developerNotification = this.googleService.parsePubSubMessage(body);
     await this.googleService.processNotification(developerNotification);
     return res.send(); // Acknowledge receipt
