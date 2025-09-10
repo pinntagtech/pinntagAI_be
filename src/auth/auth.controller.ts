@@ -326,10 +326,7 @@ export class AuthController {
     const cached = await this.cacheManager.get('getAllConfigs');
     if( cached) {
       console.log('✅ Returning getAllConfigs from Redis');
-      return { 
-        message: 'Carousels fetched successfully',
-        data: cached
-      };
+      return cached;
     }
     
     const result = await this.authService.getDashboardAllConfigs(carouselType);

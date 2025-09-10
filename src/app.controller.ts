@@ -32,7 +32,7 @@ export class AppController {
     const cached = await this.cacheManager.get('categories');
     if (cached) {
       console.log('✅ Returning categories from Redis');
-      return { categories: cached };
+      return cached;
     }
 
     // 2. If not in Redis, call the service
