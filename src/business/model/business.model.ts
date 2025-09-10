@@ -275,9 +275,9 @@ export class Business {
   scalabilityFactor: number;
 
   @Prop()
-<<<<<<< HEAD
   stripeCustomerId: string;
-=======
+
+  @Prop()
   tags: string[];
 
   @Prop()
@@ -291,7 +291,6 @@ export class Business {
 
   @Prop()
   uniqueId: string;
->>>>>>> 1f8dc0d02d08cf2747e0df737530c9409a82940f
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

@@ -62,15 +62,14 @@ import { Folder, FolderSchema } from 'src/drive/models/folder.model';
 import { Admin, AdminSchema } from 'src/admin/models/admin.model';
 import { FirebaseService } from 'src/notification/firebase.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-<<<<<<< HEAD
 import {
   UserAllowedNotification,
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
-=======
-import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
->>>>>>> 1f8dc0d02d08cf2747e0df737530c9409a82940f
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [

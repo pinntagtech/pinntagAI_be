@@ -161,9 +161,18 @@ import {
 } from 'src/auth/models/platformConfig.model';
 import { SmsService } from 'src/sms/sms.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
-import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from 'src/admin/models/BusinessDocVerificationLeads.model';
+import {
+  OwnershipTransferRecord,
+  OwnershipTransferRecordSchema,
+} from 'src/business/model/ownershipTransferRecords.model';
 
 @Module({
   imports: [
@@ -228,18 +237,18 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
       { name: OutletCategory.name, schema: OutletCategorySchema },
       { name: OutletType.name, schema: OutletTypeSchema },
       { name: DashboardConfig.name, schema: DashboardConfigSchema },
-<<<<<<< HEAD
       { name: Tag.name, schema: TagSchema },
       { name: PlatformConfig.name, schema: PlatformConfigSchema },
       { name: Reward.name, schema: RewardSchema },
-=======
-      { name: Tag.name, schema: TagSchema},
-      { name: PlatformConfig.name, schema: PlatformConfigSchema},
-      { name: Reward.name, schema: RewardSchema},
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
->>>>>>> 1f8dc0d02d08cf2747e0df737530c9409a82940f
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
