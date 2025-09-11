@@ -163,6 +163,11 @@ import {
   OwnershipTransferRecord,
   OwnershipTransferRecordSchema,
 } from 'src/business/model/ownershipTransferRecords.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -237,6 +242,7 @@ import {
         name: OwnershipTransferRecord.name,
         schema: OwnershipTransferRecordSchema,
       },
+      { name: Broadcast.name, schema: BroadcastSchema },
     ]),
   ],
   controllers: [RewardsController],
@@ -255,6 +261,7 @@ import {
     SeederService,
     AuthService,
     SmsService,
+    RedisBullService,
   ],
 })
 export class RewardsModule {}

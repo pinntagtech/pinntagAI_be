@@ -141,6 +141,8 @@ import {
   SampleDocument,
   SampleDocumentSchema,
 } from 'src/admin/models/sampleDocuments.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
 
 @Global()
 @Module({
@@ -195,6 +197,7 @@ import {
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      { name: Broadcast.name, schema: BroadcastSchema},
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
@@ -234,6 +237,7 @@ import {
     SeederService,
     DriveService,
     FirebaseService,
+    RedisBullService,
   ],
 })
 export class MailModule {}

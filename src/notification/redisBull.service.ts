@@ -13,6 +13,7 @@ import {
 } from './models/notification.model';
 import { User } from 'src/user/models/user.model';
 import { Business } from 'src/business/model/business.model';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class RedisBullService {
@@ -26,6 +27,7 @@ export class RedisBullService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     private readonly firebaseService: FirebaseService,
+    private readonly userService: UserService,
   ) {
     const redisConfig = { host: 'localhost', port: 6379 };
     this.broadcastQueue = new Queue('broadcastQueue', {
@@ -37,7 +39,21 @@ export class RedisBullService {
       async (job: Job) => {
         const { broadcastId } = job.data;
         console.log('Worker picked job:', job.id, job.data, broadcastId);
-        await this.triggerBroadcast(broadcastId);
+
+        switch (job.name) {
+          case 'sendBroadcast':
+            await this.triggerBroadcast(job.data.broadcastId);
+            break;
+
+          case 'deleteConsumer':
+            await this.userService.deleteAccount(job.data.userId);
+            break;
+
+          default:
+            console.warn(`Unknown job type: ${job.name}`);
+        }
+
+        // await this.triggerBroadcast(broadcastId);
       },
       { connection: redisConfig },
     );
@@ -55,6 +71,16 @@ export class RedisBullService {
       { _id: broadcastId },
       { $set: { schedulerId: job.id } },
     );
+  }
+
+  async addDeleteUserJob(userId: string, delay: number) {
+    console.log('Scheduleddddd and added to queue:', userId);
+    const job = await this.broadcastQueue.add(
+      'deleteConsumer',
+      { userId },
+      { delay },
+    );
+    console.log('Job added to queue:', job.id, job.data);
   }
 
   async removeBroadcastJob(jobId: string) {

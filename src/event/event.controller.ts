@@ -289,85 +289,85 @@ export class EventController {
     }
   }
 
-  @Get('crawled')
-  @UseGuards(AdminGuard2)
-  async getCrawledEvents(
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-    @Query('status') status: string,
-  ) {
-    if (!page || page == '') {
-      page = '1';
-    }
-    if (!limit || limit == '') {
-      limit = '10';
-    }
-    if (!status || status == '') {
-      status = 'all';
-    }
-    const result = await this.eventService.getCrawledEvents(
-      parseInt(page),
-      parseInt(limit),
-      status,
-    );
-    if (result.success) {
-      return {
-        message: result.message,
-        count: result.count,
-        events: result.crawledEvents,
-        pages: result.pages,
-        page: result.page,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Get('crawled')
+  // @UseGuards(AdminGuard2)
+  // async getCrawledEvents(
+  //   @Query('page') page: string,
+  //   @Query('limit') limit: string,
+  //   @Query('status') status: string,
+  // ) {
+  //   if (!page || page == '') {
+  //     page = '1';
+  //   }
+  //   if (!limit || limit == '') {
+  //     limit = '10';
+  //   }
+  //   if (!status || status == '') {
+  //     status = 'all';
+  //   }
+  //   const result = await this.eventService.getCrawledEvents(
+  //     parseInt(page),
+  //     parseInt(limit),
+  //     status,
+  //   );
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       count: result.count,
+  //       events: result.crawledEvents,
+  //       pages: result.pages,
+  //       page: result.page,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
-  @Delete('crawled/:id')
-  @UseGuards(AdminGuard2)
-  async removeCrawledEvent(@Param('id') id: string) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException({
-        message: 'Invalid event id',
-      });
-    }
-    const result = await this.eventService.deleteCrawledEvent(id);
-    if (result.success) {
-      return {
-        message: result.message,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Delete('crawled/:id')
+  // @UseGuards(AdminGuard2)
+  // async removeCrawledEvent(@Param('id') id: string) {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     throw new BadRequestException({
+  //       message: 'Invalid event id',
+  //     });
+  //   }
+  //   const result = await this.eventService.deleteCrawledEvent(id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
-  @Post('crawled/edit/:id')
-  @UseGuards(AdminGuard2)
-  async updateCrawledEvent(
-    @Param('id') id: string,
-    @Body() body: UpdateCrawledEventDto,
-  ) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid id',
-      });
-    }
-    const result = await this.eventService.updateCrawledEvent(id, body);
-    if (result.success) {
-      return {
-        message: result.message,
-        event: result.event,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('crawled/edit/:id')
+  // @UseGuards(AdminGuard2)
+  // async updateCrawledEvent(
+  //   @Param('id') id: string,
+  //   @Body() body: UpdateCrawledEventDto,
+  // ) {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid id',
+  //     });
+  //   }
+  //   const result = await this.eventService.updateCrawledEvent(id, body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       event: result.event,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   // @Post('crawled/publish')
   // @UseGuards(AdminGuard2)
@@ -681,21 +681,21 @@ export class EventController {
     }
   }
 
-  @Post('close/:id')
-  @UseGuards(JwtGuard)
-  async closeEvent(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
-    const result = await this.eventService.closeEvent(id, user);
-    if (result.success) {
-      return {
-        message: result.message,
-        status: result.status,
-      };
-    } else {
-      throw new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('close/:id')
+  // @UseGuards(JwtGuard)
+  // async closeEvent(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
+  //   const result = await this.eventService.closeEvent(id, user);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       status: result.status,
+  //     };
+  //   } else {
+  //     throw new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   @Post('copy/:id')
   @UseGuards(JwtGuard2)
