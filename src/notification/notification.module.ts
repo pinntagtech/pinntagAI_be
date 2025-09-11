@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -58,6 +58,11 @@ import {
   SubscriptionProduct,
   SubscriptionProductSchema,
 } from 'src/subscription/models/subscription-product.model';
+import { UserService } from 'src/user/user.service';
+import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
+import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
+import { WebhookSnapshot, WebhookSnapshotSchema } from 'src/user/models/webhook.model';
 
 @Module({
   imports: [
@@ -96,6 +101,9 @@ import {
       { name: Business.name, schema: BusinessSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
+      { name: Reward.name, schema: RewardSchema },
+      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
+      { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
     ]),
   ],
   controllers: [NotificationController],
@@ -106,6 +114,9 @@ import {
     RedisBullService,
     DriveService,
     S3Service,
+    UserService,
+    Logger,
+    StripeService,
   ],
 })
 export class NotificationModule {}

@@ -152,8 +152,19 @@ import {
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from './models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from './models/BusinessDocVerificationLeads.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from './models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from './models/BusinessDocVerificationLeads.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -217,7 +228,11 @@ import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      { name: Broadcast.name, schema: BroadcastSchema },
     ]),
   ],
   controllers: [AdminController],
@@ -237,6 +252,7 @@ import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from
     DriveService,
     GoogleService,
     FirebaseService,
+    RedisBullService,
   ],
 })
 export class AdminModule {}

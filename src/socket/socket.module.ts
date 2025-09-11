@@ -148,9 +148,23 @@ import {
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
-import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from 'src/admin/models/BusinessDocVerificationLeads.model';
+import {
+  OwnershipTransferRecord,
+  OwnershipTransferRecordSchema,
+} from 'src/business/model/ownershipTransferRecords.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -218,8 +232,15 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
       { name: Menu.name, schema: MenuSchema },
       { name: Reward.name, schema: RewardSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
+      { name: Broadcast.name, schema: BroadcastSchema },
     ]),
   ],
   providers: [
@@ -237,6 +258,7 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
     SocketService,
     FirebaseService,
     BusinessService,
+    RedisBullService,
   ],
   exports: [SocketGateway],
 })

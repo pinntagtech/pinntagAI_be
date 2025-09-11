@@ -1378,4 +1378,25 @@ export class AdminController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('doc-verification-lead/update-status/:id')
+  @UseGuards(AdminGuard2)
+  async updateDocVerificationLeadStatus(
+    @Param('id') id: string,
+    @Body('status') status: boolean,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.verifyDocument(
+      id,
+      user.id,
+      status
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

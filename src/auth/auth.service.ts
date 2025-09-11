@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -119,6 +124,7 @@ import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { CommandSucceededEvent } from 'mongodb';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { RedisBullService } from 'src/notification/redisBull.service';
 
 @Injectable()
 export class AuthService {
@@ -169,6 +175,7 @@ export class AuthService {
     private readonly stripeService: StripeService,
     private readonly smsService: SmsService,
     private readonly seederService: SeederService,
+    private readonly redisBullService: RedisBullService,
 
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
@@ -977,7 +984,7 @@ export class AuthService {
       }
       await foundUser.updateOne(
         { _id: foundUser.id },
-        { $set: { userAgent, ipAddress } },
+        { $set: { userAgent, ipAddress, isDeleted: false } },
       );
       if (loginDto.fcmToken) {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
@@ -2978,10 +2985,6 @@ export class AuthService {
     // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
     return [dataRows, totalCount];
   }
-
- 
-
-
 
   async fetchBusinessListing(
     userId: mongoose.Types.ObjectId,
@@ -5340,13 +5343,17 @@ export class AuthService {
     );
     await this.tokenModel.deleteMany({ user: foundUser._id });
     // Schedule a job after 30 days to delete the user
-    const date = currentDateTz();
+    let date = currentDateTz();
     date.setDate(date.getDate() + 30);
+
     nodeSchedule.scheduleJob(date, async () => {
       if (foundUser.isDeleted) {
         await this.userService.deleteAccount(user.id);
       }
     });
+    let delay = date.getTime() - Date.now();
+    this.redisBullService.addDeleteUserJob(foundUser.id, delay);
+
     return {
       success: true,
       message: 'User deleted successfully',
@@ -5742,7 +5749,7 @@ export class AuthService {
     }
   }
 
-     async getDashboardCarouselEvent2(
+  async getDashboardCarouselEvent2(
     user: DecodedUser,
     carouselId: string,
     latitude: number,
@@ -5756,8 +5763,7 @@ export class AuthService {
     industries?: Array<string>,
     isFollowedByMe?: boolean,
   ) {
-
-     if (!latitude || !longitude) {
+    if (!latitude || !longitude) {
       throw new BadRequestException('Latitude and Longitude are required');
     }
     if (!mongoose.isValidObjectId(carouselId)) {
@@ -6013,7 +6019,6 @@ export class AuthService {
       },
     };
   }
-
 
   async autoGeneratePassword(length: number = 12) {
     try {

@@ -135,7 +135,15 @@ import {
   UserAllowedNotificationSchema,
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -194,6 +202,7 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: Broadcast.name, schema: BroadcastSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
@@ -215,6 +224,7 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
     SeederService,
     DriveService,
     FirebaseService,
+    RedisBullService,
     // GoogleStrategy
   ],
 })

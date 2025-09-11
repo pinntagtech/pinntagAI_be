@@ -34,97 +34,97 @@ import { UserTypes } from 'src/enums/auth.enums';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('my/refferal')
-  @UseGuards(UserGuard)
-  async getMyRefferalCode(@TokenDecoder() user: DecodedUser) {
-    const result = await this.userService.getMyRefferalCode(user.id);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get('my/refferal')
+  // @UseGuards(UserGuard)
+  // async getMyRefferalCode(@TokenDecoder() user: DecodedUser) {
+  //   const result = await this.userService.getMyRefferalCode(user.id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Get('payment-methods')
-  @UseGuards(UserGuard)
-  async getPaymentMethods(@TokenDecoder() user: DecodedUser) {
-    const result = await this.userService.getPaymentMethods(user.id);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get('payment-methods')
+  // @UseGuards(UserGuard)
+  // async getPaymentMethods(@TokenDecoder() user: DecodedUser) {
+  //   const result = await this.userService.getPaymentMethods(user.id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Get('subscription-products')
-  @UseGuards(UserGuard)
-  async getSubscriptionProducts() {
-    const result = await this.userService.getSubscriptionProducts();
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get('subscription-products')
+  // @UseGuards(UserGuard)
+  // async getSubscriptionProducts() {
+  //   const result = await this.userService.getSubscriptionProducts();
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Post('subscription')
-  @UseGuards(UserGuard)
-  async createSubscription(
-    @Body() body: CreateSubscriptionDto,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.userService.createSubscription(user.id, body);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Post('subscription')
+  // @UseGuards(UserGuard)
+  // async createSubscription(
+  //   @Body() body: CreateSubscriptionDto,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const result = await this.userService.createSubscription(user.id, body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Post('cancel-subscription/:id')
-  @UseGuards(UserGuard)
-  async cancelSubscription(
-    @Param('id') id: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.userService.cancelSubscription(user.id, id);
-    if (result.success) {
-      return {
-        message: result.message,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Post('cancel-subscription/:id')
+  // @UseGuards(UserGuard)
+  // async cancelSubscription(
+  //   @Param('id') id: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const result = await this.userService.cancelSubscription(user.id, id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Get('refferal/:code')
-  @UseGuards(UserGuard)
-  async UseRefferalCode(
-    @Param('code') code: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.userService.useRefferalCode(code, user.id);
-    if (result.success) {
-      return {
-        message: result.message,
-        data: result.data,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get('refferal/:code')
+  // @UseGuards(UserGuard)
+  // async UseRefferalCode(
+  //   @Param('code') code: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const result = await this.userService.useRefferalCode(code, user.id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
   @Get('profile')
   @UseGuards(JwtGuard2)
@@ -140,23 +140,23 @@ export class UserController {
     }
   }
 
-  @Patch('change/password')
-  @UseGuards(UserGuard)
-  async changePassword(
-    @Req() req: Request,
-    @Body() body: ChangePasswordDto,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.userService.changePassword(body, user.id);
-    if (result.success) {
-      return {
-        message: result.message,
-        user: result.user,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Patch('change/password')
+  // @UseGuards(UserGuard)
+  // async changePassword(
+  //   @Req() req: Request,
+  //   @Body() body: ChangePasswordDto,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const result = await this.userService.changePassword(body, user.id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       user: result.user,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
   @Post('update/profilePhoto')
   @UseGuards(JwtGuard2)
@@ -201,28 +201,28 @@ export class UserController {
     }
   }
 
-  @Get('search/:query')
-  @UseGuards(JwtGuard)
-  async searchUser(
-    @Param('query') query: string,
-    @Query('emailOnly') emailOnly: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const onlyByEmail = emailOnly === 'true';
-    const result = await this.userService.searchUser(
-      query,
-      user.id.toString(),
-      onlyByEmail,
-    );
-    if (result.success) {
-      return {
-        message: result.message,
-        users: result.users,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get('search/:query')
+  // @UseGuards(JwtGuard)
+  // async searchUser(
+  //   @Param('query') query: string,
+  //   @Query('emailOnly') emailOnly: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const onlyByEmail = emailOnly === 'true';
+  //   const result = await this.userService.searchUser(
+  //     query,
+  //     user.id.toString(),
+  //     onlyByEmail,
+  //   );
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       users: result.users,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
   @Patch('follow')
   @UseGuards(JwtGuard2)
@@ -294,32 +294,32 @@ export class UserController {
     }
   }
 
-  @Patch('block/:id')
-  @UseGuards(UserGuard)
-  async blockUser(@Req() req: Request, @Param('id') id: string) {
-    const result = await this.userService.blockUser(id, req.user['_id']);
-    if (result.success) {
-      return {
-        message: result.message,
-        user: result.user,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Patch('block/:id')
+  // @UseGuards(UserGuard)
+  // async blockUser(@Req() req: Request, @Param('id') id: string) {
+  //   const result = await this.userService.blockUser(id, req.user['_id']);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       user: result.user,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Get('transactions')
-  @UseGuards(UserGuard)
-  async getTransactions(
-    @Req() req: Request,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const result = await this.userService.getTransactions(user.id);
-    return {
-      message: result.message,
-      transactions: result.transactions,
-    };
-  }
+  // @Get('transactions')
+  // @UseGuards(UserGuard)
+  // async getTransactions(
+  //   @Req() req: Request,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const result = await this.userService.getTransactions(user.id);
+  //   return {
+  //     message: result.message,
+  //     transactions: result.transactions,
+  //   };
+  // }
 
   @Post('contact-us')
   @UseGuards(UserGuard)

@@ -173,6 +173,8 @@ import {
   OwnershipTransferRecord,
   OwnershipTransferRecordSchema,
 } from 'src/business/model/ownershipTransferRecords.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -249,6 +251,7 @@ import {
         name: OwnershipTransferRecord.name,
         schema: OwnershipTransferRecordSchema,
       },
+       { name: Broadcast.name, schema: BroadcastSchema }
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
@@ -272,6 +275,7 @@ import {
     SeederService,
     AuthService,
     SmsService,
+    RedisBullService,
     // BusinessService,
   ],
 })

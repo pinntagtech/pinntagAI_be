@@ -143,6 +143,8 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
 import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/ownershipTransferRecords.model';
+import { RedisBullService } from 'src/notification/redisBull.service';
+import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -207,7 +209,8 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/
       { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
+      { name: Broadcast.name, schema: BroadcastSchema }
     ]),
   ],
   controllers: [BusinessController],
@@ -225,6 +228,7 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/
     DriveService,
     PrivilegeService,
     FirebaseService,
+    RedisBullService,
   ],
 })
 export class BusinessModule {}

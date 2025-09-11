@@ -1678,67 +1678,67 @@ export class EventService2 {
     }
   }
 
-  async getCrawledEvents(page: number, limit: number, status: string) {
-    let searchQuery = {};
-    if (status && status != 'all') {
-      searchQuery = { status };
-    } else {
-      searchQuery = {
-        status: CrawledEventStatus.CRAWLED,
-      };
-    }
-    const crawledEvents = await this.crawledEventModel
-      .find(searchQuery)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-    const totalCrawledEvents = await this.crawledEventModel.find(searchQuery);
-    const pages = Math.ceil(totalCrawledEvents.length / limit);
-    return {
-      success: true,
-      message: 'Crawled events fetched successfully',
-      count: crawledEvents.length,
-      crawledEvents,
-      page,
-      pages,
-    };
-  }
+  // async getCrawledEvents(page: number, limit: number, status: string) {
+  //   let searchQuery = {};
+  //   if (status && status != 'all') {
+  //     searchQuery = { status };
+  //   } else {
+  //     searchQuery = {
+  //       status: CrawledEventStatus.CRAWLED,
+  //     };
+  //   }
+  //   const crawledEvents = await this.crawledEventModel
+  //     .find(searchQuery)
+  //     .sort({ createdAt: -1 })
+  //     .skip((page - 1) * limit)
+  //     .limit(limit)
+  //     .exec();
+  //   const totalCrawledEvents = await this.crawledEventModel.find(searchQuery);
+  //   const pages = Math.ceil(totalCrawledEvents.length / limit);
+  //   return {
+  //     success: true,
+  //     message: 'Crawled events fetched successfully',
+  //     count: crawledEvents.length,
+  //     crawledEvents,
+  //     page,
+  //     pages,
+  //   };
+  // }
 
-  async deleteCrawledEvent(id: string) {
-    const crawledEvent = await this.crawledEventModel.findById(id);
-    if (!crawledEvent) {
-      return {
-        success: false,
-        message: 'Crawled event not found',
-      };
-    }
-    await this.crawledEventModel.findByIdAndDelete(id);
-    return {
-      success: true,
-      message: 'Crawled event deleted successfully',
-    };
-  }
+  // async deleteCrawledEvent(id: string) {
+  //   const crawledEvent = await this.crawledEventModel.findById(id);
+  //   if (!crawledEvent) {
+  //     return {
+  //       success: false,
+  //       message: 'Crawled event not found',
+  //     };
+  //   }
+  //   await this.crawledEventModel.findByIdAndDelete(id);
+  //   return {
+  //     success: true,
+  //     message: 'Crawled event deleted successfully',
+  //   };
+  // }
 
-  async updateCrawledEvent(id: string, data: UpdateCrawledEventDto) {
-    const updatedEvent = await this.crawledEventModel.findOneAndUpdate(
-      { _id: new mongoose.Types.ObjectId(id) },
-      { $set: { ...data } },
-      { new: true },
-    );
-    if (!updatedEvent) {
-      return {
-        success: false,
-        message: 'No event data found with the id',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Event updated successfully.',
-        event: updatedEvent,
-      };
-    }
-  }
+  // async updateCrawledEvent(id: string, data: UpdateCrawledEventDto) {
+  //   const updatedEvent = await this.crawledEventModel.findOneAndUpdate(
+  //     { _id: new mongoose.Types.ObjectId(id) },
+  //     { $set: { ...data } },
+  //     { new: true },
+  //   );
+  //   if (!updatedEvent) {
+  //     return {
+  //       success: false,
+  //       message: 'No event data found with the id',
+  //     };
+  //   } else {
+  //     return {
+  //       success: true,
+  //       message: 'Event updated successfully.',
+  //       event: updatedEvent,
+  //     };
+  //   }
+  // }
 
   // async publishCrawledEvent(data: PublishCrawledEventDto) {
   //   const { ids, user, businessProfile } = data;
@@ -3369,51 +3369,51 @@ export class EventService2 {
     }
   }
 
-  async closeEvent(
-    id: string,
-    user: DecodedUser,
-  ): Promise<{ success: boolean; message: string; status?: string }> {
-    if (!mongoose.isValidObjectId(id)) {
-      return {
-        success: false,
-        message: 'Please provide a valid event id',
-      };
-    } else {
-      const event = await this.eventModel.findById(id);
-      if (!event) {
-        return {
-          success: false,
-          message: 'Event not found',
-        };
-      }
-      if (
-        event.creatorType === Business.name &&
-        event.businessProfile.toString() !== user.businessProfile
-      ) {
-        return {
-          success: false,
-          message: 'You are not authorized to close this event',
-        };
-      } else if (
-        event.creatorType === User.name &&
-        event.user.toString() !== user.id
-      ) {
-        return {
-          success: false,
-          message: 'You are not authorized to close this event',
-        };
-      } else {
-        await this.eventModel.findByIdAndUpdate(id, {
-          status: EventStatus.CLOSED,
-        });
-        return {
-          success: true,
-          message: 'Event closed successfully',
-          status: EventStatus.CLOSED,
-        };
-      }
-    }
-  }
+  // async closeEvent(
+  //   id: string,
+  //   user: DecodedUser,
+  // ): Promise<{ success: boolean; message: string; status?: string }> {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     return {
+  //       success: false,
+  //       message: 'Please provide a valid event id',
+  //     };
+  //   } else {
+  //     const event = await this.eventModel.findById(id);
+  //     if (!event) {
+  //       return {
+  //         success: false,
+  //         message: 'Event not found',
+  //       };
+  //     }
+  //     if (
+  //       event.creatorType === Business.name &&
+  //       event.businessProfile.toString() !== user.businessProfile
+  //     ) {
+  //       return {
+  //         success: false,
+  //         message: 'You are not authorized to close this event',
+  //       };
+  //     } else if (
+  //       event.creatorType === User.name &&
+  //       event.user.toString() !== user.id
+  //     ) {
+  //       return {
+  //         success: false,
+  //         message: 'You are not authorized to close this event',
+  //       };
+  //     } else {
+  //       await this.eventModel.findByIdAndUpdate(id, {
+  //         status: EventStatus.CLOSED,
+  //       });
+  //       return {
+  //         success: true,
+  //         message: 'Event closed successfully',
+  //         status: EventStatus.CLOSED,
+  //       };
+  //     }
+  //   }
+  // }
 
   async copyEvent(id: string, user: DecodedUser, expired: boolean) {
     if (!mongoose.isValidObjectId(id)) {

@@ -112,232 +112,232 @@ export class UserService {
     // private readonly mailerService: MailService,
   ) {}
 
-  async getMyRefferalCode(userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      return {
-        success: false,
-        message: 'User not found',
-      };
-    }
-    const refferal = await this.refferalModel.findOne({ user: user._id });
-    if (refferal) {
-      return {
-        success: true,
-        message: 'Refferal code fetched successfully',
-        data: refferal,
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Refferal code not found',
-        data: refferal,
-      };
-    }
-  }
+  // async getMyRefferalCode(userId: string) {
+  //   const user = await this.userModel.findById(userId);
+  //   if (!user) {
+  //     return {
+  //       success: false,
+  //       message: 'User not found',
+  //     };
+  //   }
+  //   const refferal = await this.refferalModel.findOne({ user: user._id });
+  //   if (refferal) {
+  //     return {
+  //       success: true,
+  //       message: 'Refferal code fetched successfully',
+  //       data: refferal,
+  //     };
+  //   } else {
+  //     return {
+  //       success: false,
+  //       message: 'Refferal code not found',
+  //       data: refferal,
+  //     };
+  //   }
+  // }
 
-  async getPaymentMethods(userId: string) {
-    const user = await this.userModel.findById(userId);
-    const paymentMethods = await this.stripeService.retrievePaymentMethods(
-      user.stripeCustomerId,
-    );
-    if (paymentMethods) {
-      return {
-        success: true,
-        message: 'Payment methods fetched successfully',
-        data: paymentMethods,
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Payment methods not found',
-      };
-    }
-  }
+  // async getPaymentMethods(userId: string) {
+  //   const user = await this.userModel.findById(userId);
+  //   const paymentMethods = await this.stripeService.retrievePaymentMethods(
+  //     user.stripeCustomerId,
+  //   );
+  //   if (paymentMethods) {
+  //     return {
+  //       success: true,
+  //       message: 'Payment methods fetched successfully',
+  //       data: paymentMethods,
+  //     };
+  //   } else {
+  //     return {
+  //       success: false,
+  //       message: 'Payment methods not found',
+  //     };
+  //   }
+  // }
 
-  async getSubscriptionProducts() {
-    const subscriptionProducts =
-      await this.stripeService.getSubscriptionProducts();
-    if (subscriptionProducts) {
-      return {
-        success: true,
-        message: 'Subscription products fetched successfully',
-        data: subscriptionProducts,
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Subscription products not found',
-      };
-    }
-  }
+  // async getSubscriptionProducts() {
+  //   const subscriptionProducts =
+  //     await this.stripeService.getSubscriptionProducts();
+  //   if (subscriptionProducts) {
+  //     return {
+  //       success: true,
+  //       message: 'Subscription products fetched successfully',
+  //       data: subscriptionProducts,
+  //     };
+  //   } else {
+  //     return {
+  //       success: false,
+  //       message: 'Subscription products not found',
+  //     };
+  //   }
+  // }
 
-  async createSubscription(userId: string, data: CreateSubscriptionDto) {
-    const user = await this.userModel.findById(userId);
-    const foundSubscriptionProduct =
-      await this.subscriptionProductModel.findOne({
-        stripeProductId: data.priceId,
-      });
-    if (!foundSubscriptionProduct) {
-      return {
-        success: false,
-        message: 'Subscription product not found',
-      };
-    }
-    const dbSubscriptionId = new mongoose.Types.ObjectId();
-    const subscription = await this.stripeService.createSubscription(
-      user.stripeCustomerId,
-      data,
-      dbSubscriptionId,
-    );
-    if (subscription.id) {
-      const latestSubscriptionInvoice =
-        await this.stripeService.retriveInvoicesOfSubscription(subscription.id);
-      const subscriptionItem = subscription.items.data[0];
-      const price = subscriptionItem.price;
-      const recurring = price.recurring;
-      const interval = recurring.interval; // month, year
-      const latestInvoice = latestSubscriptionInvoice.data[0];
-      const invoiceEndDate = dayjs(subscription.current_period_end * 1000)
-        .add(1, interval)
-        .toDate();
-      // const invoiceEndDate =
-      //   foundSubscriptionProduct.durationType == DurationType.ANNUAL
-      //     ? new Date(latestInvoice.period_start * 1000 + 31536000000)
-      //     : new Date(latestInvoice.period_start * 1000 + 7884000000);
-      const createdSubscription = await this.subscriptionModel.create({
-        _id: dbSubscriptionId,
-        serviceType: SubscriptionServiceTypes.STRIPE,
-        user: new mongoose.Types.ObjectId(userId),
-        startDate: new Date(subscription.current_period_start * 1000),
-        endDate: new Date(subscription.current_period_end * 1000),
-        invoiceStartDate: new Date(latestInvoice.period_start * 1000),
-        invoiceEndDate,
-        product: foundSubscriptionProduct._id,
-        businessProfile: new mongoose.Types.ObjectId(data.businessProfileId),
-        stripeSubscriptionId: subscription.id,
-        isTrialActive: true,
-      });
-      const createdTransaction = await this.transactionModel.create({
-        user: new mongoose.Types.ObjectId(userId),
-        subscription: createdSubscription._id,
-        amount: 0,
-        quantity: data.quantity,
-        businessProfile: new mongoose.Types.ObjectId(data.businessProfileId),
-        currency: subscription.items.data[0].price.currency,
-        transactionId: subscription.id,
-        description: 'Subscription trial period',
-        startDate: new Date(subscription.current_period_start * 1000),
-        endDate: new Date(subscription.current_period_end * 1000),
-      });
-      createdSubscription.transaction = new mongoose.Types.ObjectId(
-        createdTransaction.id,
-      );
-      await createdSubscription.save();
+  // async createSubscription(userId: string, data: CreateSubscriptionDto) {
+  //   const user = await this.userModel.findById(userId);
+  //   const foundSubscriptionProduct =
+  //     await this.subscriptionProductModel.findOne({
+  //       stripeProductId: data.priceId,
+  //     });
+  //   if (!foundSubscriptionProduct) {
+  //     return {
+  //       success: false,
+  //       message: 'Subscription product not found',
+  //     };
+  //   }
+  //   const dbSubscriptionId = new mongoose.Types.ObjectId();
+  //   const subscription = await this.stripeService.createSubscription(
+  //     user.stripeCustomerId,
+  //     data,
+  //     dbSubscriptionId,
+  //   );
+  //   if (subscription.id) {
+  //     const latestSubscriptionInvoice =
+  //       await this.stripeService.retriveInvoicesOfSubscription(subscription.id);
+  //     const subscriptionItem = subscription.items.data[0];
+  //     const price = subscriptionItem.price;
+  //     const recurring = price.recurring;
+  //     const interval = recurring.interval; // month, year
+  //     const latestInvoice = latestSubscriptionInvoice.data[0];
+  //     const invoiceEndDate = dayjs(subscription.current_period_end * 1000)
+  //       .add(1, interval)
+  //       .toDate();
+  //     // const invoiceEndDate =
+  //     //   foundSubscriptionProduct.durationType == DurationType.ANNUAL
+  //     //     ? new Date(latestInvoice.period_start * 1000 + 31536000000)
+  //     //     : new Date(latestInvoice.period_start * 1000 + 7884000000);
+  //     const createdSubscription = await this.subscriptionModel.create({
+  //       _id: dbSubscriptionId,
+  //       serviceType: SubscriptionServiceTypes.STRIPE,
+  //       user: new mongoose.Types.ObjectId(userId),
+  //       startDate: new Date(subscription.current_period_start * 1000),
+  //       endDate: new Date(subscription.current_period_end * 1000),
+  //       invoiceStartDate: new Date(latestInvoice.period_start * 1000),
+  //       invoiceEndDate,
+  //       product: foundSubscriptionProduct._id,
+  //       businessProfile: new mongoose.Types.ObjectId(data.businessProfileId),
+  //       stripeSubscriptionId: subscription.id,
+  //       isTrialActive: true,
+  //     });
+  //     const createdTransaction = await this.transactionModel.create({
+  //       user: new mongoose.Types.ObjectId(userId),
+  //       subscription: createdSubscription._id,
+  //       amount: 0,
+  //       quantity: data.quantity,
+  //       businessProfile: new mongoose.Types.ObjectId(data.businessProfileId),
+  //       currency: subscription.items.data[0].price.currency,
+  //       transactionId: subscription.id,
+  //       description: 'Subscription trial period',
+  //       startDate: new Date(subscription.current_period_start * 1000),
+  //       endDate: new Date(subscription.current_period_end * 1000),
+  //     });
+  //     createdSubscription.transaction = new mongoose.Types.ObjectId(
+  //       createdTransaction.id,
+  //     );
+  //     await createdSubscription.save();
 
-      // update subscription metadata
-      // await this.stripeService.fetchAndUpdateSubscriptionMetadata(
-      //   subscription.id,
-      //   {
-      //     dbSubscriptionId: createdSubscription._id.toString(),
-      //   },
-      // );
+  //     // update subscription metadata
+  //     // await this.stripeService.fetchAndUpdateSubscriptionMetadata(
+  //     //   subscription.id,
+  //     //   {
+  //     //     dbSubscriptionId: createdSubscription._id.toString(),
+  //     //   },
+  //     // );
 
-      await this.userModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(userId) },
-        {
-          $set: { hasSubscribedForBusiness: true },
-          $push: { subscriptions: createdSubscription._id },
-        },
-      );
-      if (data.businessProfileId) {
-        await this.businessModel.updateOne(
-          { _id: new mongoose.Types.ObjectId(data.businessProfileId) },
-          {
-            $addToSet: { subscriptions: createdSubscription._id },
-          },
-        );
-      }
-      return {
-        success: true,
-        message: 'Subscription created successfully',
-        data: subscription,
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Subscription not created',
-      };
-    }
-  }
+  //     await this.userModel.updateOne(
+  //       { _id: new mongoose.Types.ObjectId(userId) },
+  //       {
+  //         $set: { hasSubscribedForBusiness: true },
+  //         $push: { subscriptions: createdSubscription._id },
+  //       },
+  //     );
+  //     if (data.businessProfileId) {
+  //       await this.businessModel.updateOne(
+  //         { _id: new mongoose.Types.ObjectId(data.businessProfileId) },
+  //         {
+  //           $addToSet: { subscriptions: createdSubscription._id },
+  //         },
+  //       );
+  //     }
+  //     return {
+  //       success: true,
+  //       message: 'Subscription created successfully',
+  //       data: subscription,
+  //     };
+  //   } else {
+  //     return {
+  //       success: false,
+  //       message: 'Subscription not created',
+  //     };
+  //   }
+  // }
 
-  async cancelSubscription(userId: string, subscriptionId: string) {
-    const user = await this.userModel.findById(userId);
-    const subscription = await this.subscriptionModel
-      .findById(subscriptionId)
-      .populate('transaction');
-    if (!subscription) {
-      return {
-        success: false,
-        message: 'Subscription not found',
-      };
-    }
-    const canceledSubscription = await this.stripeService.cancelSubscription(
-      subscription['transaction']['transactionId'],
-    );
-    if (canceledSubscription.id) {
-      await this.subscriptionModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(subscriptionId) },
-        { $set: { isCancelled: true } },
-      );
-      return {
-        success: true,
-        message: 'Subscription canceled successfully',
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Subscription not canceled',
-      };
-    }
-  }
+  // async cancelSubscription(userId: string, subscriptionId: string) {
+  //   const user = await this.userModel.findById(userId);
+  //   const subscription = await this.subscriptionModel
+  //     .findById(subscriptionId)
+  //     .populate('transaction');
+  //   if (!subscription) {
+  //     return {
+  //       success: false,
+  //       message: 'Subscription not found',
+  //     };
+  //   }
+  //   const canceledSubscription = await this.stripeService.cancelSubscription(
+  //     subscription['transaction']['transactionId'],
+  //   );
+  //   if (canceledSubscription.id) {
+  //     await this.subscriptionModel.updateOne(
+  //       { _id: new mongoose.Types.ObjectId(subscriptionId) },
+  //       { $set: { isCancelled: true } },
+  //     );
+  //     return {
+  //       success: true,
+  //       message: 'Subscription canceled successfully',
+  //     };
+  //   } else {
+  //     return {
+  //       success: false,
+  //       message: 'Subscription not canceled',
+  //     };
+  //   }
+  // }
 
-  async useRefferalCode(code: string, userId: string) {
-    const refferal = await this.refferalModel.findOne({ refferalCode: code });
-    if (!refferal) {
-      return {
-        success: false,
-        message: 'Invalid refferal code',
-      };
-    }
-    if (refferal.user.toString() == userId) {
-      return {
-        success: false,
-        message: 'You cannot use your own refferal code',
-      };
-    } else if (refferal.isBlacklisted) {
-      return {
-        success: false,
-        message: 'Refferal code is blacklisted',
-      };
-    } else {
-      // Get discounted price of subscription products
-      const subscriptionProductsDocs =
-        await this.subscriptionProductModel.find();
-      const subscriptionProducts = JSON.parse(
-        JSON.stringify(subscriptionProductsDocs),
-      );
-      const discountedProducts = subscriptionProducts.map((product) => {
-        product.price -= refferal.amount;
-        return product;
-      });
-      return {
-        success: true,
-        data: discountedProducts,
-        message: 'Refferal code used successfully',
-      };
-    }
-  }
+  // async useRefferalCode(code: string, userId: string) {
+  //   const refferal = await this.refferalModel.findOne({ refferalCode: code });
+  //   if (!refferal) {
+  //     return {
+  //       success: false,
+  //       message: 'Invalid refferal code',
+  //     };
+  //   }
+  //   if (refferal.user.toString() == userId) {
+  //     return {
+  //       success: false,
+  //       message: 'You cannot use your own refferal code',
+  //     };
+  //   } else if (refferal.isBlacklisted) {
+  //     return {
+  //       success: false,
+  //       message: 'Refferal code is blacklisted',
+  //     };
+  //   } else {
+  //     // Get discounted price of subscription products
+  //     const subscriptionProductsDocs =
+  //       await this.subscriptionProductModel.find();
+  //     const subscriptionProducts = JSON.parse(
+  //       JSON.stringify(subscriptionProductsDocs),
+  //     );
+  //     const discountedProducts = subscriptionProducts.map((product) => {
+  //       product.price -= refferal.amount;
+  //       return product;
+  //     });
+  //     return {
+  //       success: true,
+  //       data: discountedProducts,
+  //       message: 'Refferal code used successfully',
+  //     };
+  //   }
+  // }
 
   // async subscribe(userId: string, productId: string) {
   //   const user = await this.userModel.findById(userId);
@@ -422,39 +422,39 @@ export class UserService {
     }
   }
 
-  async changePassword(data: ChangePasswordDto, userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      return {
-        success: false,
-        message: 'User not found',
-      };
-    }
-    const validatePassword = await bcrypt.compare(
-      data.oldPassword,
-      user.password,
-    );
-    if (!validatePassword) {
-      return {
-        success: false,
-        message: 'Invalid old password',
-      };
-    } else {
-      // user.password = data.newPassword;
-      // await user.save();
-      await this.userModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(userId) },
-        {
-          $set: { password: bcrypt.hashSync(data.newPassword, 10) },
-        },
-      );
-      return {
-        success: true,
-        user,
-        message: 'Password changed successfully',
-      };
-    }
-  }
+  // async changePassword(data: ChangePasswordDto, userId: string) {
+  //   const user = await this.userModel.findById(userId);
+  //   if (!user) {
+  //     return {
+  //       success: false,
+  //       message: 'User not found',
+  //     };
+  //   }
+  //   const validatePassword = await bcrypt.compare(
+  //     data.oldPassword,
+  //     user.password,
+  //   );
+  //   if (!validatePassword) {
+  //     return {
+  //       success: false,
+  //       message: 'Invalid old password',
+  //     };
+  //   } else {
+  //     // user.password = data.newPassword;
+  //     // await user.save();
+  //     await this.userModel.updateOne(
+  //       { _id: new mongoose.Types.ObjectId(userId) },
+  //       {
+  //         $set: { password: bcrypt.hashSync(data.newPassword, 10) },
+  //       },
+  //     );
+  //     return {
+  //       success: true,
+  //       user,
+  //       message: 'Password changed successfully',
+  //     };
+  //   }
+  // }
 
   async updateProfilePhoto(userId: string, profilePhoto: Express.Multer.File) {
     const user = await this.userModel.findById(userId);
@@ -517,45 +517,45 @@ export class UserService {
     }
   }
 
-  async searchUser(query: string, userId: string, emailOnly: boolean) {
-    //Search users other that the logged in user and role not equal to admin
-    const admin = await this.userModel.findOne({
-      email: process.env.ADMIN_EMAIL,
-    });
-    let searchQuery = {};
-    if (!emailOnly) {
-      searchQuery = {
-        _id: { $ne: new mongoose.Types.ObjectId(userId) },
-        role: { $ne: admin.role },
-        $or: [
-          { firstName: { $regex: query, $options: 'i' } },
-          { lastName: { $regex: query, $options: 'i' } },
-          { email: { $regex: query, $options: 'i' } },
-        ],
-      };
-    } else {
-      searchQuery = {
-        _id: { $ne: new mongoose.Types.ObjectId(userId) },
-        role: { $ne: admin.role },
-        email: { $regex: query, $options: 'i' },
-      };
-    }
-    const users = await this.userModel
-      .find(searchQuery)
-      .select({ password: 0 })
-      .populate('role', {
-        __v: 0,
-        createdAt: 0,
-        updatedAt: 0,
-      })
-      .exec();
-    return {
-      success: true,
-      message: 'Users fetched successfully',
-      count: users.length,
-      users,
-    };
-  }
+  // async searchUser(query: string, userId: string, emailOnly: boolean) {
+  //   //Search users other that the logged in user and role not equal to admin
+  //   const admin = await this.userModel.findOne({
+  //     email: process.env.ADMIN_EMAIL,
+  //   });
+  //   let searchQuery = {};
+  //   if (!emailOnly) {
+  //     searchQuery = {
+  //       _id: { $ne: new mongoose.Types.ObjectId(userId) },
+  //       role: { $ne: admin.role },
+  //       $or: [
+  //         { firstName: { $regex: query, $options: 'i' } },
+  //         { lastName: { $regex: query, $options: 'i' } },
+  //         { email: { $regex: query, $options: 'i' } },
+  //       ],
+  //     };
+  //   } else {
+  //     searchQuery = {
+  //       _id: { $ne: new mongoose.Types.ObjectId(userId) },
+  //       role: { $ne: admin.role },
+  //       email: { $regex: query, $options: 'i' },
+  //     };
+  //   }
+  //   const users = await this.userModel
+  //     .find(searchQuery)
+  //     .select({ password: 0 })
+  //     .populate('role', {
+  //       __v: 0,
+  //       createdAt: 0,
+  //       updatedAt: 0,
+  //     })
+  //     .exec();
+  //   return {
+  //     success: true,
+  //     message: 'Users fetched successfully',
+  //     count: users.length,
+  //     users,
+  //   };
+  // }
 
   async getUserById(id: string): Promise<User> {
     console.log('IDDD:', id);
@@ -922,70 +922,70 @@ export class UserService {
     };
   }
 
-  async blockUser(targetId: string, userId: string) {
-    const follow = await this.followModel.findOne({
-      follower: new mongoose.Types.ObjectId(userId),
-      following: new mongoose.Types.ObjectId(targetId),
-    });
-    let result = {};
-    if (!follow) {
-      return {
-        success: false,
-        message: 'User not found in your following list',
-      };
-    } else {
-      if (follow.followingType == User.name) {
-        const user = await this.userModel.findById(targetId);
-        if (!user) {
-          return {
-            success: false,
-            message: 'User not found',
-          };
-        } else {
-          result = user;
-        }
-      } else {
-        const businessProfile = await this.businessModel.findById(targetId);
-        if (!businessProfile) {
-          return {
-            success: false,
-            message: 'User not found',
-          };
-        } else {
-          result = businessProfile;
-        }
-      }
-    }
-    follow.isBlocked = true;
-    await follow.save();
-    return {
-      success: true,
-      message: 'User blocked successfully',
-      user: result,
-    };
-  }
+  // async blockUser(targetId: string, userId: string) {
+  //   const follow = await this.followModel.findOne({
+  //     follower: new mongoose.Types.ObjectId(userId),
+  //     following: new mongoose.Types.ObjectId(targetId),
+  //   });
+  //   let result = {};
+  //   if (!follow) {
+  //     return {
+  //       success: false,
+  //       message: 'User not found in your following list',
+  //     };
+  //   } else {
+  //     if (follow.followingType == User.name) {
+  //       const user = await this.userModel.findById(targetId);
+  //       if (!user) {
+  //         return {
+  //           success: false,
+  //           message: 'User not found',
+  //         };
+  //       } else {
+  //         result = user;
+  //       }
+  //     } else {
+  //       const businessProfile = await this.businessModel.findById(targetId);
+  //       if (!businessProfile) {
+  //         return {
+  //           success: false,
+  //           message: 'User not found',
+  //         };
+  //       } else {
+  //         result = businessProfile;
+  //       }
+  //     }
+  //   }
+  //   follow.isBlocked = true;
+  //   await follow.save();
+  //   return {
+  //     success: true,
+  //     message: 'User blocked successfully',
+  //     user: result,
+  //   };
+  // }
 
-  async getTransactions(userId: string) {
-    const transactions = await this.transactionModel
-      .find({ user: new mongoose.Types.ObjectId(userId) })
-      .populate('subscription', '-createdAt -updatedAt -__v')
-      //populate product in subscription data
-      .populate({
-        path: 'subscription',
-        populate: {
-          path: 'product',
-          select: '-createdAt -updatedAt -__v',
-        },
-      })
-      .sort({ createdAt: -1 })
-      .exec();
-    return {
-      success: true,
-      message: 'Transactions fetched successfully',
-      count: transactions.length,
-      transactions,
-    };
-  }
+  // async getTransactions(userId: string) {
+  //   const transactions = await this.transactionModel
+  //     .find({ user: new mongoose.Types.ObjectId(userId) })
+  //     .populate('subscription', '-createdAt -updatedAt -__v')
+  //     //populate product in subscription data
+  //     .populate({
+  //       path: 'subscription',
+  //       populate: {
+  //         path: 'product',
+  //         select: '-createdAt -updatedAt -__v',
+  //       },
+  //     })
+  //     .sort({ createdAt: -1 })
+  //     .exec();
+  //   return {
+  //     success: true,
+  //     message: 'Transactions fetched successfully',
+  //     count: transactions.length,
+  //     transactions,
+  //   };
+  // }
 
   public async updateFollowerCount(model: any, id: string, count: number) {
     await model.updateOne(

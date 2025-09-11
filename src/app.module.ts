@@ -159,6 +159,8 @@ import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocum
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EtlModule } from './etl/etl.module';
+import { RedisBullService } from './notification/redisBull.service';
+import { Broadcast, BroadcastSchema } from './notification/models/broadcast.model';
 
 @Module({
   imports: [
@@ -246,6 +248,7 @@ import { EtlModule } from './etl/etl.module';
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+       { name: Broadcast.name, schema: BroadcastSchema }
     ]),
     StripeeModule,
     AuthModule,
@@ -284,6 +287,7 @@ import { EtlModule } from './etl/etl.module';
     MailService,
     SmsService,
     FirebaseService,
+    RedisBullService,
   ],
 })
 export class AppModule {}
