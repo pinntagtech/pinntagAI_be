@@ -429,21 +429,21 @@ export class AuthService {
     };
   }
 
-  async updateUserConsent(id: string, privacyConsent: boolean) {
-    await this.userModel.updateOne(
-      { _id: id },
-      {
-        $set: {
-          privacyConsent,
-          consentTimestamp: new Date(),
-        },
-      },
-    );
-    return {
-      success: true,
-      message: 'User consent updated successfully',
-    };
-  }
+  // async updateUserConsent(id: string, privacyConsent: boolean) {
+  //   await this.userModel.updateOne(
+  //     { _id: id },
+  //     {
+  //       $set: {
+  //         privacyConsent,
+  //         consentTimestamp: new Date(),
+  //       },
+  //     },
+  //   );
+  //   return {
+  //     success: true,
+  //     message: 'User consent updated successfully',
+  //   };
+  // }
 
   async updatePersonalDetails(
     personalDetailDTO: PersonDetailDto,
@@ -719,26 +719,26 @@ export class AuthService {
     }
   }
 
-  async continueWithFacebook(body: any) {
-    const userFound = await this.userModel
-      .findOne({ email: body.email })
-      .exec();
-    if (!userFound) {
-      const user = await this.userModel.create({
-        firstName: body.firstName,
-        lastName: body.lastName,
-        profilePhoto: body.picture,
-        email: body.email,
-        isOAuth: true,
-        oAuthProvider: 'facebook',
-      });
-      return {
-        success: true,
-        message: 'User information from facebook',
-        user: user,
-      };
-    }
-  }
+  // async continueWithFacebook(body: any) {
+  //   const userFound = await this.userModel
+  //     .findOne({ email: body.email })
+  //     .exec();
+  //   if (!userFound) {
+  //     const user = await this.userModel.create({
+  //       firstName: body.firstName,
+  //       lastName: body.lastName,
+  //       profilePhoto: body.picture,
+  //       email: body.email,
+  //       isOAuth: true,
+  //       oAuthProvider: 'facebook',
+  //     });
+  //     return {
+  //       success: true,
+  //       message: 'User information from facebook',
+  //       user: user,
+  //     };
+  //   }
+  // }
 
   async forgotPassword(email: string) {
     const user = await this.userModel.findOne({ email }).exec();
@@ -1030,56 +1030,56 @@ export class AuthService {
     }
   }
 
-  async fcmReport() {
-    const users = await this.userModel.find({
-      createdAt: { $lte: new Date('2024-11-24') },
-    });
-    //Fetch fcm tokens for those users
-    const fcmTokens = await this.tokenModel
-      .find({
-        type: TokenTypes.FCM,
-        userId: { $in: users.map((user) => user._id) },
-      })
-      .populate('user', 'email name');
-    const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('User Fcm Report');
-    worksheet.columns = [
-      {
-        header: 'S.No',
-        key: 'sno',
-        width: 10,
-      },
-      {
-        header: 'User ID',
-        key: '_id',
-        width: 50,
-      },
-      {
-        header: 'Name',
-        key: 'name',
-        width: 20,
-      },
-      {
-        header: 'Email',
-        key: 'email',
-        width: 40,
-      },
-    ];
-    for (let i = 0; i < fcmTokens.length; i++) {
-      worksheet.addRow({
-        sno: i + 1,
-        _id: fcmTokens[i].user['_id'],
-        name: fcmTokens[i].user['name'],
-        email: fcmTokens[i].user['email'],
-      });
-    }
-    const fileBuffer = await workbook.xlsx.writeBuffer();
-    await this.mailService.sendUserReports(
-      users.length,
-      fcmTokens.length,
-      fileBuffer,
-    );
-  }
+  // async fcmReport() {
+  //   const users = await this.userModel.find({
+  //     createdAt: { $lte: new Date('2024-11-24') },
+  //   });
+  //   //Fetch fcm tokens for those users
+  //   const fcmTokens = await this.tokenModel
+  //     .find({
+  //       type: TokenTypes.FCM,
+  //       userId: { $in: users.map((user) => user._id) },
+  //     })
+  //     .populate('user', 'email name');
+  //   const workbook = new Workbook();
+  //   const worksheet = workbook.addWorksheet('User Fcm Report');
+  //   worksheet.columns = [
+  //     {
+  //       header: 'S.No',
+  //       key: 'sno',
+  //       width: 10,
+  //     },
+  //     {
+  //       header: 'User ID',
+  //       key: '_id',
+  //       width: 50,
+  //     },
+  //     {
+  //       header: 'Name',
+  //       key: 'name',
+  //       width: 20,
+  //     },
+  //     {
+  //       header: 'Email',
+  //       key: 'email',
+  //       width: 40,
+  //     },
+  //   ];
+  //   for (let i = 0; i < fcmTokens.length; i++) {
+  //     worksheet.addRow({
+  //       sno: i + 1,
+  //       _id: fcmTokens[i].user['_id'],
+  //       name: fcmTokens[i].user['name'],
+  //       email: fcmTokens[i].user['email'],
+  //     });
+  //   }
+  //   const fileBuffer = await workbook.xlsx.writeBuffer();
+  //   await this.mailService.sendUserReports(
+  //     users.length,
+  //     fcmTokens.length,
+  //     fileBuffer,
+  //   );
+  // }
 
   async guestLogin(data: GuestLoginDto) {
     const { deviceId } = data;
@@ -1213,32 +1213,32 @@ export class AuthService {
     }
   }
 
-  async switchToUserProfile(userId: string) {
-    const user = await this.userService.getUserById(userId);
-    if (!user) {
-      return {
-        success: false,
-        message: 'User not found with the id provided.',
-      };
-    } else {
-      const payload: JwtPayload = {
-        id: userId,
-        userType: UserTypes.USER,
-        role: Roles.USER,
-      };
-      const token = await this.generateJWT(
-        payload,
-        TokenTypes.ACCESS,
-        UserTypes.USER,
-      );
-      return {
-        success: true,
-        message: 'Switched to user profile successfully',
-        user,
-        token,
-      };
-    }
-  }
+  // async switchToUserProfile(userId: string) {
+  //   const user = await this.userService.getUserById(userId);
+  //   if (!user) {
+  //     return {
+  //       success: false,
+  //       message: 'User not found with the id provided.',
+  //     };
+  //   } else {
+  //     const payload: JwtPayload = {
+  //       id: userId,
+  //       userType: UserTypes.USER,
+  //       role: Roles.USER,
+  //     };
+  //     const token = await this.generateJWT(
+  //       payload,
+  //       TokenTypes.ACCESS,
+  //       UserTypes.USER,
+  //     );
+  //     return {
+  //       success: true,
+  //       message: 'Switched to user profile successfully',
+  //       user,
+  //       token,
+  //     };
+  //   }
+  // }
 
   async generateJWT(payload: JwtPayload, tokenType: string, userType: string) {
     console.log('Payload::::', payload);
@@ -3332,356 +3332,356 @@ export class AuthService {
   //   };
   // }
 
-  async getDashboardV2(
-    user: DecodedUser,
-    latitude: number,
-    longitude: number,
-    maxDistance: number,
-    search: string,
-    categoryIds?: Array<string>,
-    startDate?: any,
-    endDate?: any,
-  ) {
-    if (!latitude || !longitude) {
-      throw new BadRequestException('Latitude and Longitude are required');
-    }
-    let match = {};
-    if (categoryIds.length) {
-      match['event.categories'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
-    const currentDate = currentDateTz();
-    let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+  // async getDashboardV2(
+  //   user: DecodedUser,
+  //   latitude: number,
+  //   longitude: number,
+  //   maxDistance: number,
+  //   search: string,
+  //   categoryIds?: Array<string>,
+  //   startDate?: any,
+  //   endDate?: any,
+  // ) {
+  //   if (!latitude || !longitude) {
+  //     throw new BadRequestException('Latitude and Longitude are required');
+  //   }
+  //   let match = {};
+  //   if (categoryIds.length) {
+  //     match['event.categories'] = {
+  //       $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+  //     };
+  //   }
+  //   const currentDate = currentDateTz();
+  //   let start = getZeroDateTz(new Date());
+  //   if (!startDate && !endDate) {
+  //     // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+  //     match['event.schedule.date'] = { $gte: start };
+  //     match['event.schedule.durations.endTime'] = { $gte: currentDate };
+  //   } else if (startDate && endDate) {
+  //     start = getZeroBodyDateTz(startDate);
+  //     const end = getZeroBodyDateTz(endDate);
+  //     if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+  //       if (
+  //         getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+  //       ) {
+  //         console.log('start is equals to current');
+  //         // If the requested query is for today only then the end time should be greater than the current time
+  //         match['event.schedule.date'] = getZeroDateTz(new Date());
+  //         match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //       } else {
+  //         console.log('start is not equals to current');
+  //         // If the start and end date are the same e.g. 2024-06-01
+  //         match['event.schedule.date'] = start;
+  //       }
+  //     } else if (end > start) {
+  //       if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+  //         // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+  //           },
+  //         };
+  //       } else {
+  //         // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: start },
+  //           },
+  //         };
+  //       }
+  //     } else {
+  //       // If the request date is in past
+  //       match['event.schedule.date'] = { $gte: currentDate };
+  //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //     }
+  //   }
 
-    if (search) {
-      // Search matching business profile name
-      const matchingBusinesses = await this.businessModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
-      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
-      match['$or'] = [
-        { 'event.title': { $regex: search, $options: 'i' } },
-        { 'event.description': { $regex: search, $options: 'i' } },
-        { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
-      ];
-    }
+  //   if (search) {
+  //     // Search matching business profile name
+  //     const matchingBusinesses = await this.businessModel.find({
+  //       name: { $regex: search, $options: 'i' },
+  //     });
+  //     // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+  //     const businessProfileIds = matchingBusinesses.map(
+  //       (business) => business._id,
+  //     );
+  //     match['$or'] = [
+  //       { 'event.title': { $regex: search, $options: 'i' } },
+  //       { 'event.description': { $regex: search, $options: 'i' } },
+  //       { 'event.keywords': { $regex: search, $options: 'i' } },
+  //       { 'event.businessProfile': { $in: businessProfileIds } },
+  //     ];
+  //   }
 
-    let age = 0;
-    if (!user.isGuest) {
-      const foundUser = await this.userModel.findById(user.id);
-      age = foundUser.age ? foundUser.age : 0;
-    }
+  //   let age = 0;
+  //   if (!user.isGuest) {
+  //     const foundUser = await this.userModel.findById(user.id);
+  //     age = foundUser.age ? foundUser.age : 0;
+  //   }
 
-    const freeEventsMatch = {
-      ...match,
-      'event.type': { $ne: EventTypes.PRIVATE },
-      'event.isFree': true,
-    };
-    const privateEventsMatch = {
-      ...match,
-      'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
-      'event.type': EventTypes.PRIVATE,
-    };
-    const freeEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      freeEventsMatch,
-      1,
-      15,
-      CarouselType.Event,
-      maxDistance,
-      startDate,
-      endDate,
-    );
-    const privateEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      privateEventsMatch,
-      1,
-      15,
-      CarouselType.Event,
-      maxDistance,
-      startDate,
-      endDate,
-    );
+  //   const freeEventsMatch = {
+  //     ...match,
+  //     'event.type': { $ne: EventTypes.PRIVATE },
+  //     'event.isFree': true,
+  //   };
+  //   const privateEventsMatch = {
+  //     ...match,
+  //     'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
+  //     'event.type': EventTypes.PRIVATE,
+  //   };
+  //   const freeEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     freeEventsMatch,
+  //     1,
+  //     15,
+  //     CarouselType.Event,
+  //     maxDistance,
+  //     startDate,
+  //     endDate,
+  //   );
+  //   const privateEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     privateEventsMatch,
+  //     1,
+  //     15,
+  //     CarouselType.Event,
+  //     maxDistance,
+  //     startDate,
+  //     endDate,
+  //   );
 
-    let data = {};
-    const dashboardConfigs = await this.dashboardConfigModel.find().sort({
-      sortOrder: 1,
-    });
-    console.log('dashboardConfigs', dashboardConfigs.length);
-    for (let i = 0; i < dashboardConfigs.length; i++) {
-      const config = dashboardConfigs[i];
-      if (match['event.categories']) {
-        delete match['event.categories'];
-      }
-      // if (config.name == 'Food & Drinks') {
-      //   // console.log('query after type:----->', match);
-      // }
-      let query = { ...match };
-      if (categoryIds.length) {
-        const sameCategories = [];
-        categoryIds.forEach((id) => {
-          if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
-            sameCategories.push(new mongoose.Types.ObjectId(id));
-          }
-        });
-        if (!sameCategories.length) {
-          continue;
-        } else {
-          query = {
-            ...query,
-            'event.categories': {
-              $in: sameCategories,
-            },
-          };
-        }
-      } else {
-        query = {
-          ...query,
-          'event.categories': { $in: config.categories },
-        };
-      }
-      if (!config.freeIncluded) {
-        query = {
-          ...query,
-          'event.isFree': false,
-        };
-      }
-      if (config.eventsIncluded && !config.offersIncluded) {
-        query = {
-          ...query,
-          'event.type': { $in: [EventTypes.FORMAL] },
-        };
-      } else if (config.offersIncluded && !config.eventsIncluded) {
-        query = {
-          ...query,
-          'event.type': EventTypes.OFFER,
-        };
-      } else if (config.offersIncluded && config.eventsIncluded) {
-        query = {
-          ...query,
-          'event.type': {
-            $in: [EventTypes.OFFER, EventTypes.FORMAL],
-          },
-        };
-      }
-      // if (config.name == 'Food & Drinks') {
-      //   console.log('query after type:----->', query);
-      // }
-      const eventsResult = await this.fetchEventsV2(
-        new mongoose.Types.ObjectId(user.id),
-        longitude,
-        latitude,
-        query,
-        1,
-        config.limit,
-        CarouselType.Event,
-        maxDistance,
-        startDate,
-        endDate,
-      );
-      // data.push({ [`${config.name}`]: eventsResult });
-      data[`${config.name}`] = eventsResult[0];
-    }
+  //   let data = {};
+  //   const dashboardConfigs = await this.dashboardConfigModel.find().sort({
+  //     sortOrder: 1,
+  //   });
+  //   console.log('dashboardConfigs', dashboardConfigs.length);
+  //   for (let i = 0; i < dashboardConfigs.length; i++) {
+  //     const config = dashboardConfigs[i];
+  //     if (match['event.categories']) {
+  //       delete match['event.categories'];
+  //     }
+  //     // if (config.name == 'Food & Drinks') {
+  //     //   // console.log('query after type:----->', match);
+  //     // }
+  //     let query = { ...match };
+  //     if (categoryIds.length) {
+  //       const sameCategories = [];
+  //       categoryIds.forEach((id) => {
+  //         if (config.categories.includes(new mongoose.Types.ObjectId(id))) {
+  //           sameCategories.push(new mongoose.Types.ObjectId(id));
+  //         }
+  //       });
+  //       if (!sameCategories.length) {
+  //         continue;
+  //       } else {
+  //         query = {
+  //           ...query,
+  //           'event.categories': {
+  //             $in: sameCategories,
+  //           },
+  //         };
+  //       }
+  //     } else {
+  //       query = {
+  //         ...query,
+  //         'event.categories': { $in: config.categories },
+  //       };
+  //     }
+  //     if (!config.freeIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.isFree': false,
+  //       };
+  //     }
+  //     if (config.eventsIncluded && !config.offersIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': { $in: [EventTypes.FORMAL] },
+  //       };
+  //     } else if (config.offersIncluded && !config.eventsIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': EventTypes.OFFER,
+  //       };
+  //     } else if (config.offersIncluded && config.eventsIncluded) {
+  //       query = {
+  //         ...query,
+  //         'event.type': {
+  //           $in: [EventTypes.OFFER, EventTypes.FORMAL],
+  //         },
+  //       };
+  //     }
+  //     // if (config.name == 'Food & Drinks') {
+  //     //   console.log('query after type:----->', query);
+  //     // }
+  //     const eventsResult = await this.fetchEventsV2(
+  //       new mongoose.Types.ObjectId(user.id),
+  //       longitude,
+  //       latitude,
+  //       query,
+  //       1,
+  //       config.limit,
+  //       CarouselType.Event,
+  //       maxDistance,
+  //       startDate,
+  //       endDate,
+  //     );
+  //     // data.push({ [`${config.name}`]: eventsResult });
+  //     data[`${config.name}`] = eventsResult[0];
+  //   }
 
-    return {
-      success: true,
-      message: 'Dashboard fetched successfully',
-      data: {
-        Free: freeEvents[0],
-        ...data,
-        'Private Invitations': privateEvents[0],
-      },
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Dashboard fetched successfully',
+  //     data: {
+  //       Free: freeEvents[0],
+  //       ...data,
+  //       'Private Invitations': privateEvents[0],
+  //     },
+  //   };
+  // }
 
-  async dashboardFixedCarouselEvents(
-    user: DecodedUser,
-    latitude: number,
-    longitude: number,
-    maxDistance: number,
-    search: string,
-    categoryIds?: Array<string>,
-    startDate?: any,
-    endDate?: any,
-  ) {
-    if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
-      return {
-        success: false,
-        message: 'Please provide a valid user',
-      };
-    }
-    let match = {};
-    if (categoryIds.length) {
-      match['event.categories'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
-    const currentDate = currentDateTz();
-    let start = getZeroDateTz(new Date());
-    if (!startDate && !endDate) {
-      // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-      match['event.schedule.date'] = { $gte: start };
-      match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    } else if (startDate && endDate) {
-      start = getZeroBodyDateTz(startDate);
-      const end = getZeroBodyDateTz(endDate);
-      if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-        if (
-          getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-        ) {
-          console.log('start is equals to current');
-          // If the requested query is for today only then the end time should be greater than the current time
-          match['event.schedule.date'] = getZeroDateTz(new Date());
-          match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-        } else {
-          console.log('start is not equals to current');
-          // If the start and end date are the same e.g. 2024-06-01
-          match['event.schedule.date'] = start;
-        }
-      } else if (end > start) {
-        if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-          // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-            },
-          };
-        } else {
-          // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-          match['event.schedule.durations'] = {
-            $elemMatch: {
-              startTime: { $lte: end },
-              endTime: { $gte: start },
-            },
-          };
-        }
-      } else {
-        // If the request date is in past
-        match['event.schedule.date'] = { $gte: currentDate };
-        match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-      }
-    }
+  // async dashboardFixedCarouselEvents(
+  //   user: DecodedUser,
+  //   latitude: number,
+  //   longitude: number,
+  //   maxDistance: number,
+  //   search: string,
+  //   categoryIds?: Array<string>,
+  //   startDate?: any,
+  //   endDate?: any,
+  // ) {
+  //   if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
+  //     return {
+  //       success: false,
+  //       message: 'Please provide a valid user',
+  //     };
+  //   }
+  //   let match = {};
+  //   if (categoryIds.length) {
+  //     match['event.categories'] = {
+  //       $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+  //     };
+  //   }
+  //   const currentDate = currentDateTz();
+  //   let start = getZeroDateTz(new Date());
+  //   if (!startDate && !endDate) {
+  //     // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
+  //     match['event.schedule.date'] = { $gte: start };
+  //     match['event.schedule.durations.endTime'] = { $gte: currentDate };
+  //   } else if (startDate && endDate) {
+  //     start = getZeroBodyDateTz(startDate);
+  //     const end = getZeroBodyDateTz(endDate);
+  //     if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
+  //       if (
+  //         getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
+  //       ) {
+  //         console.log('start is equals to current');
+  //         // If the requested query is for today only then the end time should be greater than the current time
+  //         match['event.schedule.date'] = getZeroDateTz(new Date());
+  //         match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //       } else {
+  //         console.log('start is not equals to current');
+  //         // If the start and end date are the same e.g. 2024-06-01
+  //         match['event.schedule.date'] = start;
+  //       }
+  //     } else if (end > start) {
+  //       if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
+  //         // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
+  //           },
+  //         };
+  //       } else {
+  //         // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
+  //         match['event.schedule.durations'] = {
+  //           $elemMatch: {
+  //             startTime: { $lte: end },
+  //             endTime: { $gte: start },
+  //           },
+  //         };
+  //       }
+  //     } else {
+  //       // If the request date is in past
+  //       match['event.schedule.date'] = { $gte: currentDate };
+  //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
+  //     }
+  //   }
 
-    if (search) {
-      // Search matching business profile name
-      const matchingBusinesses = await this.businessModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
-      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
-      match['$or'] = [
-        { 'event.title': { $regex: search, $options: 'i' } },
-        { 'event.description': { $regex: search, $options: 'i' } },
-        { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
-      ];
-    }
+  //   if (search) {
+  //     // Search matching business profile name
+  //     const matchingBusinesses = await this.businessModel.find({
+  //       name: { $regex: search, $options: 'i' },
+  //     });
+  //     // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+  //     const businessProfileIds = matchingBusinesses.map(
+  //       (business) => business._id,
+  //     );
+  //     match['$or'] = [
+  //       { 'event.title': { $regex: search, $options: 'i' } },
+  //       { 'event.description': { $regex: search, $options: 'i' } },
+  //       { 'event.keywords': { $regex: search, $options: 'i' } },
+  //       { 'event.businessProfile': { $in: businessProfileIds } },
+  //     ];
+  //   }
 
-    let age = 0;
-    if (!user.isGuest) {
-      const foundUser = await this.userModel.findById(user.id);
-      age = foundUser.age ? foundUser.age : 0;
-    }
+  //   let age = 0;
+  //   if (!user.isGuest) {
+  //     const foundUser = await this.userModel.findById(user.id);
+  //     age = foundUser.age ? foundUser.age : 0;
+  //   }
 
-    const freeEventsMatch = {
-      ...match,
-      'event.type': { $ne: EventTypes.PRIVATE },
-      'event.isFree': true,
-    };
-    const privateEventsMatch = {
-      ...match,
-      'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
-      'event.type': EventTypes.PRIVATE,
-    };
-    const freeEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      freeEventsMatch,
-      1,
-      15,
-      CarouselType.Event,
-      maxDistance,
-      startDate,
-      endDate,
-    );
-    const privateEvents = await this.fetchEventsV2(
-      new mongoose.Types.ObjectId(user.id),
-      longitude,
-      latitude,
-      privateEventsMatch,
-      1,
-      15,
-      CarouselType.Event,
-      maxDistance,
-      startDate,
-      endDate,
-    );
-    return {
-      success: true,
-      message: 'Dashboard fetched successfully',
-      data: {
-        Free: freeEvents[0],
-        'Private Invitations': privateEvents[0],
-      },
-    };
-  }
+  //   const freeEventsMatch = {
+  //     ...match,
+  //     'event.type': { $ne: EventTypes.PRIVATE },
+  //     'event.isFree': true,
+  //   };
+  //   const privateEventsMatch = {
+  //     ...match,
+  //     'event.participants': { $in: [new mongoose.Types.ObjectId(user.id)] },
+  //     'event.type': EventTypes.PRIVATE,
+  //   };
+  //   const freeEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     freeEventsMatch,
+  //     1,
+  //     15,
+  //     CarouselType.Event,
+  //     maxDistance,
+  //     startDate,
+  //     endDate,
+  //   );
+  //   const privateEvents = await this.fetchEventsV2(
+  //     new mongoose.Types.ObjectId(user.id),
+  //     longitude,
+  //     latitude,
+  //     privateEventsMatch,
+  //     1,
+  //     15,
+  //     CarouselType.Event,
+  //     maxDistance,
+  //     startDate,
+  //     endDate,
+  //   );
+  //   return {
+  //     success: true,
+  //     message: 'Dashboard fetched successfully',
+  //     data: {
+  //       Free: freeEvents[0],
+  //       'Private Invitations': privateEvents[0],
+  //     },
+  //   };
+  // }
 
   async getDashboardCarouselEvent(
     user: DecodedUser,

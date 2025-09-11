@@ -266,67 +266,67 @@ export class AdminService {
     }
   }
 
-  async getCrawledEvents(page: number, limit: number, status: string) {
-    let searchQuery = {};
-    if (status && status != 'all') {
-      searchQuery = { status };
-    } else {
-      searchQuery = {
-        status: CrawledEventStatus.CRAWLED,
-      };
-    }
-    const crawledEvents = await this.crawledEventModel
-      .find(searchQuery)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-    const totalCrawledEvents = await this.crawledEventModel.find(searchQuery);
-    const pages = Math.ceil(totalCrawledEvents.length / limit);
-    return {
-      success: true,
-      message: 'Crawled events fetched successfully',
-      count: crawledEvents.length,
-      crawledEvents,
-      page,
-      pages,
-    };
-  }
+  // async getCrawledEvents(page: number, limit: number, status: string) {
+  //   let searchQuery = {};
+  //   if (status && status != 'all') {
+  //     searchQuery = { status };
+  //   } else {
+  //     searchQuery = {
+  //       status: CrawledEventStatus.CRAWLED,
+  //     };
+  //   }
+  //   const crawledEvents = await this.crawledEventModel
+  //     .find(searchQuery)
+  //     .sort({ createdAt: -1 })
+  //     .skip((page - 1) * limit)
+  //     .limit(limit)
+  //     .exec();
+  //   const totalCrawledEvents = await this.crawledEventModel.find(searchQuery);
+  //   const pages = Math.ceil(totalCrawledEvents.length / limit);
+  //   return {
+  //     success: true,
+  //     message: 'Crawled events fetched successfully',
+  //     count: crawledEvents.length,
+  //     crawledEvents,
+  //     page,
+  //     pages,
+  //   };
+  // }
 
-  async deleteCrawledEvent(id: string) {
-    const crawledEvent = await this.crawledEventModel.findById(id);
-    if (!crawledEvent) {
-      return {
-        success: false,
-        message: 'Crawled event not found',
-      };
-    }
-    await this.crawledEventModel.findByIdAndDelete(id);
-    return {
-      success: true,
-      message: 'Crawled event deleted successfully',
-    };
-  }
+  // async deleteCrawledEvent(id: string) {
+  //   const crawledEvent = await this.crawledEventModel.findById(id);
+  //   if (!crawledEvent) {
+  //     return {
+  //       success: false,
+  //       message: 'Crawled event not found',
+  //     };
+  //   }
+  //   await this.crawledEventModel.findByIdAndDelete(id);
+  //   return {
+  //     success: true,
+  //     message: 'Crawled event deleted successfully',
+  //   };
+  // }
 
-  async updateCrawledEvent(id: string, data: UpdateCrawledEventDto) {
-    const updatedEvent = await this.crawledEventModel.findOneAndUpdate(
-      { _id: new mongoose.Types.ObjectId(id) },
-      { $set: { ...data } },
-      { new: true },
-    );
-    if (!updatedEvent) {
-      return {
-        success: false,
-        message: 'No event data found with the id',
-      };
-    } else {
-      return {
-        success: true,
-        message: 'Event updated successfully.',
-        event: updatedEvent,
-      };
-    }
-  }
+  // async updateCrawledEvent(id: string, data: UpdateCrawledEventDto) {
+  //   const updatedEvent = await this.crawledEventModel.findOneAndUpdate(
+  //     { _id: new mongoose.Types.ObjectId(id) },
+  //     { $set: { ...data } },
+  //     { new: true },
+  //   );
+  //   if (!updatedEvent) {
+  //     return {
+  //       success: false,
+  //       message: 'No event data found with the id',
+  //     };
+  //   } else {
+  //     return {
+  //       success: true,
+  //       message: 'Event updated successfully.',
+  //       event: updatedEvent,
+  //     };
+  //   }
+  // }
 
   // async publishCrawledEvent(data: PublishCrawledEventDto) {
   //   const { ids, user, businessProfile } = data;
@@ -2590,48 +2590,48 @@ export class AdminService {
     }
   }
 
-  async updatePlaceIdinAtlantaData() {
-    try {
-      const jsonData = JSON.parse(
-        fs.readFileSync('src/admin/Init-resources/atlantadata.json', 'utf-8'),
-      );
-      for (let data of jsonData) {
-        if (!data.address.placeId || data.address.placeId === '') {
-          console.log('Processing address:', data.address.address);
-          let placeList = await this.googleService.googleRecommendation({
-            address: data.address.address,
-          });
-          if (
-            placeList &&
-            placeList.data &&
-            Array.isArray(placeList.data) &&
-            placeList.data.length > 0 &&
-            placeList.data[0].placePrediction &&
-            placeList.data[0].placePrediction.placeId
-          ) {
-            data.address.placeId = placeList.data[0].placePrediction.placeId;
-          } else {
-            data.address.placeId = 'ChIJjQmTaV0E9YgRC2MLmS_e_mY';
-            console.error('No place id found');
-          }
-        }
-      }
-      fs.writeFileSync(
-        'src/admin/Init-resources/atlantadata.json',
-        JSON.stringify(jsonData, null, 2), // Pretty-print with 2-space indentation
-      );
-      return {
-        success: true,
-        message: 'Place IDs updated successfully',
-      };
-    } catch (error) {
-      console.error('Error in updatePlaceIdinAtlantaData:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
-    }
-  }
+  // async updatePlaceIdinAtlantaData() {
+  //   try {
+  //     const jsonData = JSON.parse(
+  //       fs.readFileSync('src/admin/Init-resources/atlantadata.json', 'utf-8'),
+  //     );
+  //     for (let data of jsonData) {
+  //       if (!data.address.placeId || data.address.placeId === '') {
+  //         console.log('Processing address:', data.address.address);
+  //         let placeList = await this.googleService.googleRecommendation({
+  //           address: data.address.address,
+  //         });
+  //         if (
+  //           placeList &&
+  //           placeList.data &&
+  //           Array.isArray(placeList.data) &&
+  //           placeList.data.length > 0 &&
+  //           placeList.data[0].placePrediction &&
+  //           placeList.data[0].placePrediction.placeId
+  //         ) {
+  //           data.address.placeId = placeList.data[0].placePrediction.placeId;
+  //         } else {
+  //           data.address.placeId = 'ChIJjQmTaV0E9YgRC2MLmS_e_mY';
+  //           console.error('No place id found');
+  //         }
+  //       }
+  //     }
+  //     fs.writeFileSync(
+  //       'src/admin/Init-resources/atlantadata.json',
+  //       JSON.stringify(jsonData, null, 2), // Pretty-print with 2-space indentation
+  //     );
+  //     return {
+  //       success: true,
+  //       message: 'Place IDs updated successfully',
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in updatePlaceIdinAtlantaData:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  // }
 
   async createBusinessUser(user: DecodedUser, data: CreateBusinessUserDto) {
     try {

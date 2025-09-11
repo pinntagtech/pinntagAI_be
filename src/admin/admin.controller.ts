@@ -87,85 +87,85 @@ export class AdminController {
     }
   }
 
-  @Get('crawled')
-  @UseGuards(AdminGuard2)
-  async getCrawledEvents(
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-    @Query('status') status: string,
-  ) {
-    if (!page || page == '') {
-      page = '1';
-    }
-    if (!limit || limit == '') {
-      limit = '10';
-    }
-    if (!status || status == '') {
-      status = 'all';
-    }
-    const result = await this.adminService.getCrawledEvents(
-      parseInt(page),
-      parseInt(limit),
-      status,
-    );
-    if (result.success) {
-      return {
-        message: result.message,
-        count: result.count,
-        events: result.crawledEvents,
-        pages: result.pages,
-        page: result.page,
-      };
-    } else {
-      return {
-        message: result.message,
-      };
-    }
-  }
+  // @Get('crawled')
+  // @UseGuards(AdminGuard2)
+  // async getCrawledEvents(
+  //   @Query('page') page: string,
+  //   @Query('limit') limit: string,
+  //   @Query('status') status: string,
+  // ) {
+  //   if (!page || page == '') {
+  //     page = '1';
+  //   }
+  //   if (!limit || limit == '') {
+  //     limit = '10';
+  //   }
+  //   if (!status || status == '') {
+  //     status = 'all';
+  //   }
+  //   const result = await this.adminService.getCrawledEvents(
+  //     parseInt(page),
+  //     parseInt(limit),
+  //     status,
+  //   );
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       count: result.count,
+  //       events: result.crawledEvents,
+  //       pages: result.pages,
+  //       page: result.page,
+  //     };
+  //   } else {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   }
+  // }
 
-  @Delete('crawled/:id')
-  @UseGuards(AdminGuard2)
-  async removeCrawledEvent(@Param('id') id: string) {
-    if (!mongoose.isValidObjectId(id)) {
-      return new BadRequestException({
-        message: 'Invalid event id',
-      });
-    }
-    const result = await this.adminService.deleteCrawledEvent(id);
-    if (result.success) {
-      return {
-        message: result.message,
-      };
-    } else {
-      return {
-        message: result.message,
-      };
-    }
-  }
+  // @Delete('crawled/:id')
+  // @UseGuards(AdminGuard2)
+  // async removeCrawledEvent(@Param('id') id: string) {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     return new BadRequestException({
+  //       message: 'Invalid event id',
+  //     });
+  //   }
+  //   const result = await this.adminService.deleteCrawledEvent(id);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   } else {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   }
+  // }
 
-  @Post('crawled/edit/:id')
-  @UseGuards(AdminGuard2)
-  async updateCrawledEvent(
-    @Param('id') id: string,
-    @Body() body: UpdateCrawledEventDto,
-  ) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException({
-        message: 'Please provide a valid id',
-      });
-    }
-    const result = await this.adminService.updateCrawledEvent(id, body);
-    if (result.success) {
-      return {
-        message: result.message,
-        event: result.event,
-      };
-    } else {
-      return new BadRequestException({
-        message: result.message,
-      });
-    }
-  }
+  // @Post('crawled/edit/:id')
+  // @UseGuards(AdminGuard2)
+  // async updateCrawledEvent(
+  //   @Param('id') id: string,
+  //   @Body() body: UpdateCrawledEventDto,
+  // ) {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     throw new BadRequestException({
+  //       message: 'Please provide a valid id',
+  //     });
+  //   }
+  //   const result = await this.adminService.updateCrawledEvent(id, body);
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       event: result.event,
+  //     };
+  //   } else {
+  //     return new BadRequestException({
+  //       message: result.message,
+  //     });
+  //   }
+  // }
 
   // @Post('crawled/publish')
   // @UseGuards(AdminGuard2)
@@ -485,19 +485,19 @@ export class AdminController {
   //   return this.adminService.createBusinessRole(createDto);
   // }
 
-  @Post('dbQueries') //just to add run db queries or only for testing purpose
-  @UseGuards(AdminGuard2)
-  async dbQueries() {
-    const result = await this.adminService.updatePlaceIdinAtlantaData();
-    if (result.success) {
-      return {
-        message: result.message,
-      };
-    }
-    throw new BadRequestException({
-      message: result.message,
-    });
-  }
+  // @Post('dbQueries') //just to add run db queries or only for testing purpose
+  // @UseGuards(AdminGuard2)
+  // async dbQueries() {
+  //   const result = await this.adminService.updatePlaceIdinAtlantaData();
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //     };
+  //   }
+  //   throw new BadRequestException({
+  //     message: result.message,
+  //   });
+  // }
 
   @Post('content/category')
   @UseGuards(AdminGuard2)

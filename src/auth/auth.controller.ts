@@ -126,27 +126,27 @@ export class AuthController {
     };
   }
 
-  @Put('updateUserConsent')
-  @UseGuards(JwtGuard2)
-  @HttpCode(HttpStatus.OK)
-  async updateUserConsent(
-    @Req() req: Request,
-    @Body('privacyConsent') privacyConsent: boolean,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    const userAgent = req.headers['user-agent'];
-    const ip = req.ip;
-    const result = await this.authService.updateUserConsent(
-      user.id,
-      privacyConsent,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-    };
-  }
+  // @Put('updateUserConsent')
+  // @UseGuards(JwtGuard2)
+  // @HttpCode(HttpStatus.OK)
+  // async updateUserConsent(
+  //   @Req() req: Request,
+  //   @Body('privacyConsent') privacyConsent: boolean,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   const userAgent = req.headers['user-agent'];
+  //   const ip = req.ip;
+  //   const result = await this.authService.updateUserConsent(
+  //     user.id,
+  //     privacyConsent,
+  //   );
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //   };
+  // }
 
   @Post('updatePersonalDetails/:id')
   @HttpCode(HttpStatus.ACCEPTED)
@@ -235,10 +235,10 @@ export class AuthController {
     };
   }
 
-  @Post('continueWithFacebook')
-  async facebookAuth(@Body() body: ContinueWithFacebookDto) {
-    return this.authService.continueWithFacebook(body);
-  }
+  // @Post('continueWithFacebook')
+  // async facebookAuth(@Body() body: ContinueWithFacebookDto) {
+  //   return this.authService.continueWithFacebook(body);
+  // }
 
   @Post('verify/otp')
   @HttpCode(HttpStatus.OK)
@@ -265,17 +265,17 @@ export class AuthController {
     return { message };
   }
 
-  @Post('forgotPassword')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RateLimitGuard)
-  async forgotPassword(@Body() body: { email: string }) {
-    const result = await this.authService.forgotPassword(body.email);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    const { id, message } = result;
-    return { id, message };
-  }
+  // @Post('forgotPassword')
+  // @HttpCode(HttpStatus.OK)
+  // @UseGuards(RateLimitGuard)
+  // async forgotPassword(@Body() body: { email: string }) {
+  //   const result = await this.authService.forgotPassword(body.email);
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   const { id, message } = result;
+  //   return { id, message };
+  // }
 
   @Post('resetPassword')
   @HttpCode(HttpStatus.OK)
@@ -346,12 +346,12 @@ export class AuthController {
     };
   }
 
-  @Get('fcm/report')
-  @UseGuards(RateLimitGuard)
-  async fcmReport() {
-    await this.authService.fcmReport();
-    return { message: 'Report sent' };
-  }
+  // @Get('fcm/report')
+  // @UseGuards(RateLimitGuard)
+  // async fcmReport() {
+  //   await this.authService.fcmReport();
+  //   return { message: 'Report sent' };
+  // }
 
   // @Post('dashboard')
   // @UseGuards(JwtGuard)
@@ -393,85 +393,85 @@ export class AuthController {
   //   };
   // }
 
-  @Post('dashboard/v2')
-  @UseGuards(JwtGuard)
-  @HttpCode(HttpStatus.OK)
-  async dashboardV2(
-    @Body() body: GetDashboardDto,
-    @Query('search') search: string,
-    @Query('distance') distance: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    if (distance) {
-      if (isNaN(parseInt(distance))) {
-        throw new BadRequestException('Please provide a valid distance value.');
-      }
-    }
-    const result = await this.authService.getDashboardV2(
-      user,
-      parseFloat(body.latitude),
-      parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
-      search ? search : '',
-      body.categories ? body.categories : [],
-      body.startDate ? new Date(body.startDate) : null,
-      body.endDate ? new Date(body.endDate) : null,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      ...result.data,
-    };
-  }
+  // @Post('dashboard/v2')
+  // @UseGuards(JwtGuard)
+  // @HttpCode(HttpStatus.OK)
+  // async dashboardV2(
+  //   @Body() body: GetDashboardDto,
+  //   @Query('search') search: string,
+  //   @Query('distance') distance: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   if (body.categories && body.categories.length) {
+  //     for (const cat of body.categories) {
+  //       if (!mongoose.Types.ObjectId.isValid(cat)) {
+  //         throw new BadRequestException(`${cat} is not a valid category id.`);
+  //       }
+  //     }
+  //   }
+  //   if (distance) {
+  //     if (isNaN(parseInt(distance))) {
+  //       throw new BadRequestException('Please provide a valid distance value.');
+  //     }
+  //   }
+  //   const result = await this.authService.getDashboardV2(
+  //     user,
+  //     parseFloat(body.latitude),
+  //     parseFloat(body.longitude),
+  //     distance ? parseInt(distance) : 1000000000000,
+  //     search ? search : '',
+  //     body.categories ? body.categories : [],
+  //     body.startDate ? new Date(body.startDate) : null,
+  //     body.endDate ? new Date(body.endDate) : null,
+  //   );
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //     ...result.data,
+  //   };
+  // }
 
-  @Post('fixedCarouselEvents')
-  @UseGuards(JwtGuard2)
-  @HttpCode(HttpStatus.OK)
-  async dashboardFixedCarouselEvents(
-    @Body() body: GetDashboardDto,
-    @Query('search') search: string,
-    @Query('distance') distance: string,
-    @TokenDecoder() user: DecodedUser,
-  ) {
-    if (body.categories && body.categories.length) {
-      for (const cat of body.categories) {
-        if (!mongoose.Types.ObjectId.isValid(cat)) {
-          throw new BadRequestException(`${cat} is not a valid category id.`);
-        }
-      }
-    }
-    if (distance) {
-      if (isNaN(parseInt(distance))) {
-        throw new BadRequestException('Please provide a valid distance value.');
-      }
-    }
-    const result = await this.authService.dashboardFixedCarouselEvents(
-      user,
-      parseFloat(body.latitude),
-      parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
-      search ? search : '',
-      body.categories ? body.categories : [],
-      body.startDate ? new Date(body.startDate) : null,
-      body.endDate ? new Date(body.endDate) : null,
-    );
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      ...result.data,
-    };
-  }
+  // @Post('fixedCarouselEvents')
+  // @UseGuards(JwtGuard2)
+  // @HttpCode(HttpStatus.OK)
+  // async dashboardFixedCarouselEvents(
+  //   @Body() body: GetDashboardDto,
+  //   @Query('search') search: string,
+  //   @Query('distance') distance: string,
+  //   @TokenDecoder() user: DecodedUser,
+  // ) {
+  //   if (body.categories && body.categories.length) {
+  //     for (const cat of body.categories) {
+  //       if (!mongoose.Types.ObjectId.isValid(cat)) {
+  //         throw new BadRequestException(`${cat} is not a valid category id.`);
+  //       }
+  //     }
+  //   }
+  //   if (distance) {
+  //     if (isNaN(parseInt(distance))) {
+  //       throw new BadRequestException('Please provide a valid distance value.');
+  //     }
+  //   }
+  //   const result = await this.authService.dashboardFixedCarouselEvents(
+  //     user,
+  //     parseFloat(body.latitude),
+  //     parseFloat(body.longitude),
+  //     distance ? parseInt(distance) : 1000000000000,
+  //     search ? search : '',
+  //     body.categories ? body.categories : [],
+  //     body.startDate ? new Date(body.startDate) : null,
+  //     body.endDate ? new Date(body.endDate) : null,
+  //   );
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //     ...result.data,
+  //   };
+  // }
 
   @Post('getDashboardCarouselEvent/:id')
   @UseGuards(JwtGuard2)
@@ -644,19 +644,19 @@ export class AuthController {
     };
   }
 
-  @Get('switch/profile')
-  @UseGuards(BusinessProfileGuard)
-  async switchToUserProfile(@TokenDecoder() user: DecodedUser) {
-    const result = await this.authService.switchToUserProfile(user.id);
-    if (!result.success) {
-      throw new BadRequestException(result.message);
-    }
-    return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
-    };
-  }
+  // @Get('switch/profile')
+  // @UseGuards(BusinessProfileGuard)
+  // async switchToUserProfile(@TokenDecoder() user: DecodedUser) {
+  //   const result = await this.authService.switchToUserProfile(user.id);
+  //   if (!result.success) {
+  //     throw new BadRequestException(result.message);
+  //   }
+  //   return {
+  //     message: result.message,
+  //     user: result.user,
+  //     token: result.token,
+  //   };
+  // }
 
   @Post('logout')
   @UseGuards(JwtGuard2)
