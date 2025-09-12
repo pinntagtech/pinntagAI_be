@@ -749,3 +749,9 @@ export const BusinessDocumentTypesList = {
   ADDRESS_VERIFICATION: 'Address Verification Document',
   OTHER: 'Other',
 }
+
+export const VerificationStatus = {
+  PENDING: 'Pending',
+  VERIFIED: 'Verified',
+  REJECTED: 'Rejected',
+}

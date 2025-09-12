@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  Head,
   HttpStatus,
   Param,
   Post,
