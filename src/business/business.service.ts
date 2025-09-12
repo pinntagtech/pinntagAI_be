@@ -21,6 +21,7 @@ import {
   ROLES_IN_ORGANISATION,
   ScalabilityFactor,
   TEAM_SIZE_OPTIONS,
+  VerificationStatus,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
 import { Business, BusinessDocument } from './model/business.model';
@@ -4467,14 +4468,13 @@ export class BusinessService {
       }
       await this.businessModel.updateOne(
         { _id: business._id },
-        { addressVerificationDoc: uploadResult.data.metaData.url },
+        { addressVerificationDoc: uploadResult.data.metaData.url,addressVerificationStatus: VerificationStatus.PENDING  },
       );
       await this.businessDocVerificationLeadsModel.create({
         businessId: business._id,
         userId: new mongoose.Types.ObjectId(user.id),
         documentUrl: uploadResult.data.metaData.url,
         documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
-        isVerified: false,
       });
       await this.mailService.businessDocVerificationRequest(
         email,

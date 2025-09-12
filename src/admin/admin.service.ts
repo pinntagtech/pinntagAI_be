@@ -106,6 +106,7 @@ import {
   BusinessDocumentTypesList,
   BusinessUserCreatorType,
   ProfileStatus,
+  VerificationStatus,
 } from 'src/business/enums/business.enum';
 import {
   BusinessUser,
@@ -2828,11 +2829,15 @@ export class AdminService {
         };
       }
       // Perform verification logic here
+      let verificationStatus = VerificationStatus.REJECTED;
+      if(status){
+        verificationStatus = VerificationStatus.VERIFIED;
+      }
       await this.docVerificationLeadModel.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
         {
           $set: {
-            isVerified: status,
+            addressVerificationStatus: verificationStatus,
             verifiedBy: new mongoose.Types.ObjectId(adminId),
           },
         },

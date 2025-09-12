@@ -12,6 +12,7 @@ import {
   BusinessStatus,
   OfferStatus,
   ScalabilityFactor,
+  VerificationStatus,
 } from '../enums/business.enum';
 import { Event } from 'src/event/models/event.model';
 import {
@@ -283,8 +284,8 @@ export class Business {
   @Prop()
   addressVerificationDoc: string;
 
-  @Prop()
-  isAddressVerified: boolean;
+  @Prop({ enum: Object.values(VerificationStatus), default: VerificationStatus.PENDING })
+  addressVerificationStatus: string;
 
   @Prop({ ref: Admin.name })
   addressVerifiedBy: mongoose.Types.ObjectId;
