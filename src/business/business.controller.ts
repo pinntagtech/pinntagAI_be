@@ -1328,10 +1328,12 @@ export class BusinessController {
   async uploadAddressVerificationDoc(
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
+    @Query('businessId') businessId: string,
   ) {
     const result = await this.businessService.uploadAddressVerificationDoc(
       user,
-      image
+      image,
+      businessId
     );
     if (result.success) {
       return {
