@@ -4439,9 +4439,14 @@ export class BusinessService {
   async uploadAddressVerificationDoc(
     user: DecodedUser,
     image: Express.Multer.File,
+    businessId: string,
   ) {
     try {
-      const business = await this.businessModel.findById(user.businessProfile);
+      let businessID = user.businessProfile;
+      if(businessId){
+        businessID = businessId;
+      }
+      const business = await this.businessModel.findById(businessID);
       if (!business) {
         return {
           success: false,
