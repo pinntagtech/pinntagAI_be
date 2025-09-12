@@ -2773,10 +2773,62 @@ export class AdminService {
 
   async getDocVerificationLeads(page: number, limit: number) {
     try {
-      const leads = await this.docVerificationLeadModel
-        .find()
-        .skip((page - 1) * limit)
-        .limit(limit);
+      // const leads = await this.docVerificationLeadModel
+      //   .find()
+      //   .populate('businessId', 'name email phone countryCode logo cover isAddressVerified')
+      //   .skip((page - 1) * limit)
+      //   .limit(limit);
+
+      const leads = await this.docVerificationLeadModel.aggregate([
+        {
+          $lookup: {
+            from: 'businesses', // collection name in MongoDB
+            localField: 'businessId',
+            foreignField: '_id',
+            as: 'business',
+          },
+        },
+        {
+          $unwind: '$business',
+        },
+        {
+          $lookup: {
+            from: 'businessusers',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: '$user' },
+        {
+          $project: {
+            _id: 1,
+            businessId: 1,
+            documentType: 1,
+            documentUrl: 1,
+            addressVerificationStatus: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            verifiedBy: 1,
+            'business._id': 1,
+            'business.name': 1,
+            'business.email': 1,
+            'business.phone': 1,
+            'business.countryCode': 1,
+            'business.logo': 1,
+            'business.cover': 1,
+            'business.addressVerificationStatus': 1,
+            'business.outlets': 1,
+            'owner.name': '$user.name',
+            'owner.email': '$user.email',
+            'owner.profilePhoto': '$user.profilePhoto',
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ]);
+
       const total = await this.docVerificationLeadModel.countDocuments();
       return {
         success: true,
@@ -2798,7 +2850,54 @@ export class AdminService {
 
   async getDocVerificationLead(id: string) {
     try {
-      const lead = await this.docVerificationLeadModel.findById(id);
+      // const lead = await this.docVerificationLeadModel.findById(id);
+      const lead = await this.docVerificationLeadModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'businesses', // collection name in MongoDB
+            localField: 'businessId',
+            foreignField: '_id',
+            as: 'business',
+          },
+        },
+        {
+          $unwind: '$business',
+        },
+        {
+          $lookup: {
+            from: 'businessusers',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: '$user' },
+        {
+          $project: {
+            _id: 1,
+            businessId: 1,
+            documentType: 1,
+            documentUrl: 1,
+            addressVerificationStatus: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            verifiedBy: 1,
+            'business._id': 1,
+            'business.name': 1,
+            'business.email': 1,
+            'business.phone': 1,
+            'business.countryCode': 1,
+            'business.logo': 1,
+            'business.cover': 1,
+            'business.addressVerificationStatus': 1,
+            'business.outlets': 1,
+            'owner.name': '$user.name',
+            'owner.email': '$user.email',
+            'owner.profilePhoto': '$user.profilePhoto',
+          },
+        },
+      ]);
       if (!lead) {
         return {
           success: false,
@@ -2808,7 +2907,7 @@ export class AdminService {
       return {
         success: true,
         message: 'Lead fetched successfully',
-        data: lead,
+        data: lead[0],
       };
     } catch (error) {
       console.error('Error in getDocVerificationLead:', error);
@@ -2830,7 +2929,7 @@ export class AdminService {
       }
       // Perform verification logic here
       let verificationStatus = VerificationStatus.REJECTED;
-      if(status){
+      if (status) {
         verificationStatus = VerificationStatus.VERIFIED;
       }
       await this.docVerificationLeadModel.updateOne(

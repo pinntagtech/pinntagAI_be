@@ -30,9 +30,9 @@ async function bootstrap() {
   //   optionsSuccessStatus: 204,
   // });
   app.enableCors({
-  origin: '*',
-  methods: ['GET', 'POST'],
-});
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'PATCH', 'PUT'],
+  });
   // app.use(cookieParser());
   app.use(helmet());
   app.useStaticAssets(join(__dirname, 'uploads'), {
