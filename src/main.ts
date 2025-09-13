@@ -7,12 +7,13 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { NextFunction } from 'express';
+import { NextFunction, raw } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     // logger: WinstonModule.createLogger({
     //   instance: instance,
     // }),
+    rawBody: true,
   });
   // app.enableCors({
   //   origin: function (origin, callback) {
@@ -38,6 +39,7 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, 'uploads'), {
     prefix: '/',
   });
+   app.use('/v1/stripe/webhooks', raw({ type: '*/*' }));
 
   //VALIDATION PIPES
   app.useGlobalPipes(
