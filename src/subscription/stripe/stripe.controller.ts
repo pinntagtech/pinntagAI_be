@@ -78,7 +78,7 @@ export class StripeController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
       console.log('request:-', req);
-    const payload = req.rawBody;
+    const payload = req.body;
     let event: Stripe.Event;
     const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
     try {
