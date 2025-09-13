@@ -7692,4 +7692,77 @@ export class EventService2 {
       };
     }
   }
+
+  async editTemplate(
+    id: string,
+    user: DecodedUser,
+    data: Partial<CreateTemplateDto>,
+    thumbnail: Express.Multer.File,
+  ) {
+    try {
+      const template = await this.templateModel.findById(id);
+      if (!template) {
+        return {
+          success: false,
+          message: 'Template not found',
+        };
+      }
+
+      let updateData: any = { ...data };
+      
+      if (data.categories) {
+        let splitted = [];
+        splitted = data.categories.split(',');
+        for (let category of splitted) {
+          if (!mongoose.isValidObjectId(category)) {
+            return {
+              success: false,
+              message: 'Please provide a valid category id',
+            };
+          }
+          const foundCategory = await this.categoryModel.findById(category);
+          if (!foundCategory) {
+            return {
+              success: false,
+              message: 'Category not found',
+            };
+          }
+          updateData.categories = [];
+          updateData.categories.push(new mongoose.Types.ObjectId(category));
+        }
+      }
+      const business = await this.businessModel.findById(user.businessProfile);
+
+      if(thumbnail){
+        const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+
+      let file = await this.driveService.uploadFile(
+        user.id,
+        business.drivePath.toString(),
+        fileCategory.id,
+        thumbnail,
+      );
+      updateData.thumbnail = file.data.metaData.url;
+      }
+
+      const updatedTemplate = await this.templateModel.findOneAndUpdate(
+        { _id: id },
+        { $set: updateData },
+        { new: true },
+      );
+      return {
+        success: true,
+        message: 'Template updated successfully.',
+        data: updatedTemplate,
+      };
+    } catch (error) {
+      console.error('Error in editTemplate:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 }

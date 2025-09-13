@@ -1293,17 +1293,18 @@ export class BusinessService {
       loginDto.email,
       loginDto.password,
     );
-    logger.info(
-      `Winston Log: Validated Business User: ${validatedBusinessUser}`,
-    );
+    // logger.info(
+    //   `Winston Log: Validated Business User: ${validatedBusinessUser}`,
+    // );
     if (validatedBusinessUser.success) {
       const user = validatedBusinessUser.user;
 
       if (loginDto.fcmToken) {
+
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
             type: TokenTypes.FCM,
-            userId: user._id,
+            user: user._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           },
           {
@@ -1312,15 +1313,18 @@ export class BusinessService {
             },
           },
         );
+
         if (!foundFcmToken) {
-          await this.tokenModel.create({
+          const createdFcmToken = await this.tokenModel.create({
             token: loginDto.fcmToken,
             type: TokenTypes.FCM,
             userType: UserTypes.BUSINESS,
             user: user._id,
             deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
           });
+          console.log('createdFcmToken:', createdFcmToken);
         }
+
       }
       const payload: JwtPayload = {
         id: user.id,
@@ -1351,7 +1355,7 @@ export class BusinessService {
 
       const fcmExists = await this.tokenModel.exists({
         type: TokenTypes.FCM,
-        userId: user._id,
+        user: user._id,
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
       // console.log('user:', user);
@@ -4454,7 +4458,6 @@ export class BusinessService {
         };
       }
       const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-      let email = 'sahil456q@gmail.com';
       // Upload the image to a cloud storage or local storage
       const fileCategory = await this.fileCategoryModel.findOne({
         name: FileCategoryTypes.VERIFICATION_DOCUMENT,
@@ -4482,7 +4485,7 @@ export class BusinessService {
         documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
       });
       await this.mailService.businessDocVerificationRequest(
-        email,
+        superAdmin.email,
         business.uniqueId ? business.uniqueId : business.id,
         BusinessDocumentTypesList.ADDRESS_VERIFICATION,
       );

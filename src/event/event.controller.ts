@@ -1257,4 +1257,37 @@ export class EventController {
       });
     }
   }
+
+  @Patch('template/:id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
+  async editTemplate(
+    @Param('id') id: string,
+    @Body() data: Partial<CreateTemplateDto>,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.eventService.editTemplate(id, user, data, image);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
 }
