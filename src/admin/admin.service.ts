@@ -2389,7 +2389,7 @@ export class AdminService {
         let coverUrl = await this.driveService.noDriveUpload(cover[0]);
         businessObj['cover'] = coverUrl;
       }
-
+      console.log("'BusinessObjXXXXXXXXXXXX:", businessObj);
       const createdBusiness = await this.businessModel.create(businessObj);
       await this.businessUserModel.updateOne(
         { _id: createdBusiness.authorisedUser },
