@@ -77,7 +77,7 @@ export class StripeController {
         'Webhook secret not configured',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
-      console.log('request:-', req);
+    // console.log('request:-', req);
     const payload = req.body;
     let event: Stripe.Event;
     const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
