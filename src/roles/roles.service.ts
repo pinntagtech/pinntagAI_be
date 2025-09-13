@@ -231,6 +231,7 @@ export class RolesService {
           };
         }
         ownerRole = findAdminUser.role;
+        query = { belongsTo: { $ne: RoleBelonging.BUSINESS } };
       } else if (user.userType === UserTypes.BUSINESS) {
         const findBusinessUser = await this.businessUserModel.findById(user.id);
         if (!findBusinessUser) {
@@ -259,10 +260,7 @@ export class RolesService {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
-      const total = await this.roleModel.countDocuments({
-        _id: { $in: allAdminObjectIds, $ne: ownerRole },
-        creatorType: user.userType,
-      });
+      const total = await this.roleModel.countDocuments(query);
 
       // const roles = await this.roleModel.aggregate([
       //   {

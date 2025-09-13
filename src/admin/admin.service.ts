@@ -2399,6 +2399,10 @@ export class AdminService {
           },
         },
       );
+      await this.roleModel.updateOne(
+        { _id: ownerRole._id },
+        { $set: { business: createdBusiness._id } },
+      );
 
       //seed Roles:
       this.seedBusinessDepartmentRoles(createdUser.id, createdBusiness._id)
