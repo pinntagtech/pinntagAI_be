@@ -136,6 +136,7 @@ import {
 } from 'src/business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -194,6 +195,10 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

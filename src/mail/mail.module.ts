@@ -141,6 +141,10 @@ import {
   SampleDocument,
   SampleDocumentSchema,
 } from 'src/admin/models/sampleDocuments.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Global()
 @Module({
@@ -200,6 +204,7 @@ import {
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
     ]),
     MailerModule.forRoot({
       transport: {

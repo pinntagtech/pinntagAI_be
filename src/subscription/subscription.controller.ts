@@ -3,37 +3,24 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   UseGuards,
-  HttpStatus,
   BadRequestException,
-  HttpCode,
-  RawBodyRequest,
-  Req,
-  HttpException,
-  Headers,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { UserGuard } from 'src/auth/guards/user.guard';
 import { CreateSubscriptionDto } from 'src/user/dto/create-subscription.dto';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
-import Stripe from 'stripe';
-import { StripeService } from 'src/subscription/stripe/stripe.service';
-import { ConfigService } from '@nestjs/config';
+import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { CreateSubscriptionPriceDto } from './dto/create-subscription-price.dto';
+import mongoose from 'mongoose';
 
 @Controller('subscription')
 export class SubscriptionController {
-  constructor(
-    private readonly subscriptionService: SubscriptionService,
-    private readonly stripeService: StripeService,
-    private readonly config: ConfigService,
-  ) {}
+  constructor(private readonly subscriptionService: SubscriptionService) {}
 
   @Post('product')
   @UseGuards(AdminGuard2)
@@ -52,8 +39,53 @@ export class SubscriptionController {
     }
   }
 
+  @Post('product/price/:id')
+  @UseGuards(AdminGuard2)
+  async createSubscriptionProductPrices(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+    @Body() body: CreateSubscriptionPriceDto,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('Invalid product id');
+    }
+    const result = await this.subscriptionService.createProductPrice(
+      user,
+      id,
+      body,
+    );
+    if (result.success) {
+      return {
+        message: 'Subscription product price created successfully',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('product/toggle/:id')
+  @UseGuards(AdminGuard2)
+  async toggleSubscriptionProduct(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('Invalid product id');
+    }
+    const result = await this.subscriptionService.toggleProduct(user, id);
+    if (result.success) {
+      return {
+        message: 'Subscription product price toggled successfully',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get('products')
-  @UseGuards(UserGuard)
+  @UseGuards(JwtGuard2)
   async getProducts() {
     const result = await this.subscriptionService.getProducts();
     return {
@@ -62,66 +94,49 @@ export class SubscriptionController {
     };
   }
 
-  @Get()
-  @UseGuards(UserGuard)
-  async findAll(@TokenDecoder() user: DecodedUser) {
-    const result = await this.subscriptionService.findAll(user);
-    return {
-      message: 'User subscriptions',
-      data: result,
-    };
-  }
+  // @Get()
+  // @UseGuards(JwtGuard2)
+  // async findAll(@TokenDecoder() user: DecodedUser) {
+  //   const result = await this.subscriptionService.findAll(user);
+  //   return {
+  //     message: 'User subscriptions',
+  //     data: result,
+  //   };
+  // }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
-    const result = await this.subscriptionService.findOne(id, user);
-    if (result) {
-      return {
-        message: 'Subscription details',
-        data: result,
-      };
-    } else {
-      throw new BadRequestException(result.message);
-    }
-  }
+  // @Get(':id')
+  // @UseGuards(JwtGuard2)
+  // async findOne(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
+  //   const result = await this.subscriptionService.findOne(id, user);
+  //   if (result) {
+  //     return {
+  //       message: 'Subscription details',
+  //       data: result,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 
-  @Post('stripe/webhooks')
-  @HttpCode(200)
-  async handleStripeWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers('stripe-signature') signature: string,
-  ) {
-    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
-    if (!secret)
-      throw new HttpException(
-        'Webhook secret not configured',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    const payload = req.rawBody;
-    let event: Stripe.Event;
-    const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
-    try {
-      // Verify webhook signature using Stripe SDK
-      event = this.stripeService.constructEventFromPayload(
-        payload,
-        signature,
-        endpointSecret,
-      );
-    } catch (err) {
-      console.error(
-        `⚠️  Webhook signature verification failed: ${err.message}`,
-      );
-      throw new BadRequestException('Invalid webhook signature');
-    }
-    try {
-      // req.body is Buffer because of raw body middleware in main.ts
-      await this.stripeService.handleStripeWebhook(event);
-      return { received: true };
-    } catch (e: any) {
-      throw new HttpException(
-        `Webhook Error: ${e.message}`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-  }
+  // @Get('checkout-session/:priceId')
+  // @UseGuards(UserGuard)
+  // async createCheckoutSession(
+  //   @Param('priceId') priceId: string,
+  //   @TokenDecoder() user: DecodedUser,
+  //   @Body() body: CreateSubscriptionDto,
+  // ) {
+  //   const result = await this.subscriptionService.createCheckoutSession(
+  //     priceId,
+  //     user,
+  //     body,
+  //   );
+  //   if (result.success) {
+  //     return {
+  //       message: 'Checkout session created',
+  //       data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
 }

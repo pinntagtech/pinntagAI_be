@@ -151,6 +151,7 @@ import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
 import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/business/model/ownershipTransferRecords.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -219,7 +220,11 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from 'src/busi
       { name: Reward.name, schema: RewardSchema },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
   ],
   providers: [

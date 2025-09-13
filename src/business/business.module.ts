@@ -140,9 +140,22 @@ import {
   UserAllowedNotificationSchema,
 } from './model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
-import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/ownershipTransferRecords.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from 'src/admin/models/BusinessDocVerificationLeads.model';
+import {
+  OwnershipTransferRecord,
+  OwnershipTransferRecordSchema,
+} from './model/ownershipTransferRecords.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -206,8 +219,18 @@ import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/
       },
       { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema }
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
   ],
   controllers: [BusinessController],

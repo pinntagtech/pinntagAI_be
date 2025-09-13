@@ -173,6 +173,10 @@ import {
   OwnershipTransferRecord,
   OwnershipTransferRecordSchema,
 } from 'src/business/model/ownershipTransferRecords.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -248,6 +252,10 @@ import {
       {
         name: OwnershipTransferRecord.name,
         schema: OwnershipTransferRecordSchema,
+      },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
       },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },

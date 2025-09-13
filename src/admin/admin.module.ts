@@ -154,6 +154,7 @@ import {
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { SampleDocument, SampleDocumentSchema } from './models/sampleDocuments.model';
 import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from './models/BusinessDocVerificationLeads.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -212,6 +213,10 @@ import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,

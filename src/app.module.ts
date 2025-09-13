@@ -159,6 +159,7 @@ import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocum
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EtlModule } from './etl/etl.module';
+import { SubscriptionPrice, SubscriptionPriceSchema } from './subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -241,6 +242,10 @@ import { EtlModule } from './etl/etl.module';
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,

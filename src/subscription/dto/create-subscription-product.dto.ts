@@ -6,15 +6,15 @@ import {
   Validate,
 } from 'class-validator';
 
-export class FeatureLimitData {
-  @IsNotEmpty()
-  @IsString()
-  key: string;
+// export class FeatureLimitData {
+//   @IsNotEmpty()
+//   @IsString()
+//   key: string;
 
-  @IsNotEmpty()
-  @IsString()
-  value: string; // examples: "unlimited", "enabled", "5"
-}
+//   @IsNotEmpty()
+//   @IsString()
+//   value: string; // examples: "unlimited", "enabled", "5"
+// }
 
 export class CreateSubscriptionProductDto {
   @IsNotEmpty()
@@ -22,9 +22,9 @@ export class CreateSubscriptionProductDto {
   name: string; // e.g. "Pro", "Mobile", "Custom"
 
   @IsNotEmpty()
-  @IsArray()
-  @Validate(FeatureLimitData, { each: true })
-  features: FeatureLimitData[];
+  // @IsArray()
+  // @Validate(FeatureLimitData, { each: true })
+  features: Object; // Array of feature limits
 
   @IsOptional()
   description?: string;

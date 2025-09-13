@@ -70,6 +70,7 @@ import {
   SampleDocument,
   SampleDocumentSchema,
 } from 'src/admin/models/sampleDocuments.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -103,6 +104,10 @@ import {
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
   ],
   controllers: [CronController],
