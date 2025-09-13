@@ -9,9 +9,9 @@ export class CreateCheckoutDto {
   @IsNotEmpty()
   priceId: string; // The price (monthly/yearly)
 
-  @IsMongoId()
-  @IsNotEmpty()
-  businessId: string; // Business profile that’s subscribing
+  // @IsMongoId()
+  // @IsNotEmpty()
+  // businessId: string; // Business profile that’s subscribing
 
   @IsOptional()
   @IsString()

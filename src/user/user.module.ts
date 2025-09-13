@@ -144,7 +144,14 @@ import {
   EventScheduleSchema,
 } from 'src/event/models/event-schedule.model';
 import { SmsService } from 'src/sms/sms.service';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -178,6 +185,10 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
+      },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
       },
     ]),
   ],

@@ -10,6 +10,9 @@ export enum BillingInterval {
 
 @Schema({ timestamps: true })
 export class SubscriptionPrice extends Document {
+  @Prop({ default: true })
+  isActive: boolean;
+
   @Prop({ required: true, ref: SubscriptionProduct.name })
   product: mongoose.Types.ObjectId;
 
@@ -25,19 +28,13 @@ export class SubscriptionPrice extends Document {
   @Prop({ default: false })
   isCustom: boolean;
 
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ required: true })
-  billingPeriod: string; // Billing interval, e.g. "month" or "year"
-
   @Prop({ required: true })
   price: number;
 
-  @Prop({ unique: true })
+  @Prop({})
   appleProductId?: string; // Apple App Store product identifier (SKU):contentReference[oaicite:5]{index=5}
 
-  @Prop({ unique: true })
+  @Prop({})
   googleProductId?: string; // Google Play subscription product ID (SKU)
 }
 

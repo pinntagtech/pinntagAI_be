@@ -144,6 +144,7 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -203,6 +204,10 @@ import {
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: Broadcast.name, schema: BroadcastSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

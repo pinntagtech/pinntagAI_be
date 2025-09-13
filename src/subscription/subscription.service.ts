@@ -14,6 +14,11 @@ import { TransactionPopulates } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
+import { CreateSubscriptionPriceDto } from './dto/create-subscription-price.dto';
+import {
+  BillingInterval,
+  SubscriptionPrice,
+} from './models/subscription-price.model';
 
 @Injectable()
 export class SubscriptionService {
@@ -23,6 +28,8 @@ export class SubscriptionService {
     private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
+    @InjectModel(SubscriptionPrice.name)
+    private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<Transaction>,
     @InjectModel(FeatureLimit.name)
@@ -43,18 +50,11 @@ export class SubscriptionService {
         data.description,
       );
       console.log('Created Stripe Product:', createdStripeProduct);
-      // const featureLimits = data.features.map(async (feature) => {
-      //   const createdFeatureLimit = await this.featureLimitModel.create({
-      //     ...feature,
-      //     product: createdProduct._id,
-      //   });
-      //   return createdFeatureLimit._id;
-      // });
-      // const createdFeatureLimits = await Promise.all(featureLimits);
       let featureLimits = [];
-      for (const feature of data.features) {
+      for (const feature of Object.keys(data.features)) {
         const createdFeatureLimit = await this.featureLimitModel.create({
-          ...feature,
+          key: feature,
+          value: data.features[feature],
           product: createdProduct._id,
         });
         featureLimits.push(createdFeatureLimit._id);
@@ -69,7 +69,11 @@ export class SubscriptionService {
           },
           { new: true },
         );
-      return { success: true, data: updatedProduct };
+      return {
+        success: true,
+        message: 'Product created successfully',
+        data: updatedProduct,
+      };
     } catch (error) {
       console.error('Error creating product:', error);
       return { success: false, message: 'Something went wrong' };
@@ -78,107 +82,135 @@ export class SubscriptionService {
 
   async getProducts() {
     return await this.subscriptionProductModel
-      .find()
+      .find({ isActive: true })
+      .populate('features', 'key value _id')
+      .populate('prices', '-product -createdAt -updatedAt -__v')
       .select({
-        createdAt: 0,
         updatedAt: 0,
         __v: 0,
       })
+      .sort({ createdAt: -1 })
       .exec();
   }
 
-  // async create(
-  //   createSubscriptionDto: CreateSubscriptionDto,
-  //   user: DecodedUser,
-  // ) {
-  //   if (!mongoose.isValidObjectId(createSubscriptionDto.product)) {
-  //     return { success: false, message: 'Invalid product id' };
-  //   } else {
-  //     const subscriptionProduct = await this.subscriptionProductModel.findById(
-  //       createSubscriptionDto.product,
-  //     );
-  //     if (!subscriptionProduct) {
-  //       return { success: false, message: 'Product not found' };
-  //     } else {
-  //       let endDate = new Date();
-  //       if (subscriptionProduct.durationType === 'monthly') {
-  //         endDate.setMonth(endDate.getMonth() + subscriptionProduct.duration);
-  //       } else if (subscriptionProduct.durationType === 'annual') {
-  //         endDate.setFullYear(
-  //           endDate.getFullYear() + subscriptionProduct.duration,
-  //         );
-  //       }
-  //       const subscription = new this.subscriptionModel({
-  //         user: new mongoose.Types.ObjectId(user.id),
-  //         product: subscriptionProduct._id,
-  //         startDate: new Date(),
-  //         endDate,
-  //       });
-  //       await subscription.save();
-  //       delete createSubscriptionDto.product;
-  //       const transaction = await this.transactionModel.create({
-  //         ...createSubscriptionDto,
-  //         subscription: subscription._id,
-  //         amount: subscriptionProduct.price * createSubscriptionDto.quantity,
-  //         businessProfile: createSubscriptionDto.businessProfileId,
-  //         user: new mongoose.Types.ObjectId(user.id),
-  //       });
-  //       const updatedSubscription = await this.subscriptionModel
-  //         .findByIdAndUpdate(
-  //           subscription._id,
-  //           { transaction: transaction._id },
-  //           { new: true },
-  //         )
-  //         .populate('product', 'name')
-  //         .populate('transaction', TransactionPopulates.FOREIGN);
+  async createProductPrice(
+    user: DecodedUser,
+    id: string,
+    data: CreateSubscriptionPriceDto,
+  ) {
+    try {
+      if (!mongoose.isValidObjectId(id)) {
+        return { success: false, message: 'Invalid product id' };
+      }
+      const subscriptionProduct =
+        await this.subscriptionProductModel.findById(id);
+      if (!subscriptionProduct) {
+        return { success: false, message: 'Product not found' };
+      }
+      const createdPrice = await this.stripeService.createPrice({
+        productId: subscriptionProduct.stripeProductId,
+        unitAmount: data.price * 100, // converting to smallest currency unit
+        currency: data.currency,
+        interval:
+          data.billingInterval == BillingInterval.MONTHLY ? 'month' : 'year',
+        metadata: {
+          isCustom: data.isCustom ? 'true' : 'false',
+        },
+        nickname: `${subscriptionProduct.name} - ${data.billingInterval} - ${data.currency.toUpperCase()}${(data.price / 100).toFixed(2)}`,
+        trialPeriodDays: undefined,
+      });
+      console.log('Created Stripe Price:', createdPrice);
+      const newSubscriptionPrice = await this.subscriptionPriceModel.create({
+        product: subscriptionProduct._id,
+        billingInterval: data.billingInterval,
+        currency: data.currency,
+        stripePriceId: createdPrice.id,
+        isCustom: data.isCustom || false,
+        price: data.price,
+        appleProductId: data.appleProductId,
+        googleProductId: data.googleProductId,
+      });
+      await this.subscriptionProductModel.findByIdAndUpdate(
+        subscriptionProduct._id,
+        {
+          $push: { prices: newSubscriptionPrice._id },
+        },
+      );
+      return {
+        success: true,
+        message: 'Product price created successfully',
+        data: newSubscriptionPrice,
+      };
+    } catch (error) {
+      console.error('Error creating product price:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
 
-  //       await this.userModel.updateOne(
-  //         { _id: new mongoose.Types.ObjectId(user.id) },
-  //         {
-  //           $set: { hasSubscribedForBusiness: true },
-  //           $push: { subscriptions: subscription._id },
-  //         },
-  //       );
-  //       return { success: true, subscription: updatedSubscription };
+  async toggleProduct(user: DecodedUser, id: string) {
+    try {
+      if (!mongoose.isValidObjectId(id)) {
+        return { success: false, message: 'Invalid product id' };
+      }
+      const subscriptionProduct =
+        await this.subscriptionProductModel.findById(id);
+      if (!subscriptionProduct) {
+        return { success: false, message: 'Product not found' };
+      }
+      const updatedProduct =
+        await this.subscriptionProductModel.findByIdAndUpdate(
+          id,
+          { isActive: !subscriptionProduct.isActive },
+          { new: true },
+        );
+      await this.stripeService.deactivateProduct(
+        subscriptionProduct.stripeProductId,
+      );
+      return {
+        success: true,
+        message: 'Product toggled successfully',
+        data: updatedProduct,
+      };
+    } catch (error) {
+      console.error('Error toggling product:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+  // async findAll(user: DecodedUser) {
+  //   return await this.subscriptionModel
+  //     .find({
+  //       user: new mongoose.Types.ObjectId(user.id),
+  //       endDate: { $gte: new Date() },
+  //     })
+  //     .populate('product', '-createdAt -updatedAt -__v')
+  //     .populate('transaction', TransactionPopulates.FOREIGN)
+  //     .sort({ createdAt: -1 });
+  // }
+
+  // async findOne(id: string, user: DecodedUser) {
+  //   if (!mongoose.isValidObjectId(id)) {
+  //     return { success: false, message: 'Invalid subscription id' };
+  //   } else {
+  //     const subscription = await this.subscriptionModel
+  //       .findOne({
+  //         _id: new mongoose.Types.ObjectId(id),
+  //         user: new mongoose.Types.ObjectId(user.id),
+  //       })
+  //       .populate('product', 'name')
+  //       .populate('transaction', TransactionPopulates.FOREIGN);
+  //     if (!subscription) {
+  //       return { success: false, message: 'Subscription not found' };
+  //     } else {
+  //       return { success: true, subscription };
   //     }
   //   }
   // }
 
-  async findAll(user: DecodedUser) {
-    return await this.subscriptionModel
-      .find({
-        user: new mongoose.Types.ObjectId(user.id),
-        endDate: { $gte: new Date() },
-      })
-      .populate('product', '-createdAt -updatedAt -__v')
-      .populate('transaction', TransactionPopulates.FOREIGN)
-      .sort({ createdAt: -1 });
-  }
+  // update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
+  //   return `This action updates a #${id} subscription`;
+  // }
 
-  async findOne(id: string, user: DecodedUser) {
-    if (!mongoose.isValidObjectId(id)) {
-      return { success: false, message: 'Invalid subscription id' };
-    } else {
-      const subscription = await this.subscriptionModel
-        .findOne({
-          _id: new mongoose.Types.ObjectId(id),
-          user: new mongoose.Types.ObjectId(user.id),
-        })
-        .populate('product', 'name')
-        .populate('transaction', TransactionPopulates.FOREIGN);
-      if (!subscription) {
-        return { success: false, message: 'Subscription not found' };
-      } else {
-        return { success: true, subscription };
-      }
-    }
-  }
-
-  update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
-    return `This action updates a #${id} subscription`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} subscription`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} subscription`;
+  // }
 }

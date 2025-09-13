@@ -161,6 +161,7 @@ import { join } from 'path';
 import { EtlModule } from './etl/etl.module';
 import { RedisBullService } from './notification/redisBull.service';
 import { Broadcast, BroadcastSchema } from './notification/models/broadcast.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from './subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -243,6 +244,10 @@ import { Broadcast, BroadcastSchema } from './notification/models/broadcast.mode
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,

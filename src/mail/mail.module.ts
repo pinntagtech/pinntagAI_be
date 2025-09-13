@@ -143,6 +143,10 @@ import {
 } from 'src/admin/models/sampleDocuments.model';
 import { RedisBullService } from 'src/notification/redisBull.service';
 import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Global()
 @Module({
@@ -203,6 +207,7 @@ import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.mo
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
     ]),
     MailerModule.forRoot({
       transport: {

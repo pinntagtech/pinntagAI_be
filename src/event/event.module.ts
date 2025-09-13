@@ -175,6 +175,10 @@ import {
 } from 'src/business/model/ownershipTransferRecords.model';
 import { RedisBullService } from 'src/notification/redisBull.service';
 import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -251,7 +255,11 @@ import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.mo
         name: OwnershipTransferRecord.name,
         schema: OwnershipTransferRecordSchema,
       },
-       { name: Broadcast.name, schema: BroadcastSchema }
+       { name: Broadcast.name, schema: BroadcastSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
     ]),
