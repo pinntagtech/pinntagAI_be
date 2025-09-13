@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+  ai:
+    build:
+      context: .
+    depends_on:
+      - mongo
+    ports:
+      - "4001:4001"
+    environment:
+      - USE_PRETTY_LOGS: "true"
+    NODE_ENV: development
+    PORT: 4001
+    # Use the container hostname for Mongo (service name = mongo)
+    MONGODB_URI: mongodb://mongo:27017/pinntag_ai
+    # If your ETL runs on the host, host.docker.internal works on macOS/Windows; on Linux, replace with your host IP
+    ETL_BASE_URL: http://host.docker.internal:8080 # Change if your ETL runs elsewhere
+    ETL_API_KEY: dev-etl-key
+    ENFORCE_INTERNAL_API_KEY: "true"
+    PINNTAG_BACKEND_TO_AI_KEY: change-me # Change this to a secure key
+    HTTP_TIMEOUT_MS: 15000
+    HTTP_RETRIES: 2
+volumes:
+    mongo_data:
