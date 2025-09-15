@@ -37,6 +37,18 @@ export class SubscriptionService {
     private readonly stripeService: StripeService,
   ) {}
 
+  async getAllSubscriptions(user: DecodedUser) {
+    const subscriptions = await this.subscriptionModel
+      .find({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        
+      })
+      .populate('product', '-createdAt -updatedAt -__v')
+      .populate('transaction', TransactionPopulates.FOREIGN)
+      .sort({ createdAt: -1 });
+    return subscriptions;
+  }
+
   async createProduct(user: DecodedUser, data: CreateSubscriptionProductDto) {
     try {
       const createdProduct = await this.subscriptionProductModel.create({

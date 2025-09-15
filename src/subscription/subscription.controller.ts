@@ -22,6 +22,16 @@ import mongoose from 'mongoose';
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
+  @Get()
+  @UseGuards(JwtGuard2)
+  async getAllSubscriptions(@TokenDecoder() user: DecodedUser) {
+    const result = await this.subscriptionService.getAllSubscriptions(user);
+    return {
+      message: 'User subscriptions',
+      data: result,
+    };
+  }
+
   @Post('product')
   @UseGuards(AdminGuard2)
   async createSubscriptionProduct(

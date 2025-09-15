@@ -449,7 +449,7 @@ export class StripeService {
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
-        businessProfile: businessId,
+        business: businessId,
         status: SubscriptionStatus.ACTIVE,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
