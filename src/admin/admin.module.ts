@@ -165,6 +165,7 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -223,6 +224,10 @@ import {
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,

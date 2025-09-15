@@ -165,6 +165,7 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -241,6 +242,12 @@ import {
         schema: OwnershipTransferRecordSchema,
       },
       { name: Broadcast.name, schema: BroadcastSchema },
+      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
+      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
   ],
   providers: [

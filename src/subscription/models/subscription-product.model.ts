@@ -4,6 +4,9 @@ import { FeatureLimit } from './feature-limit.model';
 
 @Schema({ timestamps: true })
 export class SubscriptionProduct extends Document {
+  @Prop({ default: true })
+  isActive: boolean;
+
   @Prop({ required: true, unique: true })
   name: string; // e.g. "Pro", "Mobile", "Custom"
 
@@ -12,6 +15,12 @@ export class SubscriptionProduct extends Document {
 
   @Prop({ required: false })
   stripeProductId?: string;
+
+  @Prop({ unique: true })
+  appleProductId?: string; // Apple App Store product identifier (SKU):contentReference[oaicite:5]{index=5}
+
+  @Prop({ unique: true })
+  googleProductId?: string; // Google Play subscription product ID (SKU)
 
   @Prop({
     type: [mongoose.Types.ObjectId],
@@ -25,6 +34,13 @@ export class SubscriptionProduct extends Document {
 
   @Prop({ ref: 'Admin' })
   createdBy: mongoose.Types.ObjectId; // Reference to User who created this product
+
+  @Prop({
+    type: [mongoose.Types.ObjectId],
+    default: [],
+    ref: 'SubscriptionPrice',
+  })
+  prices: mongoose.Types.ObjectId[]; // Array of SubscriptionPrice IDs
 }
 
 export const SubscriptionProductSchema =

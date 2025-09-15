@@ -60,9 +60,19 @@ import {
 } from 'src/subscription/models/subscription-product.model';
 import { UserService } from 'src/user/user.service';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { UserAllowedNotification, UserAllowedNotificationSchema } from 'src/business/model/userAllowedNotification.model';
+import {
+  UserAllowedNotification,
+  UserAllowedNotificationSchema,
+} from 'src/business/model/userAllowedNotification.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
-import { WebhookSnapshot, WebhookSnapshotSchema } from 'src/user/models/webhook.model';
+import {
+  WebhookSnapshot,
+  WebhookSnapshotSchema,
+} from 'src/user/models/webhook.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -102,8 +112,12 @@ import { WebhookSnapshot, WebhookSnapshotSchema } from 'src/user/models/webhook.
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: FileCategory.name, schema: FileCategorySchema },
       { name: Reward.name, schema: RewardSchema },
-      { name: UserAllowedNotification.name, schema: UserAllowedNotificationSchema },
+      {
+        name: UserAllowedNotification.name,
+        schema: UserAllowedNotificationSchema,
+      },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
     ]),
   ],
   controllers: [NotificationController],

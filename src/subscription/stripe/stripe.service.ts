@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -30,12 +31,12 @@ import {
 } from 'src/user/models/webhook.model';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
-import { FeatureLimitData } from 'src/subscription/dto/create-subscription-product.dto';
+import { SubscriptionPrice } from '../models/subscription-price.model';
 
 @Injectable()
 export class StripeService {
   constructor(
-    @InjectStripe() private readonly stripeClient: Stripe,
+    @InjectStripe() private readonly stripe: Stripe,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Transaction.name)
     private readonly transactionModel: Model<Transaction>,
@@ -45,6 +46,8 @@ export class StripeService {
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(WebhookSnapshot.name)
     private readonly webhookSnapshotModel: Model<WebhookSnapshotDocument>,
+    @InjectModel(SubscriptionPrice.name)
+    private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
   ) {}
 
   public constructEventFromPayload(
@@ -62,27 +65,27 @@ export class StripeService {
   }
 
   async createCustomer(email: string, name: string) {
-    return await this.stripeClient.customers.create({
+    return await this.stripe.customers.create({
       email,
       name,
     });
   }
   // // Save a card to a customer in Stripe
   // async createPaymentMethod(customerId: string, paymentMethodId: string) {
-  //   return await this.stripeClient.paymentMethods.attach(paymentMethodId, {
+  //   return await this.stripe.paymentMethods.attach(paymentMethodId, {
   //     customer: customerId,
   //   });
   // }
 
   async retrievePaymentMethods(customerId: string) {
-    return await this.stripeClient.paymentMethods.list({
+    return await this.stripe.paymentMethods.list({
       customer: customerId,
       type: 'card',
     });
   }
 
   async removePaymentMethod(paymentMethodId: string) {
-    return await this.stripeClient.paymentMethods.detach(paymentMethodId);
+    return await this.stripe.paymentMethods.detach(paymentMethodId);
   }
 
   async findAllSubscriptions(): Promise<Subscription[]> {
@@ -96,12 +99,12 @@ export class StripeService {
   }
 
   async getSubscriptionProducts() {
-    const products = await this.stripeClient.products.list({
+    const products = await this.stripe.products.list({
       active: true,
     });
     return await Promise.all(
       products.data.map(async (product) => {
-        const prices = await this.stripeClient.prices.list({
+        const prices = await this.stripe.prices.list({
           active: true,
           product: product.id,
         });
@@ -113,26 +116,166 @@ export class StripeService {
     );
   }
 
-  async createProduct(
-    name: string,
-    features: FeatureLimitData[],
-    description?: string,
-  ) {
-    return await this.stripeClient.products.create({
+  async createProduct(name: string, metadata: Object, description?: string) {
+    return await this.stripe.products.create({
       name,
       description,
       active: true,
-      features: features.map((f) => ({ name: f.key + ' - ' + f.value })),
+      metadata: metadata as Stripe.MetadataParam,
+    });
+  }
+
+  async editProduct(productId: string, updates: Stripe.ProductUpdateParams) {
+    // Ensure default_price is only a string if present
+    return await this.stripe.products.update(productId, updates);
+  }
+
+  async deactivateProduct(productId: string) {
+    return await this.stripe.products.update(productId, {
+      active: false,
+    });
+  }
+
+  async updateProductMetadata(
+    productId: string,
+    metadata: Record<string, string>,
+  ) {
+    return await this.stripe.products.update(productId, {
+      metadata,
     });
   }
 
   async getProducts(): Promise<Stripe.Product[]> {
-    const products = await this.stripeClient.products.list({
+    const products = await this.stripe.products.list({
       active: true,
       limit: 100,
       expand: ['data.default_price'],
     });
     return products.data;
+  }
+
+  async createPrice(params: {
+    productId: string;
+    unitAmount: number;
+    currency: string;
+    interval: 'month' | 'year';
+    trialPeriodDays?: number;
+    nickname?: string;
+    metadata?: Record<string, string>;
+  }) {
+    const { productId, unitAmount, currency, interval, trialPeriodDays } =
+      params;
+    return await this.stripe.prices.create({
+      product: productId,
+      unit_amount: unitAmount,
+      currency,
+      recurring: {
+        interval,
+      },
+      nickname: params.nickname,
+      metadata: params.metadata,
+      // Add trial period if specified (only for subscriptions)
+      ...(trialPeriodDays
+        ? {
+            tiers_mode: 'volume',
+            billing_scheme: 'per_unit',
+            // Note: Stripe does not support trial_period_days directly on Price
+            // It should be set on the Subscription object when creating a subscription
+          }
+        : {}),
+    });
+  }
+
+  async updatePriceMetadata(priceId: string, metadata: Record<string, string>) {
+    return await this.stripe.prices.update(priceId, {
+      metadata,
+    });
+  }
+
+  /** Updates amount for a given currency.
+   * If the currency matches the top-level currency of the Price, Stripe requires creating a new Price.
+   * Returns the active Price to use going forward (new or updated).
+   */
+  async upsertPriceAmount(
+    priceId: string,
+    currency: string,
+    unit_amount: number,
+    opts?: {
+      deactivateOld?: boolean; // default true
+      copyLookupKey?: boolean; // copy old lookup_key to new Price
+      newLookupKeySuffix?: string; // e.g. "-v2"
+      prorationBehavior?: Stripe.SubscriptionUpdateParams.ProrationBehavior; // when switching subscriptions
+    },
+  ) {
+    const settings = {
+      deactivateOld: true,
+      copyLookupKey: true,
+      newLookupKeySuffix: '-v2',
+      prorationBehavior: 'none' as const,
+      ...(opts || {}),
+    };
+
+    const price = await this.stripe.prices.retrieve(priceId, {
+      expand: ['recurring'],
+    });
+
+    const target = currency.toLowerCase();
+    const isTopLevelCurrency = price.currency === target;
+
+    // Case A: same as top-level currency -> must create a new Price
+    if (isTopLevelCurrency) {
+      const newPrice = await this.stripe.prices.create({
+        product:
+          typeof price.product === 'string' ? price.product : price.product.id,
+        currency: target,
+        unit_amount,
+        nickname: price.nickname ?? undefined,
+        tax_behavior: price.tax_behavior ?? undefined,
+        billing_scheme: price.billing_scheme ?? undefined,
+        // copy recurring settings if any (for subscriptions)
+        ...(price.type === 'recurring' && price.recurring
+          ? {
+              recurring: {
+                interval: price.recurring.interval,
+                interval_count: price.recurring.interval_count ?? undefined,
+                usage_type: price.recurring.usage_type ?? undefined,
+                trial_period_days:
+                  price.recurring.trial_period_days ?? undefined,
+              },
+            }
+          : {}),
+        metadata: price.metadata ?? {},
+        lookup_key:
+          settings.copyLookupKey && price.lookup_key
+            ? `${price.lookup_key}${settings.newLookupKeySuffix}`
+            : undefined,
+      });
+
+      if (settings.deactivateOld) {
+        await this.stripe.prices.update(price.id, { active: false });
+      }
+
+      return { price: newPrice, createdNew: true };
+    }
+
+    // Case B: multi-currency price updating a non-top-level currency option
+    const updated = await this.stripe.prices.update(priceId, {
+      currency_options: { [target]: { unit_amount } },
+    });
+
+    return { price: updated, createdNew: false };
+  }
+
+  /** Replace the price on a subscription item */
+  async switchSubscriptionItemPrice(
+    subscriptionItemId: string,
+    newPriceId: string,
+    prorationBehavior: Stripe.SubscriptionItemUpdateParams.ProrationBehavior = 'none',
+  ) {
+    return this.stripe.subscriptionItems.update(subscriptionItemId, {
+      price: newPriceId,
+      proration_behavior: prorationBehavior,
+    });
   }
 
   /** Ensure Stripe customer exists for the business */
@@ -143,7 +286,7 @@ export class StripeService {
     }
     if (business.stripeCustomerId) return business.stripeCustomerId;
 
-    const customer = await this.stripeClient.customers.create({
+    const customer = await this.stripe.customers.create({
       name: business.name ?? undefined,
       email: business.email || business.email || undefined,
       metadata: { businessId: String(business._id) },
@@ -176,29 +319,51 @@ export class StripeService {
     if (!business) throw new NotFoundException('Business not found');
 
     const customerId = await this.ensureStripeCustomer(business.id);
+    const priceDoc = await this.subscriptionPriceModel.findById(priceId);
+    if (!priceDoc) throw new NotFoundException('Subscription price not found');
+    const price = await this.stripe.prices.retrieve(priceDoc.stripePriceId, {
+      expand: ['product'],
+    });
+    if (!price.active || price.type !== 'recurring') {
+      throw new BadRequestException('Invalid subscription price');
+    }
+
+    let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+    if (couponId) {
+      discounts = [{ coupon: couponId }];
+    } else if (promotionCode) {
+      discounts = [{ promotion_code: promotionCode }];
+    }
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      discounts: params.couponId ? [{ coupon: params.couponId }] : [],
+      line_items: [{ price: price.id, quantity: 1 }],
+      discounts,
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       metadata: {
         businessId: String(business._id),
       },
+      subscription_data: {
+        metadata: { businessId: String(business._id), priceId: price.id },
+      },
+      // ui_mode: 'hosted',
+      // Optional extras:
+      // allow_promotion_codes: true, // if you want user-entered codes instead
+      // automatic_tax: { enabled: true }, // if Stripe Tax configured
+      // billing_address_collection: 'auto',
+      // customer_update: { address: 'auto' },
+      // tax_id_collection: { enabled: true }, // if you collect VAT/GST
     };
-
-    // Apply server-side discount if provided
-    if (couponId) {
-      sessionParams.discounts = [{ coupon: couponId }];
-    } else if (promotionCode) {
-      sessionParams.discounts = [{ promotion_code: promotionCode }];
-    }
-
+    const idempotencyKey = `checkout:${crypto.randomUUID()}`;
     try {
-      const session =
-        await this.stripeClient.checkout.sessions.create(sessionParams);
+      const session = await this.stripe.checkout.sessions.create(
+        sessionParams,
+        {
+          idempotencyKey,
+        },
+      );
       if (!session.url)
         throw new InternalServerErrorException(
           'Stripe returned no session URL',
@@ -207,6 +372,19 @@ export class StripeService {
     } catch (err: any) {
       throw new InternalServerErrorException(
         `Stripe session error: ${err.message}`,
+      );
+    }
+  }
+
+  async fetchCheckoutSession(sessionId: string) {
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['customer', 'subscription', 'payment_intent'],
+      });
+      return session;
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Stripe session fetch error: ${err.message}`,
       );
     }
   }
@@ -262,8 +440,7 @@ export class StripeService {
 
     // Find or create our internal Subscription record
     // Map Stripe price -> internal product/price if needed (you have that mapping).
-    const stripeSub =
-      await this.stripeClient.subscriptions.retrieve(subscriptionId);
+    const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
 
     const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
     if (!priceId) return;
@@ -272,7 +449,7 @@ export class StripeService {
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
-        businessProfile: businessId,
+        business: businessId,
         status: SubscriptionStatus.ACTIVE,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
@@ -281,7 +458,7 @@ export class StripeService {
       },
       { upsert: true, new: true },
     );
-    const invoice = await this.stripeClient.invoices.retrieve(
+    const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
     );
     // Upsert by stripeInvoiceId to make it idempotent
@@ -412,10 +589,10 @@ export class StripeService {
         newLocationCount: data.quantity,
       };
     }
-    await this.stripeClient.paymentMethods.attach(paymentMethodId, {
+    await this.stripe.paymentMethods.attach(paymentMethodId, {
       customer: customerId,
     });
-    const subscription = await this.stripeClient.subscriptions.create({
+    const subscription = await this.stripe.subscriptions.create({
       customer: customerId,
       items: [
         {
@@ -452,14 +629,14 @@ export class StripeService {
     try {
       // Fetch existing subscription details
       const existingSubscription =
-        await this.stripeClient.subscriptions.retrieve(subscriptionId);
+        await this.stripe.subscriptions.retrieve(subscriptionId);
       console.log(
         'Existing subscription metadata:',
         existingSubscription.metadata,
       );
 
       // Update the subscription metadata
-      const updatedSubscription = await this.stripeClient.subscriptions.update(
+      const updatedSubscription = await this.stripe.subscriptions.update(
         subscriptionId,
         {
           metadata: {
@@ -492,7 +669,7 @@ export class StripeService {
     existingLocationCount: number,
   ) {
     const { paymentMethodId, priceId } = data;
-    await this.stripeClient.paymentMethods.attach(paymentMethodId, {
+    await this.stripe.paymentMethods.attach(paymentMethodId, {
       customer: customerId,
     });
     const subscription = await this.retrieveSubscription(subscriptionId);
@@ -530,10 +707,7 @@ export class StripeService {
         },
       };
 
-      await this.stripeClient.subscriptions.update(
-        subscription.id,
-        updateParams,
-      );
+      await this.stripe.subscriptions.update(subscription.id, updateParams);
     } else if (newQuantity > maxPaidQuantity) {
       const { scheduleId, scheduleStartDate, scheduleEndDate } =
         subscription.metadata;
@@ -543,12 +717,12 @@ export class StripeService {
       const currentTime = Math.floor(Date.now() / 1000);
       let schedule: Stripe.Response<Stripe.SubscriptionSchedule> | null = null;
       if (!scheduleId || (scheduleId && currentTime >= endDate)) {
-        schedule = await this.stripeClient.subscriptionSchedules.create({
+        schedule = await this.stripe.subscriptionSchedules.create({
           from_subscription: subscriptionId,
         });
       }
 
-      await this.stripeClient.subscriptions.update(subscription.id, {
+      await this.stripe.subscriptions.update(subscription.id, {
         items: [
           {
             id: subscription.items.data[0].id,
@@ -578,7 +752,7 @@ export class StripeService {
         },
       });
 
-      await this.stripeClient.subscriptionSchedules.update(
+      await this.stripe.subscriptionSchedules.update(
         schedule ? schedule.id : scheduleId,
         {
           phases: [
@@ -605,7 +779,7 @@ export class StripeService {
       const currentTime = Math.floor(Date.now() / 1000);
       let schedule: Stripe.Response<Stripe.SubscriptionSchedule> | null = null;
       if (!scheduleId || (scheduleId && currentTime >= endDate)) {
-        schedule = await this.stripeClient.subscriptionSchedules.create({
+        schedule = await this.stripe.subscriptionSchedules.create({
           from_subscription: subscriptionId,
         });
       }
@@ -619,7 +793,7 @@ export class StripeService {
         newLocationCount: newQuantity,
       });
 
-      await this.stripeClient.subscriptionSchedules.update(
+      await this.stripe.subscriptionSchedules.update(
         schedule ? schedule.id : scheduleId,
         {
           phases: [
@@ -651,21 +825,21 @@ export class StripeService {
   }
 
   async retrieveSubscriptions(customerId: string) {
-    return await this.stripeClient.subscriptions.list({
+    return await this.stripe.subscriptions.list({
       customer: customerId,
     });
   }
 
   async retrieveSubscription(subscriptionId: string) {
-    return await this.stripeClient.subscriptions.retrieve(subscriptionId);
+    return await this.stripe.subscriptions.retrieve(subscriptionId);
   }
 
   async cancelSubscription(subscriptionId: string) {
-    return await this.stripeClient.subscriptions.cancel(subscriptionId);
+    return await this.stripe.subscriptions.cancel(subscriptionId);
   }
 
   async retriveInvoicesOfSubscription(subscriptionId: string) {
-    return await this.stripeClient.invoices.list({
+    return await this.stripe.invoices.list({
       subscription: subscriptionId,
     });
   }
@@ -691,7 +865,7 @@ export class StripeService {
               newLocationCount,
             } = latestInvoice.subscription_details.metadata;
 
-            const subscription = await this.stripeClient.subscriptions.retrieve(
+            const subscription = await this.stripe.subscriptions.retrieve(
               latestInvoice.subscription.toString(),
             );
 
@@ -788,10 +962,9 @@ export class StripeService {
               existingLocationCount,
               newLocationCount,
             } = failedInvoice.subscription_details.metadata;
-            const failedSubscription =
-              await this.stripeClient.subscriptions.retrieve(
-                failedInvoice.subscription.toString(),
-              );
+            const failedSubscription = await this.stripe.subscriptions.retrieve(
+              failedInvoice.subscription.toString(),
+            );
             await this.transactionModel.create({
               description: 'Subscription payment',
               amount: (failedInvoice.amount_paid / 100).toFixed(2),
@@ -818,7 +991,7 @@ export class StripeService {
               endDate: new Date(failedSubscription.current_period_end * 1000),
             });
 
-            const subscription = await this.stripeClient.subscriptions.retrieve(
+            const subscription = await this.stripe.subscriptions.retrieve(
               failedInvoice.subscription.toString(),
             );
             if (

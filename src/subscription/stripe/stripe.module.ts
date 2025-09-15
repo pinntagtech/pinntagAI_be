@@ -22,6 +22,22 @@ import {
   WebhookSnapshotSchema,
 } from 'src/user/models/webhook.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { Token, TokenSchema } from 'src/auth/models/token.model';
+import { JwtService } from '@nestjs/jwt';
+import { Role, RoleSchema } from 'src/roles/models/roles.model';
+import {
+  GuestSession,
+  GuestSessionSchema,
+} from 'src/auth/models/guestSession.model';
+import { Admin, AdminSchema } from 'src/admin/models/admin.model';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from '../models/subscription-price.model';
 
 @Module({
   imports: [
@@ -50,12 +66,36 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
         name: WebhookSnapshot.name,
         schema: WebhookSnapshotSchema,
       },
+      {
+        name: Token.name,
+        schema: TokenSchema,
+      },
+      {
+        name: Role.name,
+        schema: RoleSchema,
+      },
+      {
+        name: GuestSession.name,
+        schema: GuestSessionSchema,
+      },
+      {
+        name: Admin.name,
+        schema: AdminSchema,
+      },
+      {
+        name: BusinessUser.name,
+        schema: BusinessUserSchema,
+      },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
     StripeModule.forRoot({
       apiKey: process.env.STRIPE_SECRET_KEY,
     }),
   ],
   controllers: [StripeController],
-  providers: [StripeService],
+  providers: [StripeService, JwtService],
 })
 export class StripeeModule {}

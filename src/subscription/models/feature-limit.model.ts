@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 
-@Schema({ _id: false })
+@Schema({ timestamps: true })
 export class FeatureLimit extends Document {
   @Prop({
     type: mongoose.Types.ObjectId,

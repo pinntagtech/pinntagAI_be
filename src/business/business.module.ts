@@ -140,11 +140,24 @@ import {
   UserAllowedNotificationSchema,
 } from './model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
-import { BusinessDocVerificationLeads, BusinessDocVerificationLeadsSchema } from 'src/admin/models/BusinessDocVerificationLeads.model';
-import { OwnershipTransferRecord, OwnershipTransferRecordSchema } from './model/ownershipTransferRecords.model';
 import { RedisBullService } from 'src/notification/redisBull.service';
 import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
+import {
+  BusinessDocVerificationLeads,
+  BusinessDocVerificationLeadsSchema,
+} from 'src/admin/models/BusinessDocVerificationLeads.model';
+import {
+  OwnershipTransferRecord,
+  OwnershipTransferRecordSchema,
+} from './model/ownershipTransferRecords.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -210,7 +223,19 @@ import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.mo
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
       { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
-      { name: Broadcast.name, schema: BroadcastSchema }
+      { name: Broadcast.name, schema: BroadcastSchema },
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
+      {
+        name: SubscriptionPrice.name,
+        schema: SubscriptionPriceSchema,
+      },
     ]),
   ],
   controllers: [BusinessController],

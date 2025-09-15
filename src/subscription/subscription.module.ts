@@ -46,6 +46,14 @@ import {
 } from './models/iap-notification-log.model';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleApiService } from './in-app-purchase/google/google-api.service';
+import {
+  BusinessUser,
+  BusinessUserSchema,
+} from 'src/business/model/businessUser.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from './models/subscription-price.model';
 
 @Module({
   imports: [
@@ -54,6 +62,7 @@ import { GoogleApiService } from './in-app-purchase/google/google-api.service';
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: Transaction.name, schema: TransactionSchema },
       { name: User.name, schema: UserSchema },
+      { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema },
       { name: Role.name, schema: RoleSchema },
       { name: GuestSession.name, schema: GuestSessionSchema },
@@ -66,6 +75,7 @@ import { GoogleApiService } from './in-app-purchase/google/google-api.service';
       { name: GooglePurchase.name, schema: GooglePurchaseSchema },
       { name: IapReceipt.name, schema: IapReceiptSchema },
       { name: IapNotificationLog.name, schema: IapNotificationLogSchema },
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
     ]),
   ],
   controllers: [

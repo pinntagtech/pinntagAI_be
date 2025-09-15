@@ -108,6 +108,7 @@ export class UserGuard implements CanActivate {
           //     message: 'The service is only accesible for users',
           //   });
           // } else {
+          console.log('User from guard:', user);
           request['user'] = user;
           // }
         } else {
