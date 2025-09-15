@@ -219,7 +219,6 @@ export class RolesService {
     try {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
       let allAdminIds = await this.getAllChildAdminIds2(user.id, user.userType);
-      console.log('allAdminIds:', allAdminIds);
       let ownerRole = null;
       let query = {};
       if (user.userType === UserTypes.ADMIN) {
@@ -243,8 +242,6 @@ export class RolesService {
         ownerRole = findBusinessUser.role[0];
         query = { business: new mongoose.Types.ObjectId(user.businessProfile)}
       }
-      console.log('businessUser:', user.userType);
-      console.log('allAdminIds:', allAdminIds);
       const allAdminObjectIds = allAdminIds.map(
         (id) => new mongoose.Types.ObjectId(id),
       );
@@ -293,8 +290,6 @@ export class RolesService {
       //   //   },
       //   // },
       // ]);
-
-      console.log("'roles:", roles);
       return {
         success: true,
         message: 'Roles Fetched Successfully!',
