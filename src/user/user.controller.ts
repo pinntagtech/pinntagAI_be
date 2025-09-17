@@ -180,6 +180,23 @@ export class UserController {
     }
   }
 
+  @Post('remove/profilePhoto')
+  @UseGuards(JwtGuard2)
+  async removeProfilePhoto(
+    @Req() req: Request,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.userService.removeProfilePhoto(user.id);
+    if (result.success) {
+      return {
+        message: result.message,
+        user: result.user,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Post('update/profile')
   @UseGuards(UserGuard)
   async updateProfile(
