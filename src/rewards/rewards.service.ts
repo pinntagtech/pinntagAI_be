@@ -452,6 +452,7 @@ export class RewardsService {
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
           reward.drivePath.toString(),
+          '',
           images,
         );
       }
