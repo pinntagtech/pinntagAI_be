@@ -303,7 +303,7 @@ export class StripeService {
     priceId: string;
     successUrl: string;
     cancelUrl: string;
-    couponId?: string;
+    couponCode?: string;
     promotionCode?: string;
   }): Promise<{ url: string }> {
     const {
@@ -311,7 +311,7 @@ export class StripeService {
       priceId,
       successUrl,
       cancelUrl,
-      couponId,
+      couponCode,
       promotionCode,
     } = params;
 
@@ -329,8 +329,8 @@ export class StripeService {
     }
 
     let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
-    if (couponId) {
-      discounts = [{ coupon: couponId }];
+    if (couponCode) {
+      discounts = [{ coupon: couponCode }];
     } else if (promotionCode) {
       discounts = [{ promotion_code: promotionCode }];
     }
