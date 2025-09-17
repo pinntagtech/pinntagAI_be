@@ -193,12 +193,14 @@ export class DriveController {
   async multiImageUpload(
     @Req() req: Request,
     @Body('locationId') locationId: string,
+    @Body('existingFiles') existingFiles: string,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     const result = this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
+      existingFiles,
       images,
     );
     // if (result.success) {

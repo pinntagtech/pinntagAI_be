@@ -6405,6 +6405,7 @@ export class EventService2 {
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
           String(event.drivePath),
+          '',
           images,
         );
       }
@@ -7542,6 +7543,7 @@ export class EventService2 {
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
           String(event.drivePath),
+          '',
           images,
         );
       }
