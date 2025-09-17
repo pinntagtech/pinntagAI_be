@@ -54,6 +54,7 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from './models/subscription-price.model';
+import { Refferal, RefferalSchema } from './models/refferal.model';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import {
       { name: IapReceipt.name, schema: IapReceiptSchema },
       { name: IapNotificationLog.name, schema: IapNotificationLogSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
+       { name: Refferal.name, schema: RefferalSchema },
     ]),
   ],
   controllers: [

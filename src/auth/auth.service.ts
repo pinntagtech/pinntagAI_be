@@ -1815,7 +1815,7 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('6895c4b3840f1dfbe52db8f9'),
+          // 'event._id': new mongoose.Types.ObjectId('68ca8493ad93013d8aad60b3'),
           'event.status': EventStatus.PUBLISHED,
           'event.isDisabled': false,
           ...match,

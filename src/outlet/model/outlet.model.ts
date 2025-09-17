@@ -149,6 +149,8 @@ export class Outlet {
   openingTime: Date;
   @Prop()
   closingTime: Date;
+  @Prop({ default: false })
+  isDeleted: boolean;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);
