@@ -48,7 +48,7 @@ export class StripeController {
       businessId: user.businessProfile,
       priceId: dto.priceId,
       couponCode: dto.couponCode,
-      promotionCode: dto.promotionCode,
+      // promotionCode: dto.promotionCode,
       successUrl,
       cancelUrl,
     });

@@ -17,7 +17,7 @@ export class CreateCheckoutDto {
   @IsString()
   couponCode?: string; // Optional coupon/referral at checkout
 
-  @IsOptional()
-  @IsString()
-  promotionCode?: string; // Optional promotion code at checkout
+  // @IsOptional()
+  // @IsString()
+  // promotionCode?: string; // Optional promotion code at checkout
 }

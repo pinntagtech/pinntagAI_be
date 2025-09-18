@@ -552,6 +552,7 @@ export class OutletService {
           ...match,
           // creator: new mongoose.Types.ObjectId(userDetails._id),
           business: new mongoose.Types.ObjectId(user.businessProfile),
+          isDeleted: false,
         })
         .populate({
           path: 'manager',
@@ -887,4 +888,46 @@ export class OutletService {
       };
     }
   }
+
+  async deleteOutlet(id: string, user: any) {
+    try {
+      const businessUser = await this.businessUserModel.findById(user.id);
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      const outlet = await this.outletModel.findById(id);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found!',
+        };
+      }
+      await this.outletModel.findByIdAndUpdate(
+        id,
+        { isDeleted: true },
+        { new: true },
+      );
+      await this.businessUserModel.updateMany(
+        { assignedOutlets: outlet._id },
+        { $pull: { assignedOutlets: outlet._id } },
+      );
+      await this.businessModel.updateOne(
+        { _id: outlet.business },
+        { $pull: { outlets: outlet._id } },
+      );  
+      return {
+        success: true,
+        message: 'Outlet deleted successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
 }

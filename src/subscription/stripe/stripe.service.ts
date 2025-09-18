@@ -32,6 +32,7 @@ import {
 import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
+import { Refferal, RefferalDocument } from '../models/refferal.model';
 
 @Injectable()
 export class StripeService {
@@ -46,8 +47,8 @@ export class StripeService {
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(WebhookSnapshot.name)
     private readonly webhookSnapshotModel: Model<WebhookSnapshotDocument>,
-    @InjectModel(SubscriptionPrice.name)
-    private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(SubscriptionPrice.name) private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(Refferal.name) private readonly refferalModel: Model<RefferalDocument>,
   ) {}
 
   public constructEventFromPayload(
@@ -304,7 +305,7 @@ export class StripeService {
     successUrl: string;
     cancelUrl: string;
     couponCode?: string;
-    promotionCode?: string;
+    // promotionCode?: string;
   }): Promise<{ url: string }> {
     const {
       businessId,
@@ -312,7 +313,6 @@ export class StripeService {
       successUrl,
       cancelUrl,
       couponCode,
-      promotionCode,
     } = params;
 
     const business = await this.businessModel.findById(businessId);
@@ -329,10 +329,24 @@ export class StripeService {
     }
 
     let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+
+
+
     if (couponCode) {
+      const referral = await this.refferalModel.findOne({ code: couponCode});
+      if (!referral) {
+        throw new BadRequestException('Invalid coupon code');
+      }
+      if(referral.isBlacklisted){
+        throw new BadRequestException('This coupon code is not valid');
+      }
+      if(referral.expiresAt && dayjs().isAfter(dayjs(referral.expiresAt))){
+        throw new BadRequestException('This coupon code has expired');
+      }
+
+      //stripe discount 
       discounts = [{ coupon: couponCode }];
-    } else if (promotionCode) {
-      discounts = [{ promotion_code: promotionCode }];
+
     }
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
