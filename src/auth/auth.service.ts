@@ -510,6 +510,8 @@ export class AuthService {
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log("Valid Token:", validToken);
+    const jwtTokenData = jwt.decode(data.oAuthToken) as any;
+    console.log("JWT Token Data:", jwtTokenData);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
