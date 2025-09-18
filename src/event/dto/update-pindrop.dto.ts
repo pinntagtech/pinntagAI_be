@@ -48,4 +48,7 @@ export class UpdatePinDropDto {
 
   @IsOptional()
   bookingSite?: string;
+
+  @IsOptional()
+  existingFiles: string;
 }
