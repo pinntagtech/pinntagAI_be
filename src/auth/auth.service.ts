@@ -125,6 +125,7 @@ import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { CommandSucceededEvent } from 'mongodb';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisBullService } from 'src/notification/redisBull.service';
+import jwt from 'jsonwebtoken'
 
 @Injectable()
 export class AuthService {
@@ -622,20 +623,21 @@ export class AuthService {
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // console.log("validToken:", validToken);
-    console.log('Apple Login Data:', data);
+    const tokenData = jwt.decode(data.oAuthToken) as any;
+    console.log('Apple Login Data:', tokenData);
     let user = await this.userModel
-      .findOne({ email: data.email })
+      .findOne({ email: tokenData.email })
       .populate('role', '_id name')
       .exec();
     if (!user) {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
       user = await this.userModel.create({
         role: role._id,
-        firstName: data.name ? data.name.split(' ')[0] : '',
-        lastName: data.name ? data.name.split(' ')[1] : '',
-        name: data.name,
-        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
-        email: data.email,
+        firstName: tokenData.name ? tokenData.name.split(' ')[0] : '',
+        lastName: tokenData.name ? tokenData.name.split(' ')[1] : '',
+        name: tokenData.name,
+        profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
+        email: tokenData.email,
         isEmailVerified: true,
         isOAuth: true,
         oAuthProvider: 'apple',
