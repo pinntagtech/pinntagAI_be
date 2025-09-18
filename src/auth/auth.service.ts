@@ -509,6 +509,7 @@ export class AuthService {
 
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    console.log("Valid Token:", validToken);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -517,6 +518,9 @@ export class AuthService {
     // });
 
     // const payload = ticket.getPayload();
+
+
+
     const email = validToken.email;
     let user = await this.userModel.findOne({ email }).exec();
     if (!user) {
