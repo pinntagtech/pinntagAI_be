@@ -125,7 +125,7 @@ import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { CommandSucceededEvent } from 'mongodb';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisBullService } from 'src/notification/redisBull.service';
-import jwt from 'jsonwebtoken'
+import jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -510,9 +510,9 @@ export class AuthService {
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     console.log('Google Login Data:', data);
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    console.log("Valid Token:", validToken);
+    console.log('Valid Token:', validToken);
     const jwtTokenData = jwt.decode(data.oAuthToken) as any;
-    console.log("JWT Token Data:", jwtTokenData);
+    console.log('JWT Token Data:', jwtTokenData);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -522,20 +522,21 @@ export class AuthService {
 
     // const payload = ticket.getPayload();
 
-
-
     const email = validToken.email;
     let user = await this.userModel.findOne({ email }).exec();
     if (!user) {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
+      let firstName = '';
       let lastName = '';
+
       if (data.name) {
-        const name = data.name.split(' ');
-        lastName = name.length > 1 ? name[1] : '';
+        const nameParts = data.name.trim().split(/\s+/); // split on spaces
+        firstName = nameParts[0] || '';
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''; // everything after first name
       }
       user = await this.userModel.create({
         role: role._id,
-        firstName: data.name ? data.name.split(' ')[0] : '',
+        firstName,
         lastName,
         name: data.name ? data.name : '',
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
