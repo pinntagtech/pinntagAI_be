@@ -179,6 +179,7 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
+import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 
 @Module({
   imports: [
@@ -284,6 +285,7 @@ import {
     AuthService,
     SmsService,
     RedisBullService,
+    AppsOnAirLinkService,
     // BusinessService,
   ],
 })
