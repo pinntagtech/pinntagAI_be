@@ -5867,7 +5867,7 @@ export class AuthService {
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
         { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
       ];
     }
 
@@ -6099,7 +6099,7 @@ export class AuthService {
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
         { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
       ];
 
       const categories = await this.categoryModel.find();
