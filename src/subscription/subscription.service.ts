@@ -101,7 +101,7 @@ export class SubscriptionService {
         // Step 2: Lookup features
         {
           $lookup: {
-            from: 'features', // collection name in MongoDB
+            from: 'featurelimits', // collection name in MongoDB
             localField: 'features',
             foreignField: '_id',
             as: 'features',
@@ -120,7 +120,11 @@ export class SubscriptionService {
             as: 'prices',
             pipeline: [
               {
-                $match: { billingInterval: billingInterval ? billingInterval : 'monthly' }, 
+                $match: {
+                  billingInterval: billingInterval
+                    ? billingInterval
+                    : 'monthly',
+                },
               },
               {
                 $project: {
