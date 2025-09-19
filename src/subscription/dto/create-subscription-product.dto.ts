@@ -31,4 +31,7 @@ export class CreateSubscriptionProductDto {
 
   @IsOptional()
   stripeProductId?: string;
+
+  @IsOptional()
+  isRecommended?: boolean;
 }

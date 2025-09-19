@@ -41,6 +41,9 @@ export class SubscriptionProduct extends Document {
     ref: 'SubscriptionPrice',
   })
   prices: mongoose.Types.ObjectId[]; // Array of SubscriptionPrice IDs
+
+  @Prop({ default: false })
+  isRecommended: boolean; // Whether this product is recommended
 }
 
 export const SubscriptionProductSchema =
