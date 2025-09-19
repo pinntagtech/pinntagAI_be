@@ -1142,7 +1142,9 @@ export class DriveService {
       if (existingFileIds && existingFileIds.length > 0) {
         let existingFileIdsArray = existingFileIds.split(',');
         oldFileQuery['_id'] = {
-          $nin: existingFileIdsArray.map((id) => new mongoose.Types.ObjectId(id)),
+          $nin: existingFileIdsArray.map(
+            (id) => new mongoose.Types.ObjectId(id),
+          ),
         };
       }
       console.log('Existing valid Object IDs:', existingFileIds);
@@ -1339,6 +1341,31 @@ export class DriveService {
       return { success: false, message: 'Failed to delete file' };
     }
   }
+
+  async softDeleteFile(id: string, user: DecodedUser) {
+    try {
+      if (!isValidObjectId(id)) {
+        return { success: false, message: 'Invalid file ID' };
+      }
+      const file = await this.fileModel.findById(id);
+      if (!file) {
+        return { success: false, message: 'File not found' };
+      }
+
+      // Soft delete by setting isDeleted to true
+      file.isDeleted = true;
+      await file.save();
+
+      return {
+        success: true,
+        message: 'File soft deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error while soft deleting file:', error);
+      return { success: false, message: 'Failed to soft delete file' };
+    }
+  }
+
   async deleteFolder(id: string, user: DecodedUser) {
     try {
       if (!isValidObjectId(id)) {

@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { FirebaseDynamicLinks } from 'firebase-dynamic-links';
+import { AppsOnAirLinkService } from './appsonair.service';
 
 @Injectable()
 export class DynamicLinkService {
   private firebaseDynamicLinks: FirebaseDynamicLinks;
-  constructor() {
+  constructor(
+    private readonly appsOnAirService: AppsOnAirLinkService
+  ) {
     this.firebaseDynamicLinks = new FirebaseDynamicLinks(
       process.env.FIREBASE_API_KEY,
     );
@@ -19,7 +22,12 @@ export class DynamicLinkService {
       businessName: string;
       // date: string;
     },
+    provider: 'firebase' | 'appsonair' = 'appsonair'
   ) {
+     if (provider === 'appsonair') {
+      return this.appsOnAirService.generateShortLink(longUrl, event);
+    }
+
     const { title, description, imageUrl, businessName } = event;
     const { shortLink, previewLink } =
       await this.firebaseDynamicLinks.createLink({

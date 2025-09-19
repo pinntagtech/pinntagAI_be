@@ -32,7 +32,7 @@ export class AppController {
     const cached = await this.cacheManager.get('categories');
     if (cached) {
       console.log('✅ Returning categories from Redis');
-      return {categories: cached};
+      return { categories: cached };
     }
 
     // 2. If not in Redis, call the service
@@ -90,6 +90,26 @@ export class AppController {
     const tags = await this.appService.getTags(id);
     return {
       tags,
+    };
+  }
+
+  @Get('countryCodes')
+  @UseGuards(RateLimitGuard)
+  async getCountryCodes() {
+    const cached = await this.cacheManager.get('countryCodes');
+    if (cached) {
+      console.log('✅ Returning country codes from Redis');
+      return { countryCodes: cached };
+    }
+    const countryCodes = await this.appService.getCountryCodes();
+    await this.cacheManager.set(
+      'countryCodes',
+      countryCodes,
+      REDIS_TTL.ONEWEEK,
+    );
+    console.log('📦 Cached country codes in Redis');
+    return {
+      countryCodes,
     };
   }
 }

@@ -47,6 +47,9 @@ export class File {
   parentType: string;
   @Prop({ default: 'file' })
   entity: string;
+
+  @Prop({default: false})
+  isDeleted: boolean;
 }
 
 export const FileSchema = SchemaFactory.createForClass(File);
