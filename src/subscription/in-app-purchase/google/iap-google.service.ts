@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { androidpublisher_v3, auth } from '@googleapis/androidpublisher';
 import { GooglePurchase } from 'src/subscription/in-app-purchase/google/google-purchase.model';
 import { IapReceipt } from 'src/subscription/models/iap-receipt.model';
@@ -11,12 +11,13 @@ import {
   SubscriptionServiceType,
 } from '../iap.config';
 import { Subscription } from 'src/subscription/models/subscription.model';
-import { SubscriptionStatus } from 'src/enums/user.enum';
+import { SubscriptionSource, SubscriptionStatus } from 'src/enums/user.enum';
 import { Types } from 'mongoose';
 import { GoogleApiService } from './google-api.service';
 import { GooglePubSubMessageDto } from './google-pub-sub.dto';
 import { IapNotificationLog } from 'src/subscription/models/iap-notification-log.model';
 import { Transaction } from 'src/subscription/models/transaction.model';
+import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 
 @Injectable()
 export class GoogleIAPService {
@@ -30,6 +31,8 @@ export class GoogleIAPService {
     @InjectModel(Transaction.name) private transactionModel: Model<Transaction>,
     @InjectModel(Subscription.name)
     private subscriptionModel: Model<Subscription>,
+    @InjectModel(SubscriptionProduct.name)
+    private subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(IapNotificationLog.name)
     private iapNotificationLogModel: Model<IapNotificationLog>,
 
@@ -303,6 +306,15 @@ export class GoogleIAPService {
     let notificationType: string;
     let googleResponse: any = null;
 
+    const foundProduct = await this.subscriptionProductModel.findOne({
+      googleProductId: productId,
+    });
+    if (!foundProduct) {
+      this.logger.warn(
+        `No subscription product found for Google ID: ${productId}`,
+      );
+      throw new Error('Unknown product ID from Google notification');
+    }
     if (subscriptionNotification) {
       purchaseToken = subscriptionNotification.purchaseToken;
       productId = subscriptionNotification.subscriptionId;
@@ -343,7 +355,7 @@ export class GoogleIAPService {
     const eventTime = parseInt(notification.eventTimeMillis || '0');
     if (purchaseToken) {
       const recentTxn = await this.transactionModel.findOne({
-        platform: 'google',
+        platform: SubscriptionSource.GOOGLE,
         purchaseToken,
         eventTime,
       });
@@ -384,7 +396,7 @@ export class GoogleIAPService {
       case 'SUBSCRIPTION_PURCHASED': {
         // New subscription started
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.productId = productId;
+        subscription.productId = new mongoose.Types.ObjectId(foundProduct.id);
         subscription.autoRenew = true;
         // Set expiration from Google API response
         // Google API (purchases.subscriptions.get) returns an "expiryTimeMillis"
@@ -475,7 +487,7 @@ export class GoogleIAPService {
 
     // Record the transaction/event in our Transaction collection
     await this.transactionModel.create({
-      platform: 'google',
+      platform: SubscriptionSource.GOOGLE,
       purchaseToken,
       eventTime,
       type: notificationType,

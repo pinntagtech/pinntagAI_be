@@ -24,7 +24,7 @@ import {
   SubscriptionDocument,
 } from 'src/subscription/models/subscription.model';
 import dayjs from 'dayjs';
-import { SubscriptionStatus } from 'src/enums/user.enum';
+import { SubscriptionSource, SubscriptionStatus } from 'src/enums/user.enum';
 import {
   WebhookSnapshot,
   WebhookSnapshotDocument,
@@ -89,10 +89,10 @@ export class StripeService {
   }
 
   async findAllSubscriptions(): Promise<Subscription[]> {
-    return this.subscriptionModel
+    return await this.subscriptionModel
       .find()
       .populate('user')
-      .populate('businessProfile')
+      .populate('business')
       .populate('product')
       .populate('transaction')
       .exec();
@@ -473,7 +473,7 @@ export class StripeService {
           business: new mongoose.Types.ObjectId(businessId),
           status: TransactionStatus.PENDING,
           subscription: internalSub._id, // <-- use internal subscription _id
-          provider: SubscriptionServiceTypes.STRIPE,
+          platform: SubscriptionSource.STRIPE,
           transactionDate: new Date(
             (invoice.created ?? Date.now() / 1000) * 1000,
           ),
@@ -528,7 +528,7 @@ export class StripeService {
             : undefined,
         },
         $setOnInsert: {
-          provider: SubscriptionServiceTypes.STRIPE,
+          platform: SubscriptionSource.STRIPE,
           stripeSubscriptionId: subscriptionId,
         },
       },
@@ -874,6 +874,7 @@ export class StripeService {
               return;
             }
             await this.transactionModel.create({
+              platform: SubscriptionSource.STRIPE,
               description: 'Subscription payment',
               amount: (latestInvoice.amount_paid / 100).toFixed(2),
               currency: latestInvoice.currency,
@@ -885,12 +886,12 @@ export class StripeService {
                     ) || existingLocationCount
                   : 1,
               user: user._id,
-              businessProfile: new mongoose.Types.ObjectId(businessProfile),
+              business: new mongoose.Types.ObjectId(businessProfile),
               status: TransactionStatus.SUCCESS,
-              transactionId: latestInvoice.id,
+              stripeInvoiceId: latestInvoice.id,
               subscription: new mongoose.Types.ObjectId(dbSubscriptionId),
               stripeSubscription: latestInvoice.subscription as any,
-              invoicePdf: latestInvoice.invoice_pdf,
+              invoiceFileUrl: latestInvoice.invoice_pdf,
               isForProrate: this.isInvoiceProrate(latestInvoice),
               stripeLogs: event,
               startDate: new Date(subscription.current_period_start * 1000),
@@ -966,6 +967,7 @@ export class StripeService {
               failedInvoice.subscription.toString(),
             );
             await this.transactionModel.create({
+              platform: SubscriptionSource.STRIPE,
               description: 'Subscription payment',
               amount: (failedInvoice.amount_paid / 100).toFixed(2),
               currency: failedInvoice.currency,
@@ -977,12 +979,12 @@ export class StripeService {
                     )
                   : 1,
               user: failedUser._id,
-              businessProfile: new mongoose.Types.ObjectId(businessProfileId),
+              business: new mongoose.Types.ObjectId(businessProfileId),
               status: TransactionStatus.FAILED,
-              transactionId: failedInvoice.id,
+              stripeInvoiceId: failedInvoice.id,
               subscription: new mongoose.Types.ObjectId(dbSubscriptionId),
-              stripeSubscription: failedInvoice.subscription as any,
-              invoicePdf: failedInvoice.invoice_pdf,
+              stripeSubscriptionId: failedInvoice.subscription as any,
+              invoiceFileUrl: failedInvoice.invoice_pdf,
               isForProrate: this.isInvoiceProrate(failedInvoice),
               stripeLogs: event,
               startDate: new Date(

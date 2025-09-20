@@ -1,27 +1,31 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { TransactionStatus } from 'src/enums/auth.enums';
+import { SubscriptionSource } from 'src/enums/user.enum';
 
 @Schema({ timestamps: true })
 export class Transaction extends Document {
+  // ─────────────────────────────────────────────────────────────
+  // CORE IDENTIFIERS & RELATIONSHIPS
+  // ─────────────────────────────────────────────────────────────
   @Prop()
   description: string;
 
   @Prop()
-  amount: number;
-
-  @Prop()
-  currency: string;
-
-  @Prop()
-  quantity: number;
+  transactionId: string;
 
   @Prop({ ref: 'User' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({ ref: 'BusinessProfile' })
-  businessProfile: mongoose.Types.ObjectId;
+  @Prop({ ref: 'Business' })
+  business: mongoose.Types.ObjectId;
 
+  @Prop({ ref: 'Subscription' })
+  subscription: mongoose.Types.ObjectId;
+
+  // ─────────────────────────────────────────────────────────────
+  // STATUS / PLATFORM
+  // ─────────────────────────────────────────────────────────────
   @Prop({
     enum: [
       TransactionStatus.PENDING,
@@ -31,23 +35,35 @@ export class Transaction extends Document {
   })
   status: number;
 
-  @Prop()
-  transactionId: string;
+  @Prop({ default: true })
+  success: boolean;
 
-  @Prop({ ref: 'Subscription' })
-  subscription: mongoose.Types.ObjectId;
+  @Prop({ enum: SubscriptionSource })
+  platform: SubscriptionSource; // 'stripe' | 'apple' | 'google'
+
+  // ─────────────────────────────────────────────────────────────
+  // MONEY / QUANTITY
+  // ─────────────────────────────────────────────────────────────
+  @Prop()
+  amount: number;
+
+  @Prop()
+  amountMinor: number; // Amount in minor units (e.g., cents)
+
+  @Prop()
+  currency: string;
+
+  @Prop()
+  quantity: number;
 
   @Prop()
   isForProrate: boolean;
 
-  @Prop({ enum: ['stripe', 'apple', 'google'], required: true })
-  provider: string; // Platform of the transaction: "stripe", "apple", or "google"
-
+  // ─────────────────────────────────────────────────────────────
+  // DATES / TIMESTAMPS
+  // ─────────────────────────────────────────────────────────────
   @Prop({ default: Date.now })
-  transactionDate: Date; // Date/time the transaction occurred (payment timestamp)
-
-  @Prop({ default: true })
-  success: boolean;
+  transactionDate: Date; // Payment timestamp
 
   @Prop()
   startDate?: Date;
@@ -56,32 +72,14 @@ export class Transaction extends Document {
   endDate?: Date;
 
   @Prop()
-  stripeInvoiceId?: string; // Stripe Invoice ID (for Stripe transactions)
-
-  @Prop({ type: mongoose.Types.ObjectId, ref: 'AppleReceipt' })
-  appleReceipt?: mongoose.Types.ObjectId | any; // Reference to AppleReceipt (for Apple transactions)
+  purchaseDate?: Date;
 
   @Prop()
-  appleTransactionId?: string; // The specific Apple transactionId for this payment (from receipt)
+  processedAt: Date;
 
-  @Prop({ type: mongoose.Types.ObjectId, ref: 'GooglePurchase' })
-  googlePurchase?: mongoose.Types.ObjectId | any; // Reference to GooglePurchase (for Google transactions)
-
-  @Prop()
-  googleOrderId?: string; // Google Order ID of this transaction (if available)
-
-  @Prop()
-  platform: string; // 'stripe' | 'apple' | 'google'
-
-  @Prop()
-  purchaseToken?: string; // Google purchaseToken or Stripe charge ID
-
-  @Prop()
-  notificationUUID?: string; // Apple notificationUUID
-
-  @Prop()
-  eventTime?: number; // Google event timestamp (ms)
-
+  // ─────────────────────────────────────────────────────────────
+  // PRODUCT / EVENT TYPE METADATA
+  // ─────────────────────────────────────────────────────────────
   @Prop()
   type: string; // e.g., INITIAL_BUY, SUBSCRIPTION_RENEWED, etc.
 
@@ -91,11 +89,53 @@ export class Transaction extends Document {
   @Prop()
   productId?: string;
 
+  // ─────────────────────────────────────────────────────────────
+  // ARTIFACTS / FILES
+  // ─────────────────────────────────────────────────────────────
   @Prop()
-  purchaseDate?: Date;
+  invoiceFileUrl?: string; // URL to the invoice PDF or receipt
+
+  // ─────────────────────────────────────────────────────────────
+  // CROSS-PLATFORM TOKENS / MISC
+  // ─────────────────────────────────────────────────────────────
+  @Prop()
+  purchaseToken?: string; // Google purchaseToken or Stripe charge ID
 
   @Prop()
-  processedAt: Date;
+  notificationUUID?: string; // Apple notificationUUID
+
+  // ─────────────────────────────────────────────────────────────
+  // STRIPE-SPECIFIC
+  // ─────────────────────────────────────────────────────────────
+  @Prop()
+  stripeInvoiceId?: string; // Stripe Invoice ID
+
+  @Prop()
+  stripeSubscriptionId: string; // Stripe Subscription ID
+
+  @Prop({ type: mongoose.Schema.Types.Mixed })
+  stripeLogs?: any; // Raw Stripe event data (for debugging)
+
+  // ─────────────────────────────────────────────────────────────
+  // APPLE-SPECIFIC
+  // ─────────────────────────────────────────────────────────────
+  @Prop({ type: mongoose.Types.ObjectId, ref: 'AppleReceipt' })
+  appleReceipt?: mongoose.Types.ObjectId | any; // Reference to AppleReceipt
+
+  @Prop()
+  appleTransactionId?: string; // Apple transactionId for this payment
+
+  // ─────────────────────────────────────────────────────────────
+  // GOOGLE-SPECIFIC
+  // ─────────────────────────────────────────────────────────────
+  @Prop({ type: mongoose.Types.ObjectId, ref: 'GooglePurchase' })
+  googlePurchase?: mongoose.Types.ObjectId | any; // Reference to GooglePurchase
+
+  @Prop()
+  googleOrderId?: string; // Google Order ID of this transaction
+
+  @Prop()
+  eventTime?: number; // Google event timestamp (ms)
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
