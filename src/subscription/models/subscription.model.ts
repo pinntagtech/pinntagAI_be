@@ -5,7 +5,8 @@ import { SubscriptionSource, SubscriptionStatus } from 'src/enums/user.enum';
 
 export enum SubscriptionServiceType {
   STRIPE = 'stripe',
-  IN_APP = 'inApp',
+  APPLE = 'apple',
+  GOOGLE = 'google',
 }
 
 @Schema({ timestamps: true })
@@ -68,8 +69,8 @@ export class Subscription extends Document {
   @Prop()
   purchaseToken?: string;
 
-  @Prop()
-  productId: string;
+  @Prop({ ref: 'SubscriptionProduct' })
+  productId: mongoose.Types.ObjectId; // Reference to SubscriptionProduct
 
   @Prop()
   autoRenew?: boolean;

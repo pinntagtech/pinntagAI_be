@@ -75,6 +75,7 @@ export enum SubscriptionStatus {
   IN_GRACE_PERIOD = 'in_grace_period', // subscription is in grace period (Apple-specific)
   FULFILLED = 'fulfilled', // one-time purchase fulfilled (if we track one-time purchases as subscriptions)
   VOIDED = 'voided', // purchase was voided (refund)
+  REVOKED = 'revoked', // subscription was revoked (Apple-specific)
 }
 
 export enum SubscriptionSource {
