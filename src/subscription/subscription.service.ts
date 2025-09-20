@@ -91,10 +91,23 @@ export class SubscriptionService {
       return { success: false, message: 'Something went wrong' };
     }
   }
+  featureLabels: Record<string, (v: string) => string> = {
+  aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
+  aiText:  (v) => v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`,
+  contentCreation: (v) => `${v} Content Creation`,
+  dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
+  locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
+  templates: (v) => v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
+  analytics: (v) => `${v} Analytics`,
+  regions: (v) => v === 'enabled' ? 'Regions Enabled' : 'Regions Disabled',
+  roles: (v) => v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled',
+  departments: (v) => v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
+  storage: (v) => `${v}GB Storage`,
+};
 
   async getProducts(billingInterval?: string) {
     try {
-      const products = this.subscriptionProductModel.aggregate([
+      const products = await this.subscriptionProductModel.aggregate([
         // Step 1: Match only active products
         { $match: { isActive: true } },
 
@@ -149,7 +162,22 @@ export class SubscriptionService {
         // Step 5: Sort
         { $sort: { createdAt: -1 } },
       ]);
-      return products;
+
+      const enrichedProducts = products.map((product) => {
+        const enrichedFeatures = product.features.map((feature) => {
+          const label = this.featureLabels[feature.key];
+          return {
+            ...feature,
+            label: label ? label(feature.value) : feature.value,
+          };
+        });
+        return {
+          ...product,
+          features: enrichedFeatures,
+        };
+      });
+
+      return enrichedProducts;
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];
