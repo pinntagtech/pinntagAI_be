@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
@@ -96,8 +97,12 @@ export class SubscriptionController {
 
   @Get('products')
   @UseGuards(JwtGuard2)
-  async getProducts() {
-    const result = await this.subscriptionService.getProducts();
+  async getProducts(
+    @Query('billingInterval') billingInterval: string,
+  ) {
+    const result = await this.subscriptionService.getProducts(
+      billingInterval,
+      );
     return {
       message: 'Subscription products',
       data: result,

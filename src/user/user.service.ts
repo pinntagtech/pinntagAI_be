@@ -491,6 +491,25 @@ export class UserService {
       user,
     };
   }
+  async removeProfilePhoto(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+    user.profilePhoto =
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+user+logo.png';
+    user.thumbnail =
+      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+user+logo.png';
+    await user.save();
+    return {
+      success: true,
+      message: 'Profile photo removed successfully',
+      user,
+    };
+  }
 
   async updateProfile(userId: string, data: UpdateProfileDto) {
     const user = await this.userModel

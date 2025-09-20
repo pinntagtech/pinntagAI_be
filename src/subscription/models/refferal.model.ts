@@ -1,11 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { User } from '../../user/models/user.model';
+import { Document } from 'mongoose';
 
 export type RefferalDocument = Refferal & mongoose.Document;
 @Schema({ timestamps: true })
 export class Refferal {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   code: string;
 
   @Prop({ required: true, default: 20 })
@@ -19,6 +20,15 @@ export class Refferal {
 
   @Prop({ default: false })
   isBlacklisted: boolean;
+
+  @Prop({ enum: Object.values(['promotion', 'coupon']) })
+  refferalType: string;
+
+  @Prop()
+  expiresAt: Date;
+
+  @Prop()
+  maxUses: number;
 }
 
 export const RefferalSchema = SchemaFactory.createForClass(Refferal);

@@ -41,7 +41,6 @@ export class SubscriptionService {
     const subscriptions = await this.subscriptionModel
       .find({
         business: new mongoose.Types.ObjectId(user.businessProfile),
-        
       })
       .populate('product', '-createdAt -updatedAt -__v')
       .populate('transaction', TransactionPopulates.FOREIGN)
@@ -55,6 +54,7 @@ export class SubscriptionService {
         name: data.name,
         description: data.description,
         createdBy: new mongoose.Types.ObjectId(user.id),
+        isRecommended: data.isRecommended || false,
       });
       const createdStripeProduct = await this.stripeService.createProduct(
         data.name,
@@ -92,7 +92,69 @@ export class SubscriptionService {
     }
   }
 
-  async getProducts() {
+  async getProducts(billingInterval?: string) {
+    try {
+      const products = this.subscriptionProductModel.aggregate([
+        // Step 1: Match only active products
+        { $match: { isActive: true } },
+
+        // Step 2: Lookup features
+        {
+          $lookup: {
+            from: 'featurelimits', // collection name in MongoDB
+            localField: 'features',
+            foreignField: '_id',
+            as: 'features',
+            pipeline: [
+              { $project: { key: 1, value: 1 } }, // only keep needed fields
+            ],
+          },
+        },
+
+        // Step 3: Lookup prices
+        {
+          $lookup: {
+            from: 'subscriptionprices', // collection name in MongoDB
+            localField: 'prices',
+            foreignField: '_id',
+            as: 'prices',
+            pipeline: [
+              {
+                $match: {
+                  billingInterval: billingInterval
+                    ? billingInterval
+                    : 'monthly',
+                },
+              },
+              {
+                $project: {
+                  product: 0,
+                  createdAt: 0,
+                  updatedAt: 0,
+                  __v: 0,
+                },
+              },
+            ],
+          },
+        },
+
+        // Step 4: Exclude fields from subscriptionProduct
+        {
+          $project: {
+            updatedAt: 0,
+            __v: 0,
+          },
+        },
+
+        // Step 5: Sort
+        { $sort: { createdAt: -1 } },
+      ]);
+      return products;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+
     return await this.subscriptionProductModel
       .find({ isActive: true })
       .populate('features', 'key value _id')

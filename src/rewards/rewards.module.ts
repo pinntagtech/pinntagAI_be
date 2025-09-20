@@ -169,9 +169,12 @@ import {
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
 import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
+import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: BusinessUser.name, schema: BusinessUserSchema },
@@ -267,6 +270,7 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/mod
     AuthService,
     SmsService,
     RedisBullService,
+    AppsOnAirLinkService,
   ],
 })
 export class RewardsModule {}

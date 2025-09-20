@@ -193,12 +193,14 @@ export class DriveController {
   async multiImageUpload(
     @Req() req: Request,
     @Body('locationId') locationId: string,
+    @Body('existingFiles') existingFiles: string,
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     const result = this.driveService.deleteBufferAndMultiImageUpload(
       user,
       locationId,
+      existingFiles,
       images,
     );
     // if (result.success) {
@@ -255,6 +257,24 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('softDeleteFile/:id')
+  @UseGuards(JwtGuard2)
+  async softDeleteFile(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid file ID');
+    }
+    const result = await this.driveService.softDeleteFile(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+
   @Delete('deleteFolder/:id')
   @UseGuards(JwtGuard2)
   async deleteFolder(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
@@ -304,4 +324,6 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
+
+
   }

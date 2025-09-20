@@ -125,6 +125,7 @@ import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { CommandSucceededEvent } from 'mongodb';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisBullService } from 'src/notification/redisBull.service';
+import jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -507,7 +508,11 @@ export class AuthService {
   }
 
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
+    console.log('Google Login Data:', data);
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    console.log('Valid Token:', validToken);
+    const jwtTokenData = jwt.decode(data.oAuthToken) as any;
+    console.log('JWT Token Data:', jwtTokenData);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -516,18 +521,22 @@ export class AuthService {
     // });
 
     // const payload = ticket.getPayload();
+
     const email = validToken.email;
     let user = await this.userModel.findOne({ email }).exec();
     if (!user) {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
+      let firstName = '';
       let lastName = '';
+
       if (data.name) {
-        const name = data.name.split(' ');
-        lastName = name.length > 1 ? name[1] : '';
+        const nameParts = data.name.trim().split(/\s+/); // split on spaces
+        firstName = nameParts[0] || '';
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''; // everything after first name
       }
       user = await this.userModel.create({
         role: role._id,
-        firstName: data.name ? data.name.split(' ')[0] : '',
+        firstName,
         lastName,
         name: data.name ? data.name : '',
         profilePhoto: data.profilePhoto ? data.profilePhoto : '',
@@ -622,20 +631,21 @@ export class AuthService {
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // console.log("validToken:", validToken);
-    console.log('Apple Login Data:', data);
+    const tokenData = jwt.decode(data.oAuthToken) as any;
+    console.log('Apple Login Data:', tokenData);
     let user = await this.userModel
-      .findOne({ email: data.email })
+      .findOne({ email: tokenData.email })
       .populate('role', '_id name')
       .exec();
     if (!user) {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
       user = await this.userModel.create({
         role: role._id,
-        firstName: data.name ? data.name.split(' ')[0] : '',
-        lastName: data.name ? data.name.split(' ')[1] : '',
-        name: data.name,
-        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
-        email: data.email,
+        firstName: tokenData.name ? tokenData.name.split(' ')[0] : '',
+        lastName: tokenData.name ? tokenData.name.split(' ')[1] : '',
+        name: tokenData.name,
+        profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
+        email: tokenData.email,
         isEmailVerified: true,
         isOAuth: true,
         oAuthProvider: 'apple',
@@ -1815,7 +1825,7 @@ export class AuthService {
       { $unwind: '$event' },
       {
         $match: {
-          // 'event._id': new mongoose.Types.ObjectId('6895c4b3840f1dfbe52db8f9'),
+          // 'event._id': new mongoose.Types.ObjectId('68ca8493ad93013d8aad60b3'),
           'event.status': EventStatus.PUBLISHED,
           'event.isDisabled': false,
           ...match,
@@ -5857,7 +5867,7 @@ export class AuthService {
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
         { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
       ];
     }
 
@@ -6089,7 +6099,7 @@ export class AuthService {
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
         { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
       ];
 
       const categories = await this.categoryModel.find();

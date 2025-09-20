@@ -238,9 +238,9 @@ export class DriveService {
     }
   }
 
-  async noDriveUpload(file: Express.Multer.File){
-    console.log("file::",file);
-     const s3 = await this.s3Service.s3_upload(
+  async noDriveUpload(file: Express.Multer.File) {
+    console.log('file::', file);
+    const s3 = await this.s3Service.s3_upload(
       file.buffer,
       process.env.AWS_S3_BUCKET_NAME,
       manipulateImageName(file.originalname),
@@ -250,7 +250,6 @@ export class DriveService {
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
     return url;
   }
-
 
   async createFolder(id: string, folderData: Partial<any>) {
     try {
@@ -1129,6 +1128,7 @@ export class DriveService {
   async deleteBufferAndMultiImageUpload(
     user: DecodedUser,
     locationId: string,
+    existingFileIds: string,
     images: Express.Multer.File[],
   ) {
     try {
@@ -1136,10 +1136,20 @@ export class DriveService {
       if (!isValidObjectId(locationId)) {
         return { success: false, message: 'Invalid locationId' };
       }
-      const oldFiles = await this.fileModel.find({
+      let oldFileQuery = {
         parentDirectory: new mongoose.Types.ObjectId(locationId),
-      });
-      console.log("Old files:", oldFiles);
+      };
+      if (existingFileIds && existingFileIds.length > 0) {
+        let existingFileIdsArray = existingFileIds.split(',');
+        oldFileQuery['_id'] = {
+          $nin: existingFileIdsArray.map(
+            (id) => new mongoose.Types.ObjectId(id),
+          ),
+        };
+      }
+      console.log('Existing valid Object IDs:', existingFileIds);
+      const oldFiles = await this.fileModel.find({ ...oldFileQuery });
+      console.log('Old files:', oldFiles);
       oldFiles.forEach(async (file) => {
         // Delete file from S3
         const fileUrl = file.metaData.url;
@@ -1197,16 +1207,13 @@ export class DriveService {
               `Converting mimetype of ${img.originalname} to image/jpeg`,
             );
             img.mimetype = 'image/jpeg'; // Force set mimetype
-          }
-          else if (img.mimetype.startsWith('video/')) {
+          } else if (img.mimetype.startsWith('video/')) {
             console.warn(
               `Converting mimetype of ${img.originalname} to video/mp4`,
             );
             img.mimetype = 'video/mp4'; // Force set mimetype
           } else {
-            console.warn(
-              `Unsupported mimetype of ${img.originalname}`,
-            );
+            console.warn(`Unsupported mimetype of ${img.originalname}`);
             return false;
           }
 
@@ -1334,6 +1341,31 @@ export class DriveService {
       return { success: false, message: 'Failed to delete file' };
     }
   }
+
+  async softDeleteFile(id: string, user: DecodedUser) {
+    try {
+      if (!isValidObjectId(id)) {
+        return { success: false, message: 'Invalid file ID' };
+      }
+      const file = await this.fileModel.findById(id);
+      if (!file) {
+        return { success: false, message: 'File not found' };
+      }
+
+      // Soft delete by setting isDeleted to true
+      file.isDeleted = true;
+      await file.save();
+
+      return {
+        success: true,
+        message: 'File soft deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error while soft deleting file:', error);
+      return { success: false, message: 'Failed to soft delete file' };
+    }
+  }
+
   async deleteFolder(id: string, user: DecodedUser) {
     try {
       if (!isValidObjectId(id)) {

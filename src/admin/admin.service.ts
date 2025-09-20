@@ -142,6 +142,8 @@ import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
 import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
+import { Refferal, RefferalDocument } from 'src/subscription/models/refferal.model';
+import { CreateReferralDto, UpdateReferralDto } from './dto/create-referral.dto';
 
 @Injectable()
 export class AdminService {
@@ -194,6 +196,7 @@ export class AdminService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(BusinessDocVerificationLeads.name)
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
+    @InjectModel(Refferal.name) private readonly referralModel: Model<RefferalDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -2974,4 +2977,93 @@ export class AdminService {
       };
     }
   }
+
+  async createReferral(adminId: string, data: CreateReferralDto) {
+    try {
+      const existing = await this.referralModel.findOne({ code: data.code });
+      if (existing) {
+        return { success: false, message: 'Referral code already exists.' };
+      }
+
+      const created = await this.referralModel.create({
+        ...data,
+        user: new mongoose.Types.ObjectId(data.user),
+      });
+
+      return {
+        success: true,
+        message: 'Referral created successfully.',
+        data: created,
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  async getAllReferrals() {
+    const referrals = await this.referralModel
+      .find()
+      .populate('user')
+      .populate('usedBy');
+    return {
+      success: true,
+      message: 'Referrals fetched successfully.',
+      data: referrals,
+    };
+  }
+
+  async updateReferral(id: string, data: UpdateReferralDto) {
+    try {
+      const updated = await this.referralModel.findByIdAndUpdate(
+        id,
+        { $set: data },
+        { new: true },
+      );
+      if (!updated) {
+        return { success: false, message: 'Referral not found.' };
+      }
+      return {
+        success: true,
+        message: 'Referral updated successfully.',
+        data: updated,
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  async deleteReferral(id: string) {
+    try {
+      const deleted = await this.referralModel.findByIdAndDelete(id);
+      if (!deleted) {
+        return { success: false, message: 'Referral not found.' };
+      }
+      return { success: true, message: 'Referral deleted successfully.' };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  async blacklistReferral(id: string) {
+    try {
+      const updated = await this.referralModel.findByIdAndUpdate(
+        id,
+        { $set: { isBlacklisted: true } },
+        { new: true },
+      );
+      if (!updated) {
+        return { success: false, message: 'Referral not found.' };
+      }
+      return {
+        success: true,
+        message: 'Referral blacklisted successfully.',
+        data: updated,
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+
+
 }

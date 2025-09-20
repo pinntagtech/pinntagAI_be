@@ -204,6 +204,22 @@ export class OutletController {
     }
   }
 
+  @Post('delete/:id')
+  @UseGuards(JwtGuard2)
+  async deleteOutlet(
+    @Param('id') id: string,
+    @TokenDecoder() user: JwtPayload,
+  ) {
+    const result = await this.outletService.deleteOutlet(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get('vehicleTypes')
   async fetchVehicleTypes(
     @Query('page') page: string,

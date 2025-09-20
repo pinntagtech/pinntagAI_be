@@ -8,6 +8,7 @@ import {
   Head,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -63,6 +64,10 @@ import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
+import {
+  CreateReferralDto,
+  UpdateReferralDto,
+} from './dto/create-referral.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1387,17 +1392,69 @@ export class AdminController {
     @Body('status') status: boolean,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.verifyDocument(
-      id,
-      user.id,
-      status
-    );
+    const result = await this.adminService.verifyDocument(id, user.id, status);
     if (result.success) {
       return {
         message: result.message,
       };
     } else {
       throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('referral/create')
+  @UseGuards(AdminGuard2)
+  async createReferral(
+    @Body() data: CreateReferralDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.createReferral(user.id, data);
+    if (result.success) {
+      return { message: result.message, data: result.data };
+    } else {
+      throw new BadRequestException({ message: result.message });
+    }
+  }
+
+  @Get('all')
+  @UseGuards(AdminGuard2)
+  async getAllReferrals() {
+    return this.adminService.getAllReferrals();
+  }
+
+  @Patch('update/:id')
+  @UseGuards(AdminGuard2)
+  async updateReferral(
+    @Param('id') id: string,
+    @Body() data: UpdateReferralDto,
+  ) {
+    const result = await this.adminService.updateReferral(id, data);
+    if (result.success) {
+      return { message: result.message, data: result.data };
+    } else {
+      throw new BadRequestException({ message: result.message });
+    }
+  }
+
+  @Delete('delete/:id')
+  @UseGuards(AdminGuard2)
+  async deleteReferral(@Param('id') id: string) {
+    const result = await this.adminService.deleteReferral(id);
+    if (result.success) {
+      return { message: result.message };
+    } else {
+      throw new BadRequestException({ message: result.message });
+    }
+  }
+
+  @Patch('blacklist/:id')
+  @UseGuards(AdminGuard2)
+  async blacklistReferral(@Param('id') id: string) {
+    const result = await this.adminService.blacklistReferral(id);
+    if (result.success) {
+      return { message: result.message, data: result.data };
+    } else {
+      throw new BadRequestException({ message: result.message });
     }
   }
 }
