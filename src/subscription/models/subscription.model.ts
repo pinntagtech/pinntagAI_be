@@ -74,6 +74,9 @@ export class Subscription extends Document {
 
   @Prop()
   autoRenew?: boolean;
+
+  @Prop({ default: false })
+  isFree: boolean;
 }
 
 export type SubscriptionDocument = Subscription & Document;

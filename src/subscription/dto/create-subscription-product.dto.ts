@@ -34,4 +34,7 @@ export class CreateSubscriptionProductDto {
 
   @IsOptional()
   isRecommended?: boolean;
+
+  @IsOptional()
+  isFree: boolean;
 }
