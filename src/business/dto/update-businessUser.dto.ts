@@ -17,12 +17,12 @@ export class UpdateBusinessUserDto {
   @IsString()
   name: string;
 
-  @IsOptional()
-  @IsString()
-  countryCode: string;
+  // @IsOptional()
+  // @IsString()
+  // countryCode: string;
 
-  // @IsPhoneNumber(null)
-  @IsOptional()
-  @IsString()
-  phone: string;
+  // // @IsPhoneNumber(null)
+  // @IsOptional()
+  // @IsString()
+  // phone: string;
 }

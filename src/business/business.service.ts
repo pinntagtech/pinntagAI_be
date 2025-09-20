@@ -1471,6 +1471,7 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
+      console.log("ALL USER IDS:", allUserIds);
       const users = await this.businessUserModel.aggregate([
         {
           $match: {
@@ -2186,11 +2187,16 @@ export class BusinessService {
               type as NotificationTypes,
             ),
         );
-        if (allowedNotiTypes.length === 0) {
-          await this.userAllowedNotificationModel.create({
-            user: updatedUser._id,
-            allowedNotifications: allowedNotiTypes,
-          });
+        if (allowedNotiTypes.length > 0) {
+          await this.userAllowedNotificationModel.findOneAndUpdate(
+            {
+              user: updatedUser._id,
+            },
+            {
+              $set: { allowedNotifications: allowedNotiTypes },
+            },
+            { upsert: true }
+          );
         }
       }
 
