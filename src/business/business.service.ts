@@ -1115,9 +1115,18 @@ export class BusinessService {
       }
 
       if (updateObj.cover) {
+        let profileCompletionPercentage =
+          (BusinessStatus.COVER_ADDED /
+            BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
+          100;
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.COVER_ADDED } },
+          {
+            $set: {
+              status: BusinessStatus.COVER_ADDED,
+              profileCompletionPercentage,
+            },
+          },
         );
       }
       if (updateObj.tags && updateObj.tags.length > 0) {
@@ -1300,7 +1309,6 @@ export class BusinessService {
       const user = validatedBusinessUser.user;
 
       if (loginDto.fcmToken) {
-
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
             type: TokenTypes.FCM,
@@ -1324,7 +1332,6 @@ export class BusinessService {
           });
           console.log('createdFcmToken:', createdFcmToken);
         }
-
       }
       const payload: JwtPayload = {
         id: user.id,
@@ -1471,7 +1478,7 @@ export class BusinessService {
         };
       }
       const allUserIds = await this.getAllChildUserIds2(user.id);
-      console.log("ALL USER IDS:", allUserIds);
+      console.log('ALL USER IDS:', allUserIds);
       const users = await this.businessUserModel.aggregate([
         {
           $match: {
@@ -2195,7 +2202,7 @@ export class BusinessService {
             {
               $set: { allowedNotifications: allowedNotiTypes },
             },
-            { upsert: true }
+            { upsert: true },
           );
         }
       }
@@ -4453,7 +4460,7 @@ export class BusinessService {
   ) {
     try {
       let businessID = user.businessProfile;
-      if(businessId){
+      if (businessId) {
         businessID = businessId;
       }
       const business = await this.businessModel.findById(businessID);
@@ -4480,9 +4487,19 @@ export class BusinessService {
           message: 'Failed to upload image',
         };
       }
+      let profileCompletionPercentage =
+        (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
+          BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
+        100;
       await this.businessModel.updateOne(
         { _id: business._id },
-        { addressVerificationDoc: uploadResult.data.metaData.url,addressVerificationStatus: VerificationStatus.PENDING  },
+        {
+          $set: {
+            addressVerificationDoc: uploadResult.data.metaData.url,
+            addressVerificationStatus: VerificationStatus.PENDING,
+            profileCompletionPercentage,
+          },
+        },
       );
       await this.businessDocVerificationLeadsModel.create({
         businessId: business._id,

@@ -92,18 +92,20 @@ export class SubscriptionService {
     }
   }
   featureLabels: Record<string, (v: string) => string> = {
-  aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
-  aiText:  (v) => v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`,
-  contentCreation: (v) => `${v} Content Creation`,
-  dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
-  locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
-  templates: (v) => v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
-  analytics: (v) => `${v} Analytics`,
-  regions: (v) => v === 'enabled' ? 'Regions Enabled' : 'Regions Disabled',
-  roles: (v) => v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled',
-  departments: (v) => v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
-  storage: (v) => `${v}GB Storage`,
-};
+    aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
+    aiText: (v) => (v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`),
+    contentCreation: (v) => `${v} Content Creation`,
+    dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
+    locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
+    templates: (v) =>
+      v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
+    analytics: (v) => `${v} Analytics`,
+    regions: (v) => (v === 'enabled' ? 'Regions Enabled' : 'Regions Disabled'),
+    roles: (v) => (v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled'),
+    departments: (v) =>
+      v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
+    storage: (v) => `${v}GB Storage`,
+  };
 
   async getProducts(billingInterval?: string) {
     try {
@@ -278,6 +280,15 @@ export class SubscriptionService {
       return { success: false, message: 'Something went wrong' };
     }
   }
+
+  async createFreeCheckoutSession(user: DecodedUser) {
+    try {
+    } catch (error) {
+      console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+
   // async findAll(user: DecodedUser) {
   //   return await this.subscriptionModel
   //     .find({

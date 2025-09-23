@@ -293,6 +293,9 @@ export class Business {
   @Prop()
   uniqueId: string;
 
+  @Prop({default:0})
+  profileCompletionPercentage: number;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }

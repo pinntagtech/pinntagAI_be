@@ -55,6 +55,7 @@ export class AppsOnAirLinkService {
     },
   ): Promise<AppLinkResponse> {
     const { title, description, imageUrl, businessName } = event;
+    console.log('Generating AppsOnAir link for URL:', longUrl);
 
     const appLinkParams: AppLinkParams = {
       url: longUrl,

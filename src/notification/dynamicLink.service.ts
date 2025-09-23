@@ -22,7 +22,7 @@ export class DynamicLinkService {
       businessName: string;
       // date: string;
     },
-    provider: 'firebase' | 'appsonair' = 'firebase'
+    provider: 'firebase' | 'appsonair' = 'appsonair'
   ) {
      if (provider === 'appsonair') {
       return this.appsOnAirService.generateShortLink(longUrl, event);
