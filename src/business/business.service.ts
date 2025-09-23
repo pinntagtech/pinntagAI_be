@@ -132,7 +132,7 @@ import { Rating, RatingDocument } from './model/rating.model';
 
 import csv from 'csv-parser';
 import * as streamifier from 'streamifier';
-import { haversineDistance } from 'src/helpers/event.helpers';
+import { currentDateTz, haversineDistance } from 'src/helpers/event.helpers';
 import { Menu } from './model/menu.model';
 import { UserAllowedNotification } from './model/userAllowedNotification.model';
 import {
@@ -3630,7 +3630,52 @@ export class BusinessService {
       const businessProfileId = new mongoose.Types.ObjectId(
         user.businessProfile,
       );
-      const business = await this.businessModel.findById(businessProfileId);
+      // const business = await this.businessModel.findById(businessProfileId).populate('activeSubscription');
+      const [business] = await this.businessModel.aggregate([
+        { $match: { _id: businessProfileId } },
+        {
+          $lookup: {
+            from: 'subscriptions',
+            localField: 'activeSubscription',
+            foreignField: '_id',
+            as: 'activeSubscription',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'subscriptionproducts',
+                  localField: 'product',
+                  foreignField: '_id',
+                  as: 'product',
+                },
+              },
+              { $unwind: '$product' },
+              {
+                $project: {
+                  _id: 1,
+                  source: 1,
+                  product: 1,
+                  startDate: 1,
+                  endDate: 1,
+                  status: 1,
+                  remainingDays: {
+                    $dateDiff: {
+                      startDate: currentDateTz(),
+                      endDate: '$endDate',
+                      unit: 'day',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$activeSubscription',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ]);
       if (!business) {
         return {
           success: false,
@@ -3651,6 +3696,7 @@ export class BusinessService {
         logo: business.logo,
         coverImage: business.cover,
         followersCount: followersCount.count,
+        activeSubscription: business.activeSubscription || null,
       };
 
       console.log('Active Participants:', activeParticipants);
