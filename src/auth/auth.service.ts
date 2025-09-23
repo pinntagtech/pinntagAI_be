@@ -5800,6 +5800,25 @@ export class AuthService {
                     as: 'activeSubscription',
                     pipeline: [
                       {
+                        $lookup: {
+                          from: 'subscriptionproducts',
+                          localField: 'product',
+                          foreignField: '_id',
+                          as: 'product',
+                          pipeline: [
+                            {
+                              $project: {
+                                _id: 1,
+                                name: 1,
+                                price: 1,
+                                description: 1,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      { $unwind: '$product' },
+                      {
                         $project: {
                           _id: 1,
                           source: 1,
@@ -5825,7 +5844,9 @@ export class AuthService {
                     businessIndustry: {
                       $arrayElemAt: ['$businessIndustry', 0],
                     },
-                    activeSubscription: { $arrayElemAt: ['$activeSubscription', 0] },
+                    activeSubscription: {
+                      $arrayElemAt: ['$activeSubscription', 0],
+                    },
                   },
                 },
               ],
