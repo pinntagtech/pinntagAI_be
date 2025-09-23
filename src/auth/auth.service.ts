@@ -126,6 +126,7 @@ import { CommandSucceededEvent } from 'mongodb';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisBullService } from 'src/notification/redisBull.service';
 import jwt from 'jsonwebtoken';
+import { start } from 'repl';
 
 @Injectable()
 export class AuthService {
@@ -5682,31 +5683,163 @@ export class AuthService {
           };
         }
       } else if (userType === UserTypes.BUSINESS) {
-        userDoc = await this.businessUserModel
-          .findById(userId)
-          // .populate('business  ')
-          .populate({
-            path: 'business',
-            populate: [
-              {
-                path: 'outlets',
-                model: Outlet.name,
-                select: LocationPopulates.FOREIGN,
-              },
-              {
-                path: 'initialOfferId',
-                model: Event.name,
-                select: '_id title description categories drivePath',
-              },
-              {
-                path: 'businessIndustry',
-                model: BusinessIndustry.name,
-                select: '_id title darkIcon lightIcon',
-              },
-            ],
-          })
-          .populate('role', '_id name description')
-          .lean();
+        // userDoc = await this.businessUserModel
+        //   .findById(userId)
+        //   // .populate('business  ')
+        //   .populate({
+        //     path: 'business',
+        //     populate: [
+        //       {
+        //         path: 'outlets',
+        //         model: Outlet.name,
+        //         select: LocationPopulates.FOREIGN,
+        //       },
+        //       {
+        //         path: 'initialOfferId',
+        //         model: Event.name,
+        //         select: '_id title description categories drivePath',
+        //       },
+        //       {
+        //         path: 'businessIndustry',
+        //         model: BusinessIndustry.name,
+        //         select: '_id title darkIcon lightIcon',
+        //       },
+        //     ],
+        //   })
+        //   .populate('role', '_id name description')
+        //   .lean();
+        userDoc = await this.businessUserModel.aggregate([
+          {
+            $match: { _id: new mongoose.Types.ObjectId(userId) },
+          },
+          {
+            $lookup: {
+              from: 'roles', // collection name for Role model
+              localField: 'role',
+              foreignField: '_id',
+              as: 'role',
+              pipeline: [
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    description: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: 'businesses', // collection name for Business model
+              localField: 'business',
+              foreignField: '_id',
+              as: 'business',
+              pipeline: [
+                {
+                  $lookup: {
+                    from: 'outlets', // collection name for Outlet model
+                    localField: 'outlets',
+                    foreignField: '_id',
+                    as: 'outlets',
+                    pipeline: [
+                      {
+                        $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                          (acc, field) => {
+                            acc[field] = 1;
+                            return acc;
+                          },
+                          {},
+                        ),
+                      },
+                    ],
+                  },
+                },
+                {
+                  $lookup: {
+                    from: 'events', // collection name for Event model
+                    localField: 'initialOfferId',
+                    foreignField: '_id',
+                    as: 'initialOfferId',
+                    pipeline: [
+                      {
+                        $project: {
+                          _id: 1,
+                          title: 1,
+                          description: 1,
+                          categories: 1,
+                          drivePath: 1,
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  $lookup: {
+                    from: 'businessindustries', // collection name for BusinessIndustry model
+                    localField: 'businessIndustry',
+                    foreignField: '_id',
+                    as: 'businessIndustry',
+                    pipeline: [
+                      {
+                        $project: {
+                          _id: 1,
+                          title: 1,
+                          darkIcon: 1,
+                          lightIcon: 1,
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  $lookup: {
+                    from: 'subscriptions',
+                    localField: 'activeSubscription',
+                    foreignField: '_id',
+                    as: 'activeSubscription',
+                    pipeline: [
+                      {
+                        $project: {
+                          _id: 1,
+                          source: 1,
+                          product: 1,
+                          startDate: 1,
+                          endDate: 1,
+                          status: 1,
+                          remainingDays: {
+                            $dateDiff: {
+                              startDate: currentDateTz(),
+                              endDate: '$endDate',
+                              unit: 'day',
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  $addFields: {
+                    initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                    businessIndustry: {
+                      $arrayElemAt: ['$businessIndustry', 0],
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          // {
+          //   $addFields: {
+          //     role: { $arrayElemAt: ['$role', 0] },
+          //     business: { $arrayElemAt: ['$business', 0] },
+          //   },
+          // },
+        ]);
+        userDoc = userDoc[0];
+        console.log('Business User Doc:', userDoc);
+
         if (!userDoc) {
           return {
             success: false,
