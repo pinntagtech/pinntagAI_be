@@ -395,6 +395,7 @@ export class EventService2 {
     }
     const eventUrl = `${process.env.EVENT_BASE_URL}${eventId.toString()}`;
     let eventDescription = '';
+    console.log("EVENT URLLL:",eventUrl);
     let requiredSchedule;
     //fetch the schedule whose date is greater than or equal to the current date
     const now = new Date();

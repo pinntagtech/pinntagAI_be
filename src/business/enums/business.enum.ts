@@ -10,6 +10,8 @@ export const BusinessStatus = {
   TAGS: 4, //-> Business Tags Added
   DESCRIPTION_ADDED: 5, //-> Business Description Added
   COVER_ADDED: 6, //-> Business Cover Added
+  VERIFICATION_DOCS_UPLOADED: 7,
+  VERIFICATION_DOCS_SUCCESSFULL: 8,
 };
 
 export const OfferStatus = {

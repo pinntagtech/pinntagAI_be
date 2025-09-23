@@ -109,6 +109,21 @@ export class SubscriptionController {
     };
   }
 
+
+  @Post('checkout/free')
+  @UseGuards(JwtGuard2)
+  async createFreeCheckoutSession(@TokenDecoder() user: DecodedUser) {
+    const result = await this.subscriptionService.createFreeCheckoutSession(user);
+    if (result.success) {
+      return {
+        message: 'Free checkout session created',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   // @Get()
   // @UseGuards(JwtGuard2)
   // async findAll(@TokenDecoder() user: DecodedUser) {

@@ -44,6 +44,9 @@ export class SubscriptionProduct extends Document {
 
   @Prop({ default: false })
   isRecommended: boolean; // Whether this product is recommended
+
+  @Prop({ default: false })
+  isFree: boolean;
 }
 
 export const SubscriptionProductSchema =

@@ -2954,12 +2954,14 @@ export class AdminService {
       if (
         lead.documentType === BusinessDocumentTypesList.ADDRESS_VERIFICATION
       ) {
+        
         await this.businessModel.updateOne(
           { _id: lead.businessId },
           {
             $set: {
               addressVerifiedBy: new mongoose.Types.ObjectId(adminId),
               isAddressVerified: status,
+              profileCompletionPercentage: 100,
             },
           },
         );

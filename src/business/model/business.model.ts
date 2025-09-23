@@ -64,6 +64,10 @@ export class Business {
       'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png',
   })
   logo: string;
+
+  @Prop({ ref: 'Subscription' })
+  activeSubscription: mongoose.Types.ObjectId;
+
   @Prop()
   isRegistered: boolean;
 
@@ -284,7 +288,10 @@ export class Business {
   @Prop()
   addressVerificationDoc: string;
 
-  @Prop({ enum: Object.values(VerificationStatus), default: VerificationStatus.PENDING })
+  @Prop({
+    enum: Object.values(VerificationStatus),
+    default: VerificationStatus.PENDING,
+  })
   addressVerificationStatus: string;
 
   @Prop({ ref: Admin.name })
@@ -292,6 +299,9 @@ export class Business {
 
   @Prop()
   uniqueId: string;
+
+  @Prop({ default: 0 })
+  profileCompletionPercentage: number;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

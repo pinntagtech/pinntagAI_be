@@ -10,7 +10,7 @@ import { SubscriptionProduct } from './models/subscription-product.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { Transaction } from 'src/subscription/models/transaction.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { TransactionPopulates } from 'src/enums/user.enum';
+import { SubscriptionSource, SubscriptionStatus, TransactionPopulates } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
@@ -92,18 +92,20 @@ export class SubscriptionService {
     }
   }
   featureLabels: Record<string, (v: string) => string> = {
-  aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
-  aiText:  (v) => v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`,
-  contentCreation: (v) => `${v} Content Creation`,
-  dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
-  locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
-  templates: (v) => v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
-  analytics: (v) => `${v} Analytics`,
-  regions: (v) => v === 'enabled' ? 'Regions Enabled' : 'Regions Disabled',
-  roles: (v) => v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled',
-  departments: (v) => v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
-  storage: (v) => `${v}GB Storage`,
-};
+    aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
+    aiText: (v) => (v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`),
+    contentCreation: (v) => `${v} Content Creation`,
+    dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
+    locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
+    templates: (v) =>
+      v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
+    analytics: (v) => `${v} Analytics`,
+    regions: (v) => (v === 'enabled' ? 'Regions Enabled' : 'Regions Disabled'),
+    roles: (v) => (v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled'),
+    departments: (v) =>
+      v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
+    storage: (v) => `${v}GB Storage`,
+  };
 
   async getProducts(billingInterval?: string) {
     try {
@@ -278,6 +280,42 @@ export class SubscriptionService {
       return { success: false, message: 'Something went wrong' };
     }
   }
+
+  async createFreeCheckoutSession(user: DecodedUser) {
+    try {
+      const createSubscription = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        source: SubscriptionSource.FREE,
+        startDate: new Date(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        invoiceStartDate: new Date(),
+        invoiceEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        isCancelled: false,
+        isTrialActive: false,
+        status: SubscriptionStatus.ACTIVE,
+        iapPlatform: 'none',
+      };
+      const freeSubscriptionProduct = await this.subscriptionProductModel.findOne({ isFree: true });
+      if (!freeSubscriptionProduct) {
+        return { success: false, message: 'Free subscription product not found' };
+      }
+
+      const freeSubscription = await this.subscriptionModel.create({
+        ...createSubscription,
+        product: freeSubscriptionProduct._id,
+      });
+      return { success: true, data: freeSubscription };
+    } catch (error) {
+      console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+
+  // async findAll(user: DecodedUser) {
+  //   return await this.subscriptionModel
+  //     .find({
+  //       user: new mongoose.Types.ObjectId(user.id),
+
   // async findAll(user: DecodedUser) {
   //   return await this.subscriptionModel
   //     .find({

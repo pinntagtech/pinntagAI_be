@@ -241,6 +241,7 @@ export class BusinessController {
   @Get('users')
   @UseGuards(JwtGuard2)
   async fetchUsers(
+    @Query('search') search: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
     @TokenDecoder() user: DecodedUser,
@@ -249,6 +250,7 @@ export class BusinessController {
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.businessService.getUsersList(
       user.id,
+      search,
       pageNumber,
       limitNumber,
     );
@@ -884,14 +886,22 @@ export class BusinessController {
     @Query('limit') limit: string,
     @TokenDecoder() user: DecodedUser,
     @Query('type') type: string,
+    @Query('search') search: string,
+    @Query('categories') categories: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
+    let categoriesArray = [];
+    if (categories) {
+      categoriesArray = categories.split(',').map((cat) => cat.trim());
+    }
     const result = await this.businessService.getTemplates(
       user,
       pageNumber,
       limitNumber,
       type,
+      search,
+      categoriesArray,
     );
     if (result.success) {
       return {
@@ -948,6 +958,7 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
     @Query('limit') limit: string,
     @Query('page') page: string,
+    // @Query('')
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
