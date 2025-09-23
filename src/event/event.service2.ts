@@ -395,7 +395,7 @@ export class EventService2 {
     }
     const eventUrl = `${process.env.EVENT_BASE_URL}${eventId.toString()}`;
     let eventDescription = '';
-    console.log("EVENT URLLL:",eventUrl);
+    console.log('EVENT URLLL:', eventUrl);
     let requiredSchedule;
     //fetch the schedule whose date is greater than or equal to the current date
     const now = new Date();
@@ -4844,19 +4844,20 @@ export class EventService2 {
               data.fixedSchedule[i].date = new Date(
                 data.fixedSchedule[i].date.toString(),
               );
-              // if (
-              //   new Date(data.fixedSchedule[i].date.toString()).setHours(
-              //     0,
-              //     0,
-              //     0,
-              //     0,
-              //   ) < new Date().setHours(0, 0, 0, 0)
-              // ) {
-              //   return {
-              //     success: false,
-              //     message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
-              //   };
-              // }
+              // Check if the date is in the past (comparing only the date part)
+              if (
+                new Date(data.fixedSchedule[i].date.toString()).setHours(
+                  0,
+                  0,
+                  0,
+                  0,
+                ) < new Date().setHours(0, 0, 0, 0)
+              ) {
+                return {
+                  success: false,
+                  message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
+                };
+              }
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
                 const duration = data.fixedSchedule[i].durations[j];
@@ -4869,18 +4870,24 @@ export class EventService2 {
                   let fiveMinFromNow = new Date(
                     new Date().getTime() + 5 * 60 * 1000,
                   );
-                  if (originalStart.getTime() < fiveMinFromNow.getTime()) {
-                    console.log('Start time is less than 5 minutes from now');
+                  // if (originalStart.getTime() < fiveMinFromNow.getTime()) {
+                  //   console.log('Start time is less than 5 minutes from now');
 
-                    return {
-                      success: false,
-                      message: `Start time cannot be less than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
-                    };
-                  }
+                  //   return {
+                  //     success: false,
+                  //     message: `Start time cannot be less than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
+                  //   };
+                  // }
                   if (originalEnd.getTime() <= originalStart.getTime()) {
                     return {
                       success: false,
                       message: `End time should be greater than start time for the date ${data.fixedSchedule[i].date}`,
+                    };
+                  }
+                  if (originalEnd.getTime() <= fiveMinFromNow.getTime()) {
+                    return {
+                      success: false,
+                      message: `End time should be greater than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
                     };
                   }
 
@@ -7541,7 +7548,6 @@ export class EventService2 {
         updateObj,
       );
       if (images.length > 0) {
-
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
           String(event.drivePath),
@@ -7713,7 +7719,7 @@ export class EventService2 {
       }
 
       let updateData: any = { ...data };
-      
+
       if (data.categories) {
         let splitted = [];
         splitted = data.categories.split(',');
@@ -7737,18 +7743,18 @@ export class EventService2 {
       }
       const business = await this.businessModel.findById(user.businessProfile);
 
-      if(thumbnail){
+      if (thumbnail) {
         const fileCategory = await this.fileCategoryModel.findOne({
-        name: FileCategoryTypes.GALLERY_IMAGE,
-      });
+          name: FileCategoryTypes.GALLERY_IMAGE,
+        });
 
-      let file = await this.driveService.uploadFile(
-        user.id,
-        business.drivePath.toString(),
-        fileCategory.id,
-        thumbnail,
-      );
-      updateData.thumbnail = file.data.metaData.url;
+        let file = await this.driveService.uploadFile(
+          user.id,
+          business.drivePath.toString(),
+          fileCategory.id,
+          thumbnail,
+        );
+        updateData.thumbnail = file.data.metaData.url;
       }
 
       const updatedTemplate = await this.templateModel.findOneAndUpdate(

@@ -5825,6 +5825,7 @@ export class AuthService {
                     businessIndustry: {
                       $arrayElemAt: ['$businessIndustry', 0],
                     },
+                    activeSubscription: { $arrayElemAt: ['$activeSubscription', 0] },
                   },
                 },
               ],
