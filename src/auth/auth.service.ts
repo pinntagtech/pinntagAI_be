@@ -2171,7 +2171,7 @@ export class AuthService {
           distance: 1,
           title: 1,
           // keywords: 1,
-          // description: 1,
+          description: 1,
           type: 1,
           // status: 1,
           // notifyFollowers: 1,
@@ -6095,12 +6095,38 @@ export class AuthService {
         (business) => business._id,
       );
       let match: any = {};
-      match['$or'] = [
-        { 'event.title': { $regex: search, $options: 'i' } },
-        { 'event.description': { $regex: search, $options: 'i' } },
-        { 'event.keywords': { $regex: search, $options: 'i' } },
-        // { 'event.businessProfile': { $in: businessProfileIds } },
-      ];
+
+      if (search) {
+        const searchTerms = search.trim().split(/\s+/); // Split by whitespace
+        const searchConditions = searchTerms.map((term) => ({
+          $or: [
+            { 'event.title': { $regex: `\\b${term}\\b`, $options: 'i' } },
+            {
+              'event.description': {
+                $regex: `\\b${term}\\b`,
+                $options: 'i',
+              },
+            },
+            {
+              'event.keywords': {
+                $regex: `\\b${term}\\b`,
+                $options: 'i',
+              },
+            },
+          ],
+        }));
+        match['$and'] = searchConditions;
+      }
+
+      // const searchTerm = search.trim();
+      // match['$or'] = [
+      //   { 'event.title': { $regex: `\\b${searchTerm}\\b`, $options: 'i' } },
+      //   {
+      //     'event.description': { $regex: `\\b${searchTerm}\\b`, $options: 'i' },
+      //   },
+      //   { 'event.keywords': { $regex: `\\b${searchTerm}\\b`, $options: 'i' } },
+      //   // { 'event.businessProfile': { $in: businessProfileIds } },
+      // ];
 
       const categories = await this.categoryModel.find();
       const catIds = categories.map((cat) => cat._id);

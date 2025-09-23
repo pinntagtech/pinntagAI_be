@@ -117,7 +117,7 @@ export class SubscriptionController {
     if (result.success) {
       return {
         message: 'Free checkout session created',
-        // data: result.data,
+        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);

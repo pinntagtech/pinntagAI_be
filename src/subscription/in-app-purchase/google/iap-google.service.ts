@@ -396,7 +396,7 @@ export class GoogleIAPService {
       case 'SUBSCRIPTION_PURCHASED': {
         // New subscription started
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.productId = new mongoose.Types.ObjectId(foundProduct.id);
+        subscription.product = new mongoose.Types.ObjectId(foundProduct.id);
         subscription.autoRenew = true;
         // Set expiration from Google API response
         // Google API (purchases.subscriptions.get) returns an "expiryTimeMillis"

@@ -215,7 +215,7 @@ export class RolesService {
     return result[0]?.descendantIds || [];
   }
 
-  async fetchRoles(user: DecodedUser, page: number, limit: number) {
+  async fetchRoles(user: DecodedUser, search: string, page: number, limit: number) {
     try {
       // let allAdminIds = await this.getAllChildAdminIds(id,userType,true,[]);
       let allAdminIds = await this.getAllChildAdminIds2(user.id, user.userType);
@@ -230,7 +230,8 @@ export class RolesService {
           };
         }
         ownerRole = findAdminUser.role;
-        query = { belongsTo: { $ne: RoleBelonging.BUSINESS } };
+        // query = { belongsTo: { $ne: RoleBelonging.BUSINESS } };
+        query['belongsTo'] = { $ne: RoleBelonging.BUSINESS };
       } else if (user.userType === UserTypes.BUSINESS) {
         const findBusinessUser = await this.businessUserModel.findById(user.id);
         if (!findBusinessUser) {
@@ -247,6 +248,12 @@ export class RolesService {
       );
 
       query = { ...query, _id: { $in: allAdminObjectIds, $ne: ownerRole } };
+      if (search && search.trim() !== '') {
+      query['name'] = {
+        $regex: search.trim(),
+        $options: 'i'
+      };
+    }
       const roles = await this.roleModel
         .find(query)
         .populate({

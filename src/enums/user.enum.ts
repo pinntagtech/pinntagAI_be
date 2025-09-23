@@ -82,6 +82,7 @@ export enum SubscriptionSource {
   STRIPE = 'stripe',
   APPLE = 'apple',
   GOOGLE = 'google',
+  FREE = 'free',
 }
 
 export enum ReceiptStatus {

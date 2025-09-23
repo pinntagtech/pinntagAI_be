@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { SubscriptionProduct } from './subscription-product.model';
 import { SubscriptionSource, SubscriptionStatus } from 'src/enums/user.enum';
+import { Business } from 'src/business/model/business.model';
 
 export enum SubscriptionServiceType {
   STRIPE = 'stripe',
@@ -44,7 +45,7 @@ export class Subscription extends Document {
   @Prop({ default: true })
   isTrialActive?: boolean;
 
-  @Prop({ type: Types.ObjectId, ref: 'SubscriptionPrice', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'SubscriptionPrice' })
   price: mongoose.Types.ObjectId;
 
   @Prop({
@@ -69,15 +70,21 @@ export class Subscription extends Document {
   @Prop()
   purchaseToken?: string;
 
-  @Prop({ ref: 'SubscriptionProduct' })
-  productId: mongoose.Types.ObjectId; // Reference to SubscriptionProduct
+  // @Prop({ ref: 'SubscriptionProduct' })
+  // productId: mongoose.Types.ObjectId; // Reference to SubscriptionProduct
 
   @Prop()
   autoRenew?: boolean;
 
-  @Prop({ default: false })
-  isFree: boolean;
 }
 
 export type SubscriptionDocument = Subscription & Document;
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
+
+SubscriptionSchema.post('save', function (doc) {
+    // Use this.model() instead of mongoose.model()
+    const BusinessModel = this.model('Business');
+    BusinessModel.findByIdAndUpdate(doc.business, { 
+        activeSubscription: doc._id 
+    }).exec();
+});

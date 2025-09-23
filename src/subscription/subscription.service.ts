@@ -10,7 +10,7 @@ import { SubscriptionProduct } from './models/subscription-product.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { Transaction } from 'src/subscription/models/transaction.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { TransactionPopulates } from 'src/enums/user.enum';
+import { SubscriptionSource, SubscriptionStatus, TransactionPopulates } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
@@ -283,11 +283,38 @@ export class SubscriptionService {
 
   async createFreeCheckoutSession(user: DecodedUser) {
     try {
+      const createSubscription = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        source: SubscriptionSource.FREE,
+        startDate: new Date(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        invoiceStartDate: new Date(),
+        invoiceEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        isCancelled: false,
+        isTrialActive: false,
+        status: SubscriptionStatus.ACTIVE,
+        iapPlatform: 'none',
+      };
+      const freeSubscriptionProduct = await this.subscriptionProductModel.findOne({ isFree: true });
+      if (!freeSubscriptionProduct) {
+        return { success: false, message: 'Free subscription product not found' };
+      }
+
+      const freeSubscription = await this.subscriptionModel.create({
+        ...createSubscription,
+        product: freeSubscriptionProduct._id,
+      });
+      return { success: true, data: freeSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
       return { success: false, message: 'Something went wrong' };
     }
   }
+
+  // async findAll(user: DecodedUser) {
+  //   return await this.subscriptionModel
+  //     .find({
+  //       user: new mongoose.Types.ObjectId(user.id),
 
   // async findAll(user: DecodedUser) {
   //   return await this.subscriptionModel

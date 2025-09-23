@@ -110,6 +110,7 @@ export class RolesController {
   @UseGuards(JwtGuard2)
   async fetchRoles(
     @TokenDecoder() user: DecodedUser,
+    @Query('search') search: string,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
@@ -117,6 +118,7 @@ export class RolesController {
     const limitNumber = parseInt(limit) || 10;
     const result = await this.roleService.fetchRoles(
       user,
+      search,
       pageNumber,
       limitNumber,
     );
