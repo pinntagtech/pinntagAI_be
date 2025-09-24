@@ -210,7 +210,7 @@ export class AuthController {
   async loginOTP(@Req() req: Request, @Body() loginDto: SignupAuthDto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
-    const result = await this.authService.loginOTP(loginDto, userAgent, ip);
+    const result = await this.authService.unifiedOTP(loginDto, userAgent, ip);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }

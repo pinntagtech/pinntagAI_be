@@ -316,7 +316,7 @@ export class AuthService {
       this.userService.getUserById(createdUser.id),
     ]);
     // knowingly removed async to make this api fast
-    this.seederService.createDrive(createdUser.id, User.name);
+    // this.seederService.createDrive(createdUser.id, User.name);
 
     return {
       success: true,
@@ -325,6 +325,251 @@ export class AuthService {
       fcmExists: !!fcmExists,
     };
   }
+
+  async unifiedOTP(
+  authDto: SignupAuthDto,
+  userAgent: string,
+  ipAddress: string,
+) {
+  try {
+    const { email, phone, countryCode, signupMethod, fcmToken, deviceType } = authDto;
+    console.log('Unified OTP DTO:', authDto);
+
+    // Validation
+    if (!email && !phone) {
+      return {
+        success: false,
+        message: 'Please provide email or phone number.',
+      };
+    }
+
+    if (signupMethod === SignupMethod.PHONE) {
+      if (!phone) {
+        return {
+          success: false,
+          message: 'Please provide phone number',
+        };
+      }
+      if (!countryCode) {
+        return {
+          success: false,
+          message: 'Please provide your Country Code',
+        };
+      }
+
+      const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return {
+          success: false,
+          message: 'Invalid phone number',
+        };
+      }
+
+      const fullPhoneNumber = phoneNumber.format('E.164');
+      let foundUser = await this.userModel.findOne({ fullPhoneNumber });
+
+      if (foundUser) {
+        // LOGIN FLOW - User exists
+        await this.handleExistingUser(foundUser, authDto, userAgent, ipAddress);
+        
+        // Send SMS OTP
+        await this.smsService.sendSMS(
+          foundUser.id,
+          fullPhoneNumber,
+          SMSType.OTP,
+        );
+
+        return {
+          success: true,
+          user: foundUser.id,
+          isNewUser: false,
+          message: 'OTP has been sent to your registered Mobile Number.',
+        };
+      } else {
+        // SIGNUP FLOW - Create new user
+        const role = await this.roleModel.findOne({ name: Roles.USER });
+        
+        const createdUser = await this.userModel.create({
+          ...authDto,
+          fullPhoneNumber,
+          role: role._id,
+          userAgent,
+          ipAddress,
+        });
+
+        // Handle new user setup
+        await this.handleNewUser(createdUser, authDto);
+
+        // Send SMS OTP
+        await this.smsService.sendSMS(
+          createdUser.id,
+          fullPhoneNumber,
+          SMSType.OTP,
+        );
+
+        const user = await this.userService.getUserById(createdUser.id);
+
+        return {
+          success: true,
+          user,
+          isNewUser: true,
+          message: 'Account created successfully. OTP has been sent to your Mobile Number.',
+          fcmExists: !!fcmToken,
+        };
+      }
+    } 
+    
+    else if (signupMethod === SignupMethod.EMAIL) {
+      let foundUser = await this.userModel.findOne({ email: authDto.email });
+
+      if (foundUser) {
+        // LOGIN FLOW - User exists
+        await this.handleExistingUser(foundUser, authDto, userAgent, ipAddress);
+        
+        // Send email OTP
+        await this.mailService.sendUserVerificationMail(foundUser.id);
+
+        return {
+          success: true,
+          user: foundUser.id,
+          isNewUser: false,
+          message: 'OTP has been sent to your registered Email.',
+        };
+      } else {
+        // SIGNUP FLOW - Create new user
+        const role = await this.roleModel.findOne({ name: Roles.USER });
+        
+        const createdUser = await this.userModel.create({
+          ...authDto,
+          role: role._id,
+          userAgent,
+          ipAddress,
+        });
+
+        // Handle new user setup
+        await this.handleNewUser(createdUser, authDto);
+
+        // Send welcome and verification emails
+        await Promise.all([
+          this.mailService.sendUserWelcomeMail(createdUser.id),
+          this.mailService.sendUserVerificationMail(createdUser.id),
+        ]);
+
+        const user = await this.userService.getUserById(createdUser.id);
+
+        return {
+          success: true,
+          user,
+          isNewUser: true,
+          message: 'Account created successfully. OTP has been sent to your Email.',
+          fcmExists: !!fcmToken,
+        };
+      }
+    }
+
+  } catch (error: any) {
+    console.error('Unified OTP Error:', error);
+    return {
+      success: false,
+      message: 'Something went wrong.',
+    };
+  }
+}
+
+// Helper method for existing user logic
+private async handleExistingUser(
+  foundUser: any,
+  authDto: SignupAuthDto,
+  userAgent: string,
+  ipAddress: string,
+) {
+  // Update user info
+  await foundUser.updateOne(
+    { _id: foundUser.id },
+    { $set: { userAgent, ipAddress, isDeleted: false } }
+  );
+
+  // Handle FCM token
+  if (authDto.fcmToken) {
+    const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+      {
+        type: TokenTypes.FCM,
+        user: foundUser._id,
+        deviceType: authDto.deviceType || 'web',
+      },
+      {
+        $set: {
+          token: authDto.fcmToken,
+        },
+      },
+    );
+
+    if (!foundFcmToken) {
+      await this.tokenModel.create({
+        token: authDto.fcmToken,
+        type: TokenTypes.FCM,
+        userType: UserTypes.USER,
+        user: foundUser._id,
+        deviceType: authDto.deviceType || 'web',
+      });
+    }
+  }
+
+  // Create Stripe customer if doesn't exist
+  if (!foundUser.stripeCustomerId) {
+    const customer = await this.stripeService.createCustomer(
+      foundUser.email,
+      foundUser.name,
+    );
+    if (customer?.id) {
+      foundUser.stripeCustomerId = customer.id;
+      await this.userModel.updateOne(
+        { _id: foundUser.id },
+        { $set: { stripeCustomerId: customer.id } },
+      );
+    }
+  }
+}
+
+// Helper method for new user logic
+private async handleNewUser(createdUser: any, authDto: SignupAuthDto) {
+  // Generate referral code and create Stripe customer in parallel
+  const [refferalCode, customer] = await Promise.all([
+    this.generateUniqueRefferalCode(),
+    this.stripeService.createCustomer(createdUser.email, createdUser.name),
+  ]);
+
+  // Create referral
+  const referral = await this.refferalModel.create({
+    user: createdUser._id,
+    code: refferalCode,
+  });
+
+  // Update user with referral and stripe customer ID
+  await this.userModel.updateOne(
+    { _id: createdUser.id },
+    {
+      $set: {
+        refferal: referral._id,
+        stripeCustomerId: customer?.id || null,
+      },
+    },
+  );
+
+  // Handle FCM token for new user
+  if (authDto.fcmToken) {
+    await this.tokenModel.create({
+      token: authDto.fcmToken,
+      type: TokenTypes.FCM,
+      userType: UserTypes.USER,
+      user: createdUser._id,
+      deviceType: authDto.deviceType || 'web',
+    });
+  }
+
+  // Create drive (async without await for performance)
+  // this.seederService.createDrive(createdUser.id, User.name);
+}
 
   async updateContactDetails(
     updateAuthDto: UpdateAuthDto,
@@ -5621,7 +5866,6 @@ export class AuthService {
       return { success: false, message: error.message };
     }
   }
-
   async getProfile(userId: string, userType: string) {
     try {
       let userDoc = null;
