@@ -107,13 +107,12 @@ export class SubscriptionService {
     storage: (v) => `${v}GB Storage`,
   };
 
-  async getProducts(billingInterval?: string) {
+  async getProducts(user: DecodedUser, billingInterval?: string) {
     try {
+      const userSubscription = await this.subscriptionModel.findOne({business: new mongoose.Types.ObjectId(user.businessProfile)});
       const products = await this.subscriptionProductModel.aggregate([
         // Step 1: Match only active products
         { $match: { isActive: true } },
-
-        // Step 2: Lookup features
         {
           $lookup: {
             from: 'featurelimits', // collection name in MongoDB
@@ -152,6 +151,16 @@ export class SubscriptionService {
             ],
           },
         },
+        {
+          $addFields: {
+            isCurrentPlan: {
+              $and: [
+                { $eq: ['$_id', userSubscription?.product] },
+                { $in: ['$_id', [userSubscription?.product]] },
+              ],
+            },
+          },
+        },
 
         // Step 4: Exclude fields from subscriptionProduct
         {
@@ -162,7 +171,9 @@ export class SubscriptionService {
         },
 
         // Step 5: Sort
-        { $sort: { createdAt: -1 } },
+        {
+          $sort: { 'prices.price': 1 },
+        }
       ]);
 
       const enrichedProducts = products.map((product) => {

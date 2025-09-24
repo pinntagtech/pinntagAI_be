@@ -99,8 +99,10 @@ export class SubscriptionController {
   @UseGuards(JwtGuard2)
   async getProducts(
     @Query('billingInterval') billingInterval: string,
+    @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.subscriptionService.getProducts(
+      user,
       billingInterval,
       );
     return {
