@@ -1366,40 +1366,194 @@ export class BusinessService {
         deviceType: loginDto.deviceType ? loginDto.deviceType : 'web',
       });
       // console.log('user:', user);
-      const userDetails = await this.businessUserModel
-        .findById(user._id)
-        .populate({
-          path: 'business',
-          populate: {
-            path: 'outlets',
-            model: Outlet.name,
-            select: LocationPopulates.FOREIGN,
+      // const userDetails = await this.businessUserModel
+      //   .findById(user._id)
+      //   .populate({
+      //     path: 'business',
+      //     populate: {
+      //       path: 'outlets',
+      //       model: Outlet.name,
+      //       select: LocationPopulates.FOREIGN,
+      //     },
+      //   })
+      //   .populate({
+      //     path: 'business',
+      //     populate: {
+      //       path: 'initialOfferId',
+      //       model: Event.name,
+      //       select: '_id title description categories',
+      //     },
+      //   })
+      //   .populate({
+      //     path: 'business',
+      //     populate: {
+      //       path: 'businessIndustry',
+      //       model: BusinessIndustry.name,
+      //       select: ' _id title darkIcon lightIcon',
+      //     },
+      //   })
+      //   .populate('role', '_id name description')
+      //   .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
+
+      let userDoc = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(user._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles', // collection name for Role model
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                },
+              },
+            ],
           },
-        })
-        .populate({
-          path: 'business',
-          populate: {
-            path: 'initialOfferId',
-            model: Event.name,
-            select: '_id title description categories',
+        },
+        {
+          $lookup: {
+            from: 'businesses', // collection name for Business model
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets', // collection name for Outlet model
+                  localField: 'outlets',
+                  foreignField: '_id',
+                  as: 'outlets',
+                  pipeline: [
+                    {
+                      $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                        (acc, field) => {
+                          acc[field] = 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'events', // collection name for Event model
+                  localField: 'initialOfferId',
+                  foreignField: '_id',
+                  as: 'initialOfferId',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        categories: 1,
+                        drivePath: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'businessindustries', // collection name for BusinessIndustry model
+                  localField: 'businessIndustry',
+                  foreignField: '_id',
+                  as: 'businessIndustry',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        darkIcon: 1,
+                        lightIcon: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'subscriptions',
+                  localField: 'activeSubscription',
+                  foreignField: '_id',
+                  as: 'activeSubscription',
+                  pipeline: [
+                    {
+                      $lookup: {
+                        from: 'subscriptionproducts',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'product',
+                        pipeline: [
+                          {
+                            $project: {
+                              _id: 1,
+                              name: 1,
+                              price: 1,
+                              description: 1,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    { $unwind: '$product' },
+                    {
+                      $project: {
+                        _id: 1,
+                        source: 1,
+                        product: 1,
+                        startDate: 1,
+                        endDate: 1,
+                        status: 1,
+                        remainingDays: {
+                          $dateDiff: {
+                            startDate: currentDateTz(),
+                            endDate: '$endDate',
+                            unit: 'day',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                  businessIndustry: {
+                    $arrayElemAt: ['$businessIndustry', 0],
+                  },
+                  activeSubscription: {
+                    $arrayElemAt: ['$activeSubscription', 0],
+                  },
+                },
+              },
+            ],
           },
-        })
-        .populate({
-          path: 'business',
-          populate: {
-            path: 'businessIndustry',
-            model: BusinessIndustry.name,
-            select: ' _id title darkIcon lightIcon',
-          },
-        })
-        .populate('role', '_id name description')
-        .select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 });
+        },
+        // {
+        //   $addFields: {
+        //     role: { $arrayElemAt: ['$role', 0] },
+        //     business: { $arrayElemAt: ['$business', 0] },
+        //   },
+        // },
+      ]);
+      userDoc = userDoc[0];
+
       // console.log('userDetails:', userDetails);
       return {
         success: true,
         status: true,
         message: 'User logged in successfully',
-        user: userDetails,
+        user: userDoc,
         token,
         fcmExists: fcmExists ? true : false,
       };
