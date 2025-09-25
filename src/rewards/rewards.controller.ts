@@ -251,7 +251,9 @@ export class RewardsController {
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
-    let activityTypeArray = activityType.split(',');
+    const activityTypeArray = activityType
+      ? activityType.split(',').map((s) => s.trim())
+      : [];
     const result = await this.rewardService.getDashboardRewards(
       user,
       data,
@@ -331,7 +333,12 @@ export class RewardsController {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid Object ID');
     }
-    const result = await this.rewardService.getUserRewardById(id, user, latitude, longitude);
+    const result = await this.rewardService.getUserRewardById(
+      id,
+      user,
+      latitude,
+      longitude,
+    );
     if (result.success) {
       return {
         message: result.message,

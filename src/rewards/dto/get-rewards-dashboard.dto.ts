@@ -16,6 +16,8 @@ export class GetRewardDashboardDto {
   endDate: string;
 
   @IsOptional()
-  @IsIn(Object.values(RewardType))
+  @IsArray()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsIn(Object.values(RewardType), { each: true })
   rewardType: string[];
 }
