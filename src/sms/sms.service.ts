@@ -65,7 +65,7 @@ export class SmsService {
       return { success: true, message: 'SMS sent successfully' };
     } catch (error) {
       console.error('Error in sending SMS:', error.message);
-      throw new InternalServerErrorException('Failed to send SMS');
+      // throw new InternalServerErrorException('Failed to send SMS');
     }
   }
 }
