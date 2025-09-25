@@ -251,11 +251,12 @@ export class RewardsController {
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
+    let activityTypeArray = activityType.split(',');
     const result = await this.rewardService.getDashboardRewards(
       user,
       data,
       search,
-      activityType,
+      activityTypeArray,
       distance ? parseInt(distance) : 1000000000000,
       pageNumber,
       limitNumber,

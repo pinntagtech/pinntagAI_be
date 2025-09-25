@@ -1332,7 +1332,7 @@ export class RewardsService {
     user: DecodedUser,
     data: GetRewardDashboardDto,
     search: string,
-    activityType: string,
+    activityType: string[],
     distance: number,
     page: number,
     limit: number,
@@ -1374,7 +1374,10 @@ export class RewardsService {
         match['reward.schedule.endDate'] = { $gte: now };
       }
       if (activityType) {
-        match['reward.activityType'] = activityType;
+        match['reward.activityType'] = { $in: activityType };
+      }
+      if(data.rewardType) {
+        match['reward.rewardType'] = { $in: data.rewardType };
       }
 
       let pipeline: PipelineStage[] = [
