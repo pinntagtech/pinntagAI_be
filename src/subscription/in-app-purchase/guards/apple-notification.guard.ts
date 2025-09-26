@@ -52,8 +52,10 @@ export class AppleNotificationGuard implements CanActivate {
       const [headerB64u, payloadB64u, sigB64u] = parts;
       const headerJson = b64urlToBuffer(headerB64u).toString('utf8');
       const payloadJson = b64urlToBuffer(payloadB64u).toString('utf8');
+      const sigB64uBuf = b64urlToBuffer(sigB64u).toString('utf8');
       console.log('AppleNotificationGuard: decoded header:', headerJson);
       console.log('AppleNotificationGuard: decoded payload:', payloadJson);
+      console.log('AppleNotificationGuard: signature:', sigB64uBuf);
       let header: any, payload: any;
       try {
         header = JSON.parse(headerJson);
@@ -96,9 +98,13 @@ export class AppleNotificationGuard implements CanActivate {
 
       // Verify signature using the leaf certificate public key
       const verify = crypto.createVerify('RSA-SHA256'); // Node maps EC algs via named curves internally
+      console.log('AppleNotificationGuard: Verifying JWS signature');
       verify.update(`${headerB64u}.${payloadB64u}`);
+      console.log('AppleNotificationGuard: verifying with leafPem:', leafPem);
       verify.end();
+      console.log('AppleNotificationGuard: signature (base64url):', sigB64u);
       const ok = verify.verify(leafPem, b64urlToBuffer(sigB64u));
+      console.log('AppleNotificationGuard: signature valid:', ok);
       if (!ok) {
         console.error('AppleNotificationGuard: Invalid JWS signature');
         throw new UnauthorizedException('Invalid Apple JWS signature');
