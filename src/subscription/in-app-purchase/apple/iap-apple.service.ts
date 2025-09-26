@@ -453,7 +453,11 @@ export class AppleIAPService {
         originalTransactionId,
       });
       if (!receiptRecord) {
-        receiptRecord = new this.appleReceiptModel({ originalTransactionId });
+        receiptRecord = new this.appleReceiptModel({
+          originalTransactionId,
+          receiptData: '', // we don't have the full base64 receipt here
+          subscription: subscription._id,
+        });
       }
       if (appleValidationData?.latestReceipt) {
         receiptRecord.latestReceipt = appleValidationData.latestReceipt; // base64 string of receipt
