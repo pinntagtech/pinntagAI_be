@@ -65,6 +65,12 @@ export class BusinessUser {
   forcePasswordReset: boolean;
   @Prop()
   assignedOutlets: mongoose.Types.ObjectId[];
+
+  @Prop({ default: false })
+  webWalkThroughCompleted: boolean;
+
+  @Prop({ default: false })
+  appWalkThroughCompleted: boolean;
 }
 
 export const BusinessUserSchema = SchemaFactory.createForClass(BusinessUser);

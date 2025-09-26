@@ -17,6 +17,12 @@ export class UpdateBusinessUserDto {
   @IsString()
   name: string;
 
+  @IsOptional()
+  webWalkThroughCompleted: boolean;
+
+  @IsOptional()
+  appWalkThroughCompleted: boolean;
+
   // @IsOptional()
   // @IsString()
   // countryCode: string;
