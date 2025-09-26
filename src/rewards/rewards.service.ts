@@ -1332,7 +1332,7 @@ export class RewardsService {
     user: DecodedUser,
     data: GetRewardDashboardDto,
     search: string,
-    activityType: string,
+    activityType: string[],
     distance: number,
     page: number,
     limit: number,
@@ -1344,6 +1344,7 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      console.log("ACTIVITY TYPE:::", activityType);
 
       let match = {};
       if (search) {
@@ -1373,8 +1374,12 @@ export class RewardsService {
       } else {
         match['reward.schedule.endDate'] = { $gte: now };
       }
-      if (activityType) {
-        match['reward.activityType'] = activityType;
+      if (activityType.length > 0) {
+        console.log("ADDING ACTIVITY TYPE TO MATCH:::", activityType);
+        match['reward.activityType'] = { $in: activityType };
+      }
+      if(data.rewardType && data.rewardType.length > 0) {
+        match['reward.rewardType'] = { $in: data.rewardType };
       }
 
       let pipeline: PipelineStage[] = [
