@@ -452,7 +452,13 @@ export class AppleIAPService {
 
     // Save updated subscription
     await subscription.save();
-
+    const updatedSubscription = await this.subscriptionModel.findById(
+      subscription._id,
+    );
+    console.log(
+      'Updated subscription after notification processing:',
+      updatedSubscription,
+    );
     // Create a Transaction record for this event
     if (transactionId) {
       await this.transactionModel.create({
