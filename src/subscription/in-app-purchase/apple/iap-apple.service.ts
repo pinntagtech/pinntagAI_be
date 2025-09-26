@@ -342,6 +342,29 @@ export class AppleIAPService {
         subscription.autoRenew = true;
         break;
       }
+
+      case AppleNotificationType.DID_CHANGE_RENEWAL_PREF: {
+        // User changed their renewal preference (e.g. switched to a different subscription plan)
+        // We might want to update the subscription price/product if we can determine the new one
+        if (renewalInfo?.productId && renewalInfo.productId !== productId) {
+          const newPrice = await this.subscriptionPriceModel.findOne({
+            appleProductId: renewalInfo.productId,
+          });
+          if (newPrice) {
+            subscription.price = new mongoose.Types.ObjectId(newPrice.id);
+            subscription.product = newPrice.product;
+            this.logger.log(
+              `Subscription ${subscription._id} changed to new product ${renewalInfo.productId}`,
+            );
+          } else {
+            this.logger.warn(
+              `Unknown new productId ${renewalInfo.productId} in DID_CHANGE_RENEWAL_PREF`,
+            );
+          }
+        }
+        // No immediate status change; subscription remains active until expiration
+        break;
+      }
       case AppleNotificationType.DID_RENEW: {
         // Subscription was successfully auto-renewed (or recovered from billing retry)
         subscription.status = SubscriptionStatus.ACTIVE;

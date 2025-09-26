@@ -8,6 +8,7 @@ export enum AppleNotificationType {
   REFUND = 'REFUND',
   INTERACTIVE_RENEWAL = 'INTERACTIVE_RENEWAL',
   REVOKE = 'REVOKE',
+  DID_CHANGE_RENEWAL_PREF = 'DID_CHANGE_RENEWAL_PREF',
 }
 
 export enum AppleNotificationSubtype {
