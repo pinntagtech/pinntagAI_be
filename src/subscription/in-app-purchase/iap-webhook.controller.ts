@@ -30,9 +30,9 @@ export class IapWebhookController {
   async handleAppleNotification(@Req() req: Request, @Res() res: Response) {
     const notification = req['appleNotification'];
     // The Apple guard ensures the JWS signature is valid and attaches decoded payload
-    const decodedPayload = (notification as any).decodedPayload;
+    // const decodedPayload = (notification as any).decodedPayload;
     // Process the notification using the service
-    await this.appleService.processNotification(decodedPayload);
+    await this.appleService.processNotification(notification);
     return res.send(); // Acknowledge receipt
   }
 
