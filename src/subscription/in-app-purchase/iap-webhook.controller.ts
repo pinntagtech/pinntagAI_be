@@ -28,6 +28,7 @@ export class IapWebhookController {
   @HttpCode(HttpStatus.OK) // Apple expects a 200 OK response
   @UseGuards(AppleNotificationGuard) // Verify Apple signature
   async handleAppleNotification(@Req() req: Request, @Res() res: Response) {
+    console.log('Received Apple notification:.........................');
     const notification = req['appleNotification'];
     // The Apple guard ensures the JWS signature is valid and attaches decoded payload
     // const decodedPayload = (notification as any).decodedPayload;
