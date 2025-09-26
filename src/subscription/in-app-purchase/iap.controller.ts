@@ -50,6 +50,7 @@ export class InAppPurchaseController {
     @Body() body: any,
     @TokenDecoder() user: DecodedUser,
   ) {
+    console.log('Received Apple validation request:', body);
     const { token } = body;
     if (!token) {
       return { error: 'Missing required fields' };
