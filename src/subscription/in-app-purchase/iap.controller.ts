@@ -51,10 +51,15 @@ export class InAppPurchaseController {
     @TokenDecoder() user: DecodedUser,
   ) {
     console.log('Received Apple validation request:', body);
+    console.log('For business:', user.businessProfile);
     const { token } = body;
     if (!token) {
       return { error: 'Missing required fields' };
     }
+    console.log(
+      'Validating Apple purchase for business:',
+      user.businessProfile,
+    );
     const result = await this.appleService.validatePurchase(
       user.businessProfile,
       token,

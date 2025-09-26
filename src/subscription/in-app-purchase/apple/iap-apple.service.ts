@@ -470,8 +470,6 @@ export class AppleIAPService {
 
   async validatePurchase(token: string, businessId: string): Promise<boolean> {
     try {
-      console.log('Validating Apple purchase with token:', token);
-      console.log('For businessId:', businessId);
       let transactionInfo: any = {};
       if (!verifyAppleJws(token)) {
         console.warn('Invalid JWS signature for token');
