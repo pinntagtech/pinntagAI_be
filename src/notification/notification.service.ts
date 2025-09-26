@@ -36,7 +36,11 @@ export class NotificationService {
     private readonly driveService: DriveService,
   ) {}
 
-  async findAll(user: DecodedUser, page: number = 1, limit: number = 10) {
+  async findAll(
+    user: DecodedUser,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     //Only 30 days notifications
 
     try {
@@ -48,10 +52,18 @@ export class NotificationService {
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      const query = {
+      let query = {
         user: new mongoose.Types.ObjectId(userId),
         createdAt: { $gte: thirtyDaysAgo },
       };
+
+      // if (
+      //   type &&
+      //   type !== '' &&
+      //   Object.values(NotificationTypes).includes(type as NotificationTypes)
+      // ) {
+      //   query['type'] = type;
+      // }
       console.log('Query for notifications:', query);
 
       const [notifications, totalCount] = await Promise.all([
@@ -68,6 +80,50 @@ export class NotificationService {
       return {
         success: true,
         notifications,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        page,
+        limit,
+      };
+    } catch (error) {
+      throw new Error('Error fetching notifications: ' + error.message);
+    }
+  }
+
+  async broadcasts(
+    user: DecodedUser,
+    businessId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    //Only 10 days notifications
+
+    try {
+      let userId = user.id;
+
+      const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+
+      let query = {
+        user: new mongoose.Types.ObjectId(userId),
+        createdAt: { $gte: tenDaysAgo },
+        type: NotificationTypes.BROADCAST,
+        targetUser: new mongoose.Types.ObjectId(businessId),
+      };
+      console.log('Query for notifications:', query);
+
+      const [broadcasts, totalCount] = await Promise.all([
+        this.notificationModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .populate('targetUser', '_id id name profilePhoto cover logo'),
+        this.notificationModel.countDocuments(query),
+      ]);
+      console.log('Fetched Broadcasts:', broadcasts);
+      return {
+        success: true,
+        broadcasts,
         totalCount,
         totalPages: Math.ceil(totalCount / limit),
         page,
@@ -172,7 +228,11 @@ export class NotificationService {
     };
   }
 
-  async createBroadcast(user: DecodedUser, data: CreateBroadcastDto,image: Express.Multer.File) {
+  async createBroadcast(
+    user: DecodedUser,
+    data: CreateBroadcastDto,
+    image: Express.Multer.File,
+  ) {
     let isScheduled = false;
     if (data.isScheduled && data.isScheduled == 'true') {
       isScheduled = true;
@@ -187,7 +247,7 @@ export class NotificationService {
         message: 'Invalid schedule date',
       };
     }
-  
+
     let broadcastObj = {
       title: data.title,
       message: data.message,
@@ -200,7 +260,7 @@ export class NotificationService {
         (userId) => new mongoose.Types.ObjectId(userId),
       );
     }
-    if(image){
+    if (image) {
       const imageUrl = await this.driveService.noDriveUpload(image);
       broadcastObj['image'] = imageUrl;
     }
@@ -238,8 +298,11 @@ export class NotificationService {
       data: broadcast,
     };
   }
-  async getBroadcasts(page:number,limit:number) {
-    const broadcasts = await this.broadcastModel.find().skip((page - 1) * limit).limit(limit);
+  async getBroadcasts(page: number, limit: number) {
+    const broadcasts = await this.broadcastModel
+      .find()
+      .skip((page - 1) * limit)
+      .limit(limit);
     const totalCount = await this.broadcastModel.countDocuments();
     if (!broadcasts || broadcasts.length === 0) {
       return {
@@ -263,13 +326,17 @@ export class NotificationService {
         message: 'Broadcast not found',
       };
     }
-    if(broadcast.status === BroadcastStatus.COMPLETED || broadcast.status === BroadcastStatus.CANCELLED || broadcast.status === BroadcastStatus.FAILED) {
+    if (
+      broadcast.status === BroadcastStatus.COMPLETED ||
+      broadcast.status === BroadcastStatus.CANCELLED ||
+      broadcast.status === BroadcastStatus.FAILED
+    ) {
       return {
         success: false,
         message: `Broadcast cannot be cancelled as it is already in ${broadcast.status} status`,
       };
     }
-    if(broadcast.schedulerId && broadcast.schedulerId !== '') {
+    if (broadcast.schedulerId && broadcast.schedulerId !== '') {
       await this.redisBullService.removeBroadcastJob(broadcast.schedulerId);
     }
 

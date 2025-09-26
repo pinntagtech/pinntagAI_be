@@ -47,6 +47,31 @@ export class NotificationController {
     }
   }
 
+  @Get('broadcasts/:businessId')
+  @UseGuards(JwtGuard2)
+  async broadcasts(
+    @TokenDecoder() user: DecodedUser,
+    @Param('businessId') businessId: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const result = await this.notificationService.broadcasts(
+      user,
+      businessId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
+    if (result.success) {
+      return {
+        broadcasts: result.broadcasts,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
+      };
+    }
+  }
+
   @Get('unread')
   @UseGuards(JwtGuard2)
   async findUnread(
@@ -127,7 +152,11 @@ export class NotificationController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     console.log('BROADCAST DATA:', data);
-    const result = await this.notificationService.createBroadcast(user, data,image);
+    const result = await this.notificationService.createBroadcast(
+      user,
+      data,
+      image,
+    );
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -145,8 +174,14 @@ export class NotificationController {
 
   @Get('broadcasts')
   @UseGuards(JwtGuard2)
-  async getBroadcasts(@Query('page') page: string, @Query('limit') limit: string) {
-    const result = await this.notificationService.getBroadcasts(page ? parseInt(page) : 1, limit ? parseInt(limit) : 10);
+  async getBroadcasts(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    const result = await this.notificationService.getBroadcasts(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
@@ -156,7 +191,7 @@ export class NotificationController {
   @Post('broadcast/cancel/:id')
   @UseGuards(JwtGuard2)
   async cancelBroadcast(@Param('id') id: string) {
-    if(!isValidObjectId(id)) {
+    if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid broadcast ID');
     }
     const result = await this.notificationService.cancelBroadcast(id);

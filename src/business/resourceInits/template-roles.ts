@@ -204,7 +204,7 @@ export const DefaultBusinessDepartmentRoles = [
     name: 'Operations',
     description: 'Manages day-to-day business operations.',
     roles: [
-      {
+      { 
         name: 'Store Manager',
         creatorType: 'Business',
         belongsTo: 'Business',

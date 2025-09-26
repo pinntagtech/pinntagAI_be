@@ -12,6 +12,8 @@ import { User, UserDocument } from 'src/user/models/user.model';
 import {
   BusinessIndustries,
   BusinessIndustryTags,
+  BusinessSubCategory,
+  BusinessTags,
   ContentTags,
   EventCategory,
   Seeder,
@@ -1157,34 +1159,34 @@ export class SeederService {
       return;
     }
 
-    for (const industry of Object.values(BusinessIndustries)) {
-      console.log('industry:', industry);
-      const foundIndustry = await this.businessIndustryModel.findOne({
-        title: industry,
-      });
-      if (!foundIndustry) {
-        console.error(`Business industry "${industry}" not found.`);
-        continue;
-      }
-      for (const tag of BusinessIndustryTags[industry]) {
-        console.log('tag:', tag);
-        const foundTag = await this.tagModel.findOne({
-          title: tag,
-          relatedId: foundIndustry._id,
-        });
-        if (!foundTag) {
-          await this.tagModel.create({
-            title: tag,
-            relatedId: foundIndustry._id,
-            relatedTo: BusinessIndustry.name,
-          });
-        } else {
-          console.log(
-            `Tag "${tag}" already exists for industry "${industry}".`,
-          );
-        }
-      }
-    }
+    // for (const industry of Object.values(BusinessIndustries)) {
+    //   console.log('industry:', industry);
+    //   const foundIndustry = await this.businessIndustryModel.findOne({
+    //     title: industry,
+    //   });
+    //   if (!foundIndustry) {
+    //     console.error(`Business industry "${industry}" not found.`);
+    //     continue;
+    //   }
+    //   for (const tag of BusinessIndustryTags[industry]) {
+    //     console.log('tag:', tag);
+    //     const foundTag = await this.tagModel.findOne({
+    //       title: tag,
+    //       relatedId: foundIndustry._id,
+    //     });
+    //     if (!foundTag) {
+    //       await this.tagModel.create({
+    //         title: tag,
+    //         relatedId: foundIndustry._id,
+    //         relatedTo: BusinessIndustry.name,
+    //       });
+    //     } else {
+    //       console.log(
+    //         `Tag "${tag}" already exists for industry "${industry}".`,
+    //       );
+    //     }
+    //   }
+    // }
 
     for (const cat of Object.values(EventCategory)) {
       console.log('category:', cat);
@@ -1206,6 +1208,33 @@ export class SeederService {
             title: tag,
             relatedId: foundCategory._id,
             relatedTo: Category.name,
+          });
+        } else {
+          console.log(`Tag "${tag}" already exists for category "${cat}".`);
+        }
+      }
+    }
+
+    for (const cat of Object.values(BusinessSubCategory)) {
+      console.log('category:', cat);
+      const foundCategory = await this.businessCategoryModel.findOne({
+        title: cat,
+      });
+      if (!foundCategory) {
+        console.error(`Business sub-category "${cat}" not found.`);
+        continue;
+      }
+      for (const tag of BusinessTags[cat]) {
+        console.log('tag:', tag);
+        const foundTag = await this.tagModel.findOne({
+          title: tag,
+          relatedId: foundCategory._id,
+        });
+        if (!foundTag) {
+          await this.tagModel.create({
+            title: tag,
+            relatedId: foundCategory._id,
+            relatedTo: BusinessCategory.name,
           });
         } else {
           console.log(`Tag "${tag}" already exists for category "${cat}".`);
