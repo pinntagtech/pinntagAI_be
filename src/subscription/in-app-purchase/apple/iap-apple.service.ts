@@ -297,8 +297,8 @@ export class AppleIAPService {
     await this.iapNotificationLogModel.create({
       platform: IapPlatform.APPLE,
       notificationUUID: notificationId,
-      rawPayload: payload,
-      validationResponse: appleValidationData,
+      rawPayload: JSON.stringify(payload),
+      validationResponse: JSON.stringify(appleValidationData),
       receivedAt: new Date(),
     });
 
