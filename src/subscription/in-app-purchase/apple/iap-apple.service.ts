@@ -299,6 +299,9 @@ export class AppleIAPService {
       notificationUUID: notificationId,
       rawPayload: JSON.stringify(payload),
       validationResponse: JSON.stringify(appleValidationData),
+      eventTime: new Date(), // could use payload.timestamp if available
+      eventType: notificationType,
+      productId: productId,
       receivedAt: new Date(),
     });
 
