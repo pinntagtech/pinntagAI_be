@@ -31,6 +31,7 @@ import {
   PurchaseTokenMapDocument,
 } from 'src/subscription/models/iap-mapping.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { console } from 'inspector';
 
 const APPLE_VERIFY_RECEIPT_PROD_URL =
   'https://buy.itunes.apple.com/verifyReceipt';
@@ -469,9 +470,11 @@ export class AppleIAPService {
 
   async validatePurchase(token: string, businessId: string): Promise<boolean> {
     try {
+      console.log('Validating Apple purchase with token:', token);
+      console.log('For businessId:', businessId);
       let transactionInfo: any = {};
       if (!verifyAppleJws(token)) {
-        this.logger.warn('Invalid JWS signature for token');
+        console.warn('Invalid JWS signature for token');
         throw new Error('Invalid JWS signature');
       }
       try {
@@ -480,12 +483,17 @@ export class AppleIAPService {
         );
         transactionInfo = decoded;
       } catch (e) {
-        this.logger.error('Failed to decode Apple token', e);
+        console.error('Failed to decode Apple token', e);
       }
       const purchaseToken = transactionInfo.originalTransactionId;
       const transactionId = transactionInfo.transactionId;
       const productId = transactionInfo.productId;
       const packageName = transactionInfo.bundleId;
+      console.log('Decoded transactionInfo:', transactionInfo);
+      console.log('purchaseToken:', purchaseToken);
+      console.log('transactionId:', transactionId);
+      console.log('productId:', productId);
+      console.log('packageName:', packageName);
       await this.purchaseTokenMapModel.create({
         purchaseToken,
         businessId: new mongoose.Types.ObjectId(businessId),
@@ -495,7 +503,7 @@ export class AppleIAPService {
       });
       return true;
     } catch (error) {
-      this.logger.error('Error validating Apple purchase', error);
+      console.error('Error validating Apple purchase', error);
       return false;
     }
   }
