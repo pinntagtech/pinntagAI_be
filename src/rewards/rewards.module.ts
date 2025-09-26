@@ -61,7 +61,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   Transaction,
   TransactionSchema,
@@ -168,9 +168,13 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
-import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -251,6 +255,7 @@ import { HttpModule } from '@nestjs/axios';
         name: SubscriptionPrice.name,
         schema: SubscriptionPriceSchema,
       },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   controllers: [RewardsController],

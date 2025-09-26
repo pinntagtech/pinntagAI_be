@@ -25,6 +25,7 @@ import { Transaction } from 'src/subscription/models/transaction.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import { Business } from 'src/business/model/business.model';
 import { AppleNotificationSubtype, AppleNotificationType } from '../enums';
+import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
 
 const APPLE_VERIFY_RECEIPT_PROD_URL =
   'https://buy.itunes.apple.com/verifyReceipt';
@@ -43,6 +44,8 @@ export class AppleIAPService {
     private subscriptionModel: Model<Subscription>,
     @InjectModel(SubscriptionProduct.name)
     private subscriptionProductModel: Model<SubscriptionProduct>,
+    @InjectModel(SubscriptionPrice.name)
+    private subscriptionPriceModel: Model<SubscriptionPrice>,
     @InjectModel(IapNotificationLog.name)
     private iapNotificationLogModel: Model<IapNotificationLog>,
     @InjectModel(Business.name) private businessModel: Model<Business>,
@@ -192,12 +195,12 @@ export class AppleIAPService {
       this.logger.warn(`Business not found for id=${businessId}`);
       throw new Error('Business not found');
     }
-    const foundProduct = await this.subscriptionProductModel.findOne({
+    const foundPrice = await this.subscriptionPriceModel.findOne({
       appleProductId: productId,
     });
-    if (!foundProduct) {
+    if (!foundPrice) {
       this.logger.warn(
-        `No subscription product found for appleProductId=${productId}`,
+        `No subscription price found for appleProductId=${productId}`,
       );
       throw new Error('Unknown productId in notification');
     }
@@ -286,7 +289,8 @@ export class AppleIAPService {
       subscription = new this.subscriptionModel({
         source: SubscriptionSource.APPLE,
         originalTransactionId,
-        product: foundProduct._id,
+        product: foundPrice.product,
+        price: foundPrice._id,
         status: SubscriptionStatus.ACTIVE,
         business: business._id,
       });
@@ -297,7 +301,7 @@ export class AppleIAPService {
       case AppleNotificationType.INITIAL_BUY: {
         // Initial purchase of a subscription
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.product = new mongoose.Types.ObjectId(foundProduct.id);
+        subscription.product = foundPrice.product;
         // Set current period expiration if available (from Apple validation or renewalInfo)
         if (appleValidationData?.expiresDate || renewalInfo.expirationDate) {
           const expMs =

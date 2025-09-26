@@ -38,7 +38,8 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from '../models/subscription-price.model';
-import { Refferal, RefferalSchema } from '../models/refferal.model';
+import { Refferal, RefferalSchema } from '../models/referral.model';
+import { Coupon, CouponSchema } from '../models/coupon.model';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { Refferal, RefferalSchema } from '../models/refferal.model';
         schema: SubscriptionPriceSchema,
       },
       { name: Refferal.name, schema: RefferalSchema },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
     StripeModule.forRoot({
       apiKey: process.env.STRIPE_SECRET_KEY,

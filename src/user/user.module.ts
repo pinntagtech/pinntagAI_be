@@ -27,7 +27,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from '../subscription/models/refferal.model';
+} from '../subscription/models/referral.model';
 import { S3Service } from 'src/s3.service';
 import {
   Notification,
@@ -152,6 +152,7 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -190,6 +191,7 @@ import {
         name: SubscriptionPrice.name,
         schema: SubscriptionPriceSchema,
       },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   controllers: [UserController],

@@ -53,7 +53,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   SubscriptionProduct,
   SubscriptionProductSchema,
@@ -73,6 +73,7 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import {
       },
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   controllers: [NotificationController],

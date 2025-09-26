@@ -54,7 +54,15 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from './models/subscription-price.model';
-import { Refferal, RefferalSchema } from './models/refferal.model';
+import { Refferal, RefferalSchema } from './models/referral.model';
+import { Coupon, CouponSchema } from './models/coupon.model';
+import { MappingRepoService } from './in-app-purchase/google/mapping-repo.service';
+import {
+  ObfuscatedIdMap,
+  ObfuscatedIdMapSchema,
+  PurchaseTokenMap,
+  PurchaseTokenMapSchema,
+} from './models/iap-mapping.model';
 
 @Module({
   imports: [
@@ -77,7 +85,10 @@ import { Refferal, RefferalSchema } from './models/refferal.model';
       { name: IapReceipt.name, schema: IapReceiptSchema },
       { name: IapNotificationLog.name, schema: IapNotificationLogSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
-       { name: Refferal.name, schema: RefferalSchema },
+      { name: Refferal.name, schema: RefferalSchema },
+      { name: Coupon.name, schema: CouponSchema },
+      { name: ObfuscatedIdMap.name, schema: ObfuscatedIdMapSchema },
+      { name: PurchaseTokenMap.name, schema: PurchaseTokenMapSchema },
     ]),
   ],
   controllers: [
@@ -92,6 +103,7 @@ import { Refferal, RefferalSchema } from './models/refferal.model';
     AppleIAPService,
     GoogleIAPService,
     GoogleApiService,
+    MappingRepoService,
   ],
 })
 export class SubscriptionModule {}

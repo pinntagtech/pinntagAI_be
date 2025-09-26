@@ -111,7 +111,7 @@ import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   Transaction,
   TransactionSchema,
@@ -165,7 +165,11 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
-import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -242,12 +246,19 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/mod
         schema: OwnershipTransferRecordSchema,
       },
       { name: Broadcast.name, schema: BroadcastSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
       {
         name: SubscriptionPrice.name,
         schema: SubscriptionPriceSchema,
       },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   providers: [

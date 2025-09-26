@@ -41,7 +41,7 @@ import { Token, TokenDocument } from './models/token.model';
 import {
   Refferal,
   RefferalDocument,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 // import {
 //   BusinessProfile,
 //   BusinessProfileDocument,

@@ -28,7 +28,7 @@ import {
 import {
   Refferal,
   RefferalDocument,
-} from '../subscription/models/refferal.model';
+} from '../subscription/models/referral.model';
 import { S3Service } from 'src/s3.service';
 import {
   Notification,

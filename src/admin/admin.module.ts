@@ -48,7 +48,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   Notification,
   NotificationSchema,
@@ -165,7 +165,11 @@ import {
   Broadcast,
   BroadcastSchema,
 } from 'src/notification/models/broadcast.model';
-import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -238,6 +242,7 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/mod
         schema: BusinessDocVerificationLeadsSchema,
       },
       { name: Broadcast.name, schema: BroadcastSchema },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   controllers: [AdminController],

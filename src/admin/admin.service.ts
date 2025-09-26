@@ -137,13 +137,12 @@ import {
 import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
 import { EventSchedule } from 'src/event/models/event-schedule.model';
-import { create } from 'domain';
 import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
 import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
-import { Refferal, RefferalDocument } from 'src/subscription/models/refferal.model';
-import { CreateReferralDto, UpdateReferralDto } from './dto/create-referral.dto';
+import { CreateCouponDto, UpdateCouponDto } from './dto/create-coupon.dto';
+import { Coupon } from 'src/subscription/models/coupon.model';
 
 @Injectable()
 export class AdminService {
@@ -196,7 +195,8 @@ export class AdminService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(BusinessDocVerificationLeads.name)
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
-    @InjectModel(Refferal.name) private readonly referralModel: Model<RefferalDocument>,
+    @InjectModel(Coupon.name)
+    private readonly couponModel: Model<Coupon>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -2954,7 +2954,6 @@ export class AdminService {
       if (
         lead.documentType === BusinessDocumentTypesList.ADDRESS_VERIFICATION
       ) {
-        
         await this.businessModel.updateOne(
           { _id: lead.businessId },
           {
@@ -2980,21 +2979,21 @@ export class AdminService {
     }
   }
 
-  async createReferral(adminId: string, data: CreateReferralDto) {
+  async createCoupon(adminId: string, data: CreateCouponDto) {
     try {
-      const existing = await this.referralModel.findOne({ code: data.code });
+      const existing = await this.couponModel.findOne({ code: data.code });
       if (existing) {
-        return { success: false, message: 'Referral code already exists.' };
+        return { success: false, message: 'Coupon code already exists.' };
       }
 
-      const created = await this.referralModel.create({
+      const created = await this.couponModel.create({
         ...data,
-        user: new mongoose.Types.ObjectId(data.user),
+        createdBy: new mongoose.Types.ObjectId(adminId),
       });
 
       return {
         success: true,
-        message: 'Referral created successfully.',
+        message: 'Coupon created successfully.',
         data: created,
       };
     } catch (err) {
@@ -3002,31 +3001,31 @@ export class AdminService {
     }
   }
 
-  async getAllReferrals() {
-    const referrals = await this.referralModel
+  async getAllCoupons() {
+    const coupons = await this.couponModel
       .find()
       .populate('user')
       .populate('usedBy');
     return {
       success: true,
-      message: 'Referrals fetched successfully.',
-      data: referrals,
+      message: 'Coupons fetched successfully.',
+      data: coupons,
     };
   }
 
-  async updateReferral(id: string, data: UpdateReferralDto) {
+  async updateCoupon(id: string, data: UpdateCouponDto) {
     try {
-      const updated = await this.referralModel.findByIdAndUpdate(
+      const updated = await this.couponModel.findByIdAndUpdate(
         id,
         { $set: data },
         { new: true },
       );
       if (!updated) {
-        return { success: false, message: 'Referral not found.' };
+        return { success: false, message: 'Coupon not found.' };
       }
       return {
         success: true,
-        message: 'Referral updated successfully.',
+        message: 'Coupon updated successfully.',
         data: updated,
       };
     } catch (err) {
@@ -3034,38 +3033,35 @@ export class AdminService {
     }
   }
 
-  async deleteReferral(id: string) {
+  async deleteCoupon(id: string) {
     try {
-      const deleted = await this.referralModel.findByIdAndDelete(id);
+      const deleted = await this.couponModel.findByIdAndDelete(id);
       if (!deleted) {
-        return { success: false, message: 'Referral not found.' };
+        return { success: false, message: 'Coupon not found.' };
       }
-      return { success: true, message: 'Referral deleted successfully.' };
+      return { success: true, message: 'Coupon deleted successfully.' };
     } catch (err) {
       return { success: false, message: err.message };
     }
   }
 
-  async blacklistReferral(id: string) {
+  async blacklistCoupon(id: string) {
     try {
-      const updated = await this.referralModel.findByIdAndUpdate(
+      const updated = await this.couponModel.findByIdAndUpdate(
         id,
         { $set: { isBlacklisted: true } },
         { new: true },
       );
       if (!updated) {
-        return { success: false, message: 'Referral not found.' };
+        return { success: false, message: 'Coupon not found.' };
       }
       return {
         success: true,
-        message: 'Referral blacklisted successfully.',
+        message: 'Coupon blacklisted successfully.',
         data: updated,
       };
     } catch (err) {
       return { success: false, message: err.message };
     }
   }
-
-
-
 }

@@ -4,12 +4,7 @@ import mongoose, { Model } from 'mongoose';
 import { androidpublisher_v3, auth } from '@googleapis/androidpublisher';
 import { GooglePurchase } from 'src/subscription/in-app-purchase/google/google-purchase.model';
 import { IapReceipt } from 'src/subscription/models/iap-receipt.model';
-import {
-  GOOGLE_PACKAGE_NAME,
-  GOOGLE_SERVICE_ACCOUNT,
-  ReceiptStatus,
-  SubscriptionServiceType,
-} from '../iap.config';
+import { GOOGLE_PACKAGE_NAME, GOOGLE_SERVICE_ACCOUNT } from '../iap.config';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionSource, SubscriptionStatus } from 'src/enums/user.enum';
 import { Types } from 'mongoose';
@@ -18,12 +13,11 @@ import { GooglePubSubMessageDto } from './google-pub-sub.dto';
 import { IapNotificationLog } from 'src/subscription/models/iap-notification-log.model';
 import { Transaction } from 'src/subscription/models/transaction.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
+import { MappingRepoService } from './mapping-repo.service';
 
 @Injectable()
 export class GoogleIAPService {
   private readonly logger = new Logger(GoogleIAPService.name);
-  private androidPublisher: androidpublisher_v3.Androidpublisher;
-  private authClient: any;
   constructor(
     @InjectModel(GooglePurchase.name)
     private googlePurchaseModel: Model<GooglePurchase>,
@@ -36,16 +30,9 @@ export class GoogleIAPService {
     @InjectModel(IapNotificationLog.name)
     private iapNotificationLogModel: Model<IapNotificationLog>,
 
-    private googleApi: GoogleApiService,
-  ) {
-    this.androidPublisher = new androidpublisher_v3.Androidpublisher({
-      auth: new auth.GoogleAuth({
-        credentials: GOOGLE_SERVICE_ACCOUNT,
-        scopes: ['https://www.googleapis.com/auth/androidpublisher'],
-      }),
-    });
-    this.authClient = this.androidPublisher.context._options.auth;
-  }
+    private googlePlayService: GoogleApiService,
+    private mappingRepo: MappingRepoService,
+  ) {}
   parsePubSubMessage(
     body: GooglePubSubMessageDto,
   ): GoogleDeveloperNotification {
@@ -55,232 +42,6 @@ export class GoogleIAPService {
     );
     return JSON.parse(decodedData);
   }
-
-  /**
-   * Calls Google Play Developer API to get subscription purchase status.
-   * @param productId The subscription product ID (SKU).
-   * @param purchaseToken The purchase token from the notification.
-   */
-  private async fetchSubscriptionStatus(
-    productId: string,
-    purchaseToken: string,
-  ): Promise<androidpublisher_v3.Schema$SubscriptionPurchase | null> {
-    if (!this.authClient) {
-      throw new Error('Google API client not configured');
-    }
-    const auth = await this.authClient.getClient();
-    try {
-      const res = await this.androidPublisher.purchases.subscriptions.get({
-        packageName: GOOGLE_PACKAGE_NAME,
-        subscriptionId: productId,
-        token: purchaseToken,
-        auth,
-      });
-      return res.data;
-    } catch (err) {
-      this.logger.error(
-        `Google API fetch failed for token ${purchaseToken}: ${err}`,
-      );
-      throw err;
-    }
-  }
-
-  /**
-  //  * Process a Google RTDN DeveloperNotification.
-  //  * @param notification The decoded DeveloperNotification object from the Google notification.
-  //  */
-  // async handleNotification(notification: any): Promise<void> {
-  //   // The notification could be subscriptionNotification, oneTimeProductNotification, etc.
-  //   const subNotif = notification.subscriptionNotification;
-  //   const oneTimeNotif = notification.oneTimeProductNotification;
-  //   const testNotif = notification.testNotification;
-  //   const voidedNotif = notification.voidedPurchaseNotification;
-
-  //   // Log basic info about the event
-  //   let eventTypeDesc = '';
-  //   if (subNotif) {
-  //     eventTypeDesc = `subscriptionNotification: type=${subNotif.notificationType}`;
-  //   } else if (oneTimeNotif) {
-  //     eventTypeDesc = `oneTimeProductNotification: type=${oneTimeNotif.notificationType}`;
-  //   } else if (testNotif) {
-  //     eventTypeDesc = 'testNotification';
-  //   } else if (voidedNotif) {
-  //     eventTypeDesc = `voidedPurchaseNotification (orderId=${voidedNotif.orderId})`;
-  //   }
-  //   this.logger.log(`Received Google RTDN: ${eventTypeDesc}`);
-
-  //   // Create log entry in IapReceipt
-  //   const iapLog = new this.iapReceiptModel({
-  //     platform: SubscriptionServiceType.ANDROID_PLAY_STORE,
-  //     rawReceipt: JSON.stringify(notification), // store entire DeveloperNotification JSON
-  //     subscriptionId: undefined,
-  //     isValidated: false,
-  //     validationAttempts: 0,
-  //   });
-
-  //   // Determine purchaseToken and productId depending on notification type
-  //   let purchaseToken: string | undefined;
-  //   let productId: string | undefined;
-  //   if (subNotif) {
-  //     purchaseToken = subNotif.purchaseToken;
-  //     // Unfortunately, subscriptionNotification does not include the productId (subscription ID).
-  //     // We might need to look it up from our database using the purchaseToken.
-  //   } else if (oneTimeNotif) {
-  //     purchaseToken = oneTimeNotif.purchaseToken;
-  //     productId = oneTimeNotif.sku; // one-time product SKU is provided
-  //   } else if (voidedNotif) {
-  //     purchaseToken = voidedNotif.purchaseToken;
-  //     // productType tells if it's subscription or in-app product (1 = subscription)
-  //     if (voidedNotif.productType === 1) {
-  //       // subscription voided
-  //       // We might handle this similar to a cancellation.
-  //     }
-  //   } else if (testNotif) {
-  //     // This is a test message from Google. We can simply log and save.
-  //     this.logger.log('Google test notification received.');
-  //     iapLog.validationAttempts = 1;
-  //     iapLog.isValidated = true;
-  //     iapLog.validationResponse = { message: 'Test notification received' };
-  //     await iapLog.save();
-  //     return;
-  //   }
-
-  //   if (!purchaseToken) {
-  //     // If we couldn't extract a purchase token, log and exit.
-  //     this.logger.error('No purchase token found in notification');
-  //     iapLog.validationResponse = {
-  //       error: 'No purchase token in notification',
-  //     };
-  //     await iapLog.save();
-  //     return;
-  //   }
-
-  //   // Find existing GooglePurchase by purchaseToken
-  //   let googlePurchase = await this.googlePurchaseModel.findOne({
-  //     purchaseToken,
-  //   });
-  //   if (googlePurchase) {
-  //     iapLog.subscriptionId = googlePurchase.subscription; // link to Subscription (user's subscription record)
-  //     if (!productId) {
-  //       productId = googlePurchase.productId;
-  //     }
-  //   }
-
-  //   // Save log (initially) before validation
-  //   iapLog.validationAttempts = 1;
-  //   await iapLog.save();
-
-  //   // If we don't know the productId yet (for subscriptionNotification), try to get it from GooglePurchase or we will fetch via API regardless.
-  //   if (!productId) {
-  //     this.logger.log(
-  //       `Product ID not known for token ${purchaseToken}, will fetch via API.`,
-  //     );
-  //   }
-
-  //   // Call Google API to get the latest subscription/purchase status
-  //   let apiResponse: any;
-  //   try {
-  //     // For subscription notifications, we must call the subscriptions.get endpoint.
-  //     if (subNotif) {
-  //       // If productId is still undefined (it might be if we never saw this token before), we still attempt API call.
-  //       productId = productId || '<unknown_subscription>';
-  //       apiResponse = await this.fetchSubscriptionStatus(
-  //         productId,
-  //         purchaseToken,
-  //       );
-  //     } else if (oneTimeNotif) {
-  //       // For one-time purchases, use purchases.products.get
-  //       const auth = await this.authClient.getClient();
-  //       const res = await this.androidPublisher.purchases.products.get({
-  //         packageName: GOOGLE_PACKAGE_NAME,
-  //         productId: productId!, // oneTimeNotif.sku provided earlier
-  //         token: purchaseToken,
-  //         auth,
-  //       });
-  //       apiResponse = res.data;
-  //     } else if (voidedNotif) {
-  //       // For voided purchases, we might not need to call an API; the notification itself indicates a refund/void.
-  //       apiResponse = { voided: true, orderId: voidedNotif.orderId };
-  //     }
-  //   } catch (err) {
-  //     // API call failed (e.g., invalid token or network issue)
-  //     this.logger.error(`Google API validation failed: ${err}`);
-  //     iapLog.validationResponse = {
-  //       error: 'Google API call failed',
-  //       details: err.message,
-  //     };
-  //     await iapLog.save();
-  //     return;
-  //   }
-
-  //   // Log the API response in the IapReceipt
-  //   iapLog.validationResponse = apiResponse;
-  //   iapLog.isValidated = true;
-
-  //   // Update or create GooglePurchase record with latest info
-  //   if (!googlePurchase) {
-  //     // Create a new GooglePurchase if not exists (e.g., new subscription purchase event)
-  //     googlePurchase = new this.googlePurchaseModel({
-  //       subscription: undefined, // link to Subscription if we create one
-  //       purchaseToken: purchaseToken,
-  //       productId: productId || (subNotif ? 'unknown' : ''),
-  //       packageName: GOOGLE_PACKAGE_NAME,
-  //     });
-  //   }
-  //   // Update fields based on API response if available
-  //   if (apiResponse) {
-  //     // For subscription:
-  //     if (apiResponse.expiryTimeMillis) {
-  //       googlePurchase.expiryTime = new Date(
-  //         Number(apiResponse.expiryTimeMillis),
-  //       );
-  //     }
-  //     if (apiResponse.startTimeMillis) {
-  //       googlePurchase.purchaseTime = new Date(
-  //         Number(apiResponse.startTimeMillis),
-  //       );
-  //     }
-  //     // If API indicates canceled or revoked:
-  //     if (apiResponse.cancelReason !== undefined) {
-  //       // cancelReason: 0 = user canceled, 1 = developer canceled
-  //       // We'll mark as expired if user/developer canceled.
-  //       if (apiResponse.cancelReason !== null) {
-  //         // If a subscription is canceled but still active until expiry, we still consider it valid until expiryTime.
-  //       }
-  //     }
-  //     // Determine status (valid or expired) by comparing expiry time to now
-  //     if (
-  //       googlePurchase.expiryTime &&
-  //       googlePurchase.expiryTime.getTime() < Date.now()
-  //     ) {
-  //       googlePurchase.status = ReceiptStatus.EXPIRED;
-  //     } else {
-  //       googlePurchase.status = ReceiptStatus.VALID;
-  //     }
-  //   }
-
-  //   // Save the GooglePurchase
-  //   await googlePurchase.save();
-  //   // Link subscription in log if available
-  //   if (!iapLog.subscriptionId && googlePurchase.subscription) {
-  //     iapLog.subscriptionId = googlePurchase.subscription;
-  //   }
-  //   // Save updated log (and potentially store an identifier for this notification)
-  //   if (subNotif) {
-  //     iapLog.latestTransactionId = purchaseToken; // For Google, purchaseToken uniquely identifies the subscription purchase series
-  //   } else if (oneTimeNotif) {
-  //     iapLog.latestTransactionId = oneTimeNotif.purchaseToken;
-  //   } else if (voidedNotif) {
-  //     iapLog.latestTransactionId = voidedNotif.orderId; // use orderId as an identifier for voided events
-  //   }
-  //   await iapLog.save();
-
-  //   // (Optional) Update your Subscription model to reflect new status (active/expired) using googlePurchase.status and expiryTime.
-
-  //   this.logger.log(
-  //     `Processed Google notification (token=${purchaseToken}): set status=${googlePurchase.status}, expiry=${googlePurchase.expiryTime}`,
-  //   );
-  // }
 
   async processNotification(
     notification: GoogleDeveloperNotification,
@@ -306,27 +67,46 @@ export class GoogleIAPService {
     let notificationType: string;
     let googleResponse: any = null;
 
-    const foundProduct = await this.subscriptionProductModel.findOne({
-      googleProductId: productId,
-    });
-    if (!foundProduct) {
-      this.logger.warn(
-        `No subscription product found for Google ID: ${productId}`,
-      );
-      throw new Error('Unknown product ID from Google notification');
-    }
+    let productDocId = null;
+
     if (subscriptionNotification) {
       purchaseToken = subscriptionNotification.purchaseToken;
       productId = subscriptionNotification.subscriptionId;
+      const foundProduct = await this.subscriptionProductModel.findOne({
+        googleProductId: productId,
+      });
+      if (!foundProduct) {
+        this.logger.warn(
+          `No subscription product found for Google ID: ${productId}`,
+        );
+        throw new Error('Unknown product ID from Google notification');
+      }
+      productDocId = foundProduct._id;
       notificationType = this.mapSubscriptionNotificationType(
         subscriptionNotification.notificationType,
       );
       // Validate via Google Play Developer API (Subscription)
-      googleResponse = await this.googleApi.getSubscriptionStatus(
+      googleResponse = await this.googlePlayService.getSubscriptionStatus(
         packageName,
-        productId,
         purchaseToken,
       );
+      const obfuscatedId =
+        googleResponse?.externalAccountIdentifiers
+          ?.obfuscatedExternalAccountId ?? null;
+      const businessId = obfuscatedId
+        ? await this.mappingRepo.findBusinessByObfuscatedId(obfuscatedId)
+        : null;
+      if (!businessId) {
+        this.logger.warn(
+          `No business found for obfuscatedExternalAccountId: ${obfuscatedId}`,
+        );
+      }
+      await this.mappingRepo.upsertPurchaseTokenMapping({
+        purchaseToken,
+        businessId,
+        packageName,
+        productId,
+      });
     } else if (oneTimeProductNotification) {
       purchaseToken = oneTimeProductNotification.purchaseToken;
       productId = oneTimeProductNotification.sku;
@@ -335,20 +115,39 @@ export class GoogleIAPService {
           ? 'ONE_TIME_PURCHASED'
           : 'ONE_TIME_CANCELED';
       // Validate via Google API (one-time purchase)
-      googleResponse = await this.googleApi.getProductPurchaseStatus(
+      googleResponse = await this.googlePlayService.getProductPurchaseStatus(
         packageName,
-        productId,
         purchaseToken,
       );
+      const obfId = googleResponse?.obfuscatedExternalAccountId ?? null; // productsV2 field
+      let businessId = obfId
+        ? await this.mappingRepo.findBusinessByObfuscatedId(obfId)
+        : await this.mappingRepo.findBusinessByPurchaseToken(purchaseToken);
+      if (businessId) {
+        await this.mappingRepo.upsertPurchaseTokenMapping({
+          purchaseToken,
+          businessId,
+          packageName,
+          productId,
+        });
+      }
+      const ack = googleResponse?.acknowledgementState; // ACKNOWLEDGEMENT_STATE_*
+      if (ack === 'ACKNOWLEDGEMENT_STATE_PENDING') {
+        await this.googlePlayService.acknowledgeProduct(
+          packageName,
+          productId,
+          purchaseToken,
+        ); // server ack
+      }
     } else if (voidedPurchaseNotification) {
       purchaseToken = voidedPurchaseNotification.purchaseToken;
       // This indicates a purchase was voided (refunded or canceled by developer). We'll handle as a separate flow.
       notificationType = 'PURCHASE_VOIDED';
       // (Google Play Developer API offers a voided purchases API, but we might not need to call it here; the notification itself is the event.)
-      googleResponse = null;
+      googleResponse = { voided: true };
     } else {
       console.warn('Unknown Google notification type structure', notification);
-      return;
+      throw new Error('Unknown Google notification type');
     }
 
     // **Deduplication**: avoid processing the same purchase token + eventTime twice
@@ -363,7 +162,7 @@ export class GoogleIAPService {
         console.log(
           `Duplicate Google event for token ${purchaseToken} at ${eventTime} ignored.`,
         );
-        return;
+        throw new Error('Duplicate event');
       }
     }
 
@@ -396,7 +195,7 @@ export class GoogleIAPService {
       case 'SUBSCRIPTION_PURCHASED': {
         // New subscription started
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.product = new mongoose.Types.ObjectId(foundProduct.id);
+        subscription.product = productDocId;
         subscription.autoRenew = true;
         // Set expiration from Google API response
         // Google API (purchases.subscriptions.get) returns an "expiryTimeMillis"
@@ -512,6 +311,85 @@ export class GoogleIAPService {
     }
     purchaseRec.lastNotificationType = notificationType;
     await purchaseRec.save();
+  }
+
+  async validatePurchase(
+    businessId: string,
+    packageName: string,
+    productId: string,
+    purchaseToken: string,
+  ): Promise<boolean> {
+    // Heuristic: if it's in your subscription catalog, treat as subscription; otherwise one-time
+    const isSub = !!(await this.subscriptionProductModel.findOne({
+      googleProductId: productId,
+    }));
+
+    if (isSub) {
+      const sub = await this.googlePlayService.getSubscriptionStatus(
+        packageName,
+        purchaseToken,
+      ); // v2
+      if (!sub) {
+        this.logger.warn(`No sub for token: ${purchaseToken}`);
+        return false;
+      }
+
+      // Map + persist
+      await this.mappingRepo.upsertPurchaseTokenMapping({
+        purchaseToken,
+        packageName,
+        productId,
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      const obf =
+        sub?.externalAccountIdentifiers?.obfuscatedExternalAccountId ?? '';
+      if (obf) {
+        await this.mappingRepo.upsertObfuscatedIdMapping({
+          obfuscatedExternalAccountId: obf,
+          businessId: new mongoose.Types.ObjectId(businessId),
+        });
+      }
+      return true;
+    }
+
+    // ----- One-time product path -----
+    const prod = await this.googlePlayService.getProductPurchaseStatus(
+      packageName,
+      purchaseToken,
+    ); // v2
+    if (!prod) {
+      this.logger.warn(`No product for token: ${purchaseToken}`);
+      return false;
+    }
+
+    // Persist mappings (primary via obfuscated ID if available)
+    const obf = prod?.obfuscatedExternalAccountId ?? '';
+    await this.mappingRepo.upsertPurchaseTokenMapping({
+      purchaseToken,
+      packageName,
+      productId,
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+    if (obf) {
+      await this.mappingRepo.upsertObfuscatedIdMapping({
+        obfuscatedExternalAccountId: obf,
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+    }
+
+    // Optional: acknowledge one-time if pending (avoid refund)
+    if (prod?.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING') {
+      await this.googlePlayService.acknowledgeProduct(
+        packageName,
+        productId,
+        purchaseToken,
+      ); // server ack
+    }
+
+    // Interpret product state: PURCHASED / PENDING / CANCELLED
+    const state = prod?.purchaseStateContext?.purchaseState;
+    return state === 'PURCHASED';
   }
 
   private async mapToUser(

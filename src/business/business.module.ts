@@ -32,7 +32,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   Notification,
   NotificationSchema,
@@ -141,7 +141,10 @@ import {
 } from './model/userAllowedNotification.model';
 import { Reward, RewardSchema } from 'src/rewards/model/reward.model';
 import { RedisBullService } from 'src/notification/redisBull.service';
-import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 import {
   SampleDocument,
   SampleDocumentSchema,
@@ -158,6 +161,7 @@ import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -221,8 +225,14 @@ import {
       },
       { name: Reward.name, schema: RewardSchema }, // Ensure Reward is imported and used here
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-      { name: BusinessDocVerificationLeads.name, schema: BusinessDocVerificationLeadsSchema },
-      { name: OwnershipTransferRecord.name, schema: OwnershipTransferRecordSchema },
+      {
+        name: BusinessDocVerificationLeads.name,
+        schema: BusinessDocVerificationLeadsSchema,
+      },
+      {
+        name: OwnershipTransferRecord.name,
+        schema: OwnershipTransferRecordSchema,
+      },
       { name: Broadcast.name, schema: BroadcastSchema },
       {
         name: BusinessDocVerificationLeads.name,
@@ -236,6 +246,7 @@ import {
         name: SubscriptionPrice.name,
         schema: SubscriptionPriceSchema,
       },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
   ],
   controllers: [BusinessController],

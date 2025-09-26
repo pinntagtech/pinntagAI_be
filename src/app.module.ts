@@ -110,7 +110,7 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from './auth/models/guestSession.model';
-import { Refferal, RefferalSchema } from './subscription/models/refferal.model';
+import { Refferal, RefferalSchema } from './subscription/models/referral.model';
 import {
   EventLocation,
   EventLocationSchema,
@@ -155,13 +155,23 @@ import {
   UserAllowedNotificationSchema,
 } from './business/model/userAllowedNotification.model';
 import { Reward, RewardSchema } from './rewards/model/reward.model';
-import { SampleDocument, SampleDocumentSchema } from './admin/models/sampleDocuments.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from './admin/models/sampleDocuments.model';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EtlModule } from './etl/etl.module';
 import { RedisBullService } from './notification/redisBull.service';
-import { Broadcast, BroadcastSchema } from './notification/models/broadcast.model';
-import { SubscriptionPrice, SubscriptionPriceSchema } from './subscription/models/subscription-price.model';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from './notification/models/broadcast.model';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from './subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from './subscription/models/coupon.model';
 
 @Module({
   imports: [
@@ -172,7 +182,7 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from './subscription/model
       isGlobal: true,
       envFilePath: './.env',
     }),
-     CacheModule.registerAsync({
+    CacheModule.registerAsync({
       isGlobal: true, // makes cache available everywhere
       useFactory: async () => ({
         store: redisStore,
@@ -253,7 +263,8 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from './subscription/model
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-       { name: Broadcast.name, schema: BroadcastSchema }
+      { name: Broadcast.name, schema: BroadcastSchema },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
     StripeeModule,
     AuthModule,

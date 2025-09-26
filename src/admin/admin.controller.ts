@@ -5,8 +5,6 @@ import {
   Controller,
   Delete,
   Get,
-  Head,
-  HttpStatus,
   Param,
   Patch,
   Post,
@@ -45,8 +43,6 @@ import {
   CreateIndustryDto,
   UpdateIndustryDto,
 } from './dto/business-industry.dto';
-import { database } from 'firebase-admin';
-import { BusinessCategory } from 'src/business/model/businessCategory.model';
 import {
   BusinessCategoryDto,
   UpdateBusinessCategoryDto,
@@ -59,15 +55,11 @@ import {
   FileFieldsInterceptor,
   FileInterceptor,
 } from '@nestjs/platform-express';
-import { RateLimit } from 'nestjs-rate-limiter';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
-import {
-  CreateReferralDto,
-  UpdateReferralDto,
-} from './dto/create-referral.dto';
+import { CreateCouponDto, UpdateCouponDto } from './dto/create-coupon.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1402,13 +1394,13 @@ export class AdminController {
     }
   }
 
-  @Post('referral/create')
+  @Post('coupon/create')
   @UseGuards(AdminGuard2)
-  async createReferral(
-    @Body() data: CreateReferralDto,
+  async createCoupon(
+    @Body() data: CreateCouponDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.createReferral(user.id, data);
+    const result = await this.adminService.createCoupon(user.id, data);
     if (result.success) {
       return { message: result.message, data: result.data };
     } else {
@@ -1416,19 +1408,16 @@ export class AdminController {
     }
   }
 
-  @Get('all')
+  @Get('coupons/all')
   @UseGuards(AdminGuard2)
-  async getAllReferrals() {
-    return this.adminService.getAllReferrals();
+  async getAllCoupons() {
+    return this.adminService.getAllCoupons();
   }
 
-  @Patch('update/:id')
+  @Patch('coupons/update/:id')
   @UseGuards(AdminGuard2)
-  async updateReferral(
-    @Param('id') id: string,
-    @Body() data: UpdateReferralDto,
-  ) {
-    const result = await this.adminService.updateReferral(id, data);
+  async updateCoupon(@Param('id') id: string, @Body() data: UpdateCouponDto) {
+    const result = await this.adminService.updateCoupon(id, data);
     if (result.success) {
       return { message: result.message, data: result.data };
     } else {
@@ -1436,10 +1425,10 @@ export class AdminController {
     }
   }
 
-  @Delete('delete/:id')
+  @Delete('coupons/delete/:id')
   @UseGuards(AdminGuard2)
-  async deleteReferral(@Param('id') id: string) {
-    const result = await this.adminService.deleteReferral(id);
+  async deleteCoupon(@Param('id') id: string) {
+    const result = await this.adminService.deleteCoupon(id);
     if (result.success) {
       return { message: result.message };
     } else {
@@ -1447,10 +1436,10 @@ export class AdminController {
     }
   }
 
-  @Patch('blacklist/:id')
+  @Patch('coupons/blacklist/:id')
   @UseGuards(AdminGuard2)
-  async blacklistReferral(@Param('id') id: string) {
-    const result = await this.adminService.blacklistReferral(id);
+  async blacklistCoupon(@Param('id') id: string) {
+    const result = await this.adminService.blacklistCoupon(id);
     if (result.success) {
       return { message: result.message, data: result.data };
     } else {

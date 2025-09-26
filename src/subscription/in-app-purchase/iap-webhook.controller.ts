@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpCode,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -24,7 +25,7 @@ export class IapWebhookController {
 
   // Apple App Store server notifications (V2)
   @Post('apple')
-  @HttpCode(200) // Apple expects a 200 OK response
+  @HttpCode(HttpStatus.OK) // Apple expects a 200 OK response
   @UseGuards(AppleNotificationGuard) // Verify Apple signature
   async handleAppleNotification(@Req() req: Request, @Res() res: Response) {
     const notification = req.body;
@@ -37,7 +38,7 @@ export class IapWebhookController {
 
   // Google Play real-time developer notifications
   @Post('google')
-  @HttpCode(200) // Google expects a 200 OK response
+  @HttpCode(HttpStatus.OK) // Google expects a 200 OK response
   @UseGuards(GoogleNotificationGuard) // (Optional) Verify Google authenticity
   async handleGoogleNotification(
     @Body() body: GooglePubSubMessageDto,

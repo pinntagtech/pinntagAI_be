@@ -30,7 +30,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import { S3Service } from 'src/s3.service';
 import {
   EventLocation,
@@ -142,11 +142,15 @@ import {
   SampleDocumentSchema,
 } from 'src/admin/models/sampleDocuments.model';
 import { RedisBullService } from 'src/notification/redisBull.service';
-import { Broadcast, BroadcastSchema } from 'src/notification/models/broadcast.model';
+import {
+  Broadcast,
+  BroadcastSchema,
+} from 'src/notification/models/broadcast.model';
 import {
   SubscriptionPrice,
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
+import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 
 @Global()
 @Module({
@@ -201,13 +205,14 @@ import {
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
-      { name: Broadcast.name, schema: BroadcastSchema},
+      { name: Broadcast.name, schema: BroadcastSchema },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,
       },
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
+      { name: Coupon.name, schema: CouponSchema },
     ]),
     MailerModule.forRoot({
       transport: {

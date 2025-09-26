@@ -29,7 +29,7 @@ import {
 import {
   Refferal,
   RefferalSchema,
-} from 'src/subscription/models/refferal.model';
+} from 'src/subscription/models/referral.model';
 import {
   Notification,
   NotificationSchema,
@@ -55,7 +55,10 @@ import {
   BusinessUserSchema,
 } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
-import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import {
+  SampleDocument,
+  SampleDocumentSchema,
+} from 'src/admin/models/sampleDocuments.model';
 
 @Module({
   imports: [

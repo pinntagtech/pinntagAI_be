@@ -8,13 +8,9 @@ import {
   IsDateString,
   IsEnum,
 } from 'class-validator';
+import { CouponType } from 'src/subscription/models/coupon.model';
 
-export enum ReferralType {
-  PROMOTION = 'promotion',
-  COUPON = 'coupon',
-}
-
-export class CreateReferralDto {
+export class CreateCouponDto {
   @IsString()
   @IsNotEmpty()
   code: string;
@@ -27,15 +23,15 @@ export class CreateReferralDto {
   @IsNotEmpty()
   user: string;
 
-  @IsEnum(ReferralType)
-  referralType: ReferralType;
+  @IsEnum(CouponType)
+  couponType: CouponType;
 
   @IsDateString()
   @IsOptional()
   expiresAt?: Date;
 }
 
-export class UpdateReferralDto {
+export class UpdateCouponDto {
   @IsNumber()
   @IsOptional()
   amount?: number;
@@ -44,9 +40,9 @@ export class UpdateReferralDto {
   @IsOptional()
   isBlacklisted?: boolean;
 
-  @IsEnum(ReferralType)
+  @IsEnum(CouponType)
   @IsOptional()
-  referralType?: ReferralType;
+  couponType?: CouponType;
 
   @IsDateString()
   @IsOptional()

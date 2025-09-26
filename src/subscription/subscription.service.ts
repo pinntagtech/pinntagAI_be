@@ -10,7 +10,11 @@ import { SubscriptionProduct } from './models/subscription-product.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { Transaction } from 'src/subscription/models/transaction.model';
 import { User, UserDocument } from 'src/user/models/user.model';
-import { SubscriptionSource, SubscriptionStatus, TransactionPopulates } from 'src/enums/user.enum';
+import {
+  SubscriptionSource,
+  SubscriptionStatus,
+  TransactionPopulates,
+} from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
 import { FeatureLimit } from './models/feature-limit.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
@@ -109,7 +113,9 @@ export class SubscriptionService {
 
   async getProducts(user: DecodedUser, billingInterval?: string) {
     try {
-      const userSubscription = await this.subscriptionModel.findOne({business: new mongoose.Types.ObjectId(user.businessProfile)});
+      const userSubscription = await this.subscriptionModel.findOne({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      });
       const products = await this.subscriptionProductModel.aggregate([
         // Step 1: Match only active products
         { $match: { isActive: true } },
@@ -173,7 +179,7 @@ export class SubscriptionService {
         // Step 5: Sort
         {
           $sort: { 'prices.price': 1 },
-        }
+        },
       ]);
 
       const enrichedProducts = products.map((product) => {
@@ -195,17 +201,6 @@ export class SubscriptionService {
       console.error('Error fetching products:', error);
       return [];
     }
-
-    return await this.subscriptionProductModel
-      .find({ isActive: true })
-      .populate('features', 'key value _id')
-      .populate('prices', '-product -createdAt -updatedAt -__v')
-      .select({
-        updatedAt: 0,
-        __v: 0,
-      })
-      .sort({ createdAt: -1 })
-      .exec();
   }
 
   async createProductPrice(
@@ -300,15 +295,21 @@ export class SubscriptionService {
         startDate: new Date(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
         invoiceStartDate: new Date(),
-        invoiceEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        invoiceEndDate: new Date(
+          new Date().setFullYear(new Date().getFullYear() + 1),
+        ),
         isCancelled: false,
         isTrialActive: false,
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
       };
-      const freeSubscriptionProduct = await this.subscriptionProductModel.findOne({ isFree: true });
+      const freeSubscriptionProduct =
+        await this.subscriptionProductModel.findOne({ isFree: true });
       if (!freeSubscriptionProduct) {
-        return { success: false, message: 'Free subscription product not found' };
+        return {
+          success: false,
+          message: 'Free subscription product not found',
+        };
       }
 
       const freeSubscription = await this.subscriptionModel.create({

@@ -1,5 +1,3 @@
-import { google } from 'googleapis';
-import { JWT } from 'google-auth-library';
 import { Injectable } from '@nestjs/common';
 import { androidpublisher_v3, auth } from '@googleapis/androidpublisher';
 import { GOOGLE_SERVICE_ACCOUNT } from '../iap.config';
@@ -27,32 +25,44 @@ export class GoogleApiService {
   }
 
   /** Verify a subscription purchase and retrieve its latest status */
-  async getSubscriptionStatus(
-    packageName: string,
-    subscriptionId: string,
-    purchaseToken: string,
-  ) {
-    const res = await this.androidPublisher.purchases.subscriptions.get({
+  async getSubscriptionStatus(packageName: string, purchaseToken: string) {
+    const res = await this.androidPublisher.purchases.subscriptionsv2.get({
       packageName,
-      subscriptionId,
       token: purchaseToken,
     });
-    return res.data;
+    return res.data; // includes externalAccountIdentifiers?.obfuscatedExternalAccountId
   }
 
   /** Verify a one-time in-app product purchase (if needed) */
-  async getProductPurchaseStatus(
+  async getProductPurchaseStatus(packageName: string, purchaseToken: string) {
+    const res =
+      await this.androidPublisher.purchases.productsv2.getproductpurchasev2({
+        packageName,
+        token: purchaseToken,
+      });
+    return res.data;
+  }
+
+  /** Validate a one-time product and read obfuscatedExternalAccountId (V2) */
+  async getProductPurchaseV2(packageName: string, productToken: string) {
+    const res =
+      await this.androidPublisher.purchases.productsv2.getproductpurchasev2({
+        packageName,
+        token: productToken,
+      });
+    return res.data; // includes obfuscatedExternalAccountId
+  }
+
+  async acknowledgeProduct(
     packageName: string,
     productId: string,
     purchaseToken: string,
   ) {
-    const res = await this.androidPublisher.purchases.products.get({
+    const res = await this.androidPublisher.purchases.products.acknowledge({
       packageName,
       productId,
       token: purchaseToken,
     });
     return res.data;
   }
-
-  // ... you can add more methods if needed (acknowledge purchase, etc.)
 }
