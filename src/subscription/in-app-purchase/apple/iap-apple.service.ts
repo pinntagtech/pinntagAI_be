@@ -455,7 +455,7 @@ export class AppleIAPService {
       if (!receiptRecord) {
         receiptRecord = new this.appleReceiptModel({
           originalTransactionId,
-          receiptData: '', // we don't have the full base64 receipt here
+          receiptData: 'There is no receipt data available', // we don't have the full base64 receipt here
           subscription: subscription._id,
         });
       }
