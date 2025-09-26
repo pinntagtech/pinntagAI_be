@@ -47,9 +47,16 @@ import {
   PurchaseTokenMap,
   PurchaseTokenMapSchema,
 } from '../models/iap-mapping.model';
+import { AppleIAPService } from './apple/iap-apple.service';
+import {
+  SubscriptionPrice,
+  SubscriptionPriceSchema,
+} from '../models/subscription-price.model';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: AppleReceipt.name, schema: AppleReceiptSchema },
       { name: GooglePurchase.name, schema: GooglePurchaseSchema },
@@ -67,6 +74,7 @@ import {
       { name: IapNotificationLog.name, schema: IapNotificationLogSchema },
       { name: ObfuscatedIdMap.name, schema: ObfuscatedIdMapSchema },
       { name: PurchaseTokenMap.name, schema: PurchaseTokenMapSchema },
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
     ]),
   ],
   controllers: [InAppPurchaseController],
@@ -76,6 +84,7 @@ import {
     GoogleIAPService,
     GoogleApiService,
     MappingRepoService,
+    AppleIAPService,
   ],
 })
 export class InAppPurchaseModule {}

@@ -177,10 +177,10 @@ export class AppleNotificationGuard implements CanActivate {
       // attach decoded, validated payload for downstream use
       // console.log('AppleNotificationGuard: attaching payload to request');
       (req as any).appleNotification = payload;
-      console.log(
-        'AppleNotificationGuard: verification successful, payload in request:',
-        req['appleNotification'],
-      );
+      // console.log(
+      //   'AppleNotificationGuard: verification successful, payload in request:',
+      //   req['appleNotification'],
+      // );
       return true;
     } catch (err) {
       console.error(

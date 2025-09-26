@@ -1325,17 +1325,17 @@ export class BusinessController {
   @Post('upload-address-verification-doc')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-      FileInterceptor('image', {
-        //   dest: './uploads',
-        //   fileFilter: imageFileFilter,
-        //   storage: diskStorage({
-        //     destination: './uploads',
-        //     filename: editFileName,
-        //   }),
-        //   //Setting file size limit to 1 MB
-        limits: { fileSize: 1000000 },
-      }),
-    )
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
+    }),
+  )
   async uploadAddressVerificationDoc(
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
@@ -1344,7 +1344,7 @@ export class BusinessController {
     const result = await this.businessService.uploadAddressVerificationDoc(
       user,
       image,
-      businessId
+      businessId,
     );
     if (result.success) {
       return {
@@ -1355,7 +1355,7 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
- //1
+  //1
   @Get('search/user')
   @UseGuards(JwtGuard2)
   async searchUser(
@@ -1375,9 +1375,7 @@ export class BusinessController {
   //2
   @Post('transfer/otp')
   @UseGuards(JwtGuard2)
-  async transferOtp(
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async transferOtp(@TokenDecoder() user: DecodedUser) {
     const result = await this.businessService.businessTransferOtp(user.id);
     if (result.success) {
       return {
@@ -1387,5 +1385,4 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
 }

@@ -26,6 +26,11 @@ import { SubscriptionProduct } from 'src/subscription/models/subscription-produc
 import { Business } from 'src/business/model/business.model';
 import { AppleNotificationSubtype, AppleNotificationType } from '../enums';
 import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
+import {
+  PurchaseTokenMap,
+  PurchaseTokenMapDocument,
+} from 'src/subscription/models/iap-mapping.model';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 const APPLE_VERIFY_RECEIPT_PROD_URL =
   'https://buy.itunes.apple.com/verifyReceipt';
@@ -49,6 +54,8 @@ export class AppleIAPService {
     @InjectModel(IapNotificationLog.name)
     private iapNotificationLogModel: Model<IapNotificationLog>,
     @InjectModel(Business.name) private businessModel: Model<Business>,
+    @InjectModel(PurchaseTokenMap.name)
+    private readonly purchaseTokenMapModel: Model<PurchaseTokenMapDocument>,
 
     private httpService: HttpService,
   ) {}
@@ -142,7 +149,7 @@ export class AppleIAPService {
   }
 
   async processNotification(payload: any): Promise<void> {
-    console.log('Processing Apple notification payload:', payload);
+    // console.log('Processing Apple notification payload:', payload);
     const notificationType: string = payload.notificationType;
     const subtype: string = payload.subtype;
     const notificationId: string = payload.notificationUUID; // unique UUID for this notification
@@ -188,12 +195,27 @@ export class AppleIAPService {
         this.logger.error('Failed to decode Apple signedRenewalInfo', e);
       }
     }
+    console.log('Decoded renewalInfo:', renewalInfo);
     console.log('Decoded transactionInfo:', transactionInfo);
     // Extract key identifiers from transactionInfo for database lookup
     const originalTransactionId = transactionInfo.originalTransactionId;
     const transactionId = transactionInfo.transactionId;
     const productId = transactionInfo.productId;
-    const businessId = transactionInfo.appAccountToken; // if app sets this to map to user/business
+    const packageName = transactionInfo.bundleId;
+    // const businessId = transactionInfo.appAccountToken; // if app sets this to map to user/business
+    const iapMapping = await this.purchaseTokenMapModel.findOne({
+      purchaseToken: originalTransactionId,
+      packageName,
+      productId,
+      platform: 'apple',
+    });
+    if (!iapMapping) {
+      this.logger.warn(
+        `No mapping found for originalTransactionId=${originalTransactionId}, package=${packageName}, productId=${productId}`,
+      );
+      throw new Error('No mapping found for this transaction');
+    }
+    const businessId = iapMapping.businessId;
     const business = await this.businessModel.findById(businessId);
     if (!business) {
       this.logger.warn(`Business not found for id=${businessId}`);
@@ -443,6 +465,39 @@ export class AppleIAPService {
     }
 
     // (Optional) trigger any post-processing, such as notifying the user, sending emails, etc., based on event.
+  }
+
+  async validatePurchase(token: string, businessId: string): Promise<boolean> {
+    try {
+      let transactionInfo: any = {};
+      if (!verifyAppleJws(token)) {
+        this.logger.warn('Invalid JWS signature for token');
+        throw new Error('Invalid JWS signature');
+      }
+      try {
+        const decoded = JSON.parse(
+          Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
+        );
+        transactionInfo = decoded;
+      } catch (e) {
+        this.logger.error('Failed to decode Apple token', e);
+      }
+      const purchaseToken = transactionInfo.originalTransactionId;
+      const transactionId = transactionInfo.transactionId;
+      const productId = transactionInfo.productId;
+      const packageName = transactionInfo.bundleId;
+      await this.purchaseTokenMapModel.create({
+        purchaseToken,
+        businessId: new mongoose.Types.ObjectId(businessId),
+        packageName,
+        productId,
+        platform: 'apple',
+      });
+      return true;
+    } catch (error) {
+      this.logger.error('Error validating Apple purchase', error);
+      return false;
+    }
   }
 
   private async mapToUser(
