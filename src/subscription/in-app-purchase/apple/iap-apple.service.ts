@@ -142,6 +142,7 @@ export class AppleIAPService {
   }
 
   async processNotification(payload: any): Promise<void> {
+    console.log('Processing Apple notification payload:', payload);
     const notificationType: string = payload.notificationType;
     const subtype: string = payload.subtype;
     const notificationId: string = payload.notificationUUID; // unique UUID for this notification
@@ -149,6 +150,9 @@ export class AppleIAPService {
     // The data object contains JWS strings for transaction and (maybe) renewal info
     const signedTransactionInfo = data.signedTransactionInfo;
     const signedRenewalInfo = data.signedRenewalInfo; // might be present for certain types
+    console.log(
+      `Apple notification type=${notificationType}, subtype=${subtype}, id=${notificationId}`,
+    );
     // Decode the signedTransactionInfo to get details (claims include transactionId, originalTransactionId, productId, purchaseDate, etc)
     let transactionInfo: any = {};
     if (signedTransactionInfo) {
@@ -184,7 +188,7 @@ export class AppleIAPService {
         this.logger.error('Failed to decode Apple signedRenewalInfo', e);
       }
     }
-
+    console.log('Decoded transactionInfo:', transactionInfo);
     // Extract key identifiers from transactionInfo for database lookup
     const originalTransactionId = transactionInfo.originalTransactionId;
     const transactionId = transactionInfo.transactionId;

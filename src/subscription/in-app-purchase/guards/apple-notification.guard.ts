@@ -32,82 +32,107 @@ function certDerToSha256Hex(der: Buffer): string {
 @Injectable()
 export class AppleNotificationGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const req = ctx.switchToHttp().getRequest<Request>();
-    const body: any = (req as any).body;
-    if (!body || !body['signedPayload']) {
-      throw new BadRequestException('Missing signedPayload');
-    }
-
-    const signedPayload: string = body['signedPayload'];
-    const parts = signedPayload.split('.');
-    if (parts.length !== 3) {
-      throw new BadRequestException('Invalid JWS format');
-    }
-
-    const [headerB64u, payloadB64u, sigB64u] = parts;
-    const headerJson = b64urlToBuffer(headerB64u).toString('utf8');
-    const payloadJson = b64urlToBuffer(payloadB64u).toString('utf8');
-
-    let header: any, payload: any;
     try {
-      header = JSON.parse(headerJson);
-      payload = JSON.parse(payloadJson);
-    } catch {
-      throw new BadRequestException('Invalid JWS JSON');
-    }
-
-    // alg check
-    if (!header.alg || !ALLOWED_ALGS.has(header.alg)) {
-      throw new UnauthorizedException(`Unsupported alg: ${header.alg}`);
-    }
-
-    // x5c chain present?
-    const x5c: string[] = header.x5c;
-    if (!x5c || x5c.length < 1) {
-      throw new UnauthorizedException('Missing x5c certificate chain');
-    }
-
-    // Convert x5c to PEM/DER
-    const leafDer = Buffer.from(x5c[0], 'base64');
-    const leafPem = `-----BEGIN CERTIFICATE-----\n${x5c[0]}\n-----END CERTIFICATE-----`;
-    const intermediateDer = x5c[1] ? Buffer.from(x5c[1], 'base64') : undefined;
-    const rootDer = x5c[2] ? Buffer.from(x5c[2], 'base64') : undefined;
-
-    // Optional but HIGHLY recommended: validate that the root in chain == Apple Root CA G3 fingerprint
-    if (APPLE_ROOT_G3_SHA256 && rootDer) {
-      const rootFp = certDerToSha256Hex(rootDer);
-      if (rootFp !== APPLE_ROOT_G3_SHA256) {
-        throw new UnauthorizedException('Apple root CA fingerprint mismatch');
+      console.log('AppleNotificationGuard: verifying request');
+      const req = ctx.switchToHttp().getRequest<Request>();
+      const body: any = (req as any).body;
+      if (!body || !body['signedPayload']) {
+        console.error('AppleNotificationGuard: missing signedPayload');
+        throw new BadRequestException('Missing signedPayload');
       }
-    }
 
-    // Verify signature using the leaf certificate public key
-    const verify = crypto.createVerify('RSA-SHA256'); // Node maps EC algs via named curves internally
-    verify.update(`${headerB64u}.${payloadB64u}`);
-    verify.end();
-    const ok = verify.verify(leafPem, b64urlToBuffer(sigB64u));
-    if (!ok) {
-      throw new UnauthorizedException('Invalid Apple JWS signature');
-    }
+      const signedPayload: string = body['signedPayload'];
+      console.log('AppleNotificationGuard: received signedPayload');
+      const parts = signedPayload.split('.');
+      if (parts.length !== 3) {
+        console.error('AppleNotificationGuard: Invalid JWS format');
+        throw new BadRequestException('Invalid JWS format');
+      }
 
-    // Basic payload sanity checks
-    // payload.notificationType / payload.subtype / payload.data.{bundleId,appAppleId}
-    const bundleId = payload?.data?.bundleId;
-    const appAppleId = payload?.data?.appAppleId;
-    if (APP_BUNDLE_ID && bundleId && bundleId !== APP_BUNDLE_ID) {
-      throw new UnauthorizedException(`bundleId mismatch: ${bundleId}`);
-    }
-    if (
-      APP_APPLE_ID &&
-      appAppleId &&
-      String(appAppleId) !== String(APP_APPLE_ID)
-    ) {
-      throw new UnauthorizedException(`appAppleId mismatch: ${appAppleId}`);
-    }
+      const [headerB64u, payloadB64u, sigB64u] = parts;
+      const headerJson = b64urlToBuffer(headerB64u).toString('utf8');
+      const payloadJson = b64urlToBuffer(payloadB64u).toString('utf8');
+      console.log('AppleNotificationGuard: decoded header:', headerJson);
+      console.log('AppleNotificationGuard: decoded payload:', payloadJson);
+      let header: any, payload: any;
+      try {
+        header = JSON.parse(headerJson);
+        payload = JSON.parse(payloadJson);
+      } catch {
+        throw new BadRequestException('Invalid JWS JSON');
+      }
 
-    // attach decoded, validated payload for downstream use
-    (req as any).appleNotification = payload;
+      // alg check
+      if (!header.alg || !ALLOWED_ALGS.has(header.alg)) {
+        console.error(`AppleNotificationGuard: Unsupported alg: ${header.alg}`);
+        throw new UnauthorizedException(`Unsupported alg: ${header.alg}`);
+      }
 
-    return true;
+      // x5c chain present?
+      const x5c: string[] = header.x5c;
+      if (!x5c || x5c.length < 1) {
+        console.error('AppleNotificationGuard: Missing x5c certificate chain');
+        throw new UnauthorizedException('Missing x5c certificate chain');
+      }
+
+      // Convert x5c to PEM/DER
+      const leafDer = Buffer.from(x5c[0], 'base64');
+      const leafPem = `-----BEGIN CERTIFICATE-----\n${x5c[0]}\n-----END CERTIFICATE-----`;
+      const intermediateDer = x5c[1]
+        ? Buffer.from(x5c[1], 'base64')
+        : undefined;
+      const rootDer = x5c[2] ? Buffer.from(x5c[2], 'base64') : undefined;
+
+      // Optional but HIGHLY recommended: validate that the root in chain == Apple Root CA G3 fingerprint
+      if (APPLE_ROOT_G3_SHA256 && rootDer) {
+        const rootFp = certDerToSha256Hex(rootDer);
+        if (rootFp !== APPLE_ROOT_G3_SHA256) {
+          console.error(
+            `AppleNotificationGuard: Apple root CA fingerprint mismatch: ${rootFp}`,
+          );
+          throw new UnauthorizedException('Apple root CA fingerprint mismatch');
+        }
+      }
+
+      // Verify signature using the leaf certificate public key
+      const verify = crypto.createVerify('RSA-SHA256'); // Node maps EC algs via named curves internally
+      verify.update(`${headerB64u}.${payloadB64u}`);
+      verify.end();
+      const ok = verify.verify(leafPem, b64urlToBuffer(sigB64u));
+      if (!ok) {
+        console.error('AppleNotificationGuard: Invalid JWS signature');
+        throw new UnauthorizedException('Invalid Apple JWS signature');
+      }
+
+      // Basic payload sanity checks
+      // payload.notificationType / payload.subtype / payload.data.{bundleId,appAppleId}
+      const bundleId = payload?.data?.bundleId;
+      const appAppleId = payload?.data?.appAppleId;
+      if (APP_BUNDLE_ID && bundleId && bundleId !== APP_BUNDLE_ID) {
+        console.error(`AppleNotificationGuard: bundleId mismatch: ${bundleId}`);
+        throw new UnauthorizedException(`bundleId mismatch: ${bundleId}`);
+      }
+      if (
+        APP_APPLE_ID &&
+        appAppleId &&
+        String(appAppleId) !== String(APP_APPLE_ID)
+      ) {
+        console.error(
+          `AppleNotificationGuard: appAppleId mismatch: ${appAppleId}`,
+        );
+        throw new UnauthorizedException(`appAppleId mismatch: ${appAppleId}`);
+      }
+
+      // attach decoded, validated payload for downstream use
+      (req as any).appleNotification = payload;
+
+      return true;
+    } catch (err) {
+      console.error(
+        'AppleNotificationGuard: Exception during verification',
+        err,
+      );
+      throw err;
+    }
   }
 }
