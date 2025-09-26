@@ -61,8 +61,8 @@ export class InAppPurchaseController {
       user.businessProfile,
     );
     const result = await this.appleService.validatePurchase(
-      user.businessProfile,
       token,
+      user.businessProfile,
     );
     return result;
   }
