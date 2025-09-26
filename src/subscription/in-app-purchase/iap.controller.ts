@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { InAppPurchaseService } from './iap.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
@@ -44,6 +45,7 @@ export class InAppPurchaseController {
 
   @Post('apple/validate')
   @UseGuards(JwtGuard2)
+  @HttpCode(200)
   async validateApplePurchase(
     @Body() body: any,
     @TokenDecoder() user: DecodedUser,
