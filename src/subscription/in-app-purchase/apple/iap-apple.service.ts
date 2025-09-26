@@ -312,7 +312,7 @@ export class AppleIAPService {
       originalTransactionId,
     });
     if (!subscription) {
-      this.logger.warn(
+      console.log(
         `Subscription record not found for origTx ${originalTransactionId}`,
       );
       // We may still proceed to create one if needed, or skip if irrelevant
