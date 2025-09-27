@@ -389,6 +389,8 @@ export class AppleIAPService {
         price: foundPrice._id,
         status: SubscriptionStatus.ACTIVE,
         business: business._id,
+        iapPlatform: 'apple',
+        purchaseToken: originalTransactionId,
       });
     }
 
@@ -396,9 +398,18 @@ export class AppleIAPService {
       case AppleNotificationType.INITIAL_BUY: {
         subscription.status = SubscriptionStatus.ACTIVE;
         subscription.product = foundPrice.product;
-        if (expiresDateMs)
-          subscription.currentPeriodEnd = new Date(expiresDateMs);
         subscription.autoRenew = true;
+        if (expiresDateMs) {
+          subscription.currentPeriodEnd = new Date(expiresDateMs);
+          subscription.startDate = purchaseDateMs
+            ? new Date(purchaseDateMs)
+            : new Date();
+          subscription.endDate = expiresDateMs
+            ? new Date(expiresDateMs)
+            : undefined;
+          subscription.invoiceStartDate = subscription.startDate;
+          subscription.invoiceEndDate = subscription.endDate;
+        }
         break;
       }
 
@@ -414,6 +425,16 @@ export class AppleIAPService {
           if (newPrice) {
             subscription.price = new mongoose.Types.ObjectId(newPrice.id);
             subscription.product = newPrice.product;
+            subscription.currentPeriodEnd = new Date(expiresDateMs);
+            subscription.startDate = purchaseDateMs
+              ? new Date(purchaseDateMs)
+              : subscription.startDate;
+            subscription.endDate = expiresDateMs
+              ? new Date(expiresDateMs)
+              : subscription.endDate;
+            subscription.invoiceStartDate = subscription.startDate;
+            subscription.invoiceEndDate = subscription.endDate;
+            // Note: you may want to proration handling here if mid-cycle change.
             this.logger.log(
               `Subscription ${subscription._id} changed to new product ${nextProductId} (DID_CHANGE_RENEWAL_PREF)`,
             );
@@ -436,6 +457,12 @@ export class AppleIAPService {
           undefined;
         if (startMs) subscription.startDate = new Date(startMs);
         if (expiresDateMs) subscription.endDate = new Date(expiresDateMs);
+        if (expiresDateMs)
+          subscription.currentPeriodEnd = new Date(expiresDateMs);
+        if (subscription.startDate && subscription.endDate) {
+          subscription.invoiceStartDate = subscription.startDate;
+          subscription.invoiceEndDate = subscription.endDate;
+        }
         break;
       }
 
@@ -453,6 +480,9 @@ export class AppleIAPService {
         subscription.status = SubscriptionStatus.CANCELED;
         subscription.autoRenew = false;
         subscription.currentPeriodEnd = new Date(); // end now
+        subscription.endDate = new Date(); // end now
+        subscription.invoiceStartDate = subscription.startDate;
+        subscription.invoiceEndDate = subscription.endDate;
         break;
       }
 
@@ -460,6 +490,9 @@ export class AppleIAPService {
         subscription.status = SubscriptionStatus.EXPIRED;
         subscription.autoRenew = false;
         subscription.currentPeriodEnd = new Date();
+        subscription.endDate = new Date();
+        subscription.invoiceStartDate = subscription.startDate;
+        subscription.invoiceEndDate = subscription.endDate;
         break;
       }
 
@@ -467,6 +500,23 @@ export class AppleIAPService {
         const autoRenewEnabled =
           subtype === AppleNotificationSubtype.AUTO_RENEW_ENABLED;
         subscription.autoRenew = !!autoRenewEnabled;
+        if (!autoRenewEnabled) {
+          subscription.status = SubscriptionStatus.CANCELED;
+          subscription.currentPeriodEnd = new Date();
+          subscription.endDate = new Date();
+          subscription.invoiceStartDate = subscription.startDate;
+          subscription.invoiceEndDate = subscription.endDate;
+        } else {
+          // Auto-renew was enabled; if previously canceled/expired, reactivate
+          if (
+            subscription.status === SubscriptionStatus.CANCELED ||
+            subscription.status === SubscriptionStatus.EXPIRED
+          ) {
+            subscription.status = SubscriptionStatus.ACTIVE;
+            if (expiresDateMs)
+              subscription.currentPeriodEnd = new Date(expiresDateMs);
+          }
+        }
         break;
       }
 
@@ -474,6 +524,9 @@ export class AppleIAPService {
         subscription.status = SubscriptionStatus.REFUNDED;
         subscription.autoRenew = false;
         subscription.currentPeriodEnd = new Date();
+        subscription.endDate = new Date();
+        subscription.invoiceStartDate = subscription.startDate;
+        subscription.invoiceEndDate = subscription.endDate;
         break;
       }
 
@@ -482,6 +535,11 @@ export class AppleIAPService {
         subscription.autoRenew = false; // manual renewal
         if (expiresDateMs)
           subscription.currentPeriodEnd = new Date(expiresDateMs);
+        if (purchaseDateMs) subscription.startDate = new Date(purchaseDateMs);
+        if (subscription.startDate && subscription.currentPeriodEnd) {
+          subscription.invoiceStartDate = subscription.startDate;
+          subscription.invoiceEndDate = subscription.currentPeriodEnd;
+        }
         break;
       }
 
@@ -489,6 +547,9 @@ export class AppleIAPService {
         subscription.status = SubscriptionStatus.REVOKED;
         subscription.autoRenew = false;
         subscription.currentPeriodEnd = new Date();
+        subscription.endDate = new Date();
+        subscription.invoiceStartDate = subscription.startDate;
+        subscription.invoiceEndDate = subscription.endDate;
         break;
       }
 
@@ -500,17 +561,10 @@ export class AppleIAPService {
 
     // Save updated subscription
     await subscription.save();
-    const updatedSubscription = await this.subscriptionModel.findById(
-      subscription._id,
-    );
-    this.logger.log(
-      'Updated subscription after notification processing:',
-      updatedSubscription,
-    );
 
     // Create a Transaction record for this event
     if (transactionId) {
-      await this.transactionModel.create({
+      const createdTransaction = await this.transactionModel.create({
         platform: SubscriptionSource.APPLE,
         notificationUUID: notificationId,
         appleTransactionId: transactionId,
@@ -520,6 +574,10 @@ export class AppleIAPService {
         productId,
         purchaseDate: purchaseDateMs ? new Date(purchaseDateMs) : new Date(),
         processedAt: new Date(),
+      });
+      this.logger.log('Created transaction record:', createdTransaction.id);
+      await this.subscriptionModel.findByIdAndUpdate(subscription._id, {
+        $set: { transaction: createdTransaction._id },
       });
     }
 
