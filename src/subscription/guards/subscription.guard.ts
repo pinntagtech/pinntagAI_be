@@ -8,13 +8,18 @@ import {
 } from '@nestjs/common';
 import { FeatureLimitList } from '../models/feature-limit.model';
 import { SubscriptionService } from '../subscription.service';
+import { EventService2 } from 'src/event/event.service2';
+import { EventTypes } from 'src/enums/event.enums';
 
 export function SubscriptionGuard(
   featureType: FeatureLimitList,
 ): Type<CanActivate> {
   @Injectable()
   class SubscriptionTypeGuard implements CanActivate {
-    constructor(private readonly subscriptionService: SubscriptionService) {}
+    constructor(
+      private readonly subscriptionService: SubscriptionService,
+      private readonly eventService: EventService2,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
       console.log('Feature Type in Guard:', featureType);
@@ -24,14 +29,25 @@ export function SubscriptionGuard(
       if (!user || !businessProfile) {
         return false;
       }
-
+      let isDropPin = false;
+      if (featureType === FeatureLimitList.CONTENT_CREATION) {
+        const eventId = request.body.eventId || request.query.eventId;
+        if (!eventId) {
+          throw new UnauthorizedException(
+            'Event ID is required to publish content.',
+          );
+        }
+        const event = await this.eventService.findById(eventId);
+        if (!event) {
+          throw new UnauthorizedException('No event found with the provided ID.');
+        }
+        isDropPin = event.type === EventTypes.DROPPED_PIN;
+      }
       const fetchFeatureLimits =
         await this.subscriptionService.fetchFeatureLimits(
           businessProfile.toString(),
-          featureType,
+          isDropPin ? FeatureLimitList.DROP_PIN : featureType,
         );
-
-      console.log('Fetch Feature Limits:', fetchFeatureLimits);
 
       if (!fetchFeatureLimits.success || !fetchFeatureLimits.data) {
         return false;

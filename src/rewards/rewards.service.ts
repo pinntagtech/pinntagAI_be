@@ -2278,10 +2278,10 @@ export class RewardsService {
           message: 'Reward Expired',
         };
       }
-      if (foundReward.status !== ClaimStatus.ACTIVE) {
+      if (foundReward.status !== RewardStatus.PUBLISHED) {
         return {
           success: false,
-          message: 'Reward is not active.',
+          message: 'Reward is closed.',
         };
       }
 
@@ -2308,7 +2308,7 @@ export class RewardsService {
           message: 'Reward already completed.',
         };
       }
-      await this.userRewardModel.updateOne(
+      const updatedReward = await this.userRewardModel.findOneAndUpdate(
         {
           _id: userReward._id,
         },
@@ -2319,7 +2319,7 @@ export class RewardsService {
       return {
         success: true,
         message: 'Reward scanned successfully.',
-        data: userReward,
+        data: updatedReward,
       };
     } catch (error) {
       console.log('Error in handleScanReward:', error);

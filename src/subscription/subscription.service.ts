@@ -28,7 +28,13 @@ import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Drive, DriveDocument } from 'src/drive/models/drive.model';
-
+export interface UsageLimitResponse {
+  maxLimit: number | string;
+  consumed: number;
+  remaining: number | string;
+  percentage: number;
+  isLimitExceeded: boolean;
+}
 @Injectable()
 export class SubscriptionService {
   constructor(
@@ -335,11 +341,9 @@ export class SubscriptionService {
 
   async fetchFeatureLimits(businessProfile: string, title: string) {
     try {
-      console.log("FETCH FEATURE LIMITS SERVICE", businessProfile, title)
       const business = await this.businessModel.findById(businessProfile);
-      if (!business) {
-        return { success: false, message: 'Business not found' };
-      }
+      if (!business) return { success: false, message: 'Business not found' };
+
       const [subscription] = await this.subscriptionModel.aggregate([
         { $match: { _id: business.activeSubscription } },
         {
@@ -351,203 +355,163 @@ export class SubscriptionService {
           },
         },
       ]);
-      const limits = new Map();
-      for (let feature of subscription.featureLimits) {
-        limits.set(feature.key, feature.value);
-      }
 
-      interface UsageLimitResponse {
-        maxLimit: number | string;
-        consumed: number;
-        remaining: number | string;
-        percentage: number;
-        isLimitExceeded: boolean;
-      }
-      let data = null;
+      const limits = new Map<string, string>();
+      for (const f of subscription.featureLimits) limits.set(f.key, f.value);
 
-      let responseData = (
-        maxLimit: string,
-        consumed: number,
-      ): UsageLimitResponse => {
-        let remaining = Number(maxLimit) - Number(consumed);
-        let percentage = (Number(consumed) / Number(maxLimit)) * 100;
-
-        return {
-          maxLimit,
-          consumed,
-          remaining,
-          percentage,
-          isLimitExceeded: remaining <= 0,
-        };
-      };
+      let data: any;
       switch (title) {
         case FeatureLimitList.AI_IMAGE:
-          {
-            data = responseData(FeatureLimitList.AI_IMAGE, 0);
-          }
+          data = await this.aiImageLimit(limits);
           break;
         case FeatureLimitList.AI_TEXT:
-          {
-            if (limits.get(FeatureLimitList.AI_TEXT) === 'enabled') {
-              data = {
-                isLimitExceeded: false,
-              };
-            } else if (limits.get(FeatureLimitList.AI_TEXT) === 'disabled') {
-              data = {
-                isLimitExceeded: true,
-              };
-            }
-          }
-          break;
-        case FeatureLimitList.ANALYTICS:
-          {
-          }
+          data = await this.aiTextLimit(limits);
           break;
         case FeatureLimitList.CONTENT_CREATION:
-          {
-            const content = await this.eventModel.countDocuments({
-              businessProfile: new mongoose.Types.ObjectId(businessProfile),
-              type: { $ne: EventTypes.DROPPED_PIN },
-              status: EventStatus.PUBLISHED,
-            });
-            data = responseData(
-              limits.get(FeatureLimitList.CONTENT_CREATION),
-              content,
-            );
-          }
+          data = await this.contentCreationLimit(
+            limits,
+            this.eventModel,
+            businessProfile,
+          );
           break;
         case FeatureLimitList.DEPARTMENT:
-          {
-            if (limits.get(FeatureLimitList.DEPARTMENT) === 'enabled') {
-              data = {
-                isLimitExceeded: false,
-              };
-            } else if (limits.get(FeatureLimitList.DEPARTMENT) === 'disabled') {
-              data = {
-                isLimitExceeded: true,
-              };
-            }
-          }
+          data = await this.departmentLimit(limits);
           break;
         case FeatureLimitList.DROP_PIN:
-          {
-            const content = await this.eventModel.countDocuments({
-              businessProfile: new mongoose.Types.ObjectId(
-                businessProfile,
-              ),
-              type: EventTypes.DROPPED_PIN,
-              status: EventStatus.PUBLISHED,
-            });
-            data = responseData(limits.get(FeatureLimitList.DROP_PIN), content);
-          }
+          data = await this.dropPinLimit(
+            limits,
+            this.eventModel,
+            businessProfile,
+          );
           break;
         case FeatureLimitList.LOCATIONS:
-          {
-            const locations = await this.outletModel.countDocuments({
-              business: new mongoose.Types.ObjectId(businessProfile),
-            });
-            data = responseData(
-              limits.get(FeatureLimitList.LOCATIONS),
-              locations,
-            );
-          }
+          data = await this.locationsLimit(
+            limits,
+            this.outletModel,
+            businessProfile,
+          );
           break;
         case FeatureLimitList.REGIONS:
-          {
-            if (limits.get(FeatureLimitList.REGIONS) === 'enabled') {
-              data = {
-                isLimitExceeded: false,
-              };
-            } else if (limits.get(FeatureLimitList.REGIONS) === 'disabled') {
-              data = {
-                isLimitExceeded: true,
-              };
-            }
-          }
+          data = await this.regionsLimit(limits);
           break;
         case FeatureLimitList.ROLES:
-          {
-            if (limits.get(FeatureLimitList.ROLES) === 'enabled') {
-              data = {
-                isLimitExceeded: false,
-              };
-            } else if (limits.get(FeatureLimitList.ROLES) === 'disabled') {
-              data = {
-                isLimitExceeded: true,
-              };
-            }
-          }
+          data = await this.rolesLimit(limits);
           break;
         case FeatureLimitList.STORAGE:
-          {
-            const drive = await this.driveModel.findOne({
-              owner: business.creator,
-            });
-            data = responseData(String(drive.TotalSpace), drive.AvailableSpace);
-          }
+          data = await this.storageLimit(
+            limits,
+            this.driveModel,
+            business.creator.toString(),
+          );
           break;
         case FeatureLimitList.TEMPLATES:
-          {
-            if (limits.get(FeatureLimitList.TEMPLATES) === 'enabled') {
-              data = {
-                isLimitExceeded: false,
-              };
-            } else if (limits.get(FeatureLimitList.TEMPLATES) === 'disabled') {
-              data = {
-                isLimitExceeded: true,
-              };
-            }
-          }
+          data = await this.templatesLimit(limits);
           break;
       }
 
-      return { success: true, data: data };
+      return { success: true, data };
     } catch (error) {
       console.error('Error fetching feature limits:', error);
       return { success: false, message: 'Something went wrong' };
     }
   }
 
-  // async findAll(user: DecodedUser) {
-  //   return await this.subscriptionModel
-  //     .find({
-  //       user: new mongoose.Types.ObjectId(user.id),
+  responseData(maxLimit: string, consumed: number): UsageLimitResponse {
+    const remaining = Number(maxLimit) - Number(consumed);
+    const percentage = (Number(consumed) / Number(maxLimit)) * 100;
+    return {
+      maxLimit,
+      consumed,
+      remaining,
+      percentage,
+      isLimitExceeded: remaining <= 0,
+    };
+  }
 
-  // async findAll(user: DecodedUser) {
-  //   return await this.subscriptionModel
-  //     .find({
-  //       user: new mongoose.Types.ObjectId(user.id),
-  //       endDate: { $gte: new Date() },
-  //     })
-  //     .populate('product', '-createdAt -updatedAt -__v')
-  //     .populate('transaction', TransactionPopulates.FOREIGN)
-  //     .sort({ createdAt: -1 });
-  // }
+  async aiImageLimit(limits: Map<string, string>) {
+    return this.responseData(limits.get(FeatureLimitList.AI_IMAGE) ?? '0', 0);
+  }
 
-  // async findOne(id: string, user: DecodedUser) {
-  //   if (!mongoose.isValidObjectId(id)) {
-  //     return { success: false, message: 'Invalid subscription id' };
-  //   } else {
-  //     const subscription = await this.subscriptionModel
-  //       .findOne({
-  //         _id: new mongoose.Types.ObjectId(id),
-  //         user: new mongoose.Types.ObjectId(user.id),
-  //       })
-  //       .populate('product', 'name')
-  //       .populate('transaction', TransactionPopulates.FOREIGN);
-  //     if (!subscription) {
-  //       return { success: false, message: 'Subscription not found' };
-  //     } else {
-  //       return { success: true, subscription };
-  //     }
-  //   }
-  // }
+  async aiTextLimit(limits: Map<string, string>) {
+    const val = limits.get(FeatureLimitList.AI_TEXT);
+    if (val === 'enabled') return { isLimitExceeded: false };
+    if (val === 'disabled') return { isLimitExceeded: true };
+    return { isLimitExceeded: true };
+  }
 
-  // update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
-  //   return `This action updates a #${id} subscription`;
-  // }
+  async contentCreationLimit(
+    limits: Map<string, string>,
+    eventModel: mongoose.Model<EventDocument>,
+    businessProfile: string,
+  ) {
+    const content = await eventModel.countDocuments({
+      businessProfile: new mongoose.Types.ObjectId(businessProfile),
+      type: { $ne: EventTypes.DROPPED_PIN },
+      status: EventStatus.PUBLISHED,
+    });
+    return this.responseData(
+      limits.get(FeatureLimitList.CONTENT_CREATION) ?? '0',
+      content,
+    );
+  }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} subscription`;
-  // }
+  async departmentLimit(limits: Map<string, string>) {
+    const val = limits.get(FeatureLimitList.DEPARTMENT);
+    return { isLimitExceeded: val === 'disabled' };
+  }
+
+  async dropPinLimit(
+    limits: Map<string, string>,
+    eventModel: mongoose.Model<EventDocument>,
+    businessProfile: string,
+  ) {
+    const count = await eventModel.countDocuments({
+      businessProfile: new mongoose.Types.ObjectId(businessProfile),
+      type: EventTypes.DROPPED_PIN,
+      status: EventStatus.PUBLISHED,
+    });
+    return this.responseData(
+      limits.get(FeatureLimitList.DROP_PIN) ?? '0',
+      count,
+    );
+  }
+
+  async locationsLimit(
+    limits: Map<string, string>,
+    outletModel: mongoose.Model<OutletDocument>,
+    businessProfile: string,
+  ) {
+    const count = await outletModel.countDocuments({
+      business: new mongoose.Types.ObjectId(businessProfile),
+    });
+    return this.responseData(
+      limits.get(FeatureLimitList.LOCATIONS) ?? '0',
+      count,
+    );
+  }
+
+  async regionsLimit(limits: Map<string, string>) {
+    const val = limits.get(FeatureLimitList.REGIONS);
+    return { isLimitExceeded: val === 'disabled' };
+  }
+
+  async rolesLimit(limits: Map<string, string>) {
+    const val = limits.get(FeatureLimitList.ROLES);
+    return { isLimitExceeded: val === 'disabled' };
+  }
+
+  async storageLimit(
+    limits: Map<string, string>,
+    driveModel: mongoose.Model<DriveDocument>,
+    creatorId: string,
+  ) {
+    const drive = await driveModel.findOne({ owner: creatorId });
+    if (!drive) return { isLimitExceeded: true };
+    return this.responseData(String(drive.TotalSpace), drive.AvailableSpace);
+  }
+
+  async templatesLimit(limits: Map<string, string>) {
+    const val = limits.get(FeatureLimitList.TEMPLATES);
+    return { isLimitExceeded: val === 'disabled' };
+  }
 }

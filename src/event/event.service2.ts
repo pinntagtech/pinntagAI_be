@@ -206,6 +206,11 @@ export class EventService2 {
     private readonly googleService: GoogleService,
     private readonly businessService: BusinessService,
   ) {}
+
+  async findById(id: string) {
+    return this.eventModel.findById(id);
+  }
+
   async create(
     createEventDto: CreateEventDto,
     user: DecodedUser,
