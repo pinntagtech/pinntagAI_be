@@ -1385,4 +1385,20 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Get('tags/recommendations')
+  @UseGuards(JwtGuard2)
+  async getTagRecommendations(@TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.getTagRecommendations(
+      user.businessProfile,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

@@ -339,7 +339,7 @@ export class SubscriptionService {
     }
   }
 
-  async fetchFeatureLimits(businessProfile: string, title: string) {
+  async fetchFeatureLimits(businessProfile: string, title: string, dataCount: number) {
     try {
       const business = await this.businessModel.findById(businessProfile);
       if (!business) return { success: false, message: 'Business not found' };
@@ -389,6 +389,7 @@ export class SubscriptionService {
             limits,
             this.outletModel,
             businessProfile,
+            dataCount,
           );
           break;
         case FeatureLimitList.REGIONS:
@@ -480,13 +481,11 @@ export class SubscriptionService {
     limits: Map<string, string>,
     outletModel: mongoose.Model<OutletDocument>,
     businessProfile: string,
+    dataCount: number,
   ) {
-    const count = await outletModel.countDocuments({
-      business: new mongoose.Types.ObjectId(businessProfile),
-    });
     return this.responseData(
       limits.get(FeatureLimitList.LOCATIONS) ?? '0',
-      count,
+      dataCount,
     );
   }
 

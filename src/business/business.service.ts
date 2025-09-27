@@ -150,6 +150,7 @@ import { messaging } from 'firebase-admin';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { BusinessDocVerificationLeads } from 'src/admin/models/BusinessDocVerificationLeads.model';
 import { OwnershipTransferRecord } from './model/ownershipTransferRecords.model';
+import { Tag } from 'src/models/tags.model';
 
 @Injectable()
 export class BusinessService {
@@ -211,6 +212,7 @@ export class BusinessService {
     private readonly businessDocVerificationLeadsModel: Model<BusinessDocVerificationLeads>,
     @InjectModel(OwnershipTransferRecord.name)
     private readonly ownershipTransferRecordModel: Model<OwnershipTransferRecord>,
+    @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -2935,8 +2937,8 @@ export class BusinessService {
       };
     }
     if (data.name && data.name !== dept.name) {
-      console.log("Data.nameee::",data.name);
-      console.log("dept.name::",dept.name);
+      console.log('Data.nameee::', data.name);
+      console.log('dept.name::', dept.name);
       const conflict = await this.departmentModel.findOne({
         name: data.name,
         business: user.businessProfile,
@@ -2972,7 +2974,11 @@ export class BusinessService {
 
     await dept.save();
     const updatedDepartment = await this.departmentModel.findById(deptId);
-    return { success: true, message: 'Department updated', data: updatedDepartment };
+    return {
+      success: true,
+      message: 'Department updated',
+      data: updatedDepartment,
+    };
   }
 
   async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {
@@ -4800,6 +4806,46 @@ export class BusinessService {
       return {
         success: true,
         message: 'OTP sent successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getTagRecommendations(businessId: string) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const tagsByCategory = await Promise.all(
+        business.businessCategories.map(async (catId) => {
+          const tags = await this.tagModel.aggregate([
+            { $match: { relatedId: catId } },
+            { $sample: { size: 3 } }, // pick 3 random docs
+            { $project: { _id: 0, title: 1 } }, // only keep title
+          ]);
+
+          return {
+            categoryId: catId,
+            tags,
+          };
+        }),
+      );
+      const allTitles = tagsByCategory.flatMap(cat => cat.tags.map(t => t.title));
+
+      console.log('Tag Recommendations:', allTitles);
+
+      return {
+        success: true,
+        message: 'Tag recommendations fetched successfully',
+        data: allTitles,
       };
     } catch (error) {
       return {

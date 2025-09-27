@@ -108,6 +108,7 @@ export class EventController {
   }
 
   @Post('update/:id')
+   @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   async update(
     @Param('id') id: string,
@@ -1114,6 +1115,7 @@ export class EventController {
   }
 
   @Put('offer/:id')
+  @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FilesInterceptor('images', 10, {

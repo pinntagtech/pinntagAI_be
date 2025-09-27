@@ -132,7 +132,7 @@ export class SubscriptionController {
     @TokenDecoder() user: DecodedUser,
     @Param('title') title: string,
   ) {
-    const result = await this.subscriptionService.fetchFeatureLimits(user.businessProfile,title);
+    const result = await this.subscriptionService.fetchFeatureLimits(user.businessProfile,title,0);
     if (result.success) {
       return {
         message: 'Feature limits fetched successfully',

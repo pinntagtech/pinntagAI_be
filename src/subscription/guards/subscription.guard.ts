@@ -29,7 +29,7 @@ export function SubscriptionGuard(
       if (!user || !businessProfile) {
         return false;
       }
-      let isDropPin = false;
+      //   let isDropPin = false;
       if (featureType === FeatureLimitList.CONTENT_CREATION) {
         const eventId = request.body.eventId || request.query.eventId;
         if (!eventId) {
@@ -39,14 +39,26 @@ export function SubscriptionGuard(
         }
         const event = await this.eventService.findById(eventId);
         if (!event) {
-          throw new UnauthorizedException('No event found with the provided ID.');
+          throw new UnauthorizedException(
+            'No event found with the provided ID.',
+          );
         }
-        isDropPin = event.type === EventTypes.DROPPED_PIN;
+        if (event.type === EventTypes.DROPPED_PIN)
+          featureType = FeatureLimitList.DROP_PIN;
       }
+      let dataCount = 0;
+      if (featureType === FeatureLimitList.LOCATIONS) {
+        const locationsInRequest = request.body.locations;
+        if (Array.isArray(locationsInRequest) && locationsInRequest.length) {
+          dataCount = locationsInRequest.length;
+        }
+      }
+
       const fetchFeatureLimits =
         await this.subscriptionService.fetchFeatureLimits(
           businessProfile.toString(),
-          isDropPin ? FeatureLimitList.DROP_PIN : featureType,
+          featureType,
+          dataCount,
         );
 
       if (!fetchFeatureLimits.success || !fetchFeatureLimits.data) {
