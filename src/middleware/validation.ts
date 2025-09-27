@@ -1,20 +1,24 @@
 import { Request, Response, NextFunction } from "express";
-import { JobRunRequest } from "../utils/types/types";
 
-export const validateJobRequest = (
+export const validateCreateJobRequest = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  const { groupId, priority } = req.body as JobRunRequest;
+  const { urls, source, output_formats } = req.body || {};
 
-  if (!groupId || typeof groupId !== "string") {
-    res.status(400).json({ error: "groupId is required and must be a string" });
+  if (urls && !Array.isArray(urls)) {
+    res.status(400).json({ error: "urls must be an array of strings" });
     return;
   }
-
-  if (priority && !["low", "normal", "high"].includes(priority)) {
-    res.status(400).json({ error: "priority must be low, normal, or high" });
+  if (output_formats && !Array.isArray(output_formats)) {
+    res
+      .status(400)
+      .json({ error: "output_formats must be an array of strings" });
+    return;
+  }
+  if (source && typeof source !== "string") {
+    res.status(400).json({ error: "source must be a string" });
     return;
   }
 

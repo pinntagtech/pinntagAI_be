@@ -19,6 +19,17 @@ const EnvSchema = z.object({
   PINNTAG_BACKEND_TO_AI_KEY: z.string().optional(),
   HTTP_TIMEOUT_MS: z.coerce.number().default(15000),
   HTTP_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+  ETL_API_KEY_HEADER_NAME: z.string().min(1).default("X-API-Key"),
+  // Inbound auth config
+  AUTH_REQUIRE_API_KEY: z.coerce.boolean().default(false),
+  AUTH_REQUIRE_BEARER: z.coerce.boolean().default(false),
+  AUTH_REQUIRE_BOTH: z.coerce.boolean().default(false),
+  AUTH_API_KEY_HEADER_NAME: z.string().min(1).default("x-api-key"),
+  AUTH_STATIC_API_KEY: z.string().optional(),
+  AUTH_BEARER_TOKEN: z.string().optional(),
+  AUTH_BEARER_TOKENS: z
+    .preprocess((v) => (typeof v === "string" ? v : undefined), z.string().optional())
+    .transform((s) => (s ? s.split(",").map((t) => t.trim()).filter(Boolean) : [])),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

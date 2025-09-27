@@ -114,6 +114,7 @@ export interface QRCode {
 
 export interface ScrapedEvent {
   _id: string;
+  jobId?: string;
   title: string;
   keywords: string[];
   description: string;

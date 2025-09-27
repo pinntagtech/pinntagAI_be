@@ -94,10 +94,18 @@ const QRCodeSchema = new Schema({
   code: { type: String, default: "" },
 });
 
-export interface IScrapedEvent extends Document, Omit<ScrapedEvent, "_id"> {}
+export interface IScrapedEvent extends Document, Omit<ScrapedEvent, "_id"> {
+  verified: boolean;
+  verifiedBy?: string;
+  verifiedAt?: Date;
+  exported: boolean;
+  exportedAt?: Date;
+  editedAt?: Date;
+}
 
 const ScrapedEventSchema = new Schema<IScrapedEvent>(
   {
+    jobId: { type: String, index: true, required: true },
     title: {
       type: String,
       required: true,
@@ -177,6 +185,14 @@ const ScrapedEventSchema = new Schema<IScrapedEvent>(
     scrapedFrom: { type: String },
     scraperVersion: { type: String },
     lastUpdated: { type: Date, default: Date.now },
+
+    // Review and export state (for Backend A import)
+    verified: { type: Boolean, default: false, index: true },
+    verifiedBy: { type: String },
+    verifiedAt: { type: Date },
+    exported: { type: Boolean, default: false, index: true },
+    exportedAt: { type: Date },
+    editedAt: { type: Date },
   },
   {
     timestamps: true,
@@ -191,6 +207,7 @@ ScrapedEventSchema.index({ keywords: 1 });
 ScrapedEventSchema.index({ "schedules.fixedSchedule.startDate": 1 });
 ScrapedEventSchema.index({ score: -1 });
 ScrapedEventSchema.index({ scrapedAt: -1 });
+ScrapedEventSchema.index({ jobId: 1, verified: 1, exported: 1 });
 
 // Text search index
 ScrapedEventSchema.index({
@@ -226,6 +243,6 @@ ScrapedEventSchema.statics.findUpcoming = function () {
 };
 
 export const ScrapedEventModel = mongoose.model<IScrapedEvent>(
-  "ScrapedEvent",
+  "Scraped_Event",
   ScrapedEventSchema
 );
