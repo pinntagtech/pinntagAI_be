@@ -166,8 +166,8 @@ export class AppleIAPService {
     !!obj && typeof obj === 'object' && Object.keys(obj).length > 0;
 
   async processNotification(payload: any): Promise<void> {
-    console.log(
-      'Entered to the service to process Apple notification payload.?????????????',
+    this.logger.log(
+      'Entered to the service to process Apple notification payload.',
     );
     const notificationType: string = payload.notificationType;
     const subtype: string = payload.subtype;
@@ -178,7 +178,7 @@ export class AppleIAPService {
       | undefined;
     const signedRenewalInfo = data.signedRenewalInfo as string | undefined;
 
-    console.log(
+    this.logger.log(
       `Apple notification type=${notificationType}, subtype=${subtype}, id=${notificationId}`,
     );
 
