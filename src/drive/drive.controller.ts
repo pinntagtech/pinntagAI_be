@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UploadedFile,
@@ -80,6 +81,28 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Put('updateFolderName/:id')
+  @UseGuards(JwtGuard2)
+  async updateFolderName(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+    @Body('name') name: string,
+  ) {
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid folder ID');
+    }
+    const result = await this.driveService.updateFolderName(id, name, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 
   @Get('getFiles')
   @UseGuards(JwtGuard2)

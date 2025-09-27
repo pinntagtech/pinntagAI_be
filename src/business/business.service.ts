@@ -2935,6 +2935,8 @@ export class BusinessService {
       };
     }
     if (data.name && data.name !== dept.name) {
+      console.log("Data.nameee::",data.name);
+      console.log("dept.name::",dept.name);
       const conflict = await this.departmentModel.findOne({
         name: data.name,
         business: user.businessProfile,
@@ -2945,6 +2947,7 @@ export class BusinessService {
           message: 'Another department with that name exists',
         };
       }
+      dept.name = data.name;
     }
 
     // Validate any new roles
@@ -2968,7 +2971,8 @@ export class BusinessService {
     }
 
     await dept.save();
-    return { success: true, message: 'Department updated', data: dept };
+    const updatedDepartment = await this.departmentModel.findById(deptId);
+    return { success: true, message: 'Department updated', data: updatedDepartment };
   }
 
   async fetchDepartment(user: DecodedUser, page = 1, limit = 20) {

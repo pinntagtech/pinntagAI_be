@@ -184,6 +184,8 @@ import {
 } from 'src/subscription/models/subscription-price.model';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 
 @Module({
   imports: [
@@ -266,6 +268,8 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
         schema: SubscriptionPriceSchema,
       },
       { name: Coupon.name, schema: CouponSchema },
+      { name: FeatureLimit.name , schema: FeatureLimitSchema },
+      
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },
@@ -292,6 +296,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
     SmsService,
     RedisBullService,
     AppsOnAirLinkService,
+    SubscriptionService,
     // BusinessService,
   ],
 })

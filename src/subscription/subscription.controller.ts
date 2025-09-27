@@ -104,21 +104,38 @@ export class SubscriptionController {
     const result = await this.subscriptionService.getProducts(
       user,
       billingInterval,
-      );
+    );
     return {
       message: 'Subscription products',
       data: result,
     };
   }
 
-
   @Post('checkout/free')
   @UseGuards(JwtGuard2)
   async createFreeCheckoutSession(@TokenDecoder() user: DecodedUser) {
-    const result = await this.subscriptionService.createFreeCheckoutSession(user);
+    const result =
+      await this.subscriptionService.createFreeCheckoutSession(user);
     if (result.success) {
       return {
         message: 'Free checkout session created',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('fetchFeatureLimits/:title')
+  @UseGuards(JwtGuard2)
+  async fetchFeatureLimits(
+    @TokenDecoder() user: DecodedUser,
+    @Param('title') title: string,
+  ) {
+    const result = await this.subscriptionService.fetchFeatureLimits(user.businessProfile,title);
+    if (result.success) {
+      return {
+        message: 'Feature limits fetched successfully',
         data: result.data,
       };
     } else {

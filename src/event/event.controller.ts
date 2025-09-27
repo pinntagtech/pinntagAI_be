@@ -44,6 +44,8 @@ import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { PinDropDto } from './dto/pinDrop.dto';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
+import { SubscriptionGuard } from 'src/subscription/guards/subscription.guard';
+import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 
 @Controller('event')
 export class EventController {
@@ -438,6 +440,7 @@ export class EventController {
   }
 
   @Post('publish/toggle')
+  @UseGuards(SubscriptionGuard(FeatureLimitList.CONTENT_CREATION))
   @UseGuards(JwtGuard2)
   async togglePublishEvent(
     @Body() body: PublishEventDto,
@@ -1065,19 +1068,19 @@ export class EventController {
   }
   @Post('ETL')
   @UseGuards(AdminGuard2)
-    @UseInterceptors(
-      FileInterceptor('file', {
-        //   dest: './uploads',
-        //   fileFilter: imageFileFilter,
-        //   storage: diskStorage({
-        //     destination: './uploads',
-        //     filename: editFileName,
-        //   }),
-        //   //Setting file size limit to 10 MB
-        limits: { fileSize: 10000000 },
-      }),
-    )
-  async ETL(user:DecodedUser,@UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 10 MB
+      limits: { fileSize: 10000000 },
+    }),
+  )
+  async ETL(user: DecodedUser, @UploadedFile() file: Express.Multer.File) {
     const result = await this.eventService.ETL_TRANSFORMER(user.id, file);
     if (result.success) {
       return {

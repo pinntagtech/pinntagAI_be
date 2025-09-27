@@ -741,7 +741,7 @@ export const ExpectedDownlineUserHeaders = [
   'email',
   'countryCode',
   'phone',
-]
+];
 
 export const BusinessDocumentTypesList = {
   TAX: 'Tax Document',
@@ -750,10 +750,12 @@ export const BusinessDocumentTypesList = {
   OWNERSHIP: 'Proof of Ownership',
   ADDRESS_VERIFICATION: 'Address Verification Document',
   OTHER: 'Other',
-}
+};
 
 export const VerificationStatus = {
   PENDING: 'Pending',
   VERIFIED: 'Verified',
   REJECTED: 'Rejected',
-}
+};
+
+

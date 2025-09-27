@@ -313,6 +313,28 @@ export class DriveService {
     }
   }
 
+  async updateFolderName(id: string, name: string, user: DecodedUser) {
+    try {
+      const folder = await this.folderModel.findById(id);
+      if (!folder) {
+        return {
+          success: false,
+          message: 'Folder not found',
+        };
+      }
+      folder.folderName = name;
+      await folder.save();
+      return {
+        success: true,
+        message: 'Folder name updated successfully',
+        data: folder,
+      };
+    } catch (error) {
+      console.error('Error updating folder name:', error);
+      return { success: false, message: 'Failed to update folder name' };
+    }
+  }
+
   async getFiles(
     userId: string,
     userType: string,

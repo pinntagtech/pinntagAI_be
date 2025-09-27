@@ -63,6 +63,9 @@ import {
   PurchaseTokenMap,
   PurchaseTokenMapSchema,
 } from './models/iap-mapping.model';
+import { Event, EventSchema } from 'src/event/models/event.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { Drive, DriveSchema } from 'src/drive/models/drive.model';
 
 @Module({
   imports: [
@@ -89,6 +92,9 @@ import {
       { name: Coupon.name, schema: CouponSchema },
       { name: ObfuscatedIdMap.name, schema: ObfuscatedIdMapSchema },
       { name: PurchaseTokenMap.name, schema: PurchaseTokenMapSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: Outlet.name, schema: OutletSchema },
+      { name: Drive.name, schema: DriveSchema },
     ]),
   ],
   controllers: [

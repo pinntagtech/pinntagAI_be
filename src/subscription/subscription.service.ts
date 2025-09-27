@@ -16,13 +16,18 @@ import {
   TransactionPopulates,
 } from 'src/enums/user.enum';
 import { CreateSubscriptionProductDto } from './dto/create-subscription-product.dto';
-import { FeatureLimit } from './models/feature-limit.model';
+import { FeatureLimit, FeatureLimitList } from './models/feature-limit.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
 import { CreateSubscriptionPriceDto } from './dto/create-subscription-price.dto';
 import {
   BillingInterval,
   SubscriptionPrice,
 } from './models/subscription-price.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import { Event, EventDocument } from 'src/event/models/event.model';
+import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
+import { Drive, DriveDocument } from 'src/drive/models/drive.model';
 
 @Injectable()
 export class SubscriptionService {
@@ -38,6 +43,12 @@ export class SubscriptionService {
     private readonly transactionModel: Model<Transaction>,
     @InjectModel(FeatureLimit.name)
     private readonly featureLimitModel: Model<FeatureLimit>,
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(Outlet.name)
+    private readonly outletModel: Model<OutletDocument>,
+    @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     private readonly stripeService: StripeService,
   ) {}
 
@@ -130,7 +141,6 @@ export class SubscriptionService {
             ],
           },
         },
-
         // Step 3: Lookup prices
         {
           $lookup: {
@@ -319,6 +329,181 @@ export class SubscriptionService {
       return { success: true, data: freeSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+
+  async fetchFeatureLimits(businessProfile: string, title: string) {
+    try {
+      console.log("FETCH FEATURE LIMITS SERVICE", businessProfile, title)
+      const business = await this.businessModel.findById(businessProfile);
+      if (!business) {
+        return { success: false, message: 'Business not found' };
+      }
+      const [subscription] = await this.subscriptionModel.aggregate([
+        { $match: { _id: business.activeSubscription } },
+        {
+          $lookup: {
+            from: 'featurelimits',
+            localField: 'product',
+            foreignField: 'product',
+            as: 'featureLimits',
+          },
+        },
+      ]);
+      const limits = new Map();
+      for (let feature of subscription.featureLimits) {
+        limits.set(feature.key, feature.value);
+      }
+
+      interface UsageLimitResponse {
+        maxLimit: number | string;
+        consumed: number;
+        remaining: number | string;
+        percentage: number;
+        isLimitExceeded: boolean;
+      }
+      let data = null;
+
+      let responseData = (
+        maxLimit: string,
+        consumed: number,
+      ): UsageLimitResponse => {
+        let remaining = Number(maxLimit) - Number(consumed);
+        let percentage = (Number(consumed) / Number(maxLimit)) * 100;
+
+        return {
+          maxLimit,
+          consumed,
+          remaining,
+          percentage,
+          isLimitExceeded: remaining <= 0,
+        };
+      };
+      switch (title) {
+        case FeatureLimitList.AI_IMAGE:
+          {
+            data = responseData(FeatureLimitList.AI_IMAGE, 0);
+          }
+          break;
+        case FeatureLimitList.AI_TEXT:
+          {
+            if (limits.get(FeatureLimitList.AI_TEXT) === 'enabled') {
+              data = {
+                isLimitExceeded: false,
+              };
+            } else if (limits.get(FeatureLimitList.AI_TEXT) === 'disabled') {
+              data = {
+                isLimitExceeded: true,
+              };
+            }
+          }
+          break;
+        case FeatureLimitList.ANALYTICS:
+          {
+          }
+          break;
+        case FeatureLimitList.CONTENT_CREATION:
+          {
+            const content = await this.eventModel.countDocuments({
+              businessProfile: new mongoose.Types.ObjectId(businessProfile),
+              type: { $ne: EventTypes.DROPPED_PIN },
+              status: EventStatus.PUBLISHED,
+            });
+            data = responseData(
+              limits.get(FeatureLimitList.CONTENT_CREATION),
+              content,
+            );
+          }
+          break;
+        case FeatureLimitList.DEPARTMENT:
+          {
+            if (limits.get(FeatureLimitList.DEPARTMENT) === 'enabled') {
+              data = {
+                isLimitExceeded: false,
+              };
+            } else if (limits.get(FeatureLimitList.DEPARTMENT) === 'disabled') {
+              data = {
+                isLimitExceeded: true,
+              };
+            }
+          }
+          break;
+        case FeatureLimitList.DROP_PIN:
+          {
+            const content = await this.eventModel.countDocuments({
+              businessProfile: new mongoose.Types.ObjectId(
+                businessProfile,
+              ),
+              type: EventTypes.DROPPED_PIN,
+              status: EventStatus.PUBLISHED,
+            });
+            data = responseData(limits.get(FeatureLimitList.DROP_PIN), content);
+          }
+          break;
+        case FeatureLimitList.LOCATIONS:
+          {
+            const locations = await this.outletModel.countDocuments({
+              business: new mongoose.Types.ObjectId(businessProfile),
+            });
+            data = responseData(
+              limits.get(FeatureLimitList.LOCATIONS),
+              locations,
+            );
+          }
+          break;
+        case FeatureLimitList.REGIONS:
+          {
+            if (limits.get(FeatureLimitList.REGIONS) === 'enabled') {
+              data = {
+                isLimitExceeded: false,
+              };
+            } else if (limits.get(FeatureLimitList.REGIONS) === 'disabled') {
+              data = {
+                isLimitExceeded: true,
+              };
+            }
+          }
+          break;
+        case FeatureLimitList.ROLES:
+          {
+            if (limits.get(FeatureLimitList.ROLES) === 'enabled') {
+              data = {
+                isLimitExceeded: false,
+              };
+            } else if (limits.get(FeatureLimitList.ROLES) === 'disabled') {
+              data = {
+                isLimitExceeded: true,
+              };
+            }
+          }
+          break;
+        case FeatureLimitList.STORAGE:
+          {
+            const drive = await this.driveModel.findOne({
+              owner: business.creator,
+            });
+            data = responseData(String(drive.TotalSpace), drive.AvailableSpace);
+          }
+          break;
+        case FeatureLimitList.TEMPLATES:
+          {
+            if (limits.get(FeatureLimitList.TEMPLATES) === 'enabled') {
+              data = {
+                isLimitExceeded: false,
+              };
+            } else if (limits.get(FeatureLimitList.TEMPLATES) === 'disabled') {
+              data = {
+                isLimitExceeded: true,
+              };
+            }
+          }
+          break;
+      }
+
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('Error fetching feature limits:', error);
       return { success: false, message: 'Something went wrong' };
     }
   }
