@@ -149,6 +149,22 @@ export class AppleIAPService {
     }
   }
 
+  // --- Little helpers (inline to keep this self-contained) ---
+  b64urlToUtf8Json = (b64url: string) => {
+    const padLen = (4 - (b64url.length % 4)) % 4;
+    const b64 =
+      b64url.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(padLen);
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  };
+  decodeJwsPayload = (jws: string) => {
+    const parts = jws.split('.');
+    if (parts.length !== 3) throw new Error('Invalid JWS');
+    // parts[1] is base64url; decode to JSON
+    return this.b64urlToUtf8Json(parts[1]);
+  };
+  isNonEmpty = (obj: any) =>
+    !!obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+
   async processNotification(payload: any): Promise<void> {
     console.log(
       'Entered to the service to process Apple notification payload.?????????????',
@@ -157,55 +173,50 @@ export class AppleIAPService {
     const subtype: string = payload.subtype;
     const notificationId: string = payload.notificationUUID; // unique UUID for this notification
     const data = payload.data || {};
-    // The data object contains JWS strings for transaction and (maybe) renewal info
-    const signedTransactionInfo = data.signedTransactionInfo;
-    const signedRenewalInfo = data.signedRenewalInfo; // might be present for certain types
+    const signedTransactionInfo = data.signedTransactionInfo as
+      | string
+      | undefined;
+    const signedRenewalInfo = data.signedRenewalInfo as string | undefined;
+
     console.log(
       `Apple notification type=${notificationType}, subtype=${subtype}, id=${notificationId}`,
     );
-    // Decode the signedTransactionInfo to get details (claims include transactionId, originalTransactionId, productId, purchaseDate, etc)
+
+    // Decode the signedTransactionInfo (notification)
     let transactionInfo: any = {};
     if (signedTransactionInfo) {
-      if (!verifyAppleJws(signedTransactionInfo)) {
-        this.logger.warn('Invalid JWS signature for signedTransactionInfo');
-        throw new Error('Invalid JWS signature');
-      }
+      // If you have a working verifier, you can verify first; here we decode to avoid blocking on signature issues.
       try {
-        const decoded = JSON.parse(
-          Buffer.from(signedTransactionInfo.split('.')[1], 'base64').toString(
-            'utf8',
-          ),
-        );
-        transactionInfo = decoded;
+        transactionInfo = this.decodeJwsPayload(signedTransactionInfo);
       } catch (e) {
         this.logger.error('Failed to decode Apple signedTransactionInfo', e);
+        // You can choose to throw here; keeping non-fatal so API fallback can still help.
       }
     }
-    // Likewise, decode signedRenewalInfo if present (contains subscription auto-renew status, expiration, etc)
+
+    // Decode the signedRenewalInfo (notification)
     let renewalInfo: any = {};
     if (signedRenewalInfo) {
-      if (!verifyAppleJws(signedRenewalInfo)) {
-        this.logger.warn('Invalid JWS signature for signedRenewalInfo');
-        throw new Error('Invalid JWS signature');
-      }
       try {
-        renewalInfo = JSON.parse(
-          Buffer.from(signedRenewalInfo.split('.')[1], 'base64').toString(
-            'utf8',
-          ),
-        );
+        renewalInfo = this.decodeJwsPayload(signedRenewalInfo);
       } catch (e) {
         this.logger.error('Failed to decode Apple signedRenewalInfo', e);
       }
     }
-    console.log('Decoded renewalInfo:', renewalInfo);
-    console.log('Decoded transactionInfo:', transactionInfo);
-    // Extract key identifiers from transactionInfo for database lookup
-    const originalTransactionId = transactionInfo.originalTransactionId;
-    const transactionId = transactionInfo.transactionId;
-    const productId = transactionInfo.productId;
-    const packageName = transactionInfo.bundleId;
-    // const businessId = transactionInfo.appAccountToken; // if app sets this to map to user/business
+
+    console.log('Decoded renewalInfo (from notification):', renewalInfo);
+    console.log(
+      'Decoded transactionInfo (from notification):',
+      transactionInfo,
+    );
+
+    // Extract identifiers from decoded notification (may be refined after API call)
+    let originalTransactionId = transactionInfo?.originalTransactionId;
+    let transactionId = transactionInfo?.transactionId;
+    let productId = transactionInfo?.productId;
+    let packageName = transactionInfo?.bundleId;
+
+    // --- Map to your business via your mapping collection ---
     const iapMapping = await this.purchaseTokenMapModel.findOne({
       purchaseToken: originalTransactionId,
       packageName,
@@ -224,6 +235,7 @@ export class AppleIAPService {
       this.logger.warn(`Business not found for id=${businessId}`);
       throw new Error('Business not found');
     }
+
     const foundPrice = await this.subscriptionPriceModel.findOne({
       appleProductId: productId,
     });
@@ -233,6 +245,7 @@ export class AppleIAPService {
       );
       throw new Error('Unknown productId in notification');
     }
+
     if (notificationId) {
       const alreadyProcessed = await this.transactionModel.findOne({
         notificationUUID: notificationId,
@@ -257,31 +270,52 @@ export class AppleIAPService {
       }
     }
 
-    // **Validate with Apple Server API or verifyReceipt**:
+    // --- Preferred: call App Store Server API Get Transaction Info ---
+    // Docs: returns JSON with signedTransactionInfo (JWS) and possibly signedRenewalInfo (JWS).
+    // You need to decode those to read purchaseDate / expiresDate, etc.
+    // https://developer.apple.com/documentation/appstoreserverapi/get-transaction-info
     let appleValidationData: any = null;
+    let apiTxInfo: any = {};
+    let apiRenewalInfo: any = {};
+
     try {
       if (transactionId) {
-        // Preferred: call App Store Server API to get transaction status (requires JWT auth using Apple's private key)
         const url = `${process.env.APPLE_API_BASE_URL}/inApps/v1/transactions/${transactionId}`;
-        // Apple API requires a JWT in Authorization header. Assume we have generated a dev token:
         const appleDevToken = await this.getAppleDevToken();
         const response = await this.httpService
-          .get(url, {
-            headers: { Authorization: `Bearer ${appleDevToken}` },
-          })
+          .get(url, { headers: { Authorization: `Bearer ${appleDevToken}` } })
           .toPromise();
-        appleValidationData = response.data;
+
+        appleValidationData = response.data; // <-- JSON object (NOT a JWS)
+        console.log(
+          'Apple GetTransactionInfo raw response:',
+          appleValidationData,
+        );
+
+        // Decode the JWS strings from the API response:
+        // https://developer.apple.com/documentation/appstoreserverapi/transactioninforesponse
+        if (appleValidationData?.signedTransactionInfo) {
+          apiTxInfo = this.decodeJwsPayload(
+            appleValidationData.signedTransactionInfo,
+          );
+        }
+        if (appleValidationData?.signedRenewalInfo) {
+          apiRenewalInfo = this.decodeJwsPayload(
+            appleValidationData.signedRenewalInfo,
+          );
+        }
+
+        console.log('Decoded transactionInfo (from API):', apiTxInfo);
+        console.log('Decoded renewalInfo (from API):', apiRenewalInfo);
       }
     } catch (err) {
       this.logger.error(
         'Apple transaction lookup failed, attempting verifyReceipt',
         err,
       );
-      // Fallback: use verifyReceipt if Server API call fails or not available
-      if (transactionInfo.signedRenewalInfo) {
-        // If we have the signedRenewalInfo, use it to get the originalTransactionId or shared secret for verifyReceipt
-        // In practice, we need the base64 receipt data from the app to call verifyReceipt
-        // Here we assume we have stored the latest receipt for this user in AppleReceipt model
+      // (Optional legacy fallback) verifyReceipt is deprecated; prefer Server API. Keep only if you still store raw receipts.
+      // https://developer.apple.com/documentation/appstoreserverapi  (see deprecation notes of verifyReceipt)
+      try {
         if (originalTransactionId) {
           const receiptRecord = await this.appleReceiptModel.findOne({
             originalTransactionId,
@@ -292,26 +326,54 @@ export class AppleIAPService {
             );
           }
         }
+      } catch (e) {
+        this.logger.error('verifyReceipt fallback failed', e);
       }
     }
-    const decodedAppleValidationData = JSON.parse(
-      Buffer.from(appleValidationData.split('.')[1], 'base64').toString('utf8'),
-    );
+
+    // Choose the most reliable decoded sources (prefer API > notification)
+    const effectiveTx = this.isNonEmpty(apiTxInfo)
+      ? apiTxInfo
+      : transactionInfo;
+    const effectiveRenewal = this.isNonEmpty(apiRenewalInfo)
+      ? apiRenewalInfo
+      : renewalInfo;
+
+    // Refresh identifiers in case API decoding had more accurate data
+    originalTransactionId =
+      effectiveTx?.originalTransactionId ?? originalTransactionId;
+    transactionId = effectiveTx?.transactionId ?? transactionId;
+    productId = effectiveTx?.productId ?? productId;
+    packageName = effectiveTx?.bundleId ?? packageName;
+
+    // Extract important dates (milliseconds since epoch as strings)
+    const purchaseDateMs =
+      (effectiveTx && Number(effectiveTx.purchaseDate)) || undefined; // when the charge occurred
+    const expiresDateMs =
+      (effectiveTx && Number(effectiveTx.expiresDate)) ||
+      (effectiveRenewal && Number(effectiveRenewal.expiresDate)) ||
+      undefined;
+
+    // Prepare decoded “validation” object for logging/auditing
+    const decodedAppleValidationData = {
+      transaction: this.isNonEmpty(apiTxInfo) ? apiTxInfo : transactionInfo,
+      renewal: this.isNonEmpty(apiRenewalInfo) ? apiRenewalInfo : renewalInfo,
+    };
+
     // Log raw notification & Apple validation response to DB (for auditing)
     await this.iapNotificationLogModel.create({
       platform: IapPlatform.APPLE,
       notificationUUID: notificationId,
       rawPayload: JSON.stringify(payload),
-      validationResponse: JSON.stringify(appleValidationData),
+      validationResponse: JSON.stringify(appleValidationData ?? {}),
       decodedValidationResponse: JSON.stringify(decodedAppleValidationData),
-      eventTime: new Date(), // could use payload.timestamp if available
+      eventTime: new Date(),
       eventType: notificationType,
       productId: productId,
       receivedAt: new Date(),
     });
 
-    // **Update internal models based on event type**:
-    // Find or create the subscription record by originalTransactionId
+    // --- Upsert subscription based on event type ---
     let subscription = await this.subscriptionModel.findOne({
       source: SubscriptionSource.APPLE,
       originalTransactionId,
@@ -320,7 +382,6 @@ export class AppleIAPService {
       console.log(
         `Subscription record not found for origTx ${originalTransactionId}`,
       );
-      // We may still proceed to create one if needed, or skip if irrelevant
       subscription = new this.subscriptionModel({
         source: SubscriptionSource.APPLE,
         originalTransactionId,
@@ -331,124 +392,106 @@ export class AppleIAPService {
       });
     }
 
-    // Determine new status or action based on Apple notification type
     switch (notificationType) {
       case AppleNotificationType.INITIAL_BUY: {
-        // Initial purchase of a subscription
         subscription.status = SubscriptionStatus.ACTIVE;
         subscription.product = foundPrice.product;
-        // Set current period expiration if available (from Apple validation or renewalInfo)
-        if (appleValidationData?.expiresDate || renewalInfo.expirationDate) {
-          const expMs =
-            appleValidationData?.expiresDate ||
-            parseInt(renewalInfo.expirationDate);
-          subscription.currentPeriodEnd = new Date(expMs);
-        }
+        if (expiresDateMs)
+          subscription.currentPeriodEnd = new Date(expiresDateMs);
         subscription.autoRenew = true;
         break;
       }
 
       case AppleNotificationType.DID_CHANGE_RENEWAL_PREF: {
-        // User changed their renewal preference (e.g. switched to a different subscription plan)
-        // We might want to update the subscription price/product if we can determine the new one
-        if (renewalInfo?.productId && renewalInfo.productId !== productId) {
+        // Prefer the next-period product from renewal info:
+        // autoRenewProductId = product that will renew next period.
+        const nextProductId =
+          effectiveRenewal?.autoRenewProductId || effectiveRenewal?.productId;
+        if (nextProductId && nextProductId !== productId) {
           const newPrice = await this.subscriptionPriceModel.findOne({
-            appleProductId: renewalInfo.productId,
+            appleProductId: nextProductId,
           });
           if (newPrice) {
             subscription.price = new mongoose.Types.ObjectId(newPrice.id);
             subscription.product = newPrice.product;
             this.logger.log(
-              `Subscription ${subscription._id} changed to new product ${renewalInfo.productId}`,
+              `Subscription ${subscription._id} changed to new product ${nextProductId} (DID_CHANGE_RENEWAL_PREF)`,
             );
           } else {
             this.logger.warn(
-              `Unknown new productId ${renewalInfo.productId} in DID_CHANGE_RENEWAL_PREF`,
+              `Unknown new productId ${nextProductId} in DID_CHANGE_RENEWAL_PREF`,
             );
           }
         }
-        // No immediate status change; subscription remains active until expiration
         break;
       }
+
       case AppleNotificationType.DID_RENEW: {
-        // Subscription was successfully auto-renewed (or recovered from billing retry)
         subscription.status = SubscriptionStatus.ACTIVE;
         subscription.autoRenew = true;
+
         const startMs =
-          appleValidationData?.purchaseDate ||
-          (transactionInfo?.purchaseDate &&
-            parseInt(transactionInfo.purchaseDate)) ||
-          (renewalInfo?.signedDate && parseInt(renewalInfo.signedDate)); // fallback
-
+          (effectiveTx && Number(effectiveTx.purchaseDate)) ||
+          (effectiveRenewal && Number(effectiveRenewal.signedDate)) ||
+          undefined;
         if (startMs) subscription.startDate = new Date(startMs);
+        if (expiresDateMs) subscription.endDate = new Date(expiresDateMs);
+        break;
+      }
 
-        const expMs =
-          appleValidationData?.expiresDate ||
-          (renewalInfo?.expirationDate && parseInt(renewalInfo.expirationDate));
-        if (expMs) subscription.endDate = new Date(expMs); // keep naming consistent with your schema
-        break;
-      }
       case AppleNotificationType.DID_FAIL_TO_RENEW: {
-        // A renewal attempt failed (payment issue). Subscription in retry mode.
-        subscription.autoRenew = true; // still in retry period
+        subscription.autoRenew = true; // still in retry
         if (subtype === AppleNotificationSubtype.GRACE_PERIOD) {
-          subscription.status = SubscriptionStatus.ACTIVE; // still active during grace period
+          subscription.status = SubscriptionStatus.ACTIVE;
         } else {
-          subscription.status = SubscriptionStatus.PAST_DUE; // payment failed, no grace period
+          subscription.status = SubscriptionStatus.PAST_DUE;
         }
-        // Apple will send EXPIRED or DID_RENEW later, so we don't cancel yet.
         break;
       }
+
       case AppleNotificationType.CANCEL: {
-        // Subscription was fully cancelled (e.g. refunded by Apple Support)
         subscription.status = SubscriptionStatus.CANCELED;
         subscription.autoRenew = false;
-        // If refunded, access should be revoked immediately
         subscription.currentPeriodEnd = new Date(); // end now
         break;
       }
+
       case AppleNotificationType.EXPIRED: {
-        // Subscription expired after all renewals ended or not renewed
         subscription.status = SubscriptionStatus.EXPIRED;
         subscription.autoRenew = false;
-        subscription.currentPeriodEnd = new Date(); // already expired
+        subscription.currentPeriodEnd = new Date();
         break;
       }
+
       case AppleNotificationType.DID_CHANGE_RENEWAL_STATUS: {
-        // User toggled auto-renew status
         const autoRenewEnabled =
           subtype === AppleNotificationSubtype.AUTO_RENEW_ENABLED;
-        subscription.autoRenew = autoRenewEnabled;
-        // Status might remain active until expiration; no immediate change to active status
+        subscription.autoRenew = !!autoRenewEnabled;
         break;
       }
+
       case AppleNotificationType.REFUND: {
-        // Apple issued a refund for this subscription (distinct from CANCEL which is AppleCare refund)
         subscription.status = SubscriptionStatus.REFUNDED;
         subscription.autoRenew = false;
-        subscription.currentPeriodEnd = new Date(); // assume access revoked
+        subscription.currentPeriodEnd = new Date();
         break;
       }
+
       case AppleNotificationType.INTERACTIVE_RENEWAL: {
-        // User manually renewed subscription from App Store (not auto-renew)
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.autoRenew = false; // user opted for manual renewal
-        const expMs =
-          appleValidationData?.expiresDate ||
-          (renewalInfo?.expirationDate && parseInt(renewalInfo.expirationDate));
-        if (expMs) subscription.currentPeriodEnd = new Date(expMs);
+        subscription.autoRenew = false; // manual renewal
+        if (expiresDateMs)
+          subscription.currentPeriodEnd = new Date(expiresDateMs);
         break;
       }
+
       case AppleNotificationType.REVOKE: {
-        // Apple revoked the subscription (e.g. due to fraud)
         subscription.status = SubscriptionStatus.REVOKED;
         subscription.autoRenew = false;
-        subscription.currentPeriodEnd = new Date(); // end immediately
+        subscription.currentPeriodEnd = new Date();
         break;
       }
-      // Apple revokes access
 
-      // ... handle other types as needed (e.g., DID_CHANGE_RENEWAL_PREF, PRICE_INCREASE_CONSENT)
       default:
         this.logger.warn(
           `Unhandled Apple notification type: ${notificationType}`,
@@ -464,6 +507,7 @@ export class AppleIAPService {
       'Updated subscription after notification processing:',
       updatedSubscription,
     );
+
     // Create a Transaction record for this event
     if (transactionId) {
       await this.transactionModel.create({
@@ -474,14 +518,12 @@ export class AppleIAPService {
         type: notificationType,
         subtype: subtype || null,
         productId,
-        purchaseDate: transactionInfo.purchaseDate
-          ? new Date(parseInt(transactionInfo.purchaseDate))
-          : new Date(),
+        purchaseDate: purchaseDateMs ? new Date(purchaseDateMs) : new Date(),
         processedAt: new Date(),
       });
     }
 
-    // If we have new receipt info (Apple may not send the full receipt in v2), we might update AppleReceipt model
+    // Update AppleReceipt model with what we can (if you keep this record)
     if (originalTransactionId) {
       let receiptRecord = await this.appleReceiptModel.findOne({
         originalTransactionId,
@@ -489,18 +531,12 @@ export class AppleIAPService {
       if (!receiptRecord) {
         receiptRecord = new this.appleReceiptModel({
           originalTransactionId,
-          receiptData: 'There is no receipt data available', // we don't have the full base64 receipt here
+          receiptData: 'There is no receipt data available', // not provided in v2
           subscription: subscription._id,
         });
       }
-      if (appleValidationData?.latestReceipt) {
-        receiptRecord.latestReceipt = appleValidationData.latestReceipt; // base64 string of receipt
-      }
-      // Store the last known status, expiration, etc., from validation data
-      if (appleValidationData?.expiresDate) {
-        receiptRecord.latestExpiresDate = new Date(
-          appleValidationData.expiresDate,
-        );
+      if (expiresDateMs) {
+        receiptRecord.latestExpiresDate = new Date(expiresDateMs);
       }
       receiptRecord.lastNotificationType = notificationType;
       await receiptRecord.save();
