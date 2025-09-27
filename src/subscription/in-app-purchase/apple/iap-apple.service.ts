@@ -204,8 +204,8 @@ export class AppleIAPService {
       }
     }
 
-    console.log('Decoded renewalInfo (from notification):', renewalInfo);
-    console.log(
+    this.logger.log('Decoded renewalInfo (from notification):', renewalInfo);
+    this.logger.log(
       'Decoded transactionInfo (from notification):',
       transactionInfo,
     );
@@ -287,7 +287,7 @@ export class AppleIAPService {
           .toPromise();
 
         appleValidationData = response.data; // <-- JSON object (NOT a JWS)
-        console.log(
+        this.logger.log(
           'Apple GetTransactionInfo raw response:',
           appleValidationData,
         );
@@ -305,8 +305,8 @@ export class AppleIAPService {
           );
         }
 
-        console.log('Decoded transactionInfo (from API):', apiTxInfo);
-        console.log('Decoded renewalInfo (from API):', apiRenewalInfo);
+        this.logger.log('Decoded transactionInfo (from API):', apiTxInfo);
+        this.logger.log('Decoded renewalInfo (from API):', apiRenewalInfo);
       }
     } catch (err) {
       this.logger.error(
@@ -379,7 +379,7 @@ export class AppleIAPService {
       originalTransactionId,
     });
     if (!subscription) {
-      console.log(
+      this.logger.log(
         `Subscription record not found for origTx ${originalTransactionId}`,
       );
       subscription = new this.subscriptionModel({
@@ -503,7 +503,7 @@ export class AppleIAPService {
     const updatedSubscription = await this.subscriptionModel.findById(
       subscription._id,
     );
-    console.log(
+    this.logger.log(
       'Updated subscription after notification processing:',
       updatedSubscription,
     );
@@ -547,7 +547,7 @@ export class AppleIAPService {
 
   async validatePurchase(token: string, businessId: string): Promise<boolean> {
     try {
-      console.log('Validating Apple Service..............');
+      this.logger.log('Validating Apple Service..............');
       let transactionInfo: any = {};
       if (!verifyAppleJws(token)) {
         console.warn('Invalid JWS signature for token');
@@ -565,11 +565,11 @@ export class AppleIAPService {
       const transactionId = transactionInfo.transactionId;
       const productId = transactionInfo.productId;
       const packageName = transactionInfo.bundleId;
-      console.log('Decoded transactionInfo:', transactionInfo);
-      console.log('purchaseToken:', purchaseToken);
-      console.log('transactionId:', transactionId);
-      console.log('productId:', productId);
-      console.log('packageName:', packageName);
+      this.logger.log('Decoded transactionInfo:', transactionInfo);
+      this.logger.log('purchaseToken:', purchaseToken);
+      this.logger.log('transactionId:', transactionId);
+      this.logger.log('productId:', productId);
+      this.logger.log('packageName:', packageName);
       await this.purchaseTokenMapModel.create({
         purchaseToken,
         businessId: new mongoose.Types.ObjectId(businessId),
