@@ -44,6 +44,9 @@ export class IapNotificationLog extends Document {
   @Prop({ type: mongoose.Schema.Types.Mixed })
   validationResponse?: any; // Response from Apple/Google validation (if applicable)
 
+  @Prop({ type: mongoose.Schema.Types.Mixed })
+  decodedValidationResponse?: any; // Decoded data from Apple/Google validation (if applicable)
+
   @Prop()
   receivedAt: Date; // When we received this notification
 }

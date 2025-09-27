@@ -33,6 +33,7 @@ export class IapWebhookController {
     // The Apple guard ensures the JWS signature is valid and attaches decoded payload
     // const decodedPayload = (notification as any).decodedPayload;
     // Process the notification using the service
+    console.log('entering service......');
     await this.appleService.processNotification(notification);
     return res.send(); // Acknowledge receipt
   }
