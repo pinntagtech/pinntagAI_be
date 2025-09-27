@@ -294,13 +294,16 @@ export class AppleIAPService {
         }
       }
     }
-
+    const decodedAppleValidationData = JSON.parse(
+      Buffer.from(appleValidationData.split('.')[1], 'base64').toString('utf8'),
+    );
     // Log raw notification & Apple validation response to DB (for auditing)
     await this.iapNotificationLogModel.create({
       platform: IapPlatform.APPLE,
       notificationUUID: notificationId,
       rawPayload: JSON.stringify(payload),
       validationResponse: JSON.stringify(appleValidationData),
+      decodedValidationResponse: JSON.stringify(decodedAppleValidationData),
       eventTime: new Date(), // could use payload.timestamp if available
       eventType: notificationType,
       productId: productId,

@@ -45,6 +45,9 @@ export class IapNotificationLog extends Document {
   validationResponse?: any; // Response from Apple/Google validation (if applicable)
 
   @Prop()
+  decodedValidationResponse?: any; // Decoded data from Apple/Google validation (if applicable)
+
+  @Prop()
   receivedAt: Date; // When we received this notification
 }
 
