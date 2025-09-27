@@ -151,8 +151,7 @@ export class AppleIAPService {
 
   async processNotification(payload: any): Promise<void> {
     console.log(
-      'Processing Apple notification payload:',
-      payload.notificationType,
+      'Entered to the service to process Apple notification payload.?????????????',
     );
     const notificationType: string = payload.notificationType;
     const subtype: string = payload.subtype;
