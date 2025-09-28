@@ -599,7 +599,7 @@ export class AppleIAPService {
       receiptRecord.lastNotificationType = notificationType;
       await receiptRecord.save();
     }
-
+    await this.purchaseTokenMapModel.findByIdAndDelete(iapMapping.id);
     // (Optional) trigger any post-processing, such as notifying the user, sending emails, etc., based on event.
   }
 
@@ -628,6 +628,17 @@ export class AppleIAPService {
       this.logger.log('transactionId:', transactionId);
       this.logger.log('productId:', productId);
       this.logger.log('packageName:', packageName);
+      const findMapping = await this.purchaseTokenMapModel.findOne({
+        purchaseToken,
+        businessId: new mongoose.Types.ObjectId(businessId),
+        packageName,
+        productId,
+        platform: 'apple',
+      });
+      if (findMapping) {
+        this.logger.log('Mapping already exists:', findMapping);
+        return true;
+      }
       const createdMapping = await this.purchaseTokenMapModel.create({
         purchaseToken,
         businessId: new mongoose.Types.ObjectId(businessId),
