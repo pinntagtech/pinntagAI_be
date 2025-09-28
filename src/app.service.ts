@@ -37,7 +37,6 @@ import {
   BusinessIndustryDocument,
 } from './business/model/businessIndustry.model';
 import countries from 'country-calling-code';
-import { PhoneNumberUtil, PhoneNumberType } from 'google-libphonenumber';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -190,25 +189,6 @@ export class AppService implements OnModuleInit {
   }
 
   async getCountryCodes() {
-    const isoCodes = countries.map((c) => c.isoCode2);
-    const phoneUtil = PhoneNumberUtil.getInstance();
-    const countryLengths: Record<string, {min: number, max: number}> = {};
-    for (const code of isoCodes) {
-      try {
-        const desc = phoneUtil.getMetadataForRegion(code);
-        if (!desc) continue;
-        // Possible lengths of valid numbers (includes mobile/fixed line)
-        const possibleLengths = desc?.general?.possibleLength || [];
-        const lengths = desc.general?.possibleLength || [];
-        const maxLen = possibleLengths.length ? Math.max(...possibleLengths) : null;
-        console.log("MAXXXX LENNN:",maxLen)
-      } catch (e) {
-        // some territories may throw if not in metadata
-        console.log('E:', e);
-      }
-    }
-
-    console.log(countryLengths);
 
     return countries.map((c) => ({
       isoCode: c.isoCode2,
