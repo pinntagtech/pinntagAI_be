@@ -1000,6 +1000,21 @@ export class BusinessService {
         updateObj['businessCategories'] = businessCategoriesIds;
       }
 
+      if (updateObj.phone && updateObj.countryCode) {
+        const phoneNumber = parsePhoneNumberFromString(
+          `${updateObj.countryCode}${updateObj.phone}`,
+        );
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          return { success: false, message: 'Invalid phone number' };
+        }
+        const fullPhoneNumber = phoneNumber.format('E.164');
+        this.smsService.sendSMS(
+          findBusiness.id,
+          fullPhoneNumber,
+          SMSType.OTP,
+        );
+      }
+
       // if (
       //   businessUser.status === ProfileStatus.MAPPED &&
       //   updateObj.isRegistered &&
@@ -3861,6 +3876,7 @@ export class BusinessService {
         coverImage: business.cover,
         followersCount: followersCount.count,
         activeSubscription: business.activeSubscription || null,
+        profileCompletionPercentage: business.profileCompletionPercentage,
       };
 
       console.log('Active Participants:', activeParticipants);
@@ -4838,7 +4854,9 @@ export class BusinessService {
           };
         }),
       );
-      const allTitles = tagsByCategory.flatMap(cat => cat.tags.map(t => t.title));
+      const allTitles = tagsByCategory.flatMap((cat) =>
+        cat.tags.map((t) => t.title),
+      );
 
       console.log('Tag Recommendations:', allTitles);
 

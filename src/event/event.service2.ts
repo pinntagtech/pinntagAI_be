@@ -6217,7 +6217,7 @@ export class EventService2 {
     offerId: string,
     data: UpdateOfferDto,
     user: DecodedUser,
-    images: Express.Multer.File[],
+    image: Express.Multer.File,
   ) {
     try {
       console.log('Data:::::', data);
@@ -6413,13 +6413,25 @@ export class EventService2 {
         }
       }
 
-      if (images && images.length > 0) {
-        console.log('Images:', images);
-        this.driveService.deleteBufferAndMultiImageUpload(
-          user,
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: 'gallery image',
+      });
+     if (image) {
+        console.log('Image:', image);
+        let qrDetails = await this.driveService.uploadAndCreateFile(
+          image,
           String(event.drivePath),
-          '',
-          images,
+          Folder.name,
+          event._id,
+          fileCategory._id,
+        );
+        await this.eventModel.updateOne(
+          { _id: event._id },
+          {
+            $set: {
+              QR_CODE: qrDetails._id,
+            },
+          },
         );
       }
 

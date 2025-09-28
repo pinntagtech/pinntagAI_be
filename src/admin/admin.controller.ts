@@ -60,6 +60,8 @@ import { CreateOutletByAdminDto } from 'src/outlet/dto/create-outlet.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateBusinessUserDto } from 'src/business/dto/create-businessUser.dto';
 import { CreateCouponDto, UpdateCouponDto } from './dto/create-coupon.dto';
+import { analyticsadmin_v1beta } from 'googleapis';
+import { EtlDataDto } from './dto/etl-data.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -1446,4 +1448,20 @@ export class AdminController {
       throw new BadRequestException({ message: result.message });
     }
   }
+
+  @Post('ETL')
+  @UseGuards(AdminGuard2)
+  async runETLProcess(
+  @TokenDecoder() user: DecodedUser,
+  @Body() data: EtlDataDto
+  ) {
+    // const result = await this.adminService.runETLProcess(data, user.id);
+    // if (result.success) {
+    //   return { message: result.message };
+    // } else {
+    //   throw new BadRequestException({ message: result.message });
+    // }
+  }
+
+
 }

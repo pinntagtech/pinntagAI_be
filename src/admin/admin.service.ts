@@ -29,6 +29,7 @@ import {
 import {
   CrawledEventStatus,
   EventStatus,
+  EventTypes,
   ReportTypes,
 } from 'src/enums/event.enums';
 import { PublishCrawledEventDto } from 'src/event/dto/publish-crawled-event.dto';
@@ -62,6 +63,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import {
   CarouselType,
   FileCategoryTypes,
+  FileType,
   TokenTypes,
   UserTypes,
 } from 'src/enums/auth.enums';
@@ -136,13 +138,20 @@ import {
 } from 'src/drive/models/fileCategory.model';
 import { Report, ReportDocument } from 'src/event/models/reports.model';
 import { BusinessPopulates } from 'src/enums/user.enum';
-import { EventSchedule } from 'src/event/models/event-schedule.model';
+import {
+  EventSchedule,
+  EventScheduleDocument,
+  ScheduleTypes,
+} from 'src/event/models/event-schedule.model';
 import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
 import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
 import { CreateCouponDto, UpdateCouponDto } from './dto/create-coupon.dto';
 import { Coupon } from 'src/subscription/models/coupon.model';
+import { EtlDataDto } from './dto/etl-data.dto';
+import { Folder } from 'src/drive/models/folder.model';
+import { File, FileDocument } from 'src/drive/models/file.model';
 
 @Injectable()
 export class AdminService {
@@ -195,8 +204,9 @@ export class AdminService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(BusinessDocVerificationLeads.name)
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
-    @InjectModel(Coupon.name)
-    private readonly couponModel: Model<Coupon>,
+    @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3064,4 +3074,182 @@ export class AdminService {
       return { success: false, message: err.message };
     }
   }
+
+  // async runETLProcess(data: EtlDataDto, adminId: string) {
+  //   try {
+  //     // Call the ETL service method to run the process
+  //     const businessUser = await this.businessUserModel.findOne({
+  //       email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+  //     });
+  //     if (!businessUser) {
+  //       return {
+  //         success: false,
+  //         message: 'Pinntag Business user not seeded',
+  //       };
+  //     }
+  //     const business = await this.businessModel.findById(data.businessId);
+
+  //     for (let event of data.eventIds) {
+  //       const eventData = await this.eventModel.findById(event); // WILL BE CHANGED TO FETCH EVENTS fROM ETL DATA
+  //       if (!eventData) {
+  //         continue;
+  //       }
+
+  //       //find outlet or create one
+  //       let address = await this.googleService.getAddressFromCoordinates(
+  //         eventData.locations[0].location.coordinates[1],
+  //         eventData.locations[0].location.coordinates[0],
+  //         '000e10b3-b0a0-4269-a864-ea419a790f76',
+  //       );
+
+  //       let foundOutlet = await this.outletModel.findOne({
+  //         address1: eventData.outlets[0].address1,
+  //       });
+
+  //       if (!foundOutlet) {
+  //         let outletName = eventData.locations[0].address1;
+  //         console.log('Outlet Name:', outletName);
+  //         foundOutlet = await this.outletModel.create({
+  //           isFromCrawler: true,
+  //           business: business._id,
+  //           name: outletName || `Loc-Atlanta City Hall`,
+  //           category: OutletCategoryList.PHYSICAL,
+  //           city: eventData.locations[0].city ?? 'Atlanta',
+  //           state: eventData.locations[0].state ?? 'GA',
+  //           country: 'United States',
+  //           postalCode: '30303',
+  //           countryCode: '404',
+  //           email: 'atlanta@yopmail.com',
+  //           address1: address.eventData.address1 ?? null,
+  //           latitude: eventData.locations[0].location.coordinates[1],
+  //           longitude: eventData.locations[0].location.coordinates[0],
+  //           location: {
+  //             type: 'Point',
+  //             coordinates: [
+  //               eventData.locations[0].location.coordinates[0],
+  //               eventData.locations[0].location.coordinates[1],
+  //             ],
+  //           },
+  //         });
+  //       }
+
+  //       await this.businessModel.updateOne(
+  //         { _id: business._id },
+  //         { $addToSet: { outlets: foundOutlet._id } },
+  //       );
+
+  //       let categoriesInObjectId = eventData.categories.map(
+  //         (cat) => new mongoose.Types.ObjectId(cat._id),
+  //       );
+
+  //       const eventFolder = await this.driveService.createFolder(
+  //         businessUser.id,
+  //         {
+  //           parentDirectory: business.drivePath,
+  //           parentType: Folder.name,
+  //           folderName: eventData.title,
+  //         },
+  //       );
+
+  //       const createdEvent = await this.eventModel.create({
+  //         title: eventData.title,
+  //         description: eventData.description,
+  //         status: EventStatus.PUBLISHED,
+  //         clientRefId: eventData._id,
+  //         type: EventTypes.FORMAL,
+  //         businessProfile: business._id,
+  //         creatorType: BusinessUser.name,
+  //         user: businessUser._id,
+  //         categories: categoriesInObjectId,
+  //         isFromCrawler: true,
+  //         drivePath: new mongoose.Types.ObjectId(eventFolder.data._id),
+  //         bookingUrl: [eventData.bookingUrl[0] || ''],
+  //         minTargetAge: 18,
+  //         maxTargetAge: 75,
+  //       });
+
+  //       const createdLocation = await this.eventLocationModel.create({
+  //         event: createdEvent._id,
+  //         businessLocationId: foundOutlet._id,
+  //         location: {
+  //           type: 'Point',
+  //           coordinates: [foundOutlet.longitude, foundOutlet.latitude],
+  //         },
+  //         address1: foundOutlet.address1,
+  //         city: foundOutlet.city,
+  //         state: foundOutlet.state,
+  //         zip: foundOutlet.postalCode,
+  //         email: foundOutlet.email,
+  //         isFromCrawler: true,
+  //         businessProfile: business._id,
+  //       });
+
+  //       await this.eventModel.updateOne(
+  //         { _id: createdEvent._id },
+  //         { $addToSet: { locations: createdLocation._id } },
+  //       );
+
+  //       for (let time of eventData.schedules || []) {
+  //                 const startTime = new Date(
+  //                   time.startTime || Date.now(),
+  //                 );
+  //                 const endTime = time.fixedSchedule.endTime
+  //                   ? new Date(time.fixedSchedule.endTime)
+  //                   : new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
+  //                 const createdSchedule = await this.eventScheduleModel.create({
+  //                   event: createdEvent._id,
+  //                   type: ScheduleTypes.FIXED,
+  //                   fixedSchedule: {
+  //                     date: new Date(time.fixedSchedule.date),
+  //                     durations: [{ startTime, endTime }],
+  //                   },
+  //                   isFromCrawler: true,
+  //                 });
+
+  //                 await this.eventModel.updateOne(
+  //                   { _id: createdEvent._id },
+  //                   { $addToSet: { eventSchedule: createdSchedule._id } },
+  //                 );
+  //               }
+
+  //              await this.eventModel.updateOne(
+  //         { _id: createdEvent._id },
+  //         { $addToSet: { eventSchedule: createdSchedule._id } },
+  //       );
+
+  //       let fileCategoryId = await this.fileCategoryModel.findOne({
+  //         name: 'gallery image',
+  //       });
+  //       for (let image of eventData.images) {
+  //         await this.fileModel.create({
+  //           metaData: {
+  //             mimeType: 'image/jpeg',
+  //             url: image,
+  //             thumbnailUrl: '',
+  //             size: 25579,
+  //             originalName: 'cloudfareImage',
+  //           },
+  //           parentDirectory: new mongoose.Types.ObjectId(
+  //             createdEvent.drivePath,
+  //           ),
+  //           ParentDirectoryType: 'Folder',
+  //           fileType: FileType.IMAGE,
+  //           category: fileCategoryId._id,
+  //           parent: businessUser._id,
+  //           parentType: Event.name, // or drive/folder parentType as needed
+  //         });
+  //       }
+  //     }
+
+  //     return { success: true, message: 'ETL process completed successfully.' };
+  //   } catch (error) {
+  //     console.error('Error running ETL process:', error);
+  //     return { success: false, message: 'Failed to complete ETL process.' };
+  //   }
+  // }
+
+
+
+
 }

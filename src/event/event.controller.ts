@@ -1118,19 +1118,26 @@ export class EventController {
   @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FilesInterceptor('images', 10, {
-      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 1000000 },
     }),
   )
   async updateOffer(
     @Param('id') id: string,
     @Body() body: UpdateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFiles() images: Express.Multer.File[],
+      @UploadedFile() image: Express.Multer.File,
   ) {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
-    const result = await this.eventService.updateOffer(id, body, user, images);
+    const result = await this.eventService.updateOffer(id, body, user, image);
     if (result.success) {
       return {
         message: result.message,

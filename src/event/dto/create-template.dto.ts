@@ -18,5 +18,8 @@ export class CreateTemplateDto {
 
   @IsNotEmpty()
   description: string;
+
+  @IsOptional()
+  termsAndConditions: string;
 }
 

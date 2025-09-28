@@ -138,13 +138,13 @@ export class UpdateBusinessDto {
   @IsString({ each: true })
   outlets?: string[];
 
-  // @IsOptional()
-  // @IsString()
-  // countryCode?: string;
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
 
-  // @IsOptional()
-  // // @IsPhoneNumber(null)
-  // phone?: string;
+  @IsOptional()
+  // @IsPhoneNumber(null)
+  phone?: string;
 
 
   // @IsOptional()
