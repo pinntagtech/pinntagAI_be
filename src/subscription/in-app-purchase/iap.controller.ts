@@ -64,6 +64,7 @@ export class InAppPurchaseController {
       token,
       user.businessProfile,
     );
+    console.log('Apple validation result:', result);
     return result;
   }
 }

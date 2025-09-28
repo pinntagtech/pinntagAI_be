@@ -635,6 +635,7 @@ export class AppleIAPService {
         productId,
         platform: 'apple',
       });
+      console.log('Mapping created successfully.');
       return true;
     } catch (error) {
       console.error('Error validating Apple purchase', error);
