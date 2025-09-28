@@ -37,6 +37,7 @@ import {
   BusinessIndustryDocument,
 } from './business/model/businessIndustry.model';
 import countries from 'country-calling-code';
+import { PhoneNumberUtil, PhoneNumberType } from 'google-libphonenumber';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -120,8 +121,7 @@ export class AppService implements OnModuleInit {
   }
 
   async getCategories() {
-
-    console.log("Inside Service");
+    console.log('Inside Service');
     return await this.categoryModel
       .find()
       // .sort({ sortOrder: 1 })
@@ -190,15 +190,33 @@ export class AppService implements OnModuleInit {
   }
 
   async getCountryCodes() {
+    const isoCodes = countries.map((c) => c.isoCode2);
+    const phoneUtil = PhoneNumberUtil.getInstance();
+    const countryLengths: Record<string, {min: number, max: number}> = {};
+    for (const code of isoCodes) {
+      try {
+        const desc = phoneUtil.getMetadataForRegion(code);
+        if (!desc) continue;
+        // Possible lengths of valid numbers (includes mobile/fixed line)
+        const possibleLengths = desc?.general?.possibleLength || [];
+        const lengths = desc.general?.possibleLength || [];
+        const maxLen = possibleLengths.length ? Math.max(...possibleLengths) : null;
+        console.log("MAXXXX LENNN:",maxLen)
+      } catch (e) {
+        // some territories may throw if not in metadata
+        console.log('E:', e);
+      }
+    }
+
+    console.log(countryLengths);
+
     return countries.map((c) => ({
-       isoCode: c.isoCode2,    
+      isoCode: c.isoCode2,
       countryCode: `+${c.countryCodes[0]}`, // +91, +1 etc.
       countryName: c.country,
       flagImage: `https://cdn.jsdelivr.net/npm/country-flag-icons/3x2/${c.isoCode2}.svg`,
     }));
   }
-
-
 
   // async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
   //   const admin = await this.adminModel.findOne();

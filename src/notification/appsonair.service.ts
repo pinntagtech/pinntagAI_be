@@ -68,7 +68,7 @@ export class AppsOnAirLinkService {
       },
       androidFallbackUrl:
         'https://play.google.com/store/apps/details?id=com.pinntag.pinntagUS',
-      iosFallbackUrl: 'https://apps.apple.com/app/id6448201172',
+      iosFallbackUrl: 'https://apps.apple.com/app/6448201172',
       isOpenInAndroidApp: true,
       isOpenInBrowserAndroid: false,
       isOpenInIosApp: true,
@@ -92,6 +92,7 @@ export class AppsOnAirLinkService {
           },
         ),
       );
+      console.log("AppsOnAir link created:", response.data);
 
       return {
         shortLink: response.data.shortLink,

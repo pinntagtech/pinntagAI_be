@@ -39,7 +39,7 @@ export class Event {
   @Prop()
   discountValue: string;
 
-  @Prop({ required: true, enum: ['User', BusinessUser.name] })
+  @Prop({ required: true, enum: ['User', BusinessUser.name],default: BusinessUser.name })
   creatorType: string;
 
   @Prop({ refPath: 'creatorType' })

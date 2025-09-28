@@ -182,7 +182,6 @@ export class SeederService {
     await this.seedCategories();
     await this.seedBusinessIndustries();
     await this.seedBusinessCategories();
-    await this.seedCountries();
     await this.seedEventTemplates();
     await this.seedDashboardConfigs();
     await this.seedPinntagBusinessProfile();
@@ -708,45 +707,45 @@ export class SeederService {
     }
   }
 
-  async seedConstitutions() {
-    const existingCountries = await this.businessCountryModel.find();
-    if (existingCountries.length < Object.keys(BusinessDocumentTypes).length) {
-      for (let country of Object.values(BusinessCountries)) {
-        const createdCountry = await this.businessCountryModel.create({
-          name: country.name,
-          currency: country.currency,
-          phoneCode: country.phoneCode,
-        });
+  // async seedConstitutions() {
+  //   const existingCountries = await this.businessCountryModel.find();
+  //   if (existingCountries.length < Object.keys(BusinessDocumentTypes).length) {
+  //     for (let country of Object.values(BusinessCountries)) {
+  //       const createdCountry = await this.businessCountryModel.create({
+  //         name: country.name,
+  //         currency: country.currency,
+  //         phoneCode: country.phoneCode,
+  //       });
 
-        for (let constitution of Object.keys(
-          BusinessDocumentTypes[country.name],
-        )) {
-          console.log('constitution:', constitution);
+  //       for (let constitution of Object.keys(
+  //         BusinessDocumentTypes[country.name],
+  //       )) {
+  //         console.log('constitution:', constitution);
 
-          const createConstitution =
-            await this.businessConstitutionModel.create({
-              title: constitution,
-              country: new mongoose.Types.ObjectId(createdCountry.id),
-            });
-          console.log('createConstitution:', createConstitution);
+  //         const createConstitution =
+  //           await this.businessConstitutionModel.create({
+  //             title: constitution,
+  //             country: new mongoose.Types.ObjectId(createdCountry.id),
+  //           });
+  //         console.log('createConstitution:', createConstitution);
 
-          for (let document of Object.values(
-            BusinessDocumentTypes[country.name][constitution],
-          )) {
-            console.log('document:', document);
-            const createdDocument = await this.businessDocumentTypeModel.create(
-              {
-                title: document,
-                constitution: new mongoose.Types.ObjectId(
-                  createConstitution.id,
-                ),
-              },
-            );
-          }
-        }
-      }
-    }
-  }
+  //         for (let document of Object.values(
+  //           BusinessDocumentTypes[country.name][constitution],
+  //         )) {
+  //           console.log('document:', document);
+  //           const createdDocument = await this.businessDocumentTypeModel.create(
+  //             {
+  //               title: document,
+  //               constitution: new mongoose.Types.ObjectId(
+  //                 createConstitution.id,
+  //               ),
+  //             },
+  //           );
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   async seedEventTemplates() {
     const eventTemplates = await this.templateModel.find();
