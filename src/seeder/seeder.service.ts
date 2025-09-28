@@ -15,6 +15,7 @@ import {
   BusinessSubCategory,
   BusinessTags,
   ContentTags,
+  CountryCodes,
   EventCategory,
   Seeder,
 } from './data';
@@ -186,6 +187,7 @@ export class SeederService {
     await this.seedDashboardConfigs();
     await this.seedPinntagBusinessProfile();
     await this.seedTags();
+    await this.seedCountries();
   }
 
   public async seedRoles() {
@@ -405,45 +407,44 @@ export class SeederService {
       // await this.categoryModel
       //   .insertMany(Seeder.ContentCategories)
       //   .then(() => console.log('Categories created.'));
-    
 
-    // 1. Fetch super-admin once
-    const superAdmin = await this.adminModel
-      .findOne({ isSuperAdmin: true })
-      .lean();
+      // 1. Fetch super-admin once
+      const superAdmin = await this.adminModel
+        .findOne({ isSuperAdmin: true })
+        .lean();
 
-    if (!superAdmin) {
-      throw new Error('Super-admin user not found');
-    }
+      if (!superAdmin) {
+        throw new Error('Super-admin user not found');
+      }
 
-    // 2. Prepare upsert operations for all industries
-    const ops = Seeder.ContentCategories.map((category) => ({
-      updateOne: {
-        filter: { title: category.title },
-        update: {
-          $setOnInsert: {
-            title: category.title,
-            lightIcon: category.lightIcon,
-            darkIcon: category.darkIcon,
-            activeColor: category.activeColor,
-            description: category.description,
-            createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+      // 2. Prepare upsert operations for all industries
+      const ops = Seeder.ContentCategories.map((category) => ({
+        updateOne: {
+          filter: { title: category.title },
+          update: {
+            $setOnInsert: {
+              title: category.title,
+              lightIcon: category.lightIcon,
+              darkIcon: category.darkIcon,
+              activeColor: category.activeColor,
+              description: category.description,
+              createdBy: new mongoose.Types.ObjectId(superAdmin._id),
+            },
           },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      }));
 
-    // 3. Execute all in one bulkWrite
-    const result = await this.categoryModel.bulkWrite(ops);
+      // 3. Execute all in one bulkWrite
+      const result = await this.categoryModel.bulkWrite(ops);
 
-    // 4. (Optional) Log how many were inserted vs. already existed
-    const inserted = result.upsertedCount;
-    const matched = result.matchedCount - inserted;
-    console.log(
-      `Content-Category: ${inserted} created, ${matched} already existed`,
-    );
-  }
+      // 4. (Optional) Log how many were inserted vs. already existed
+      const inserted = result.upsertedCount;
+      const matched = result.matchedCount - inserted;
+      console.log(
+        `Content-Category: ${inserted} created, ${matched} already existed`,
+      );
+    }
   }
 
   public async seedAgeGroups() {
@@ -684,22 +685,20 @@ export class SeederService {
 
   async seedCountries() {
     const existingCount = await this.businessCountryModel.countDocuments();
-    const totalCountries = Object.keys(BusinessCountries).length;
-
+    const totalCountries = CountryCodes.length;
     if (existingCount < totalCountries) {
-      for (const country of Object.values(BusinessCountries)) {
-        if (typeof country === 'object' && country !== null) {
-          const foundCountry = await this.businessCountryModel.findOne({
-            name: country.name,
+      for (let country of CountryCodes) {
+        const foundCountry = await this.businessCountryModel.findOne({
+          isoCode: country.isoCode,
+        });
+        if (!foundCountry) {
+          await this.businessCountryModel.create({
+            countryName: country.countryName,
+            isoCode: country.isoCode,
+            countryCode: country.countryCode,
+            flagImage: country.flagImage,
+            limit: country.limit,
           });
-
-          if (!foundCountry) {
-            await this.businessCountryModel.create({
-              name: country.name,
-              currency: country.currency,
-              phoneCode: country.phoneCode,
-            });
-          }
         }
       }
     } else {

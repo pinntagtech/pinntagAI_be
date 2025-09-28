@@ -608,7 +608,7 @@ export class AppleIAPService {
       this.logger.log('Validating Apple Service..............');
       let transactionInfo: any = {};
       if (!verifyAppleJws(token)) {
-        console.warn('Invalid JWS signature for token');
+        this.logger.error('Invalid JWS signature for token');
         throw new Error('Invalid JWS signature');
       }
       try {
@@ -617,7 +617,7 @@ export class AppleIAPService {
         );
         transactionInfo = decoded;
       } catch (e) {
-        console.error('Failed to decode Apple token', e);
+        this.logger.error('Failed to decode Apple token', e);
       }
       const purchaseToken = transactionInfo.originalTransactionId;
       const transactionId = transactionInfo.transactionId;
@@ -628,17 +628,17 @@ export class AppleIAPService {
       this.logger.log('transactionId:', transactionId);
       this.logger.log('productId:', productId);
       this.logger.log('packageName:', packageName);
-      await this.purchaseTokenMapModel.create({
+      const createdMapping = await this.purchaseTokenMapModel.create({
         purchaseToken,
         businessId: new mongoose.Types.ObjectId(businessId),
         packageName,
         productId,
         platform: 'apple',
       });
-      console.log('Mapping created successfully.');
+      this.logger.log('Mapping created successfully.', createdMapping);
       return true;
     } catch (error) {
-      console.error('Error validating Apple purchase', error);
+      this.logger.error('Error validating Apple purchase', error);
       return false;
     }
   }

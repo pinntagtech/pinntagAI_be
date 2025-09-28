@@ -37,6 +37,7 @@ import {
   BusinessIndustryDocument,
 } from './business/model/businessIndustry.model';
 import countries from 'country-calling-code';
+import { CountryCodes } from './seeder/data';
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -189,13 +190,15 @@ export class AppService implements OnModuleInit {
   }
 
   async getCountryCodes() {
+    // return countries.map((c) => ({
+    //   isoCode: c.isoCode2,
+    //   countryCode: `+${c.countryCodes[0]}`, // +91, +1 etc.
+    //   countryName: c.country,
+    //   flagImage: `https://cdn.jsdelivr.net/npm/country-flag-icons/3x2/${c.isoCode2}.svg`,
+    // }));
 
-    return countries.map((c) => ({
-      isoCode: c.isoCode2,
-      countryCode: `+${c.countryCodes[0]}`, // +91, +1 etc.
-      countryName: c.country,
-      flagImage: `https://cdn.jsdelivr.net/npm/country-flag-icons/3x2/${c.isoCode2}.svg`,
-    }));
+    return CountryCodes;
+
   }
 
   // async createDrive(ownerId: string|mongoose.Types.ObjectId, ownerType: string): Promise<Drive> {
