@@ -6425,6 +6425,7 @@ private async handleNewUser(createdUser: any, authDto: SignupAuthDto) {
       message: 'Dashboard fetched successfully',
       data: {
         eventsResult,
+        totalCount,
       },
     };
   }
