@@ -28,6 +28,7 @@ import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Drive, DriveDocument } from 'src/drive/models/drive.model';
+
 export interface UsageLimitResponse {
   maxLimit: number | string;
   consumed: number;
@@ -339,7 +340,11 @@ export class SubscriptionService {
     }
   }
 
-  async fetchFeatureLimits(businessProfile: string, title: string, dataCount: number) {
+  async fetchFeatureLimits(
+    businessProfile: string,
+    title: string,
+    dataCount: number,
+  ) {
     try {
       const business = await this.businessModel.findById(businessProfile);
       if (!business) return { success: false, message: 'Business not found' };
