@@ -348,7 +348,7 @@ export class SubscriptionService {
     try {
       const business = await this.businessModel.findById(businessProfile);
       if (!business) return { success: false, message: 'Business not found' };
-
+      console.log('Business Active Subscription:', business.activeSubscription);
       const [subscription] = await this.subscriptionModel.aggregate([
         { $match: { _id: business.activeSubscription } },
         {
