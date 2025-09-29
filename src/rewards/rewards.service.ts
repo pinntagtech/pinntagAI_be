@@ -1032,6 +1032,39 @@ export class RewardsService {
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          $lookup: {
+            from: 'follows', // make sure it's the actual collection name
+            let: {
+              userId: new mongoose.Types.ObjectId(user.id), // assuming userId is available in the scope
+              targetId: '$businessProfile._id',
+              targetType: Business.name,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', '$$userId'] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', '$$targetType'] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+        {
+          $addFields: {
+            isFollowedByMe: {
+              $gt: [{ $size: '$userFollow' }, 0],
+            },
+          },
+        },
 
         // businessIndustry inside businessProfile
         {
@@ -1344,7 +1377,7 @@ export class RewardsService {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log("ACTIVITY TYPE:::", activityType);
+      console.log('ACTIVITY TYPE:::', activityType);
 
       let match = {};
       if (search) {
@@ -1375,10 +1408,10 @@ export class RewardsService {
         match['reward.schedule.endDate'] = { $gte: now };
       }
       if (activityType.length > 0) {
-        console.log("ADDING ACTIVITY TYPE TO MATCH:::", activityType);
+        console.log('ADDING ACTIVITY TYPE TO MATCH:::', activityType);
         match['reward.activityType'] = { $in: activityType };
       }
-      if(data.rewardType && data.rewardType.length > 0) {
+      if (data.rewardType && data.rewardType.length > 0) {
         match['reward.rewardType'] = { $in: data.rewardType };
       }
 
