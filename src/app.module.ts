@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
@@ -172,6 +172,7 @@ import {
   SubscriptionPriceSchema,
 } from './subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from './subscription/models/coupon.model';
+import multer from 'multer';
 
 @Module({
   imports: [
@@ -306,4 +307,12 @@ import { Coupon, CouponSchema } from './subscription/models/coupon.model';
     RedisBullService,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(
+        multer().any(), // parses all form-data (files + fields)
+      )
+      .forRoutes('*'); // or specific route
+  }
+}

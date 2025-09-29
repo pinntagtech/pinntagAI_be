@@ -130,8 +130,15 @@ export class SubscriptionService {
 
   async getProducts(user: DecodedUser, billingInterval?: string) {
     try {
+      const business = await this.businessModel.findById(
+        user.businessProfile,
+      );
+      if (!business) {
+        throw new Error('Business not found');
+      }
       const userSubscription = await this.subscriptionModel.findOne({
-        business: new mongoose.Types.ObjectId(user.businessProfile),
+        // business: new mongoose.Types.ObjectId(user.businessProfile),
+        _id: new mongoose.Types.ObjectId(business.activeSubscription),
       });
       const products = await this.subscriptionProductModel.aggregate([
         // Step 1: Match only active products

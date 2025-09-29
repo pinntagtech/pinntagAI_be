@@ -48,6 +48,8 @@ export function SubscriptionGuard(
       }
       let dataCount = 0;
       if (featureType === FeatureLimitList.LOCATIONS) {
+        console.log("Checking locations in request:", request);
+        console.log('Request body:', request.body);
         const locationsInRequest = request.body.locations;
         if (Array.isArray(locationsInRequest) && locationsInRequest.length) {
           dataCount = locationsInRequest.length;
