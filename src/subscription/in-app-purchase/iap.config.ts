@@ -19,6 +19,7 @@ export const APP_BUNDLE_ID = process.env.APP_BUNDLE_ID || '<your.app.bundleid>';
 
 export const GOOGLE_SERVICE_ACCOUNT_JSON =
   process.env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
+
 export const GOOGLE_PACKAGE_NAME =
   process.env.GOOGLE_PACKAGE_NAME || '<com.your.app>';
 // Parse service account JSON (for Google API authentication)

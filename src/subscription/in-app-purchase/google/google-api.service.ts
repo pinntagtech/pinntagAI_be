@@ -15,6 +15,8 @@ export class GoogleApiService {
     // }).getClient();
     // // Bind the auth client to all googleapis calls
     // google.options({ auth: this.authClient });
+
+    console.log('GOOGLE_SERVICE_ACCOUNT:', GOOGLE_SERVICE_ACCOUNT);
     this.androidPublisher = new androidpublisher_v3.Androidpublisher({
       auth: new auth.GoogleAuth({
         credentials: GOOGLE_SERVICE_ACCOUNT,
