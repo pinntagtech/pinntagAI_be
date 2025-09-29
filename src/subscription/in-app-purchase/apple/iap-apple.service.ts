@@ -632,6 +632,7 @@ export class AppleIAPService {
         purchaseToken,
         businessId: new mongoose.Types.ObjectId(businessId),
         packageName,
+        productId,
         platform: 'apple',
       });
       if (findMapping) {
