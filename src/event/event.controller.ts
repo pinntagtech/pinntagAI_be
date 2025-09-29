@@ -441,7 +441,7 @@ export class EventController {
   }
 
   @Post('publish/toggle')
-  @UseGuards(SubscriptionGuard(FeatureLimitList.CONTENT_CREATION))
+  // @UseGuards(SubscriptionGuard(FeatureLimitList.CONTENT_CREATION))
   @UseGuards(JwtGuard2)
   async togglePublishEvent(
     @Body() body: PublishEventDto,
@@ -1115,7 +1115,7 @@ export class EventController {
   }
 
   @Put('offer/:id')
-  @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
+  // @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   @UseInterceptors(
     FileInterceptor('image', {

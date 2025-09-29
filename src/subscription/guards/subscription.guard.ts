@@ -52,6 +52,7 @@ export function SubscriptionGuard(
         if (Array.isArray(locationsInRequest) && locationsInRequest.length) {
           dataCount = locationsInRequest.length;
         }
+        console.log('Locations count from request:', dataCount);
       }
 
       const fetchFeatureLimits =

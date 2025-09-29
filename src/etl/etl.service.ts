@@ -2,24 +2,36 @@ import { Injectable } from '@nestjs/common';
 import { CreateEtlDto } from './dto/create-etl.dto';
 import { UpdateEtlDto } from './dto/update-etl.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { ETL_Source, ETL_SourceDocument  } from './models/etl-source.model';
+import { ETL_Source, ETL_SourceDocument } from './models/etl-source.model';
 import { Model } from 'mongoose';
 import { CreateEtlSourceDto, UpdateEtlSourceDto } from './dto/ETL-sources.dto';
-import { ETL_Source_Group, ETL_Source_GroupDocument } from './models/etl-source-groups.model';
-import { CreateEtlSourceGroupDto, UpdateEtlSourceGroupDto } from './dto/ETL-source-group.dto';
+import {
+  ETL_Source_Group,
+  ETL_Source_GroupDocument,
+} from './models/etl-source-groups.model';
+import {
+  CreateEtlSourceGroupDto,
+  UpdateEtlSourceGroupDto,
+} from './dto/ETL-source-group.dto';
 import { Admin } from 'mongodb';
 import { AdminDocument } from 'src/admin/models/admin.model';
-import { BusinessUser, BusinessUserDocument } from 'src/business/model/businessUser.model';
+import {
+  BusinessUser,
+  BusinessUserDocument,
+} from 'src/business/model/businessUser.model';
 import { Role, RoleDocument } from 'src/roles/models/roles.model';
 import { PrivilegeService } from 'src/roles/privilege.service';
 
 @Injectable()
 export class EtlService {
   constructor(
-    @InjectModel(ETL_Source.name) private readonly etlURLModel: Model<ETL_SourceDocument>,
-    @InjectModel(ETL_Source_Group.name) private readonly etlUrlGroupModel: Model<ETL_Source_GroupDocument>,
+    @InjectModel(ETL_Source.name)
+    private readonly etlURLModel: Model<ETL_SourceDocument>,
+    @InjectModel(ETL_Source_Group.name)
+    private readonly etlUrlGroupModel: Model<ETL_Source_GroupDocument>,
     @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
-    @InjectModel(BusinessUser.name) private readonly businessUserModel: Model<BusinessUserDocument>,
+    @InjectModel(BusinessUser.name)
+    private readonly businessUserModel: Model<BusinessUserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly privilegeService: PrivilegeService,
   ) {}
@@ -49,7 +61,7 @@ export class EtlService {
     return createdUrl.save();
   }
 
-  async findAllUrls() : Promise<ETL_Source[]> {
+  async findAllUrls(): Promise<ETL_Source[]> {
     const Sources = await this.etlURLModel.find().exec();
     console.log(Sources);
     return Sources;
@@ -59,8 +71,13 @@ export class EtlService {
     return await this.etlURLModel.findById(id).exec();
   }
 
-  async updateUrl(id: string, updateEtlUrlDto: UpdateEtlSourceDto): Promise<ETL_Source | null> {
-    return await this.etlURLModel.findByIdAndUpdate(id, updateEtlUrlDto, { new: true }).exec();
+  async updateUrl(
+    id: string,
+    updateEtlUrlDto: UpdateEtlSourceDto,
+  ): Promise<ETL_Source | null> {
+    return await this.etlURLModel
+      .findByIdAndUpdate(id, updateEtlUrlDto, { new: true })
+      .exec();
   }
 
   async removeUrl(id: string): Promise<ETL_Source | null> {
@@ -68,21 +85,34 @@ export class EtlService {
   }
 
   // CRUD for ETL_Source_Group model
-  async createUrlGroup(createEtlUrlGroupDto: CreateEtlSourceGroupDto): Promise<ETL_Source_Group> {
+  async createUrlGroup(
+    createEtlUrlGroupDto: CreateEtlSourceGroupDto,
+  ): Promise<ETL_Source_Group> {
     const createdGroup = new this.etlUrlGroupModel(createEtlUrlGroupDto);
     return createdGroup.save();
   }
 
   async findAllUrlGroups(): Promise<ETL_Source_Group[]> {
-    return await this.etlUrlGroupModel.find().populate('urls', 'label url status').exec();
+    return await this.etlUrlGroupModel
+      .find()
+      .populate('urls', 'label url status')
+      .exec();
   }
 
   async findOneUrlGroup(id: string): Promise<ETL_Source_Group | null> {
-    return await this.etlUrlGroupModel.findById(id).populate('urls', 'label url status').exec();
+    return await this.etlUrlGroupModel
+      .findById(id)
+      .populate('urls', 'label url status')
+      .exec();
   }
 
-  async updateUrlGroup(id: string, updateEtlUrlGroupDto: UpdateEtlSourceGroupDto): Promise<ETL_Source_Group | null> {
-    return await this.etlUrlGroupModel.findByIdAndUpdate(id, updateEtlUrlGroupDto, { new: true }).exec();
+  async updateUrlGroup(
+    id: string,
+    updateEtlUrlGroupDto: UpdateEtlSourceGroupDto,
+  ): Promise<ETL_Source_Group | null> {
+    return await this.etlUrlGroupModel
+      .findByIdAndUpdate(id, updateEtlUrlGroupDto, { new: true })
+      .exec();
   }
 
   async removeUrlGroup(id: string): Promise<ETL_Source_Group | null> {
@@ -140,5 +170,26 @@ export class EtlService {
   async triggerEtlOnDemand(id: string): Promise<string> {
     // Logic to trigger ETL on-demand for the group
     return `ETL process triggered on-demand for group ${id}`;
+  }
+
+  async getETLEventByID(id: string) {
+    try {
+      let url = `http://localhost:4001/etl/events/${id}`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-internal-api-key': 'change-me',
+        },
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const data = await res.json();
+      console.log(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      return null;
+    }
   }
 }

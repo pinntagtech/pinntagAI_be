@@ -1116,7 +1116,7 @@ private async handleNewUser(createdUser: any, authDto: SignupAuthDto) {
 
   async getDashboardAllConfigs(carouselType: string) {
     const foundConfig = await this.dashboardConfigModel
-      .find({ carouselType: carouselType }, { _id: 1, name: 1, cardType: 1 })
+      .find({ carouselType: carouselType }, { _id: 1, name: 1, cardType: 1,limit:1 })
       .populate('categories', 'title')
       .populate('businessIndustries', 'title')
       .sort({ sortOrder: 1 });
