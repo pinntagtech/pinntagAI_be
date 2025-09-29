@@ -385,7 +385,7 @@ export class AppleIAPService {
       subscription = new this.subscriptionModel({
         source: SubscriptionSource.APPLE,
         originalTransactionId,
-        product: new mongoose.Types.ObjectId(productId),
+        product: foundPrice.product,
         price: foundPrice._id,
         status: SubscriptionStatus.ACTIVE,
         business: business._id,
