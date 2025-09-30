@@ -14,6 +14,7 @@ import { IapNotificationLog } from 'src/subscription/models/iap-notification-log
 import { Transaction } from 'src/subscription/models/transaction.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import { MappingRepoService } from './mapping-repo.service';
+import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
 
 @Injectable()
 export class GoogleIAPService {
@@ -29,6 +30,8 @@ export class GoogleIAPService {
     private subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(IapNotificationLog.name)
     private iapNotificationLogModel: Model<IapNotificationLog>,
+    @InjectModel(SubscriptionPrice.name)
+    private subscriptionPriceModel: Model<SubscriptionPrice>,
 
     private googlePlayService: GoogleApiService,
     private mappingRepo: MappingRepoService,
@@ -323,7 +326,7 @@ export class GoogleIAPService {
       `Validating Google purchase for business ${businessId}, package ${packageName}, product ${productId}, token ${purchaseToken}`,
     );
     // Heuristic: if it's in your subscription catalog, treat as subscription; otherwise one-time
-    const isSub = !!(await this.subscriptionProductModel.findOne({
+    const isSub = !!(await this.subscriptionPriceModel.findOne({
       googleProductId: productId,
     }));
     console.log(`Is subscription product: ${isSub}`);
