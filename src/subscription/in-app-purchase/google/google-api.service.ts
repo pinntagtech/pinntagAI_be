@@ -32,6 +32,7 @@ export class GoogleApiService {
       packageName,
       token: purchaseToken,
     });
+    console.log('Subscription status response:', res);
     return res.data; // includes externalAccountIdentifiers?.obfuscatedExternalAccountId
   }
 

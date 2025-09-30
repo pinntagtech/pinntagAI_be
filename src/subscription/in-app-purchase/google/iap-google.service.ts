@@ -335,6 +335,7 @@ export class GoogleIAPService {
         packageName,
         purchaseToken,
       ); // v2
+      console.log('Google subscription status response:', sub);
       if (!sub) {
         this.logger.warn(`No sub for token: ${purchaseToken}`);
         return false;
