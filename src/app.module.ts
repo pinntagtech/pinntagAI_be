@@ -307,12 +307,17 @@ import multer from 'multer';
     RedisBullService,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(
-        multer().any(), // parses all form-data (files + fields)
-      )
-      .forRoutes('*'); // or specific route
-  }
+export class AppModule {
+// export class AppModule implements NestModule {
+//   configure(consumer: MiddlewareConsumer) {
+//     consumer
+//       .apply((req, res, next) => {
+//         // Only parse multipart/form-data
+//         if (req.is('multipart/form-data')) {
+//           return multer().any()(req, res, next);
+//         }
+//         next();
+//       })
+//       .forRoutes('*'); // or specific routes
+//   }
 }

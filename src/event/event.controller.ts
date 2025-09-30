@@ -1011,6 +1011,7 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() image: Express.Multer.File,
   ) {
+    console.log('Creating offer with data:', data);
     const result = await this.eventService.createOffer(data, user, image);
     if (result.success) {
       return {
@@ -1149,6 +1150,31 @@ export class EventController {
       });
     }
   }
+
+  @Post('update/locations/:id')
+  @UseGuards(JwtGuard2)
+  async updateEventLocations(
+    @Param('id') id: string,
+    @Body('locations') locations: string[], 
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.updateEventLocations(
+      id,
+      locations,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('pinDrop')
   @UseGuards(JwtGuard2)
   @UseInterceptors(

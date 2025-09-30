@@ -67,9 +67,9 @@ export class UpdateOfferDto {
   @IsOptional()
   quantityLimit?: any;
 
-  @IsOptional()
-  // @IsArray()
-  locations: Array<string> | Array<Location>;
+  // @IsOptional()
+  // // @IsArray()
+  // locations: Array<string> | Array<Location>;
 
   @IsOptional()
   tags?: any;

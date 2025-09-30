@@ -14,6 +14,7 @@ async function bootstrap() {
     //   instance: instance,
     // }),
     rawBody: true,
+    // bodyParser: true,
   });
   // app.enableCors({
   //   origin: function (origin, callback) {
