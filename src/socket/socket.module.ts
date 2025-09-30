@@ -170,9 +170,12 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       {
         name: User.name,
@@ -277,6 +280,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
     FirebaseService,
     BusinessService,
     RedisBullService,
+    AppsOnAirLinkService,
   ],
   exports: [SocketGateway],
 })

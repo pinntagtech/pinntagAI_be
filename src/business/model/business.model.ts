@@ -303,6 +303,9 @@ export class Business {
   @Prop({ default: 0 })
   profileCompletionPercentage: number;
 
+  @Prop()
+  QRCode: string;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }

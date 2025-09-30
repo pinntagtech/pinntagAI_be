@@ -151,6 +151,9 @@ import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { BusinessDocVerificationLeads } from 'src/admin/models/BusinessDocVerificationLeads.model';
 import { OwnershipTransferRecord } from './model/ownershipTransferRecords.model';
 import { Tag } from 'src/models/tags.model';
+import { error } from 'console';
+import * as QRCode from 'qrcode';
+import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 
 @Injectable()
 export class BusinessService {
@@ -221,6 +224,7 @@ export class BusinessService {
     private readonly userService: UserService,
     private readonly firebaseService: FirebaseService,
     private readonly smsService: SmsService,
+    private readonly appsOnAirLinkService: AppsOnAirLinkService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -731,7 +735,7 @@ export class BusinessService {
 
       const fullPhoneNumber = phoneNumber.format('E.164');
       this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP);
-
+      this.generateBusinessQR(createdBusiness.id);
       this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
         .then(() => logger.info('Business roles seeded successfully'))
         .catch((err) => logger.error('Error seeding business roles:', err));
@@ -1008,11 +1012,7 @@ export class BusinessService {
           return { success: false, message: 'Invalid phone number' };
         }
         const fullPhoneNumber = phoneNumber.format('E.164');
-        this.smsService.sendSMS(
-          findBusiness.id,
-          fullPhoneNumber,
-          SMSType.OTP,
-        );
+        this.smsService.sendSMS(findBusiness.id, fullPhoneNumber, SMSType.OTP);
       }
 
       // if (
@@ -4021,7 +4021,6 @@ export class BusinessService {
   }
 
   private percentageChange(oldVal: number, newVal: number) {
-    console.log('Old Value:', oldVal, 'New Value:', newVal);
     if (oldVal === 0) return 0;
     return ((newVal - oldVal) / oldVal) * 100;
   }
@@ -4864,6 +4863,49 @@ export class BusinessService {
         success: true,
         message: 'Tag recommendations fetched successfully',
         data: allTitles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async generateBusinessQR(businessId: string) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+
+      const url = process.env.BUSINESS_LINK_URL + businessId;
+
+      const { shortLink } = await this.appsOnAirLinkService.generateShortLink(
+        url,
+        {
+          title: business.name,
+          description: business.description,
+          imageUrl: business.logo,
+          businessName: business.name,
+        },
+      );
+      console.log('Short Link:', shortLink);
+      const qrFileCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+      const businessQR = await this.driveService.generateQrCode(
+        shortLink,
+        business.name,
+        business.creator.toString(),
+        qrFileCategory.id,
+        business.drivePath.toString(),
+      );
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        { $set: { QRCode: businessQR.data.metaData.url } },
+      );
+      return {
+        success: true,
+        message: 'Business QR code generated successfully',
       };
     } catch (error) {
       return {

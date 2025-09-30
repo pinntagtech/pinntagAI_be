@@ -6480,7 +6480,7 @@ export class EventService2 {
     try {
       const event = await this.eventModel.findOne({
         _id: eventId,
-        businessProfile: user.businessProfile,
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
       });
       if (!event) return { success: false, message: 'Event not found' };
 

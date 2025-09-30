@@ -1401,4 +1401,21 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('generateBusinessQR/:id')
+  @UseGuards(JwtGuard2)
+  async generateBusinessQR(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.generateBusinessQR(id);
+    if (result.success) {
+      return {
+        message: result.message,
+        // data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

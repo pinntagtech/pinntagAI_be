@@ -36,7 +36,7 @@ export class AppsOnAirLinkService {
     this.apiKey = process.env.APPSONAIR_API_KEY;
     this.appId = process.env.APPSONAIR_APP_ID;
     this.baseUrl =
-      process.env.APPSONAIR_BASE_URL || 'https://api.appsonair.com'; // Assumed endpoint
+      process.env.APPSONAIR_BASE_URL
 
     if (!this.apiKey || !this.appId) {
       throw new Error(
@@ -46,70 +46,69 @@ export class AppsOnAirLinkService {
   }
 
   async generateShortLink(
-    longUrl: string,
-    event: {
-      title: string;
-      description: string;
-      imageUrl: string;
-      businessName: string;
-    },
-  ): Promise<AppLinkResponse> {
-    const { title, description, imageUrl, businessName } = event;
-    console.log('Generating AppsOnAir link for URL:', longUrl);
+  longUrl: string,
+  event: {
+    title: string;
+    description: string;
+    imageUrl: string;
+    businessName: string;
+  },
+): Promise<AppLinkResponse> {
+  const { title, description, imageUrl, businessName } = event;
+  console.log('Generating AppsOnAir link for URL:', longUrl);
 
-    const appLinkParams: AppLinkParams = {
-      url: longUrl,
-      name: `${title} by ${businessName}`,
-      urlPrefix: process.env.APPSONAIR_DOMAIN_PREFIX, // e.g., 'links.yourdomain.com'
-      socialMeta: {
-        title: `${title} by ${businessName} brought to you by Pinntag.`,
-        description,
-        imageUrl,
-      },
-      androidFallbackUrl:
-        'https://play.google.com/store/apps/details?id=com.pinntag.pinntagUS',
-      iosFallbackUrl: 'https://apps.apple.com/app/6448201172',
-      isOpenInAndroidApp: true,
-      isOpenInBrowserAndroid: false,
-      isOpenInIosApp: true,
-      isOpenInBrowserApple: false,
-    };
-
-    try {
-      // Method 1: Direct API approach (needs to be confirmed with AppsOnAir documentation)
-      const response = await firstValueFrom(
-        this.httpService.post(
-          `${this.baseUrl}/v1/applinks/create`, // Assumed endpoint
-          {
-            appId: this.appId,
-            ...appLinkParams,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${this.apiKey}`,
-              'Content-Type': 'application/json',
+  try {
+    console.log("EVENT:",event);
+    const response = await firstValueFrom(
+      this.httpService.post(
+        this.baseUrl,
+        {
+          data: {
+            url: longUrl,
+            name: `${businessName}`,
+            urlPrefix: process.env.APPSONAIR_DOMAIN_PREFIX,
+            socialMeta: {
+              title: `${title} by ${businessName} brought to you by Pinntag.`,
+              description,
+              imageUrl,
             },
+            androidFallbackUrl:
+              'https://play.google.com/store/apps/details?id=com.pinntag.pinntagUS',
+            iosFallbackUrl: 'https://apps.apple.com/app/6448201172',
+            isOpenInAndroidApp: true,
+            isOpenInBrowserAndroid: false,
+            isOpenInIosApp: true,
+            isOpenInBrowserApple: false,
           },
-        ),
-      );
-      console.log("AppsOnAir link created:", response.data);
+        },
+        {
+          headers: {
+            'x-api-key': this.apiKey,
+            'x-app-key': this.appId,
+            'Content-Type': 'application/json',
+          },
+        },
+      ),
+    );
+    
+    console.log('AppsOnAir link created:', response.data);
 
-      return {
-        shortLink: response.data.shortLink,
-        previewLink: response.data.previewLink,
-        linkId: response.data.linkId,
-      };
-    } catch (error) {
-      console.error(
-        'Error creating AppsOnAir AppLink:',
-        error.response?.data || error.message,
-      );
-      throw new HttpException(
-        'Failed to create AppLink',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return {
+      shortLink: response.data.brandedLink,
+      previewLink: response.data.brandedLink,
+      linkId: response.data.brandedLink,
+    };
+  } catch (error) {
+    console.error(
+      'Error creating AppsOnAir AppLink:',
+      error.response?.data || error.message,
+    );
+    throw new HttpException(
+      'Failed to create AppLink',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
+}
 
   // Alternative method using a wrapper around their SDK approach
   async generateShortLinkAlternative(
@@ -235,4 +234,10 @@ export class AppsOnAirLinkService {
       );
     }
   }
+
+
+  // async generateDynamicLink()
+
+
+
 }

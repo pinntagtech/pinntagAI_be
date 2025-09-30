@@ -1151,7 +1151,7 @@ export class EventController {
     }
   }
 
-  @Post('update/locations/:id')
+  @Post('update/location/:id')
   @UseGuards(JwtGuard2)
   async updateEventLocations(
     @Param('id') id: string,

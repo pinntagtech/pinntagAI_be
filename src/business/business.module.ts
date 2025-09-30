@@ -162,9 +162,12 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: BusinessUser.name, schema: BusinessUserSchema },
       { name: Role.name, schema: RoleSchema },
@@ -265,6 +268,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
     PrivilegeService,
     FirebaseService,
     RedisBullService,
+    AppsOnAirLinkService,
   ],
 })
 export class BusinessModule {}
