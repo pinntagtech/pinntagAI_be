@@ -108,7 +108,7 @@ export class EventController {
   }
 
   @Post('update/:id')
-   @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
+  //  @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   async update(
     @Param('id') id: string,
