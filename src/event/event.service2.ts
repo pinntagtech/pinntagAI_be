@@ -6341,59 +6341,27 @@ export class EventService2 {
         );
       }
 
-      
-
-
-
-
-
-      return {
-        success: true,
-        message: 'Offer updated successfully',
-        data: updatedEvent,
-      };
-    } catch (err) {
-      console.log('Error in updateOffer:', err);
-      return { success: false, message: 'Something went wrong.' };
-    }
-  }
-
-  async updateEventLocations(
-    eventId: string,
-    locations: string[],
-    user: DecodedUser,
-  ) {
-    try {
-      const event = await this.eventModel.findOne({
-        _id: eventId,
-        businessProfile: user.businessProfile,
-      });
-      if (!event) return { success: false, message: 'Event not found' };
-
-      await this.subscriptionService.fetchFeatureLimits(
-        user.businessProfile,
-        FeatureLimitList.LOCATIONS,
-        locations.length,
-      );
-
-
-        if (locations && locations.length) {
-          for (let i = 0; i < locations.length; i++) {
-            if (typeof locations[i] == 'string') {
-              if (!mongoose.isValidObjectId(locations[i])) {
+      if (data.locations) {
+        if (data.locations.length) {
+          if (!Array.isArray(data.locations)) {
+            data.locations = [data.locations];
+          }
+          for (let i = 0; i < data.locations.length; i++) {
+            if (typeof data.locations[i] == 'string') {
+              if (!mongoose.isValidObjectId(data.locations[i])) {
                 return {
                   success: false,
-                  message: `Please provide a valid location id, ${locations[i]} is not valid`,
+                  message: `Please provide a valid location id, ${data.locations[i]} is not valid`,
                 };
               }
             }
           }
           await this.eventLocationModel.deleteMany({
-            event: new mongoose.Types.ObjectId(eventId),
+            event: new mongoose.Types.ObjectId(offerId),
           });
           await this.eventModel.updateOne(
             {
-              _id: new mongoose.Types.ObjectId(eventId),
+              _id: new mongoose.Types.ObjectId(offerId),
             },
             {
               $set: { locations: [] },
@@ -6491,9 +6459,157 @@ export class EventService2 {
             },
           );
         }
+      }
 
+      return {
+        success: true,
+        message: 'Offer updated successfully',
+        data: updatedEvent,
+      };
+    } catch (err) {
+      console.log('Error in updateOffer:', err);
+      return { success: false, message: 'Something went wrong.' };
+    }
+  }
 
+  async updateEventLocations(
+    eventId: string,
+    locations: string[],
+    user: DecodedUser,
+  ) {
+    try {
+      const event = await this.eventModel.findOne({
+        _id: eventId,
+        businessProfile: user.businessProfile,
+      });
+      if (!event) return { success: false, message: 'Event not found' };
 
+      await this.subscriptionService.fetchFeatureLimits(
+        user.businessProfile,
+        FeatureLimitList.LOCATIONS,
+        locations.length,
+      );
+
+      if (locations && locations.length) {
+        for (let i = 0; i < locations.length; i++) {
+          if (typeof locations[i] == 'string') {
+            if (!mongoose.isValidObjectId(locations[i])) {
+              return {
+                success: false,
+                message: `Please provide a valid location id, ${locations[i]} is not valid`,
+              };
+            }
+          }
+        }
+        await this.eventLocationModel.deleteMany({
+          event: new mongoose.Types.ObjectId(eventId),
+        });
+        await this.eventModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(eventId),
+          },
+          {
+            $set: { locations: [] },
+          },
+        );
+        for (let i = 0; i < locations.length; i++) {
+          const location = locations[i];
+          if (
+            event.creatorType === BusinessUser.name &&
+            !mongoose.isValidObjectId(location)
+          ) {
+            return {
+              success: false,
+              message: `Please provide a valid location id`,
+            };
+          }
+          if (mongoose.isValidObjectId(location)) {
+            if (event.creatorType === User.name) {
+              return {
+                success: false,
+                message: `Please provide valid location object for the event`,
+              };
+            }
+            const outletDoc = await this.outletModel.findById(location);
+            if (!outletDoc) {
+              return {
+                success: false,
+                message: `Outlet with id ${location} not found`,
+              };
+            }
+            const createdlocation = await this.eventLocationModel.create({
+              event: new mongoose.Types.ObjectId(eventId),
+              businessLocationId: outletDoc._id,
+              businessProfile: event.businessProfile,
+              location: {
+                type: 'Point',
+                coordinates: [outletDoc.longitude, outletDoc.latitude],
+              },
+              accuracy: outletDoc.accuracy,
+              address1: outletDoc.address1,
+              address2: outletDoc.address2 ? outletDoc.address2 : '',
+              city: outletDoc.city,
+              state: outletDoc.state,
+              zip: outletDoc.postalCode,
+              website: outletDoc.website,
+              email: outletDoc.email,
+              phone: outletDoc.phone,
+            });
+            console.log('created-location---->', createdlocation);
+            await this.eventModel.updateOne(
+              {
+                _id: new mongoose.Types.ObjectId(eventId),
+              },
+              {
+                $addToSet: { locations: createdlocation._id },
+              },
+            );
+          } else {
+            const locationData: LocationClass =
+              location as unknown as LocationClass;
+            const latitude = locationData.latitude;
+            const longitude = locationData.longitude;
+            delete locationData.latitude;
+            delete locationData.longitude;
+            const locationAddQuery = {
+              event: new mongoose.Types.ObjectId(eventId),
+              location: {
+                type: 'Point',
+                coordinates: [longitude, latitude],
+              },
+              businessProfile: event.businessProfile,
+              ...locationData,
+            };
+            const createdlocation =
+              await this.eventLocationModel.create(locationAddQuery);
+            await this.eventModel.updateOne(
+              {
+                _id: new mongoose.Types.ObjectId(eventId),
+              },
+              {
+                $addToSet: { locations: createdlocation._id },
+              },
+            );
+            // console.log(`created-location:-------${createdlocation}`);
+          }
+        }
+
+        await this.businessModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(event.businessProfile),
+          },
+          {
+            $set: { onboardingOfferStatus: OfferStatus.LOCATIONS },
+          },
+        );
+      }
+      const updatedEvent = await this.eventModel.findById(eventId);
+
+      return {
+        success: true,
+        message: 'Event locations updated successfully',
+        data: updatedEvent,
+      };
     } catch (error) {
       console.log('Error in updateEventLocations:', error);
       return { success: false, message: 'Something went wrong.' };
