@@ -319,11 +319,14 @@ export class GoogleIAPService {
     productId: string,
     purchaseToken: string,
   ): Promise<boolean> {
+    console.log(
+      `Validating Google purchase for business ${businessId}, package ${packageName}, product ${productId}, token ${purchaseToken}`,
+    );
     // Heuristic: if it's in your subscription catalog, treat as subscription; otherwise one-time
     const isSub = !!(await this.subscriptionProductModel.findOne({
       googleProductId: productId,
     }));
-
+    console.log(`Is subscription product: ${isSub}`);
     if (isSub) {
       const sub = await this.googlePlayService.getSubscriptionStatus(
         packageName,
