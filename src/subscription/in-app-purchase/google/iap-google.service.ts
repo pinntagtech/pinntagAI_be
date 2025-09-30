@@ -331,6 +331,7 @@ export class GoogleIAPService {
     }));
     console.log(`Is subscription product: ${isSub}`);
     if (isSub) {
+      console.log('Fetching Google subscription status...');
       const sub = await this.googlePlayService.getSubscriptionStatus(
         packageName,
         purchaseToken,

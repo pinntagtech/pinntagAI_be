@@ -28,6 +28,7 @@ export class GoogleApiService {
 
   /** Verify a subscription purchase and retrieve its latest status */
   async getSubscriptionStatus(packageName: string, purchaseToken: string) {
+    console.log('Fetching Google subscription status...2222');
     const res = await this.androidPublisher.purchases.subscriptionsv2.get({
       packageName,
       token: purchaseToken,
