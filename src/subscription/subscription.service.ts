@@ -138,7 +138,6 @@ export class SubscriptionService {
         throw new Error('Business not found');
       }
       const userSubscription = await this.subscriptionModel.findOne({
-        // business: new mongoose.Types.ObjectId(user.businessProfile),
         _id: new mongoose.Types.ObjectId(business.activeSubscription),
       });
       const products = await this.subscriptionProductModel.aggregate([
@@ -186,7 +185,7 @@ export class SubscriptionService {
             isCurrentPlan: {
               $and: [
                 { $eq: ['$_id', userSubscription?.product] },
-                { $in: ['$_id', [userSubscription?.product]] },
+                { $eq: [userSubscription.price, { $arrayElemAt: ['$prices._id', 0] }] },
               ],
             },
           },
