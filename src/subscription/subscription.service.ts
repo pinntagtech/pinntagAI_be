@@ -129,102 +129,122 @@ export class SubscriptionService {
     storage: (v) => `${v}GB Storage`,
   };
 
-  async getProducts(user: DecodedUser, billingInterval?: string) {
-    try {
-      const business = await this.businessModel.findById(
-        user.businessProfile,
-      );
-      if (!business) {
-        throw new Error('Business not found');
-      }
-      const userSubscription = await this.subscriptionModel.findOne({
-        _id: new mongoose.Types.ObjectId(business.activeSubscription),
-      });
-      const products = await this.subscriptionProductModel.aggregate([
-        // Step 1: Match only active products
-        { $match: { isActive: true } },
-        {
-          $lookup: {
-            from: 'featurelimits', // collection name in MongoDB
-            localField: 'features',
-            foreignField: '_id',
-            as: 'features',
-            pipeline: [
-              { $project: { key: 1, value: 1 } }, // only keep needed fields
-            ],
-          },
+async getProducts(user: DecodedUser, billingInterval?: string) {
+  try {
+    const business = await this.businessModel.findById(user.businessProfile);
+    if (!business) {
+      throw new Error('Business not found');
+    }
+
+    const userSubscription = business.activeSubscription
+      ? await this.subscriptionModel.findById(business.activeSubscription)
+      : null;
+
+    console.log('User Subscription:', userSubscription);
+
+    if (!userSubscription) {
+      console.warn('No active subscription found for business:', business._id);
+    }
+
+    // Base pipeline
+    const pipeline: any[] = [
+      // Step 1: Match only active products
+      { $match: { isActive: true } },
+      {
+        $lookup: {
+          from: 'featurelimits',
+          localField: 'features',
+          foreignField: '_id',
+          as: 'features',
+          pipeline: [{ $project: { key: 1, value: 1 } }],
         },
-        // Step 3: Lookup prices
-        {
-          $lookup: {
-            from: 'subscriptionprices', // collection name in MongoDB
-            localField: 'prices',
-            foreignField: '_id',
-            as: 'prices',
-            pipeline: [
-              {
-                $match: {
-                  billingInterval: billingInterval
-                    ? billingInterval
-                    : 'monthly',
-                },
+      },
+      {
+        $lookup: {
+          from: 'subscriptionprices',
+          localField: 'prices',
+          foreignField: '_id',
+          as: 'prices',
+          pipeline: [
+            {
+              $match: {
+                billingInterval: billingInterval ?? 'monthly',
               },
-              {
-                $project: {
-                  product: 0,
-                  createdAt: 0,
-                  updatedAt: 0,
-                  __v: 0,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $addFields: {
-            isCurrentPlan: {
-              $and: [
-                { $eq: ['$_id', userSubscription?.product] },
-                { $eq: [userSubscription.price, { $arrayElemAt: ['$prices._id', 0] }] },
-              ],
             },
+            {
+              $project: {
+                product: 0,
+                createdAt: 0,
+                updatedAt: 0,
+                __v: 0,
+              },
+            },
+          ],
+        },
+      },
+    ];
+
+    // Step 3: Add isCurrentPlan safely
+    if (userSubscription) {
+      pipeline.push({
+        $addFields: {
+          isCurrentPlan: {
+            $and: [
+              { $eq: ['$_id', userSubscription.product] },
+              {
+                $eq: [
+                  userSubscription.price,
+                  { $arrayElemAt: ['$prices._id', 0] },
+                ],
+              },
+            ],
           },
         },
+      });
+    } else {
+      pipeline.push({
+        $addFields: { isCurrentPlan: false },
+      });
+    }
 
-        // Step 4: Exclude fields from subscriptionProduct
-        {
-          $project: {
-            updatedAt: 0,
-            __v: 0,
-          },
-        },
+    // Step 4: Exclude fields
+    pipeline.push({
+      $project: {
+        updatedAt: 0,
+        __v: 0,
+      },
+    });
 
-        // Step 5: Sort
-        {
-          $sort: { 'prices.price': 1 },
-        },
-      ]);
+    // Step 5: Sort
+    pipeline.push({
+      $sort: { 'prices.price': 1 },
+    });
 
-      const enrichedProducts = products.map((product) => {
-        const enrichedFeatures = product.features.map((feature) => {
-          const label = this.featureLabels[feature.key];
-          return {
-            ...feature,
-            label: label ? label(feature.value) : feature.value,
-          };
-        });
+    // Execute aggregation
+    const products = await this.subscriptionProductModel.aggregate(pipeline);
+
+    // Enrich features
+    const enrichedProducts = products.map((product) => {
+      const enrichedFeatures = product.features.map((feature) => {
+        const label = this.featureLabels[feature.key];
         return {
-          ...product,
-          features: enrichedFeatures,
+          ...feature,
+          label: label ? label(feature.value) : feature.value,
         };
       });
+      return {
+        ...product,
+        features: enrichedFeatures,
+      };
+    });
 
-      return enrichedProducts;
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      return [];
-    }
+    return enrichedProducts;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
   }
+}
+
 
   async createProductPrice(
     user: DecodedUser,
