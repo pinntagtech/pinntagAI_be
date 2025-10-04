@@ -131,9 +131,7 @@ export class SubscriptionService {
 
   async getProducts(user: DecodedUser, billingInterval?: string) {
     try {
-      const business = await this.businessModel.findById(
-        user.businessProfile,
-      );
+      const business = await this.businessModel.findById(user.businessProfile);
       if (!business) {
         throw new Error('Business not found');
       }
@@ -185,7 +183,12 @@ export class SubscriptionService {
             isCurrentPlan: {
               $and: [
                 { $eq: ['$_id', userSubscription?.product] },
-                { $eq: [userSubscription.price, { $arrayElemAt: ['$prices._id', 0] }] },
+                {
+                  $eq: [
+                    userSubscription.price,
+                    { $arrayElemAt: ['$prices._id', 0] },
+                  ],
+                },
               ],
             },
           },
