@@ -135,36 +135,43 @@ export class SubscriptionService {
       if (!business) {
         throw new Error('Business not found');
       }
-      const userSubscription = await this.subscriptionModel.findOne({
-        _id: new mongoose.Types.ObjectId(business.activeSubscription),
-      });
-      const products = await this.subscriptionProductModel.aggregate([
+
+      const userSubscription = business.activeSubscription
+        ? await this.subscriptionModel.findById(business.activeSubscription)
+        : null;
+
+      console.log('User Subscription:', userSubscription);
+
+      if (!userSubscription) {
+        console.warn(
+          'No active subscription found for business:',
+          business._id,
+        );
+      }
+
+      // Base pipeline
+      const pipeline: any[] = [
         // Step 1: Match only active products
         { $match: { isActive: true } },
         {
           $lookup: {
-            from: 'featurelimits', // collection name in MongoDB
+            from: 'featurelimits',
             localField: 'features',
             foreignField: '_id',
             as: 'features',
-            pipeline: [
-              { $project: { key: 1, value: 1 } }, // only keep needed fields
-            ],
+            pipeline: [{ $project: { key: 1, value: 1 } }],
           },
         },
-        // Step 3: Lookup prices
         {
           $lookup: {
-            from: 'subscriptionprices', // collection name in MongoDB
+            from: 'subscriptionprices',
             localField: 'prices',
             foreignField: '_id',
             as: 'prices',
             pipeline: [
               {
                 $match: {
-                  billingInterval: billingInterval
-                    ? billingInterval
-                    : 'monthly',
+                  billingInterval: billingInterval ?? 'monthly',
                 },
               },
               {
@@ -178,11 +185,15 @@ export class SubscriptionService {
             ],
           },
         },
-        {
+      ];
+
+      // Step 3: Add isCurrentPlan safely
+      if (userSubscription) {
+        pipeline.push({
           $addFields: {
             isCurrentPlan: {
               $and: [
-                { $eq: ['$_id', userSubscription?.product] },
+                { $eq: ['$_id', userSubscription.product] },
                 {
                   $eq: [
                     userSubscription.price,
@@ -192,22 +203,30 @@ export class SubscriptionService {
               ],
             },
           },
-        },
+        });
+      } else {
+        pipeline.push({
+          $addFields: { isCurrentPlan: false },
+        });
+      }
 
-        // Step 4: Exclude fields from subscriptionProduct
-        {
-          $project: {
-            updatedAt: 0,
-            __v: 0,
-          },
+      // Step 4: Exclude fields
+      pipeline.push({
+        $project: {
+          updatedAt: 0,
+          __v: 0,
         },
+      });
 
-        // Step 5: Sort
-        {
-          $sort: { 'prices.price': 1 },
-        },
-      ]);
+      // Step 5: Sort
+      pipeline.push({
+        $sort: { 'prices.price': 1 },
+      });
 
+      // Execute aggregation
+      const products = await this.subscriptionProductModel.aggregate(pipeline);
+
+      // Enrich features
       const enrichedProducts = products.map((product) => {
         const enrichedFeatures = product.features.map((feature) => {
           const label = this.featureLabels[feature.key];
