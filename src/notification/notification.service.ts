@@ -298,18 +298,19 @@ export class NotificationService {
       data: broadcast,
     };
   }
-  async getBroadcasts(page: number, limit: number) {
+
+  async getBroadcasts(user: DecodedUser, page: number, limit: number) {
     const broadcasts = await this.broadcastModel
-      .find()
+      .find({ business: new mongoose.Types.ObjectId(user.businessProfile) })
       .skip((page - 1) * limit)
       .limit(limit);
     const totalCount = await this.broadcastModel.countDocuments();
-    if (!broadcasts || broadcasts.length === 0) {
-      return {
-        success: false,
-        message: 'Broadcast not found',
-      };
-    }
+    // if (!broadcasts || broadcasts.length === 0) {
+    //   return {
+    //     success: false,
+    //     message: 'Broadcast not found',
+    //   };
+    // }
     return {
       success: true,
       message: 'Broadcast status fetched successfully',

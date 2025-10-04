@@ -175,10 +175,12 @@ export class NotificationController {
   @Get('broadcasts')
   @UseGuards(JwtGuard2)
   async getBroadcasts(
+    @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
   ) {
     const result = await this.notificationService.getBroadcasts(
+      user,
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
     );

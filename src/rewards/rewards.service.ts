@@ -107,6 +107,7 @@ export class RewardsService {
     qrCode: Express.Multer.File,
   ) {
     try {
+      const EndDate = new Date(new Date(data.endDate).setHours(23, 59, 59, 999));
       console.log('createReward data:', data);
 
       const userId = user.id;
@@ -125,9 +126,9 @@ export class RewardsService {
         folderName: data.title,
       });
       if (new Date(data.startDate) < new Date()) {
-        return { success: false, message: 'Start date must be in the future.' };
+        return { success: false, message: 'Start date cannot be in the past.' };
       }
-      if (new Date(data.endDate) < new Date(data.startDate)) {
+      if (EndDate < new Date(data.startDate)) {
         return {
           success: false,
           message: 'End date must be after start date.',
@@ -142,7 +143,7 @@ export class RewardsService {
         user: new mongoose.Types.ObjectId(userId),
         schedule: {
           startDate: new Date(data.startDate),
-          endDate: new Date(data.endDate),
+          endDate: EndDate,
         },
       };
 

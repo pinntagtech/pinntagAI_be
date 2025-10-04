@@ -92,7 +92,7 @@ export class DriveController {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid folder ID');
     }
-    const result = await this.driveService.updateFolderName(id, name, user);
+    const result = await this.driveService.updateFolderName(id, name);
     if (result.success) {
       return {
         message: result.message,

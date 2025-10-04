@@ -313,7 +313,7 @@ export class DriveService {
     }
   }
 
-  async updateFolderName(id: string, name: string, user: DecodedUser) {
+  async updateFolderName(id: string, name: string) {
     try {
       const folder = await this.folderModel.findById(id);
       if (!folder) {

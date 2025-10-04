@@ -1015,6 +1015,13 @@ export class BusinessService {
         this.smsService.sendSMS(findBusiness.id, fullPhoneNumber, SMSType.OTP);
       }
 
+      if(updateObj.name && updateObj.name !== findBusiness.name){
+        //update drive folder name
+        if(findBusiness.drivePath){
+          await this.driveService.updateFolderName(findBusiness.drivePath.toString(), updateObj.name);
+        }
+      }
+
       // if (
       //   businessUser.status === ProfileStatus.MAPPED &&
       //   updateObj.isRegistered &&
@@ -2182,13 +2189,14 @@ export class BusinessService {
     try {
       // const userDetails = await this.businessUserModel.findById(id);
       const foundUser = await this.businessUserModel.findOne({
-        email: data.email,
+        $or: [{ email: data.email }, { phone: data.phone }],
       });
 
       if (foundUser) {
         return {
           success: false,
-          message: 'Business User already found with this email',
+          message:
+            'Business User already exists with this email or phone number.',
         };
       }
       let password = await this.authService.autoGeneratePassword();

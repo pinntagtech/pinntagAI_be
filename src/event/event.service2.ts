@@ -6276,6 +6276,7 @@ export class EventService2 {
           }
           categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
         }
+        
       }
       if (data.tags) {
         data.tags = data.tags.split(',');
