@@ -1224,6 +1224,7 @@ export class DriveService {
       let totalSize = 0;
       const tasks = images
         .filter((img) => {
+          console.log('img.mimetype:', img.mimetype);
           if (img.mimetype.startsWith('image/')) {
             console.warn(
               `Converting mimetype of ${img.originalname} to image/jpeg`,
