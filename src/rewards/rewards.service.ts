@@ -107,7 +107,9 @@ export class RewardsService {
     qrCode: Express.Multer.File,
   ) {
     try {
-      const EndDate = new Date(new Date(data.endDate).setHours(23, 59, 59, 999));
+      const EndDate = new Date(
+        new Date(data.endDate).setHours(23, 59, 59, 999),
+      );
       console.log('createReward data:', data);
 
       const userId = user.id;
@@ -448,8 +450,8 @@ export class RewardsService {
       }
 
       // Upload images async (fire and forget)
-      if (images) {
-        console.log('Updating Images:::');
+      if (images.length) {
+        console.log('Updating Images:::', images.length);
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
           reward.drivePath.toString(),
