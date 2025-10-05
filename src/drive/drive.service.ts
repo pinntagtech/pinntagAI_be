@@ -1223,31 +1223,31 @@ export class DriveService {
       // Filter valid images and prepare upload/create tasks
       let totalSize = 0;
       const tasks = images
-        .filter((img) => {
-          console.log('img.mimetype:', img.mimetype);
-          if (img.mimetype.startsWith('image/')) {
-            console.warn(
-              `Converting mimetype of ${img.originalname} to image/jpeg`,
-            );
-            img.mimetype = 'image/jpeg'; // Force set mimetype
-          } else if (img.mimetype.startsWith('video/')) {
-            console.warn(
-              `Converting mimetype of ${img.originalname} to video/mp4`,
-            );
-            img.mimetype = 'video/mp4'; // Force set mimetype
-          } else {
-            console.warn(`Unsupported mimetype of ${img.originalname}`);
-            return false;
-          }
+        // .filter((img) => {
+        //   console.log('img.mimetype:', img.mimetype);
+        //   if (img.mimetype.startsWith('image/')) {
+        //     console.warn(
+        //       `Converting mimetype of ${img.originalname} to image/jpeg`,
+        //     );
+        //     img.mimetype = 'image/jpeg'; // Force set mimetype
+        //   } else if (img.mimetype.startsWith('video/')) {
+        //     console.warn(
+        //       `Converting mimetype of ${img.originalname} to video/mp4`,
+        //     );
+        //     img.mimetype = 'video/mp4'; // Force set mimetype
+        //   } else {
+        //     console.warn(`Unsupported mimetype of ${img.originalname}`);
+        //     return false;
+        //   }
 
-          if (img.size > driveDetails.AvailableSpace) {
-            throw new BadRequestException(
-              `Insufficient space for ${img.originalname}`,
-            );
-          }
+        //   if (img.size > driveDetails.AvailableSpace) {
+        //     throw new BadRequestException(
+        //       `Insufficient space for ${img.originalname}`,
+        //     );
+        //   }
 
-          return true; // All images go through now
-        })
+        //   return true; // All images go through now
+        // })
         .map((img) => {
           totalSize += img.size;
           return this.uploadAndCreateFile(
