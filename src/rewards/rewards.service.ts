@@ -127,7 +127,8 @@ export class RewardsService {
         parentType: Folder.name,
         folderName: data.title,
       });
-      if (new Date(data.startDate) < new Date()) {
+      const now = new Date(data.startDate).setHours(0, 0, 0, 0);
+      if (new Date(data.startDate) < new Date(now)) {
         return { success: false, message: 'Start date cannot be in the past.' };
       }
       if (EndDate < new Date(data.startDate)) {

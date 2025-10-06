@@ -279,8 +279,8 @@ export class BusinessController {
       //     destination: './uploads',
       //     filename: editFileName,
       //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+      //   //Setting file size limit to 10 MB
+      limits: { fileSize: 10000000 },
     }),
   )
   async updateBusinessUser(
