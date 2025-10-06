@@ -251,11 +251,11 @@ export class EtlController {
     }
   }
 
-  async listAllEventsToJob(req: Request, res: Response): Promise<Response> {
+  async listAllEventsIdToJob(req: Request, res: Response): Promise<Response> {
     try {
       const { jobId } = req.params as any;
       if (!jobId) return res.status(400).json({ error: "jobId required" });
-      const result: any = await etlService.listAllEventsToJob(jobId);
+      const result: any = await etlService.listAllEventsIdToJob(jobId);
       if (result.length === 0)
         return res.status(404).json({ error: "Job not found" });
       return res.json(result);
@@ -265,6 +265,21 @@ export class EtlController {
         "Failed to list all events for job"
       );
       return res.status(400).json({ error: error.message });
+    }
+  }
+
+  async getEventById(req: Request, res: Response): Promise<Response> {
+    try {
+      const { eventId } = req.params as any;
+      if (!eventId) return res.status(400).json({ error: "eventId required" });
+      const event = await etlService.getEventById(eventId);
+      return res.json(event);
+    } catch (error: any) {
+      logger.error(
+        { eventId: req.params.eventId, error },
+        "Failed to get event by ID"
+      );
+      return res.status(404).json({ error: error.message });
     }
   }
 
@@ -389,7 +404,8 @@ export const etlController = {
   listEvents: controller.listEvents.bind(controller),
   addJobEvents: controller.addJobEvents.bind(controller),
   getJobEvents: controller.getJobEvents.bind(controller),
-  listAllEventsToJob: controller.listAllEventsToJob.bind(controller),
+  listAllEventsIdToJob: controller.listAllEventsIdToJob.bind(controller),
+  getEventById: controller.getEventById.bind(controller),
   deleteJobEvents: controller.deleteJobEvents.bind(controller),
   updateEvent: controller.updateEvent.bind(controller),
   verifyEvent: controller.verifyEvent.bind(controller),

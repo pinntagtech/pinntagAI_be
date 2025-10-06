@@ -57,15 +57,24 @@ export class EtlService extends EventEmitter {
     return { inserted: docs.length };
   }
 
-  async listAllEventsToJob(jobId: string) {
+  async listAllEventsIdToJob(jobId: string) {
     logger.info({ jobId }, "Listing all events for job");
     const job = await JobModel.findOne({ jobId });
     if (!job) throw new Error("Job not found");
-    const events = await ScrapedEventModel.find({ jobId }).sort({
+    const events = await ScrapedEventModel.find({ jobId }, { _id: 1 }).sort({
       scrapedAt: -1,
     });
     logger.info({ count: events.length }, "Events fetched");
     return { jobId, events, total: events.length };
+  }
+
+  async getEventById(eventId: string) {
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      throw new Error("Invalid event ID");
+    }
+    const event = await ScrapedEventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+    return event;
   }
 
   async listJobEvents(jobId: string, page: number = 1, limit: number = 100) {

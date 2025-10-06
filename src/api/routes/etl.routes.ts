@@ -31,7 +31,8 @@ router.get("/jobs/stream/:jobId", etlController.streamJobProgress);
 router.get("/jobs/statistics", etlController.getJobStatistics);
 router.post("/jobs/events/:jobId", etlController.addJobEvents);
 router.get("/jobs/events/:jobId", etlController.getJobEvents); // Add pagination
-router.get("/jobs/all-events/:jobId", etlController.listAllEventsToJob);
+router.get("/jobs/all-events/:jobId", etlController.listAllEventsIdToJob);
+router.get("/events/:eventId", etlController.getEventById);
 router.delete("/jobs/events/:jobId", etlController.deleteJobEvents);
 router.get(
   "/jobs/verified-events/:jobId",
