@@ -947,6 +947,7 @@ export class BusinessService {
     data: UpdateBusinessDto,
   ) {
     try {
+      console.log("Updateddd DATAAAA:", data);
       const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
         return {
