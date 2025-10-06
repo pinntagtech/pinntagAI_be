@@ -107,7 +107,9 @@ export class RewardsService {
     qrCode: Express.Multer.File,
   ) {
     try {
-      const EndDate = new Date(new Date(data.endDate).setHours(23, 59, 59, 999));
+      const EndDate = new Date(
+        new Date(data.endDate).setHours(23, 59, 59, 999),
+      );
       console.log('createReward data:', data);
 
       const userId = user.id;
@@ -766,6 +768,7 @@ export class RewardsService {
       // ];
 
       const foundRewardAgg = await this.rewardModel.aggregate(pipeline);
+      console.log('FOUNDREWARDAGGGG:::', foundRewardAgg);
 
       if (!foundRewardAgg || foundRewardAgg.length === 0) {
         return {
