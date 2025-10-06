@@ -1599,21 +1599,21 @@ export class EventService2 {
           message: 'Event not found',
         };
       }
-      if (event.creatorType === Business.name) {
-        if (event.businessProfile._id.toString() !== user.businessProfile) {
-          return {
-            success: false,
-            message: 'You are not authorized to access this event',
-          };
-        }
-      } else {
-        if (event.user._id.toString() !== user.id) {
-          return {
-            success: false,
-            message: 'You are not authorized to access this event',
-          };
-        }
-      }
+      // if (event.creatorType === Business.name) {
+      //   if (event.businessProfile._id.toString() !== user.businessProfile) {
+      //     return {
+      //       success: false,
+      //       message: 'You are not authorized to access this event',
+      //     };
+      //   }
+      // } else {
+      //   if (event.user._id.toString() !== user.id) {
+      //     return {
+      //       success: false,
+      //       message: 'You are not authorized to access this event',
+      //     };
+      //   }
+      // }
       const eventObj = JSON.parse(JSON.stringify(event));
       if (event.creatorType === 'User') {
         const creator = await this.userModel.findById(event.user);
@@ -2030,6 +2030,7 @@ export class EventService2 {
             const followersRes = await this.userService.getFollowers(
               user.businessProfile,
             );
+            console.log('Followers Res:', followersRes);
             let eventType = '';
             switch (event.type) {
               case EventTypes.PRIVATE:
@@ -2049,6 +2050,10 @@ export class EventService2 {
               console.log('Followers:', followers);
               const message = `${business.name} published a new ${eventType} called ${event.title}`;
               for (let i = 0; i < followers.length; i++) {
+                if (!followers[i].follower) {
+                  console.log('Skipping null follower at index:', i);
+                  continue;
+                }
                 const fcmTokens = await this.tokenModel.find({
                   user: new mongoose.Types.ObjectId(
                     followers[i].follower['_id'],
@@ -6276,7 +6281,6 @@ export class EventService2 {
           }
           categoriesInObjectId.push(new mongoose.Types.ObjectId(category));
         }
-        
       }
       if (data.tags) {
         data.tags = data.tags.split(',');

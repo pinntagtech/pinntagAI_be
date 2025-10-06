@@ -317,4 +317,8 @@ export class UpdateBusinessDto {
   @IsOptional()
   // @IsPhoneNumber(null)
   managerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  roleOfCreator?: string;
 }

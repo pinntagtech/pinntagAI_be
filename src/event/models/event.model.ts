@@ -33,7 +33,7 @@ export class Event {
   })
   type: string;
 
-  @IsEnum(DiscountType, { message: 'Invalid discount type' })
+  @Prop({ enum: Object.values(DiscountType) })
   discountType: string;
 
   @Prop()

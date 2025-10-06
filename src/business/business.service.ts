@@ -659,6 +659,7 @@ export class BusinessService {
         creatorType: BusinessCreatorType.BUSINESS_USER,
         creator: new mongoose.Types.ObjectId(userId),
         authorisedUser: new mongoose.Types.ObjectId(userId),
+        roleOfCreator: data.roleOfCreator,
       };
       if (data.website) createObj['website'] = data.website;
       // if (data.brand && isValidObjectId(data.brand))
