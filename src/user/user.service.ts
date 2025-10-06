@@ -1235,6 +1235,7 @@ export class UserService {
         content = await this.rewardModel.findById(contentId);
         business = await this.businessModel.findById(content.businessProfile);
       } else if (notificationType == NotificationTypes.FOLLOW) {
+        content = await this.userModel.findById(consumerId);
         business = await this.businessModel.findById(contentId);
       }
 
@@ -1269,7 +1270,7 @@ export class UserService {
           userType: BusinessUser.name,
           message,
           type: notificationType,
-          targetType: Business.name,
+          targetType: User.name,
           targetUser: new mongoose.Types.ObjectId(consumerId),
         };
         if (
