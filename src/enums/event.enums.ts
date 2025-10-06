@@ -264,11 +264,11 @@ export enum WeekDays {
 }
 
 export enum DiscountType {
-  Percentage = 'PERCENTAGE',
-  Flat = 'FLAT',
-  BOGO = 'BUY_ONE_GET_ONE',
-  FREE_ITEM = 'FREE_ITEM',
-  BUNDLE = 'BUNDLE',
-  HAPPY_HOUR = 'HAPPY_HOUR',
-  CUSTOM = 'CUSTOM',
+  Percentage = '% Off',
+  Flat = '$ Off',
+  BOGO = 'BOGO',
+  FREE_ITEM = 'Free Item',
+  BUNDLE = 'Combo/Bundle',
+  HAPPY_HOUR = 'Happy Hour',
+  CUSTOM = 'Custom Deal',
 }

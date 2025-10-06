@@ -13,7 +13,7 @@ export class Notification {
   @Prop({ required: true, refPath: 'userType' })
   user: mongoose.Types.ObjectId;
 
-  @Prop({ required: true, enum: [User.name, BusinessUser.name] })
+  @Prop({ required: true, enum: [User.name, Business.name] })
   userType: string;
 
   @Prop({
