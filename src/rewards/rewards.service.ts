@@ -338,18 +338,35 @@ export class RewardsService {
       };
 
       if (data.startDate && data.endDate) {
-        if (new Date(data.startDate) < new Date()) {
+        // if (new Date(data.startDate) < new Date()) {
+        //   return {
+        //     success: false,
+        //     message: 'Start date must be in the future.',
+        //   };
+        // }
+        // if (new Date(data.endDate) < new Date(data.startDate)) {
+        //   return {
+        //     success: false,
+        //     message: 'End date must be after start date.',
+        //   };
+        // }
+        const EndDate = new Date(
+          new Date(data.endDate).setHours(23, 59, 59, 999),
+        );
+        const now = new Date(data.startDate).setHours(0, 0, 0, 0);
+        if (new Date(data.startDate) < new Date(now)) {
           return {
             success: false,
-            message: 'Start date must be in the future.',
+            message: 'Start date cannot be in the past.',
           };
         }
-        if (new Date(data.endDate) < new Date(data.startDate)) {
+        if (EndDate < new Date(data.startDate)) {
           return {
             success: false,
             message: 'End date must be after start date.',
           };
         }
+
         updateObj['schedule'] = {
           startDate: new Date(data.startDate),
           endDate: new Date(data.endDate),
