@@ -96,6 +96,7 @@
     "swagger-ui-express": "^5.0.0",
     "twilio": "^5.4.4",
     "typeorm": "^0.3.19",
+    "tz-lookup": "^6.1.25",
     "uuid": "^11.1.0",
     "winston": "^3.11.0"
   },
