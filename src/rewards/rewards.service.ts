@@ -1393,6 +1393,9 @@ export class RewardsService {
     limit: number,
   ) {
     try {
+      console.log('GetRewardDashboardDto:', data);
+      console.log('FILTERS:', search, activityType, distance);
+
       const now = new Date();
       let consumerId = user.id;
       let skip = (page - 1) * limit;
@@ -1597,6 +1600,7 @@ export class RewardsService {
       ];
 
       const result = await this.rewardLocationModel.aggregate(pipeline);
+      console.log('REWARDSS DATA:::', result);
 
       // const result = await this.rewardModel
       //   .find()
