@@ -70,7 +70,7 @@ export class CreateOutletDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  @Max(90)
+  @Max(100)
   servingRadius: number;
 
   @IsOptional()

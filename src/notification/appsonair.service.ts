@@ -65,7 +65,7 @@ export class AppsOnAirLinkService {
         {
           data: {
             url: longUrl,
-            name: `${businessName}`,
+            name: 'AppsOnAir',
             urlPrefix: process.env.APPSONAIR_DOMAIN_PREFIX,
             socialMeta: {
               title: `${title} by ${businessName} brought to you by Pinntag.`,
