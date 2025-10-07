@@ -7353,7 +7353,7 @@ export class EventService2 {
         const categoriesInObjectId = cats.map((cat) => cat._id);
         if (categoriesInObjectId.length === 0) {
           const defaultCategory = await this.categoryModel.findOne({
-            title: 'Entertainment',
+            title: 'Attractions',
           });
           categoriesInObjectId.push(defaultCategory._id);
         }
