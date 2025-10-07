@@ -970,11 +970,47 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
+         {
+          $lookup: {
+            from: 'userrewards',
+            let: { rewardId: '$reward._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      {
+                        $eq: [
+                          '$userId',
+                          new mongoose.Types.ObjectId(user.id),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'claimed',
+          },
+        },
+         {
+          $addFields: {
+            isEnrolled: {
+              $cond: {
+                if: { $gt: [{ $size: '$claimed' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
         {
           $match: {
             'reward._id': new mongoose.Types.ObjectId(id),
           },
         },
+
         {
           $lookup: {
             from: 'files',
@@ -1027,6 +1063,7 @@ export class RewardsService {
             user: { $first: '$reward.user' },
             businessProfile: { $first: '$reward.businessProfile' },
             distance: { $first: { $divide: ['$distance', 1609.34] } },
+            isEnrolled: { $first: '$isEnrolled'}
           },
         },
         {
@@ -1830,6 +1867,7 @@ export class RewardsService {
               _id: '$businessProfile._id',
               name: '$businessProfile.name',
             },
+            isEnrolled: true,
           },
         },
         { $skip: (page - 1) * limit },
