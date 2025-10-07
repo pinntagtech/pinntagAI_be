@@ -1393,16 +1393,12 @@ export class RewardsService {
     limit: number,
   ) {
     try {
-      console.log('GetRewardDashboardDto:', data);
-      console.log('FILTERS:', search, activityType, distance);
-
       const now = new Date();
       let consumerId = user.id;
       let skip = (page - 1) * limit;
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log('ACTIVITY TYPE:::', activityType);
 
       let match = {};
       if (search) {
@@ -1440,6 +1436,7 @@ export class RewardsService {
         match['reward.rewardType'] = { $in: data.rewardType };
       }
 
+
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
@@ -1464,37 +1461,47 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
-        // {
-        //   $lookup: {
-        //     from: 'userrewards',
-        //     let: { rewardId: '$reward._id' },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: {
-        //             $and: [
-        //               { $eq: ['$rewardId', '$$rewardId'] },
-        //               {
-        //                 $eq: [
-        //                   '$userId',
-        //                   new mongoose.Types.ObjectId(consumerId),
-        //                 ],
-        //               },
-        //             ],
-        //           },
-        //         },
-        //       },
-        //     ],
-        //     as: 'claimed',
-        //   },
-        // },
-        // {
-        //   $match: {
-        //     ...match,
-        //     'reward.status': RewardStatus.PUBLISHED,
-        //     claimed: { $eq: [] },
-        //   },
-        // },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: { rewardId: '$reward._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      {
+                        $eq: [
+                          '$userId',
+                          new mongoose.Types.ObjectId(consumerId),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'claimed',
+          },
+        },
+        {
+          $addFields: {
+            isEnrolled: {
+              $cond: {
+                if: { $gt: [{ $size: '$claimed' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            ...match,
+            'reward.status': RewardStatus.PUBLISHED,
+          },
+        },
         {
           $lookup: {
             from: 'files',
@@ -1547,6 +1554,7 @@ export class RewardsService {
             user: { $first: '$reward.user' },
             businessProfile: { $first: '$reward.businessProfile' },
             distance: { $first: { $divide: ['$distance', 1609.34] } },
+            isEnrolled: { $first: '$isEnrolled'}
           },
         },
         {
@@ -1588,6 +1596,7 @@ export class RewardsService {
               name: '$businessProfile.name',
               businessIndustry: '$businessProfile.businessIndustry',
             },
+            isEnrolled: 1,
           },
         },
         { $sort: { createdAt: -1, distance: 1, _id: 1 } },
