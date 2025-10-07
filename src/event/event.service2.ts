@@ -2975,10 +2975,16 @@ export class EventService2 {
     page: number,
     limit: number,
   ) {
-    let startDate = new Date();
-    let endDate = new Date(
-      new Date(startDate).setFullYear(startDate.getFullYear() + 2),
-    );
+   const now = new Date();
+    let startDate = now;
+    let endDate =  new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    console.log("startDate",startDate);
+    console.log("endDate",endDate);
+
+    
     const user = await this.userModel.findById(userId);
     if (!user) {
       return {
@@ -3172,59 +3178,87 @@ export class EventService2 {
             as: 'schedules',
           },
         },
-        {
-          $addFields: {
-            schedules: {
-              $filter: {
-                input: '$schedules',
-                as: 'schedule',
-                cond: {
-                  $or: [
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'fixed'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.fixedSchedule.date',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: ['$$schedule.fixedSchedule.date', endDate],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'recurring'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                endDate,
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
+       {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                          {
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
               },
             },
           },
         },
+      },
         {
           $match: {
             $expr: { $gt: [{ $size: '$schedules' }, 0] },
@@ -4067,58 +4101,86 @@ export class EventService2 {
           },
         },
         {
-          $addFields: {
-            schedules: {
-              $filter: {
-                input: '$schedules',
-                as: 'schedule',
-                cond: {
-                  $or: [
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'fixed'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.fixedSchedule.date',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: ['$$schedule.fixedSchedule.date', endDate],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    {
-                      $and: [
-                        { $eq: ['$$schedule.type', 'recurring'] },
-                        {
-                          $and: [
-                            {
-                              $gte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                startDate,
-                              ],
-                            },
-                            {
-                              $lte: [
-                                '$$schedule.recurringSchedule.endDate',
-                                endDate,
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                          {
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
               },
             },
           },
         },
+      },
         {
           $match: {
             $expr: { $gt: [{ $size: '$schedules' }, 0] },
@@ -4615,7 +4677,7 @@ export class EventService2 {
           as: 'schedules',
         },
       },
-      {
+     {
         $addFields: {
           schedules: {
             $filter: {
@@ -4631,8 +4693,39 @@ export class EventService2 {
                           {
                             $gte: ['$$schedule.fixedSchedule.date', startDate],
                           },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
                           {
-                            $lte: ['$$schedule.fixedSchedule.date', endDate],
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
                           },
                         ],
                       },
