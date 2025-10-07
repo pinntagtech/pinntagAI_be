@@ -108,11 +108,13 @@ export class AiController {
     @Query('contentType') contentType: string,
     @Query('category') category: string,
     @Query('dealType') dealType: string,
+    @Query('suggestion') suggestion: string,
   ) {
     const result = await this.aiService.getTitleSuggestions(
       contentType,
       category,
       dealType,
+      suggestion,
     );
     console.log('RESULT:', result);
     if (result.success) {

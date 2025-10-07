@@ -282,13 +282,14 @@ export class AiService {
     contentType: string,
     category: string,
     dealType: string,
+    suggestion: string,
   ) {
     try {
       const messages = [
         {
           role: 'user',
           content: `
-          Suggest only 4 catchy titles for a ${contentType} in the ${category} category, specifically for the ${dealType} deal type.I want them to be creative and engaging.
+          Suggest 4 catchy and creative titles for a ${contentType} in the ${category} category, focused on the ${dealType} deal type. Make them engaging, attention-grabbing, and tailored to appeal to the target audience. Use ${suggestion} as inspiration or a guiding theme if relevant.
         `.trim(),
         },
       ];
