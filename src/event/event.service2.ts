@@ -4858,19 +4858,19 @@ export class EventService2 {
                 data.fixedSchedule[i].date.toString(),
               );
               // Check if the date is in the past (comparing only the date part)
-              if (
-                new Date(data.fixedSchedule[i].date.toString()).setHours(
-                  0,
-                  0,
-                  0,
-                  0,
-                ) < new Date().setHours(0, 0, 0, 0)
-              ) {
-                return {
-                  success: false,
-                  message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
-                };
-              }
+              // if (
+              //   new Date(data.fixedSchedule[i].date.toString()).setHours(
+              //     0,
+              //     0,
+              //     0,
+              //     0,
+              //   ) < new Date().setHours(0, 0, 0, 0)
+              // ) {
+              //   return {
+              //     success: false,
+              //     message: `Date cannot be in past for the date ${data.fixedSchedule[i].date}`,
+              //   };
+              // }
 
               for (let j = 0; j < data.fixedSchedule[i].durations.length; j++) {
                 const duration = data.fixedSchedule[i].durations[j];
@@ -4897,12 +4897,12 @@ export class EventService2 {
                       message: `End time should be greater than start time for the date ${data.fixedSchedule[i].date}`,
                     };
                   }
-                  if (originalEnd.getTime() <= fiveMinFromNow.getTime()) {
-                    return {
-                      success: false,
-                      message: `End time should be greater than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
-                    };
-                  }
+                  // if (originalEnd.getTime() <= fiveMinFromNow.getTime()) {
+                  //   return {
+                  //     success: false,
+                  //     message: `End time should be greater than 5 minutes from now for the date ${data.fixedSchedule[i].date}`,
+                  //   };
+                  // }
 
                   // if (originalStart.getTime() < baseDate.getTime()) {
                   //    console.log('Start time is less than 5 minutes from now 222222');
