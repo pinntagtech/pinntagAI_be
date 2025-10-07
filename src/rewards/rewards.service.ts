@@ -1840,6 +1840,7 @@ export class RewardsService {
         {
           $project: {
             _id: 1,
+            isEnrolled: { $literal: true },
             rewardId: '$reward._id',
             userId: 1,
             claimStatus: '$reward.claimStatus',
@@ -1867,12 +1868,12 @@ export class RewardsService {
               _id: '$businessProfile._id',
               name: '$businessProfile.name',
             },
-            isEnrolled: true,
           },
         },
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ]);
+      console.log("Rewards:",rewards);
 
       const total = await this.userRewardModel.countDocuments({
         userId: new mongoose.Types.ObjectId(userId),
