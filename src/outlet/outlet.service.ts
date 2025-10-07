@@ -499,7 +499,6 @@ export class OutletService {
           message: 'User not found!',
         };
       }
-      console.log('UserDetails:', userDetails);
 
       if (!userDetails) {
         return {
@@ -547,12 +546,14 @@ export class OutletService {
           $lt: new Date(date.setHours(23, 59, 59, 999)),
         };
       }
+      console.log("Match:::",match);
+      console.log("business:::",user.businessProfile);
       const outlets = await this.outletModel
         .find({
           ...match,
           // creator: new mongoose.Types.ObjectId(userDetails._id),
           business: new mongoose.Types.ObjectId(user.businessProfile),
-          isDeleted: false,
+          // isDeleted: false,
         })
         .populate({
           path: 'manager',
