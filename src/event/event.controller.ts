@@ -1083,7 +1083,7 @@ export class EventController {
     }),
   )
   async ETL(user: DecodedUser, @UploadedFile() file: Express.Multer.File) {
-    const result = await this.eventService.ETL_TRANSFORMER(user.id, file);
+    const result = await this.eventService.ETL_TRANSFORMER();
     if (result.success) {
       return {
         message: result.message,

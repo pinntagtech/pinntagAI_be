@@ -1461,37 +1461,37 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
-        {
-          $lookup: {
-            from: 'userrewards',
-            let: { rewardId: '$reward._id' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ['$rewardId', '$$rewardId'] },
-                      {
-                        $eq: [
-                          '$userId',
-                          new mongoose.Types.ObjectId(consumerId),
-                        ],
-                      },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: 'claimed',
-          },
-        },
-        {
-          $match: {
-            ...match,
-            'reward.status': RewardStatus.PUBLISHED,
-            claimed: { $eq: [] },
-          },
-        },
+        // {
+        //   $lookup: {
+        //     from: 'userrewards',
+        //     let: { rewardId: '$reward._id' },
+        //     pipeline: [
+        //       {
+        //         $match: {
+        //           $expr: {
+        //             $and: [
+        //               { $eq: ['$rewardId', '$$rewardId'] },
+        //               {
+        //                 $eq: [
+        //                   '$userId',
+        //                   new mongoose.Types.ObjectId(consumerId),
+        //                 ],
+        //               },
+        //             ],
+        //           },
+        //         },
+        //       },
+        //     ],
+        //     as: 'claimed',
+        //   },
+        // },
+        // {
+        //   $match: {
+        //     ...match,
+        //     'reward.status': RewardStatus.PUBLISHED,
+        //     claimed: { $eq: [] },
+        //   },
+        // },
         {
           $lookup: {
             from: 'files',

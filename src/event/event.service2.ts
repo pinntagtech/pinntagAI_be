@@ -7209,7 +7209,7 @@ export class EventService2 {
     });
   }
 
-  async ETL_TRANSFORMER(userId: string, file: Express.Multer.File) {
+  async ETL_TRANSFORMER() {
     try {
       const businessUser = await this.businessUserModel.findOne({
         email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
@@ -7267,39 +7267,60 @@ export class EventService2 {
         if (!businessUser || !businessIndustry || !businessCategory) continue;
 
         if (!data.locations[0].location.coordinates) continue;
-
         let address = await this.googleService.getAddressFromCoordinates(
           data.locations[0].location.coordinates[1],
           data.locations[0].location.coordinates[0],
           '000e10b3-b0a0-4269-a864-ea419a790f76',
         );
 
+        let placeList = await this.googleService.googleRecommendation({
+          address: data.locations[0].address1,
+        });
+        console.log('PLACELIST:::', placeList);
+
+        let placeDetails = null;
+        if (placeList.data && placeList.data.length > 0) {
+          placeDetails = await this.googleService.getPlaceDetails(
+            placeList.data[0].placePrediction.placeId,
+            placeList.sessionToken,
+            data.locations[0].address1,
+          );
+        }
+        console.log('IDDDDDDDD:', data._id);
+        console.log('Place DETAILS:', placeDetails);
+
         let foundOutlet = await this.outletModel.findOne({
-          address1: address.data.address1,
+          address1: data.locations[0].address1,
         });
 
         if (!foundOutlet) {
           let outletName = data.locations[0].address1;
-          console.log('Outlet Name:', outletName);
+          // console.log('Outlet Name:', outletName);
           foundOutlet = await this.outletModel.create({
             isFromCrawler: true,
             business: businessDetails._id,
             name: outletName || `Loc-Atlanta City Hall`,
             category: OutletCategoryList.PHYSICAL,
-            city: data.locations[0].city ?? 'Atlanta',
-            state: data.locations[0].state ?? 'GA',
+            city: data.locations[0].city ?? 'Lubbock',
+            state: data.locations[0].state ?? 'Texas',
             country: 'United States',
-            postalCode: '30303',
+            postalCode: data.locations[0].zip,
             countryCode: '404',
-            email: 'atlanta@yopmail.com',
-            address1: address.data.address1 ?? null,
-            latitude: data.locations[0].location.coordinates[1],
-            longitude: data.locations[0].location.coordinates[0],
+            email: 'info@visitlubbock.org',
+            address1: data.locations[0].address1,
+            latitude:
+              placeDetails?.data?.latitude ??
+              data.locations[0].location.coordinates[1],
+            longitude:
+              placeDetails?.data?.longitude ??
+              data.locations[0].location.coordinates[0],
             location: {
               type: 'Point',
               coordinates: [
-                data.locations[0].location.coordinates[0],
-                data.locations[0].location.coordinates[1],
+                 placeDetails?.data?.longitude ??
+              data.locations[0].location.coordinates[0],
+                placeDetails?.data?.latitude ??
+              data.locations[0].location.coordinates[1],
               ],
             },
           });
@@ -7324,9 +7345,7 @@ export class EventService2 {
           },
         );
 
-        console.log('CATEGORIES:', data.categories);
         const categoryNames = data.categories.map((cat) => cat.name);
-        console.log('Category Names:', categoryNames);
         const cats = await this.categoryModel
           .find({ title: { $in: categoryNames } })
           .select('_id')
@@ -7338,7 +7357,6 @@ export class EventService2 {
           });
           categoriesInObjectId.push(defaultCategory._id);
         }
-        console.log('CATEGORIES::::', categoriesInObjectId);
         const createdEvent = await this.eventModel.create({
           title: data.title,
           description: data.description,
