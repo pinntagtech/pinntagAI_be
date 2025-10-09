@@ -6714,16 +6714,21 @@ export class EventService2 {
     }
   }
 
-  async getDefaultTemplates(user: DecodedUser, page: number, limit: number) {
+  async getDefaultTemplates(user: DecodedUser, page: number, limit: number,industry:string) {
     const business = await this.businessModel.findById(user.businessProfile);
     let templates = null;
     let totalDocs = 0;
+    if(!industry){
+      industry = business.businessIndustry.toString();
+    }
+    console.log("Business:",business);
+    console.log("Industry::",industry);
     if (user.isBusiness) {
       templates = await this.templateModel
         .find({
           creatorType: Admin.name,
           businessIndustry: new mongoose.Types.ObjectId(
-            business.businessIndustry,
+            industry,
           ),
         })
         .populate('categories', '_id title')
@@ -6746,6 +6751,9 @@ export class EventService2 {
       });
     }
 
+    console.log("Templates:::",templates);
+
+    
     return {
       success: true,
       message: 'Templates fetched successfully',
@@ -7438,7 +7446,7 @@ export class EventService2 {
           },
         );
 
-        const categoryNames = data.categories.map((cat) => cat.name);
+        const categoryNames = data.categories.map((cat) => cat.title);
         const cats = await this.categoryModel
           .find({ title: { $in: categoryNames } })
           .select('_id')
@@ -7446,7 +7454,7 @@ export class EventService2 {
         const categoriesInObjectId = cats.map((cat) => cat._id);
         if (categoriesInObjectId.length === 0) {
           const defaultCategory = await this.categoryModel.findOne({
-            title: 'Attractions',
+            title: 'Happy Hour',
           });
           categoriesInObjectId.push(defaultCategory._id);
         }

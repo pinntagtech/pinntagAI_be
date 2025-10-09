@@ -627,13 +627,16 @@ export class EventController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('industry') industry: string,
   ) {
+    console.log("Industry:",industry);
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.eventService.getDefaultTemplates(
       user,
       pageNumber,
       limitNumber,
+      industry,
     );
     if (result.success) {
       return {
