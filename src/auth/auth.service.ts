@@ -2038,6 +2038,7 @@ export class AuthService {
     distance: number,
     startDate?: any,
     endDate?: any,
+    dealType?: string,
   ) {
     // const cached = await this.cacheManager.get<[any[], number]>('fetchEventsV2');
     // if (cached) {
@@ -2054,7 +2055,11 @@ export class AuthService {
     endDate.setHours(23, 59, 59, 999);
 
     if (carouselType === CarouselType.Event) {
-      match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL] };
+      if(dealType){
+        match['event.type'] = { $in: [dealType]};
+      }else{
+        match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL,EventTypes.FLASHDEAL,EventTypes.SPOTLIGHT] };
+      }
     } else if (carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
@@ -6186,6 +6191,7 @@ export class AuthService {
     endDate?: any,
     industries?: Array<string>,
     isFollowedByMe?: boolean,
+    dealType?: string,
   ) {
     if (!latitude || !longitude) {
       throw new BadRequestException('Latitude and Longitude are required');
@@ -6420,7 +6426,7 @@ export class AuthService {
       carousel.carouselType === CarouselType.Event ||
       carousel.carouselType === CarouselType.OnWheels
     ) {
-      console.log('Carourselll TYPEEE:', carousel.carouselType);
+
       [eventsResult, totalCount] = await this.fetchEventsV2(
         new mongoose.Types.ObjectId(user.id),
         longitude,
@@ -6432,6 +6438,7 @@ export class AuthService {
         maxDistance,
         startDate,
         endDate,
+        dealType,
       );
     }
 

@@ -17,4 +17,6 @@ export class GetDashboardDto {
   industries: Array<string>;
   @IsOptional()
   isFollowedByMe: boolean;
+  @IsOptional()
+  dealType: string;
 }

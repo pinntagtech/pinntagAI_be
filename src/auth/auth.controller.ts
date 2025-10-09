@@ -485,7 +485,7 @@ export class AuthController {
     @TokenDecoder() user: DecodedUser,
   ) {
     console.log('LATITUDE AND LONGITUDE::::', body.latitude, body.longitude);
-    console.log("Body:::",body);
+    console.log('Body:::', body);
     if (user.userType !== UserTypes.USER && user.userType !== UserTypes.GUEST) {
       throw new BadRequestException('Not a valid User');
     }
@@ -516,6 +516,7 @@ export class AuthController {
       body.endDate ? new Date(body.endDate) : null,
       body.industries ? body.industries : [],
       body.isFollowedByMe ? body.isFollowedByMe : null,
+      body.dealType ? body.dealType : null,
     );
 
     if (!result.success) {
