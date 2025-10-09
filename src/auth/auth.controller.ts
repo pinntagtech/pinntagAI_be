@@ -802,7 +802,13 @@ export class AuthController {
     @Body() data: DashboardSearchDto,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.authService.dashboardSearch(user, data);
+    let result = null;
+    if(data.type === 'all'){
+      result = await this.authService.dashboardAllSearch(user,data);
+    }else{
+      result = await this.authService.dashboardSearch(user, data);
+    }
+    
     if (!result.success) {
       throw new BadRequestException(result.message);
     }

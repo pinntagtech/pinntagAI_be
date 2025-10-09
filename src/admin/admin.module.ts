@@ -170,6 +170,7 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 
 @Module({
   imports: [
@@ -243,6 +244,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
       },
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
+      { name: RewardLocation.name, schema: RewardLocationSchema },
     ]),
   ],
   controllers: [AdminController],

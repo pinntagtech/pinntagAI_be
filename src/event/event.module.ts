@@ -186,6 +186,7 @@ import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
+import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 
 @Module({
   imports: [
@@ -269,6 +270,7 @@ import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/featur
       },
       { name: Coupon.name, schema: CouponSchema },
       { name: FeatureLimit.name , schema: FeatureLimitSchema },
+      { name: RewardLocation.name, schema: RewardLocationSchema },
       
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },

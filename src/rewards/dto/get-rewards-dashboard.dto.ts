@@ -10,14 +10,14 @@ export class GetRewardDashboardDto {
   longitude: string;
 
   @IsOptional()
-  startDate: string;
+  startDate?: string;
 
   @IsOptional()
-  endDate: string;
+  endDate?: string;
 
   @IsOptional()
   @IsArray()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsIn(Object.values(RewardType), { each: true })
-  rewardType: string[];
+  rewardType?: string[];
 }

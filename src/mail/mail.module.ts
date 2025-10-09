@@ -151,6 +151,7 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 
 @Global()
 @Module({
@@ -205,6 +206,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
       { name: Outlet.name, schema: OutletSchema },
       { name: Tag.name, schema: TagSchema },
       { name: Reward.name, schema: RewardSchema },
+      { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Broadcast.name, schema: BroadcastSchema },
       {
         name: UserAllowedNotification.name,

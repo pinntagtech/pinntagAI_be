@@ -8,7 +8,7 @@ export class DashboardSearchDto {
   @IsNotEmpty()
   longitude: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   carouselType: string;
   
@@ -24,5 +24,8 @@ export class DashboardSearchDto {
 
   @IsOptional()
   distance?: number;
+
+  @IsOptional()
+  type?: string;
 
 }

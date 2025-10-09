@@ -173,6 +173,7 @@ import {
 } from './subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from './subscription/models/coupon.model';
 import multer from 'multer';
+import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLocation.model';
 
 @Module({
   imports: [
@@ -266,6 +267,7 @@ import multer from 'multer';
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
+      { name: RewardLocation.name, schema: RewardLocationSchema },
     ]),
     StripeeModule,
     AuthModule,

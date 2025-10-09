@@ -127,6 +127,14 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisBullService } from 'src/notification/redisBull.service';
 import jwt from 'jsonwebtoken';
 import { start } from 'repl';
+import { RewardsService } from 'src/rewards/rewards.service';
+import { GetRewardDashboardDto } from 'src/rewards/dto/get-rewards-dashboard.dto';
+import { PipelineStage } from 'mongoose';
+import { RewardStatus } from 'src/rewards/enums/rewards.enum';
+import {
+  RewardLocation,
+  RewardLocationDocument,
+} from 'src/rewards/model/rewardLocation.model';
 
 @Injectable()
 export class AuthService {
@@ -171,6 +179,8 @@ export class AuthService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
+    @InjectModel(RewardLocation.name)
+    private readonly rewardLocationModel: Model<RewardLocationDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -2055,10 +2065,17 @@ export class AuthService {
     endDate.setHours(23, 59, 59, 999);
 
     if (carouselType === CarouselType.Event) {
-      if(dealType){
-        match['event.type'] = { $in: [dealType]};
-      }else{
-        match['event.type'] = { $in: [EventTypes.OFFER, EventTypes.FORMAL,EventTypes.FLASHDEAL,EventTypes.SPOTLIGHT] };
+      if (dealType) {
+        match['event.type'] = { $in: [dealType] };
+      } else {
+        match['event.type'] = {
+          $in: [
+            EventTypes.OFFER,
+            EventTypes.FORMAL,
+            EventTypes.FLASHDEAL,
+            EventTypes.SPOTLIGHT,
+          ],
+        };
       }
     } else if (carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
@@ -6426,7 +6443,6 @@ export class AuthService {
       carousel.carouselType === CarouselType.Event ||
       carousel.carouselType === CarouselType.OnWheels
     ) {
-
       [eventsResult, totalCount] = await this.fetchEventsV2(
         new mongoose.Types.ObjectId(user.id),
         longitude,
@@ -6569,8 +6585,6 @@ export class AuthService {
       );
       result = result[0];
       total = result[1];
-
-      console.log('Result:', result);
     } else if (carouselType === CarouselType.Business) {
       let match: any = {};
       let industries = await this.businessIndustryModel.find();
@@ -6597,7 +6611,6 @@ export class AuthService {
       );
       result = result[0].data;
       total = result[0].totalCount;
-      console.log('Result:', result);
     }
 
     return {
@@ -6608,5 +6621,332 @@ export class AuthService {
       page: page,
       limit: limit,
     };
+  }
+
+  async getDashboardRewards(
+    user: DecodedUser,
+    data: GetRewardDashboardDto,
+    search: string,
+    activityType: string[],
+    distance: number,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      const now = new Date();
+      let consumerId = user.id;
+      let skip = (page - 1) * limit;
+      const QR_ImageCategory = await this.fileCategoryModel.findOne({
+        name: 'Content QR',
+      });
+
+      let match = {};
+      if (search) {
+        // Search matching business profile name
+        const matchingBusinesses = await this.businessModel.find({
+          name: { $regex: search, $options: 'i' },
+        });
+        // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+        const businessProfileIds = matchingBusinesses.map(
+          (business) => business._id,
+        );
+        match['$or'] = [
+          { 'reward.title': { $regex: search, $options: 'i' } },
+          { 'reward.description': { $regex: search, $options: 'i' } },
+          { 'reward.businessProfile': { $in: businessProfileIds } },
+        ];
+      }
+      if (data.startDate) {
+        match['reward.schedule.startDate'] = {
+          $gte: new Date(data.startDate),
+        };
+      }
+      if (data.endDate) {
+        match['reward.schedule.endDate'] = {
+          $lte: new Date(data.endDate),
+        };
+      } else {
+        match['reward.schedule.endDate'] = { $gte: now };
+      }
+      if (activityType.length > 0) {
+        console.log('ADDING ACTIVITY TYPE TO MATCH:::', activityType);
+        match['reward.activityType'] = { $in: activityType };
+      }
+      if (data.rewardType && data.rewardType.length > 0) {
+        match['reward.rewardType'] = { $in: data.rewardType };
+      }
+
+      let pipeline: PipelineStage[] = [
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [
+                parseFloat(data.longitude),
+                parseFloat(data.latitude),
+              ],
+            },
+            distanceField: 'distance',
+            maxDistance: distance * 1609.34,
+            spherical: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            as: 'reward',
+          },
+        },
+        { $unwind: '$reward' },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: { rewardId: '$reward._id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      {
+                        $eq: [
+                          '$userId',
+                          new mongoose.Types.ObjectId(consumerId),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'claimed',
+          },
+        },
+        {
+          $addFields: {
+            isEnrolled: {
+              $cond: {
+                if: { $gt: [{ $size: '$claimed' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            ...match,
+            'reward.status': RewardStatus.PUBLISHED,
+          },
+        },
+        {
+          $lookup: {
+            from: 'files',
+            localField: 'reward.QR_CODE',
+            foreignField: '_id',
+            as: 'QR_CODE',
+          },
+        },
+        { $unwind: { path: '$QR_CODE', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'files', // assuming this is the same collection as QR_CODE
+            let: { folderId: '$reward.drivePath' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$parentDirectory', '$$folderId'] },
+                      {
+                        $ne: ['$category', QR_ImageCategory._id],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'files',
+          },
+        },
+        {
+          $group: {
+            _id: '$reward._id',
+            status: { $first: '$reward.status' },
+            title: { $first: '$reward.title' },
+            activityType: { $first: '$reward.activityType' },
+            rewardType: { $first: '$reward.rewardType' },
+            targetCount: { $first: '$reward.targetCount' },
+            redemptionMode: { $first: '$reward.redemptionMode' },
+            locations: { $first: '$reward.locations' },
+            drivePath: { $first: '$reward.drivePath' },
+            files: { $first: '$files' },
+            QR_CODE: { $first: '$QR_CODE' },
+            rewardExpiration: { $first: '$reward.rewardExpiration' },
+            description: { $first: '$reward.description' },
+            schedule: { $first: '$reward.schedule' },
+            createdAt: { $first: '$reward.createdAt' },
+            updatedAt: { $first: '$reward.updatedAt' },
+            __v: { $first: '$reward.__v' },
+            user: { $first: '$reward.user' },
+            businessProfile: { $first: '$reward.businessProfile' },
+            distance: { $first: { $divide: ['$distance', 1609.34] } },
+            isEnrolled: { $first: '$isEnrolled' },
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'businessProfile',
+            foreignField: '_id',
+            as: 'businessProfile',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessProfile',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            status: 1,
+            title: 1,
+            activityType: 1,
+            rewardType: 1,
+            targetCount: 1,
+            redemptionMode: 1,
+            locations: 1,
+            drivePath: 1,
+            files: 1,
+            QR_CODE: 1,
+            rewardExpiration: 1,
+            description: 1,
+            schedule: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            __v: 1,
+            user: 1,
+            businessProfile: {
+              _id: '$businessProfile._id',
+              name: '$businessProfile.name',
+              businessIndustry: '$businessProfile.businessIndustry',
+            },
+            isEnrolled: 1,
+          },
+        },
+        { $sort: { createdAt: -1, distance: 1, _id: 1 } },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
+      ];
+
+      const result = await this.rewardLocationModel.aggregate(pipeline);
+      console.log('REWARDSS DATA:::', result);
+
+      // const result = await this.rewardModel
+      //   .find()
+      //   .populate('locations', LocationPopulates.FOREIGN)
+      //   .populate('QR_CODE', 'metaData')
+      //   // .populate('drivePath')
+      //   .populate('user', UserPopulates.FOREIGN)
+      //   .populate('businessProfile', BusinessPopulates.FOREIGN)
+      //   .populate('files')
+      //   .skip((page - 1) * limit)
+      //   .limit(limit);
+      return {
+        success: true,
+        message: 'Rewards found successfully.',
+        data: result[0].data,
+        total: result[0].totalCount[0]?.count || 0,
+        pages: Math.ceil((result[0].totalCount[0]?.count || 0) / limit),
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      console.log('Error in getDashboardRewards:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async dashboardAllSearch(user: DecodedUser, data: DashboardSearchDto) {
+    try {
+      const [deals, listings, mobile, rewards] = await Promise.all([
+        this.dashboardSearch(user, {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          carouselType: CarouselType.Event,
+          search: data.search,
+          page: 1,
+          limit: 5,
+        }),
+        this.dashboardSearch(user, {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          carouselType: CarouselType.Business,
+          search: data.search,
+          page: 1,
+          limit: 5,
+        }),
+        this.dashboardSearch(user, {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          carouselType: CarouselType.OnWheels,
+          search: data.search,
+          page: 1,
+          limit: 5,
+        }),
+        this.getDashboardRewards(
+          user,
+          {
+            latitude: String(data.latitude),
+            longitude: String(data.longitude),
+          },
+          data.search,
+          [],
+          1000000000000,
+          1,
+          5,
+        ),
+      ]);
+      let result = [
+        {
+          carouselType: CarouselType.Event,
+          data: deals.data,
+        },
+        {
+          carouselType: CarouselType.Business,
+          data: listings.data,
+        },
+        {
+          carouselType: 'Rewards',
+          data: rewards.data,
+        },
+        {
+          carouselType: CarouselType.OnWheels,
+          data: mobile.data,
+        },
+      ];
+      return {
+        success: true,
+        message: 'Data fetch successfully.',
+        data: result,
+      };
+    } catch (error) {
+      console.log('Error in getDashboardRewards:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
   }
 }

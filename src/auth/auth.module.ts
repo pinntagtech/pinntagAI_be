@@ -149,6 +149,7 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 
 @Module({
   imports: [
@@ -213,6 +214,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
         schema: SubscriptionPriceSchema,
       },
       { name: Coupon.name, schema: CouponSchema },
+      { name: RewardLocation.name, schema: RewardLocationSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
