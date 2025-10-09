@@ -588,7 +588,6 @@ export class AuthController {
     @Query('limit') limit: string,
     @Query('distance') distance: string,
     @Query('timeZone') timeZone: string,
-    // @Query('type') type: string,
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
@@ -611,6 +610,7 @@ export class AuthController {
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
+      body.dealType? body.dealType: null,
     );
     if (!result.success) {
       throw new BadRequestException(result.message);

@@ -3276,6 +3276,8 @@ export class AuthService {
     // return filteredEvents; // Return the arranged result
 
     // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
+   
+    console.log("DataROWS:",dataRows);
     return [dataRows, totalCount];
   }
 
@@ -4368,35 +4370,36 @@ export class AuthService {
     categoryIds?: Array<string>,
     startDate?: Date,
     endDate?: Date,
+    dealType?: string,
   ) {
     console.log('Service Category IDs:', categoryIds);
     let match = {};
-    if (categoryIds.length) {
-      match['event.categories'] = {
-        $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
-      };
-    }
+    // if (categoryIds.length) {
+    //   match['event.categories'] = {
+    //     $in: categoryIds.map((id) => new mongoose.Types.ObjectId(id)),
+    //   };
+    // }
 
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
-    console.log('Match:', match);
+    
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
+      // const matchingBusinesses = await this.businessModel.find({
+      //   name: { $regex: search, $options: 'i' },
+      // });
       // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
+      // const businessProfileIds = matchingBusinesses.map(
+      //   (business) => business._id,
+      // );
       match['$or'] = [
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
         { 'event.keywords': { $regex: search, $options: 'i' } },
-        { 'event.businessProfile': { $in: businessProfileIds } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
       ];
     }
 
@@ -4438,7 +4441,7 @@ export class AuthService {
     }
 
     let totalCount = 0;
-
+    console.log('Match:', match);
     console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
@@ -4451,6 +4454,7 @@ export class AuthService {
       maxDistance,
       startDate,
       endDate,
+      dealType,
     );
     console.log('Total:::::::', totalCount);
     return {
@@ -6293,13 +6297,13 @@ export class AuthService {
 
     if (search) {
       // Search matching business profile name
-      const matchingBusinesses = await this.businessModel.find({
-        name: { $regex: search, $options: 'i' },
-      });
-      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
-      const businessProfileIds = matchingBusinesses.map(
-        (business) => business._id,
-      );
+      // const matchingBusinesses = await this.businessModel.find({
+      //   name: { $regex: search, $options: 'i' },
+      // });
+      // // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      // const businessProfileIds = matchingBusinesses.map(
+      //   (business) => business._id,
+      // );
       match['$or'] = [
         { 'event.title': { $regex: search, $options: 'i' } },
         { 'event.description': { $regex: search, $options: 'i' } },
