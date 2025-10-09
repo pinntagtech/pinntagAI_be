@@ -3277,7 +3277,7 @@ export class AuthService {
 
     // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
    
-    console.log("DataROWS:",dataRows);
+    // console.log("DataROWS:",dataRows);
     return [dataRows, totalCount];
   }
 
