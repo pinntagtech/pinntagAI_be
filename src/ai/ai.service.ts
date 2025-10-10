@@ -23,7 +23,13 @@ export class AiService {
     title: string,
   ) {
     try {
-      console.log("contentType category dealType title",contentType,category, dealType, title)
+      console.log(
+        'contentType category dealType title',
+        contentType,
+        category,
+        dealType,
+        title,
+      );
       const business = await this.businessModel
         .findById(businessId)
         .select('name businessCategories businessIndustry')
@@ -43,30 +49,33 @@ export class AiService {
         {
           role: 'user',
           content: `
-          Write a professionally engaging, under-100-word description for the content item, using a friendly, persuasive tone. The description should be:Relevant to the business category and content type
-          Business Name: ${business.name}
+         Write a professionally engaging, under-100-word description for this content item.
+
           Business Category: ${business.businessIndustry['name']}
           Content Type: ${contentType}
           Content Category: ${category}
           Deal Type: ${dealType}
           Title: ${title}
-          Tailored to the deal type and category
-          Specific, informative, and value-driven
-          Unique each time — use different phrasings, sentence structures, or angles
-          Avoid using the business name
-          DO NOT use generic phrases like “Don't miss out”, “This is the best”, “Welcome to”, etc.
-          Include subtle creative variation each time it's run (change lead-ins, highlight different benefits, or use analogies when appropriate)
-          Optionally vary the tone slightly within a professional range (e.g., slightly more dynamic, thoughtful, or bold — depending on the content type or category)
-          Example styles to vary between:
-          Focused on benefits
-          Focused on insights or takeaways
-          Emphasizing urgency or timeliness (without clichés)
-          Using a question hook
-          Using a metaphor or comparison
-          Using a stat or data point if contextually relevant
-          Output format:
-          Just the description text.
-          Do not include titles, headers, or repeat the input fields.
+
+          Requirements:
+          - Friendly, persuasive tone tailored to ${dealType} and ${category}
+          - Specific, informative, and value-driven
+          - Never use the business name
+          - Avoid clichés: "Don't miss out," "This is the best," "Welcome to," "limited time," "amazing opportunity"
+
+          CRITICAL - Enforce uniqueness by randomly selecting ONE approach:
+          1. Lead with a compelling question that addresses a pain point
+          2. Open with a surprising statistic or industry insight
+          3. Use a brief scenario or "imagine if" framing
+          4. Start with a bold statement about transformation or results
+          5. Begin with a contrasting comparison (before/after, traditional vs. innovative)
+          6. Use sensory or experiential language
+          7. Open with a specific problem this solves
+          8. Frame around a common misconception or myth
+
+          Vary sentence structure: alternate between short punchy sentences, compound sentences, and different clause orders. Change your opening word each time (avoid starting with "Join," "Discover," "Learn," "Get" repeatedly).
+
+          Output only the description text.
         `,
         },
       ];
@@ -214,34 +223,51 @@ export class AiService {
         {
           role: 'user',
           content: `
-         Write a compelling and professional business description for the following business. The tone should be clear, engaging, and business-friendly, suitable for a general audience.
+        Write a compelling and professional business description for the following business.
 
           Business Name: "${business.name}"
           Industry: ${business.businessIndustry?.['title'] || 'N/A'}
           Categories: ${Array.isArray(business.businessCategories) ? business.businessCategories.map((c) => c['title']).join(', ') : business.businessCategories?.['title'] || 'N/A'}
-          Location: ${[
-            business.addressLine1,
-            business.addressLine2,
-            business.city,
-            business.country,
-            business.postalCode,
-          ]
-            .filter(Boolean)
-            .join(', ')}
+          Location: ${[business.addressLine1, business.addressLine2, business.city, business.country, business.postalCode].filter(Boolean).join(', ')}
           Phone: (${business.countryCode}) ${business.phone}
           Email: ${business.email}
           ${business.website ? 'Website: ' + business.website : ''}
 
-          Instructions:
-          - Focus on what the business does and the value it provides to its customers.
-          - Highlight unique offerings, expertise, or competitive advantages.
-          - Emphasize relevance in its industry or local market.
-          - Keep it between **100 and 150 words**.
-          - Avoid generic phrases, assumptions, or technical jargon.
-          - Do not use bullet points — write in natural, well-formed paragraphs.
-          - Every sentence should add value — avoid filler content.
+          Core Requirements:
+          - 100-150 words in natural, well-formed paragraphs (no bullet points)
+          - Clear, engaging, business-friendly tone for general audiences
+          - Focus on what the business does and customer value delivered
+          - Build trust and interest while conveying purpose and strengths
+          - Every sentence must add value—no filler content
+          - Avoid generic phrases like "committed to excellence," "proud to serve," "your trusted partner," "premier provider"
+          - Do not make assumptions about services not indicated by the category/industry
 
-          The goal is to produce a description that builds trust and interest, and clearly conveys the business's purpose and strengths.
+          CRITICAL - Enforce structural diversity by selecting ONE narrative framework:
+
+          1. **Problem-Solution Arc**: Open with a customer need/challenge in this industry, then explain how this business addresses it, close with the outcome/benefit
+
+          2. **Expertise-First**: Lead with specialized knowledge or years of experience, follow with service range, end with customer-centric philosophy
+
+          3. **Local-Community Angle**: Start with location/community connection, describe how the business serves that market, finish with accessibility/convenience
+
+          4. **Service-Spectrum**: Open by defining the breadth of offerings, detail key categories, conclude with what sets the approach apart
+
+          5. **Customer-Journey**: Begin from the customer's perspective (when someone needs X...), walk through the experience, end with results
+
+          6. **Category-Authority**: Start with industry positioning, explain specialized focus areas, close with distinguishing qualities
+
+          7. **Value-Proposition Lead**: Open with the primary benefit/outcome customers receive, support with how it's delivered, finish with business philosophy
+
+          8. **Modern-Traditional Balance**: Contrast traditional industry values with modern approach/innovation, explain the synthesis
+
+          Variation tactics:
+          - Rotate sentence length patterns (short-long-medium vs. medium-short-long)
+          - Alternate between starting with the business name vs. starting with the industry/service
+          - Vary how you reference location (early mention vs. late mention vs. woven throughout)
+          - Mix direct statements with implied benefits
+          - Change the role of the final sentence (call-to-action vs. values statement vs. breadth summary)
+
+          Output only the description text.
         `.trim(),
         },
       ];
