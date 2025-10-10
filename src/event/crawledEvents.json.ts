@@ -22353,7 +22353,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '275 Riverside Parkway, SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22441,7 +22440,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22480,9 +22478,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44ae',
         },
-        title: 'Attractions',
+        title: 'Family & Kids',
       },
     ],
     creatorDetails: null,
@@ -22530,7 +22528,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1320 Monroe Drive, NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22620,7 +22617,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '394 Moreland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22710,7 +22706,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1071 Piedmont Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22799,7 +22794,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '100 Rue Charlemagne',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22839,9 +22833,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44b3',
         },
-        title: 'Attractions',
+        title: 'Beer & Wine',
       },
     ],
     creatorDetails: null,
@@ -22889,7 +22883,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '800 Cherokee Avenue, S.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -22979,7 +22972,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23069,7 +23061,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '660 Peachtree Street NE Atlanta, GA 30308',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23157,7 +23148,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '225 Baker Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23247,7 +23237,6 @@ export const ETL_DATA = [
         location: null,
         address1:
           'Shirley A. Massey Conference Center, Westview Dr SW & West End Ave SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23337,7 +23326,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '225 Baker Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23426,7 +23414,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23466,9 +23453,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -23516,7 +23503,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23556,9 +23542,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a9',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Sports & Fitness',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -23606,7 +23592,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1345 Piedmont Avenue, N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23696,7 +23681,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1197 Peachtree St NE Suite 150',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23786,7 +23770,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23826,9 +23809,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Experiences',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -23876,7 +23859,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '285 Andrew Young International Blvd., NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -23966,7 +23948,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '767 Clifton Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24055,7 +24036,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '650 Gaskill Street SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24145,7 +24125,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4770 Peachtree Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24235,7 +24214,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24324,7 +24302,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1345 Piedmont Avenue, N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24414,7 +24391,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5100 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24503,7 +24479,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1647 Stony Creek Way',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24593,7 +24568,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '33 Peachtree Place Northeast',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24683,7 +24657,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24772,7 +24745,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24860,7 +24832,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1280 Peachtree St NE, #1400',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -24949,7 +24920,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '800 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25039,7 +25009,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25129,7 +25098,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '878 Peachtree Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25219,7 +25187,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25309,7 +25276,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1221 Peachtree Street, Suite 110',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25349,9 +25315,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a3',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Food & Drink',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -25397,7 +25363,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25486,7 +25451,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '8534 Main St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25576,7 +25540,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25666,7 +25629,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '767 Clifton Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25706,9 +25668,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b3',
+          $oid: '68a176fb15ee3362d03f44a7',
         },
-        title: 'Beer & Wine',
+        title: 'Events',
       },
     ],
     creatorDetails: null,
@@ -25756,7 +25718,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '750 Ferst Drive NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25846,7 +25807,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'P.O. Box 5376',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -25936,7 +25896,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 West Peachtree Street Northwest Atlanta, GA 30309',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26026,7 +25985,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26115,7 +26073,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '407 N. Clayton St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26205,7 +26162,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1470 Spring St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26245,9 +26201,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44a7',
         },
-        title: 'Arts & Culture',
+        title: 'Events',
       },
     ],
     creatorDetails: null,
@@ -26295,7 +26251,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '170 Northside Dr SW, Suite 96',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26383,7 +26338,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Dunwoody, GA',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26470,7 +26424,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26559,7 +26512,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1010 White Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26649,7 +26601,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26739,7 +26690,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Alpharetta',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26836,7 +26786,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -26926,7 +26875,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2771 Columbia Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27014,7 +26962,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '80 Forsyth Street NW at Luckie Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27103,7 +27050,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1004 Town Blvd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27193,7 +27139,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1544 Piedmont Ave., Suite 403-R',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27283,7 +27228,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '241 20th Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27373,7 +27317,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '620 South Central Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27413,9 +27356,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -27463,7 +27406,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '500 10th Street N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27553,7 +27495,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2771 Columbia Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27593,9 +27534,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44b0',
         },
-        title: 'Arts & Culture',
+        title: 'Charity & Community',
       },
     ],
     creatorDetails: null,
@@ -27643,7 +27584,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3307 Buford Hwy NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27733,7 +27673,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27823,7 +27762,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '250 Marietta St., NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -27863,9 +27801,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a9',
         },
-        title: 'Experiences',
+        title: 'Sports & Fitness',
       },
     ],
     creatorDetails: null,
@@ -27913,7 +27851,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3144 Cascade rd sw',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28003,7 +27940,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '68 North Marietta Parkway NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28092,7 +28028,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1660 Johnson Road NW, Entrance 1',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28182,7 +28117,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '142 North Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28272,7 +28206,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1004 Town Boulevard',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28362,7 +28295,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '241 20th Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28452,7 +28384,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '975 Chattachoochee Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28542,7 +28473,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '265 Peachtree Street, NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28632,7 +28562,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3686 Pleasantdale Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28722,7 +28651,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4580 Lakeshore Dr., N/A',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28811,7 +28739,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '100 CNN Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28901,7 +28828,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5105 Peachtree Boulevard, Building B',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -28996,7 +28922,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5100 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29086,7 +29011,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2076 N Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29175,7 +29099,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '240 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29215,9 +29138,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -29263,7 +29186,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29352,7 +29274,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1260 Glenwood Ave SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29392,9 +29313,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a3',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Food & Drink',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -29442,7 +29363,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2105 Lavista Road Northeast, #108',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29532,7 +29452,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '40 Courtland Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29622,7 +29541,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '950 3rd. St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29712,7 +29630,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1010 White Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29802,7 +29719,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29892,7 +29808,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '275 Riverside Parkway, SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -29982,7 +29897,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1315 Peachtree St. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30070,7 +29984,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30109,9 +30022,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44ae',
         },
-        title: 'Attractions',
+        title: 'Family & Kids',
       },
     ],
     creatorDetails: null,
@@ -30157,7 +30070,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30246,7 +30158,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1320 Monroe Drive, NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30334,7 +30245,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30373,9 +30283,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -30423,7 +30333,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '394 Moreland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30513,7 +30422,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30603,7 +30511,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1071 Piedmont Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30692,7 +30599,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '100 Rue Charlemagne',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30732,9 +30638,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44b3',
         },
-        title: 'Attractions',
+        title: 'Beer & Wine',
       },
     ],
     creatorDetails: null,
@@ -30782,7 +30688,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1738 MacArthur Blvd NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30822,9 +30727,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a8',
         },
-        title: 'Experiences',
+        title: 'Clubs & Classes',
       },
     ],
     creatorDetails: null,
@@ -30872,7 +30777,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -30962,7 +30866,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '800 Cherokee Avenue, S.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31052,7 +30955,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '840 Cherokee Ave SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31142,7 +31044,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31232,7 +31133,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31321,7 +31221,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31409,7 +31308,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '660 Peachtree Street NE Atlanta, GA 30308',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31498,7 +31396,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '660 Peachtree Street NE Atlanta, GA 30308',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31588,7 +31485,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '590 West Peachtree Street, NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31676,7 +31572,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '225 Baker Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31763,7 +31658,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '675 Ponce De Leon Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31853,7 +31747,6 @@ export const ETL_DATA = [
         location: null,
         address1:
           'Shirley A. Massey Conference Center, Westview Dr SW & West End Ave SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -31943,7 +31836,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2076 N Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32033,7 +31925,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '225 Baker Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32123,7 +32014,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '638 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32212,7 +32102,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32252,9 +32141,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -32299,7 +32188,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32388,7 +32276,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32428,9 +32315,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a9',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Sports & Fitness',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -32478,7 +32365,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32568,7 +32454,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1345 Piedmont Avenue, N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32656,7 +32541,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '135 Riverside Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32745,7 +32629,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1197 Peachtree St NE Suite 150',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32835,7 +32718,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32875,9 +32757,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Experiences',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -32925,7 +32807,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '248 Oakland Avenue, SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -32965,9 +32846,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -33015,7 +32896,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '285 Andrew Young International Blvd., NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33103,7 +32983,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33192,7 +33071,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '767 Clifton Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33282,7 +33160,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '840 Franklin Court, Suite 100',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33371,7 +33248,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '650 Gaskill Street SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33461,7 +33337,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33551,7 +33426,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4770 Peachtree Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33641,7 +33515,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1005 Peachtree St NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33731,7 +33604,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33821,7 +33693,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5953 Buford Hwy NE, STE 102/103',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -33861,9 +33732,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a3',
         },
-        title: 'Experiences',
+        title: 'Food & Drink',
       },
     ],
     creatorDetails: null,
@@ -33910,7 +33781,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1345 Piedmont Avenue, N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34000,7 +33870,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '117 North Park Square',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34090,7 +33959,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5100 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34180,7 +34048,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2345 Cheshire Bridge Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34269,7 +34136,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1647 Stony Creek Way',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34359,7 +34225,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34399,9 +34264,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -34449,7 +34314,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34539,7 +34403,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '33 Peachtree Place Northeast',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34629,7 +34492,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34718,7 +34580,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '188 14th St NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34807,7 +34668,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34895,7 +34755,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -34982,7 +34841,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1280 Peachtree St NE, #1400',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35075,7 +34933,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Callanwolde Fine Arts Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35165,7 +35022,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Callanwolde Fine Arts Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35255,7 +35111,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '800 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35343,7 +35198,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1700 North Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35432,7 +35286,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35522,7 +35375,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35612,7 +35464,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '878 Peachtree Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35702,7 +35553,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5000 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35792,7 +35642,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35882,7 +35731,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '592 N. Angier Ave. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -35972,7 +35820,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1221 Peachtree Street, Suite 110',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36012,9 +35859,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a3',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Food & Drink',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -36062,7 +35909,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '155 Willowbend Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36150,7 +35996,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36239,7 +36084,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5468 Peachtree Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36329,7 +36173,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '8534 Main St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36419,7 +36262,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '6205 Best Friend Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36509,7 +36351,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36599,7 +36440,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '680 S. Central Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36689,7 +36529,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '767 Clifton Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36729,9 +36568,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b3',
+          $oid: '68a176fb15ee3362d03f44a7',
         },
-        title: 'Beer & Wine',
+        title: 'Events',
       },
     ],
     creatorDetails: null,
@@ -36779,7 +36618,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36819,9 +36657,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -36869,7 +36707,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '750 Ferst Drive NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -36959,7 +36796,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3800 Hog Mountain Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37049,7 +36885,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'P.O. Box 5376',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37139,7 +36974,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '125 N Clayton St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37179,9 +37013,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a5',
+          $oid: '68a176fb15ee3362d03f44ae',
         },
-        title: 'Music & Nightlife',
+        title: 'Family & Kids',
       },
     ],
     creatorDetails: null,
@@ -37229,7 +37063,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 West Peachtree Street Northwest Atlanta, GA 30309',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37319,7 +37152,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37409,7 +37241,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '620 South Central Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37449,9 +37280,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -37498,7 +37329,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '407 N. Clayton St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37588,7 +37418,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4675 HWY. 136 W',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37678,7 +37507,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4261 Communications Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37718,9 +37546,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a3',
         },
-        title: 'Experiences',
+        title: 'Food & Drink',
       },
     ],
     creatorDetails: null,
@@ -37768,7 +37596,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1470 Spring St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37808,9 +37635,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44a7',
         },
-        title: 'Arts & Culture',
+        title: 'Events',
       },
     ],
     creatorDetails: null,
@@ -37858,7 +37685,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '170 Northside Dr SW, Suite 96',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -37946,7 +37772,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38033,7 +37858,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Dunwoody, GA',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38120,7 +37944,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '933 Lee St SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38207,7 +38030,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38294,7 +38116,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2800 Cobb Galleria Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38333,9 +38154,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -38383,7 +38204,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1010 White Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38473,7 +38293,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3025 Bolling Way NE, Suite G115',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38563,7 +38382,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38653,7 +38471,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4425 Beach St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38743,7 +38560,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Alpharetta',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38833,7 +38649,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '680 Dallas Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -38930,7 +38745,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1000 Robert E. Lee Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39017,7 +38831,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39056,9 +38869,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -39106,7 +38919,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2771 Columbia Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39196,7 +39008,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '245 Azalea Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39284,7 +39095,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '80 Forsyth Street NW at Luckie Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39373,7 +39183,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1004 Town Blvd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39463,7 +39272,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '883 Dill Ave SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39553,7 +39361,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1544 Piedmont Ave., Suite 403-R',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39642,7 +39449,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '933 Lee Street SW B-1',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39732,7 +39538,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '241 20th Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39822,7 +39627,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4479 S Atlanta Rd SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39912,7 +39716,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '620 South Central Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -39952,9 +39755,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -40002,7 +39805,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '88 West Paces Ferry Rd NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40042,9 +39844,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44aa',
         },
-        title: 'Experiences',
+        title: 'Beauty & Spa',
       },
     ],
     creatorDetails: null,
@@ -40092,7 +39894,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '500 10th Street N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40181,7 +39982,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40271,7 +40071,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2771 Columbia Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40311,9 +40110,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44b0',
         },
-        title: 'Arts & Culture',
+        title: 'Charity & Community',
       },
     ],
     creatorDetails: null,
@@ -40361,7 +40160,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '240 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40401,9 +40199,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -40451,7 +40249,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3307 Buford Hwy NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40541,7 +40338,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40631,7 +40427,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40721,7 +40516,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2860 Cumberland Mall SE Suite 1640',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40811,7 +40605,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '250 Marietta St., NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40851,9 +40644,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a9',
         },
-        title: 'Experiences',
+        title: 'Sports & Fitness',
       },
     ],
     creatorDetails: null,
@@ -40901,7 +40694,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '929 White St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -40991,7 +40783,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3144 Cascade rd sw',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41081,7 +40872,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1345 Piedmont Avenue, N.E.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41121,9 +40911,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Arts & Culture',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -41171,7 +40961,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '68 North Marietta Parkway NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41260,7 +41049,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41349,7 +41137,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1660 Johnson Road NW, Entrance 1',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41439,7 +41226,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '245 Azalea Dr',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41529,7 +41315,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '142 North Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41619,7 +41404,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '638 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41709,7 +41493,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1004 Town Boulevard',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41799,7 +41582,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '349 Peachtree Hills Ave., Suite A5',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41889,7 +41671,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '241 20th Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -41979,7 +41760,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '199 Armour Dr NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42069,7 +41849,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '975 Chattachoochee Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42159,7 +41938,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3785 King Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42249,7 +42027,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '265 Peachtree Street, NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42337,7 +42114,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '6400 Sugarloaf Pkwy',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42376,9 +42152,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a9',
+          $oid: '68a176fb15ee3362d03f44b0',
         },
-        title: 'Sports & Fitness',
+        title: 'Charity & Community',
       },
     ],
     creatorDetails: null,
@@ -42426,7 +42202,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3686 Pleasantdale Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42514,7 +42289,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42603,7 +42377,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4580 Lakeshore Dr., N/A',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42692,7 +42465,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '9135 Willeo Road',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42782,7 +42554,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '100 CNN Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42872,7 +42643,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3500 Peachtree Road NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -42912,9 +42682,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44ad',
         },
-        title: 'Experiences',
+        title: 'Attractions',
       },
     ],
     creatorDetails: null,
@@ -42962,7 +42732,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5105 Peachtree Boulevard, Building B',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43050,7 +42819,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '515 B N McDonough St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43144,7 +42912,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5100 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43234,7 +43001,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3500 Peachtree Road Northeast',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43274,9 +43040,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44ad',
         },
-        title: 'Experiences',
+        title: 'Attractions',
       },
     ],
     creatorDetails: null,
@@ -43324,7 +43090,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2076 N Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43414,7 +43179,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1601 McDonough Place, Suite E',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43503,7 +43267,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '240 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43543,9 +43306,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -43592,7 +43355,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '750 Ferst Drive NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43680,7 +43442,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43769,7 +43530,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '750 Ferst Drive NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43859,7 +43619,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1260 Glenwood Ave SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -43899,9 +43658,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a3',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Food & Drink',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -43949,7 +43708,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1390 McLendon Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44039,7 +43797,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2105 Lavista Road Northeast, #108',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44129,7 +43886,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44219,7 +43975,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '40 Courtland Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44309,7 +44064,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1516 Peachtree St NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44399,7 +44153,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '950 3rd. St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44489,7 +44242,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '620 South Central Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44579,7 +44331,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1010 White Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44669,7 +44420,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44759,7 +44509,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44847,7 +44596,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3699 Lenox Rd NE, Suite #5',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -44936,7 +44684,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1315 Peachtree St. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45026,7 +44773,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2020 Convention Center Concourse',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45114,7 +44860,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45203,7 +44948,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4400 Ashford Dunwoody Road Northeast',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45243,9 +44987,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a7',
+          $oid: '68a176fb15ee3362d03f44aa',
         },
-        title: 'Events',
+        title: 'Beauty & Spa',
       },
     ],
     creatorDetails: null,
@@ -45291,7 +45035,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45330,9 +45073,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -45379,7 +45122,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '265 Park Avenue West, NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45469,7 +45211,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45558,7 +45299,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4711 Best Road',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45648,7 +45388,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1738 MacArthur Blvd NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45688,9 +45427,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a8',
         },
-        title: 'Experiences',
+        title: 'Clubs & Classes',
       },
     ],
     creatorDetails: null,
@@ -45738,7 +45477,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '50 Lower Alabama Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45828,7 +45566,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '825 Warner Street SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -45918,7 +45655,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1071 Piedmont Ave.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46008,7 +45744,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '840 Cherokee Ave SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46098,7 +45833,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2211 Roswell Rd, Suite 174',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46138,9 +45872,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Experiences',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -46188,7 +45922,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 AMB Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46278,7 +46011,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2400 Garson Drive NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46318,9 +46050,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ac',
+          $oid: '68a176fb15ee3362d03f44b0',
         },
-        title: 'Arts & Culture',
+        title: 'Charity & Community',
       },
     ],
     creatorDetails: null,
@@ -46367,7 +46099,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46457,7 +46188,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '712 LG Griffin Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46545,7 +46275,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '660 Peachtree Street NE Atlanta, GA 30308',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46634,7 +46363,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '656 Exchange Circle #100',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46724,7 +46452,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '590 West Peachtree Street, NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46814,7 +46541,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5200 Roberts Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46902,7 +46628,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '675 Ponce De Leon Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -46991,7 +46716,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '180 Walker Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47081,7 +46805,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2076 N Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47171,7 +46894,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1010 White Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47261,7 +46983,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3376 Peachtree Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47351,7 +47072,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '638 North Highland Ave NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47438,7 +47158,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47526,7 +47245,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '767 Clifton Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47616,7 +47334,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47706,7 +47423,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47794,7 +47510,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '135 Riverside Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47881,7 +47596,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '467 N Highland Ave. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -47970,7 +47684,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '142 North Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48060,7 +47773,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '248 Oakland Avenue, SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48100,9 +47812,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -48150,7 +47862,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '500 Pinnacle Ct',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48238,7 +47949,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48327,7 +48037,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1524 Church St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48417,7 +48126,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '840 Franklin Court, Suite 100',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48507,7 +48215,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1804 N. Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48597,7 +48304,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48684,7 +48390,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48773,7 +48478,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1005 Peachtree St NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48863,7 +48567,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3333 Buford Dr',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48953,7 +48656,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5953 Buford Hwy NE, STE 102/103',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -48993,9 +48695,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a3',
         },
-        title: 'Experiences',
+        title: 'Food & Drink',
       },
     ],
     creatorDetails: null,
@@ -49043,7 +48745,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '7000 Lanier Islands Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49083,9 +48784,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44ae',
         },
-        title: 'Attractions',
+        title: 'Family & Kids',
       },
     ],
     creatorDetails: null,
@@ -49133,7 +48834,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '117 North Park Square',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49223,7 +48923,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4770 Peachtree Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49312,7 +49011,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2345 Cheshire Bridge Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49400,7 +49098,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1816 Harvard Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49489,7 +49186,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49529,9 +49225,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -49579,7 +49275,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '374 East Paces Ferry Rd NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49669,7 +49364,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49759,7 +49453,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '675 Ponce de Leon Ave, Suite 158',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49848,7 +49541,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '188 14th St NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -49938,7 +49630,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1117 W Peachtree St NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50026,7 +49717,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50113,7 +49803,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '458 PONCE DE LEON AVE NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50206,7 +49895,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Callanwolde Fine Arts Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50296,7 +49984,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '820 Ralph McGill Blvd. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50386,7 +50073,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Callanwolde Fine Arts Center',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50474,7 +50160,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1700 North Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50563,7 +50248,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50653,7 +50337,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '6345 Powers Ferry Rd NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50743,7 +50426,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5000 Commerce Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50831,7 +50513,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '251 E. Marietta St. Canton GA 30144',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -50920,7 +50601,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '592 N. Angier Ave. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51010,7 +50690,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '7000 Lanier Islands Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51100,7 +50779,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '155 Willowbend Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51190,7 +50868,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Multiple Locations',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51280,7 +50957,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '5468 Peachtree Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51370,7 +51046,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51460,7 +51135,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '6205 Best Friend Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51550,7 +51224,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '178 Fifteenth St NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51640,7 +51313,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '680 S. Central Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51730,7 +51402,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2000 Clayton State Blvd.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51820,7 +51491,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -51860,9 +51530,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -51910,7 +51580,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '500 South Columbia Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52000,7 +51669,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3800 Hog Mountain Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52088,7 +51756,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '500 S Columbia Dr',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52127,9 +51794,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44ac',
         },
-        title: 'Experiences',
+        title: 'Arts & Culture',
       },
     ],
     creatorDetails: null,
@@ -52186,7 +51853,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1483 Chattahoochee Ave',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52276,7 +51942,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '125 N Clayton St',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52316,9 +51981,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44a5',
+          $oid: '68a176fb15ee3362d03f44ae',
         },
-        title: 'Music & Nightlife',
+        title: 'Family & Kids',
       },
     ],
     creatorDetails: null,
@@ -52366,7 +52031,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1 State Farm Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52406,9 +52070,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -52456,7 +52120,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '620 South Central Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52496,9 +52159,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -52546,7 +52209,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4675 HWY. 136 W',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52636,7 +52298,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4469 Stella Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52726,7 +52387,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3116 Main Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52816,7 +52476,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4261 Communications Dr NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52856,9 +52515,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44a3',
         },
-        title: 'Experiences',
+        title: 'Food & Drink',
       },
     ],
     creatorDetails: null,
@@ -52906,7 +52565,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'Euclid Avenue',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -52946,9 +52604,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -52994,7 +52652,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1404 Spring Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53081,7 +52738,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4400 N. Peachtree Rd.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53168,7 +52824,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '933 Lee St SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53257,7 +52912,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3430 GA-9',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53345,7 +52999,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2800 Cobb Galleria Parkway',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53384,9 +53037,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -53434,7 +53087,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '250 Marietta St., NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53524,7 +53176,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3025 Bolling Way NE, Suite G115',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53614,7 +53265,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '100 Auburn Avenue NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53704,7 +53354,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4425 Beach St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53794,7 +53443,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '308 Clairemont Ave.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53884,7 +53532,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '680 Dallas Street',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -53974,7 +53621,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1315 Peachtree St. NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54061,7 +53707,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54100,9 +53745,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -54150,7 +53795,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '460 Fourth Street NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54240,7 +53884,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '245 Azalea Drive',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54330,7 +53973,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '2076 N Decatur Rd',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54420,7 +54062,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '883 Dill Ave SW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54508,7 +54149,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: 'at Woodruff Arts Center, 1280 Peachtree Street NE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54596,7 +54236,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '933 Lee Street SW B-1',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54686,7 +54325,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '3597 Peachtree Corners',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54776,7 +54414,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '4479 S Atlanta Rd SE',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54864,7 +54501,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '1374 W. Peachtree St.',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54903,9 +54539,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44ad',
+          $oid: '68a176fb15ee3362d03f44a5',
         },
-        title: 'Attractions',
+        title: 'Music & Nightlife',
       },
     ],
     creatorDetails: null,
@@ -54953,7 +54589,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '88 West Paces Ferry Rd NW',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
@@ -54993,9 +54628,9 @@ export const ETL_DATA = [
     categories: [
       {
         _id: {
-          $oid: '68a176fb15ee3362d03f44b4',
+          $oid: '68a176fb15ee3362d03f44aa',
         },
-        title: 'Experiences',
+        title: 'Beauty & Spa',
       },
     ],
     creatorDetails: null,
@@ -55043,7 +54678,6 @@ export const ETL_DATA = [
       {
         location: null,
         address1: '840 Franklin Court, Suite 100',
-        address2: '',
         city: 'Atlanta',
         state: 'GA',
         zip: '30033',
