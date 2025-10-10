@@ -23,6 +23,7 @@ export class AiService {
     title: string,
   ) {
     try {
+      console.log("contentType category dealType title",contentType,category, dealType, title)
       const business = await this.businessModel
         .findById(businessId)
         .select('name businessCategories businessIndustry')
@@ -73,7 +74,7 @@ export class AiService {
         this.httpService.post(
           'https://api.openai.com/v1/chat/completions',
           {
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: messages,
             max_tokens: 512,
             temperature: 0.7,
@@ -162,7 +163,7 @@ export class AiService {
         this.httpService.post(
           'https://api.openai.com/v1/chat/completions',
           {
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: messages,
             max_tokens: 512,
             temperature: 0.7,
@@ -248,7 +249,7 @@ export class AiService {
         this.httpService.post(
           'https://api.openai.com/v1/chat/completions',
           {
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: messages,
             max_tokens: 512,
             temperature: 0.7,
@@ -297,7 +298,7 @@ export class AiService {
         this.httpService.post(
           'https://api.openai.com/v1/chat/completions',
           {
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4o',
             messages: messages,
             max_tokens: 512,
             temperature: 0.7,
