@@ -1592,7 +1592,8 @@ export class EventService2 {
         .populate({
           path: 'files',
           match: { category: { $ne: QR_CATEGORY_ID._id } },
-        });
+        })
+        .populate('QR_CODE');
       if (!event) {
         return {
           success: false,
@@ -6231,15 +6232,18 @@ export class EventService2 {
 
       // Validate age range
       if (data.minTargetAge && data.maxTargetAge) {
-        const minAge = Number(data.minTargetAge);
-        const maxAge = Number(data.maxTargetAge);
+        let minAge = Number(data.minTargetAge);
+        let maxAge = Number(data.maxTargetAge);
 
         if (minAge > maxAge) {
-          return {
-            success: false,
-            message:
-              'Minimum target age cannot be greater than maximum target age',
-          };
+          // return {
+          //   success: false,
+          //   message:
+          //     'Minimum target age cannot be greater than maximum target age',
+          // };
+          const temp = minAge;
+          minAge = maxAge;
+          maxAge = temp;
         }
 
         data.minTargetAge = minAge;
@@ -6299,7 +6303,7 @@ export class EventService2 {
       if (image) {
         const uploadPromise = (async () => {
           const fileCategory = await this.fileCategoryModel
-            .findOne({ name: 'gallery image' })
+            .findOne({ name: FileCategoryTypes.CONTENT_QR })
             .lean();
 
           if (fileCategory) {
@@ -6418,7 +6422,7 @@ export class EventService2 {
       );
 
       const fileCategory = await this.fileCategoryModel.findOne({
-        name: 'gallery image',
+        name: FileCategoryTypes.CONTENT_QR
       });
       if (image) {
         console.log('Image:', image);

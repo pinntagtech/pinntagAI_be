@@ -43,7 +43,7 @@ import { BusinessIndustry } from 'src/business/model/businessIndustry.model';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { UserReward, UserRewardDocument } from './model/userReward.model';
 import { NotificationTypes } from 'src/enums/event.enums';
-import { TokenTypes } from 'src/enums/auth.enums';
+import { FileCategoryTypes, TokenTypes } from 'src/enums/auth.enums';
 import { Token } from 'aws-sdk';
 import { TokenDocument } from 'src/auth/models/token.model';
 import { FirebaseService } from 'src/notification/firebase.service';
@@ -153,7 +153,7 @@ export class RewardsService {
       const reward = await this.rewardModel.create(createObj);
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
-        name: 'Content QR',
+        name: FileCategoryTypes.CONTENT_QR,
       });
 
       // Generate QR if applicable

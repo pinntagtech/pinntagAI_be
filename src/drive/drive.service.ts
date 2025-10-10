@@ -1171,22 +1171,29 @@ export class DriveService {
       }
       console.log('Existing valid Object IDs:', existingFileIds);
       const oldFiles = await this.fileModel.find({ ...oldFileQuery });
-      console.log('Old files:', oldFiles);
-      oldFiles.forEach(async (file) => {
-        // Delete file from S3
-        const fileUrl = file.metaData.url;
-        const pathname = new URL(fileUrl).pathname; // Extracts /staging/image_cropper_...
-        const fileName = pathname.startsWith('/')
-          ? pathname.slice(1)
-          : pathname;
-        await this.s3Service.s3_delete(
-          process.env.AWS_S3_BUCKET_NAME,
-          fileName,
-        );
-        await this.fileModel.deleteOne({
-          _id: new mongoose.Types.ObjectId(file._id),
-        });
+      const QR_FileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.CONTENT_QR,
       });
+      console.log('Old files:', oldFiles);
+      await Promise.all(
+        oldFiles.map(async (file) => {
+          if (file.category.toString() !== QR_FileCategory._id.toString()) {
+            const fileUrl = file.metaData.url;
+            const pathname = new URL(fileUrl).pathname;
+            const fileName = pathname.startsWith('/')
+              ? pathname.slice(1)
+              : pathname;
+
+            await this.s3Service.s3_delete(
+              process.env.AWS_S3_BUCKET_NAME,
+              fileName,
+            );
+            await this.fileModel.deleteOne({
+              _id: new mongoose.Types.ObjectId(file._id),
+            });
+          }
+        }),
+      );
 
       let parentId = user.id;
       console.log('parentId:', parentId);
