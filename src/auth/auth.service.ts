@@ -6927,18 +6927,22 @@ export class AuthService {
         {
           carouselType: CarouselType.Event,
           data: deals.data,
+          total: deals.total
         },
         {
           carouselType: CarouselType.Business,
           data: listings.data,
+          total: listings.total
         },
         {
           carouselType: 'Rewards',
           data: rewards.data,
+          total: rewards.total
         },
         {
           carouselType: CarouselType.OnWheels,
           data: mobile.data,
+          total: mobile.total,
         },
       ];
       return {
