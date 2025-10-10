@@ -66,7 +66,6 @@ export class AiService {
           CRITICAL - Enforce uniqueness by randomly selecting ONE approach:
           1. Lead with a compelling question that addresses a pain point
           2. Open with a surprising statistic or industry insight
-          3. Use a brief scenario or "imagine if" framing
           4. Start with a bold statement about transformation or results
           5. Begin with a contrasting comparison (before/after, traditional vs. innovative)
           6. Use sensory or experiential language
