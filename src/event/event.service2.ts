@@ -1593,7 +1593,7 @@ export class EventService2 {
           path: 'files',
           match: { category: { $ne: QR_CATEGORY_ID._id } },
         })
-        .populate('QR_CODE');
+        .populate('QR_CODE','_id metaData');
       if (!event) {
         return {
           success: false,

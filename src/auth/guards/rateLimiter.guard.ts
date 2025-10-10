@@ -10,7 +10,7 @@ import {
   @Injectable()
   export class RateLimitGuard implements CanActivate {
     private limiter = new RateLimiterMemory({
-      points: 20,
+      points: 40,
       duration: 60,
     });
   
