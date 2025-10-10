@@ -468,7 +468,7 @@ export class RewardsService {
       }
 
       // Upload images async (fire and forget)
-      if (images.length) {
+      if (images && images.length > 0) {
         console.log('Updating Images:::', images.length);
         this.driveService.deleteBufferAndMultiImageUpload(
           user,
