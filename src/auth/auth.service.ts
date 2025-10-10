@@ -6577,7 +6577,7 @@ export class AuthService {
         $in: catIds,
       };
 
-      result = await this.fetchEventsV2(
+      const [eventsResult, totalCount] = await this.fetchEventsV2(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -6587,8 +6587,8 @@ export class AuthService {
         carouselType,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
-      result = result[0];
-      total = result[1];
+      result = eventsResult;
+      total = totalCount;
     } else if (carouselType === CarouselType.Business) {
       let match: any = {};
       let industries = await this.businessIndustryModel.find();
@@ -6604,7 +6604,7 @@ export class AuthService {
         { 'locations.city': { $regex: search, $options: 'i' } },
         { 'locations.state': { $regex: search, $options: 'i' } },
       ];
-      result = await this.fetchBusinessListing(
+        const [listingResult] = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -6613,8 +6613,9 @@ export class AuthService {
         limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
-      result = result[0].data;
-      total = result[0].totalCount;
+      console.log("LISTINGRESULT:::",listingResult);
+      result = listingResult.data;
+      total = listingResult.totalCount;
     }
 
     return {
