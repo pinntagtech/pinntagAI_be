@@ -2055,20 +2055,22 @@ export class EventService2 {
                   console.log('Skipping null follower at index:', i);
                   continue;
                 }
-                const fcmTokens = await this.tokenModel.find({
-                  user: new mongoose.Types.ObjectId(
-                    followers[i].follower['_id'],
-                  ),
-                  type: TokenTypes.FCM,
-                });
-                console.log('FCM Tokens:', fcmTokens);
-                for (let j = 0; j < fcmTokens.length; j++) {
-                  this.firebaseService.sendNotification(
-                    fcmTokens[j].token,
-                    event.title,
-                    message,
-                    { data: NotificationTypes.EVENT, id: event.id },
-                  );
+                if (!followers[i].muted) {
+                  const fcmTokens = await this.tokenModel.find({
+                    user: new mongoose.Types.ObjectId(
+                      followers[i].follower['_id'],
+                    ),
+                    type: TokenTypes.FCM,
+                  });
+                  console.log('FCM Tokens:', fcmTokens);
+                  for (let j = 0; j < fcmTokens.length; j++) {
+                    this.firebaseService.sendNotification(
+                      fcmTokens[j].token,
+                      event.title,
+                      message,
+                      { data: NotificationTypes.EVENT, id: event.id },
+                    );
+                  }
                 }
                 await this.notificationModel.create({
                   user: followers[i].follower['_id'],
@@ -3628,88 +3630,88 @@ export class EventService2 {
     }
   }
 
- async likeEvent(
-  eventId: string,
-  userId: string,
-): Promise<{ success: boolean; message: string; liked?: boolean }> {
-  // Validate eventId
-  if (!mongoose.isValidObjectId(eventId)) {
-    return {
-      success: false,
-      message: 'Please provide a valid event id',
-    };
-  }
+  async likeEvent(
+    eventId: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string; liked?: boolean }> {
+    // Validate eventId
+    if (!mongoose.isValidObjectId(eventId)) {
+      return {
+        success: false,
+        message: 'Please provide a valid event id',
+      };
+    }
 
-  // Fetch user and event in parallel
-  const [user, event] = await Promise.all([
-    this.userModel.findById(userId).select('likedEvents name').lean(),
-    this.eventModel.findById(eventId).select('_id title').lean(),
-  ]);
-
-  // Early return if either not found
-  if (!event) {
-    return {
-      success: false,
-      message: 'Event not found',
-    };
-  }
-
-  if (!user) {
-    return {
-      success: false,
-      message: 'User not found',
-    };
-  }
-
-  const eventObjectId = new mongoose.Types.ObjectId(eventId);
-  const isLiked = user.likedEvents.some(id => id.equals(eventObjectId));
-
-  if (isLiked) {
-    // Unlike: execute updates in parallel
-    await Promise.all([
-      this.userModel.updateOne(
-        { _id: userId },
-        { $pull: { likedEvents: eventObjectId } }
-      ),
-      this.eventModel.updateOne(
-        { _id: eventObjectId },
-        { $inc: { totalLikes: -1, engagementCount: -1 } }
-      ),
+    // Fetch user and event in parallel
+    const [user, event] = await Promise.all([
+      this.userModel.findById(userId).select('likedEvents name').lean(),
+      this.eventModel.findById(eventId).select('_id title').lean(),
     ]);
 
-    return {
-      success: true,
-      message: 'Event removed from liked events',
-      liked: false,
-    };
-  } else {
-    // Like: execute updates in parallel
-    await Promise.all([
-      this.userModel.updateOne(
-        { _id: userId },
-        { $push: { likedEvents: eventObjectId } }
-      ),
-      this.eventModel.updateOne(
-        { _id: eventObjectId },
-        { $inc: { totalLikes: 1, engagementCount: 1 } }
-      ),
-    ]);
+    // Early return if either not found
+    if (!event) {
+      return {
+        success: false,
+        message: 'Event not found',
+      };
+    }
 
-    // Fire notification asynchronously (don't await)
-    this.businessService.businessNotification(
-      userId,
-      eventId,
-      NotificationTypes.EVENT,
-      `${user.name} liked your event ${event.title}`,
-    );
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
 
-    return {
-      success: true,
-      message: 'Event added to liked events',
-      liked: true,
-    };
+    const eventObjectId = new mongoose.Types.ObjectId(eventId);
+    const isLiked = user.likedEvents.some((id) => id.equals(eventObjectId));
+
+    if (isLiked) {
+      // Unlike: execute updates in parallel
+      await Promise.all([
+        this.userModel.updateOne(
+          { _id: userId },
+          { $pull: { likedEvents: eventObjectId } },
+        ),
+        this.eventModel.updateOne(
+          { _id: eventObjectId },
+          { $inc: { totalLikes: -1, engagementCount: -1 } },
+        ),
+      ]);
+
+      return {
+        success: true,
+        message: 'Event removed from liked events',
+        liked: false,
+      };
+    } else {
+      // Like: execute updates in parallel
+      await Promise.all([
+        this.userModel.updateOne(
+          { _id: userId },
+          { $push: { likedEvents: eventObjectId } },
+        ),
+        this.eventModel.updateOne(
+          { _id: eventObjectId },
+          { $inc: { totalLikes: 1, engagementCount: 1 } },
+        ),
+      ]);
+
+      // Fire notification asynchronously (don't await)
+      this.businessService.businessNotification(
+        userId,
+        eventId,
+        NotificationTypes.EVENT,
+        `${user.name} liked your event ${event.title}`,
+      );
+
+      return {
+        success: true,
+        message: 'Event added to liked events',
+        liked: true,
+      };
+    }
   }
-}
 
   async getLikedEvents(
     userId: string,

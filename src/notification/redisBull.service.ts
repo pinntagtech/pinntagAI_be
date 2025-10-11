@@ -14,6 +14,7 @@ import {
 import { User } from 'src/user/models/user.model';
 import { Business } from 'src/business/model/business.model';
 import { UserService } from 'src/user/user.service';
+import { Follow, FollowDocument } from 'src/user/models/follow.model';
 
 @Injectable()
 export class RedisBullService {
@@ -24,8 +25,8 @@ export class RedisBullService {
     @InjectModel(Broadcast.name)
     private readonly broadcastModel: Model<Broadcast>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
-    @InjectModel(Notification.name)
-    private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(Notification.name) private readonly notificationModel: Model<NotificationDocument>,
+    @InjectModel(Follow.name) private readonly followModel: Model<FollowDocument>,
     private readonly firebaseService: FirebaseService,
     private readonly userService: UserService,
   ) {
@@ -105,19 +106,40 @@ export class RedisBullService {
       }
 
       for (const user of broadcast.users) {
-        // const fcmTokens = await this.tokenModel.find({
-        //   user: new mongoose.Types.ObjectId(user),
-        //   type: TokenTypes.FCM,
-        // });
-
-        // for (const token of fcmTokens) {
-        //   this.firebaseService.sendNotification(
-        //     token.token,
-        //     broadcast.title,
-        //     broadcast.message,
-        //     { data: NotificationTypes.BROADCAST, id: broadcast.id },
-        //   );
-        // }
+        const follow = await this.followModel.findOne({
+          follower: new mongoose.Types.ObjectId(user),
+          following: new mongoose.Types.ObjectId(broadcast.business),
+        });
+        if (follow) {
+          if (!follow.muted) {
+            // const fcmTokens = await this.tokenModel.find({
+            //   user: new mongoose.Types.ObjectId(user),
+            //   type: TokenTypes.FCM,
+            // });
+            // for (const token of fcmTokens) {
+            //   this.firebaseService.sendNotification(
+            //     token.token,
+            //     broadcast.title,
+            //     broadcast.message,
+            //     { data: NotificationTypes.BROADCAST, id: broadcast.id },
+            //   );
+            // }
+          }
+        } else {
+          //send broadcast notification to non followers:::::
+          // const fcmTokens = await this.tokenModel.find({
+          //   user: new mongoose.Types.ObjectId(user),
+          //   type: TokenTypes.FCM,
+          // });
+          // for (const token of fcmTokens) {
+          //   this.firebaseService.sendNotification(
+          //     token.token,
+          //     broadcast.title,
+          //     broadcast.message,
+          //     { data: NotificationTypes.BROADCAST, id: broadcast.id },
+          //   );
+          // }
+        }
 
         await this.notificationModel.create({
           user: new mongoose.Types.ObjectId(user),

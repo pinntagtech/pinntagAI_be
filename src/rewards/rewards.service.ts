@@ -283,18 +283,20 @@ export class RewardsService {
           const message = `${business.name} published a new Reward called ${reward.title}`;
 
           for (const follower of followers) {
-            const fcmTokens = await this.tokenModel.find({
-              user: follower.follower['_id'],
-              type: TokenTypes.FCM,
-            });
+            if (!follower.muted) {
+              const fcmTokens = await this.tokenModel.find({
+                user: follower.follower['_id'],
+                type: TokenTypes.FCM,
+              });
 
-            for (const token of fcmTokens) {
-              this.firebaseService.sendNotification(
-                token.token,
-                reward.title,
-                message,
-                { data: NotificationTypes.EVENT, id: reward.id },
-              );
+              for (const token of fcmTokens) {
+                this.firebaseService.sendNotification(
+                  token.token,
+                  reward.title,
+                  message,
+                  { data: NotificationTypes.EVENT, id: reward.id },
+                );
+              }
             }
 
             this.notificationModel.create({
@@ -970,7 +972,7 @@ export class RewardsService {
           },
         },
         { $unwind: '$reward' },
-         {
+        {
           $lookup: {
             from: 'userrewards',
             let: { rewardId: '$reward._id' },
@@ -981,10 +983,7 @@ export class RewardsService {
                     $and: [
                       { $eq: ['$rewardId', '$$rewardId'] },
                       {
-                        $eq: [
-                          '$userId',
-                          new mongoose.Types.ObjectId(user.id),
-                        ],
+                        $eq: ['$userId', new mongoose.Types.ObjectId(user.id)],
                       },
                     ],
                   },
@@ -994,7 +993,7 @@ export class RewardsService {
             as: 'claimed',
           },
         },
-         {
+        {
           $addFields: {
             isEnrolled: {
               $cond: {
@@ -1063,7 +1062,7 @@ export class RewardsService {
             user: { $first: '$reward.user' },
             businessProfile: { $first: '$reward.businessProfile' },
             distance: { $first: { $divide: ['$distance', 1609.34] } },
-            isEnrolled: { $first: '$isEnrolled'}
+            isEnrolled: { $first: '$isEnrolled' },
           },
         },
         {
@@ -1473,7 +1472,6 @@ export class RewardsService {
         match['reward.rewardType'] = { $in: data.rewardType };
       }
 
-
       let pipeline: PipelineStage[] = [
         {
           $geoNear: {
@@ -1591,7 +1589,7 @@ export class RewardsService {
             user: { $first: '$reward.user' },
             businessProfile: { $first: '$reward.businessProfile' },
             distance: { $first: { $divide: ['$distance', 1609.34] } },
-            isEnrolled: { $first: '$isEnrolled'}
+            isEnrolled: { $first: '$isEnrolled' },
           },
         },
         {
@@ -1873,7 +1871,7 @@ export class RewardsService {
         { $skip: (page - 1) * limit },
         { $limit: limit },
       ]);
-      console.log("Rewards:",rewards);
+      console.log('Rewards:', rewards);
 
       const total = await this.userRewardModel.countDocuments({
         userId: new mongoose.Types.ObjectId(userId),

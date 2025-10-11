@@ -16,6 +16,8 @@ export class Follow {
   followingType: string;
   @Prop({ default: false })
   isBlocked: boolean;
+  @Prop({default:false})
+  muted:boolean;
 }
 
 export const FollowSchema = SchemaFactory.createForClass(Follow);

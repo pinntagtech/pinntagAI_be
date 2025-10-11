@@ -1318,4 +1318,52 @@ export class UserService {
       };
     }
   }
+
+  async muteNotifications(userId: string, businessId: string) {
+    try {
+      const [user, business] = await Promise.all([
+        this.userModel.findById(userId),
+        this.businessModel.findById(businessId),
+      ]);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found',
+        };
+      }
+      const follow = await this.followModel.findOne({
+        follower: new mongoose.Types.ObjectId(userId),
+        following: new mongoose.Types.ObjectId(businessId),
+      });
+      if (!follow) {
+        return {
+          success: false,
+          message: 'Please follow business first',
+        };
+      }
+      let action = follow.muted;
+      if (!action) action = false;
+      await this.followModel.updateOne(
+        { _id: follow._id },
+        { $set: { muted: !action } },
+      );
+
+      return {
+        success: true,
+        message: 'Mute status updated successfully',
+        data: !action
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

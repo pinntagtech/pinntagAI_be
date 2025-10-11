@@ -279,7 +279,7 @@ export class UserController {
 
   @Get('get/followers')
   @UseGuards(JwtGuard2)
-  async getFollowers(@Req() req: Request,@TokenDecoder() user: DecodedUser) {
+  async getFollowers(@Req() req: Request, @TokenDecoder() user: DecodedUser) {
     let userId = user.id;
     if (user.userType === UserTypes.BUSINESS) {
       userId = user.businessProfile;
@@ -361,6 +361,26 @@ export class UserController {
     if (result.success) {
       return {
         message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('toggle/mute/notifications/:id')
+  @UseGuards(JwtGuard2)
+  async muteNotifications(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') businessId: string,
+  ) {
+    const result = await this.userService.muteNotifications(
+      user.id,
+      businessId,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        muted: result.data,
       };
     } else {
       throw new BadRequestException(result.message);
