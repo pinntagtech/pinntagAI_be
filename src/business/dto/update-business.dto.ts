@@ -146,7 +146,6 @@ export class UpdateBusinessDto {
   // @IsPhoneNumber(null)
   phone?: string;
 
-
   // @IsOptional()
   // @IsEmail()
   // email?: string;
@@ -321,4 +320,10 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsString()
   roleOfCreator?: string;
+
+  @IsOptional()
+  confettiCompleted: boolean;
+
+  @IsOptional()
+  contentCreationStart: boolean;
 }
