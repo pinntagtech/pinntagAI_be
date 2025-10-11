@@ -759,3 +759,7 @@ export const VerificationStatus = {
 };
 
 
+export const DEFAULT_IMAGES = {
+  BUSINESS_COVER: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg',
+  BUSINESS_LOGO: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png'
+}

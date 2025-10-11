@@ -10,6 +10,7 @@ import { BusinessConstitution } from './businessConstitution.model';
 import { BusinessDocumentType } from './BussinessDocumentType.model';
 import {
   BusinessStatus,
+  DEFAULT_IMAGES,
   OfferStatus,
   ScalabilityFactor,
   VerificationStatus,
@@ -61,7 +62,7 @@ export class Business {
   // status: number;
   @Prop({
     default:
-      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png',
+      DEFAULT_IMAGES.BUSINESS_LOGO
   })
   logo: string;
 
@@ -79,7 +80,7 @@ export class Business {
 
   @Prop({
     default:
-      'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg',
+      DEFAULT_IMAGES.BUSINESS_COVER
   })
   cover: string;
 

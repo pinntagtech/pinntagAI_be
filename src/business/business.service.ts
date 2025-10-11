@@ -16,6 +16,7 @@ import {
   BusinessDocumentTypesList,
   BusinessStatus,
   BusinessUserCreatorType,
+  DEFAULT_IMAGES,
   ExpectedDownlineUserHeaders,
   ProfileStatus,
   ROLES_IN_ORGANISATION,
@@ -957,6 +958,7 @@ export class BusinessService {
       }
       logger.info(`Business ID: ${businessId}`);
       const findBusiness = await this.businessModel.findById(businessId);
+      console.log("Find Businessss:",findBusiness);
       if (!findBusiness) {
         return {
           success: false,
@@ -1121,26 +1123,26 @@ export class BusinessService {
         },
         { new: true },
       );
-      if (updateObj.addressLine1) {
+      if (updateObj.addressLine1 && updateObj.addressLine1.length>0 && !findBusiness.addressLine1) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
-      if (updateObj.businessIndustry && updateObj.businessCategories) {
+      if (updateObj.businessIndustry && updateObj.businessCategories && !findBusiness.businessIndustry && (findBusiness.businessCategories && findBusiness.businessCategories.length==0)) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.TYPE_ADDED } },
         );
       }
-      if (updateObj.description && updateObj.description.length > 0) {
+      if (updateObj.description && updateObj.description.length > 0 && !findBusiness.description) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
         );
       }
 
-      if (updateObj.cover) {
+      if (updateObj.cover && (findBusiness.cover === DEFAULT_IMAGES.BUSINESS_COVER)) {
         let profileCompletionPercentage =
           (BusinessStatus.COVER_ADDED /
             BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
@@ -1155,7 +1157,7 @@ export class BusinessService {
           },
         );
       }
-      if (updateObj.tags && updateObj.tags.length > 0) {
+      if (updateObj.tags && updateObj.tags.length > 0 && (findBusiness.tags && findBusiness.tags.length==0)) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.TAGS } },
