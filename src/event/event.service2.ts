@@ -7681,12 +7681,12 @@ export class EventService2 {
           message: 'Event not found.',
         };
       }
-      if (event.status !== EventStatus.DRAFTED) {
-        return {
-          success: false,
-          message: 'Only drafted events can be saved as templates.',
-        };
-      }
+      // if (event.status !== EventStatus.DRAFTED) {
+      //   return {
+      //     success: false,
+      //     message: 'Only drafted events can be saved as templates.',
+      //   };
+      // }
 
       let createQuery = { ...event };
       delete createQuery._id;
