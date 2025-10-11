@@ -1453,7 +1453,7 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   async runETLProcess(
   @TokenDecoder() user: DecodedUser,
-  @Body() data: EtlDataDto
+  // @Body() data: EtlDataDto
   ) {
     // const result = await this.adminService.runETLProcess(data, user.id);
     // if (result.success) {
@@ -1461,6 +1461,11 @@ export class AdminController {
     // } else {
     //   throw new BadRequestException({ message: result.message });
     // }
+  
+    await this.adminService.runDbQueries();
+
+
+
   }
 
 

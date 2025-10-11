@@ -2612,60 +2612,82 @@ export class EventService2 {
   }
 
   async toggleSaveEvent(eventId: string, userId: string) {
+    // Validate eventId
     if (!mongoose.isValidObjectId(eventId)) {
       return {
         success: false,
         message: 'Please provide a valid event id',
       };
-    } else {
-      const event = await this.eventModel.findById(eventId);
-      if (!event) {
-        return {
-          success: false,
-          message: 'Event not found',
-        };
-      } else {
-        const user = await this.userModel.findById(userId);
-        if (!user) {
-          return {
-            success: false,
-            message: 'User not found',
-          };
-        } else {
-          const saved = user.savedEvents.includes(event._id);
-          await this.eventModel.updateOne(
-            { _id: new mongoose.Types.ObjectId(eventId) },
-            { $inc: { engagementCount: 1 } },
-          );
-          if (saved) {
-            await this.userModel.findByIdAndUpdate(userId, {
-              $pull: { savedEvents: event._id },
-            });
-            return {
-              success: true,
-              message: 'Event removed from saved events',
-              saved: false,
-            };
-          } else {
-            await this.userModel.findByIdAndUpdate(userId, {
-              $push: { savedEvents: event._id },
-            });
+    }
 
-            let message = `${user.name} saved your event ${event.title}`;
-            this.businessService.businessNotification(
-              userId,
-              eventId,
-              NotificationTypes.EVENT,
-              message,
-            );
-            return {
-              success: true,
-              message: 'Event added to saved events',
-              saved: true,
-            };
-          }
-        }
-      }
+    // Fetch user and event in parallel
+    const [user, event] = await Promise.all([
+      this.userModel.findById(userId).select('savedEvents name').lean(),
+      this.eventModel.findById(eventId).select('_id title').lean(),
+    ]);
+
+    // Early return if either not found
+    if (!event) {
+      return {
+        success: false,
+        message: 'Event not found',
+      };
+    }
+
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+
+    const eventObjectId = new mongoose.Types.ObjectId(eventId);
+    const isSaved = user.savedEvents.some((id) => id.equals(eventObjectId));
+
+    if (isSaved) {
+      // Unsave: execute updates in parallel
+      await Promise.all([
+        this.userModel.updateOne(
+          { _id: userId },
+          { $pull: { savedEvents: eventObjectId } },
+        ),
+        this.eventModel.updateOne(
+          { _id: eventObjectId },
+          { $inc: { totalSaved: -1, engagementCount: -1 } },
+        ),
+      ]);
+
+      return {
+        success: true,
+        message: 'Event removed from saved events',
+        saved: false,
+      };
+    } else {
+      // Save: execute updates in parallel
+      await Promise.all([
+        this.userModel.updateOne(
+          { _id: userId },
+          { $push: { savedEvents: eventObjectId } },
+        ),
+        this.eventModel.updateOne(
+          { _id: eventObjectId },
+          { $inc: { totalSaved: 1, engagementCount: 1 } },
+        ),
+      ]);
+
+      // Fire notification asynchronously (don't await)
+      this.businessService.businessNotification(
+        userId,
+        eventId,
+        NotificationTypes.EVENT,
+        `${user.name} saved your event ${event.title}`,
+      );
+
+      return {
+        success: true,
+        message: 'Event added to saved events',
+        saved: true,
+      };
     }
   }
 
@@ -3606,86 +3628,88 @@ export class EventService2 {
     }
   }
 
-  async likeEvent(
-    eventId: string,
-    userId: string,
-  ): Promise<{ success: boolean; message: string; liked?: boolean }> {
-    if (!mongoose.isValidObjectId(eventId)) {
-      return {
-        success: false,
-        message: 'Please provide a valid event id',
-      };
-    } else {
-      const event = await this.eventModel.findById(eventId);
-      if (!event) {
-        return {
-          success: false,
-          message: 'Event not found',
-        };
-      } else {
-        const user = await this.userModel.findById(userId);
-        if (!user) {
-          return {
-            success: false,
-            message: 'User not found',
-          };
-        } else {
-          const liked = user.likedEvents.includes(event._id);
-          //Increase the engagement count of the event
-          await this.eventModel.updateOne(
-            { _id: new mongoose.Types.ObjectId(eventId) },
-            { $inc: { engagementCount: 1 } },
-          );
-
-          if (liked) {
-            await this.userModel.findByIdAndUpdate(userId, {
-              $pull: { likedEvents: event._id },
-            });
-            return {
-              success: true,
-              message: 'Event removed from liked events',
-              liked: false,
-            };
-          } else {
-            await this.userModel.findByIdAndUpdate(userId, {
-              $push: { likedEvents: event._id },
-            });
-            await this.eventModel.updateOne(
-              { _id: new mongoose.Types.ObjectId(eventId) },
-              {
-                $inc: {
-                  totalLikes: 1,
-                },
-              },
-            );
-            let message = `${user.name} liked your event ${event.title}`;
-            // await this.notificationModel.create({
-            //   user: event.businessProfile,
-            //   userType: Business.name,
-            //   message,
-            //   type: NotificationTypes.LIKE,
-            //   targetType: Business.name,
-            //   targetUser: new mongoose.Types.ObjectId(userId),
-            //   isRead: false,
-            // });
-
-            this.businessService.businessNotification(
-              userId,
-              eventId,
-              NotificationTypes.EVENT,
-              message,
-            );
-
-            return {
-              success: true,
-              message: 'Event added to liked events',
-              liked: true,
-            };
-          }
-        }
-      }
-    }
+ async likeEvent(
+  eventId: string,
+  userId: string,
+): Promise<{ success: boolean; message: string; liked?: boolean }> {
+  // Validate eventId
+  if (!mongoose.isValidObjectId(eventId)) {
+    return {
+      success: false,
+      message: 'Please provide a valid event id',
+    };
   }
+
+  // Fetch user and event in parallel
+  const [user, event] = await Promise.all([
+    this.userModel.findById(userId).select('likedEvents name').lean(),
+    this.eventModel.findById(eventId).select('_id title').lean(),
+  ]);
+
+  // Early return if either not found
+  if (!event) {
+    return {
+      success: false,
+      message: 'Event not found',
+    };
+  }
+
+  if (!user) {
+    return {
+      success: false,
+      message: 'User not found',
+    };
+  }
+
+  const eventObjectId = new mongoose.Types.ObjectId(eventId);
+  const isLiked = user.likedEvents.some(id => id.equals(eventObjectId));
+
+  if (isLiked) {
+    // Unlike: execute updates in parallel
+    await Promise.all([
+      this.userModel.updateOne(
+        { _id: userId },
+        { $pull: { likedEvents: eventObjectId } }
+      ),
+      this.eventModel.updateOne(
+        { _id: eventObjectId },
+        { $inc: { totalLikes: -1, engagementCount: -1 } }
+      ),
+    ]);
+
+    return {
+      success: true,
+      message: 'Event removed from liked events',
+      liked: false,
+    };
+  } else {
+    // Like: execute updates in parallel
+    await Promise.all([
+      this.userModel.updateOne(
+        { _id: userId },
+        { $push: { likedEvents: eventObjectId } }
+      ),
+      this.eventModel.updateOne(
+        { _id: eventObjectId },
+        { $inc: { totalLikes: 1, engagementCount: 1 } }
+      ),
+    ]);
+
+    // Fire notification asynchronously (don't await)
+    this.businessService.businessNotification(
+      userId,
+      eventId,
+      NotificationTypes.EVENT,
+      `${user.name} liked your event ${event.title}`,
+    );
+
+    return {
+      success: true,
+      message: 'Event added to liked events',
+      liked: true,
+    };
+  }
+}
 
   async getLikedEvents(
     userId: string,
@@ -7412,7 +7436,7 @@ export class EventService2 {
         }
         console.log('IDDDDDDDD:', data._id);
         console.log('Place DETAILS:', placeDetails);
-        if(!placeDetails){
+        if (!placeDetails) {
           continue;
         }
 

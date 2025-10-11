@@ -206,7 +206,8 @@ export class AdminService {
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly eventScheduleModel: Model<EventScheduleDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3249,7 +3250,26 @@ export class AdminService {
   //   }
   // }
 
-
-
-
+  async runDbQueries() {
+    const duplicates = await this.eventModel.aggregate([
+      {
+        $group: {
+          _id: '$title',
+          ids: { $push: '$_id' },
+          count: { $sum: 1 },
+        },
+      },
+      { $match: { count: { $gt: 1 } } },
+    ]);
+    console.log("Duplicates:",duplicates);
+    // Step 2: For each duplicate group, keep one and delete the rest
+    duplicates.forEach(async (group) => {
+      // Keep the first document and remove others
+      const idsToDelete = group.ids.slice(1); // all except the first
+      if (idsToDelete.length > 0) {
+        await this.eventModel.deleteMany({ _id: { $in: idsToDelete },isFromCrawler:true });
+        console.log("IdsToDelete::",idsToDelete)
+      }
+    });
+  }
 }
