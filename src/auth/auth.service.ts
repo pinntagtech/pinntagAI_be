@@ -3276,7 +3276,7 @@ export class AuthService {
     // return filteredEvents; // Return the arranged result
 
     // await this.cacheManager.set('fetchEventsV2', [dataRows, totalCount], REDIS_TTL.ONEDAY);
-   
+
     // console.log("DataROWS:",dataRows);
     return [dataRows, totalCount];
   }
@@ -3370,6 +3370,7 @@ export class AuthService {
           isFollowedByMe: { $first: '$isFollowedByMe' },
           locations: {
             $push: {
+              location: '$location',
               accuracy: '$accuracy',
               address1: '$address1',
               address2: '$address2',
@@ -3407,8 +3408,97 @@ export class AuthService {
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
+    console.log('EVENTSRESULTTTS:', eventsResult);
 
     return eventsResult;
+  }
+
+  async dashboardListingMap(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    maxDistance: number,
+    search: string,
+    limit: number,
+    page: number,
+    // type: string,
+    industries?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+    isFollowedByMe?:boolean,
+  ) {
+    let match = {};
+    // let start = getZeroDateTz(new Date(), timeZone);
+    // console.log('START DATE:', start);
+
+    if (search) {
+      match['$or'] = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { 'locations.address1': { $regex: search, $options: 'i' } },
+        { 'locations.address2': { $regex: search, $options: 'i' } },
+        { 'locations.city': { $regex: search, $options: 'i' } },
+        { 'locations.state': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (industries.length) {
+      const matchingIndustries = [];
+      industries.forEach((id) => {
+        matchingIndustries.push(new mongoose.Types.ObjectId(id));
+      });
+      if (matchingIndustries.length) {
+        match = {
+          ...match,
+          'industry._id': {
+            $in: matchingIndustries,
+          },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          // data: {
+          //   eventsResult,
+          // },
+        };
+      }
+    } else {
+      const businessIndustries = await this.businessIndustryModel
+        .find()
+        .select('_id');
+      match = {
+        ...match,
+        'industry._id': { $in: businessIndustries.map((cat) => cat._id) },
+      };
+    }
+     if (isFollowedByMe) {
+        match = {
+          ...match,
+          isFollowedByMe: isFollowedByMe,
+        };
+      }
+    const [listings] = await this.fetchBusinessListing(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      match,
+      page,
+      limit,
+      maxDistance,
+      startDate,
+      endDate,
+    );
+    console.log('page, limit, totoal', page, limit, listings.totalCount);
+    return {
+      success: true,
+      message: 'Dashboard fetched successfully',
+      data: listings.data,
+      total: listings.totalCount,
+      page: page,
+      limit: limit,
+      pages: Math.ceil(listings.totalCount / limit),
+    };
   }
 
   // async getDashboard(
@@ -4384,7 +4474,6 @@ export class AuthService {
 
     let start = getZeroDateTz(new Date(), timeZone);
     console.log('START DATE:', start);
-    
 
     if (search) {
       // Search matching business profile name
@@ -6604,7 +6693,7 @@ export class AuthService {
         { 'locations.city': { $regex: search, $options: 'i' } },
         { 'locations.state': { $regex: search, $options: 'i' } },
       ];
-        const [listingResult] = await this.fetchBusinessListing(
+      const [listingResult] = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -6613,7 +6702,7 @@ export class AuthService {
         limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
-      console.log("LISTINGRESULT:::",listingResult);
+      console.log('LISTINGRESULT:::', listingResult);
       result = listingResult.data;
       total = listingResult.totalCount;
     }
@@ -6927,17 +7016,17 @@ export class AuthService {
         {
           carouselType: CarouselType.Event,
           data: deals.data,
-          total: deals.total
+          total: deals.total,
         },
         {
           carouselType: CarouselType.Business,
           data: listings.data,
-          total: listings.total
+          total: listings.total,
         },
         {
           carouselType: 'Rewards',
           data: rewards.data,
-          total: rewards.total
+          total: rewards.total,
         },
         {
           carouselType: CarouselType.OnWheels,

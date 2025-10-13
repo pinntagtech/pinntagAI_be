@@ -610,7 +610,7 @@ export class AuthController {
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
-      body.dealType? body.dealType: null,
+      body.dealType ? body.dealType : null,
     );
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -621,6 +621,51 @@ export class AuthController {
       page: result.page,
       limit: result.limit,
       total: result.totalCount,
+      pages: result.pages,
+    };
+  }
+  @Post('dashboard/listings/map')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async dashboardListingMap(
+    @Body() body: GetDashboardDto,
+    @Param('id') id: string,
+    @Query('search') search: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('distance') distance: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (body.industries && body.industries.length) {
+      for (const cat of body.industries) {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          throw new BadRequestException(`${cat} is not a valid industry id.`);
+        }
+      }
+    }
+    const result = await this.authService.dashboardListingMap(
+      user,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      distance ? parseInt(distance) : 1000000000000,
+      search ? search : '',
+      limit ? parseInt(limit) : 15,
+      page ? parseInt(page) : 1,
+      // type ? type.toLowerCase() : '',
+      body.industries ? body.industries : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+      body.isFollowedByMe?body.isFollowedByMe:null,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
       pages: result.pages,
     };
   }
@@ -803,12 +848,12 @@ export class AuthController {
     @TokenDecoder() user: DecodedUser,
   ) {
     let result = null;
-    if(data.type === 'all'){
-      result = await this.authService.dashboardAllSearch(user,data);
-    }else{
+    if (data.type === 'all') {
+      result = await this.authService.dashboardAllSearch(user, data);
+    } else {
       result = await this.authService.dashboardSearch(user, data);
     }
-    
+
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
