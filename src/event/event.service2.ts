@@ -5988,9 +5988,10 @@ export class EventService2 {
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      console.log('Queryy:', query);
       console.log('Expired Status:', isExpired);
+      query['_id'] = new mongoose.Types.ObjectId('68e938aedbdc481561565f39');
       // 3. Build aggregation pipeline
+      console.log('Queryy:', query);
       const pipeline: any[] = [
         { $match: query },
         {
@@ -6142,6 +6143,64 @@ export class EventService2 {
             },
           },
         },
+        { $sort: { createdAt: -1, _id: 1 } },
+        {
+          $project: {
+            _id: 1,
+            isFromCrawler: 1,
+            type: 1,
+            creatorType: 1,
+            user: 1,
+            businessProfile: 1,
+            status: 1,
+            categories: 1,
+            drivePath: 1,
+            QR_CODE: 1,
+            images: 1,
+            keywords: 1,
+            description: 1,
+            locations: 1,
+            minTargetAge: 1,
+            maxTargetAge: 1,
+            targetGenders: 1,
+            promotionCode: 1,
+            isFree: 1,
+            participationCost: 1,
+            bookingUrl: 1,
+            notifyFollowers: 1,
+            RSVP: 1,
+            termsApplied: 1,
+            termsAndConditions: 1,
+            specifyForEachDay: 1,
+            participants: 1,
+            eventUrl: 1,
+            responses: 1,
+            viewsCount: 1,
+            engagementCount: 1,
+            quantityLimit: 1,
+            totalLikes: 1,
+            totalShares: 1,
+            totalSaved: 1,
+            date_range: 1,
+            each_date: 1,
+            isDisabled: 1,
+            isSavedAsTemplate: 1,
+            tags: 1,
+            __v: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            discountType: 1,
+            discountValue: 1,
+            schedules: {
+              $sortArray: {
+                input: '$schedules',
+                sortBy: { 'fixedSchedule.date': 1 }, // ascending order
+              },
+            },
+            files: 1,
+          },
+        },
+
         {
           $facet: {
             data: [
