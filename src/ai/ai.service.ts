@@ -21,6 +21,7 @@ export class AiService {
     category: string,
     dealType: string,
     title: string,
+    tags: string[],
   ) {
     try {
       console.log(
@@ -29,6 +30,7 @@ export class AiService {
         category,
         dealType,
         title,
+        tags,
       );
       const business = await this.businessModel
         .findById(businessId)
@@ -56,9 +58,11 @@ export class AiService {
           Content Category: ${category}
           Deal Type: ${dealType}
           Title: ${title}
+          Tags: ${tags}
 
           Requirements:
           - Friendly, persuasive tone tailored to ${dealType} and ${category}
+          - Use ${tags} accordingly
           - Specific, informative, and value-driven
           - Never use the business name
           - Avoid clichés: "Don't miss out," "This is the best," "Welcome to," "limited time," "amazing opportunity"
@@ -309,13 +313,14 @@ export class AiService {
     category: string,
     dealType: string,
     suggestion: string,
+    tags: string[],
   ) {
     try {
       const messages = [
         {
           role: 'user',
           content: `
-          Suggest 4 catchy and creative titles for a ${contentType} in the ${category} category, focused on the ${dealType} deal type. Make them engaging, attention-grabbing, and tailored to appeal to the target audience. Use ${suggestion} as inspiration or a guiding theme if relevant.
+          Suggest 4 catchy and creative titles for a ${contentType} in the ${category} category, focused on the ${dealType} deal type and provided ${tags} tags. Make them engaging, attention-grabbing, and tailored to appeal to the target audience. Use ${suggestion} as inspiration or a guiding theme if relevant.
         `.trim(),
         },
       ];

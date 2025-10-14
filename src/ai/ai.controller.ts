@@ -29,6 +29,7 @@ export class AiController {
     @Body('category') category: string,
     @Body('dealType') dealType: string,
     @Body('title') title: string,
+    @Body('tags') tags: string[],
   ) {
     const result = await this.aiService.getEventDescription(
       user.businessProfile,
@@ -36,6 +37,7 @@ export class AiController {
       category,
       dealType,
       title,
+      tags
     );
     console.log('RESULT:', result);
     if (result.success) {
@@ -109,12 +111,15 @@ export class AiController {
     @Query('category') category: string,
     @Query('dealType') dealType: string,
     @Query('suggestion') suggestion: string,
+    @Query('tags') tags: string,
   ) {
+    const tagsArray = tags.split(',');
     const result = await this.aiService.getTitleSuggestions(
       contentType,
       category,
       dealType,
       suggestion,
+      tagsArray,
     );
     console.log('RESULT:', result);
     if (result.success) {
