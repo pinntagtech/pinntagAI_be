@@ -253,13 +253,17 @@ export class NotificationService {
       message: data.message,
       creator: new mongoose.Types.ObjectId(user.id),
       business: new mongoose.Types.ObjectId(user.businessProfile),
+      visibility: data.visibility,
     };
-    if (data.users && data.users !== '') {
-      let users = data.users.split(',').map((id) => id.trim());
-      broadcastObj['users'] = users.map(
-        (userId) => new mongoose.Types.ObjectId(userId),
-      );
-    }
+
+
+    // if (data.users && data.users !== '') {
+    //   let users = data.users.split(',').map((id) => id.trim());
+    //   broadcastObj['users'] = users.map(
+    //     (userId) => new mongoose.Types.ObjectId(userId),
+    //   );
+    // }
+
     if (image) {
       const imageUrl = await this.driveService.noDriveUpload(image);
       broadcastObj['image'] = imageUrl;

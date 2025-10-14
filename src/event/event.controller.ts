@@ -1005,8 +1005,8 @@ export class EventController {
       //     destination: './uploads',
       //     filename: editFileName,
       //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+      //   //Setting file size limit to 10 MB
+      limits: { fileSize: 10000000 },
     }),
   )
   async createOffer(
@@ -1278,7 +1278,7 @@ export class EventController {
       //     filename: editFileName,
       //   }),
       //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+      limits: { fileSize: 10000000 },
     }),
   )
   async createTemplate(
@@ -1310,7 +1310,7 @@ export class EventController {
       //     filename: editFileName,
       //   }),
       //   //Setting file size limit to 1 MB
-      limits: { fileSize: 1000000 },
+      limits: { fileSize: 10000000 },
     }),
   )
   async editTemplate(

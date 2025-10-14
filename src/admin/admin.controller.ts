@@ -632,7 +632,7 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 1000000 },
+      limits: { fileSize: 10000000 },
     }),
   )
   async uploadDownlineAdminsInBulk(
@@ -1054,7 +1054,7 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   @UseInterceptors(
     FileInterceptor('image', {
-      limits: { fileSize: 1000000 },
+      limits: { fileSize: 10000000 },
     }),
   )
   async createTemplate(
@@ -1079,7 +1079,7 @@ export class AdminController {
   @UseGuards(AdminGuard2)
   @UseInterceptors(
     FileInterceptor('image', {
-      limits: { fileSize: 1000000 },
+      limits: { fileSize: 10000000 },
     }),
   )
   async updateTemplate(

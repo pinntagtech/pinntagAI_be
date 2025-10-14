@@ -74,6 +74,7 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
+import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
       { name: Coupon.name, schema: CouponSchema },
+      { name: Feed.name, schema: FeedSchema }
     ]),
   ],
   controllers: [NotificationController],

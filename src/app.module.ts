@@ -174,6 +174,10 @@ import {
 import { Coupon, CouponSchema } from './subscription/models/coupon.model';
 import multer from 'multer';
 import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLocation.model';
+import { FeedController } from './feed/feed.controller';
+import { FeedService } from './feed/feed.service';
+import { FeedModule } from './feed/feed.module';
+import { Feed, FeedSchema } from './feed/models/feed.model';
 
 @Module({
   imports: [
@@ -268,6 +272,7 @@ import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLoca
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
+      { name: Feed.name, schema: FeedSchema }
     ]),
     StripeeModule,
     AuthModule,
@@ -291,8 +296,9 @@ import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLoca
     RewardsModule,
     SocketModule,
     EtlModule,
+    FeedModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, FeedController],
   providers: [
     AppService,
     UserService,
@@ -307,6 +313,7 @@ import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLoca
     SmsService,
     FirebaseService,
     RedisBullService,
+    FeedService,
   ],
 })
 export class AppModule {

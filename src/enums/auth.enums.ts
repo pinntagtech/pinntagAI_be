@@ -1,5 +1,6 @@
 import { ADDRCONFIG } from 'dns';
 import { BusinessUser } from 'src/business/model/businessUser.model';
+import { Broadcast } from 'src/notification/models/broadcast.model';
 
 export const UserTypes = {
   USER: 'Consumer',
@@ -140,4 +141,13 @@ export const REDIS_TTL = {
   ONEHOUR: 3600,
   FIVEMINUTES: 300,
   ONEWEEK: 604800,
+}
+
+
+export const FeedTypes = {
+  MEDIA: 'media',
+  BROADCAST: 'Broadcast',
+  POLL: 'poll/survey',
+  NEWS: 'news',
+  AGENDA: 'agenda',
 }

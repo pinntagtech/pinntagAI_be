@@ -152,6 +152,7 @@ import {
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
+import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 
 @Global()
 @Module({
@@ -215,6 +216,7 @@ import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLo
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
       { name: Coupon.name, schema: CouponSchema },
+      { name: Feed.name, schema: FeedSchema }
     ]),
     MailerModule.forRoot({
       transport: {

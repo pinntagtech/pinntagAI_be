@@ -171,6 +171,7 @@ import {
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
+import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 
 @Module({
   imports: [
@@ -245,6 +246,7 @@ import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLo
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
+      { name: Feed.name, schema: FeedSchema }
     ]),
   ],
   controllers: [AdminController],

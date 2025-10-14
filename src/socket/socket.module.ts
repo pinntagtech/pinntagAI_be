@@ -173,6 +173,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
+import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 
 @Module({
   imports: [
@@ -264,6 +265,7 @@ import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLo
       },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
+      { name: Feed.name, schema: FeedSchema }
     ]),
   ],
   providers: [
