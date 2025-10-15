@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { Feed } from './models/feed.model';
-import mongoose, { Model } from 'mongoose';
+import { Feed, FeedVisibility } from './models/feed.model';
+import mongoose, { Model, PipelineStage } from 'mongoose';
 import { Business } from 'src/business/model/business.model';
 
 @Injectable()
@@ -19,14 +19,21 @@ export class FeedService {
     limit: number,
   ) {
     try {
-      const feed = await this.feedModel.aggregate([
-        { $match: { visibility: visibility, feedType: type } },
+      let query: any = {};
+      if (visibility) {
+        query.visibility = visibility;
+      }
+      if (type) {
+        query.feedType = type;
+      }
+      let pipeline: PipelineStage[] = [
+        { $match: query },
         {
           $lookup: {
             from: 'follows',
             let: {
               userId: new mongoose.Types.ObjectId(user.id),
-              targetId: '$businessDetails._id',
+              targetId: '$creator',
               targetType: Business.name,
             },
             pipeline: [
@@ -55,62 +62,129 @@ export class FeedService {
         {
           $match: {
             $or: [
-              { visibility: { $ne: 'followers' } },
+              { visibility: { $ne: FeedVisibility.FOLLOWERS } },
               { isFollowedByMe: true },
             ],
           },
         },
         {
-          $match: { feedType: 'Broadcast' },
+          $lookup: {
+            from: 'media',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Media'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'mediaContent',
+          },
         },
         {
           $lookup: {
             from: 'broadcasts',
-            localField: 'content',
-            foreignField: '_id',
-            as: 'contentDetails',
-          },
-        },
-
-        // Merge with Event type
-        {
-          $unionWith: {
-            coll: 'feeds',
+            let: { contentId: '$content', feedType: '$feedType' },
             pipeline: [
-              { $match: { feedType: 'Event' } },
               {
-                $lookup: {
-                  from: 'events',
-                  localField: 'content',
-                  foreignField: '_id',
-                  as: 'contentDetails',
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Broadcast'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
                 },
               },
             ],
+            as: 'broadcastContent',
           },
         },
-
-        // Merge with Video type
         {
-          $unionWith: {
-            coll: 'feeds',
+          $lookup: {
+            from: 'news',
+            let: { contentId: '$content', feedType: '$feedType' },
             pipeline: [
-              { $match: { feedType: 'Video' } },
               {
-                $lookup: {
-                  from: 'videos',
-                  localField: 'content',
-                  foreignField: '_id',
-                  as: 'contentDetails',
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'News'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
                 },
               },
             ],
+            as: 'newsContent',
           },
+        },
+        {
+          $lookup: {
+            from: 'agendas',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Agenda'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'agendaContent',
+          },
+        },
+        // Merge all content into a single field
+        {
+          $addFields: {
+            contentDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$feedType', 'Media'] },
+                    then: { $arrayElemAt: ['$mediaContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Broadcast'] },
+                    then: { $arrayElemAt: ['$broadcastContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'News'] },
+                    then: { $arrayElemAt: ['$newsContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Agenda'] },
+                    then: { $arrayElemAt: ['$agendaContent', 0] },
+                  },
+                ],
+                default: null,
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            feedType: 1,
+            contentDetails: 1,
+            createdAt: 1,
+            visibility: 1,
+            isFollowedByMe: 1,
+          },    
         },
 
         // Sort and limit (optional)
         { $sort: { createdAt: -1 } },
-      ]);
+      ];
+      const feed = await this.feedModel.aggregate(pipeline);
 
       console.log('FEEEDDDD', feed);
 

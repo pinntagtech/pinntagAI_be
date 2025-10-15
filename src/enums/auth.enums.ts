@@ -145,9 +145,9 @@ export const REDIS_TTL = {
 
 
 export const FeedTypes = {
-  MEDIA: 'media',
+  MEDIA: 'Media',
   BROADCAST: 'Broadcast',
-  POLL: 'poll/survey',
-  NEWS: 'news',
-  AGENDA: 'agenda',
+  POLL: 'Poll',
+  NEWS: 'News',
+  AGENDA: 'Agenda',
 }
