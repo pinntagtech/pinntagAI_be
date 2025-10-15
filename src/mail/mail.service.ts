@@ -245,5 +245,14 @@ export class MailService {
       context: { name: business.name, documentType, businessId: business.id },
     });
   }
+  async consumerInvitation(email: string, name: string, inviteLink: string) {
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'You have been invited to join Pinntag',
+      template:
+        process.cwd() + '/src/mail/templates/consumerInvitation.template.hbs',
+      context: { name, inviteLink },
+    });
+  }
 
 }

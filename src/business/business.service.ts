@@ -4397,7 +4397,7 @@ export class BusinessService {
       if (!businessUser || !business) {
         return {
           success: false,
-          message: 'Business User or Business not found!',
+          message: 'Business not found!',
         };
       }
       const rows = await this.parseCsv(file);
@@ -4473,6 +4473,47 @@ export class BusinessService {
         message: 'Users created successfully in bulk.',
         file: result, // You can return the created outlets data if needed
       };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async sendConsumerInvitation(row: any, user: DecodedUser) {
+    try {
+      let inviteLink = '';
+      const phoneNumber = parsePhoneNumberFromString(
+        `${row.countryCode}${row.phone}`,
+      );
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return { success: false, message: 'Invalid phone number' };
+      }
+      await Promise.all([
+        this.mailService.consumerInvitation(row.email, row.name, inviteLink),
+      ]);
+    } catch (error) {
+      throw new BadRequestException(
+        'Error sending invitation: ' + error.message,
+      );
+    }
+  }
+
+  async inviteConsumers(file: Express.Multer.File, user: DecodedUser) {
+    try {
+      const rows = await this.parseCsv(file);
+      let failure = 0;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.sendConsumerInvitation(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
+      );
     } catch (error) {
       return {
         success: false,
