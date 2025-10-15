@@ -1,95 +1,21 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>You're invited!</title>
-  <style>
-    /* Reset */
-    html,body{margin:0;padding:0;height:100%;background:#f3f6fb;font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
-    a{color:inherit}
-
-    /* Container */
-    .wrap{max-width:680px;margin:28px auto;background:#ffffff;border-radius:12px;box-shadow:0 6px 30px rgba(29,41,65,0.08);overflow:hidden;border:1px solid rgba(18,28,45,0.04)}
-    .hero{padding:34px 36px 24px;background:linear-gradient(180deg, #0f1724 0%, #132035 100%);color:#fff}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo__mark{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#6ee7b7,#3b82f6);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#04203a}
-    .logo__text{font-size:18px;font-weight:600}
-
-    .body{padding:28px 36px;color:#0f1724}
-    h1{font-size:22px;margin:0 0 8px}
-    p.lead{margin:0 0 18px;color:#374151;line-height:1.45}
-
-    .card{background:#f8fafc;border-radius:10px;padding:18px;border:1px solid rgba(15,23,42,0.03);margin-bottom:18px}
-    .invite-line{font-size:16px;margin:0 0 12px}
-
-    /* CTA */
-    .cta{display:inline-block;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:600;border:0;cursor:pointer;background:#0b69ff;color:#fff;box-shadow:0 8px 20px rgba(11,105,255,0.18)}
-
-    /* fallback link */
-    .muted{color:#6b7280;font-size:13px}
-    .small{font-size:13px}
-
-    /* footer */
-    .footer{padding:18px 36px 36px;color:#6b7280;font-size:13px}
-
-    /* Responsive */
-    @media (max-width:520px){
-      .wrap{margin:16px;}
-      .hero{padding:20px}
-      .body{padding:20px}
-      .footer{padding:16px}
-      h1{font-size:20px}
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap" role="article" aria-label="Invitation">
-    <div class="hero">
-      <div class="logo">
-        <div class="logo__mark">PT</div>
-        <div class="logo__text">PinnTag</div>
-      </div>
-      <div style="margin-top:18px">
-        <h2 style="margin:0;font-size:18px;">You're invited to join</h2>
-        <p style="margin:6px 0 0;color:rgba(255,255,255,0.86);font-size:14px;">A special invitation — just for you.</p>
-      </div>
-    </div>
-
-    <div class="body">
-      <h1>Hi {{name}} 👋</h1>
-      <p class="lead">Someone from our team has invited you to join PinnTag. Click the button below to accept the invitation and get started right away.</p>
-
-      <div class="card">
-        <p class="invite-line"><strong>Invitation link</strong></p>
-        <!-- Primary CTA (also include inline styles for email clients) -->
-        <p style="margin:10px 0 0">
-          <a href="{{invitationLink}}" class="cta" style="display:inline-block;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:600;border:0;background:#0b69ff;color:#fff;">Accept invitation</a>
-        </p>
-
-        <p style="margin:14px 0 0;" class="small muted">If the button doesn't work, copy and paste this link into your browser:</p>
-        <p style="word-break:break-all;margin:8px 0 0;color:#0b69ff;font-size:14px;">{{invitationLink}}</p>
-      </div>
-
-      <p class="small muted">This link will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.</p>
-
-      <div style="height:8px"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div style="display:flex;gap:8px;align-items:center">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M12 2L4 7v6c0 5 4 9 8 9s8-4 8-9V7l-8-5z" stroke="#9aa9bf" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span class="muted">Need help? Reply to this email or contact support.</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div class="muted">PinnTag • 123 Business Rd • City, Country</div>
-        <div class="muted">© {{year}} PinnTag. All rights reserved.</div>
-      </div>
-    </div>
-  </div>
-</body>
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Invitation to {{businessName}} on Pinntag</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Invitation to {{businessName}} on Pinntag</h1>
+    <p>Hi {{name}},</p>
+    <p>You have been invited to join
+      {{businessName}}
+      on Pinntag. Link:
+      {{inviteLink}}</p>
+    <p>Best regards,</p>
+    <p>Pinntag Team</p>
+  </body>
 </html>

@@ -4480,18 +4480,31 @@ export class BusinessService {
       };
     }
   }
-  async sendConsumerInvitation(row: any, user: DecodedUser) {
+  async sendConsumerInvitation(
+    row: any,
+    user: DecodedUser,
+    inviteLink: string,
+    businessName: string,
+  ) {
     try {
-      let inviteLink = '';
+      console.log("Sending invitation to:", row);
       const phoneNumber = parsePhoneNumberFromString(
         `${row.countryCode}${row.phone}`,
       );
       if (!phoneNumber || !phoneNumber.isValid()) {
         return { success: false, message: 'Invalid phone number' };
       }
+      const fullPhoneNumber = phoneNumber.format('E.164');
       await Promise.all([
-        this.mailService.consumerInvitation(row.email, row.name, inviteLink),
+        this.mailService.consumerInvitation(row.email, row.name, inviteLink, businessName),
+        this.smsService.sendSMS(
+          user.id,
+          fullPhoneNumber,
+          SMSType.CONSUMER_INVITE,
+          { name: row.name, link: inviteLink, businessName: businessName },
+        ),
       ]);
+      return { success: true, message: 'Invitations sent successfully' };
     } catch (error) {
       throw new BadRequestException(
         'Error sending invitation: ' + error.message,
@@ -4501,12 +4514,17 @@ export class BusinessService {
 
   async inviteConsumers(file: Express.Multer.File, user: DecodedUser) {
     try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        throw new BadRequestException('Business not found with given ID');
+      }
+
       const rows = await this.parseCsv(file);
       let failure = 0;
       const results = await Promise.all(
         rows.map(async (row) => {
           try {
-            await this.sendConsumerInvitation(row, user);
+            await this.sendConsumerInvitation(row, user, business.appRedirectLink, business.name);
             return { ...row, status: 'Created', message: '' };
           } catch (err) {
             failure++;
@@ -4514,6 +4532,10 @@ export class BusinessService {
           }
         }),
       );
+      return {
+        success: true,
+        message: 'Invitations Processed.',
+      };
     } catch (error) {
       return {
         success: false,
@@ -4973,7 +4995,7 @@ export class BusinessService {
         url,
         {
           title: business.name,
-          description: business.description,
+          description: 'Join ' + business.name,
           imageUrl: business.logo,
           businessName: business.name,
         },
@@ -4992,7 +5014,12 @@ export class BusinessService {
 
       await this.businessModel.updateOne(
         { _id: business._id },
-        { $set: { QRCode: businessQR.data.metaData.url } },
+        {
+          $set: {
+            QRCode: businessQR.data.metaData.url,
+            appRedirectLink: shortLink,
+          },
+        },
       );
       return {
         success: true,

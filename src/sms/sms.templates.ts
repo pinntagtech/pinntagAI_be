@@ -11,4 +11,6 @@ export const SMSTemplates = {
 
   [SMSType.ALERT]: (message: string) =>
     `ALERT: ${message}. Please take necessary action.`,
+  [SMSType.CONSUMER_INVITE]: (name: string, link: string, businessName: string) =>
+    `Hi! ${name} has invited you to join our platform ${businessName}. Sign up using this link ${link} to get started.`,
 };

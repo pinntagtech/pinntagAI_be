@@ -58,8 +58,7 @@ export class MailService {
     this.mailerService.sendMail({
       to: user.email,
       subject: 'Two-Factor Authentication',
-      template:
-        process.cwd() + '/src/mail/templates/2fa.template.hbs',
+      template: process.cwd() + '/src/mail/templates/2fa.template.hbs',
       context: {
         name: user.firstName,
         otp,
@@ -98,14 +97,16 @@ export class MailService {
     });
   }
 
-  async sendBusinessUserInvitation(email: string,name: string,){
+  async sendBusinessUserInvitation(email: string, name: string) {
     await this.mailerService.sendMail({
       to: email,
       subject: 'You have been invited to join a business',
-      template: process.cwd() + '/src/mail/templates/businessUserInvitation.template.hbs',
+      template:
+        process.cwd() +
+        '/src/mail/templates/businessUserInvitation.template.hbs',
       context: {
         inviterName: name,
-        inviteLink: 'https://dev.business.pinntag.com'
+        inviteLink: 'https://dev.business.pinntag.com',
       },
     });
   }
@@ -243,16 +244,27 @@ export class MailService {
         process.cwd() +
         '/src/mail/templates/businessDocVerification.template.hbs',
       context: { name: business.name, documentType, businessId: business.id },
-    });
+    }); 
   }
-  async consumerInvitation(email: string, name: string, inviteLink: string) {
+  async consumerInvitation(
+    email: string,
+    name: string,
+    inviteLink: string,
+    businessName: string,
+  ) {
+    console.log(
+      'Preparing to send invitation to:',
+      email,
+      name,
+      inviteLink,
+      businessName,
+    );
     await this.mailerService.sendMail({
       to: email,
-      subject: 'You have been invited to join Pinntag',
+      subject: `You have been invited to join ${businessName} on Pinntag`,
       template:
         process.cwd() + '/src/mail/templates/consumerInvitation.template.hbs',
-      context: { name, inviteLink },
+      context: { name, inviteLink, businessName },
     });
   }
-
 }

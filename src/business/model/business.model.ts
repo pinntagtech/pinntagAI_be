@@ -307,6 +307,9 @@ export class Business {
   @Prop()
   QRCode: string;
 
+  @Prop()
+  appRedirectLink: string;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }

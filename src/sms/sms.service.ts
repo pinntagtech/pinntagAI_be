@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
-import { OtpTypes } from 'src/enums/auth.enums';
+import { OtpTypes, SMSType } from 'src/enums/auth.enums';
 import { User, UserDocument } from 'src/user/models/user.model';
 import { UserService } from 'src/user/user.service';
 import twilio from 'twilio';
@@ -14,6 +14,7 @@ export enum SMSTemplateType {
   WELCOME = 'WELCOME',
   ORDER_CONFIRMATION = 'ORDER_CONFIRMATION',
   ALERT = 'ALERT',
+  CONSUMER_INVITE = 'CONSUMER_INVITE',
 }
 @Injectable()
 export class SmsService {
@@ -34,28 +35,46 @@ export class SmsService {
     userId: string,
     to: string,
     type: string,
-    templateData?: string,
+    templateData?: any,
   ) {
     try {
-      let messageBody = '';
-      if (!Object.values(SMSTemplateType).includes(type as SMSTemplateType)) {
-        throw new Error('Invalid SMS template type');
-      }
+     let messageBody = '';
 
-      if (type === SMSTemplateType.OTP) {
-        const otp = await this.userService.saveOtp({
-          user: userId,
-          type: OtpTypes.MOBILE,
-        });
-        messageBody = SMSTemplates[type](String(otp));
-      } else {
-        messageBody = SMSTemplates[type](templateData);
-      }
-      const message = await this.client.messages.create({
-        body: messageBody,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to,
-      });
+switch (type) {
+  case SMSTemplateType.OTP: {
+    const otp = await this.userService.saveOtp({
+      user: userId,
+      type: OtpTypes.MOBILE,
+    });
+    messageBody = (SMSTemplates[SMSType.OTP] as (data: any) => string)(String(otp));
+    break;
+  }
+  case SMSTemplateType.CONSUMER_INVITE:
+    messageBody = SMSTemplates[SMSType.CONSUMER_INVITE](
+      templateData.name,
+      templateData.link,
+      templateData.businessName
+    );
+    break;
+  case SMSTemplateType.WELCOME:
+    messageBody = (SMSTemplates[SMSType.WELCOME] as (data: any) => string)(templateData);
+    break;
+  case SMSTemplateType.ORDER_CONFIRMATION:
+    messageBody = (SMSTemplates[SMSType.ORDER_CONFIRMATION] as (data: any) => string)(templateData);
+    break;
+  case SMSTemplateType.ALERT:
+    messageBody = (SMSTemplates[SMSType.ALERT] as (data: any) => string)(templateData);
+    break;
+  default:
+    throw new Error('Invalid SMS template type');
+}
+
+console.log("messageBody:",messageBody);
+const message = await this.client.messages.create({
+  body: messageBody,
+  from: process.env.TWILIO_PHONE_NUMBER,
+  to,
+});
       // const message = await client.messages.create({
       //   body: `Thank you for signing up! Please confirm your email address by entering the OTP below:${otp}`,
       //   from: process.env.TWILIO_PHONE_NUMBER,

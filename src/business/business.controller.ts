@@ -1272,7 +1272,7 @@ export class BusinessController {
     if (result.success) {
       return {
         message: result.message,
-        file: result.file,
+        // file: result.file,
       };
     } else {
       throw new BadRequestException(result.message);
