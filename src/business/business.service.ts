@@ -5116,10 +5116,9 @@ export class BusinessService {
       //     message: 'Cannot delete user. User is an authorised user for some businesses.',
       //   };
       // }
-      // await this.businessUserModel.deleteOne({_id: userId});
       return {
         success: true,
-        message: 'Business User deleted successfully',
+        message: 'Your account deletion request is being processed. Our team will get back to you shortly.',
       };
     }catch(error){
       return {
