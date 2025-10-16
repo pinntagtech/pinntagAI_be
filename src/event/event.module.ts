@@ -188,6 +188,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
 
 @Module({
   imports: [
@@ -272,7 +273,8 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
       { name: Coupon.name, schema: CouponSchema },
       { name: FeatureLimit.name , schema: FeatureLimitSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: BusinessActivation.name, schema: BusinessActivationSchema },
       
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },

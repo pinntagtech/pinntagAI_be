@@ -54,6 +54,8 @@ import {
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
+import { Prop } from '@nestjs/mongoose';
+import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -1454,4 +1456,27 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('activation/request/:id')
+  @UseGuards(JwtGuard2)
+  async requestForActivation(
+    @Param('id') businessId: string,
+    @Body() data: BusinessActivationRequestDto,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.requestForActivation(
+      businessId,
+      data,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    } 
+  }
+
+
 }

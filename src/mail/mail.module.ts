@@ -228,7 +228,7 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
         },
       },
       defaults: {
-        from: '"No Reply" <noreply@example.com>',
+        from: '"PinnTag" <noreply@pinntag.com>',
       },
       template: {
         dir: join(__dirname + '/templates'),

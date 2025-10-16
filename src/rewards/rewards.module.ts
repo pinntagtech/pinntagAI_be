@@ -176,6 +176,7 @@ import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
 
 @Module({
   imports: [
@@ -257,7 +258,8 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
         schema: SubscriptionPriceSchema,
       },
       { name: Coupon.name, schema: CouponSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: BusinessActivation.name, schema: BusinessActivationSchema },
     ]),
   ],
   controllers: [RewardsController],

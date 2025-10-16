@@ -155,6 +155,8 @@ import { Tag } from 'src/models/tags.model';
 import { error } from 'console';
 import * as QRCode from 'qrcode';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
+import { ActivationRequestStatus, BusinessActivation } from './model/businessActivation.model';
+import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
 
 @Injectable()
 export class BusinessService {
@@ -217,6 +219,7 @@ export class BusinessService {
     @InjectModel(OwnershipTransferRecord.name)
     private readonly ownershipTransferRecordModel: Model<OwnershipTransferRecord>,
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
+    @InjectModel(BusinessActivation.name) private readonly businessActivationRequestModel: Model<BusinessActivation>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -232,7 +235,7 @@ export class BusinessService {
     try {
       const foundUser = await this.businessUserModel.findOne({
         email: data.email,
-      });
+      }).select('-password');
 
       if (foundUser) {
         if (
@@ -243,6 +246,7 @@ export class BusinessService {
           return {
             success: true,
             message: 'Business User already found with this email, OTP resent',
+            data: foundUser,
           };
         }
         return {
@@ -4487,7 +4491,7 @@ export class BusinessService {
     businessName: string,
   ) {
     try {
-      console.log("Sending invitation to:", row);
+      console.log('Sending invitation to:', row);
       const phoneNumber = parsePhoneNumberFromString(
         `${row.countryCode}${row.phone}`,
       );
@@ -4496,7 +4500,12 @@ export class BusinessService {
       }
       const fullPhoneNumber = phoneNumber.format('E.164');
       await Promise.all([
-        this.mailService.consumerInvitation(row.email, row.name, inviteLink, businessName),
+        this.mailService.consumerInvitation(
+          row.email,
+          row.name,
+          inviteLink,
+          businessName,
+        ),
         this.smsService.sendSMS(
           user.id,
           fullPhoneNumber,
@@ -4524,7 +4533,12 @@ export class BusinessService {
       const results = await Promise.all(
         rows.map(async (row) => {
           try {
-            await this.sendConsumerInvitation(row, user, business.appRedirectLink, business.name);
+            await this.sendConsumerInvitation(
+              row,
+              user,
+              business.appRedirectLink,
+              business.name,
+            );
             return { ...row, status: 'Created', message: '' };
           } catch (err) {
             failure++;
@@ -5024,6 +5038,59 @@ export class BusinessService {
       return {
         success: true,
         message: 'Business QR code generated successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async requestForActivation(
+    businessId: string,
+    data: BusinessActivationRequestDto,
+  ) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      if (business.isActive) {
+        return {
+          success: false,
+          message: 'Business is already active',
+        };
+      }
+
+      let activeReq = null;
+      activeReq = await this.businessActivationRequestModel.findOne({
+        email: data.email,
+        status: ActivationRequestStatus.Pending,
+      });
+      if (activeReq) {
+        return {
+          success: false,
+          message:
+            'You have already requested for activation. Please wait for approval.',
+        };
+      }
+      activeReq = await this.businessActivationRequestModel.create({
+        business: business._id,
+        status: ActivationRequestStatus.Pending,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        countryCode: data.countryCode,
+      });
+
+      return {
+        success: true,
+        message: 'Business activation request submitted successfully',
+        data: activeReq,
       };
     } catch (error) {
       return {
