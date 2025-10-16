@@ -5099,4 +5099,34 @@ export class BusinessService {
       };
     }
   }
+
+  async deleteBusinessUser(userId: string){
+    try{
+      const user = await this.businessUserModel.findById(userId);
+      if(!user){
+        return {
+          success: false,
+          message: 'Business User not found',
+        };
+      }
+      // const linkedBusinesses = await this.businessModel.find({authorisedUser: user._id});
+      // if(linkedBusinesses && linkedBusinesses.length > 0){
+      //   return {
+      //     success: false,
+      //     message: 'Cannot delete user. User is an authorised user for some businesses.',
+      //   };
+      // }
+      // await this.businessUserModel.deleteOne({_id: userId});
+      return {
+        success: true,
+        message: 'Business User deleted successfully',
+      };
+    }catch(error){
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
 }

@@ -1267,10 +1267,7 @@ export class BusinessController {
       throw new BadRequestException('File is required');
     }
 
-    const result = await this.businessService.inviteConsumers(
-      file,
-      user,
-    );
+    const result = await this.businessService.inviteConsumers(file, user);
     if (result.success) {
       return {
         message: result.message,
@@ -1475,8 +1472,21 @@ export class BusinessController {
       };
     } else {
       throw new BadRequestException(result.message);
-    } 
+    }
   }
 
-
+  @Post('user/delete')
+  @UseGuards(JwtGuard2)
+  async deleteBusinessUser(
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.deleteBusinessUser(user.id);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

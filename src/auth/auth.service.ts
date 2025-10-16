@@ -3368,6 +3368,7 @@ export class AuthService {
           industry: { $first: '$industryDetails' },
           description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
+          isActive: { $first: '$businessDetails.isActive' },
           locations: {
             $push: {
               location: '$location',
