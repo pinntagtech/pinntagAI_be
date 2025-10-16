@@ -192,15 +192,23 @@ export class SubscriptionService {
         pipeline.push({
           $addFields: {
             isCurrentPlan: {
-              $and: [
-                { $eq: ['$_id', userSubscription.product] },
-                {
-                  $eq: [
-                    userSubscription.price,
-                    { $arrayElemAt: ['$prices._id', 0] },
+              $cond: {
+                if: { $eq: [{ $size: '$prices' }, 0] }, // if it's a free plan (no prices)
+                then: {
+                  $eq: ['$_id', userSubscription.product], // only check product match
+                },
+                else: {
+                  $and: [
+                    { $eq: ['$_id', userSubscription.product] },
+                    {
+                      $eq: [
+                        userSubscription.price,
+                        { $arrayElemAt: ['$prices._id', 0] },
+                      ],
+                    },
                   ],
                 },
-              ],
+              },
             },
           },
         });
