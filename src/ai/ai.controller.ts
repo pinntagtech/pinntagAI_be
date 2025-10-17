@@ -113,7 +113,11 @@ export class AiController {
     @Query('suggestion') suggestion: string,
     @Query('tags') tags: string,
   ) {
-    const tagsArray = tags.split(',');
+    let tagsArray = [];
+    console.log("Tags:",tags)
+    if(tags && tags != ''){
+      tagsArray = tags.split(',');
+    }
     const result = await this.aiService.getTitleSuggestions(
       contentType,
       category,
