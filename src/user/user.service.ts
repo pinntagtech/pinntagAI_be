@@ -66,6 +66,7 @@ import {
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
 import { UserAllowedNotification } from 'src/business/model/userAllowedNotification.model';
+import { MuteDuration } from 'src/enums/user.enum';
 
 @Injectable()
 export class UserService {
@@ -1319,45 +1320,85 @@ export class UserService {
     }
   }
 
-  async muteNotifications(userId: string, businessId: string) {
+  private calculateMutedUntil(duration: MuteDuration): Date | null {
+    if (duration === MuteDuration.NONE || duration === MuteDuration.FOREVER) {
+      return duration === MuteDuration.FOREVER
+        ? new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000)
+        : null;
+    }
+
+    const now = new Date();
+    const durationMs = {
+      '8h': 8 * 60 * 60 * 1000,
+      '1d': 24 * 60 * 60 * 1000,
+      '1w': 7 * 24 * 60 * 60 * 1000,
+    }[duration];
+
+    return new Date(now.getTime() + durationMs);
+  }
+
+  async muteNotifications(
+    userId: string,
+    businessId: string,
+    duration: MuteDuration,
+  ) {
     try {
       const [user, business] = await Promise.all([
         this.userModel.findById(userId),
         this.businessModel.findById(businessId),
       ]);
+
       if (!user) {
         return {
           success: false,
           message: 'User not found',
         };
       }
+
       if (!business) {
         return {
           success: false,
           message: 'Business not found',
         };
       }
+
       const follow = await this.followModel.findOne({
         follower: new mongoose.Types.ObjectId(userId),
         following: new mongoose.Types.ObjectId(businessId),
       });
+
       if (!follow) {
         return {
           success: false,
           message: 'Please follow business first',
         };
       }
-      let action = follow.muted;
-      if (!action) action = false;
+
+      // Toggle mute based on current state
+      const shouldMute = !follow.muted;
+      const mutedUntil = shouldMute ? this.calculateMutedUntil(duration) : null;
+
       await this.followModel.updateOne(
         { _id: follow._id },
-        { $set: { muted: !action } },
+        {
+          $set: {
+            muted: shouldMute,
+            muteDuration: shouldMute ? duration : MuteDuration.NONE,
+            mutedUntil: mutedUntil,
+          },
+        },
       );
 
       return {
         success: true,
-        message: 'Mute status updated successfully',
-        data: !action
+        message: shouldMute
+          ? `Notifications muted for ${duration}`
+          : 'Notifications unmuted successfully',
+        data: {
+          muted: shouldMute,
+          muteDuration: shouldMute ? duration : MuteDuration.NONE,
+          mutedUntil: mutedUntil,
+        },
       };
     } catch (error) {
       return {

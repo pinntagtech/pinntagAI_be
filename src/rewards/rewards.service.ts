@@ -31,6 +31,7 @@ import {
 import {
   BusinessPopulates,
   LocationPopulates,
+  MuteDuration,
   UserPopulates,
 } from 'src/enums/user.enum';
 import {
@@ -97,6 +98,21 @@ export class RewardsService {
     private readonly firebaseService: FirebaseService,
     private readonly businessService: BusinessService,
   ) {}
+
+  private isMuteExpired(mutedUntil: Date | null): boolean {
+      if (!mutedUntil) return false;
+      return new Date() > mutedUntil;
+    }
+    private isCurrentlyMuted(follower: any): boolean {
+      if (!follower.muted) return false;
+  
+      if (follower.muteDuration === MuteDuration.FOREVER) return true;
+      
+      if (this.isMuteExpired(follower.mutedUntil)) {
+        return false;
+      }
+      return true;
+    }
 
   // Create Offer
 
@@ -283,7 +299,7 @@ export class RewardsService {
           const message = `${business.name} published a new Reward called ${reward.title}`;
 
           for (const follower of followers) {
-            if (!follower.muted) {
+            if (!this.isCurrentlyMuted(follower)) {
               const fcmTokens = await this.tokenModel.find({
                 user: follower.follower['_id'],
                 type: TokenTypes.FCM,

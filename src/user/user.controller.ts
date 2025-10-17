@@ -21,7 +21,7 @@ import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer';
 import { UpdateProfileDto } from './dto/updateProfile.dto';
-import { ProfileTypes } from 'src/enums/user.enum';
+import { MuteDuration, ProfileTypes } from 'src/enums/user.enum';
 import { FollowDto } from './dto/follow.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { ContactUsDto } from './dto/contact-us.dto';
@@ -366,16 +366,19 @@ export class UserController {
       throw new BadRequestException(result.message);
     }
   }
+  
 
   @Post('toggle/mute/notifications/:id')
   @UseGuards(JwtGuard2)
   async muteNotifications(
     @TokenDecoder() user: DecodedUser,
     @Param('id') businessId: string,
+    @Query('duration') duration: MuteDuration,
   ) {
     const result = await this.userService.muteNotifications(
       user.id,
       businessId,
+      duration,
     );
     if (result.success) {
       return {

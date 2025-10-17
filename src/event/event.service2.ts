@@ -45,6 +45,7 @@ import {
   ExmpLocKeys,
   ImagePopulates,
   LocationPopulates,
+  MuteDuration,
   UserPopulates,
 } from 'src/enums/user.enum';
 import {
@@ -1959,6 +1960,21 @@ export class EventService2 {
     }
   }
 
+   private isMuteExpired(mutedUntil: Date | null): boolean {
+      if (!mutedUntil) return false;
+      return new Date() > mutedUntil;
+    }
+    private isCurrentlyMuted(follower: any): boolean {
+      if (!follower.muted) return false;
+  
+      if (follower.muteDuration === MuteDuration.FOREVER) return true;
+      
+      if (this.isMuteExpired(follower.mutedUntil)) {
+        return false;
+      }
+      return true;
+    }
+
   async togglePublishEvent(data: PublishEventDto, user: DecodedUser) {
     const id = data.id;
     if (!mongoose.isValidObjectId(id)) {
@@ -2055,7 +2071,7 @@ export class EventService2 {
                   console.log('Skipping null follower at index:', i);
                   continue;
                 }
-                if (!followers[i].muted) {
+                if (!this.isCurrentlyMuted(followers[i])) {
                   const fcmTokens = await this.tokenModel.find({
                     user: new mongoose.Types.ObjectId(
                       followers[i].follower['_id'],
