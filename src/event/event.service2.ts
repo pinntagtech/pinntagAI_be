@@ -6005,7 +6005,6 @@ export class EventService2 {
         name: 'Content QR',
       });
       console.log('Expired Status:', isExpired);
-      query['_id'] = new mongoose.Types.ObjectId('68e938aedbdc481561565f39');
       // 3. Build aggregation pipeline
       console.log('Queryy:', query);
       const pipeline: any[] = [
