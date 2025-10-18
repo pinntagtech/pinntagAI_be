@@ -23,6 +23,7 @@ import { Event, EventSchema } from 'src/event/models/event.model';
 import { File, FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
+import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDoc
       { name: Event.name, schema: EventSchema },
       { name: File.name, schema: FileSchema},
       { name: SampleDocument.name, schema: SampleDocumentSchema },
-
+      { name: MobileSpots.name, schema: MobileSpotsSchema },
+        
     ])
   ],
   controllers: [OutletController],
