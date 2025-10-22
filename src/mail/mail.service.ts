@@ -92,7 +92,7 @@ export class MailService {
       to: email,
       subject: 'Verify your email',
       template:
-        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+        process.cwd() + '/src/mail/templates/ownershipTransferOtpVerification.template.hbs',
       context: { name: profile.name, otp, otpExpiry: '5 minutes' },
     });
   }
