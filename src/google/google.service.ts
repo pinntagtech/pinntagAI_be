@@ -136,6 +136,7 @@ export class GoogleService {
       };
       const url = `https://places.googleapis.com/v1/places/${placeId}`;
       const response = await axios.get(url, { params });
+      console.log('Response:', JSON.stringify(response.data));
       let address = this.mapGoogleAddressToSchema(
         response.data.addressComponents,
       );
@@ -150,6 +151,40 @@ export class GoogleService {
         success: true,
         message: 'Place details fetched successfully',
         data: address,
+      };
+    } catch (error) {
+      console.error('Error fetching place details:', error);
+      throw error;
+    }
+  }
+  async getPlaceDetailsWithMetaData(placeId: string) {
+    try {
+      const params = {
+        key: this.GOOGLE_API_KEY,
+        fields: [
+          'displayName',
+          'formattedAddress',
+          'location',
+          'regularOpeningHours',
+          'currentOpeningHours',
+          'photos',
+          'rating',
+          'userRatingCount',
+          'priceLevel',
+          'websiteUri',
+          'googleMapsUri',
+          'nationalPhoneNumber',
+          'primaryType',
+          'types',
+        ].join(','),
+      };
+      const url = `https://places.googleapis.com/v1/places/${placeId}`;
+      const response = await axios.get(url, { params });
+
+      return {
+        success: true,
+        message: 'Place details fetched successfully',
+        data: response.data,
       };
     } catch (error) {
       console.error('Error fetching place details:', error);
