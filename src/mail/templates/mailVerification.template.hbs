@@ -1,24 +1,66 @@
-<!-- FILEPATH: /Users/apple/Desktop/Playground/hypp/pinntag/src/mail/templates/mailVerification.template.hbs -->
-
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset='UTF-8' />
     <title>Email Confirmation</title>
     <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-        }
-        </style>
-</head>
-<body>
-    <h1>Please Verify Your Identity</h1>
-    <p>Hi {{name}},</p>
-    <p>Thank you for signing up! Please confirm your email address by entering the OTP below:</p>
-    <p>OTP: {{otp}}</p>
-    <p>This OTP is valid for {{otpExpiry}} minutes.</p>
-    <p>If you did not sign up for an account, please ignore this email.</p>
-    <p>Best regards,</p>
-    <p>Pinntag Team</p>
-</body>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #f7f9fb;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        background-color: #ffffff;
+        margin: 40px auto;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        color: #222222;
+        font-size: 24px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      p {
+        color: #555555;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .otp {
+        display: inline-block;
+        background-color: #1a73e8;
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: bold;
+        padding: 10px 20px;
+        border-radius: 6px;
+        letter-spacing: 2px;
+        margin: 15px 0;
+      }
+      .footer {
+        border-top: 1px solid #eeeeee;
+        margin-top: 25px;
+        padding-top: 15px;
+        font-size: 13px;
+        color: #888888;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <h1>Please Verify Your Identity</h1>
+      <p>Hi {{name}},</p>
+      <p>Thank you for signing up! Please confirm your email address by entering
+        the OTP below:</p>
+      <p class='otp'>{{otp}}</p>
+      <p>This OTP is valid for <strong>{{otpExpiry}} minutes</strong>.</p>
+      <p>If you did not sign up for an account, please ignore this email.</p>
+      <div class='footer'>
+        <p>Best regards,<br />Pinntag Team</p>
+      </div>
+    </div>
+  </body>
 </html>

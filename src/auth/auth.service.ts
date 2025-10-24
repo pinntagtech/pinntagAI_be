@@ -3426,7 +3426,7 @@ export class AuthService {
     industries?: Array<string>,
     startDate?: Date,
     endDate?: Date,
-    isFollowedByMe?:boolean,
+    isFollowedByMe?: boolean,
   ) {
     let match = {};
     // let start = getZeroDateTz(new Date(), timeZone);
@@ -3473,12 +3473,12 @@ export class AuthService {
         'industry._id': { $in: businessIndustries.map((cat) => cat._id) },
       };
     }
-     if (isFollowedByMe) {
-        match = {
-          ...match,
-          isFollowedByMe: isFollowedByMe,
-        };
-      }
+    if (isFollowedByMe) {
+      match = {
+        ...match,
+        isFollowedByMe: isFollowedByMe,
+      };
+    }
     const [listings] = await this.fetchBusinessListing(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -4452,6 +4452,7 @@ export class AuthService {
     user: DecodedUser,
     latitude: number,
     longitude: number,
+    carouselType: string,
     maxDistance: number,
     search: string,
     timeZone: string,
@@ -4540,7 +4541,7 @@ export class AuthService {
       query,
       page,
       limit,
-      CarouselType.Event,
+      carouselType,
       maxDistance,
       startDate,
       endDate,
@@ -6875,7 +6876,22 @@ export class AuthService {
             rewardType: { $first: '$reward.rewardType' },
             targetCount: { $first: '$reward.targetCount' },
             redemptionMode: { $first: '$reward.redemptionMode' },
-            locations: { $first: '$reward.locations' },
+            locations: {
+              $push: {
+                location: '$location',
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$zip',
+                website: '$website',
+                _id: '$_id',
+                email: '$email',
+                phone: '$phone',
+                distance: { $divide: ['$distance', 1609.34] },
+              },
+            },
             drivePath: { $first: '$reward.drivePath' },
             files: { $first: '$files' },
             QR_CODE: { $first: '$QR_CODE' },
@@ -6931,6 +6947,7 @@ export class AuthService {
               businessIndustry: '$businessProfile.businessIndustry',
             },
             isEnrolled: 1,
+            distance: 1,
           },
         },
         { $sort: { createdAt: -1, distance: 1, _id: 1 } },
