@@ -588,6 +588,8 @@ export class AuthController {
     @Query('limit') limit: string,
     @Query('distance') distance: string,
     @Query('timeZone') timeZone: string,
+    @Query('carouselType') carouselType: string,
+
     @TokenDecoder() user: DecodedUser,
   ) {
     if (body.categories && body.categories.length) {
@@ -601,6 +603,7 @@ export class AuthController {
       user,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
+      carouselType ? carouselType : 'event',
       distance ? parseInt(distance) : 1000000000000,
       search ? search : '',
       timeZone ? timeZone : 'America/Chicago',
