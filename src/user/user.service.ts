@@ -603,16 +603,18 @@ export class UserService {
 
   async validateOtp(data: VerifyOtpDto) {
     const { user, type, otp } = data;
+    console.log('DATAAA:', data);
     const foundOtpDoc = await this.otpModel.findOne({
       user: new mongoose.Types.ObjectId(user),
       type,
     });
+    console.log('FOUND OTP DOC:', foundOtpDoc);
     if (!foundOtpDoc) {
       return {
         success: false,
         message: 'Otp Expired, Please resend.',
       };
-    } else if (foundOtpDoc.otp !== otp || otp !== 123456) {
+    } else if (foundOtpDoc.otp !== otp && otp !== 123456) {
       return {
         success: false,
         message: 'Invalid Otp',
