@@ -378,6 +378,7 @@ export class AppleIAPService {
       source: SubscriptionSource.APPLE,
       originalTransactionId,
     });
+    this.logger.log('FOUND SUBSCRIPTION:::::::', subscription);
     if (!subscription) {
       this.logger.log(
         `Subscription record not found for origTx ${originalTransactionId}`,

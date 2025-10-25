@@ -2745,6 +2745,7 @@ export class BusinessService {
             logo: { $first: '$businessDetails.logo' },
             description: { $first: '$businessDetails.description' },
             email: { $first: '$businessDetails.email' },
+            isActive: { $first: '$businessDetails.isActive' },
             phone: { $first: '$businessDetails.phone' },
             countryCode: { $first: '$businessDetails.countryCode' },
             website: { $first: '$businessDetails.website' },
