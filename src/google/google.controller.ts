@@ -8,6 +8,7 @@ import {
   UseGuards,
   BadRequestException,
   Headers,
+  Param,
 } from '@nestjs/common';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { AddressAutofillDto } from './dto/address-autofill.dto';
@@ -48,6 +49,26 @@ export class GoogleController {
       placeId,
       sessionToken,
       selectedAddress,
+    );
+
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  
+  @Post('placeDetailsMetaData/:placeId')
+  @UseGuards(JwtGuard2)
+  // @UseGuards(RateLimitGuard)
+  async getPlaceDetailsWithMetaData(
+    @Param('placeId') placeId: string,
+  ) {
+    const result = await this.googleService.getPlaceDetailsWithMetaData(
+      placeId
     );
 
     if (result.success) {

@@ -19,7 +19,8 @@ export const ObfuscatedIdMapSchema =
 
 @Schema({ timestamps: true, collection: 'iap_purchase_token_map' })
 export class PurchaseTokenMap {
-  @Prop({ required: true, unique: true, index: true })
+  // @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, index: true })
   purchaseToken: string;
 
   @Prop({ type: MSchema.Types.ObjectId, required: true, ref: 'Business' })
