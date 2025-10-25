@@ -383,7 +383,7 @@ export class UserController {
     if (result.success) {
       return {
         message: result.message,
-        muted: result.data,
+        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);

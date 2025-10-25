@@ -747,18 +747,20 @@ export class UserService {
         followerType,
         followingType,
       });
-      //Update following count of user
-      await this.updateFollowingCount(
-        followerType == User.name ? this.userModel : this.businessModel,
-        userId,
-        1,
-      );
-      //Update followers count of target user
-      await this.updateFollowerCount(
-        followingType == User.name ? this.userModel : this.businessModel,
-        targetId,
-        1,
-      );
+
+      Promise.all([
+        this.updateFollowingCount(
+          followerType == User.name ? this.userModel : this.businessModel,
+          userId,
+          1,
+        ),
+        this.updateFollowerCount(
+          followingType == User.name ? this.userModel : this.businessModel,
+          targetId,
+          1,
+        ),
+      ]);
+
       if (followingType == User.name) {
         const user = await this.userModel.findById(targetId);
         let message = '';
@@ -1323,8 +1325,8 @@ export class UserService {
   }
 
   private calculateMutedUntil(duration: MuteDuration): Date | null {
-    if (duration === MuteDuration.NONE || duration === MuteDuration.FOREVER) {
-      return duration === MuteDuration.FOREVER
+    if (duration === MuteDuration.ALWAYS) {
+      return duration === MuteDuration.ALWAYS
         ? new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000)
         : null;
     }
@@ -1393,7 +1395,6 @@ export class UserService {
 
       return {
         success: true,
-<<<<<<< HEAD
         message: shouldMute
           ? `Notifications muted for ${duration}`
           : 'Notifications unmuted successfully',
@@ -1402,10 +1403,6 @@ export class UserService {
           muteDuration: shouldMute ? duration : MuteDuration.NONE,
           mutedUntil: mutedUntil,
         },
-=======
-        message: 'Mute status updated successfully',
-        data: !action,
->>>>>>> 7304a7f57117a84cf49d75f920f81a584442cdb1
       };
     } catch (error) {
       return {

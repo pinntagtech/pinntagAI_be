@@ -100,8 +100,7 @@ export enum CurrencyTypes {
 
 export enum MuteDuration {
   EIGHT_HOURS = '8h',
-  ONE_DAY = '1d',
   ONE_WEEK = '1w',
-  FOREVER = 'forever',
-  NONE = 'none',
+  ALWAYS = 'always',
+  NONE = 'none'
 }

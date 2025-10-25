@@ -106,7 +106,7 @@ export class RewardsService {
     private isCurrentlyMuted(follower: any): boolean {
       if (!follower.muted) return false;
   
-      if (follower.muteDuration === MuteDuration.FOREVER) return true;
+      if (follower.muteDuration === MuteDuration.ALWAYS) return true;
       
       if (this.isMuteExpired(follower.mutedUntil)) {
         return false;
