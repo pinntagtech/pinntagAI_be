@@ -155,7 +155,10 @@ import { Tag } from 'src/models/tags.model';
 import { error } from 'console';
 import * as QRCode from 'qrcode';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
-import { ActivationRequestStatus, BusinessActivation } from './model/businessActivation.model';
+import {
+  ActivationRequestStatus,
+  BusinessActivation,
+} from './model/businessActivation.model';
 import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
 
 @Injectable()
@@ -219,7 +222,8 @@ export class BusinessService {
     @InjectModel(OwnershipTransferRecord.name)
     private readonly ownershipTransferRecordModel: Model<OwnershipTransferRecord>,
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
-    @InjectModel(BusinessActivation.name) private readonly businessActivationRequestModel: Model<BusinessActivation>,
+    @InjectModel(BusinessActivation.name)
+    private readonly businessActivationRequestModel: Model<BusinessActivation>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -233,9 +237,11 @@ export class BusinessService {
 
   async createBusinessUser(data: CreateBusinessUserDto) {
     try {
-      const foundUser = await this.businessUserModel.findOne({
-        email: data.email,
-      }).select('-password');
+      const foundUser = await this.businessUserModel
+        .findOne({
+          email: data.email,
+        })
+        .select('-password');
 
       if (foundUser) {
         if (
@@ -384,7 +390,10 @@ export class BusinessService {
           success: false,
           message: 'Otp Expired, Please resend.',
         };
-      } else if (foundOtpDoc.otp !== Number(data.otp) && Number(data.otp) !== 123456) {
+      } else if (
+        foundOtpDoc.otp !== Number(data.otp) &&
+        Number(data.otp) !== 123456
+      ) {
         return {
           success: false,
           message: 'Invalid Otp',
@@ -2630,6 +2639,7 @@ export class BusinessService {
       //   .findById(businessId)
       //   .populate('outlets', LocationPopulates.FOREIGN);
       console.log('BusinessID:', businessId);
+      const now = new Date();
       const basePipeline: any[] = [
         {
           $geoNear: {
@@ -2736,6 +2746,44 @@ export class BusinessService {
             },
           },
         },
+        {
+          $unwind: {
+            path: '$userFollow',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            isMuted: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$userFollow', null] }, // no userFollow
+                    { $eq: ['$userFollow.muted', false] }, // not muted
+                  ],
+                },
+                false,
+                {
+                  $cond: [
+                    {
+                      $and: [
+                        { $ifNull: ['$userFollow.mutedUntil', false] },
+                        {
+                          $gt: [
+                            { $toDate: '$userFollow.mutedUntil' },
+                            new Date(),
+                          ],
+                        },
+                      ],
+                    },
+                    true,
+                    false,
+                  ],
+                },
+              ],
+            },
+          },
+        },
         { $sort: { distance: 1 } },
         {
           $group: {
@@ -2771,6 +2819,7 @@ export class BusinessService {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
+            isMuted: { $first: '$isMuted' },
           },
         },
         { $sort: { createdAt: -1, _id: 1 } },
@@ -5101,10 +5150,10 @@ export class BusinessService {
     }
   }
 
-  async deleteBusinessUser(userId: string){
-    try{
+  async deleteBusinessUser(userId: string) {
+    try {
       const user = await this.businessUserModel.findById(userId);
-      if(!user){
+      if (!user) {
         return {
           success: false,
           message: 'Business User not found',
@@ -5119,14 +5168,14 @@ export class BusinessService {
       // }
       return {
         success: true,
-        message: 'Your account deletion request is being processed. Our team will get back to you shortly.',
+        message:
+          'Your account deletion request is being processed. Our team will get back to you shortly.',
       };
-    }catch(error){
+    } catch (error) {
       return {
         success: false,
         message: error.message,
       };
     }
   }
-
 }

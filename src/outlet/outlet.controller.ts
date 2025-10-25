@@ -21,6 +21,7 @@ import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateSpotDto } from './dto/create-spot.dto';
 
 @Controller('outlet')
 export class OutletController {
@@ -273,4 +274,23 @@ export class OutletController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('createSpot/:id')
+  @UseGuards(JwtGuard2)
+  async createSpot(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: CreateSpotDto,
+  ) {
+    const result = await this.outletService.createSpot(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

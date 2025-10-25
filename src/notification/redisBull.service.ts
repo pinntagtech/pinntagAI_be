@@ -16,6 +16,7 @@ import { Business } from 'src/business/model/business.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { Feed, FeedVisibility } from 'src/feed/models/feed.model';
+import { MuteDuration } from 'src/enums/user.enum';
 
 @Injectable()
 export class RedisBullService {
@@ -28,7 +29,8 @@ export class RedisBullService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
-    @InjectModel(Follow.name) private readonly followModel: Model<FollowDocument>,
+    @InjectModel(Follow.name)
+    private readonly followModel: Model<FollowDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly firebaseService: FirebaseService,
     private readonly userService: UserService,
@@ -94,6 +96,20 @@ export class RedisBullService {
       console.log('Job removed from queue:', job.id);
     }
   }
+  private isMuteExpired(mutedUntil: Date | null): boolean {
+    if (!mutedUntil) return false;
+    return new Date() > mutedUntil;
+  }
+  private isCurrentlyMuted(follower: any): boolean {
+    if (!follower.muted) return false;
+
+    if (follower.muteDuration === MuteDuration.ALWAYS) return true;
+    
+    if (this.isMuteExpired(follower.mutedUntil)) {
+      return false;
+    }
+    return true;
+  }
 
   async triggerBroadcast(broadcastId: string) {
     try {
@@ -128,14 +144,14 @@ export class RedisBullService {
           );
 
         for (const follower of followers) {
-          console.log("Follower Details:::", follower);
-          if (!follower.muted) {
-            console.log("Is even coming here:::");
+          console.log('Follower Details:::', follower);
+          if (!this.isCurrentlyMuted(follower)) {
+            console.log('Is even coming here:::');
             const fcmTokens = await this.tokenModel.find({
               user: follower._id,
               type: TokenTypes.FCM,
             });
-            console.log("FCM TOKENS:::",fcmTokens);
+            console.log('FCM TOKENS:::', fcmTokens);
             for (const token of fcmTokens) {
               this.firebaseService.sendNotification(
                 token.token,

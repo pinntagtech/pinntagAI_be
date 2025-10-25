@@ -34,6 +34,8 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
+import { CreateSpotDto } from './dto/create-spot.dto';
+import { MobileSpots } from 'src/business/model/mobileSpots.model';
 
 @Injectable()
 export class OutletService {
@@ -51,6 +53,8 @@ export class OutletService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(MobileSpots.name)
+    private readonly mobileSpotsModel: Model<MobileSpots>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -233,23 +237,7 @@ export class OutletService {
       }
       let {
         category,
-        // type,
-        // refId,
         name,
-        // manager,
-        city,
-        state,
-        country,
-        postalCode,
-        countryCode,
-        phone,
-        email,
-        // whatsappNumber,
-        website,
-        // facebook,
-        // instagram,
-        // twitter,
-        // googleMyBusinessId,
         address1,
         address2,
         // posSystemId,
@@ -311,6 +299,23 @@ export class OutletService {
 
       const outlet = await this.outletModel.create(createObj);
 
+      const spot = await this.mobileSpotsModel.create({
+        name: outlet.name,
+        business: outlet.business,
+        outlet: outlet._id,
+        creator: outlet.creator,
+        accuracy: outlet.accuracy,
+        address1: outlet.address1,
+        address2: outlet.address2,
+        city: outlet.city,
+        state: outlet.state,
+        country: outlet.country,
+        postalCode: outlet.postalCode,
+        latitude: outlet.latitude,
+        longitude: outlet.longitude,
+        location: outlet.location,
+      });
+
       let updateObj: any = {};
       if (outlet.category === OutletCategoryList.PHYSICAL) {
         updateObj['physicalUnitsCreated'] = business.physicalUnitsCreated + 1;
@@ -319,6 +324,11 @@ export class OutletService {
         updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
       }
       console.log('Business User Id:', businessUser.id);
+
+      await this.outletModel.updateOne(
+        { _id: outlet.id },
+        { $push: { spots: spot._id } },
+      );
 
       // if (createObj.manager) {
       //   const isUserUpdated = await this.businessUserModel.updateOne(
@@ -546,8 +556,8 @@ export class OutletService {
           $lt: new Date(date.setHours(23, 59, 59, 999)),
         };
       }
-      console.log("Match:::",match);
-      console.log("business:::",user.businessProfile);
+      console.log('Match:::', match);
+      console.log('business:::', user.businessProfile);
       const outlets = await this.outletModel
         .find({
           ...match,
@@ -918,7 +928,7 @@ export class OutletService {
       await this.businessModel.updateOne(
         { _id: outlet.business },
         { $pull: { outlets: outlet._id } },
-      );  
+      );
       return {
         success: true,
         message: 'Outlet deleted successfully.',
@@ -931,4 +941,52 @@ export class OutletService {
     }
   }
 
+  async createSpot(id: string, user: DecodedUser, data: CreateSpotDto) {
+    try {
+      const outlet = await this.outletModel.findById(id);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found!',
+        };
+      }
+
+      let spotObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          spotObj[key] = data[key];
+        }
+      });
+      spotObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      spotObj['outlet'] = new mongoose.Types.ObjectId(outlet.id);
+      spotObj['business'] = new mongoose.Types.ObjectId(outlet.business);
+
+      const spot = await this.mobileSpotsModel.create(spotObj);
+
+      // const spotExists = outlet.spots.some(
+      //   (spot) => spot.name === spotObj.name,
+      // );
+      // if (spotExists) {
+      //   return {
+      //     success: false,
+      //     message: 'Spot with the same name already exists in this outlet.',
+      //   };
+      // }
+      await this.outletModel.updateOne(
+        { _id: outlet.id },
+        { $push: { spots: spotObj } },
+      );
+
+      return {
+        success: true,
+        message: 'Spot created successfully.',
+        data: spot,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
 }

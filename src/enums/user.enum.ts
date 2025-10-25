@@ -96,3 +96,11 @@ export enum CurrencyTypes {
   USD = 'USD',
   EUR = 'EUR',
 }
+
+
+export enum MuteDuration {
+  EIGHT_HOURS = '8h',
+  ONE_WEEK = '1w',
+  ALWAYS = 'always',
+  NONE = 'none'
+}
