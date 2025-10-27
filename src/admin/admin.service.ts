@@ -11,7 +11,6 @@ import { ConfigureDashboardDto } from 'src/admin/dto/configureDashboard.dto';
 import { LoginDto } from 'src/admin/dto/login.dto';
 import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
-import * as fs from 'fs';
 import * as streamifier from 'streamifier';
 import csv from 'csv-parser';
 import {
@@ -154,6 +153,7 @@ import { Folder } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
 import { FeaturedAsset } from './models/featuredAssets.model';
 
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -207,8 +207,10 @@ export class AdminService {
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
-    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(EventSchedule.name)
+    private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(FeaturedAsset.name)
+    private readonly featuredAssetModel: Model<FeaturedAsset>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3300,7 +3302,7 @@ export class AdminService {
           message: 'File category not found',
         };
       }
-      const fileRecord = await this.driveService.uploadFile(
+      const fileRecord = await this.driveService.uploadVideo(
         adminId,
         admin.drive.toString(),
         fileCategory.id,
@@ -3350,7 +3352,11 @@ export class AdminService {
     }
   }
 
-  async updateFeaturedVideoStatus(id: string, isActive: boolean, user: DecodedUser) {
+  async updateFeaturedVideoStatus(
+    id: string,
+    isActive: boolean,
+    user: DecodedUser,
+  ) {
     try {
       const video = await this.featuredAssetModel.findById(id);
       if (!video) {
