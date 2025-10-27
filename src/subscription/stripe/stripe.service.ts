@@ -446,11 +446,11 @@ export class StripeService {
     // Find or create our internal Subscription record
     // Map Stripe price -> internal product/price if needed (you have that mapping).
     const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
-    console.log("STRIPESUBBB:",stripeSub);
 
     const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
-    console.log("PRICEID:",priceId);
     if (!priceId) return;
+    const internalSubPrice = await this.subscriptionPriceModel.findOne({stripePriceId:priceId});
+    if(!internalSubPrice) return;
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
@@ -458,6 +458,7 @@ export class StripeService {
       {
         business: new mongoose.Types.ObjectId(businessId),
         status: SubscriptionStatus.ACTIVE,
+        price: internalSubPrice._id,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
