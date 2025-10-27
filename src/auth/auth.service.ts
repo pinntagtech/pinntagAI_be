@@ -4558,6 +4558,112 @@ export class AuthService {
       pages: Math.ceil(totalCount / limit),
     };
   }
+  async businessMoreContent(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    carouselType: string,
+    maxDistance: number,
+    search: string,
+    timeZone: string,
+    limit: number,
+    page: number,
+    businessId: string,
+    // type: string,
+    categoryIds?: Array<string>,
+    startDate?: Date,
+    endDate?: Date,
+    dealType?: string,
+  ) {
+    console.log('Service Category IDs:', categoryIds);
+    let match = {};
+
+    const currentDate = currentDateTz(timeZone);
+
+    let start = getZeroDateTz(new Date(), timeZone);
+
+    if (search) {
+      // Search matching business profile name
+      // const matchingBusinesses = await this.businessModel.find({
+      //   name: { $regex: search, $options: 'i' },
+      // });
+      // keep the search queries as it is, just add the business profile ids to the match query if the event creatorType is BusinessProfile
+      // const businessProfileIds = matchingBusinesses.map(
+      //   (business) => business._id,
+      // );
+      match['$or'] = [
+        { 'event.title': { $regex: search, $options: 'i' } },
+        { 'event.description': { $regex: search, $options: 'i' } },
+        { 'event.keywords': { $regex: search, $options: 'i' } },
+        // { 'event.businessProfile': { $in: businessProfileIds } },
+      ];
+    }
+    match['businessProfile'] = new mongoose.Types.ObjectId(businessId);
+
+    let age = 0;
+    if (!user.isGuest) {
+      const foundUser = await this.userModel.findById(user.id);
+      age = foundUser.age ? foundUser.age : 0;
+    }
+    let data = {};
+    let query = { ...match };
+    let eventsResult = [];
+    if (categoryIds.length) {
+      const matchingCategories = [];
+      categoryIds.forEach((id) => {
+        matchingCategories.push(new mongoose.Types.ObjectId(id));
+      });
+      if (matchingCategories.length) {
+        query = {
+          ...query,
+          'event.categories': {
+            $in: matchingCategories,
+          },
+        };
+      } else {
+        return {
+          success: true,
+          message: 'Dashboard fetched successfully',
+          data: {
+            eventsResult,
+          },
+        };
+      }
+    } else {
+      const categories = await this.categoryModel.find().select('_id');
+      query = {
+        ...query,
+        'event.categories': { $in: categories.map((cat) => cat._id) },
+      };
+    }
+
+    let totalCount = 0;
+    console.log('Match:', match);
+    console.log('query from carousel dashboard:', query);
+    [eventsResult, totalCount] = await this.fetchEventsV2(
+      new mongoose.Types.ObjectId(user.id),
+      longitude,
+      latitude,
+      query,
+      page,
+      limit,
+      carouselType,
+      maxDistance,
+      startDate,
+      endDate,
+      dealType,
+    );
+    console.log('Total:::::::', totalCount);
+    return {
+      success: true,
+      message: 'Dashboard data fetched successfully',
+      events: eventsResult,
+      page,
+      limit,
+      totalCount,
+      pages: Math.ceil(totalCount / limit),
+    };
+  }
 
   // async processEventsAggregate(
   //   eventIds: Array<mongoose.Types.ObjectId>,
