@@ -459,6 +459,7 @@ export class StripeService {
         business: new mongoose.Types.ObjectId(businessId),
         status: SubscriptionStatus.ACTIVE,
         price: internalSubPrice._id,
+        product: internalSubPrice.product,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
