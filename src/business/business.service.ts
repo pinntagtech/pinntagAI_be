@@ -2025,8 +2025,6 @@ export class BusinessService {
           message: 'No Countries Found!',
         };
       }
-      logger.info(`page,limit ${page} ${limit}`);
-      logger.info(`countries: ${JSON.stringify(countries)}`);
 
       const countDocs = await this.businessCountryModel.countDocuments();
       logger.info(`countDocs: ${countDocs}`);

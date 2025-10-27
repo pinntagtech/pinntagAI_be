@@ -446,8 +446,10 @@ export class StripeService {
     // Find or create our internal Subscription record
     // Map Stripe price -> internal product/price if needed (you have that mapping).
     const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
+    console.log("STRIPESUBBB:",stripeSub);
 
     const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
+    console.log("PRICEID:",priceId);
     if (!priceId) return;
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
