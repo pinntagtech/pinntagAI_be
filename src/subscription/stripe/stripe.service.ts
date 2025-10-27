@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, mongo } from 'mongoose';
 import { InjectStripe } from 'nestjs-stripe';
 import {
   SubscriptionServiceTypes,
@@ -454,7 +454,7 @@ export class StripeService {
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
-        business: businessId,
+        business: new mongoose.Types.ObjectId(businessId),
         status: SubscriptionStatus.ACTIVE,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
@@ -463,6 +463,7 @@ export class StripeService {
       },
       { upsert: true, new: true },
     );
+    await this.businessModel.updateOne({_id:new mongoose.Types.ObjectId(businessId)},{$set:{activeSubscription:new mongoose.Types.ObjectId(internalSub.id)}})
     const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
     );
