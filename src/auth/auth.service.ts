@@ -135,6 +135,7 @@ import {
   RewardLocation,
   RewardLocationDocument,
 } from 'src/rewards/model/rewardLocation.model';
+import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
 
 @Injectable()
 export class AuthService {
@@ -179,8 +180,8 @@ export class AuthService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
-    @InjectModel(RewardLocation.name)
-    private readonly rewardLocationModel: Model<RewardLocationDocument>,
+    @InjectModel(RewardLocation.name) private readonly rewardLocationModel: Model<RewardLocationDocument>,
+    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -7171,4 +7172,25 @@ export class AuthService {
       };
     }
   }
+
+  async featuredAssets() {
+    try {
+      const featuredAssets = await this.featuredAssetModel
+        .find({ isActive: true })
+        .populate('file', 'metaData')
+        .sort({ sortOrder: 1 });
+      return {
+        success: true,
+        message: 'Featured assets fetched successfully',
+        data: featuredAssets,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    } 
+  }
+
+
 }

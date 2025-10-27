@@ -152,6 +152,7 @@ import { Coupon } from 'src/subscription/models/coupon.model';
 import { EtlDataDto } from './dto/etl-data.dto';
 import { Folder } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
+import { FeaturedAsset } from './models/featuredAssets.model';
 
 @Injectable()
 export class AdminService {
@@ -206,8 +207,8 @@ export class AdminService {
     private readonly docVerificationLeadModel: Model<BusinessDocVerificationLeads>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(EventSchedule.name)
-    private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(EventSchedule.name) private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3261,15 +3262,133 @@ export class AdminService {
       },
       { $match: { count: { $gt: 1 } } },
     ]);
-    console.log("Duplicates:",duplicates);
+    console.log('Duplicates:', duplicates);
     // Step 2: For each duplicate group, keep one and delete the rest
     duplicates.forEach(async (group) => {
       // Keep the first document and remove others
       const idsToDelete = group.ids.slice(1); // all except the first
       if (idsToDelete.length > 0) {
-        await this.eventModel.deleteMany({ _id: { $in: idsToDelete },isFromCrawler:true });
-        console.log("IdsToDelete::",idsToDelete)
+        await this.eventModel.deleteMany({
+          _id: { $in: idsToDelete },
+          isFromCrawler: true,
+        });
+        console.log('IdsToDelete::', idsToDelete);
       }
     });
+  }
+
+  async uploadFeaturedVideo(
+    adminId: string,
+    video: Express.Multer.File,
+    title: string,
+    description: string,
+  ) {
+    try {
+      const admin = await this.adminModel.findById(adminId);
+      if (!admin) {
+        return {
+          success: false,
+          message: 'Admin not found',
+        };
+      }
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.PROMOTIONAL_VIDEO,
+      });
+      if (!fileCategory) {
+        return {
+          success: false,
+          message: 'File category not found',
+        };
+      }
+      const fileRecord = await this.driveService.uploadFile(
+        adminId,
+        admin.drive.toString(),
+        fileCategory.id,
+        video,
+      );
+
+      const featuredVideo = await this.featuredAssetModel.create({
+        title,
+        description,
+        file: new mongoose.Types.ObjectId(fileRecord.data.id),
+        isActive: false,
+      });
+
+      return {
+        success: true,
+        message: 'Featured video uploaded successfully',
+        data: featuredVideo,
+      };
+    } catch (error) {
+      console.error('Error in uploadFeaturedVideo:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while uploading featured video.',
+      };
+    }
+  }
+
+  async fetchFeaturedVideos(isActive: string, page: number, limit: number) {
+    try {
+      const videos = await this.featuredAssetModel
+        .find(isActive ? { isActive: isActive === 'true' } : {})
+        .populate('file')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      return {
+        success: true,
+        message: 'Featured videos fetched successfully',
+        data: videos,
+      };
+    } catch (error) {
+      console.error('Error in fetchFeaturedVideos:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while fetching featured videos.',
+      };
+    }
+  }
+
+  async updateFeaturedVideoStatus(id: string, isActive: boolean, user: DecodedUser) {
+    try {
+      const video = await this.featuredAssetModel.findById(id);
+      if (!video) {
+        return {
+          success: false,
+          message: 'Featured video not found',
+        };
+      }
+      video.isActive = isActive;
+      await video.save();
+      return {
+        success: true,
+        message: `Featured video ${
+          isActive ? 'activated' : 'deactivated'
+        } successfully`,
+        data: video,
+      };
+    } catch (error) {
+      console.error('Error in toggleFeaturedVideoStatus:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while updating featured video status.',
+      };
+    }
+  }
+  async deleteFeaturedVideo(id: string, user: DecodedUser) {
+    try {
+      await this.driveService.deleteFile(id, user);
+      return {
+        success: true,
+        message: 'Featured video deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error in deleteFeaturedVideo:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while deleting featured video.',
+      };
+    }
   }
 }

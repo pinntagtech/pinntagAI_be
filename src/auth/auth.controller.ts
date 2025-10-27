@@ -919,4 +919,20 @@ export class AuthController {
       limit: result.limit,
     };
   }
+
+  @Get('featuredAssets')
+  @UseGuards(JwtGuard2)
+  async featuredAssets() {
+    const result = await this.authService.featuredAssets();
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
+
+
+
 }

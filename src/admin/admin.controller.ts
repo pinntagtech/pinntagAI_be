@@ -1452,8 +1452,8 @@ export class AdminController {
   @Post('ETL')
   @UseGuards(AdminGuard2)
   async runETLProcess(
-  @TokenDecoder() user: DecodedUser,
-  // @Body() data: EtlDataDto
+    @TokenDecoder() user: DecodedUser,
+    // @Body() data: EtlDataDto
   ) {
     // const result = await this.adminService.runETLProcess(data, user.id);
     // if (result.success) {
@@ -1461,12 +1461,106 @@ export class AdminController {
     // } else {
     //   throw new BadRequestException({ message: result.message });
     // }
-  
+
     await this.adminService.runDbQueries();
-
-
-
   }
 
+  @Post('upload/featuredVideo')
+  @UseGuards(AdminGuard2)
+  @UseInterceptors(
+    FileInterceptor('video', {
+      limits: { fileSize: 50000000 },
+    }),
+  )
+  async uploadFeaturedVideo(
+    @UploadedFile() video: Express.Multer.File,
+    @Body('title') title: string,
+    @Body('description') description: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (!video) {
+      throw new BadRequestException('Video file is required');
+    }
 
+    const result = await this.adminService.uploadFeaturedVideo(
+      user.id,
+      video,
+      title,
+      description,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Get('fetch/featuredVideos')
+  @UseGuards(AdminGuard2)
+  async fetchFeaturedVideos(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('isActive') isActive: string,
+  ) {
+    if (isActive && isActive !== 'true' && isActive !== 'false') {
+      throw new BadRequestException('isActive must be either true or false');
+    }
+    const pageNumber = page ? parseInt(page) : 1;
+    const limitNumber = limit ? parseInt(limit) : 10;
+
+    const result = await this.adminService.fetchFeaturedVideos(
+      isActive,
+      pageNumber,
+      limitNumber,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('featuredVideo/updateStatus/:id')
+  @UseGuards(AdminGuard2)
+  async updateFeaturedVideoStatus(
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.updateFeaturedVideoStatus(
+      id,
+      isActive,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Delete('featuredVideo/delete/:id')
+  @UseGuards(AdminGuard2)
+  async deleteFeaturedVideo(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.adminService.deleteFeaturedVideo(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

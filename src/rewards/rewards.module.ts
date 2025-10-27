@@ -177,6 +177,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
+import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 
 @Module({
   imports: [
@@ -260,6 +261,7 @@ import { BusinessActivation, BusinessActivationSchema } from 'src/business/model
       { name: Coupon.name, schema: CouponSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
+      { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
     ]),
   ],
   controllers: [RewardsController],
