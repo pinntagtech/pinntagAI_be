@@ -892,16 +892,30 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
-    //2. Upload thumbnail
     const [base, rest] = s3.Location.split('amazonaws');
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+    //2. Upload thumbnail
+    let thumbnailUrl = '';
+    if (allowedVideoMimeTypes.includes(file.mimetype)) {
+      const thumbnailBuffer = await this.generateThumbnailBuffer(file.buffer);
+
+      // // 3️⃣ Upload thumbnail to S3
+      const thumbnailS3 = await this.s3Service.s3_upload(
+        thumbnailBuffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
+        'image/png',
+      );
+      const [thumbBase, thumbRest] = thumbnailS3.Location.split('amazonaws');
+      thumbnailUrl = `${thumbBase}${process.env.AWS_REGION}.amazonaws${thumbRest}`;
+    }
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
         url,
-        thumbnailUrl: '',
+        thumbnailUrl: thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
       },
