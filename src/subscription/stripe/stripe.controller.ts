@@ -56,6 +56,19 @@ export class StripeController {
     return { url };
   }
 
+  @Post('cancel')
+  @UseGuards(JwtGuard2)
+  async cancelSubscription(@TokenDecoder() user: DecodedUser) {
+    const result = await this.stripeService.cancelSubscription(user.businessProfile);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get('checkout/session/:id')
   @UseGuards(JwtGuard2)
   async getCheckoutSession(@Param('id') id: string) {

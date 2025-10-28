@@ -8,6 +8,13 @@ import { Exception } from 'handlebars';
 import { User, UserDocument } from 'src/user/models/user.model';
 import * as QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
+
+import * as fs from 'fs';
+// import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import * as path from 'path';
+import * as os from 'os';
+
 // import {
 //   BusinessProfile,
 //   BusinessProfileDocument,
@@ -40,7 +47,6 @@ import {
 } from 'src/business/model/businessUser.model';
 import { OfferStatus } from 'src/business/enums/business.enum';
 import { Business, BusinessDocument } from 'src/business/model/business.model';
-import path from 'path';
 import axios from 'axios';
 import streamifier from 'streamifier';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
@@ -48,6 +54,8 @@ import sharp from 'sharp';
 import { CreateSampleDocumentDto } from './dto/createSampleDocument.dto';
 import { SampleDocument } from 'src/admin/models/sampleDocuments.model';
 
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 @Injectable()
 export class DriveService {
   constructor(
@@ -226,6 +234,151 @@ export class DriveService {
           fileCategoryId,
         );
       }
+
+      return {
+        success: true,
+        message: 'File uploaded successfully',
+        data: createdFile,
+      };
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return { success: false, message: 'Failed to upload media' };
+    }
+  }
+
+  async generateThumbnailBuffer(videoBuffer: Buffer): Promise<Buffer> {
+    const tempDir = os.tmpdir();
+    const tempVideoPath = path.join(tempDir, `${Date.now()}-video.mp4`);
+    const thumbnailPath = path.join(tempDir, `${Date.now()}-thumbnail.png`);
+
+    console.log('FFmpeg typeof:', typeof ffmpeg);
+
+    fs.writeFileSync(tempVideoPath, videoBuffer);
+
+    return new Promise((resolve, reject) => {
+      ffmpeg(tempVideoPath)
+        .on('end', () => {
+          const buffer = fs.readFileSync(thumbnailPath);
+          fs.unlinkSync(tempVideoPath);
+          fs.unlinkSync(thumbnailPath);
+          resolve(buffer);
+        })
+        .on('error', (err) => reject(err))
+        .screenshots({
+          count: 1,
+          filename: path.basename(thumbnailPath),
+          folder: tempDir,
+          size: '640x?',
+          timemarks: ['00:00:02.000'],
+        });
+    });
+  }
+
+  async uploadVideo(
+    parentId: string,
+    locationId: string,
+    fileCategoryId: string,
+    file: Express.Multer.File,
+  ) {
+    try {
+      if (!isValidObjectId(parentId)) {
+        return {
+          success: false,
+          message: 'Invalid ObjectId',
+        };
+      }
+      if (!fileCategoryId) {
+        let getFileCategory = await this.fileCategoryModel.findOne({
+          name: FileCategoryTypes.OTHER,
+        });
+        fileCategoryId = getFileCategory.id;
+      }
+      if (!allowedVideoMimeTypes.includes(file.mimetype)) {
+        return {
+          success: false,
+          message: 'Invalid video file type',
+        };
+      }
+      let parentType = null;
+      let fileType = null;
+      console.log('parentId:', parentId);
+      let driveDetails = await this.driveModel.findOne({
+        owner: new mongoose.Types.ObjectId(parentId),
+      });
+      if (!driveDetails) {
+        return {
+          success: false,
+          message: 'Drive not found!',
+        };
+      }
+      parentType = driveDetails.ownerType;
+
+      if (!locationId) locationId = driveDetails.id;
+
+      console.log('ParentType:', parentType);
+      console.log('FILE:', file);
+      const [drive, folder] = await Promise.all([
+        this.driveModel.findById(locationId),
+        this.folderModel.findById(locationId),
+      ]);
+      if (!drive && !folder) {
+        return { success: false, message: 'Invalid locationId' };
+      }
+      const parentDirectoryType = drive ? Drive.name : folder.parentType;
+      console.log(driveDetails);
+      if (file.size > driveDetails.AvailableSpace) {
+        return {
+          success: false,
+          message: 'You have been consumed your available free space',
+          data: driveDetails,
+        };
+      }
+
+      if (!driveDetails) {
+        return {
+          success: false,
+          message: 'Drive not found',
+        };
+      }
+      let createdFile = null;
+      const s3 = await this.s3Service.s3_upload(
+        file.buffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        manipulateImageName(file.originalname),
+        file.mimetype,
+      );
+      const [base, rest] = s3.Location.split('amazonaws');
+      const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+      //2. Upload thumbnail
+
+      const thumbnailBuffer = await this.generateThumbnailBuffer(file.buffer);
+
+      // // 3️⃣ Upload thumbnail to S3
+      const thumbnailS3 = await this.s3Service.s3_upload(
+        thumbnailBuffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
+        'image/png',
+      );
+      const [thumbBase, thumbRest] = thumbnailS3.Location.split('amazonaws');
+      const thumbnailUrl = `${thumbBase}${process.env.AWS_REGION}.amazonaws${thumbRest}`;
+
+      // 2. Persist File doc
+      createdFile = await this.fileModel.create({
+        metaData: {
+          mimeType: file.mimetype,
+          url,
+          thumbnailUrl: thumbnailUrl,
+          size: file.size,
+          originalName: file.originalname,
+        },
+        parentDirectory: new mongoose.Types.ObjectId(locationId),
+        ParentDirectoryType: parentDirectoryType,
+        fileType: FileType.IMAGE,
+        category: new mongoose.Types.ObjectId(fileCategoryId),
+        parent: new mongoose.Types.ObjectId(parentId),
+        parentType: Event.name, // or drive/folder parentType as needed
+      });
 
       return {
         success: true,
@@ -739,16 +892,30 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
-    //2. Upload thumbnail
     const [base, rest] = s3.Location.split('amazonaws');
     const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+    //2. Upload thumbnail
+    let thumbnailUrl = '';
+    if (allowedVideoMimeTypes.includes(file.mimetype)) {
+      const thumbnailBuffer = await this.generateThumbnailBuffer(file.buffer);
+
+      // // 3️⃣ Upload thumbnail to S3
+      const thumbnailS3 = await this.s3Service.s3_upload(
+        thumbnailBuffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
+        'image/png',
+      );
+      const [thumbBase, thumbRest] = thumbnailS3.Location.split('amazonaws');
+      thumbnailUrl = `${thumbBase}${process.env.AWS_REGION}.amazonaws${thumbRest}`;
+    }
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
         url,
-        thumbnailUrl: '',
+        thumbnailUrl: thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
       },

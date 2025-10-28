@@ -426,9 +426,9 @@ export class EventService2 {
               let durations = schedule.fixedSchedule.durations;
               for (let j = 0; j < durations.length; j++) {
                 console.log('Durations:', durations[j]);
-                if (new Date(durations[j].startTime) >= new Date()) {
-                  console.log('Start time:', durations[j].startTime);
-                  requiredSchedule = durations[j].startTime;
+                if (new Date(durations[j].endTime) >= new Date()) {
+                  console.log('End time:', durations[j].endTime);
+                  requiredSchedule = durations[j].endTime;
                   break;
                 }
                 // else {

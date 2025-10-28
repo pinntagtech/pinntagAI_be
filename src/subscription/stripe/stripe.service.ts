@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, mongo } from 'mongoose';
 import { InjectStripe } from 'nestjs-stripe';
 import {
   SubscriptionServiceTypes,
@@ -449,19 +449,33 @@ export class StripeService {
 
     const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
     if (!priceId) return;
+    const internalSubPrice = await this.subscriptionPriceModel.findOne({
+      stripePriceId: priceId,
+    });
+    if (!internalSubPrice) return;
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
-        business: businessId,
+        business: new mongoose.Types.ObjectId(businessId),
         status: SubscriptionStatus.ACTIVE,
+        price: internalSubPrice._id,
+        product: internalSubPrice.product,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
         // Optionally also store stripe customer on Business (already done in ensure)
       },
       { upsert: true, new: true },
+    );
+    await this.businessModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(businessId) },
+      {
+        $set: {
+          activeSubscription: new mongoose.Types.ObjectId(internalSub.id),
+        },
+      },
     );
     const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
@@ -839,8 +853,40 @@ export class StripeService {
     return await this.stripe.subscriptions.retrieve(subscriptionId);
   }
 
-  async cancelSubscription(subscriptionId: string) {
-    return await this.stripe.subscriptions.cancel(subscriptionId);
+  async cancelSubscription(businessId: string) {
+    const business = await this.businessModel.findById(businessId);
+    if (!business) {
+      return {
+        success: false,
+        message: 'Business Not found',
+      };
+    }
+    const activeSub = await this.subscriptionModel.findOne({
+      _id: new mongoose.Types.ObjectId(business.activeSubscription),
+    });
+    if (!activeSub || !activeSub.stripeSubscriptionId) {
+      return {
+        success: false,
+        message: 'Active Subscription not found',
+      };
+    }
+
+    const data = await this.stripe.subscriptions.cancel(
+      activeSub.stripeSubscriptionId,
+    );
+    console.log("cancel subscription data:",data);
+    if (data && data.id) {
+      await this.subscriptionModel.updateOne({ _id: new mongoose.Types.ObjectId(business.activeSubscription)},{$set:{isCancelled:true}});
+      return {
+        sucess: true,
+        message: 'Subscription cancelled',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Technical Problem in cancelling your subscription',
+    };
   }
 
   async retriveInvoicesOfSubscription(subscriptionId: string) {

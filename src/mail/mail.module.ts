@@ -153,6 +153,7 @@ import {
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 
 @Global()
 @Module({
@@ -216,15 +217,16 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
       { name: Coupon.name, schema: CouponSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
     ]),
     MailerModule.forRoot({
       transport: {
-        host: 'smtp.gmail.com',
+        host: 'email-smtp.us-east-1.amazonaws.com',
         port: 587,
         auth: {
-          user: 'tns.flutter1@gmail.com',
-          pass: 'yexu pyto ujrl tuks',
+          user: 'AKIA2CUNLHD3ULIZ3P6O',
+          pass: 'BH0z8M42BT1516FMB13rymSgOrkjjKUYs+k/VRr8FdQH',
         },
       },
       defaults: {

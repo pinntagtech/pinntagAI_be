@@ -83,7 +83,7 @@ export class GoogleController {
 
   @Post('reverseGeocode')
   // @UseGuards(JwtGuard2)
-  // @UseGuards(RateLimitGuard)
+  @UseGuards(RateLimitGuard)
    @ApiHeader({
     name: 'X-Goog-Api-Key',
     description: 'Google Maps API key',
