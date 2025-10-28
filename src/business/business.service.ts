@@ -391,7 +391,7 @@ export class BusinessService {
           message: 'Otp Expired, Please resend.',
         };
       } else if (
-        foundOtpDoc.otp !== Number(data.otp) &&
+        foundOtpDoc.otp !== Number(data.otp) ||
         Number(data.otp) !== 123456
       ) {
         return {
