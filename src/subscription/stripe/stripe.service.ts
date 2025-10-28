@@ -874,6 +874,7 @@ export class StripeService {
     const data = await this.stripe.subscriptions.cancel(
       activeSub.stripeSubscriptionId,
     );
+    console.log("cancel subscription data:",data);
     if (data && data.id) {
       await this.subscriptionModel.updateOne({ _id: new mongoose.Types.ObjectId(business.activeSubscription)},{$set:{isCancelled:true}});
       return {
@@ -881,7 +882,7 @@ export class StripeService {
         message: 'Subscription cancelled',
       };
     }
-    
+
     return {
       success: true,
       message: 'Technical Problem in cancelling your subscription',
