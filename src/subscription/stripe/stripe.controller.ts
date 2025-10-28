@@ -63,7 +63,6 @@ export class StripeController {
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);
