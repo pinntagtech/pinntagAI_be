@@ -361,6 +361,159 @@ export class OutletService {
       };
     }
   }
+  async createOutletV2(data: CreateOutletDto, user: any) {
+    try {
+      console.log('data:', data);
+      const businessUser = await this.businessUserModel.findById(user.id);
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business Profile not found!',
+        };
+      }
+
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      let {
+        category,
+        name,
+        address1,
+        address2,
+        // posSystemId,
+        // vehicleRegistrationNumber,
+        vehicleType,
+        // gpsTrackerEnabled,
+        openingTime,
+        closingTime,
+      } = data;
+
+      if (
+        !Object.values(OutletCategoryList).includes(
+          category as OutletCategoryList,
+        )
+      ) {
+        return {
+          success: false,
+          message: 'Invalid category',
+        };
+      }
+
+      if (category === OutletCategoryList.MOBILE && !vehicleType) {
+        return {
+          success: false,
+          message: 'Vehicle Type is required',
+        };
+      }
+      const foundOutlet = await this.outletModel.findOne({
+        address1: address1,
+        business: business._id,
+      });
+      console.log('foundOutlet', foundOutlet);
+      if (foundOutlet) {
+        return {
+          success: false,
+          message: 'Outlet already exists with given address.',
+        };
+      }
+
+      let createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
+      });
+      createObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      createObj['business'] = new mongoose.Types.ObjectId(business.id);
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [data.longitude, data.latitude],
+      };
+      if (data.openingTime) {
+        createObj['openingTime'] = new Date(data.openingTime);
+      }
+
+      if (data.closingTime) {
+        createObj['closingTime'] = new Date(data.closingTime);
+      }
+
+      const outlet = await this.outletModel.create(createObj);
+
+      const spot = await this.mobileSpotsModel.create({
+        name: outlet.name,
+        business: outlet.business,
+        outlet: outlet._id,
+        creator: outlet.creator,
+        accuracy: outlet.accuracy,
+        address1: outlet.address1,
+        address2: outlet.address2,
+        city: outlet.city,
+        state: outlet.state,
+        country: outlet.country,
+        postalCode: outlet.postalCode,
+        latitude: outlet.latitude,
+        longitude: outlet.longitude,
+        location: outlet.location,
+      });
+
+      let updateObj: any = {};
+      if (outlet.category === OutletCategoryList.PHYSICAL) {
+        updateObj['physicalUnitsCreated'] = business.physicalUnitsCreated + 1;
+      }
+      if (outlet.category === OutletCategoryList.MOBILE) {
+        updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
+      }
+      console.log('Business User Id:', businessUser.id);
+
+      await this.outletModel.updateOne(
+        { _id: outlet.id },
+        { $push: { spots: spot._id } },
+      );
+
+      // if (createObj.manager) {
+      //   const isUserUpdated = await this.businessUserModel.updateOne(
+      //     { _id: createObj.manager },
+      //     { $addToSet: { assignedOutlets: outlet.id } },
+      //   );
+      // }
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        {
+          $push: { outlets: new mongoose.Types.ObjectId(outlet.id) },
+          $set: { ...updateObj },
+        },
+      );
+      await this.businessUserModel.updateOne(
+        { _id: businessUser.id },
+        { $addToSet: { assignedOutlets: outlet.id } },
+      );
+
+      return {
+        success: true,
+        message: 'Outlet created successfully.',
+        data: outlet,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+
+
   async updateOutlet(data: UpdateOutletDto, user: any, id: string) {
     try {
       const businessUser = await this.businessUserModel.findById(user.id);

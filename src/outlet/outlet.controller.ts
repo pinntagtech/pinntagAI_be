@@ -123,6 +123,28 @@ export class OutletController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('v2')
+  @UseGuards(JwtGuard2)
+   @UseInterceptors(
+      FileInterceptor('file', {
+        limits: { fileSize: 50000000 },
+      }),
+    )
+  async createOutletV2(
+    @Body() createOutletDto: CreateOutletDto,
+    @TokenDecoder() user: JwtPayload,
+     @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.outletService.createOutletV2(createOutletDto, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Post('/update/:id')
   @UseGuards(JwtGuard2)

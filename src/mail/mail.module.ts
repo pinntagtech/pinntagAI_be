@@ -222,11 +222,11 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
     ]),
     MailerModule.forRoot({
       transport: {
-        host: 'smtp.gmail.com',
+        host: 'email-smtp.us-east-1.amazonaws.com',
         port: 587,
         auth: {
-          user: 'tns.flutter1@gmail.com',
-          pass: 'yexu pyto ujrl tuks',
+          user: 'AKIA2CUNLHD3ULIZ3P6O',
+          pass: 'BH0z8M42BT1516FMB13rymSgOrkjjKUYs+k/VRr8FdQH',
         },
       },
       defaults: {

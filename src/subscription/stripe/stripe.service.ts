@@ -844,8 +844,30 @@ export class StripeService {
     return await this.stripe.subscriptions.retrieve(subscriptionId);
   }
 
-  async cancelSubscription(subscriptionId: string) {
-    return await this.stripe.subscriptions.cancel(subscriptionId);
+  async cancelSubscription(businessId: string) {
+
+    const business = await this.businessModel.findById(businessId);
+    if(!business){
+      return {
+        success: false,
+        message: "Business Not found"
+      }
+    }
+    const activeSub = await this.subscriptionModel.findOne({_id:new mongoose.Types.ObjectId(business.activeSubscription)});
+    if(!activeSub || !activeSub.stripeSubscriptionId){
+      return {
+        success: false,
+        message: "Active Subscription not found"
+      }
+    }
+
+
+    const data = await this.stripe.subscriptions.cancel(activeSub.stripeSubscriptionId);
+    return {
+      success: true,
+      message: "Cancel Subscription Initiated",
+      data
+    }
   }
 
   async retriveInvoicesOfSubscription(subscriptionId: string) {
