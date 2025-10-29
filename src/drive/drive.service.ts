@@ -109,7 +109,7 @@ export class DriveService {
     );
     const thumbnail = await FileUploadUtils.compressThumbnail(file);
     const thumbnailS3 = await this.s3Service.s3_upload(
-      thumbnail,
+      thumbnail.buffer,
       process.env.AWS_S3_BUCKET_NAME,
       `thumbnails/${manipulateImageName(file.originalname)}`,
       file.mimetype,
@@ -892,8 +892,6 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
-    const [base, rest] = s3.Location.split('amazonaws');
-    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
     //2. Upload thumbnail
     let thumbnailUrl = '';
     if (allowedVideoMimeTypes.includes(file.mimetype)) {
@@ -906,16 +904,15 @@ export class DriveService {
         `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
         'image/png',
       );
-      const [thumbBase, thumbRest] = thumbnailS3.Location.split('amazonaws');
-      thumbnailUrl = `${thumbBase}${process.env.AWS_REGION}.amazonaws${thumbRest}`;
+      thumbnailUrl = thumbnailS3.Location;
     }
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
-        url,
-        thumbnailUrl: thumbnailUrl,
+        url:s3.Location,
+        thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
       },
@@ -942,6 +939,7 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
+    console.log("B3 S3 fileee:",s3);
     //2. Upload thumbnail
     const thumbnail = await FileUploadUtils.compressThumbnail(file);
     const thumbnailS3 = await this.s3Service.s3_upload(
@@ -950,16 +948,13 @@ export class DriveService {
       `thumbnails/${manipulateImageName(file.originalname)}`,
       thumbnail.mimetype,
     );
-    const [base, rest] = s3.Location.split('amazonaws');
-    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
-    const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
-        url,
-        thumbnailUrl,
+        url:s3.Location,
+        thumbnailUrl:thumbnailS3.Location,
         size: file.size,
         originalName: file.originalname,
       },
@@ -1601,7 +1596,12 @@ export class DriveService {
   ) {
     // Implementation for uploading a sample document
     try {
-      const result = await this.s3Service.uploadFile(file);
+      const result = await this.s3Service.s3_upload(
+        file.buffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        file.originalname,
+        file.mimetype,
+      );
       if (!result) {
         throw new Error('Failed to upload file');
       }
