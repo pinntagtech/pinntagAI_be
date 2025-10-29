@@ -347,8 +347,6 @@ export class DriveService {
         manipulateImageName(file.originalname),
         file.mimetype,
       );
-      const [base, rest] = s3.Location.split('amazonaws');
-      const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
       //2. Upload thumbnail
 
       const thumbnailBuffer = await this.generateThumbnailBuffer(file.buffer);
@@ -360,15 +358,14 @@ export class DriveService {
         `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
         'image/png',
       );
-      const [thumbBase, thumbRest] = thumbnailS3.Location.split('amazonaws');
-      const thumbnailUrl = `${thumbBase}${process.env.AWS_REGION}.amazonaws${thumbRest}`;
+      let thumbnailUrl = '';
 
       // 2. Persist File doc
       createdFile = await this.fileModel.create({
         metaData: {
           mimeType: file.mimetype,
-          url,
-          thumbnailUrl: thumbnailUrl,
+          url:s3.Location,
+          thumbnailUrl,
           size: file.size,
           originalName: file.originalname,
         },
@@ -904,7 +901,7 @@ export class DriveService {
         `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
         'image/png',
       );
-      thumbnailUrl = thumbnailS3.Location;
+      thumbnailUrl = thumbnailS3.Location; 
     }
 
     // 2. Persist File doc
