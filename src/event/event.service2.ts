@@ -6173,6 +6173,7 @@ export class EventService2 {
             QR_CODE: 1,
             images: 1,
             keywords: 1,
+            title: 1,
             description: 1,
             locations: 1,
             minTargetAge: 1,
