@@ -1242,72 +1242,24 @@ export class AdminService {
   }
   async createBusinessFromRow(row: any, user: DecodedUser) {
     try {
-      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
+      const { cover,logo,name,AddressLine1,AddressLine2,city,state,country,postalCode,latitude,longitude,phone,countryCode,email,website,openingTime,closingTime,busyTime,slowTime,rating,menu,categories,industry} = row;
+      const foundBusiness = await this.businessModel.findOne({email:email});
+      if(foundBusiness){
+        throw new BadRequestException('Business already exists with this email');
+      }
+      const businessUser = await this.businessUserModel.findOne({
+        email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+      });
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Pinntag Business user not seeded',
+        };
+      }
       
-      const foundUser = await this.adminModel.findOne({
-        email: row.email,
-      });
 
-      if (foundUser) {
-        throw new BadRequestException('Admin already found with this email');
-      }
-      let password = await this.authService.autoGeneratePassword();
-      const hashedPassword = await bcrypt.hash(password, 10);
-      let role = null;
-      if (row.role) {
-        role = await this.roleModel.findOne({
-          name: row.role,
-          creator: superAdmin._id,
-        });
-        if (!role) {
-          throw new BadRequestException('Please provide valid Role.');
-        }
-      } else {
-        throw new BadRequestException('Please provide valid Role.');
-      }
-      let fullPhoneNumber = row.countryCode + row.phone;
-      const existingAdmin = await this.adminModel.findOne({
-        $or: [{ email: row.email }, { fullPhoneNumber: fullPhoneNumber }],
-      });
-      if (existingAdmin) {
-        throw new BadRequestException(
-          'Admin with this email or phone number already exists.',
-        );
-      }
 
-      let createObj = {
-        role: [new mongoose.Types.ObjectId(role._id)],
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        countryCode: row.countryCode,
-        creatorType: RoleCreatorType.ADMIN,
-        creator: new mongoose.Types.ObjectId(superAdmin._id),
-        password: hashedPassword,
-        fullPhoneNumber: fullPhoneNumber,
-        isEmailVerified: true,
-      };
 
-      const createdAdmin = await this.adminModel.create(createObj);
-
-      //create drive
-      let driveDetails = await this.seederService.createDrive(
-        createdAdmin._id,
-        Admin.name,
-      );
-      await this.adminModel.updateOne(
-        { _id: createdAdmin.id },
-        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
-      );
-
-      // sendEmaillink verification
-      const loginLink = process.env.PORTAL_URL + 'v1/business/user/login';
-      this.mailService.sendDownlineUserCredentials(
-        createdAdmin.name,
-        createdAdmin.email,
-        password,
-        loginLink,
-      );
     } catch (error) {
       throw new BadRequestException(
         'Error creating outlet from row: ' + error.message,
