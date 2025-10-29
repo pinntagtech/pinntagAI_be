@@ -396,9 +396,9 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
-    const [base, rest] = s3.Location.split('amazonaws');
-    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
-    return url;
+    // const [base, rest] = s3.Location.split('amazonaws');
+    // const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
+    return s3.Location;
   }
 
   async createFolder(id: string, folderData: Partial<any>) {
