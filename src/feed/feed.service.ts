@@ -172,12 +172,33 @@ export class FeedService {
           },
         },
         {
+          $lookup: {
+            from: 'businesses',
+            localField: 'contentDetails.business',
+            foreignField: '_id',
+            as: 'businessDetails'
+          }
+        },
+        {
+        $unwind: {
+          path: '$businessDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+        {
           $project: {
             feedType: 1,
             contentDetails: 1,
             createdAt: 1,
             visibility: 1,
             isFollowedByMe: 1,
+            businessDetails: {
+              logo: '$businessDetails.logo',
+              cover: '$businessDetails.cover',
+              name: '$businessDetails.name',
+              id: '$businessDetails._id'
+            }
           },    
         },
 

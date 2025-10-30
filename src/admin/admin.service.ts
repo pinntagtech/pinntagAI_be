@@ -820,7 +820,7 @@ export class AdminService {
         TokenTypes.RESET_PASSWORD,
       );
       const resetLink = `${origin}/reset-password?token=${token}`;
-      await this.mailService.sendForgotPasswordMail2(
+      this.mailService.sendForgotPasswordMail2(
         admin.name,
         admin.email,
         resetLink,

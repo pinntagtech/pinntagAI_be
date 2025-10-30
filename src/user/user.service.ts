@@ -578,7 +578,6 @@ export class UserService {
   // }
 
   async getUserById(id: string): Promise<User> {
-    console.log('IDDD:', id);
     const user = await this.userModel.findById(id).select({ password: 0 });
     // .populate('role', {
     //   __v: 0,
@@ -588,8 +587,6 @@ export class UserService {
     // .populate('subscriptions')
     // .populate('refferal', 'id code isBlacklisted')
     // .exec();
-
-    console.log('USERRRR:', user);
     return user;
   }
 

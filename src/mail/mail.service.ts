@@ -56,21 +56,27 @@ export class MailService {
 
   async sendUserVerificationMail(userId: string) {
     try {
+      console.log("Inside sendUserVerificationMail")
       const user = await this.userService.getUserById(userId);
       const otp = await this.userService.saveOtp({
         user: userId,
         type: OtpTypes.EMAIL,
       });
-      this.mailerService.sendMail({
-        to: user.email,
-        subject: 'Two-Factor Authentication',
-        template: process.cwd() + '/src/mail/templates/2fa.template.hbs',
-        context: {
-          name: user.firstName,
-          otp,
-          otpExpiry: '5 minutes',
-        },
-      });
+      try {
+        await this.mailerService.sendMail({
+          to: user.email,
+          subject: 'Two-Factor Authentication',
+          template: process.cwd() + '/src/mail/templates/2fa.template.hbs',
+          context: {
+            name: user.firstName,
+            otp,
+            otpExpiry: '5 minutes',
+          },
+        });
+        console.log("Is It COMINGGGGG::")
+      } catch (error) {
+        console.error('Error in sending mail!', error);
+      }
     } catch (error) {
       console.error('Error in sending mail!', error);
     }

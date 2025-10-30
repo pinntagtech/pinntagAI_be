@@ -450,7 +450,8 @@ export class AuthService {
           );
 
           // Send email OTP
-          await this.mailService.sendUserVerificationMail(foundUser.id);
+          console.log("Log BEFORE SENDING MAIL:::")
+          this.mailService.sendUserVerificationMail(foundUser.id);
 
           return {
             success: true,
@@ -656,7 +657,7 @@ export class AuthService {
           $set: { email },
         },
       );
-      await this.mailService.sendUserVerificationMail(id);
+      this.mailService.sendUserVerificationMail(id);
       return {
         success: true,
         message: 'Email saved successfully and OTP sent to verify it.',
@@ -1052,7 +1053,7 @@ export class AuthService {
         message: 'User not found with the email provided.',
       };
     } else {
-      await this.mailService.sendForgotPasswordMail(user.id);
+      this.mailService.sendForgotPasswordMail(user.id);
       return {
         success: true,
         id: user.id,
@@ -1280,7 +1281,7 @@ export class AuthService {
             message: 'User not found!',
           };
         }
-        await this.mailService.sendUserVerificationMail(foundUser.id);
+        this.mailService.sendUserVerificationMail(foundUser.id);
       }
       await foundUser.updateOne(
         { _id: foundUser.id },
@@ -1482,7 +1483,7 @@ export class AuthService {
       };
     } else {
       if (data.type === OtpTypes.EMAIL) {
-        await this.mailService.sendUserVerificationMail(data.user);
+        this.mailService.sendUserVerificationMail(data.user);
       } else if (data.type === OtpTypes.MOBILE) {
         this.smsService.sendSMS(data.user, user.fullPhoneNumber, SMSType.OTP);
       }
@@ -5971,7 +5972,7 @@ export class AuthService {
           userType,
         );
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-        await this.mailService.sendEmailVerificationMail(
+         this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
           resetLink,
@@ -5995,7 +5996,7 @@ export class AuthService {
           userType,
         );
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-        await this.mailService.sendForgotPasswordMail2(
+        this.mailService.sendForgotPasswordMail2(
           user.name,
           user.email,
           resetLink,
@@ -6021,7 +6022,7 @@ export class AuthService {
         );
 
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-        await this.mailService.sendEmailVerificationMail(
+        this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
           resetLink,
@@ -6110,7 +6111,7 @@ export class AuthService {
       );
 
       const resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-      await this.mailService.sendEmailVerificationMail(
+      this.mailService.sendEmailVerificationMail(
         user.name,
         user.email,
         resetLink,

@@ -257,12 +257,12 @@ export class NotificationService {
     };
 
 
-    // if (data.users && data.users !== '') {
-    //   let users = data.users.split(',').map((id) => id.trim());
-    //   broadcastObj['users'] = users.map(
-    //     (userId) => new mongoose.Types.ObjectId(userId),
-    //   );
-    // }
+    if (data.users && data.users !== '') {
+      let users = data.users.split(',').map((id) => id.trim());
+      broadcastObj['users'] = users.map(
+        (userId) => new mongoose.Types.ObjectId(userId),
+      );
+    }
 
     if (image) {
       const imageUrl = await this.driveService.noDriveUpload(image);

@@ -6385,7 +6385,7 @@ export class EventService2 {
       data.isFree = data.isFree === 'true';
 
       // Create folder
-      const businessFolder = await this.driveService.createFolder(userId, {
+      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
         parentDirectory: business.drive,
         parentType: 'Drive',
         folderName: data.title,
@@ -7876,7 +7876,7 @@ export class EventService2 {
         }
         data.categories = categoriesInObjectId;
       }
-      const businessFolder = await this.driveService.createFolder(userId, {
+      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
         parentDirectory: business.drive,
         parentType: 'Drive',
         folderName: data.title,

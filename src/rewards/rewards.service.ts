@@ -138,7 +138,7 @@ export class RewardsService {
       const business = await this.businessModel.findById(user.businessProfile);
       if (!business) return { success: false, message: 'Business not found.' };
 
-      const businessFolder = await this.driveService.createFolder(userId, {
+      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
         parentDirectory: business.drive,
         parentType: 'Drive',
         folderName: data.title,

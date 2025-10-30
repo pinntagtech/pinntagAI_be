@@ -248,7 +248,7 @@ export class BusinessService {
           foundUser.status === ProfileStatus.INITIATED &&
           foundUser.isEmailVerified === false
         ) {
-          await this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+          this.mailService.sendBusinessUserVerificationMail(foundUser.id);
           return {
             success: true,
             message: 'Business User already found with this email, OTP resent',
@@ -444,7 +444,7 @@ export class BusinessService {
           message: 'Email already verified!',
         };
       }
-      await this.mailService.sendBusinessUserVerificationMail(user.id);
+      this.mailService.sendBusinessUserVerificationMail(user.id);
       return {
         success: true,
         message: 'Otp resent successfully!',
@@ -471,7 +471,7 @@ export class BusinessService {
       }
       if (data.type === OtpTypes.EMAIL) {
         console.log('In MAILLLL:');
-        await this.mailService.sendBusinessVerificationMail(business.id);
+        this.mailService.sendBusinessVerificationMail(business.id);
       } else {
         const phoneNumber = parsePhoneNumberFromString(
           `${business.countryCode}${business.phone}`,
@@ -4876,7 +4876,7 @@ export class BusinessService {
           email: newOwnerEmail,
         });
 
-        await this.mailService.sendBusinessUserInvitation(
+        this.mailService.sendBusinessUserInvitation(
           newOwnerEmail,
           businessUser.name,
         );

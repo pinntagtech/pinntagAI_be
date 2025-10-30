@@ -401,10 +401,10 @@ export class DriveService {
     return s3.Location;
   }
 
-  async createFolder(id: string, folderData: Partial<any>) {
+  async createFolder(businessId: string, folderData: Partial<any>) {
     try {
       let driveDetails = await this.driveModel.findOne({
-        owner: new mongoose.Types.ObjectId(id),
+        owner: new mongoose.Types.ObjectId(businessId),
       });
       console.log('folder data........', folderData);
       if (

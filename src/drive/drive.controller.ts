@@ -67,10 +67,10 @@ export class DriveController {
   @Post('createFolder')
   @UseGuards(JwtGuard2)
   async createFolder(
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
     @Body() createDto: Partial<Folder>,
   ) {
-    const result = await this.driveService.createFolder(user.id, createDto);
+    const result = await this.driveService.createFolder(user.businessProfile, createDto);
 
     if (result.success) {
       return {
