@@ -76,7 +76,11 @@ import {
 } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
-import { Business, BusinessDocument } from 'src/business/model/business.model';
+import {
+  Business,
+  BusinessDocument,
+  CreatorType,
+} from 'src/business/model/business.model';
 import { AuthService } from 'src/auth/auth.service';
 import {
   BusinessIndustry,
@@ -152,7 +156,6 @@ import { EtlDataDto } from './dto/etl-data.dto';
 import { Folder } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
 import { FeaturedAsset } from './models/featuredAssets.model';
-
 
 @Injectable()
 export class AdminService {
@@ -1242,10 +1245,38 @@ export class AdminService {
   }
   async createBusinessFromRow(row: any, user: DecodedUser) {
     try {
-      const { cover,logo,name,AddressLine1,AddressLine2,city,state,country,postalCode,latitude,longitude,phone,countryCode,email,website,openingTime,closingTime,busyTime,slowTime,rating,menu,categories,industry} = row;
-      const foundBusiness = await this.businessModel.findOne({email:email});
-      if(foundBusiness){
-        throw new BadRequestException('Business already exists with this email');
+      const {
+        cover,
+        logo,
+        name,
+        description,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        country,
+        postalCode,
+        latitude,
+        longitude,
+        phone,
+        countryCode,
+        email,
+        website,
+        openingTime,
+        closingTime,
+        busyTime,
+        slowTime,
+        rating,
+        menu,
+        categories,
+        industry,
+        scalabilityFactor,
+      } = row;
+      const foundBusiness = await this.businessModel.findOne({ email: email });
+      if (foundBusiness) {
+        throw new BadRequestException(
+          'Business already exists with this email',
+        );
       }
       const businessUser = await this.businessUserModel.findOne({
         email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
@@ -1256,8 +1287,77 @@ export class AdminService {
           message: 'Pinntag Business user not seeded',
         };
       }
-      
+      const foundAdmin = await this.adminModel.findById(user.id);
+      if (!foundAdmin) {
+        return {
+          success: false,
+          message: 'Pinntag Admin user not found',
+        };
+      }
 
+      let lat = latitude,
+        long = longitude;
+      if (!lat && !long) {
+        let placeList = await this.googleService.googleRecommendation({
+          address: addressLine1,
+        });
+        let placeDetails = await this.googleService.getPlaceDetails(
+          placeList.data[0].placePrediction.placeId,
+          placeList.sessionToken,
+          addressLine1,
+        );
+        lat = placeDetails.data['latitude']
+          ? parseFloat(placeDetails.data['latitude'])
+          : 0;
+        long = placeDetails.data['longitude']
+          ? parseFloat(placeDetails.data['longitude'])
+          : 0;
+      }
+
+      let categoryNames = categories.split[','];
+      let categoryIds = [];
+      for (let category of categoryNames) {
+        const foundCategory = await this.businessCategoryModel.findOne({
+          title: category,
+        });
+        if (!foundCategory) {
+          throw new BadRequestException('Business Category Not found!');
+        }
+        categoryIds.push(foundCategory._id);
+      }
+      const foundIndustry = await this.industryModel.findOne({
+        title: industry,
+      });
+      if (!foundIndustry) {
+        throw new BadRequestException('Business Industry Not found!');
+      }
+      let createObj = {
+        status: 6.1,
+        logo: logo,
+        businessCategories: categoryIds,
+        businessIndustry: foundIndustry._id,
+        cover: cover,
+        description: description,
+        authorisedUser: businessUser._id,
+        creatorType: CreatorType.Admin,
+        creator: foundAdmin._id,
+        name: name,
+        phone: phone,
+        countryCode: countryCode,
+        email: email,
+        website: website,
+        addressLine1: addressLine1,
+        addressLine2: addressLine2,
+        city: city,
+        state: state,
+        country: country,
+        latitude: lat,
+        longitude: long,
+        isActive: false,
+        postalCode: postalCode,
+        scalabilityFactor: scalabilityFactor,
+      };
+      const createdBusiness = await this.businessModel.create(createObj);
 
 
     } catch (error) {
@@ -1363,10 +1463,7 @@ export class AdminService {
       };
     }
   }
-  async uploadBusinessesInBulk(
-    file: Express.Multer.File,
-    user: DecodedUser,
-  ) {
+  async uploadBusinessesInBulk(file: Express.Multer.File, user: DecodedUser) {
     try {
       const admin = await this.adminModel.findById(user.id);
       if (!admin) {
