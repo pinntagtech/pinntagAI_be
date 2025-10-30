@@ -115,7 +115,7 @@ export class DriveController {
     @Query('limit') limit: number = 10,
   ) {
     const result = await this.driveService.getFiles(
-      user.id,
+      user,
       user.userType,
       fileCategory,
       folderId,
@@ -189,7 +189,7 @@ export class DriveController {
     @Query('limit') limit: number = 10,
   ) {
     const result = await this.driveService.recentlyUploadedFiles(
-      user.id,
+      user,
       user.userType,
       page,
       limit,

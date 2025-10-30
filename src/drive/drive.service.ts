@@ -486,7 +486,7 @@ export class DriveService {
   }
 
   async getFiles(
-    userId: string,
+    user: DecodedUser,
     userType: string,
     fileCategory?: string,
     folderId?: string,
@@ -497,31 +497,31 @@ export class DriveService {
     try {
       const skip = (page - 1) * limit;
       console.log('limit:', typeof limit);
-      if (!isValidObjectId(userId))
+      if (!isValidObjectId(user.id))
         return {
           success: false,
           message: 'Please Provide valid ObjectId!',
         };
 
-      let user = null;
+      let userDetails = null;
       if (userType == UserTypes.ADMIN) {
-        user = await this.adminModel.findById(userId);
+        userDetails = await this.adminModel.findById(user.id);
       }
       if (userType == UserTypes.USER) {
-        user = await this.userModel.findById(userId);
+        userDetails = await this.userModel.findById(user.id);
       }
       if (userType == UserTypes.BUSINESS) {
-        user = await this.businessUserModel.findById(userId);
+        userDetails = await this.businessModel.findById(user.businessProfile);
       }
-      if (!user) {
+      if (!userDetails) {
         return {
           success: false,
           message: 'User not found!',
         };
       }
 
-      console.log('user:', userId, userType, fileType, user);
-      let locationId = user.drive;
+      console.log('user:', user.id, userType, fileType, user);
+      let locationId = userDetails.drive;
       if (folderId) {
         locationId = folderId;
       }
@@ -716,37 +716,37 @@ export class DriveService {
     }
   }
   async recentlyUploadedFiles(
-    userId: string,
+    user: DecodedUser,
     userType: string,
     page: number,
     limit: number,
   ) {
     try {
       const skip = (page - 1) * limit;
-      if (!isValidObjectId(userId))
+      if (!isValidObjectId(user.id))
         return {
           success: false,
           message: 'Please Provide valid ObjectId!',
         };
 
-      let user = null;
+      let userDetails = null;
       if (userType == UserTypes.ADMIN) {
-        user = await this.adminModel.findById(userId);
+        userDetails = await this.adminModel.findById(user.id);
       }
       if (userType == UserTypes.USER) {
-        user = await this.userModel.findById(userId);
+        userDetails = await this.userModel.findById(user.id);
       }
       if (userType == UserTypes.BUSINESS) {
-        user = await this.businessUserModel.findById(userId);
+        userDetails = await this.businessModel.findById(user.businessProfile);
       }
-      if (!user) {
+      if (!userDetails) {
         return {
           success: false,
           message: 'User not found!',
         };
       }
       let fileFilter: any = {
-        parentDirectory: new mongoose.Types.ObjectId(user.drive),
+        parentDirectory: new mongoose.Types.ObjectId(userDetails.drive),
       };
       const files = await this.fileModel
         .find(fileFilter)

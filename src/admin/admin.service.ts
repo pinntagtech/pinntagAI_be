@@ -1358,8 +1358,6 @@ export class AdminService {
         scalabilityFactor: scalabilityFactor,
       };
       const createdBusiness = await this.businessModel.create(createObj);
-
-
     } catch (error) {
       throw new BadRequestException(
         'Error creating outlet from row: ' + error.message,
@@ -2538,15 +2536,6 @@ export class AdminService {
           message: `Business already exist with given email:${data.businessEmail} `,
         };
       }
-
-      const businessFolder = await this.driveService.createFolder(
-        String(createdUser._id),
-        {
-          parentDirectory: createdUser.drive,
-          parentType: Drive.name,
-          folderName: data.businessName,
-        },
-      );
       let businessCategoriesIds = [];
       if (data.businessCategories) {
         // data.businessCategories = data.businessCategories.split(',');
@@ -2608,7 +2597,6 @@ export class AdminService {
         state: data.state,
         country: data.country,
         zipCode: data.zipCode,
-        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessCreatorType.ADMIN,
         creator: new mongoose.Types.ObjectId(user.id),
         authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
@@ -2626,7 +2614,6 @@ export class AdminService {
         businessObj['cover'] = coverUrl;
       }
       businessObj['postalCode'] = data.zipCode;
-      console.log("'BusinessObjXXXXXXXXXXXX:", businessObj);
 
       const createdBusiness = await this.businessModel.create(businessObj);
       await this.businessUserModel.updateOne(
@@ -2636,6 +2623,16 @@ export class AdminService {
             business: createdBusiness._id,
           },
         },
+      );
+
+      let businessDriveDetails = await this.seederService.createDrive(
+        createdBusiness._id,
+        Business.name,
+      );
+
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: businessDriveDetails._id } },
       );
       await this.roleModel.updateOne(
         { _id: ownerRole._id },

@@ -26,6 +26,7 @@ import {
 } from './types.model';
 import { Menu } from './menu.model';
 import { Admin } from 'src/admin/models/admin.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export class SocialMediaTokenDetails {
   value: string;
@@ -223,8 +224,8 @@ export class Business {
   managerEmail: string;
   @Prop()
   managerPhone: string;
-  @Prop({ ref: 'Folder' })
-  drivePath: mongoose.Types.ObjectId;
+  @Prop({ ref: 'Drive' })
+  drive: mongoose.Types.ObjectId;
 
   @Prop({ default: false })
   isPhysicalType: boolean;

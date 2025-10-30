@@ -1031,7 +1031,7 @@ export class OutletService {
           };
           const uploadResult = await this.driveService.uploadFile(
             businessUser.id,
-            String(business.drivePath),
+            String(business.drive),
             fileCategory.id,
             fakeFile,
           );

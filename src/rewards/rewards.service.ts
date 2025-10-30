@@ -139,8 +139,8 @@ export class RewardsService {
       if (!business) return { success: false, message: 'Business not found.' };
 
       const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
+        parentDirectory: business.drive,
+        parentType: 'Drive',
         folderName: data.title,
       });
       const now = new Date(data.startDate).setHours(0, 0, 0, 0);

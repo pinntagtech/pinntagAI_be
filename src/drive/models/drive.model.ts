@@ -10,7 +10,7 @@ export type DriveDocument = Drive & mongoose.Document;
 export class Drive {
   @Prop({ required: true, refPath: 'ownerType' })
   owner: mongoose.Types.ObjectId;
-  @Prop({ required: true, enum: [User.name, BusinessUser.name, Admin.name,Business.name] })
+  @Prop({ required: true, enum: [User.name, BusinessUser.name, Admin.name, 'Business'] })
   ownerType: string;
   @Prop()
   AvailableSpace: number;

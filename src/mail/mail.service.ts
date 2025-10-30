@@ -38,99 +38,125 @@ export class MailService {
   }
 
   async sendUserWelcomeMail(userId: string) {
-    const user = await this.userService.getUserById(userId);
-    this.mailerService.sendMail({
-      to: user.email,
-      subject: 'Welcome to Pinntag',
-      template: process.cwd() + '/src/mail/templates/welcomeMail.template.hbs',
-      context: {
-        name: user.firstName,
-      },
-    });
+    try {
+      const user = await this.userService.getUserById(userId);
+      this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Welcome to Pinntag',
+        template:
+          process.cwd() + '/src/mail/templates/welcomeMail.template.hbs',
+        context: {
+          name: user.firstName,
+        },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendUserVerificationMail(userId: string) {
-    const user = await this.userService.getUserById(userId);
-    const otp = await this.userService.saveOtp({
-      user: userId,
-      type: OtpTypes.EMAIL,
-    });
-    this.mailerService.sendMail({
-      to: user.email,
-      subject: 'Two-Factor Authentication',
-      template: process.cwd() + '/src/mail/templates/2fa.template.hbs',
-      context: {
-        name: user.firstName,
-        otp,
-        otpExpiry: '5 minutes',
-      },
-    });
+    try {
+      const user = await this.userService.getUserById(userId);
+      const otp = await this.userService.saveOtp({
+        user: userId,
+        type: OtpTypes.EMAIL,
+      });
+      this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Two-Factor Authentication',
+        template: process.cwd() + '/src/mail/templates/2fa.template.hbs',
+        context: {
+          name: user.firstName,
+          otp,
+          otpExpiry: '5 minutes',
+        },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendBusinessUserVerificationMail(userId: string) {
-    const profile = await this.businessUserModel.findOne({ _id: userId });
-    const otp = await this.userService.saveOtp({
-      user: userId,
-      type: OtpTypes.EMAIL,
-    });
-    await this.mailerService.sendMail({
-      to: profile.email,
-      subject: 'Verify your email',
-      template:
-        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
-      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
-    });
+    try {
+      const profile = await this.businessUserModel.findOne({ _id: userId });
+      const otp = await this.userService.saveOtp({
+        user: userId,
+        type: OtpTypes.EMAIL,
+      });
+      await this.mailerService.sendMail({
+        to: profile.email,
+        subject: 'Verify your email',
+        template:
+          process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+        context: { name: profile.name, otp, otpExpiry: '5 minutes' },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendBusinessTransferOtp(email: string, userId: string) {
-    const profile = await this.businessUserModel.findOne({ _id: userId });
-    const otp = await this.userService.saveOtp({
-      user: userId,
-      type: OtpTypes.EMAIL,
-    });
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Verify your email',
-      template:
-        process.cwd() + '/src/mail/templates/ownershipTransferOtpVerification.template.hbs',
-      context: { name: profile.name, otp, otpExpiry: '5 minutes' },
-    });
+    try {
+      const profile = await this.businessUserModel.findOne({ _id: userId });
+      const otp = await this.userService.saveOtp({
+        user: userId,
+        type: OtpTypes.EMAIL,
+      });
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Verify your email',
+        template:
+          process.cwd() +
+          '/src/mail/templates/ownershipTransferOtpVerification.template.hbs',
+        context: { name: profile.name, otp, otpExpiry: '5 minutes' },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendBusinessUserInvitation(email: string, name: string) {
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'You have been invited to join a business',
-      template:
-        process.cwd() +
-        '/src/mail/templates/businessUserInvitation.template.hbs',
-      context: {
-        inviterName: name,
-        inviteLink: 'https://dev.business.pinntag.com',
-      },
-    });
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'You have been invited to join a business',
+        template:
+          process.cwd() +
+          '/src/mail/templates/businessUserInvitation.template.hbs',
+        context: {
+          inviterName: name,
+          inviteLink: 'https://dev.business.pinntag.com',
+        },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendBusinessVerificationMail(businessId: any) {
-    // const user = await this.userService.getUserById(userId);
-    const profile = await this.businessModel.findOne({
-      _id: new mongoose.Types.ObjectId(businessId),
-    });
-    const otp = await this.userService.saveOtp({
-      user: businessId,
-      type: OtpTypes.EMAIL,
-    });
-    await this.mailerService.sendMail({
-      to: profile.email,
-      subject: 'Verify your email',
-      template:
-        process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
-      context: {
-        name: profile.name,
-        otp,
-        otpExpiry: '5 minutes',
-      },
-    });
+    try {
+      // const user = await this.userService.getUserById(userId);
+      const profile = await this.businessModel.findOne({
+        _id: new mongoose.Types.ObjectId(businessId),
+      });
+      const otp = await this.userService.saveOtp({
+        user: businessId,
+        type: OtpTypes.EMAIL,
+      });
+      await this.mailerService.sendMail({
+        to: profile.email,
+        subject: 'Verify your email',
+        template:
+          process.cwd() + '/src/mail/templates/mailVerification.template.hbs',
+        context: {
+          name: profile.name,
+          otp,
+          otpExpiry: '5 minutes',
+        },
+      });
+    } catch (error) {
+      console.error('Error in sending mail!', error);
+    }
   }
 
   async sendForgotPasswordMail(userId: string) {
@@ -244,7 +270,7 @@ export class MailService {
         process.cwd() +
         '/src/mail/templates/businessDocVerification.template.hbs',
       context: { name: business.name, documentType, businessId: business.id },
-    }); 
+    });
   }
   async consumerInvitation(
     email: string,

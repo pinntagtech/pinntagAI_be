@@ -6386,8 +6386,8 @@ export class EventService2 {
 
       // Create folder
       const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
+        parentDirectory: business.drive,
+        parentType: 'Drive',
         folderName: data.title,
       });
 
@@ -7086,7 +7086,7 @@ export class EventService2 {
           const businessFolder = await this.driveService.createFolder(
             businessUser.id,
             {
-              parentDirectory: businessDetails.drivePath,
+              parentDirectory: businessDetails.drive,
               parentType: Folder.name,
               folderName: data.title,
             },
@@ -7310,7 +7310,7 @@ export class EventService2 {
         const eventFolder = await this.driveService.createFolder(
           businessUser.id,
           {
-            parentDirectory: businessDetails.drivePath,
+            parentDirectory: businessDetails.drive,
             parentType: Folder.name,
             folderName: data.title,
           },
@@ -7567,7 +7567,7 @@ export class EventService2 {
         const eventFolder = await this.driveService.createFolder(
           businessUser.id,
           {
-            parentDirectory: businessDetails.drivePath,
+            parentDirectory: businessDetails.drive,
             parentType: Folder.name,
             folderName: data.title,
           },
@@ -7877,8 +7877,8 @@ export class EventService2 {
         data.categories = categoriesInObjectId;
       }
       const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
+        parentDirectory: business.drive,
+        parentType: 'Drive',
         folderName: data.title,
       });
       let createObj: any = {
@@ -8111,7 +8111,7 @@ export class EventService2 {
 
       let file = await this.driveService.uploadFile(
         user.id,
-        business.drivePath.toString(),
+        business.drive.toString(),
         fileCategory.id,
         thumbnail,
       );
@@ -8188,7 +8188,7 @@ export class EventService2 {
 
         let file = await this.driveService.uploadFile(
           user.id,
-          business.drivePath.toString(),
+          business.drive.toString(),
           fileCategory.id,
           thumbnail,
         );

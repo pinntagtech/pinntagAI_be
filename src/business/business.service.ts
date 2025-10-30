@@ -347,7 +347,7 @@ export class BusinessService {
           });
         }
       }
-      await this.mailService.sendBusinessUserVerificationMail(createdUser.id);
+      this.mailService.sendBusinessUserVerificationMail(createdUser.id);
 
       const updatedUser = await this.businessUserModel
         .findById(createdUser.id)
@@ -653,14 +653,6 @@ export class BusinessService {
         };
       }
 
-      //create business folder in drive
-      logger.info(`userDetails: ${JSON.stringify(userDetails)}`);
-      const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: userDetails.drive,
-        parentType: Drive.name,
-        folderName: data.name,
-      });
-      logger.info(`Business Folder: ${JSON.stringify(businessFolder)}`);
       let createObj = {
         name: data.name,
         email: data.email,
@@ -669,7 +661,6 @@ export class BusinessService {
         phone: data.phone,
         countryCode: data.countryCode,
         scalabilityFactor: data.scalabilityFactor,
-        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessCreatorType.BUSINESS_USER,
         creator: new mongoose.Types.ObjectId(userId),
         authorisedUser: new mongoose.Types.ObjectId(userId),
@@ -679,6 +670,16 @@ export class BusinessService {
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       const createdBusiness = await this.businessModel.create(createObj);
+
+      //create drive
+      let driveDetails = await this.seederService.createDrive(
+        createdBusiness._id,
+        Business.name,
+      );
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: driveDetails._id } },
+      );
 
       if (createdBusiness.authorisedUser) {
         await this.businessUserModel.updateOne(
@@ -1037,9 +1038,9 @@ export class BusinessService {
 
       if (updateObj.name && updateObj.name !== findBusiness.name) {
         //update drive folder name
-        if (findBusiness.drivePath) {
+        if (findBusiness.drive) {
           await this.driveService.updateFolderName(
-            findBusiness.drivePath.toString(),
+            findBusiness.drive.toString(),
             updateObj.name,
           );
         }
@@ -4515,7 +4516,7 @@ export class BusinessService {
           };
           const uploadResult = await this.driveService.uploadFile(
             businessUser.id,
-            String(business.drivePath),
+            String(business.drive),
             fileCategory.id,
             fakeFile,
           );
@@ -4640,7 +4641,7 @@ export class BusinessService {
 
       const uploadedFiles = await this.driveService.multiImageUpload(
         user.id,
-        String(business.drivePath),
+        String(business.drive),
         files,
       );
 
@@ -4918,7 +4919,7 @@ export class BusinessService {
       });
       const uploadResult = await this.driveService.uploadFile(
         user.id,
-        business.drivePath.toString(),
+        business.drive.toString(),
         fileCategory.id,
         image,
       );
@@ -5076,7 +5077,7 @@ export class BusinessService {
         business.name,
         business.creator.toString(),
         qrFileCategory.id,
-        business.drivePath.toString(),
+        business.drive.toString(),
       );
 
       await this.businessModel.updateOne(
