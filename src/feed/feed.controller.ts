@@ -46,6 +46,40 @@ export class FeedController {
     }
   }
 
+  @Get('business')
+  @UseGuards(JwtGuard2)
+  async getBusinessFeed(
+    @TokenDecoder() user: DecodedUser,
+    @Query('visibility') visibility: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('type') type: string,
+  ) {
+    const result = await this.feedService.getBusinessFeed(
+      user,
+      visibility,
+      type,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+
+
+
+
   @Patch('like/toggle/:id')
   @UseGuards(JwtGuard2)
   async likeFeed(
