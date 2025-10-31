@@ -1,4 +1,12 @@
-import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
@@ -6,9 +14,7 @@ import { FeedService } from './feed.service';
 
 @Controller('feed')
 export class FeedController {
-  constructor(
-    private readonly feedService: FeedService,
-  ) {}
+  constructor(private readonly feedService: FeedService) {}
 
   @Get()
   @UseGuards(JwtGuard2)
@@ -37,6 +43,25 @@ export class FeedController {
       };
     } else {
       throw new BadRequestException(result.message);
+    }
+  }
+
+  @Patch('like/toggle/:id')
+  @UseGuards(JwtGuard2)
+  async likeFeed(
+    @Param('id') feedId: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.feedService.likeFeed(feedId, user.id);
+    if (result.success) {
+      return {
+        message: result.message,
+        liked: result.liked,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
     }
   }
 }
