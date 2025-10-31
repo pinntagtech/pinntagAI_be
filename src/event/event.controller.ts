@@ -1211,6 +1211,8 @@ export class EventController {
       });
     }
   }
+
+  
   @Post('pinDrop/:id')
   @UseGuards(JwtGuard2)
   @UseInterceptors(

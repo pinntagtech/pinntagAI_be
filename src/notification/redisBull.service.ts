@@ -104,7 +104,7 @@ export class RedisBullService {
     if (!follower.muted) return false;
 
     if (follower.muteDuration === MuteDuration.ALWAYS) return true;
-    
+
     if (this.isMuteExpired(follower.mutedUntil)) {
       return false;
     }
@@ -124,13 +124,19 @@ export class RedisBullService {
         };
       }
       // create feed
-      const feed = await this.feedModel.create({
-        feedType: FeedTypes.BROADCAST,
-        creatorType: Business.name,
-        creator: new mongoose.Types.ObjectId(broadcast.business),
-        content: new mongoose.Types.ObjectId(broadcast.id),
-        visibility: broadcast.visibility,
+      let feed = null;
+      feed = await this.feedModel.findOne({
+        content: new mongoose.Types.ObjectId(broadcastId),
       });
+      if (!feed) {
+        feed = await this.feedModel.create({
+          feedType: FeedTypes.BROADCAST,
+          creatorType: Business.name,
+          creator: new mongoose.Types.ObjectId(broadcast.business),
+          content: new mongoose.Types.ObjectId(broadcast.id),
+          visibility: broadcast.visibility,
+        });
+      }
 
       if (feed.visibility === FeedVisibility.FOLLOWERS) {
         const followers = await this.followModel

@@ -9,7 +9,10 @@ import {
 } from './models/notification.model';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { BusinessUser } from 'src/business/model/businessUser.model';
-import { CreateBroadcastDto } from './dto/create-broadcast.dto';
+import {
+  CreateBroadcastDto,
+  UpdateBroadcastDto,
+} from './dto/create-broadcast.dto';
 import { Broadcast } from './models/broadcast.model';
 import { BroadcastStatus, NotificationTypes } from 'src/enums/event.enums';
 import { FirebaseService } from './firebase.service';
@@ -283,6 +286,75 @@ export class NotificationService {
       data: broadcast,
     };
   }
+
+  async updateBroadcast(
+    id: string,
+    user: DecodedUser,
+    data: UpdateBroadcastDto,
+    image: Express.Multer.File,
+  ) {
+    let isScheduled = false;
+    if (data.isScheduled && data.isScheduled == 'true') {
+      isScheduled = true;
+    }
+    let scheduleDate = null;
+    if (isScheduled && data.schedule && data.schedule !== '') {
+      scheduleDate = new Date(data.schedule);
+    }
+    if (isScheduled && (!scheduleDate || scheduleDate <= new Date())) {
+      return {
+        success: false,
+        message: 'Invalid schedule date',
+      };
+    }
+
+    let broadcastObj = {};
+    if (data.title) {
+      broadcastObj['title'] = data.title;
+    }
+    if (data.title) {
+      broadcastObj['message'] = data.message;
+    }
+    if (data.title) {
+      broadcastObj['visibility'] = data.visibility;
+    }
+
+    if (data.users && data.users !== '') {
+      let users = data.users.split(',').map((id) => id.trim());
+      broadcastObj['users'] = users.map(
+        (userId) => new mongoose.Types.ObjectId(userId),
+      );
+    }
+
+    if (image) {
+      const imageUrl = await this.driveService.noDriveUpload(image);
+      broadcastObj['image'] = imageUrl;
+    }
+
+    const broadcast = await this.broadcastModel.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { $set: broadcastObj },
+      { new: true },
+    );
+
+    if (!isScheduled) {
+      this.redisBullService.triggerBroadcast(broadcast.id);
+    } else {
+      await this.broadcastModel.updateOne(
+        { _id: broadcast.id },
+        { $set: { status: BroadcastStatus.SCHEDULED, schedule: scheduleDate } },
+      );
+      const delay = scheduleDate.getTime() - Date.now();
+      await this.redisBullService.addBroadcastJob(broadcast.id, delay);
+    }
+
+    return {
+      success: true,
+      message: 'Broadcast updated successfully.',
+      data: broadcast,
+    };
+  }
+
   async getBroadcast(id: string) {
     const broadcast = await this.broadcastModel.findById(id);
     if (!broadcast) {

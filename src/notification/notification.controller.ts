@@ -16,7 +16,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { NotificationTypes } from 'src/enums/event.enums';
-import { CreateBroadcastDto } from './dto/create-broadcast.dto';
+import { CreateBroadcastDto, UpdateBroadcastDto } from './dto/create-broadcast.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { isValidObjectId } from 'mongoose';
 
@@ -162,6 +162,44 @@ export class NotificationController {
     }
     return { message: result.message, data: result.data };
   }
+
+
+  @Post('broadcast/:id')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 10000000 },
+    }),
+  )
+  async updateBroadcast(
+    @Param('id') id: string,
+    @Body() data: UpdateBroadcastDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    console.log('BROADCAST DATA:', data);
+    const result = await this.notificationService.updateBroadcast(
+      id,
+      user,
+      data,
+      image,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message, data: result.data };
+  }
+
+
+
+
   @Get('broadcast/:id')
   @UseGuards(JwtGuard2)
   async getBroadcast(@Param('id') id: string) {
