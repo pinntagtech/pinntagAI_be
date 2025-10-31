@@ -16,7 +16,7 @@ import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { CreateOutletDto } from './dto/create-outlet.dto';
+import { CreateOutletDto, CreateOutletDtoV2 } from './dto/create-outlet.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
@@ -111,7 +111,7 @@ export class OutletController {
   @UseGuards(JwtGuard2)
   async createOutlet(
     @Body() createOutletDto: CreateOutletDto,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.outletService.createOutlet(createOutletDto, user);
     if (result.success) {
@@ -123,7 +123,7 @@ export class OutletController {
       throw new BadRequestException(result.message);
     }
   }
-  @Post('v2')
+  @Post('mobile')
   @UseGuards(JwtGuard2)
    @UseInterceptors(
       FileInterceptor('file', {
@@ -131,11 +131,11 @@ export class OutletController {
       }),
     )
   async createOutletV2(
-    @Body() createOutletDto: CreateOutletDto,
+    @Body() createOutletDto: CreateOutletDtoV2,
     @TokenDecoder() user: JwtPayload,
      @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.outletService.createOutletV2(createOutletDto, user);
+    const result = await this.outletService.createMobileOutlet(createOutletDto, user,image);
     if (result.success) {
       return {
         message: result.message,

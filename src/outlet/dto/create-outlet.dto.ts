@@ -122,10 +122,6 @@ export class CreateOutletDto {
   // gpsTrackerEnabled?: boolean;
 }
 export class CreateOutletDtoV2 {
-  // Outlet Basic Information
-  @IsNotEmpty()
-  @IsString()
-  category: string;
 
   // @IsOptional()
   // @IsString()
@@ -134,6 +130,10 @@ export class CreateOutletDtoV2 {
   @IsNotEmpty()
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsString()
+  description: string;
 
   // @IsOptional()
   // @IsString()
@@ -210,9 +210,9 @@ export class CreateOutletDtoV2 {
   address2?: string;
 
   // Mobile & Flexible Outlet Specific Fields
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(VehicleType)
-  vehicleType?: string;
+  vehicleType: string;
 
   @IsOptional()
   openingTime: string;

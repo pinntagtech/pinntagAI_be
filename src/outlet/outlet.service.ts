@@ -3,7 +3,7 @@ import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
 import { Category } from 'src/models/contentCategory.model';
-import { CreateOutletDto } from './dto/create-outlet.dto';
+import { CreateOutletDto, CreateOutletDtoV2 } from './dto/create-outlet.dto';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -211,7 +211,7 @@ export class OutletService {
     }
   }
 
-  async createOutlet(data: CreateOutletDto, user: any) {
+  async createOutlet(data: CreateOutletDto, user: DecodedUser) {
     try {
       console.log('data:', data);
       const businessUser = await this.businessUserModel.findById(user.id);
@@ -276,6 +276,7 @@ export class OutletService {
           message: 'Outlet already exists with given address.',
         };
       }
+     
 
       let createObj: any = {};
       Object.keys(data).forEach((key) => {
@@ -289,32 +290,38 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
-      if (data.openingTime) {
-        createObj['openingTime'] = new Date(data.openingTime);
-      }
+      if(data.openingTime && data.closingTime){
+        let [openingHour,openingMinute] = data.openingTime.split(':');
+        let [closingHour,closingMinute] = data.closingTime.split(':');
 
-      if (data.closingTime) {
-        createObj['closingTime'] = new Date(data.closingTime);
+        createObj['openingTime'] = {
+          hour:openingHour,
+          minute:openingMinute
+        }
+        createObj['closingTime'] = {
+          hour:closingHour,
+          minute:closingMinute
+        }
       }
 
       const outlet = await this.outletModel.create(createObj);
 
-      const spot = await this.mobileSpotsModel.create({
-        name: outlet.name,
-        business: outlet.business,
-        outlet: outlet._id,
-        creator: outlet.creator,
-        accuracy: outlet.accuracy,
-        address1: outlet.address1,
-        address2: outlet.address2,
-        city: outlet.city,
-        state: outlet.state,
-        country: outlet.country,
-        postalCode: outlet.postalCode,
-        latitude: outlet.latitude,
-        longitude: outlet.longitude,
-        location: outlet.location,
-      });
+      // const spot = await this.mobileSpotsModel.create({
+      //   name: outlet.name,
+      //   business: outlet.business,
+      //   outlet: outlet._id,
+      //   creator: outlet.creator,
+      //   accuracy: outlet.accuracy,
+      //   address1: outlet.address1,
+      //   address2: outlet.address2,
+      //   city: outlet.city,
+      //   state: outlet.state,
+      //   country: outlet.country,
+      //   postalCode: outlet.postalCode,
+      //   latitude: outlet.latitude,
+      //   longitude: outlet.longitude,
+      //   location: outlet.location,
+      // });
 
       let updateObj: any = {};
       if (outlet.category === OutletCategoryList.PHYSICAL) {
@@ -325,10 +332,10 @@ export class OutletService {
       }
       console.log('Business User Id:', businessUser.id);
 
-      await this.outletModel.updateOne(
-        { _id: outlet.id },
-        { $push: { spots: spot._id } },
-      );
+      // await this.outletModel.updateOne(
+      //   { _id: outlet.id },
+      //   { $push: { spots: spot._id } },
+      // );
 
       // if (createObj.manager) {
       //   const isUserUpdated = await this.businessUserModel.updateOne(
@@ -361,7 +368,7 @@ export class OutletService {
       };
     }
   }
-  async createOutletV2(data: CreateOutletDto, user: any) {
+  async createMobileOutlet(data: CreateOutletDtoV2, user: any,image: Express.Multer.File) {
     try {
       console.log('data:', data);
       const businessUser = await this.businessUserModel.findById(user.id);
@@ -386,7 +393,6 @@ export class OutletService {
         };
       }
       let {
-        category,
         name,
         address1,
         address2,
@@ -397,24 +403,6 @@ export class OutletService {
         openingTime,
         closingTime,
       } = data;
-
-      if (
-        !Object.values(OutletCategoryList).includes(
-          category as OutletCategoryList,
-        )
-      ) {
-        return {
-          success: false,
-          message: 'Invalid category',
-        };
-      }
-
-      if (category === OutletCategoryList.MOBILE && !vehicleType) {
-        return {
-          success: false,
-          message: 'Vehicle Type is required',
-        };
-      }
       const foundOutlet = await this.outletModel.findOne({
         address1: address1,
         business: business._id,
@@ -435,36 +423,51 @@ export class OutletService {
       });
       createObj['creator'] = new mongoose.Types.ObjectId(user.id);
       createObj['business'] = new mongoose.Types.ObjectId(business.id);
+      createObj['latitude'] = Number(data.latitude);
+      createObj['longitude'] = Number(data.longitude);
       createObj['location'] = {
         type: 'Point',
-        coordinates: [data.longitude, data.latitude],
+        coordinates: [Number(data.longitude), Number(data.latitude)],
       };
-      if (data.openingTime) {
-        createObj['openingTime'] = new Date(data.openingTime);
+      if(data.openingTime && data.closingTime){
+        let [openingHour,openingMinute] = data.openingTime.split(':');
+        let [closingHour,closingMinute] = data.closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour:openingHour,
+          minute:openingMinute
+        }
+        createObj['closingTime'] = {
+          hour:closingHour,
+          minute:closingMinute
+        }
       }
 
-      if (data.closingTime) {
-        createObj['closingTime'] = new Date(data.closingTime);
-      }
+       let coverUrl = await this.driveService.noDriveUpload(image);
+       createObj['cover'] = coverUrl;
+       createObj['category'] = OutletCategoryList.MOBILE;
+
+       console.log("CREATEOBJ:",createObj);
 
       const outlet = await this.outletModel.create(createObj);
+      console.log("OUTLET:",outlet);
 
-      const spot = await this.mobileSpotsModel.create({
-        name: outlet.name,
-        business: outlet.business,
-        outlet: outlet._id,
-        creator: outlet.creator,
-        accuracy: outlet.accuracy,
-        address1: outlet.address1,
-        address2: outlet.address2,
-        city: outlet.city,
-        state: outlet.state,
-        country: outlet.country,
-        postalCode: outlet.postalCode,
-        latitude: outlet.latitude,
-        longitude: outlet.longitude,
-        location: outlet.location,
-      });
+      // const spot = await this.mobileSpotsModel.create({
+      //   name: outlet.name,
+      //   business: outlet.business,
+      //   outlet: outlet._id,
+      //   creator: outlet.creator,
+      //   accuracy: outlet.accuracy,
+      //   address1: outlet.address1,
+      //   address2: outlet.address2,
+      //   city: outlet.city,
+      //   state: outlet.state,
+      //   country: outlet.country,
+      //   postalCode: outlet.postalCode,
+      //   latitude: outlet.latitude,
+      //   longitude: outlet.longitude,
+      //   location: outlet.location,
+      // });
 
       let updateObj: any = {};
       if (outlet.category === OutletCategoryList.PHYSICAL) {
@@ -475,10 +478,10 @@ export class OutletService {
       }
       console.log('Business User Id:', businessUser.id);
 
-      await this.outletModel.updateOne(
-        { _id: outlet.id },
-        { $push: { spots: spot._id } },
-      );
+      // await this.outletModel.updateOne(
+      //   { _id: outlet.id },
+      //   { $push: { spots: spot._id } },
+      // );
 
       // if (createObj.manager) {
       //   const isUserUpdated = await this.businessUserModel.updateOne(

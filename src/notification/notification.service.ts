@@ -36,11 +36,7 @@ export class NotificationService {
     private readonly driveService: DriveService,
   ) {}
 
-  async findAll(
-    user: DecodedUser,
-    page: number = 1,
-    limit: number = 10,
-  ) {
+  async findAll(user: DecodedUser, page: number = 1, limit: number = 10) {
     //Only 30 days notifications
 
     try {
@@ -256,7 +252,6 @@ export class NotificationService {
       visibility: data.visibility,
     };
 
-
     if (data.users && data.users !== '') {
       let users = data.users.split(',').map((id) => id.trim());
       broadcastObj['users'] = users.map(
@@ -304,11 +299,43 @@ export class NotificationService {
   }
 
   async getBroadcasts(user: DecodedUser, page: number, limit: number) {
-    const broadcasts = await this.broadcastModel
-      .find({ business: new mongoose.Types.ObjectId(user.businessProfile) })
-      .skip((page - 1) * limit)
-      .limit(limit);
-    const totalCount = await this.broadcastModel.countDocuments();
+    const broadcasts = await this.broadcastModel.aggregate([
+      {
+        $match: {
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'users',
+          foreignField: '_id',
+          as: 'users',
+          pipeline: [
+            {
+              $project: {
+                _id: 1, // keep _id if you need it
+                name: 1,
+                profilePhoto: 1,
+                thumbnail: 1,
+                email: 1,
+                phone: 1,
+                countryCode: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $skip: (page - 1) * limit,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+    const totalCount = await this.broadcastModel.countDocuments({
+      business: new mongoose.Types.ObjectId(user.businessProfile),
+    });
     // if (!broadcasts || broadcasts.length === 0) {
     //   return {
     //     success: false,

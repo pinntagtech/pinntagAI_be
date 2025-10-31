@@ -33,6 +33,11 @@ export class SocialMediaTokenDetails {
   age: Date;
 }
 
+class Hours {
+  hour: number;
+  minute: number;
+}
+
 export enum CreatorType {
   Admin = 'Admin',
   BusinessUser = 'BusinessUser',
@@ -62,8 +67,7 @@ export class Business {
   // })
   // status: number;
   @Prop({
-    default:
-      DEFAULT_IMAGES.BUSINESS_LOGO
+    default: DEFAULT_IMAGES.BUSINESS_LOGO,
   })
   logo: string;
 
@@ -80,8 +84,7 @@ export class Business {
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop({
-    default:
-      DEFAULT_IMAGES.BUSINESS_COVER
+    default: DEFAULT_IMAGES.BUSINESS_COVER,
   })
   cover: string;
 
@@ -158,6 +161,12 @@ export class Business {
   county: string;
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop()
+  openingTime: Hours;
+  @Prop()
+  closingTime: Hours;
+
   @Prop()
   postalCode: string;
   @Prop({ default: 0 })
@@ -174,8 +183,6 @@ export class Business {
   menus: Array<mongoose.Types.ObjectId>; // Array of menu items with details
   @Prop()
   allergenInformation: Allergen[]; // Array of allergens present in the dishes
-  @Prop()
-  openingHours: OpeningHours[]; // Array of opening hours for each day
   @Prop()
   acceptsReservations: boolean; // Indicates if reservations are accepted
   @Prop()

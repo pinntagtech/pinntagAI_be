@@ -18,7 +18,7 @@ export class Broadcast extends Document {
   @Prop()
   image: string;
 
-  @Prop({ ref: User.name })
+  @Prop({ ref: 'User' })
   users: Array<mongoose.Types.ObjectId>;
 
   @Prop({ ref: Business.name })

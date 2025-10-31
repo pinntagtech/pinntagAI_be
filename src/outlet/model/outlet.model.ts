@@ -16,6 +16,10 @@ class LocationType {
   };
   coordinates: Array<number>;
 }
+class Hours {
+  hour: number;
+  minute: number;
+}
 
 @Schema({ timestamps: true })
 export class Outlet {
@@ -97,45 +101,12 @@ export class Outlet {
   @Prop()
   twitter?: string;
 
-  // @Prop()
-  // googleMyBusinessId?: string;
-
-  // @Prop()
-  // posSystemId?: string;
-
   // Mobile & Flexible Outlet Specific Fields
   @Prop()
   vehicleType?: string;
 
   @Prop()
   vehicleRegistrationNumber?: string;
-
-  // @Prop({ default: false })
-  // gpsTrackerEnabled?: boolean;
-
-  // // Temporary & Event-Based Outlets
-  // @Prop()
-  // eventName?: string;
-
-  // @Prop()
-  // startDate?: Date;
-
-  // @Prop()
-  // endDate?: Date;
-
-  // @Prop()
-  // boothNumber?: string;
-
-  // // Online & Delivery-Centric Outlets
-  // @Prop({ type: [String] })
-  // partneredDeliveryServices?: string[];
-
-  // // Specialty & Unconventional Outlets
-  // @Prop({ default: false })
-  // insidePremise?: boolean;
-
-  // @Prop()
-  // premiseName?: string; // Name of Hotel, Airport, University, etc.
 
   @Prop()
   latitude: number;
@@ -146,9 +117,9 @@ export class Outlet {
   @Prop()
   location: LocationType;
   @Prop()
-  openingTime: Date;
+  openingTime: Hours;
   @Prop()
-  closingTime: Date;
+  closingTime: Hours;
   @Prop({ default: false })
   isDeleted: boolean;
   @Prop()

@@ -11,8 +11,8 @@ export class CreateBroadcastDto {
   message: string;
 
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  @IsArray()
+  // @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  // @IsArray()
   @IsString()
   users: string;
 
