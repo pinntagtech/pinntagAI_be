@@ -303,7 +303,7 @@ export class OutletService {
           minute:closingMinute
         }
       }
-
+      console.log("CREATEOBJ:",createObj);
       const outlet = await this.outletModel.create(createObj);
 
       // const spot = await this.mobileSpotsModel.create({

@@ -38,7 +38,7 @@ class Hours {
   minute: number;
 }
 class TimeBracket {
-  startTime:Hours;
+  startTime: Hours;
   endTime: Hours;
 }
 
@@ -171,9 +171,9 @@ export class Business {
   @Prop()
   closingTime: Hours;
   @Prop()
-  busyTime:TimeBracket;
+  busyTime: TimeBracket;
   @Prop()
-  slowTime:TimeBracket;
+  slowTime: TimeBracket;
 
   @Prop()
   postalCode: string;
@@ -187,8 +187,8 @@ export class Business {
   vatNumber: string; // VAT registration number, if applicable
   @Prop()
   foodHygieneRating: number; // Food Standards Agency (FSA) hygiene rating
-  @Prop({ ref: Menu.name })
-  menus: Array<mongoose.Types.ObjectId>; // Array of menu items with details
+  @Prop()
+  menus: string[]; // Array of menu items with details
   @Prop()
   allergenInformation: Allergen[]; // Array of allergens present in the dishes
   @Prop()
@@ -296,7 +296,7 @@ export class Business {
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
 
-  @Prop({default: 0})
+  @Prop({ default: 0 })
   rating: number;
 
   @Prop()

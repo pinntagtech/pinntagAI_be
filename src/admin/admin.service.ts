@@ -1326,12 +1326,10 @@ export class AdminService {
           : 0;
       }
       let categoryNames = categories.split(',');
-      console.log('categoryNames:', categoryNames);
       let categoryIds = [];
       for (let category of categoryNames) {
-        console.log('cateory inside loop:', category);
         const foundCategory = await this.businessCategoryModel.findOne({
-          title: category,
+          title: category.trim(),
         });
         if (!foundCategory) {
           throw new BadRequestException('Business Category Not found!');
@@ -1370,6 +1368,7 @@ export class AdminService {
         postalCode: postalCode,
         scalabilityFactor: Number(scalabilityFactor),
         rating: Number(rating),
+        menus: menu,
       };
 
       if (openingTime && closingTime) {
@@ -1386,7 +1385,6 @@ export class AdminService {
         };
       }
       if (busyTime) {
-        
         let [startTime, endTime] = busyTime.split('-');
         let [openingHour, openingMinute] = startTime.trim().split(':');
         let [closingHour, closingMinute] = endTime.trim().split(':');
@@ -1416,8 +1414,38 @@ export class AdminService {
           },
         };
       }
+      console.log('CREATEOBJJJJ:', createObj);
       const createdBusiness = await this.businessModel.create(createObj);
       console.log('CREATED BUSINESS:', createdBusiness);
+
+      if (createdBusiness) {
+        // create physical outlet for this business
+        const outlet = await this.outletModel.create({
+          category: OutletCategoryList.PHYSICAL,
+          name: createdBusiness.name,
+          address1: createdBusiness.addressLine1,
+          city: createdBusiness.city,
+          state: createdBusiness.state,
+          country: createdBusiness.country,
+          postalCode: createdBusiness.postalCode,
+          countryCode: createdBusiness.countryCode,
+          phone: createdBusiness.phone,
+          email: createdBusiness.email,
+          latitude: createdBusiness.latitude,
+          longitude: createdBusiness.longitude,
+          website: createdBusiness.website,
+          creator: createdBusiness.creator,
+          location: {
+            type: 'Point',
+            coordinates: [createdBusiness.longitude, createdBusiness.latitude],
+          },
+          business: createdBusiness._id,
+        });
+        await this.businessModel.updateOne(
+          { _id: createdBusiness._id },
+          { $push: { outlets: new mongoose.Types.ObjectId(outlet.id) } },
+        );
+      }
     } catch (error) {
       throw new BadRequestException(
         'Error creating business from row: ' + error.message,
