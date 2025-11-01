@@ -17,12 +17,13 @@ import { Broadcast } from './models/broadcast.model';
 import { BroadcastStatus, NotificationTypes } from 'src/enums/event.enums';
 import { FirebaseService } from './firebase.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
-import { TokenTypes } from 'src/enums/auth.enums';
+import { FeedTypes, TokenTypes } from 'src/enums/auth.enums';
 import { User } from 'src/user/models/user.model';
 import { Business } from 'src/business/model/business.model';
 import { Queue, Worker } from 'bullmq';
 import { RedisBullService } from './redisBull.service';
 import { DriveService } from 'src/drive/drive.service';
+import { Feed, FeedVisibility } from 'src/feed/models/feed.model';
 const redisConfig = { host: 'localhost', port: 6379 }; // your Redis settings
 const broadcastQueue = new Queue('broadcastQueue', { connection: redisConfig });
 
@@ -34,6 +35,7 @@ export class NotificationService {
     @InjectModel(Broadcast.name)
     private readonly broadcastModel: Model<Broadcast>,
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
+    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly firebaseService: FirebaseService,
     private readonly redisBullService: RedisBullService,
     private readonly driveService: DriveService,
@@ -269,6 +271,14 @@ export class NotificationService {
 
     const broadcast = await this.broadcastModel.create(broadcastObj);
 
+    await this.feedModel.create({
+      feedType: FeedTypes.BROADCAST,
+      creatorType: Business.name,
+      creator: new mongoose.Types.ObjectId(broadcast.business),
+      content: new mongoose.Types.ObjectId(broadcast.id),
+      visibility: broadcast.visibility,
+    });
+
     if (!isScheduled) {
       this.redisBullService.triggerBroadcast(broadcast.id);
     } else {
@@ -293,6 +303,20 @@ export class NotificationService {
     data: UpdateBroadcastDto,
     image: Express.Multer.File,
   ) {
+    const feed = await this.feedModel.findById(id);
+    if(!feed){
+      return {
+        success: false,
+        message: "feed not found"
+      }
+    }
+    const foundBroadcast = await this.broadcastModel.findById(feed.content);
+    if(!foundBroadcast){
+      return {
+        success: false,
+        message: "Broadcast not found"
+      }
+    }
     let isScheduled = false;
     if (data.isScheduled && data.isScheduled == 'true') {
       isScheduled = true;
@@ -312,11 +336,14 @@ export class NotificationService {
     if (data.title) {
       broadcastObj['title'] = data.title;
     }
-    if (data.title) {
+    if (data.message) {
       broadcastObj['message'] = data.message;
     }
-    if (data.title) {
+    if (data.visibility) {
       broadcastObj['visibility'] = data.visibility;
+      if(data.visibility === FeedVisibility.PUBLIC){
+        broadcastObj['users'] = [];
+      }
     }
 
     if (data.users && data.users !== '') {
@@ -332,7 +359,7 @@ export class NotificationService {
     }
 
     const broadcast = await this.broadcastModel.findOneAndUpdate(
-      { _id: new mongoose.Types.ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(foundBroadcast.id) },
       { $set: broadcastObj },
       { new: true },
     );

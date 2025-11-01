@@ -123,22 +123,8 @@ export class RedisBullService {
           message: `Broadcast cannot be triggered as it is cancelled.`,
         };
       }
-      // create feed
-      let feed = null;
-      feed = await this.feedModel.findOne({
-        content: new mongoose.Types.ObjectId(broadcastId),
-      });
-      if (!feed) {
-        feed = await this.feedModel.create({
-          feedType: FeedTypes.BROADCAST,
-          creatorType: Business.name,
-          creator: new mongoose.Types.ObjectId(broadcast.business),
-          content: new mongoose.Types.ObjectId(broadcast.id),
-          visibility: broadcast.visibility,
-        });
-      }
 
-      if (feed.visibility === FeedVisibility.FOLLOWERS) {
+      if (broadcast.visibility === FeedVisibility.FOLLOWERS) {
         const followers = await this.followModel
           .find({
             following: new mongoose.Types.ObjectId(broadcast.business),
