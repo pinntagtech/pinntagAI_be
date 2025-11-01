@@ -744,6 +744,10 @@ export const ExpectedDownlineUserHeaders = [
   'countryCode',
   'phone',
 ];
+export const ExpectedBulkEventUploadHeaders = [
+  'title',
+  'description',
+]
 
 export const BusinessDocumentTypesList = {
   TAX: 'Tax Document',

@@ -1244,6 +1244,44 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('uploadEventsInBulk')
+  @UseGuards(JwtGuard2)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      //   dest: './uploads',
+      //   fileFilter: imageFileFilter,
+      //   storage: diskStorage({
+      //     destination: './uploads',
+      //     filename: editFileName,
+      //   }),
+      //   //Setting file size limit to 1 MB
+      limits: { fileSize: 10000000 },
+    }),
+  )
+  async uploadEventsInBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenDecoder() user: DecodedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const result = await this.businessService.uploadEventsInBulk(
+      file,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        file: result.file,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  
   @Post('invitation')
   @UseGuards(JwtGuard2)
   @UseInterceptors(

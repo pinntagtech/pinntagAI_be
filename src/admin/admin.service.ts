@@ -1414,9 +1414,19 @@ export class AdminService {
           },
         };
       }
-      console.log('CREATEOBJJJJ:', createObj);
       const createdBusiness = await this.businessModel.create(createObj);
-      console.log('CREATED BUSINESS:', createdBusiness);
+      await this.businessUserModel.updateOne(
+          { _id: businessUser._id },
+          {
+            $addToSet: {
+              business: createdBusiness._id,
+            },
+            $set: {
+              // status: ProfileStatus.BUSINESS_CREATED,
+              selectedBusiness: createdBusiness._id,
+            },
+          },
+        );
 
       if (createdBusiness) {
         // create physical outlet for this business

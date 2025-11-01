@@ -17,6 +17,7 @@ import {
   BusinessStatus,
   BusinessUserCreatorType,
   DEFAULT_IMAGES,
+  ExpectedBulkEventUploadHeaders,
   ExpectedDownlineUserHeaders,
   ProfileStatus,
   ROLES_IN_ORGANISATION,
@@ -4353,17 +4354,18 @@ export class BusinessService {
     }
   }
 
-  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+  async parseCsv(file: Express.Multer.File, type: string): Promise<any[]> {
     const rows: any[] = [];
     const stream = streamifier.createReadStream(file.buffer);
-
+    let expectedHeaders = [];
+    if (type === 'downlineUsers') expectedHeaders = ExpectedDownlineUserHeaders;
+    if (type === 'bulkEventUpload')
+      expectedHeaders = ExpectedBulkEventUploadHeaders;
     return new Promise((resolve, reject) => {
       stream
         .pipe(csv())
         .on('headers', (headers: string[]) => {
-          const missing = ExpectedDownlineUserHeaders.filter(
-            (h) => !headers.includes(h),
-          );
+          const missing = expectedHeaders.filter((h) => !headers.includes(h));
           if (missing.length > 0) {
             reject(
               new BadRequestException(`Missing columns: ${missing.join(', ')}`),
@@ -4458,7 +4460,7 @@ export class BusinessService {
           message: 'Business not found!',
         };
       }
-      const rows = await this.parseCsv(file);
+      const rows = await this.parseCsv(file, 'downlineUsers');
       let failure = 0;
       let result = null;
       const results = await Promise.all(
@@ -4538,6 +4540,127 @@ export class BusinessService {
       };
     }
   }
+
+  async bulkUploadEventsFromRow(row: any, user: DecodedUser) {
+    const trimIfString = (v) => (typeof v === 'string' ? v.trim() : v);
+    const {
+      outletName,
+      title,
+      description,
+      type,
+      discountType,
+      discountValue,
+      categories,
+      images,
+      date,
+      startTime,
+      endTime,
+      tags,
+      weblinks,
+      isFree,
+      cost,
+      targetGenders,
+      minTargetAge,
+      maxTargetAge,
+    } = Object.fromEntries(
+      Object.entries(row).map(([k, v]) => [k, trimIfString(v)]),
+    );
+    const business = await this.businessModel.findById(user.b)
+
+  }
+
+  async uploadEventsInBulk(file: Express.Multer.File, user: DecodedUser) {
+    try {
+      const businessUser = await this.businessUserModel.findById(user.id);
+      const business = await this.businessModel.findById(user.businessProfile);
+
+      if (!businessUser || !business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      const rows = await this.parseCsv(file, 'bulkEventUpload');
+      let failure = 0;
+      let result = null;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createDownlineUserFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
+      );
+      console.log('Failure:', failure);
+      if (failure > 0) {
+        const failedRecords = results.filter((r) => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'email', title: 'Email' },
+              { id: 'name', title: 'Name' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'ErrorMessage' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            email: r.email,
+            name: r.name,
+            phone: r.phone,
+            countryCode: r.countryCode,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'downline_users_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'downline_users_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            businessUser.id,
+            String(business.drive),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (err) {
+          console.log('Error:', err);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Users created successfully in bulk.',
+        file: result, // You can return the created outlets data if needed
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
   async sendConsumerInvitation(
     row: any,
     user: DecodedUser,
@@ -4582,7 +4705,7 @@ export class BusinessService {
         throw new BadRequestException('Business not found with given ID');
       }
 
-      const rows = await this.parseCsv(file);
+      const rows = await this.parseCsv(file, 'downlineUsers');
       let failure = 0;
       const results = await Promise.all(
         rows.map(async (row) => {
