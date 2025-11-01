@@ -146,7 +146,10 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
-import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
+import {
+  ExpectedBusinessListingHeaders,
+  ExpectedDownlineAdminHeaders,
+} from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
 import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
@@ -1145,17 +1148,20 @@ export class AdminService {
     };
   }
 
-  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+  async parseCsv(file: Express.Multer.File, type: string): Promise<any[]> {
     const rows: any[] = [];
     const stream = streamifier.createReadStream(file.buffer);
+    let expectedHeaders = [];
+    if (type === 'downlineAdmin')
+      expectedHeaders = ExpectedDownlineAdminHeaders;
+    if (type === 'businessListings')
+      expectedHeaders = ExpectedBusinessListingHeaders;
 
     return new Promise((resolve, reject) => {
       stream
         .pipe(csv())
         .on('headers', (headers: string[]) => {
-          const missing = ExpectedDownlineAdminHeaders.filter(
-            (h) => !headers.includes(h),
-          );
+          const missing = expectedHeaders.filter((h) => !headers.includes(h));
           if (missing.length > 0) {
             reject(
               new BadRequestException(`Missing columns: ${missing.join(', ')}`),
@@ -1245,6 +1251,7 @@ export class AdminService {
   }
   async createBusinessFromRow(row: any, user: DecodedUser) {
     try {
+      const trimIfString = (v) => (typeof v === 'string' ? v.trim() : v);
       const {
         cover,
         logo,
@@ -1271,8 +1278,13 @@ export class AdminService {
         categories,
         industry,
         scalabilityFactor,
-      } = row;
-      const foundBusiness = await this.businessModel.findOne({ email: email });
+      } = Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [k, trimIfString(v)]),
+      );
+      console.log('ROWW:', row);
+      const foundBusiness = await this.businessModel.findOne({
+        email: email.trim(),
+      });
       if (foundBusiness) {
         throw new BadRequestException(
           'Business already exists with this email',
@@ -1304,7 +1316,7 @@ export class AdminService {
         let placeDetails = await this.googleService.getPlaceDetails(
           placeList.data[0].placePrediction.placeId,
           placeList.sessionToken,
-          addressLine1,
+          addressLine1.trim(),
         );
         lat = placeDetails.data['latitude']
           ? parseFloat(placeDetails.data['latitude'])
@@ -1313,10 +1325,11 @@ export class AdminService {
           ? parseFloat(placeDetails.data['longitude'])
           : 0;
       }
-
-      let categoryNames = categories.split[','];
+      let categoryNames = categories.split(',');
+      console.log('categoryNames:', categoryNames);
       let categoryIds = [];
       for (let category of categoryNames) {
+        console.log('cateory inside loop:', category);
         const foundCategory = await this.businessCategoryModel.findOne({
           title: category,
         });
@@ -1351,16 +1364,63 @@ export class AdminService {
         city: city,
         state: state,
         country: country,
-        latitude: lat,
-        longitude: long,
+        latitude: Number(lat),
+        longitude: Number(long),
         isActive: false,
         postalCode: postalCode,
-        scalabilityFactor: scalabilityFactor,
+        scalabilityFactor: Number(scalabilityFactor),
+        rating: Number(rating),
       };
+
+      if (openingTime && closingTime) {
+        let [openingHour, openingMinute] = openingTime.split(':');
+        let [closingHour, closingMinute] = closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
+      }
+      if (busyTime) {
+        
+        let [startTime, endTime] = busyTime.split('-');
+        let [openingHour, openingMinute] = startTime.trim().split(':');
+        let [closingHour, closingMinute] = endTime.trim().split(':');
+        createObj['busyTime'] = {
+          startTime: {
+            hour: openingHour,
+            minute: openingMinute,
+          },
+          endTime: {
+            hour: closingHour,
+            minute: closingMinute,
+          },
+        };
+      }
+      if (slowTime) {
+        let [startTime, endTime] = slowTime.split('-');
+        let [openingHour, openingMinute] = startTime.trim().split(':');
+        let [closingHour, closingMinute] = endTime.trim().split(':');
+        createObj['slowTime'] = {
+          startTime: {
+            hour: openingHour,
+            minute: openingMinute,
+          },
+          endTime: {
+            hour: closingHour,
+            minute: closingMinute,
+          },
+        };
+      }
       const createdBusiness = await this.businessModel.create(createObj);
+      console.log('CREATED BUSINESS:', createdBusiness);
     } catch (error) {
       throw new BadRequestException(
-        'Error creating outlet from row: ' + error.message,
+        'Error creating business from row: ' + error.message,
       );
     }
   }
@@ -1379,7 +1439,7 @@ export class AdminService {
           'Only super admin can use this functionality',
         );
       }
-      const rows = await this.parseCsv(file);
+      const rows = await this.parseCsv(file, 'downlineAdmin');
       let failure = 0;
       let result = null;
       const results = await Promise.all(
@@ -1472,13 +1532,13 @@ export class AdminService {
           'Only super admin can use this functionality',
         );
       }
-      const rows = await this.parseCsv(file);
+      const rows = await this.parseCsv(file, 'businessListings');
       let failure = 0;
       let result = null;
       const results = await Promise.all(
         rows.map(async (row) => {
           try {
-            await this.createDownlineAdminFromRow(row, user);
+            await this.createBusinessFromRow(row, user);
             return { ...row, status: 'Created', message: '' };
           } catch (err) {
             failure++;
@@ -1492,11 +1552,31 @@ export class AdminService {
         try {
           const csvStringifier = createObjectCsvStringifier({
             header: [
-              { id: 'email', title: 'Email' },
+              { id: 'cover', title: 'Cover' },
+              { id: 'logo', title: 'Logo' },
               { id: 'name', title: 'Name' },
-              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'description', title: 'Description' },
+              { id: 'addressLine1', title: 'AddressLine1' },
+              { id: 'addressLine2', title: 'AddressLine2' },
+              { id: 'city', title: 'City' },
+              { id: 'state', title: 'State' },
+              { id: 'country', title: 'Country' },
+              { id: 'postalCode', title: 'PostalCode' },
+              { id: 'latitude', title: 'Latitude' },
+              { id: 'longitude', title: 'Longitude' },
               { id: 'phone', title: 'Phone' },
-              { id: 'role', title: 'Role' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'email', title: 'Email' },
+              { id: 'website', title: 'Website' },
+              { id: 'openingTime', title: 'OpeningTime' },
+              { id: 'closingTime', title: 'ClosingTime' },
+              { id: 'busyTime', title: 'BusyTime' },
+              { id: 'slowTime', title: 'SlowTime' },
+              { id: 'rating', title: 'Rating' },
+              { id: 'menu', title: 'Menu' },
+              { id: 'categories', title: 'Categories' },
+              { id: 'industry', title: 'Industry' },
+              { id: 'scalabilityFactor', title: 'ScalabilityFactor' },
               { id: 'status', title: 'Status' },
               { id: 'message', title: 'ErrorMessage' },
             ],
@@ -1504,11 +1584,31 @@ export class AdminService {
 
           const header = csvStringifier.getHeaderString();
           const records = failedRecords.map((r) => ({
-            email: r.email,
+            cover: r.cover,
+            logo: r.logo,
             name: r.name,
+            description: r.description,
+            addressLine1: r.addressLine1,
+            addressLine2: r.addressLine2,
+            city: r.city,
+            state: r.state,
+            country: r.country,
+            postalCode: r.postalCode,
+            latitude: r.latitude,
+            longitude: r.longitude,
             phone: r.phone,
             countryCode: r.countryCode,
-            role: r.role,
+            email: r.email,
+            website: r.website,
+            openingTime: r.openingTime,
+            closingTime: r.closingTime,
+            busyTime: r.busyTime,
+            slowTime: r.slowTime,
+            rating: r.rating,
+            menu: r.menu,
+            categories: r.categories,
+            industry: r.industry,
+            scalabilityFactor: r.scalabilityFactor,
             status: r.status,
             message: r.message || '',
           }));
@@ -1520,15 +1620,15 @@ export class AdminService {
 
           const fakeFile: Express.Multer.File = {
             fieldname: 'file',
-            originalname: 'downline_users_status.csv',
+            originalname: 'business_listings_bulk_status.csv',
             encoding: '7bit',
             mimetype: 'text/csv',
             buffer: csvBuffer,
             size: csvBuffer.length,
             destination: '',
-            filename: 'downline_users_status.csv',
+            filename: 'business_listings_bulk_status.csv',
             path: '',
-            stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+            stream: Readable.from(csvBuffer) as any,
           };
           const uploadResult = await this.driveService.uploadFile(
             admin.id,

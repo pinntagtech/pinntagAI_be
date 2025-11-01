@@ -45,6 +45,33 @@ export class FeedController {
       throw new BadRequestException(result.message);
     }
   }
+  @Get('popular')
+  @UseGuards(JwtGuard2)
+  async getPopularFeed(
+    @TokenDecoder() user: DecodedUser,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('type') type: string,
+  ) {
+    const result = await this.feedService.getPopularFeed(
+      user,
+      type,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+        total: result.total,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Get('business')
   @UseGuards(JwtGuard2)

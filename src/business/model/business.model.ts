@@ -37,6 +37,10 @@ class Hours {
   hour: number;
   minute: number;
 }
+class TimeBracket {
+  startTime:Hours;
+  endTime: Hours;
+}
 
 export enum CreatorType {
   Admin = 'Admin',
@@ -122,7 +126,7 @@ export class Business {
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
   @Prop()
-  countryCode: mongoose.Types.ObjectId;
+  countryCode: string;
   @Prop()
   phone: string;
   @Prop()
@@ -166,6 +170,10 @@ export class Business {
   openingTime: Hours;
   @Prop()
   closingTime: Hours;
+  @Prop()
+  busyTime:TimeBracket;
+  @Prop()
+  slowTime:TimeBracket;
 
   @Prop()
   postalCode: string;
@@ -287,6 +295,9 @@ export class Business {
 
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
+
+  @Prop({default: 0})
+  rating: number;
 
   @Prop()
   stripeCustomerId: string;
