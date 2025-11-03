@@ -26,7 +26,11 @@ import {
   VerificationStatus,
 } from './enums/business.enum';
 import { Admin, AdminDocument } from 'src/admin/models/admin.model';
-import { Business, BusinessDocument } from './model/business.model';
+import {
+  Business,
+  BusinessDocument,
+  CreatorType,
+} from './model/business.model';
 import { LoginBusinessDto } from './dto/login-business.dto';
 import { MailService } from 'src/mail/mail.service';
 import { Token, TokenDocument } from 'src/auth/models/token.model';
@@ -161,6 +165,13 @@ import {
   BusinessActivation,
 } from './model/businessActivation.model';
 import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
+import { Category, CategoryDocument } from 'src/models/contentCategory.model';
+import {
+  EventSchedule,
+  EventScheduleDocument,
+  FixedSchedule,
+  ScheduleTypes,
+} from 'src/event/models/event-schedule.model';
 
 @Injectable()
 export class BusinessService {
@@ -225,6 +236,10 @@ export class BusinessService {
     @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     @InjectModel(BusinessActivation.name)
     private readonly businessActivationRequestModel: Model<BusinessActivation>,
+    @InjectModel(Category.name)
+    private readonly categoryModel: Model<CategoryDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly scheduleModel: Model<EventScheduleDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -4565,14 +4580,126 @@ export class BusinessService {
     } = Object.fromEntries(
       Object.entries(row).map(([k, v]) => [k, trimIfString(v)]),
     );
-    const business = await this.businessModel.findById(user.b)
+    const business = await this.businessModel.findById(user.businessProfile);
+    if (!business) {
+      throw new BadRequestException('Business Not found.');
+    }
+    const outlet = await this.outletModel.findOne({
+      business: business._id,
+      name: outletName,
+    });
+    if (!outlet) {
+      throw new BadRequestException('Outlet not found');
+    }
+    let categoryNames = categories.split(',');
+    let categoryIds = [];
+    for (let category of categoryNames) {
+      const foundCategory = await this.categoryModel.findOne({
+        title: category.trim(),
+      });
+      if (!foundCategory) {
+        throw new BadRequestException('Category Not found!');
+      }
+      categoryIds.push(foundCategory._id);
+    }
+    console.log('foundCategoryIds:', categoryIds);
 
+    const eventFolder = await this.driveService.createFolder(
+      user.businessProfile,
+      {
+        parentDirectory: business.drive,
+        parentType: 'Drive',
+        folderName: title,
+      },
+    );
+    console.log('eventFolder:', eventFolder);
+    let eventObj = {
+      isFromCrawler: false,
+      type: type,
+      discountType: discountType,
+      discountValue: discountValue,
+      CreatorType: BusinessUser.name,
+      user: new mongoose.Types.ObjectId(user.id),
+      businessProfile: business._id,
+      categories: categoryIds,
+      title: title,
+      description: description,
+      minTargetAge: minTargetAge,
+      maxTargetAge: maxTargetAge,
+      targetGenders: targetGenders,
+      tags: tags,
+      drivePath: eventFolder.data._id,
+    };
+    console.log('eventOBJ:', eventObj);
+    const createdEvent = await this.eventModel.create(eventObj);
+    console.log('createdEvent:', createdEvent);
+    // const imageUrlsArray = images.split(',');
+    // for(let image of imageUrlsArray){
+
+    // }
+
+    //1. create event, create its folder,upload image in folder, create schedule, eventLocation
+
+    //EventLocation:::
+    const eventLocation = await this.eventLocationModel.create({
+      isFromCrawler: false,
+      event: createdEvent._id,
+      businessProfile: business._id,
+      businessLocationId: outlet._id,
+      location: {
+        type: 'Point',
+        coordinates: [outlet.longitude, outlet.latitude],
+      },
+      accuracy: outlet.accuracy,
+      address1: outlet.address1,
+      address2: outlet.address2 ? outlet.address2 : '',
+      city: outlet.city,
+      state: outlet.state,
+      zip: outlet.postalCode,
+      website: outlet.website,
+      email: outlet.email,
+      phone: outlet.phone,
+    });
+    console.log('EVENTLOCATION:', eventLocation);
+    await this.eventModel.updateOne(
+      {
+        _id: new mongoose.Types.ObjectId(createdEvent._id),
+      },
+      {
+        $addToSet: { locations: eventLocation._id },
+      },
+    );
+    const startLocal = new Date(`${date}T${startTime}:00Z`);
+    const endLocal = new Date(`${date}T${endTime}:00Z`);
+
+    // Convert to UTC ISO string
+    const startUtc = new Date(startLocal.toISOString());
+    const endUtc = new Date(endLocal.toISOString());
+    const schedule = await this.scheduleModel.create({
+      type: ScheduleTypes.FIXED,
+      event: createdEvent._id,
+      fixedSchedule: {
+        date: new Date(date),
+        durations: [
+          {
+            startTime: startUtc,
+            endTime: endUtc,
+          },
+        ],
+      },
+      businessId: business._id,
+    });
+    await this.eventModel.updateOne({_id:createdEvent._id},{
+      $push:{
+        eventSchedule: schedule._id
+      }
+    })
   }
 
   async uploadEventsInBulk(file: Express.Multer.File, user: DecodedUser) {
     try {
-      const businessUser = await this.businessUserModel.findById(user.id);
-      const business = await this.businessModel.findById(user.businessProfile);
+
+      const [businessUser,business] = await Promise.all([this.businessUserModel.findById(user.id),this.businessModel.findById(user.businessProfile)])
 
       if (!businessUser || !business) {
         return {
@@ -4586,7 +4713,7 @@ export class BusinessService {
       const results = await Promise.all(
         rows.map(async (row) => {
           try {
-            await this.createDownlineUserFromRow(row, user);
+            await this.bulkUploadEventsFromRow(row, user);
             return { ...row, status: 'Created', message: '' };
           } catch (err) {
             failure++;
@@ -4600,21 +4727,51 @@ export class BusinessService {
         try {
           const csvStringifier = createObjectCsvStringifier({
             header: [
-              { id: 'email', title: 'Email' },
-              { id: 'name', title: 'Name' },
-              { id: 'phone', title: 'Phone' },
-              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'outletName', title: 'OutletName' },
+              { id: 'title', title: 'Title' },
+              { id: 'description', title: 'Description' },
+              { id: 'type', title: 'Type' },
+              { id: 'discountType', title: 'DiscountType' },
+              { id: 'discountValue', title: 'DiscountValue' },
+              { id: 'categories', title: 'Categories' },
+              { id: 'images', title: 'Images' },
+              { id: 'qrCode', title: 'QrCode' },
+              { id: 'date', title: 'Date' },
+              { id: 'startTime', title: 'StartTime' },
+              { id: 'endTime', title: 'EndTime' },
+              { id: 'tags', title: 'Tags' },
+              { id: 'weblinks', title: 'Weblinks' },
+              { id: 'isFree', title: 'IsFree' },
+              { id: 'cost', title: 'Cost' },
+              { id: 'targetGenders', title: 'TargetGenders' },
+              { id: 'minTargetAge', title: 'MinTargetAge' },
+              { id: 'maxTargetAge', title: 'MaxTargetAge' },
               { id: 'status', title: 'Status' },
-              { id: 'message', title: 'ErrorMessage' },
+              { id: 'message', title: 'Message' },
             ],
           });
 
           const header = csvStringifier.getHeaderString();
           const records = failedRecords.map((r) => ({
-            email: r.email,
-            name: r.name,
-            phone: r.phone,
-            countryCode: r.countryCode,
+            outletName: r.outletName,
+            title: r.title,
+            description: r.description,
+            type: r.type,
+            discountType: r.discountType,
+            discountValue: r.discountValue,
+            categories: r.categories,
+            images: r.images,
+            qrCode: r.qrCode,
+            date: r.date,
+            startTime: r.startTime,
+            endTime: r.endTime,
+            tags: r.tags,
+            weblinks: r.weblinks,
+            isFree: r.isFree,
+            cost: r.cost,
+            targetGenders: r.targetGenders,
+            minTargetAge: r.minTargetAge,
+            maxTargetAge: r.maxTargetAge,
             status: r.status,
             message: r.message || '',
           }));
@@ -4626,13 +4783,13 @@ export class BusinessService {
 
           const fakeFile: Express.Multer.File = {
             fieldname: 'file',
-            originalname: 'downline_users_status.csv',
+            originalname: 'bulk_upload_events_status.csv',
             encoding: '7bit',
             mimetype: 'text/csv',
             buffer: csvBuffer,
             size: csvBuffer.length,
             destination: '',
-            filename: 'downline_users_status.csv',
+            filename: 'bulk_upload_events_status.csv',
             path: '',
             stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
           };
@@ -4650,7 +4807,7 @@ export class BusinessService {
 
       return {
         success: true,
-        message: 'Users created successfully in bulk.',
+        message: 'Events Uploaded successfully in bulk.',
         file: result, // You can return the created outlets data if needed
       };
     } catch (error) {

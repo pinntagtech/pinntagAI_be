@@ -406,7 +406,6 @@ export class DriveService {
       let driveDetails = await this.driveModel.findOne({
         owner: new mongoose.Types.ObjectId(businessId),
       });
-      console.log('folder data........', folderData);
       if (
         folderData.parentDirectory &&
         !isValidObjectId(folderData.parentDirectory)
@@ -416,6 +415,7 @@ export class DriveService {
           message: 'Invalid ObjectId',
         };
       }
+      console.log("FOLDER DATA:,",folderData);
       if (!folderData.parentDirectory) {
         folderData.parentDirectory = driveDetails.id;
       }
@@ -444,14 +444,12 @@ export class DriveService {
           };
         }
       }
-      console.log('parentType:', parentType);
 
       const createdFolder = await this.folderModel.create({
         ...folderData,
         drive: driveDetails._id,
         parentType,
       });
-      console.log('createdFolder:', createdFolder);
       return {
         success: true,
         message: 'Folder Created Successfully!',

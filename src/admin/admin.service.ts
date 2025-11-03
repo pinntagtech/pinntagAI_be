@@ -1342,6 +1342,7 @@ export class AdminService {
       if (!foundIndustry) {
         throw new BadRequestException('Business Industry Not found!');
       }
+      
       let createObj = {
         status: 6.1,
         logo: logo,
@@ -1415,6 +1416,10 @@ export class AdminService {
         };
       }
       const createdBusiness = await this.businessModel.create(createObj);
+      let driveDetails = await this.seederService.createDrive(
+              createdBusiness._id,
+              Business.name,
+            );
       await this.businessUserModel.updateOne(
           { _id: businessUser._id },
           {
@@ -1426,6 +1431,10 @@ export class AdminService {
               selectedBusiness: createdBusiness._id,
             },
           },
+        );
+        await this.businessModel.updateOne(
+          { _id: createdBusiness._id },
+          { $set: { drive: driveDetails._id } },
         );
 
       if (createdBusiness) {
