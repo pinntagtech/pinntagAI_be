@@ -1960,20 +1960,20 @@ export class EventService2 {
     }
   }
 
-   private isMuteExpired(mutedUntil: Date | null): boolean {
-      if (!mutedUntil) return false;
-      return new Date() > mutedUntil;
+  private isMuteExpired(mutedUntil: Date | null): boolean {
+    if (!mutedUntil) return false;
+    return new Date() > mutedUntil;
+  }
+  private isCurrentlyMuted(follower: any): boolean {
+    if (!follower.muted) return false;
+
+    if (follower.muteDuration === MuteDuration.ALWAYS) return true;
+
+    if (this.isMuteExpired(follower.mutedUntil)) {
+      return false;
     }
-    private isCurrentlyMuted(follower: any): boolean {
-      if (!follower.muted) return false;
-  
-      if (follower.muteDuration === MuteDuration.ALWAYS) return true;
-      
-      if (this.isMuteExpired(follower.mutedUntil)) {
-        return false;
-      }
-      return true;
-    }
+    return true;
+  }
 
   async togglePublishEvent(data: PublishEventDto, user: DecodedUser) {
     const id = data.id;
@@ -5173,6 +5173,12 @@ export class EventService2 {
           data.recurringSchedule.startDate = startDate;
           data.recurringSchedule.endDate = endDate;
           console.log('Check:2', startDate, endDate);
+          console.log(
+            'startDate Day:',
+            startDate.getUTCDay(),
+            endDate.getUTCDay(),
+          );
+
           if (startDate > endDate) {
             return {
               success: false,
@@ -5180,10 +5186,21 @@ export class EventService2 {
             };
           }
           let week = data.recurringSchedule.weekDays;
+          let allowedWeekdays = [];
+          let daysMap = {
+            monday: 1,
+            tuesday: 2,
+            wednesday: 3,
+            thursday: 4,
+            friday: 5,
+            saturday: 6,
+            sunday: 7,
+          };
           for (let i = 0; i < Object.keys(week).length; i++) {
             let day = Object.keys(week)[i];
             let dayObj = week[day];
             console.log('day:', day);
+            allowedWeekdays.push(daysMap[day]);
             console.log('Day Data:', dayObj);
             if (dayObj.included) {
               if (dayObj.durations.length == 0) {
@@ -5224,6 +5241,12 @@ export class EventService2 {
               });
               data.recurringSchedule.weekDays[day] = dayObj;
             }
+          }
+          if (!allowedWeekdays.includes(endDate.getUTCDay())) {
+            return {
+              success: false,
+              message: 'endDate should only be allowed for selected weekdays',
+            };
           }
           let scheduleObj = {
             type: data.scheduleType,
@@ -6385,11 +6408,14 @@ export class EventService2 {
       data.isFree = data.isFree === 'true';
 
       // Create folder
-      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
-        parentDirectory: business.drive,
-        parentType: 'Drive',
-        folderName: data.title,
-      });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: data.title,
+        },
+      );
 
       // Prepare event object
       const createObj = {
@@ -7876,11 +7902,14 @@ export class EventService2 {
         }
         data.categories = categoriesInObjectId;
       }
-      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
-        parentDirectory: business.drive,
-        parentType: 'Drive',
-        folderName: data.title,
-      });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: data.title,
+        },
+      );
       let createObj: any = {
         ...data,
         type: data.eventType,

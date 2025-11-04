@@ -1187,7 +1187,7 @@ export class OutletService {
       // }
       await this.outletModel.updateOne(
         { _id: outlet.id },
-        { $push: { spots: spotObj } },
+        { $addToSet: { spots: spot._id } },
       );
 
       return {
