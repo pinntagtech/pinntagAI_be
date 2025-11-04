@@ -3,7 +3,7 @@ import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
 import { Category } from 'src/models/contentCategory.model';
-import { CreateOutletDto, CreateOutletDtoV2 } from './dto/create-outlet.dto';
+import { CreateOutletDto, CreateOutletDtoV2, UpdateMobileOutletDto } from './dto/create-outlet.dto';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -34,7 +34,7 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
-import { CreateSpotDto } from './dto/create-spot.dto';
+import { CreateSpotDto, UpdateSpotDto } from './dto/create-spot.dto';
 import { MobileSpots } from 'src/business/model/mobileSpots.model';
 
 @Injectable()
@@ -276,7 +276,6 @@ export class OutletService {
           message: 'Outlet already exists with given address.',
         };
       }
-     
 
       let createObj: any = {};
       Object.keys(data).forEach((key) => {
@@ -290,20 +289,20 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
-      if(data.openingTime && data.closingTime){
-        let [openingHour,openingMinute] = data.openingTime.split(':');
-        let [closingHour,closingMinute] = data.closingTime.split(':');
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
 
         createObj['openingTime'] = {
-          hour:openingHour,
-          minute:openingMinute
-        }
+          hour: openingHour,
+          minute: openingMinute,
+        };
         createObj['closingTime'] = {
-          hour:closingHour,
-          minute:closingMinute
-        }
+          hour: closingHour,
+          minute: closingMinute,
+        };
       }
-      console.log("CREATEOBJ:",createObj);
+      console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
 
       // const spot = await this.mobileSpotsModel.create({
@@ -368,7 +367,11 @@ export class OutletService {
       };
     }
   }
-  async createMobileOutlet(data: CreateOutletDtoV2, user: any,image: Express.Multer.File) {
+  async createMobileOutlet(
+    data: CreateOutletDtoV2,
+    user: any,
+    image: Express.Multer.File,
+  ) {
     try {
       console.log('data:', data);
       const businessUser = await this.businessUserModel.findById(user.id);
@@ -429,28 +432,28 @@ export class OutletService {
         type: 'Point',
         coordinates: [Number(data.longitude), Number(data.latitude)],
       };
-      if(data.openingTime && data.closingTime){
-        let [openingHour,openingMinute] = data.openingTime.split(':');
-        let [closingHour,closingMinute] = data.closingTime.split(':');
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
 
         createObj['openingTime'] = {
-          hour:openingHour,
-          minute:openingMinute
-        }
+          hour: openingHour,
+          minute: openingMinute,
+        };
         createObj['closingTime'] = {
-          hour:closingHour,
-          minute:closingMinute
-        }
+          hour: closingHour,
+          minute: closingMinute,
+        };
       }
 
-       let coverUrl = await this.driveService.noDriveUpload(image);
-       createObj['cover'] = coverUrl;
-       createObj['category'] = OutletCategoryList.MOBILE;
+      let coverUrl = await this.driveService.noDriveUpload(image);
+      createObj['cover'] = coverUrl;
+      createObj['category'] = OutletCategoryList.MOBILE;
 
-       console.log("CREATEOBJ:",createObj);
+      console.log('CREATEOBJ:', createObj);
 
       const outlet = await this.outletModel.create(createObj);
-      console.log("OUTLET:",outlet);
+      console.log('OUTLET:', outlet);
 
       // const spot = await this.mobileSpotsModel.create({
       //   name: outlet.name,
@@ -515,7 +518,60 @@ export class OutletService {
     }
   }
 
+  async updateMobileOutlet(
+    id: string,
+    data: UpdateMobileOutletDto,
+    user: any,
+    image: Express.Multer.File,
+  ) {
+    try {
+      const foundOutlet = await this.outletModel.findById(id);
 
+      let createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
+      });
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
+      }
+      if (image) {
+        let coverUrl = await this.driveService.noDriveUpload(image);
+        createObj['cover'] = coverUrl;
+      }
+
+      console.log('CREATEOBJ:', createObj);
+
+      const outlet = await this.outletModel.findOneAndUpdate(
+        { _id: foundOutlet._id },
+        { $set: createObj },
+        { new: true },
+      );
+      console.log('OUTLET:', outlet);
+
+      return {
+        success: true,
+        message: 'Outlet updated successfully.',
+        data: outlet,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
 
   async updateOutlet(data: UpdateOutletDto, user: any, id: string) {
     try {
@@ -1137,6 +1193,61 @@ export class OutletService {
       return {
         success: true,
         message: 'Spot created successfully.',
+        data: spot,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateSpot(id: string, user: DecodedUser, data: UpdateSpotDto) {
+    try {
+      const foundSpot = await this.mobileSpotsModel.findById(id);
+      if (!foundSpot) {
+        return {
+          success: false,
+          message: 'Spot not found.',
+        };
+      }
+      if (user.businessProfile.toString() !== foundSpot.business.toString()) {
+        return {
+          success: false,
+          message: 'Only authorised to update your own spot.',
+        };
+      }
+
+      let spotObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          spotObj[key] = data[key];
+        }
+      });
+
+      const spot = await this.mobileSpotsModel.findByIdAndUpdate(
+        { _id: foundSpot._id },
+        {
+          $set: spotObj,
+        },
+        {
+          new: true,
+        },
+      );
+
+      // const spotExists = outlet.spots.some(
+      //   (spot) => spot.name === spotObj.name,
+      // );
+      // if (spotExists) {
+      //   return {
+      //     success: false,
+      //     message: 'Spot with the same name already exists in this outlet.',
+      //   };
+      // }
+
+      return {
+        success: true,
+        message: 'Spot updated successfully.',
         data: spot,
       };
     } catch (error) {

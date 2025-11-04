@@ -11,17 +11,18 @@ import {
   BadRequestException,
   UploadedFile,
   UseInterceptors,
+  Put,
 } from '@nestjs/common';
 import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { CreateOutletDto, CreateOutletDtoV2 } from './dto/create-outlet.dto';
+import { CreateOutletDto, CreateOutletDtoV2, UpdateMobileOutletDto } from './dto/create-outlet.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateSpotDto } from './dto/create-spot.dto';
+import { CreateSpotDto, UpdateSpotDto } from './dto/create-spot.dto';
 
 @Controller('outlet')
 export class OutletController {
@@ -136,6 +137,29 @@ export class OutletController {
      @UploadedFile() image: Express.Multer.File,
   ) {
     const result = await this.outletService.createMobileOutlet(createOutletDto, user,image);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('mobile/:id')
+  @UseGuards(JwtGuard2)
+   @UseInterceptors(
+      FileInterceptor('file', {
+        limits: { fileSize: 50000000 },
+      }),
+    )
+  async updateMobileOutlet(
+    @Param('id') id: string,
+    @Body() updateOutletDto: UpdateMobileOutletDto,
+    @TokenDecoder() user: JwtPayload,
+     @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.outletService.updateMobileOutlet(id,updateOutletDto, user,image);
     if (result.success) {
       return {
         message: result.message,
@@ -305,6 +329,23 @@ export class OutletController {
     @Body() data: CreateSpotDto,
   ) {
     const result = await this.outletService.createSpot(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('updateSpot/:id')
+  @UseGuards(JwtGuard2)
+  async updateSpot(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: UpdateSpotDto,
+  ) {
+    const result = await this.outletService.updateSpot(id, user, data);
     if (result.success) {
       return {
         message: result.message,

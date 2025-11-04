@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { OutletCategory } from '../model/outletCategory.model';
 import { VehicleType } from '../outlet.enum';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateOutletDto {
   // Outlet Basic Information
@@ -228,6 +229,7 @@ export class CreateOutletDtoV2 {
   // @IsBoolean()
   // gpsTrackerEnabled?: boolean;
 }
+export class UpdateMobileOutletDto extends PartialType(CreateOutletDtoV2){}
 export class CreateOutletByAdminDto {
   // Outlet Basic Information
   @IsNotEmpty()

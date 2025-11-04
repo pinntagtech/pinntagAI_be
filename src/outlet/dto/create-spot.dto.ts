@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import {
   IsNotEmpty,
   IsNumber,
@@ -50,3 +51,5 @@ export class CreateSpotDto {
   @IsString()
   address2?: string;
 }
+
+export class UpdateSpotDto extends PartialType(CreateSpotDto) {}

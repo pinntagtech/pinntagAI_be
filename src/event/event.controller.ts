@@ -195,7 +195,7 @@ export class EventController {
       throw new BadRequestException({
         message: result.message,
       });
-    }
+    };
   }
 
   @Get('created/v2')
