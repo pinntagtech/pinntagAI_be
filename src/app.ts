@@ -1,9 +1,9 @@
 import express from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
-import { logger } from "./utils/logger";
+import { logger } from "./utils/logger.js";
 import cors from "cors";
-import indexRouter from "./api/routes/index.routes";
+import indexRouter from "./api/routes/index.routes.js";
 
 // Add CORS and allowed origins as needed
 const allowedOrigins = [
@@ -15,7 +15,7 @@ export const buildApp = () => {
   const app = express();
   app.use(helmet());
   app.use(express.json({ limit: "2mb" }));
-  app.use(pinoHttp({ logger }));
+  app.use((pinoHttp as unknown as any)({ logger }));
   app.use(
     cors({
       origin: (origin, callback) => {

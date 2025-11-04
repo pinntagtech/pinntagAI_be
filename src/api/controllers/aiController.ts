@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { AIService } from "../services/ai.service";
-import { logger } from "../../utils/logger";
+import { AIService } from "../services/ai.service.js";
+import { logger } from "../../utils/logger.js";
 
 export class AIController {
   /**

@@ -1,7 +1,7 @@
-import { env } from "./config/env";
-import { buildApp } from "./app";
-import { connectMongo, getBackendConnection } from "./db/connection";
-import { logger } from "./utils/logger";
+import { env } from "./config/env.js";
+import { buildApp } from "./app.js";
+import { connectMongo, getBackendConnection } from "./db/connection.js";
+import { logger } from "./utils/logger.js";
 
 (async () => {
   try {

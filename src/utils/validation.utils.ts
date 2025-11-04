@@ -1,4 +1,4 @@
-import { ScrapedEvent, EventFilters } from "../utils/types/event.types";
+import { ScrapedEvent, EventFilters } from "../utils/types/event.types.js";
 
 export class EventValidator {
   static validateEvent(event: Partial<ScrapedEvent>): {

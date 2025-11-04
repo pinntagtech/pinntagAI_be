@@ -1,5 +1,5 @@
 import type { Connection } from "mongoose";
-import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model";
+import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
 
 /**
  * Ad-hoc reads against the Backend DB from PinntagAI context.

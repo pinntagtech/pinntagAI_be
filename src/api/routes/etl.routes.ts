@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { etlController } from "../controllers/etlController";
-import { validateCreateJobRequest } from "../../middleware/validation";
-import { requireAuth, internalApiKeyGuard } from "../../middleware/auth";
+import { etlController } from "../controllers/etlController.js";
+import { validateCreateJobRequest } from "../../middleware/validation.js";
+import { requireAuth, internalApiKeyGuard } from "../../middleware/auth.js";
 // import { etlController } from '../controllers/etl.controller';
 // import { validateJobRequest } from '../middleware/validation';
 

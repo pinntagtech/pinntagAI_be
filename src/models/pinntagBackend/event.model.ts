@@ -1,5 +1,5 @@
 import { Connection, Model, Schema } from "mongoose";
-import { getBackendConnection } from "../../db/connection";
+import { getBackendConnection } from "../../db/connection.js";
 
 // Enums for Backend Event
 export enum EventTypes {

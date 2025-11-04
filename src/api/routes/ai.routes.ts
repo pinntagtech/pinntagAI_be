@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { internalApiKeyGuard } from "../../middleware/auth";
-import { aiController } from "../controllers/aiController";
+import { internalApiKeyGuard } from "../../middleware/auth.js";
+import { aiController } from "../controllers/aiController.js";
 
 export const aiRouter = Router();
 

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { etlService } from "../services/etl.service";
-import { logger } from "../../utils/logger";
-import { JobRunRequest } from "../../utils/types/types";
+import { etlService } from "../services/etl.service.js";
+import { logger } from "../../utils/logger.js";
+import { JobRunRequest } from "../../utils/types/types.js";
 import { REPLCommand } from "repl";
 // import { etlService } from '../services/enhanced-etl.service';
 // import { logger } from '../utils/logger';

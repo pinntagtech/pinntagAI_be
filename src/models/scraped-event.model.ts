@@ -5,7 +5,7 @@ import {
   EventStatus,
   EventType,
   CreatorType,
-} from "../utils/types/event.types";
+} from "../utils/types/event.types.js";
 
 const LocationCoordinatesSchema = new Schema({
   type: { type: String, default: "Point" },

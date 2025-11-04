@@ -2,9 +2,9 @@ import OpenAI from "openai";
 import fs from "node:fs";
 import mongoose from "mongoose";
 import { toFile } from "openai/uploads";
-import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model";
-import { logger } from "../../utils/logger";
-import { getS3ObjectStream } from "../../utils/s3";
+import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
+import { logger } from "../../utils/logger.js";
+import { getS3ObjectStream } from "../../utils/s3.js";
 
 // ===========================
 // Types & Constants

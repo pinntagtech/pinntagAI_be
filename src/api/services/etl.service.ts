@@ -1,16 +1,16 @@
 import axios, { AxiosInstance } from "axios";
 import { EventEmitter } from "events";
 import WebSocket from "ws";
-import { env } from "../../config/env";
-import { logger } from "../../utils/logger";
-import { JobModel } from "../../models/job.model";
-import { ScrapedEventModel } from "../../models/scraped-event.model";
+import { env } from "../../config/env.js";
+import { logger } from "../../utils/logger.js";
+import { JobModel } from "../../models/job.model.js";
+import { ScrapedEventModel } from "../../models/scraped-event.model.js";
 import {
   EtlEvent,
   JobStatus,
   JobRunRequest,
   StreamingJobUpdate,
-} from "../../utils/types/types";
+} from "../../utils/types/types.js";
 import { randomUUID } from "crypto";
 import mongoose from "mongoose";
 import { count } from "console";

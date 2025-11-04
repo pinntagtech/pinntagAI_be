@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { etlService } from "../services/etl.service";
-import { etlRoutes } from "./etl.routes";
-import { aiRoutes } from "./ai.routes";
+import { etlService } from "../services/etl.service.js";
+import { etlRoutes } from "./etl.routes.js";
+import { aiRoutes } from "./ai.routes.js";
 
 // Import your route modules here
 // Example:

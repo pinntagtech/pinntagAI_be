@@ -9,8 +9,8 @@
 // };
 
 import mongoose, { Connection } from "mongoose";
-import { logger } from "../utils/logger";
-import { env } from "../config/env";
+import { logger } from "../utils/logger.js";
+import { env } from "../config/env.js";
 
 /**
  * Primary (default) connection: PinntagAI DB

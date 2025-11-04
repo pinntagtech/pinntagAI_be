@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { env } from "../config/env";
-import { ApiKeyModel } from "../models/ApiKey";
+import { env } from "../config/env.js";
+import { ApiKeyModel } from "../models/ApiKey.js";
 
 type AuthCheck = {
   apiKeyValid: boolean;
@@ -54,10 +54,8 @@ export async function requireAuth(
 
     // Extract API key
     const apiKeyHeaderName = env.AUTH_API_KEY_HEADER_NAME.toLowerCase();
-    const apiKeyHeaderValue = (req.headers[apiKeyHeaderName] || req.headers["x-api-key"]) as
-      | string
-      | string[]
-      | undefined;
+    const apiKeyHeaderValue = (req.headers[apiKeyHeaderName] ||
+      req.headers["x-api-key"]) as string | string[] | undefined;
     const apiKeyValue = Array.isArray(apiKeyHeaderValue)
       ? apiKeyHeaderValue[0]
       : apiKeyHeaderValue;
@@ -65,19 +63,27 @@ export async function requireAuth(
 
     // Validate API key (static env or DB)
     if (apiKeyValue) {
-      const staticKeyOk = !!env.AUTH_STATIC_API_KEY && apiKeyValue === env.AUTH_STATIC_API_KEY;
+      const staticKeyOk =
+        !!env.AUTH_STATIC_API_KEY && apiKeyValue === env.AUTH_STATIC_API_KEY;
       let dbKeyOk = false;
       if (!staticKeyOk) {
-        const found = await ApiKeyModel.findOne({ key: apiKeyValue, active: true }).lean();
+        const found = await ApiKeyModel.findOne({
+          key: apiKeyValue,
+          active: true,
+        }).lean();
         dbKeyOk = !!found;
       }
       check.apiKeyValid = staticKeyOk || dbKeyOk;
     }
 
     // Extract Bearer token
-    const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+    const authHeader =
+      req.headers.authorization || req.headers["Authorization" as any];
     let bearerToken: string | undefined;
-    if (typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")) {
+    if (
+      typeof authHeader === "string" &&
+      authHeader.toLowerCase().startsWith("bearer ")
+    ) {
       bearerToken = authHeader.slice(7).trim();
     }
     check.bearerTokenValue = bearerToken;
