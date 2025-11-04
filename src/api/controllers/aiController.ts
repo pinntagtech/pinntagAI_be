@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { AIService } from "../services/ai.service.js";
 import { logger } from "../../utils/logger.js";
+import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
 
 export class AIController {
   /**
@@ -55,8 +56,18 @@ export class AIController {
           error: "Business ID is required",
         });
       }
+
+      const checkDuplicateBusiness = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(business.businessId),
+      });
+      if (checkDuplicateBusiness) {
+        return res.status(400).json({
+          success: false,
+          error: "An AI agent for this Business ID already exists.",
+        });
+      }
       // Validate business ID format
-      if (!mongoose.Types.ObjectId.isValid(business.id)) {
+      if (!mongoose.Types.ObjectId.isValid(business.businessId)) {
         return res.status(400).json({
           success: false,
           error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
