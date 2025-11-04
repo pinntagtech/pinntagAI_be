@@ -8,6 +8,11 @@ const EnvSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development"),
   PORT: z.coerce.number().default(4001),
+  BACKEND_MONGODB_URI: z
+    .string()
+    .nonempty()
+    .url()
+    .or(z.string().nonempty().startsWith("mongodb://")),
   MONGODB_URI: z
     .string()
     .nonempty()
@@ -28,8 +33,18 @@ const EnvSchema = z.object({
   AUTH_STATIC_API_KEY: z.string().optional(),
   AUTH_BEARER_TOKEN: z.string().optional(),
   AUTH_BEARER_TOKENS: z
-    .preprocess((v) => (typeof v === "string" ? v : undefined), z.string().optional())
-    .transform((s) => (s ? s.split(",").map((t) => t.trim()).filter(Boolean) : [])),
+    .preprocess(
+      (v) => (typeof v === "string" ? v : undefined),
+      z.string().optional()
+    )
+    .transform((s) =>
+      s
+        ? s
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : []
+    ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

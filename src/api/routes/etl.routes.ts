@@ -5,42 +5,42 @@ import { requireAuth, internalApiKeyGuard } from "../../middleware/auth";
 // import { etlController } from '../controllers/etl.controller';
 // import { validateJobRequest } from '../middleware/validation';
 
-const router = Router();
+const etlRouter = Router();
 
-router.get("/health", etlController.health);
+etlRouter.get("/health", etlController.health);
 
 // Enforce internal API key for A->B calls when enabled
-router.use(internalApiKeyGuard);
+etlRouter.use(internalApiKeyGuard);
 
 // Backend A -> initiate ETL for a group
-router.post("/groups/:groupId/run", etlController.startGroupJob);
+etlRouter.post("/groups/:groupId/run", etlController.startGroupJob);
 
 // Protect all endpoints below with auth
 // Optional additional auth layer (API key/Bearer) if enabled via env
-router.use(requireAuth);
-router.post("/jobs", validateCreateJobRequest, etlController.createJob);
-router.get("/jobs/:jobId", etlController.getJob);
-router.get("/jobs", etlController.listJobs);
-router.get("/jobs/status/:jobId", etlController.getJobStatus);
-router.get("/jobs/logs/:jobId", etlController.getJobLogs);
-router.patch("/jobs/pause/:jobId", etlController.pauseJob);
-router.patch("/jobs/resume/:jobId", etlController.resumeJob);
-router.patch("/jobs/cancel/:jobId", etlController.cancelJob);
-router.delete("/jobs/:jobId", etlController.deleteJob);
-router.get("/jobs/stream/:jobId", etlController.streamJobProgress);
-router.get("/jobs/statistics", etlController.getJobStatistics);
-router.post("/jobs/events/:jobId", etlController.addJobEvents);
-router.get("/jobs/events/:jobId", etlController.getJobEvents); // Add pagination
-router.get("/jobs/all-events/:jobId", etlController.listAllEventsIdToJob);
-router.get("/events/:eventId", etlController.getEventById);
-router.delete("/jobs/events/:jobId", etlController.deleteJobEvents);
-router.get(
+etlRouter.use(requireAuth);
+etlRouter.post("/jobs", validateCreateJobRequest, etlController.createJob);
+etlRouter.get("/jobs/:jobId", etlController.getJob);
+etlRouter.get("/jobs", etlController.listJobs);
+etlRouter.get("/jobs/status/:jobId", etlController.getJobStatus);
+etlRouter.get("/jobs/logs/:jobId", etlController.getJobLogs);
+etlRouter.patch("/jobs/pause/:jobId", etlController.pauseJob);
+etlRouter.patch("/jobs/resume/:jobId", etlController.resumeJob);
+etlRouter.patch("/jobs/cancel/:jobId", etlController.cancelJob);
+etlRouter.delete("/jobs/:jobId", etlController.deleteJob);
+etlRouter.get("/jobs/stream/:jobId", etlController.streamJobProgress);
+etlRouter.get("/jobs/statistics", etlController.getJobStatistics);
+etlRouter.post("/jobs/events/:jobId", etlController.addJobEvents);
+etlRouter.get("/jobs/events/:jobId", etlController.getJobEvents); // Add pagination
+etlRouter.get("/jobs/all-events/:jobId", etlController.listAllEventsIdToJob);
+etlRouter.get("/events/:eventId", etlController.getEventById);
+etlRouter.delete("/jobs/events/:jobId", etlController.deleteJobEvents);
+etlRouter.get(
   "/jobs/verified-events/:jobId",
   etlController.exportVerifiedJobEvents
 );
-router.patch("/events/:eventId", etlController.updateEvent);
-router.patch("/events/:eventId/verify", etlController.verifyEvent);
-router.get("/events", etlController.listEvents);
-router.get("/metrics", etlController.getMetrics);
+etlRouter.patch("/events/:eventId", etlController.updateEvent);
+etlRouter.patch("/events/:eventId/verify", etlController.verifyEvent);
+etlRouter.get("/events", etlController.listEvents);
+etlRouter.get("/metrics", etlController.getMetrics);
 
-export { router as etlRoutes };
+export { etlRouter as etlRoutes };

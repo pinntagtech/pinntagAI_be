@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { internalApiKeyGuard } from "../../middleware/auth";
+import { aiController } from "../controllers/aiController";
 
 export const aiRouter = Router();
 
@@ -7,23 +8,37 @@ export const aiRouter = Router();
 aiRouter.use(internalApiKeyGuard);
 
 /**
- * POST /ai/generate
- * Body: { prompt: string, context?: object }
- * TODO: wire to your LLM provider / internal inference service.
+ * POST /ai/create-agent
+ * Body: { id?: string, name: string, category?: string, website?: string, tone?: string }
+ * Creates a new AI agent for a business
  */
-aiRouter.post("/generate", async (req, res) => {
-  const { prompt, context } = req.body || {};
-  if (!prompt)
-    return res
-      .status(400)
-      .json({ success: false, error: "prompt is required" });
+aiRouter.post("/create-agent", aiController.createAgent);
 
-  // TODO: replace with real LLM call (OpenAI, local, or your AI microservice)
-  const mock = {
-    prompt,
-    context: context ?? null,
-    output: `This is a stub response for: ${prompt.slice(0, 64)}...`,
-  };
+/**
+ * PUT /ai/update-agent/:agentId
+ * Body: { name?: string, category?: string, website?: string, tone?: string }
+ * Updates an existing AI agent's configuration
+ */
+aiRouter.put("/update-agent/:agentId", aiController.updateAgent);
 
-  res.json({ success: true, data: mock });
-});
+/**
+ * POST /ai/chat
+ * Body: { agentId: string, message: string }
+ * Chats with an AI agent using the assistant ID
+ */
+aiRouter.post("/chat", aiController.chatWithAgent);
+
+/**
+ * POST /ai/ask-business
+ * Body: { businessId: string, message: string }
+ * Asks the AI assistant for a specific business using the business ID
+ */
+aiRouter.post("/ask-business", aiController.askBusinessAssistant);
+
+/**
+ * GET /ai/business/:businessId
+ * Gets the AI agent configuration for a business
+ */
+aiRouter.get("/business/:businessId", aiController.getBusinessAgent);
+
+export { aiRouter as aiRoutes };

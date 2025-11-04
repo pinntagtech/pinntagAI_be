@@ -158,6 +158,7 @@ export class EtlService extends EventEmitter {
     output_formats?: string[];
     metadata?: Record<string, any>;
     groupId?: string;
+    scraping_type?: string;
   }): Promise<{ jobId: string; status: "created" } & { job: any }> {
     // Basic validation
     if (
@@ -196,6 +197,7 @@ export class EtlService extends EventEmitter {
         jobId,
         id: jobId,
         source: payload.source,
+        scraping_type: payload.scraping_type,
         urls: payload.urls,
         output_formats: payload.output_formats || [],
         metadata: payload.metadata || {},

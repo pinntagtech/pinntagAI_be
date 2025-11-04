@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { etlService } from "../services/etl.service";
 import { etlRoutes } from "./etl.routes";
+import { aiRoutes } from "./ai.routes";
 
 // Import your route modules here
 // Example:
@@ -12,6 +13,8 @@ const router = Router();
 // Example:
 // router.use('/ai', aiRouter);
 router.use("/etl", etlRoutes);
+router.use("/ai", aiRoutes);
+
 // Setup global event handlers
 etlService.on("jobUpdate", (update) => {
   console.log("Job update:", update);
@@ -26,9 +29,5 @@ process.on("SIGTERM", async () => {
   await etlService.shutdown();
   process.exit(0);
 });
-// router.use('/health', healthRouter);
-
-// router.use('/users', userRoutes);
-// router.use('/auth', authRoutes);
 
 export default router;
