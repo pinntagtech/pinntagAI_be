@@ -11,11 +11,15 @@ import { getS3ObjectStream } from "../../utils/s3.js";
 // ===========================
 
 export type Business = {
-  id: string;
+  businessName: string;
+  businessId: string;
   name: string;
-  category?: string;
+  industry: string;
   website?: string;
-  tone?: string;
+  tone: string;
+  description?: string;
+  tags: string[];
+  categories: string[];
 };
 
 const openai = new OpenAI({
@@ -126,15 +130,15 @@ async function pollRunUntilComplete(
 async function createBusinessAgent(biz: Business) {
   try {
     console.log("Creating business agent for (in service):", biz);
-    if (!biz.id) {
+    if (!biz.businessId) {
       return Error("Business ID is required to create an agent.");
     }
-    if (!mongoose.Types.ObjectId.isValid(biz.id)) {
+    if (!mongoose.Types.ObjectId.isValid(biz.businessId)) {
       return Error("Business ID must be a valid ObjectId string.");
     }
 
     // Basic input validation to fail fast with clear message
-    if (!biz || !biz.id || !biz.name) {
+    if (!biz || !biz.businessId || !biz.name) {
       const msg = `Invalid business payload: ${JSON.stringify(biz)}`;
       logger.error(msg);
       throw new Error(msg);
@@ -150,6 +154,11 @@ async function createBusinessAgent(biz: Business) {
       model: "gpt-4o", // or gpt-4.1 / gpt-4o-mini depending on cost/latency
       instructions: [
         `You are the AI agent for ${biz.name}.`,
+        `Your knowledge is based on the following information about the business:`,
+        `Name: ${biz.name}`,
+        `Description: ${biz.description}`,
+        `Tags: ${biz.tags.join(", ")}`,
+        `Categories: ${biz.categories.join(", ")}`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
         `Tone: ${biz.tone ?? "professional, warm, succinct"}.`,
         `If you don't know, say so briefly and ask for missing info.`,
@@ -202,12 +211,16 @@ async function createBusinessAgent(biz: Business) {
 
     // 3) Persist ids for future use
     await BusinessAIAssistantModel.create({
-      businessId: new mongoose.Types.ObjectId(biz.id),
+      businessId: new mongoose.Types.ObjectId(biz.businessId),
       assistantId: assistant.id,
       vectorStoreId: vectorStore.id,
-      businessName: biz.name,
+      businessName: biz.businessName,
       name: biz.name,
-      industry: biz.category,
+      description: biz.description,
+      tags: biz.tags,
+      categories: biz.categories,
+      tone: biz.tone,
+      industry: biz.industry,
       website: biz.website,
       threadId: thread.id,
     });
@@ -344,9 +357,9 @@ export class AIService {
   static async createAgentForBusiness(business: Business) {
     try {
       // Validate business has an ID
-      if (!business.id) {
-        business.id = `biz_${Math.random().toString(36).substring(2, 10)}`;
-      }
+      // if (!business.id) {
+      //   business.id = `biz_${Math.random().toString(36).substring(2, 10)}`;
+      // }
 
       const result = await createBusinessAgent(business);
       logger.info({ result }, "Created business agent");

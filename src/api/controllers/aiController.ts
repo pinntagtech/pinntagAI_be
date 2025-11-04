@@ -21,6 +21,12 @@ export class AIController {
           error: "Business name is required",
         });
       }
+      if (!business.businessName) {
+        return res.status(400).json({
+          success: false,
+          error: "Business name is required",
+        });
+      }
       if (business.website && !/^https?:\/\/.+\..+/.test(business.website)) {
         return res.status(400).json({
           success: false,
@@ -43,13 +49,12 @@ export class AIController {
           error: "Category must be a string",
         });
       }
-      if (!business.id) {
+      if (!business.businessId) {
         return res.status(400).json({
           success: false,
           error: "Business ID is required",
         });
       }
-
       // Validate business ID format
       if (!mongoose.Types.ObjectId.isValid(business.id)) {
         return res.status(400).json({
@@ -57,19 +62,34 @@ export class AIController {
           error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
         });
       }
-      // if (business.id) {
-      //   const existingAgent = await AIService.getAgentByBusinessId(business.id);
-      //   if (existingAgent) {
-      //     return res.status(400).json({
-      //       success: false,
-      //       error: "An agent for this business already exists",
-      //     });
-      //   }
-      // } else {
+      if (
+        !business.categories ||
+        !Array.isArray(business.categories) ||
+        business.categories.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Categories are required",
+        });
+      }
+      if (
+        !business.tags ||
+        !Array.isArray(business.tags) ||
+        business.tags.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Tags are required",
+        });
+      }
       const result = await AIService.createAgentForBusiness(business);
       logger.info({ result }, "Created business agent");
 
-      return res.status(201).json({ success: true, data: result });
+      return res.status(201).json({
+        success: true,
+        data: result,
+        message: "AI agent created successfully",
+      });
       // }
     } catch (error: any) {
       logger.error({ error }, "Error creating AI agent");
@@ -264,7 +284,11 @@ export class AIController {
 
       const result = await AIService.getBusinessAIAgent(businessId);
 
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: "Business agent retrieved successfully",
+      });
     } catch (error: any) {
       logger.error(
         { error, businessId: req.params.businessId },
