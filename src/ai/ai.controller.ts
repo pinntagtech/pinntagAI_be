@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,10 +17,12 @@ import { UserGuard } from 'src/auth/guards/user.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { PinntagAiService } from './pinntag-ai.service';
+import { ConnectableObservable } from 'rxjs';
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(private readonly aiService: AiService,private readonly pinntagAiService:PinntagAiService) {}
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
@@ -137,4 +140,13 @@ export class AiController {
       });
     }
   }
+
+  @Post('pinntagAgent')
+  async createAgent(@Body() body, @Req() req) {
+    console.log("Inside pinntag agent:",)
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    return this.pinntagAiService.createAgent(token, body);
+  }
+
+
   }
