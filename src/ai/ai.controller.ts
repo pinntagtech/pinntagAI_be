@@ -142,10 +142,8 @@ export class AiController {
   }
 
   @Post('pinntagAgent')
-  async createAgent(@Body() body, @Req() req) {
-    console.log("Inside pinntag agent:",)
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    return this.pinntagAiService.createAgent(token, body);
+  async createAgent(@Body() body) {
+    return this.pinntagAiService.createAgent(body);
   }
 
 

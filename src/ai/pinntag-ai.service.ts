@@ -7,8 +7,7 @@ export class PinntagAiService {
   private baseUrl = 'http://localhost:4001'; // same instance, internal call
   private internalKey = 'change-me';
 
-  async createAgent(token: string, payload: any) {
-    console.log("token:",token);
+  async createAgent(payload: any) {
     console.log("payload:",payload);
     const response = await axios.post(
       `${this.baseUrl}/ai/create-agent`,
@@ -16,7 +15,6 @@ export class PinntagAiService {
       {
         headers: {
           'x-internal-api-key': this.internalKey,
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       },

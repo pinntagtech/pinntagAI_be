@@ -91,6 +91,11 @@ export class Business {
     default: DEFAULT_IMAGES.BUSINESS_COVER,
   })
   cover: string;
+  @Prop({
+    default: DEFAULT_IMAGES.BUSINESS_COVER,
+  })
+  thumbnailCover: string;
+
 
   @Prop({ ref: BusinessConstitution.name })
   constitution: mongoose.Types.ObjectId;
