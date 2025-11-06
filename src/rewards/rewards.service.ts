@@ -199,7 +199,7 @@ export class RewardsService {
 
       // Upload images async (fire and forget)
       await this.driveService.multiImageUpload(
-        userId,
+        user.businessProfile,
         businessFolder.data.id,
         images,
       );

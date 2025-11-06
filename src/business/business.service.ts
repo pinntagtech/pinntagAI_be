@@ -172,6 +172,7 @@ import {
   FixedSchedule,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
+import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 
 @Injectable()
 export class BusinessService {
@@ -249,6 +250,7 @@ export class BusinessService {
     private readonly firebaseService: FirebaseService,
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
+    private readonly pinnAiService: PinntagAiService,
   ) {}
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -4920,7 +4922,7 @@ export class BusinessService {
       });
 
       const uploadedFiles = await this.driveService.multiImageUpload(
-        user.id,
+        user.businessProfile,
         String(business.drive),
         files,
       );

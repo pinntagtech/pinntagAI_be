@@ -75,6 +75,11 @@ export class Business {
   })
   logo: string;
 
+  @Prop({
+    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+  })
+  logoThumbnail: string;
+
   @Prop({ ref: 'Subscription' })
   activeSubscription: mongoose.Types.ObjectId;
 
@@ -94,7 +99,7 @@ export class Business {
   @Prop({
     default: DEFAULT_IMAGES.BUSINESS_COVER,
   })
-  thumbnailCover: string;
+  coverThumbnail: string;
 
 
   @Prop({ ref: BusinessConstitution.name })

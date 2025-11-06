@@ -7929,7 +7929,7 @@ export class EventService2 {
       // });
       if (images.length > 0) {
         await this.driveService.multiImageUpload(
-          user.id,
+          user.businessProfile,
           String(event.drivePath),
           images,
         );

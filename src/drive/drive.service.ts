@@ -1381,27 +1381,30 @@ export class DriveService {
         name: FileCategoryTypes.CONTENT_QR,
       });
       console.log('Old files:', oldFiles);
-      await Promise.all(
-        oldFiles.map(async (file) => {
-          if (file.category.toString() !== QR_FileCategory._id.toString()) {
-            const fileUrl = file.metaData.url;
-            const pathname = new URL(fileUrl).pathname;
-            const fileName = pathname.startsWith('/')
-              ? pathname.slice(1)
-              : pathname;
+      if(oldFiles.length>0){
+        await Promise.all(
+          oldFiles.map(async (file) => {
+            if (file.category.toString() !== QR_FileCategory._id.toString()) {
+              const fileUrl = file.metaData.url;
+              const pathname = new URL(fileUrl).pathname;
+              const fileName = pathname.startsWith('/')
+                ? pathname.slice(1)
+                : pathname;
+  
+              await this.s3Service.s3_delete(
+                process.env.AWS_S3_BUCKET_NAME,
+                fileName,
+              );
+              await this.fileModel.deleteOne({
+                _id: new mongoose.Types.ObjectId(file._id),
+              });
+            }
+          }),
+        );
 
-            await this.s3Service.s3_delete(
-              process.env.AWS_S3_BUCKET_NAME,
-              fileName,
-            );
-            await this.fileModel.deleteOne({
-              _id: new mongoose.Types.ObjectId(file._id),
-            });
-          }
-        }),
-      );
+      }
 
-      let parentId = user.id;
+      let parentId = user.businessProfile;
       console.log('parentId:', parentId);
 
       if (!isValidObjectId(parentId)) {

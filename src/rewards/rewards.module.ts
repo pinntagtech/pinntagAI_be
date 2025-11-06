@@ -178,6 +178,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 
 @Module({
   imports: [
@@ -282,6 +283,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
     SmsService,
     RedisBullService,
     AppsOnAirLinkService,
+    PinntagAiService,
   ],
 })
 export class RewardsModule {}
