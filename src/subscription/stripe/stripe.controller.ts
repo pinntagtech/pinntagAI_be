@@ -49,6 +49,7 @@ export class StripeController {
       priceId: dto.priceId,
       couponCode: dto.couponCode,
       // promotionCode: dto.promotionCode,
+      quantity: dto.quantity,
       successUrl,
       cancelUrl,
     });

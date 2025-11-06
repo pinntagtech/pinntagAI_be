@@ -303,6 +303,7 @@ export class StripeService {
   async createCheckoutSession(params: {
     businessId: string;
     priceId: string;
+    quantity?: number;
     successUrl: string;
     cancelUrl: string;
     couponCode?: string;
@@ -343,7 +344,7 @@ export class StripeService {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       customer: customerId,
-      line_items: [{ price: price.id, quantity: 1 }],
+      line_items: [{ price: price.id, quantity: params.quantity || 1 }],
       discounts,
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
@@ -874,9 +875,12 @@ export class StripeService {
     const data = await this.stripe.subscriptions.cancel(
       activeSub.stripeSubscriptionId,
     );
-    console.log("cancel subscription data:",data);
+    console.log('cancel subscription data:', data);
     if (data && data.id) {
-      await this.subscriptionModel.updateOne({ _id: new mongoose.Types.ObjectId(business.activeSubscription)},{$set:{isCancelled:true}});
+      await this.subscriptionModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(business.activeSubscription) },
+        { $set: { isCancelled: true } },
+      );
       return {
         sucess: true,
         message: 'Subscription cancelled',
