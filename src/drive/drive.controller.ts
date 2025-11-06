@@ -14,6 +14,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Headers,
 } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
@@ -29,6 +30,8 @@ import { Token } from 'src/auth/models/token.model';
 import { DirectoryService } from 'aws-sdk';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { CreateSampleDocumentDto } from './dto/createSampleDocument.dto';
+import { ApiHeader } from '@nestjs/swagger';
+import { Files } from 'openai/resources/beta/vector-stores/files';
 
 @Controller('drive')
 export class DriveController {
@@ -70,7 +73,10 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @Body() createDto: Partial<Folder>,
   ) {
-    const result = await this.driveService.createFolder(user.businessProfile, createDto);
+    const result = await this.driveService.createFolder(
+      user.businessProfile,
+      createDto,
+    );
 
     if (result.success) {
       return {
@@ -102,7 +108,6 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
-
 
   @Get('getFiles')
   @UseGuards(JwtGuard2)
@@ -239,6 +244,35 @@ export class DriveController {
     };
   }
 
+  @Post('csvAssests')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: { fileSize: 500 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
+  @ApiHeader({
+    name: 'X-Upload-Api-Key',
+    description: 'Interal Verification Key API key',
+    required: true,
+  })
+  async csvAssests(
+    @Headers('X-Upload-Api-Key') apiKey: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    const result = await this.driveService.csvAssests(files, apiKey);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: 'Files uploaded successfully',
+    };
+  }
+
   @Post('updateFile/:id')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -283,7 +317,10 @@ export class DriveController {
 
   @Post('softDeleteFile/:id')
   @UseGuards(JwtGuard2)
-  async softDeleteFile(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
+  async softDeleteFile(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid file ID');
     }
@@ -297,10 +334,12 @@ export class DriveController {
     }
   }
 
-
   @Delete('deleteFolder/:id')
   @UseGuards(JwtGuard2)
-  async deleteFolder(@TokenDecoder() user: DecodedUser, @Param('id') id: string) {
+  async deleteFolder(
+    @TokenDecoder() user: DecodedUser,
+    @Param('id') id: string,
+  ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid file ID');
     }
@@ -316,13 +355,21 @@ export class DriveController {
 
   @Post('uploadSampleDocument')
   @UseGuards(AdminGuard2)
-    @UseInterceptors(
+  @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 }, // ✅ Set file size limit to 10MB
     }),
   )
-  async uploadSampleDocument(@Body() data: CreateSampleDocumentDto, @TokenDecoder() user: DecodedUser, @UploadedFile() file: Express.Multer.File) {
-    const result = await this.driveService.uploadSampleDocument(data, user, file);
+  async uploadSampleDocument(
+    @Body() data: CreateSampleDocumentDto,
+    @TokenDecoder() user: DecodedUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const result = await this.driveService.uploadSampleDocument(
+      data,
+      user,
+      file,
+    );
 
     if (result.success) {
       return {
@@ -336,7 +383,7 @@ export class DriveController {
 
   @Get('sampleDocument')
   @UseGuards(JwtGuard2)
-  async getSampleDocuments(@Query('document')document: string) {
+  async getSampleDocuments(@Query('document') document: string) {
     const result = await this.driveService.getSampleDocuments(document);
     if (result.success) {
       return {
@@ -347,6 +394,4 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
-
-
-  }
+}

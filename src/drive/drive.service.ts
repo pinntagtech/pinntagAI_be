@@ -364,7 +364,7 @@ export class DriveService {
       createdFile = await this.fileModel.create({
         metaData: {
           mimeType: file.mimetype,
-          url:s3.Location,
+          url: s3.Location,
           thumbnailUrl,
           size: file.size,
           originalName: file.originalname,
@@ -415,7 +415,7 @@ export class DriveService {
           message: 'Invalid ObjectId',
         };
       }
-      console.log("FOLDER DATA:,",folderData);
+      console.log('FOLDER DATA:,', folderData);
       if (!folderData.parentDirectory) {
         folderData.parentDirectory = driveDetails.id;
       }
@@ -899,14 +899,24 @@ export class DriveService {
         `thumbnails/${Date.now()}-${manipulateImageName(file.originalname)}.png`,
         'image/png',
       );
-      thumbnailUrl = thumbnailS3.Location; 
+      thumbnailUrl = thumbnailS3.Location;
+    }
+    else if(allowedImageMimeTypes.includes(file.mimetype)){
+      const thumbnail = await FileUploadUtils.compressThumbnail(file);
+    const thumbnailS3 = await this.s3Service.s3_upload(
+      thumbnail.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      `thumbnails/${manipulateImageName(file.originalname)}`,
+      thumbnail.mimetype,
+    );
+    thumbnailUrl = thumbnailS3.Location;
     }
 
     // 2. Persist File doc
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
-        url:s3.Location,
+        url: s3.Location,
         thumbnailUrl,
         size: file.size,
         originalName: file.originalname,
@@ -934,7 +944,7 @@ export class DriveService {
       manipulateImageName(file.originalname),
       file.mimetype,
     );
-    console.log("B3 S3 fileee:",s3);
+    console.log('B3 S3 fileee:', s3);
     //2. Upload thumbnail
     const thumbnail = await FileUploadUtils.compressThumbnail(file);
     const thumbnailS3 = await this.s3Service.s3_upload(
@@ -948,8 +958,8 @@ export class DriveService {
     return await this.fileModel.create({
       metaData: {
         mimeType: file.mimetype,
-        url:s3.Location,
-        thumbnailUrl:thumbnailS3.Location,
+        url: s3.Location,
+        thumbnailUrl: thumbnailS3.Location,
         size: file.size,
         originalName: file.originalname,
       },
@@ -1040,6 +1050,45 @@ export class DriveService {
         { _id: parentDirectoryId },
         { $inc: { AvailableSpace: -totalSize } },
       );
+
+      return {
+        success: true,
+        message: 'Files uploaded successfully',
+        data: createdFiles,
+      };
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return { success: false, message: 'Failed to upload media' };
+    }
+  }
+  async csvAssests(images: Express.Multer.File[], apiKey: string) {
+    try {
+      if (apiKey != '000e10b3-b0a0-4269-a864-ea419a790f76') {
+        return { success: false, message: 'Api key is not valid' };
+      }
+      const admin = await this.adminModel.findOne({ isSuperAdmin: true });
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+      if (!fileCategory) {
+        return { success: false, message: 'File category not found' };
+      }
+
+      // Filter valid images and prepare upload/create tasks
+      let totalSize = 0;
+      const tasks = images.map((img) => {
+        totalSize += img.size;
+        return this.uploadAndCreateFile(
+          img,
+          admin.drive.toString(),
+          'Drive',
+          admin.id,
+          fileCategory._id,
+        );
+      });
+
+      // Run uploads/creates in parallel
+      const createdFiles = await Promise.all(tasks);
 
       return {
         success: true,
