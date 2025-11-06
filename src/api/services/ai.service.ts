@@ -2,7 +2,10 @@ import OpenAI from "openai";
 import fs from "node:fs";
 import mongoose from "mongoose";
 import { toFile } from "openai/uploads";
-import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
+import {
+  BusinessAIAssistantModel,
+  IBusiness_AI_Assistant,
+} from "../../models/businessAIAssistant.model.js";
 import { logger } from "../../utils/logger.js";
 import { getS3ObjectStream } from "../../utils/s3.js";
 
@@ -287,7 +290,9 @@ export async function addS3FilesToVectorStore(
 /**
  * Retrieves the assistant for a business by ID
  */
-async function getBusinessAssistant(businessId: string) {
+async function getBusinessAssistant(
+  businessId: string
+): Promise<IBusiness_AI_Assistant> {
   const businessAI = await BusinessAIAssistantModel.findOne({
     businessId: new mongoose.Types.ObjectId(businessId),
   });
@@ -373,21 +378,60 @@ export class AIService {
   /**
    * Updates an existing AI agent's configuration
    */
-  static async updateAgent(agentId: string, updates: Partial<Business>) {
+  static async updateAgent(businessId: string, updates: Partial<Business>) {
     try {
+      const agent: IBusiness_AI_Assistant = await getBusinessAssistant(
+        businessId
+      );
+
       const updatedInstructions = [
-        `You are the AI agent for ${updates.name ?? "the business"}.`,
+        `You are the AI agent for ${
+          updates.businessName ? updates.businessName : agent.businessName
+        }.`,
+        `Your knowledge is based on the following information about the business:`,
+        `Name: ${updates.name ? updates.name : agent.name}`,
+        `Description: ${
+          updates.description ? updates.description : agent.description
+        }`,
+        `Tags: ${
+          updates.tags ? updates.tags.join(", ") : (agent.tags ?? []).join(", ")
+        }`,
+        `Categories: ${
+          updates.categories
+            ? updates.categories.join(", ")
+            : (agent.categories ?? []).join(", ")
+        }`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
-        `Tone: ${updates.tone ?? "professional, warm, succinct"}.`,
+        `Tone: ${
+          updates.tone ?? agent.tone ?? "professional, warm, succinct"
+        }.`,
         `If you don't know, say so briefly and ask for missing info.`,
         `Use the provided tools to fetch live data from the business backend when relevant.`,
         `${ASSISTANT_INSTRUCTIONS}`,
       ].join("\n");
 
-      const updatedAssistant = await openai.beta.assistants.update(agentId, {
-        name: updates.name ? `${updates.name}` : undefined,
-        instructions: updatedInstructions,
-      });
+      const updatedAssistant = await openai.beta.assistants.update(
+        agent.assistantId,
+        {
+          name: updates.name ? `${updates.name}` : undefined,
+          instructions: updatedInstructions,
+        }
+      );
+
+      const updatedAgent = await BusinessAIAssistantModel.findOneAndUpdate(
+        { businessId: new mongoose.Types.ObjectId(businessId) },
+        {
+          businessName: updates.businessName ?? agent.businessName,
+          name: updates.name ?? agent.name,
+          description: updates.description ?? agent.description,
+          tags: updates.tags ?? agent.tags,
+          categories: updates.categories ?? agent.categories,
+          tone: updates.tone ?? agent.tone,
+          industry: updates.industry ?? agent.industry,
+          website: updates.website ?? agent.website,
+        },
+        { new: true }
+      );
 
       return updatedAssistant;
     } catch (error: any) {

@@ -19,7 +19,7 @@ aiRouter.post("/create-agent", aiController.createAgent);
  * Body: { name?: string, category?: string, website?: string, tone?: string }
  * Updates an existing AI agent's configuration
  */
-aiRouter.put("/update-agent/:agentId", aiController.updateAgent);
+aiRouter.put("/update-agent/:businessId", aiController.updateAgent);
 
 /**
  * POST /ai/chat

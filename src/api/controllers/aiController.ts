@@ -129,23 +129,78 @@ export class AIController {
    */
   async updateAgent(req: Request, res: Response) {
     try {
-      const { agentId } = req.params;
+      const { businessId } = req.params;
       const updates = req.body;
 
-      // Validate agentId
-      if (!agentId) {
+      // Validate businessId
+      if (!businessId) {
         return res.status(400).json({
           success: false,
-          error: "Agent ID is required",
+          error: "Business ID is required",
+        });
+      }
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+        });
+      }
+      const existingAgent = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+      if (!existingAgent) {
+        return res.status(404).json({
+          success: false,
+          error: "No AI agent found for this Business ID",
+        });
+      }
+      if (!updates || typeof updates !== "object") {
+        return res.status(400).json({
+          success: false,
+          error: "Updates must be an object",
+        });
+      }
+      if (updates.website && !/^https?:\/\/.+\..+/.test(updates.website)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid website URL format",
+        });
+      }
+      if (
+        updates.tone &&
+        !["professional", "casual", "friendly"].includes(updates.tone)
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Invalid tone. Allowed values are: professional, casual, friendly.",
+        });
+      }
+      if (updates.name && typeof updates.name !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Name must be a string",
+        });
+      }
+      if (updates.categories && !Array.isArray(updates.categories)) {
+        return res.status(400).json({
+          success: false,
+          error: "Categories must be an array of strings",
+        });
+      }
+      if (updates.tags && !Array.isArray(updates.tags)) {
+        return res.status(400).json({
+          success: false,
+          error: "Tags must be an array of strings",
         });
       }
 
-      const result = await AIService.updateAgent(agentId, updates);
+      const result = await AIService.updateAgent(businessId, updates);
 
       return res.status(200).json({ success: true, data: result });
     } catch (error: any) {
       logger.error(
-        { error, agentId: req.params.agentId },
+        { error, businessId: req.params.businessId },
         "Error updating AI agent"
       );
 
