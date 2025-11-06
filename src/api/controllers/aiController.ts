@@ -13,7 +13,10 @@ export class AIController {
     try {
       const business = req.body;
       console.log("Received createAgent request with body:", business);
-      console.log("Received createAgent request with body:", business.id);
+      console.log(
+        "Received createAgent request with body:",
+        business.businessId
+      );
 
       // Validate required fields
       if (!business || !business.name) {
