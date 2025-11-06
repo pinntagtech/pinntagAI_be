@@ -7,7 +7,7 @@ import indexRouter from "./api/routes/index.routes.js";
 
 // Add CORS and allowed origins as needed
 const allowedOrigins = [
-  "http://localhost:3000",
+  "http://localhost:4200",
   "https://your-frontend-domain.com",
 ];
 
