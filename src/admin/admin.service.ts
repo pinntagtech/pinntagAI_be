@@ -118,7 +118,7 @@ import {
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Drive } from 'src/drive/models/drive.model';
+import { Drive, DriveDocument } from 'src/drive/models/drive.model';
 import { DriveService } from 'src/drive/drive.service';
 import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
@@ -217,6 +217,7 @@ export class AdminService {
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
     @InjectModel(FeaturedAsset.name)
     private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -1342,7 +1343,7 @@ export class AdminService {
       if (!foundIndustry) {
         throw new BadRequestException('Business Industry Not found!');
       }
-      
+
       let createObj = {
         status: 6.1,
         logo: logo,
@@ -1417,25 +1418,25 @@ export class AdminService {
       }
       const createdBusiness = await this.businessModel.create(createObj);
       let driveDetails = await this.seederService.createDrive(
-              createdBusiness._id,
-              Business.name,
-            );
+        createdBusiness._id,
+        Business.name,
+      );
       await this.businessUserModel.updateOne(
-          { _id: businessUser._id },
-          {
-            $addToSet: {
-              business: createdBusiness._id,
-            },
-            $set: {
-              // status: ProfileStatus.BUSINESS_CREATED,
-              selectedBusiness: createdBusiness._id,
-            },
+        { _id: businessUser._id },
+        {
+          $addToSet: {
+            business: createdBusiness._id,
           },
-        );
-        await this.businessModel.updateOne(
-          { _id: createdBusiness._id },
-          { $set: { drive: driveDetails._id } },
-        );
+          $set: {
+            // status: ProfileStatus.BUSINESS_CREATED,
+            selectedBusiness: createdBusiness._id,
+          },
+        },
+      );
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: driveDetails._id } },
+      );
 
       if (createdBusiness) {
         // create physical outlet for this business
@@ -3617,29 +3618,61 @@ export class AdminService {
   // }
 
   async runDbQueries() {
-    const duplicates = await this.eventModel.aggregate([
-      {
-        $group: {
-          _id: '$title',
-          ids: { $push: '$_id' },
-          count: { $sum: 1 },
-        },
-      },
-      { $match: { count: { $gt: 1 } } },
-    ]);
-    console.log('Duplicates:', duplicates);
-    // Step 2: For each duplicate group, keep one and delete the rest
-    duplicates.forEach(async (group) => {
-      // Keep the first document and remove others
-      const idsToDelete = group.ids.slice(1); // all except the first
-      if (idsToDelete.length > 0) {
-        await this.eventModel.deleteMany({
-          _id: { $in: idsToDelete },
-          isFromCrawler: true,
-        });
-        console.log('IdsToDelete::', idsToDelete);
+    try {
+      const bUsers = await this.businessUserModel.find();
+      for (let user of bUsers) {
+        //1. find user's drive
+        const userDrive = await this.driveModel.findById(user.drive);
+        if (!userDrive) {
+          console.error('Exception No user drive found!');
+          continue;
+        }
+
+        for (let i = 0; i < user.business.length; i++) {
+          const foundBusiness = await this.businessModel.findById(
+            user.business[i],
+          );
+          if (!foundBusiness) {
+            console.error('Exception business not found!');
+            continue;
+          }
+          if (
+            foundBusiness.drive
+          ) {
+            console.error('Already according to new regime!!');
+            continue;
+          }
+          if (i == 0) {
+            await Promise.all([
+              this.businessModel.updateOne(
+                { _id: new mongoose.Types.ObjectId(user.business[i]) },
+                { $set: { drive: userDrive._id } },
+              ),
+              this.driveModel.updateOne(
+                { _id: userDrive._id },
+                {
+                  $set: {
+                    owner: new mongoose.Types.ObjectId(user.business[i]),
+                    ownerType: 'Business',
+                  },
+                },
+              ),
+            ]);
+          } else {
+            const createdDrive = await this.seederService.createDrive(
+              new mongoose.Types.ObjectId(user.business[i]),
+              Business.name,
+            );
+            await this.businessModel.updateOne(
+              { _id: new mongoose.Types.ObjectId(user.business[i]) },
+              { $set: { drive: createdDrive._id } },
+            );
+          }
+        }
       }
-    });
+    } catch (error) {
+      console.error('Error:', error);
+    }
   }
 
   async uploadFeaturedVideo(

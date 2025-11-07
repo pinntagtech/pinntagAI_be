@@ -311,14 +311,14 @@ export class BusinessService {
       );
 
       //create drive
-      let driveDetails = await this.seederService.createDrive(
-        createdUser._id,
-        BusinessUser.name,
-      );
-      await this.businessUserModel.updateOne(
-        { _id: createdUser.id },
-        { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
-      );
+      // let driveDetails = await this.seederService.createDrive(
+      //   createdUser._id,
+      //   BusinessUser.name,
+      // );
+      // await this.businessUserModel.updateOne(
+      //   { _id: createdUser.id },
+      //   { $set: { drive: new mongoose.Types.ObjectId(driveDetails.id) } },
+      // );
       //sendEmaillink verification
 
       // const token = await this.authService.generateJWT(
