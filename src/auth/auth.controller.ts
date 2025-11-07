@@ -508,7 +508,7 @@ export class AuthController {
       id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
+      distance ? parseInt(distance) : 100000,
       search ? search : '',
       timeZone ? timeZone : 'America/Chicago',
       body.categories ? body.categories : [],
@@ -555,7 +555,7 @@ export class AuthController {
       id,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
+      distance ? parseInt(distance) : 100000,
       search ? search : '',
       timeZone ? timeZone : 'America/Chicago',
       limit ? parseInt(limit) : 15,
@@ -604,11 +604,62 @@ export class AuthController {
       parseFloat(body.latitude),
       parseFloat(body.longitude),
       carouselType ? carouselType : 'event',
-      distance ? parseInt(distance) : 1000000000000,
+      distance ? parseInt(distance) : 100000,
       search ? search : '',
       timeZone ? timeZone : 'America/Chicago',
       limit ? parseInt(limit) : 15,
       page ? parseInt(page) : 1,
+      // type ? type.toLowerCase() : '',
+      body.categories ? body.categories : [],
+      body.startDate ? new Date(body.startDate) : null,
+      body.endDate ? new Date(body.endDate) : null,
+      body.dealType ? body.dealType : null,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      eventsResult: result.events,
+      page: result.page,
+      limit: result.limit,
+      total: result.totalCount,
+      pages: result.pages,
+    };
+  }
+  @Post('business/moreContent/:id')
+  @UseGuards(JwtGuard2)
+  @HttpCode(HttpStatus.OK)
+  async businessMoreContent(
+    @Body() body: GetDashboardDto,
+    @Param('id') id: string,
+    @Query('search') search: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('distance') distance: string,
+    @Query('timeZone') timeZone: string,
+    @Query('carouselType') carouselType: string,
+
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    if (body.categories && body.categories.length) {
+      for (const cat of body.categories) {
+        if (!mongoose.Types.ObjectId.isValid(cat)) {
+          throw new BadRequestException(`${cat} is not a valid category id.`);
+        }
+      }
+    }
+    const result = await this.authService.businessMoreContent(
+      user,
+      parseFloat(body.latitude),
+      parseFloat(body.longitude),
+      carouselType ? carouselType : 'event',
+      distance ? parseInt(distance) : 100000,
+      search ? search : '',
+      timeZone ? timeZone : 'America/Chicago',
+      limit ? parseInt(limit) : 15,
+      page ? parseInt(page) : 1,
+      id,
       // type ? type.toLowerCase() : '',
       body.categories ? body.categories : [],
       body.startDate ? new Date(body.startDate) : null,
@@ -650,7 +701,7 @@ export class AuthController {
       user,
       parseFloat(body.latitude),
       parseFloat(body.longitude),
-      distance ? parseInt(distance) : 1000000000000,
+      distance ? parseInt(distance) : 100000,
       search ? search : '',
       limit ? parseInt(limit) : 15,
       page ? parseInt(page) : 1,
@@ -868,4 +919,20 @@ export class AuthController {
       limit: result.limit,
     };
   }
+
+  @Get('featuredAssets')
+  @UseGuards(JwtGuard2)
+  async featuredAssets() {
+    const result = await this.authService.featuredAssets();
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
+
+
+
 }

@@ -23,7 +23,7 @@ import { FirebaseService } from './firebase.service';
 import { RedisBullService } from './redisBull.service';
 import { DriveService } from 'src/drive/drive.service';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
-import { Subscription } from 'rxjs';
+// import { Subscription } from 'rxjs';
 import {
   SampleDocument,
   SampleDocumentSchema,
@@ -38,7 +38,7 @@ import {
   SavedEventSchema,
 } from 'src/event/models/savedEvent.model';
 import { Template, TemplateSchema } from 'src/event/models/template.model';
-import { SubscriptionSchema } from 'src/subscription/models/subscription.model';
+import { Subscription, SubscriptionSchema } from 'src/subscription/models/subscription.model';
 import { ContactUs, ContactUsSchema } from 'src/user/models/contact-us.model';
 import { Follow, FollowSchema } from 'src/user/models/follow.model';
 import {

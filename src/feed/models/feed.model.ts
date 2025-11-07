@@ -36,6 +36,14 @@ export class Feed extends Document {
 
   @Prop({ enum: Object.values(FeedVisibility), default: FeedVisibility.PUBLIC })
   visibility: string;
+
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  likes: mongoose.Types.ObjectId[];
+  @Prop({ default: 0 })
+  totalLikes: number;
 }
 
 export const FeedSchema = SchemaFactory.createForClass(Feed);

@@ -223,6 +223,8 @@ export class SeederService {
       foundOwner = await this.userModel.findById(ownerId);
     } else if (ownerType === BusinessUser.name) {
       foundOwner = await this.businessUserModel.findById(ownerId);
+    } else if( ownerType === Business.name){
+      foundOwner = await this.businessModel.findById(ownerId);
     }
 
     if (!foundOwner) {
@@ -1088,7 +1090,6 @@ export class SeederService {
       countryCode: '+44',
       phone: '7917303330',
       roleOfCreator: 'Owner',
-      drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
       creatorType: BusinessCreatorType.ADMIN,
       creator: new mongoose.Types.ObjectId(user.id),
       authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
@@ -1099,6 +1100,17 @@ export class SeederService {
     };
 
     const createdBusiness = await this.businessModel.create(businessObj);
+
+    let businessDriveDetails = await this.createDrive(
+      createdBusiness._id,
+      Business.name,
+    );
+
+    await this.businessModel.updateOne(
+      { _id: createdBusiness._id },
+      { $set: { drivePath: businessDriveDetails.data._id } },
+    );
+
     await this.roleModel.updateOne(
       { _id: ownerRole.id },
       { $set: { business: createdBusiness._id } },

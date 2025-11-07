@@ -18,6 +18,7 @@ import {
   BusinessUserSchema,
 } from 'src/business/model/businessUser.model';
 import { Business, BusinessSchema } from 'src/business/model/business.model';
+import { PinntagAiService } from './pinntag-ai.service';
 
 @Module({
   imports: [
@@ -34,6 +35,6 @@ import { Business, BusinessSchema } from 'src/business/model/business.model';
     ]),
   ],
   controllers: [AiController],
-  providers: [AiService, JwtService],
+  providers: [AiService, PinntagAiService,JwtService],
 })
 export class AiModule {}

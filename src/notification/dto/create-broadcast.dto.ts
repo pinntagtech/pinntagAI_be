@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { Transform } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
@@ -10,11 +11,11 @@ export class CreateBroadcastDto {
   @IsString()
   message: string;
 
+  @IsOptional()
   // @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   // @IsArray()
-  // @IsNotEmpty()
-  // @IsString()
-  // users: string;
+  @IsString()
+  users: string;
 
   @IsNotEmpty()
   @IsString()
@@ -26,3 +27,6 @@ export class CreateBroadcastDto {
   @IsOptional()
   isScheduled: string;
 }
+
+
+export class UpdateBroadcastDto extends PartialType(CreateBroadcastDto) {}

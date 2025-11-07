@@ -172,6 +172,7 @@ import {
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.model';
 
 @Module({
   imports: [
@@ -234,6 +235,7 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
         name: SubscriptionPrice.name,
         schema: SubscriptionPriceSchema,
       },
+      { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       {
         name: UserAllowedNotification.name,
         schema: UserAllowedNotificationSchema,

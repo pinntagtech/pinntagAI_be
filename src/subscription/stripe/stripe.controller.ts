@@ -49,11 +49,25 @@ export class StripeController {
       priceId: dto.priceId,
       couponCode: dto.couponCode,
       // promotionCode: dto.promotionCode,
+      quantity: dto.quantity,
       successUrl,
       cancelUrl,
     });
 
     return { url };
+  }
+
+  @Post('cancel')
+  @UseGuards(JwtGuard2)
+  async cancelSubscription(@TokenDecoder() user: DecodedUser) {
+    const result = await this.stripeService.cancelSubscription(user.businessProfile);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
   }
 
   @Get('checkout/session/:id')

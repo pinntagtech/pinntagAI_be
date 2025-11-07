@@ -744,6 +744,28 @@ export const ExpectedDownlineUserHeaders = [
   'countryCode',
   'phone',
 ];
+export const ExpectedBulkEventUploadHeaders = [
+  'outletName',
+  'title',
+  'description',
+  'type',
+  'discountType',
+  'discountValue',
+  'categories',
+  'images',
+  'qrCode',
+  'date',
+  'startTime',
+  'endTime',
+  'tags',
+  'weblinks',
+  'isFree',
+  'cost',
+  'targetGenders',
+  'minTargetAge',
+  'maxTargetAge',
+  'tags',
+];
 
 export const BusinessDocumentTypesList = {
   TAX: 'Tax Document',
@@ -760,8 +782,9 @@ export const VerificationStatus = {
   REJECTED: 'Rejected',
 };
 
-
 export const DEFAULT_IMAGES = {
-  BUSINESS_COVER: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg',
-  BUSINESS_LOGO: 'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png'
-}
+  BUSINESS_COVER:
+    'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/default+cover.svg',
+  BUSINESS_LOGO:
+    'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+Business+logo.png',
+};

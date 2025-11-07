@@ -189,6 +189,8 @@ import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/featur
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
+import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 
 @Module({
   imports: [
@@ -275,6 +277,7 @@ import { BusinessActivation, BusinessActivationSchema } from 'src/business/model
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
+      { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
@@ -303,6 +306,7 @@ import { BusinessActivation, BusinessActivationSchema } from 'src/business/model
     RedisBullService,
     AppsOnAirLinkService,
     SubscriptionService,
+    PinntagAiService,
     // BusinessService,
   ],
 })

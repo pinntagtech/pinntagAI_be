@@ -26,10 +26,20 @@ import {
 } from './types.model';
 import { Menu } from './menu.model';
 import { Admin } from 'src/admin/models/admin.model';
+import { Drive } from 'src/drive/models/drive.model';
 
 export class SocialMediaTokenDetails {
   value: string;
   age: Date;
+}
+
+class Hours {
+  hour: number;
+  minute: number;
+}
+class TimeBracket {
+  startTime: Hours;
+  endTime: Hours;
 }
 
 export enum CreatorType {
@@ -61,10 +71,14 @@ export class Business {
   // })
   // status: number;
   @Prop({
-    default:
-      DEFAULT_IMAGES.BUSINESS_LOGO
+    default: DEFAULT_IMAGES.BUSINESS_LOGO,
   })
   logo: string;
+
+  @Prop({
+    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+  })
+  logoThumbnail: string;
 
   @Prop({ ref: 'Subscription' })
   activeSubscription: mongoose.Types.ObjectId;
@@ -79,10 +93,14 @@ export class Business {
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop({
-    default:
-      DEFAULT_IMAGES.BUSINESS_COVER
+    default: DEFAULT_IMAGES.BUSINESS_COVER,
   })
   cover: string;
+  @Prop({
+    default: DEFAULT_IMAGES.BUSINESS_COVER,
+  })
+  coverThumbnail: string;
+
 
   @Prop({ ref: BusinessConstitution.name })
   constitution: mongoose.Types.ObjectId;
@@ -118,7 +136,7 @@ export class Business {
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
   @Prop()
-  countryCode: mongoose.Types.ObjectId;
+  countryCode: string;
   @Prop()
   phone: string;
   @Prop()
@@ -157,6 +175,16 @@ export class Business {
   county: string;
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop()
+  openingTime: Hours;
+  @Prop()
+  closingTime: Hours;
+  @Prop()
+  busyTime: TimeBracket;
+  @Prop()
+  slowTime: TimeBracket;
+
   @Prop()
   postalCode: string;
   @Prop({ default: 0 })
@@ -169,12 +197,10 @@ export class Business {
   vatNumber: string; // VAT registration number, if applicable
   @Prop()
   foodHygieneRating: number; // Food Standards Agency (FSA) hygiene rating
-  @Prop({ ref: Menu.name })
-  menus: Array<mongoose.Types.ObjectId>; // Array of menu items with details
+  @Prop()
+  menus: string[]; // Array of menu items with details
   @Prop()
   allergenInformation: Allergen[]; // Array of allergens present in the dishes
-  @Prop()
-  openingHours: OpeningHours[]; // Array of opening hours for each day
   @Prop()
   acceptsReservations: boolean; // Indicates if reservations are accepted
   @Prop()
@@ -223,8 +249,8 @@ export class Business {
   managerEmail: string;
   @Prop()
   managerPhone: string;
-  @Prop({ ref: 'Folder' })
-  drivePath: mongoose.Types.ObjectId;
+  @Prop({ ref: 'Drive' })
+  drive: mongoose.Types.ObjectId;
 
   @Prop({ default: false })
   isPhysicalType: boolean;
@@ -279,6 +305,9 @@ export class Business {
 
   @Prop({ default: 0, enum: Object.values(ScalabilityFactor) })
   scalabilityFactor: number;
+
+  @Prop({ default: 0 })
+  rating: number;
 
   @Prop()
   stripeCustomerId: string;
