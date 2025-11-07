@@ -3385,6 +3385,8 @@ export class AuthService {
           name: { $first: '$businessDetails.name' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
+          coverThumbnail:{ $first: '$businessDetails.coverThumbnail'},
+          logoThumbnail:{ $first: '$businessDetails.logoThumbnail'},
           industry: { $first: '$industryDetails' },
           description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },

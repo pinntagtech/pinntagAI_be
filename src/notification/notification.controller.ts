@@ -143,7 +143,7 @@ export class NotificationController {
       //     filename: editFileName,
       //   }),
       //   //Setting file size limit to 1 MB
-      limits: { fileSize: 10000000 },
+      limits: { fileSize: 100000000 },
     }),
   )
   async createBroadcast(

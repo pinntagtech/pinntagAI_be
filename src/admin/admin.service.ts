@@ -13,6 +13,7 @@ import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
 import * as streamifier from 'streamifier';
 import csv from 'csv-parser';
+import axios from 'axios';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -43,7 +44,10 @@ import {
   EventLocationDocument,
 } from 'src/event/models/eventLocation.model';
 import { Image, ImageDocument } from 'src/event/models/image.model';
-import { manipulateImageName } from 'src/helpers/upload.helpers';
+import {
+  FileUploadUtils,
+  manipulateImageName,
+} from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import {
   Category,
@@ -3618,60 +3622,159 @@ export class AdminService {
   // }
 
   async runDbQueries() {
+    //Query for drive issueee:
+    // const bUsers = await this.businessUserModel.find();
+    // for (let user of bUsers) {
+    //   //1. find user's drive
+    //   const userDrive = await this.driveModel.findById(user.drive);
+    //   if (!userDrive) {
+    //     console.error('Exception No user drive found!');
+    //     continue;
+    //   }
+
+    //   for (let i = 0; i < user.business.length; i++) {
+    //     const foundBusiness = await this.businessModel.findById(
+    //       user.business[i],
+    //     );
+    //     if (!foundBusiness) {
+    //       console.error('Exception business not found!');
+    //       continue;
+    //     }
+    //     if (
+    //       foundBusiness.drive
+    //     ) {
+    //       console.error('Already according to new regime!!');
+    //       continue;
+    //     }
+    //     if (i == 0) {
+    //       await Promise.all([
+    //         this.businessModel.updateOne(
+    //           { _id: new mongoose.Types.ObjectId(user.business[i]) },
+    //           { $set: { drive: userDrive._id } },
+    //         ),
+    //         this.driveModel.updateOne(
+    //           { _id: userDrive._id },
+    //           {
+    //             $set: {
+    //               owner: new mongoose.Types.ObjectId(user.business[i]),
+    //               ownerType: 'Business',
+    //             },
+    //           },
+    //         ),
+    //       ]);
+    //     } else {
+    //       const createdDrive = await this.seederService.createDrive(
+    //         new mongoose.Types.ObjectId(user.business[i]),
+    //         Business.name,
+    //       );
+    //       await this.businessModel.updateOne(
+    //         { _id: new mongoose.Types.ObjectId(user.business[i]) },
+    //         { $set: { drive: createdDrive._id } },
+    //       );
+    //     }
+    //   }
+    // }
+
+    // query to create cover thumbnails:
     try {
-      const bUsers = await this.businessUserModel.find();
-      for (let user of bUsers) {
-        //1. find user's drive
-        const userDrive = await this.driveModel.findById(user.drive);
-        if (!userDrive) {
-          console.error('Exception No user drive found!');
+      const businesses = await this.businessModel.find({
+        // _id: new mongoose.Types.ObjectId('68a0d9072e19fc726daa1345'),
+      });
+      const getBuffer = async (url: string) => {
+        try {
+          const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            timeout: 150000,
+            maxContentLength: 50 * 1024 * 1024,
+            validateStatus: (status) => status === 200,
+          });
+
+          // const contentType = response.headers['content-type'];
+          // if (!contentType?.startsWith('image/')) {
+          //   console.warn(`⚠️ Not an image URL: ${url} (${contentType})`);
+          //   return null;
+          // }
+
+          return response.data;
+        } catch (err) {
+          console.error(`❌ Failed to fetch buffer for ${url}:`, err.message);
+          return null;
+        }
+      };
+      for (let business of businesses) {
+        console.log('🟢 Processing business:', business._id);
+        console.log('Cover:', business.cover);
+        console.log('Logo:', business.logo);
+
+        const coverBuffer = await getBuffer(business.cover);
+        const logoBuffer = await getBuffer(business.logo);
+
+        if (!coverBuffer && !logoBuffer) {
+          console.warn(`⚠️ Skipping ${business._id}: No valid image found`);
           continue;
         }
 
-        for (let i = 0; i < user.business.length; i++) {
-          const foundBusiness = await this.businessModel.findById(
-            user.business[i],
+        let coverThumbnailBuffer = null;
+        let logoThumbnailBuffer = null;
+
+        try {
+          if (coverBuffer)
+            coverThumbnailBuffer =
+              await FileUploadUtils.compressThumbnail(coverBuffer);
+        } catch (err) {
+          console.error(
+            '❌ Cover compression failed for',
+            business._id,
+            err.message,
           );
-          if (!foundBusiness) {
-            console.error('Exception business not found!');
-            continue;
-          }
-          if (
-            foundBusiness.drive
-          ) {
-            console.error('Already according to new regime!!');
-            continue;
-          }
-          if (i == 0) {
-            await Promise.all([
-              this.businessModel.updateOne(
-                { _id: new mongoose.Types.ObjectId(user.business[i]) },
-                { $set: { drive: userDrive._id } },
-              ),
-              this.driveModel.updateOne(
-                { _id: userDrive._id },
-                {
-                  $set: {
-                    owner: new mongoose.Types.ObjectId(user.business[i]),
-                    ownerType: 'Business',
-                  },
-                },
-              ),
-            ]);
-          } else {
-            const createdDrive = await this.seederService.createDrive(
-              new mongoose.Types.ObjectId(user.business[i]),
-              Business.name,
-            );
-            await this.businessModel.updateOne(
-              { _id: new mongoose.Types.ObjectId(user.business[i]) },
-              { $set: { drive: createdDrive._id } },
-            );
-          }
         }
+
+        try {
+          if (logoBuffer)
+            logoThumbnailBuffer =
+              await FileUploadUtils.compressThumbnail(logoBuffer);
+        } catch (err) {
+          console.error(
+            '❌ Logo compression failed for',
+            business._id,
+            err.message,
+          );
+        }
+
+        const coverThumbnail = coverThumbnailBuffer
+          ? await this.s3Service.s3_upload(
+              coverThumbnailBuffer.buffer,
+              process.env.AWS_S3_BUCKET_NAME,
+              `thumbnails/${manipulateImageName('cover')}`,
+              'image/jpeg',
+            )
+          : null;
+
+        const logoThumbnail = logoThumbnailBuffer
+          ? await this.s3Service.s3_upload(
+              logoThumbnailBuffer.buffer,
+              process.env.AWS_S3_BUCKET_NAME,
+              `thumbnails/${manipulateImageName('logo')}`,
+              'image/jpeg',
+            )
+          : null;
+
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: {
+              ...(coverThumbnail && {
+                coverThumbnail: coverThumbnail.Location,
+              }),
+              ...(logoThumbnail && { logoThumbnail: logoThumbnail.Location }),
+            },
+          },
+        );
+
+        console.log(`✅ Successfully updated business: ${business._id}`);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('💥 runDbQueries Error:', error);
     }
   }
 
