@@ -31,7 +31,6 @@ import { DirectoryService } from 'aws-sdk';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { CreateSampleDocumentDto } from './dto/createSampleDocument.dto';
 import { ApiHeader } from '@nestjs/swagger';
-import { Files } from 'openai/resources/beta/vector-stores/files';
 
 @Controller('drive')
 export class DriveController {

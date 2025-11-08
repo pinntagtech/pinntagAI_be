@@ -58,6 +58,9 @@ export class Outlet {
   address1?: string;
 
   @Prop()
+  description: string;
+
+  @Prop()
   address2?: string;
 
   @Prop()
