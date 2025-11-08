@@ -710,6 +710,7 @@ export class OutletService {
     search: string,
     type: string,
     creationDate: string,
+    vehicleType: string,
     page: number,
     limit: number,
   ) {
@@ -767,6 +768,9 @@ export class OutletService {
           $gte: new Date(date.setHours(0, 0, 0, 0)),
           $lt: new Date(date.setHours(23, 59, 59, 999)),
         };
+      }
+      if(vehicleType){
+        match['vehicleType'] = vehicleType;
       }
       console.log('Match:::', match);
       console.log('business:::', user.businessProfile);

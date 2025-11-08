@@ -41,7 +41,7 @@ import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
-import { PinDropDto } from './dto/pinDrop.dto';
+import { PinDropDto, PinDropV2Dto } from './dto/pinDrop.dto';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { SubscriptionGuard } from 'src/subscription/guards/subscription.guard';
@@ -1199,6 +1199,28 @@ export class EventController {
       data,
       user,
       images,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('pinDropV2')
+  @UseGuards(JwtGuard2)
+  async pinDropV2(
+    @TokenDecoder() user:DecodedUser,
+    @Body() data: PinDropV2Dto
+  ){
+      const result = await this.eventService.pinDropV2(
+      user,
+      data
     );
     if (result.success) {
       return {

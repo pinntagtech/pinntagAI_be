@@ -133,7 +133,7 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
-import { PinDropDto } from './dto/pinDrop.dto';
+import { PinDropDto, PinDropV2Dto } from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { BusinessService } from 'src/business/business.service';
@@ -7950,6 +7950,38 @@ export class EventService2 {
       };
     }
   }
+
+  async pinDropV2(user:DecodedUser,data:PinDropV2Dto){
+    try{
+      const outlet = await this.outletModel.findById(data.outletId);
+      if(!outlet){
+        return {
+          success: false,
+          message: 'Outlet not found'
+        }
+      }
+      if(outlet.category !== OutletCategoryList.MOBILE){
+         return {
+          success: false,
+          message: 'Only Mobile Outlet can pinDrop'
+        }
+      }
+      return {
+        success: true,
+        message: '',
+        data: ''
+      }
+    }catch(error){
+      console.error("Error:",error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+
+
   async updatePinDropEvent(
     eventId: string,
     data: UpdatePinDropDto,
