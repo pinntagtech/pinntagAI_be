@@ -446,11 +446,20 @@ export class OutletService {
         };
       }
 
-      let coverUrl = await this.driveService.noDriveUpload(image);
-      createObj['cover'] = coverUrl;
+       const folder = await this.driveService.createFolder(user.businessProfile, {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: createObj.name,
+        });
+        createObj['drivePath'] = folder.data._id;
+        const fileCategory = await this.fileCategoryModel.findOne({name:FileCategoryTypes.GALLERY_IMAGE});
+      const coverUpload = await this.driveService.uploadAndCreateImage(image,String(folder.data._id),'Folder',user.id,fileCategory.id);
+
+      createObj['cover'] = coverUpload.metaData.url;
       createObj['category'] = OutletCategoryList.MOBILE;
 
       console.log('CREATEOBJ:', createObj);
+      
 
       const outlet = await this.outletModel.create(createObj);
       console.log('OUTLET:', outlet);

@@ -6,6 +6,7 @@ import { Business } from 'src/business/model/business.model';
 import { OutletCategory } from './outletCategory.model';
 import { OutletType } from './outletType.model';
 import { MobileSpots } from 'src/business/model/mobileSpots.model';
+import { Folder } from 'src/drive/models/folder.model';
 // import { OutletCategory, VehicleType } from '../outlet.enum';
 
 export type OutletDocument = Outlet & Document;
@@ -127,6 +128,8 @@ export class Outlet {
   isDeleted: boolean;
   @Prop()
   cover: string;
+  @Prop({ref:'Folder'})
+  drivePath: mongoose.Types.ObjectId;
   @Prop({ ref: MobileSpots.name })
   spots: mongoose.Types.ObjectId[];
 }

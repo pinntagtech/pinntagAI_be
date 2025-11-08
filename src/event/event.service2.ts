@@ -144,6 +144,7 @@ import * as streamifier from 'streamifier';
 import { ExpectedOutletHeaders } from 'src/outlet/enums/outlet.enum';
 import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { MobileSpots } from 'src/business/model/mobileSpots.model';
 
 @Injectable()
 export class EventService2 {
@@ -197,7 +198,8 @@ export class EventService2 {
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
-
+    @InjectModel(MobileSpots.name)
+    private readonly mobileSpotsModel: Model<MobileSpots>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -7951,36 +7953,86 @@ export class EventService2 {
     }
   }
 
-  async pinDropV2(user:DecodedUser,data:PinDropV2Dto){
-    try{
-      const outlet = await this.outletModel.findById(data.outletId);
-      if(!outlet){
+  async pinDropV2(user: DecodedUser, data: PinDropV2Dto) {
+    try {
+      const [business, outlet] = await Promise.all([
+        this.businessModel.findById(user.businessProfile),
+        this.outletModel.findById(data.outletId),
+      ]);
+      if (!outlet) {
         return {
           success: false,
-          message: 'Outlet not found'
-        }
+          message: 'Outlet not found',
+        };
       }
-      if(outlet.category !== OutletCategoryList.MOBILE){
-         return {
+      if (outlet.category !== OutletCategoryList.MOBILE) {
+        return {
           success: false,
-          message: 'Only Mobile Outlet can pinDrop'
-        }
+          message: 'Only Mobile Outlet can pinDrop',
+        };
       }
+      const category = await this.categoryModel.findOne({
+        title: 'Food Trucks',
+      });
+      if (!category) {
+        return {
+          success: false,
+          message: 'Food Truck category not found',
+        };
+      }
+      //create event, upload that stupid cover to files, eventLocation entry, schedule
+      const [createdEvent, spot] = await Promise.all([
+        this.eventModel.create({
+          type: EventTypes.DROPPED_PIN,
+          creatorType: 'BusinessUser',
+          user: new mongoose.Types.ObjectId(user.id),
+          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+          categories: [category._id],
+          drivePath: outlet.drivePath,
+          title: outlet.name,
+          description: outlet.description,
+        }),
+        this.mobileSpotsModel.findById(data.spotId),
+      ]);
+
+      const [location, schedule] = await Promise.all([
+        this.eventLocationModel.create({
+          event: createdEvent._id,
+          businessLocationId: outlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          address1: spot.address1,
+          city: spot.city,
+          state: spot.state,
+          zip: spot.postalCode,
+          email: outlet.email,
+          isFromCrawler: false,
+          businessProfile: business._id,
+        }),
+        this.createSchedule(createdEvent.id, data, user),
+      ]);
+      await this.eventModel.updateOne(
+        { _id: createdEvent._id },
+        { $addToSet: { locations: location._id } },
+      );
+
+      const createdPinDrop = await this.eventModel.findById(createdEvent.id).populate('files');
+
       return {
         success: true,
-        message: '',
-        data: ''
-      }
-    }catch(error){
-      console.error("Error:",error);
+        message: 'Pindrop created successfully',
+        data: createdPinDrop,
+      };
+    } catch (error) {
+      console.error('Error:', error);
       return {
         success: false,
         message: 'Something went wrong.',
       };
     }
   }
-
-
 
   async updatePinDropEvent(
     eventId: string,

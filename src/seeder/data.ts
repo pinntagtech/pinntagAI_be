@@ -22,7 +22,7 @@ export enum EventCategory {
   FOOD_AND_DRINK = 'Food & Drink',
   HAPPY_HOUR = 'Happy Hour',
   MUSIC_AND_NIGHTLIFE = 'Music & Nightlife',
-  FOOD_TRUCKS_AND_POPUPS = 'Food Trucks & Pop-Ups',
+  FOOD_TRUCKS_AND_POPUPS = 'Food Trucks',
   EVENTS = 'Events',
   CLUBS_AND_CLASSES = 'Clubs & Classes',
   SPORTS_AND_FITNESS = 'Sports & Fitness',
@@ -165,7 +165,7 @@ export const Seeder = {
       description: 'Music & Nightlife',
     },
     {
-      title: 'Food Trucks & Pop-Ups',
+      title: 'Food Trucks',
       lightIcon:
         'https://staging-pinntagbucket.s3.us-east-1.amazonaws.com/staging/Food%20Trucks1755341968415.svg',
       darkIcon:
@@ -2374,7 +2374,7 @@ export const Seeder = {
       flashOffersIncluded: false,
       freeIncluded: true,
       limit: 5,
-      categories: ['Shopping', 'Beauty & Spa', 'Food Trucks & Pop-Ups'],
+      categories: ['Shopping', 'Beauty & Spa', 'Food Trucks'],
       sortOrder: 200,
       carouselType: CarouselType.Event,
       cardType: 'xxl',
