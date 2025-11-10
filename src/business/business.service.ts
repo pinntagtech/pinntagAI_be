@@ -459,126 +459,124 @@ export class BusinessService {
     }
   }
 
-  // async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-  //   console.log('Google Login Data:', data);
-  //   const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-  //   console.log('Valid Token:', validToken);
-  //   const jwtTokenData = jwt.decode(data.oAuthToken) as any;
-  //   console.log('JWT Token Data:', jwtTokenData);
+  async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
+    console.log('Google Login Data:', data);
+    const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    console.log('Valid Token:', validToken);
 
-  //   // const ticket = await this.oAuth2Client.verifyIdToken({
-  //   //   idToken: data.oAuthToken,
-  //   //   // audience:
-  //   //   //   '292637058686-gagsac0fra0t611e3o88qb2bhbber11d.apps.googleusercontent.com',
-  //   // });
+    // const ticket = await this.oAuth2Client.verifyIdToken({
+    //   idToken: data.oAuthToken,
+    //   // audience:
+    //   //   '292637058686-gagsac0fra0t611e3o88qb2bhbber11d.apps.googleusercontent.com',
+    // });
 
-  //   // const payload = ticket.getPayload();
+    // const payload = ticket.getPayload();
 
-  //   const email = validToken.email;
-  //   let user = await this.userModel.findOne({ email }).exec();
-  //   if (!user) {
-  //     const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
-  //     let firstName = '';
-  //     let lastName = '';
+    const email = validToken.email;
+    let user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
+      let firstName = '';
+      let lastName = '';
 
-  //     if (data.name) {
-  //       const nameParts = data.name.trim().split(/\s+/); // split on spaces
-  //       firstName = nameParts[0] || '';
-  //       lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''; // everything after first name
-  //     }
-  //     user = await this.userModel.create({
-  //       role: role._id,
-  //       firstName,
-  //       lastName,
-  //       name: data.name ? data.name : '',
-  //       profilePhoto: data.profilePhoto ? data.profilePhoto : '',
-  //       email: validToken.email,
-  //       isEmailVerified: true,
-  //       isOAuth: true,
-  //       oAuthProvider: 'google',
-  //       userAgent,
-  //       ipAddress,
-  //     });
-  //     console.log('user created from google:', user);
-  //     const customer = await this.stripeService.createCustomer(
-  //       user.email,
-  //       user.name,
-  //     );
-  //     if (customer.id) {
-  //       user.stripeCustomerId = customer.id;
-  //     }
-  //     const refferalCode = await this.generateUniqueRefferalCode();
-  //     const refferal = await this.refferalModel.create({
-  //       user: user._id,
-  //       code: refferalCode,
-  //     });
-  //     user.refferal = refferal._id as any;
-  //     await user.save();
-  //     // const jwtPayload: JwtPayload = {
-  //     //   id: user.id,
-  //     //   email: user.email,
-  //     //   role: Roles.USER,
-  //     // };
-  //     // const token = await this.generateJWT(jwtPayload);
-  //     // return {
-  //     //   success: true,
-  //     //   message: 'User information from google',
-  //     //   user: user,
-  //     //   token,
-  //     // };
-  //   } else {
-  //     if (!user.stripeCustomerId) {
-  //       const customer = await this.stripeService.createCustomer(
-  //         user.email,
-  //         user.name,
-  //       );
-  //       if (customer.id) {
-  //         user.stripeCustomerId = customer.id;
-  //         await user.save();
-  //       }
-  //     }
-  //   }
-  //   const jwtPayload: JwtPayload = {
-  //     id: user.id,
-  //     role: user.role.toString(),
-  //     userType: UserTypes.USER,
-  //   };
-  //   const token = await this.generateJWT(
-  //     jwtPayload,
-  //     TokenTypes.ACCESS,
-  //     UserTypes.USER,
-  //   );
-  //   if (data.fcmToken) {
-  //     const foundFcmToken = await this.tokenModel.findOneAndUpdate(
-  //       {
-  //         type: TokenTypes.FCM,
-  //         user: user._id,
-  //         deviceType: data.deviceType ? data.deviceType : 'web',
-  //       },
-  //       {
-  //         $set: {
-  //           token: data.fcmToken,
-  //         },
-  //       },
-  //     );
-  //     if (!foundFcmToken) {
-  //       await this.tokenModel.create({
-  //         token: data.fcmToken,
-  //         type: TokenTypes.FCM,
-  //         userType: UserTypes.USER,
-  //         user: user._id,
-  //         deviceType: data.deviceType ? data.deviceType : 'web',
-  //       });
-  //     }
-  //   }
-  //   const updatedUser = await this.userService.getUserById(user.id);
-  //   return {
-  //     success: true,
-  //     message: 'User logged in successfully',
-  //     user: updatedUser,
-  //     token,
-  //   };
-  // }
+      if (data.name) {
+        const nameParts = data.name.trim().split(/\s+/); // split on spaces
+        firstName = nameParts[0] || '';
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''; // everything after first name
+      }
+      user = await this.userModel.create({
+        role: role._id,
+        firstName,
+        lastName,
+        name: data.name ? data.name : '',
+        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
+        email: validToken.email,
+        isEmailVerified: true,
+        isOAuth: true,
+        oAuthProvider: 'google',
+        userAgent,
+        ipAddress,
+      });
+      console.log('user created from google:', user);
+      const customer = await this.stripeService.createCustomer(
+        user.email,
+        user.name,
+      );
+      if (customer.id) {
+        user.stripeCustomerId = customer.id;
+      }
+      const refferalCode = await this.generateUniqueRefferalCode();
+      const refferal = await this.refferalModel.create({
+        user: user._id,
+        code: refferalCode,
+      });
+      user.refferal = refferal._id as any;
+      await user.save();
+      // const jwtPayload: JwtPayload = {
+      //   id: user.id,
+      //   email: user.email,
+      //   role: Roles.USER,
+      // };
+      // const token = await this.generateJWT(jwtPayload);
+      // return {
+      //   success: true,
+      //   message: 'User information from google',
+      //   user: user,
+      //   token,
+      // };
+    } else {
+      if (!user.stripeCustomerId) {
+        const customer = await this.stripeService.createCustomer(
+          user.email,
+          user.name,
+        );
+        if (customer.id) {
+          user.stripeCustomerId = customer.id;
+          await user.save();
+        }
+      }
+    }
+    const jwtPayload: JwtPayload = {
+      id: user.id,
+      role: user.role.toString(),
+      userType: UserTypes.USER,
+    };
+    const token = await this.generateJWT(
+      jwtPayload,
+      TokenTypes.ACCESS,
+      UserTypes.USER,
+    );
+    if (data.fcmToken) {
+      const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+        {
+          type: TokenTypes.FCM,
+          user: user._id,
+          deviceType: data.deviceType ? data.deviceType : 'web',
+        },
+        {
+          $set: {
+            token: data.fcmToken,
+          },
+        },
+      );
+      if (!foundFcmToken) {
+        await this.tokenModel.create({
+          token: data.fcmToken,
+          type: TokenTypes.FCM,
+          userType: UserTypes.USER,
+          user: user._id,
+          deviceType: data.deviceType ? data.deviceType : 'web',
+        });
+      }
+    }
+    const updatedUser = await this.userService.getUserById(user.id);
+    return {
+      success: true,
+      message: 'User logged in successfully',
+      user: updatedUser,
+      token,
+    };
+  }
 
   async verifyUser(data: VerifyEmailDto) {
     try {

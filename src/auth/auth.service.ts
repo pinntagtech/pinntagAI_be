@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import axios from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { SignupMethod, User, UserDocument } from 'src/user/models/user.model';
@@ -799,8 +800,15 @@ export class AuthService {
     console.log('Google Login Data:', data);
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log('Valid Token:', validToken);
-    const jwtTokenData = jwt.decode(data.oAuthToken) as any;
-    console.log('JWT Token Data:', jwtTokenData);
+
+    const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: {
+      Authorization: `Bearer ${data.oAuthToken}`,
+    },
+  });
+
+  const userInfo = userInfoResponse.data;
+  console.log('User Info:', userInfo);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
