@@ -133,7 +133,11 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
-import { PinDropDto, PinDropV2Dto } from './dto/pinDrop.dto';
+import {
+  PinDropDto,
+  PinDropV2Dto,
+  UpdatePinDropV2Dto,
+} from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { BusinessService } from 'src/business/business.service';
@@ -8010,6 +8014,7 @@ export class EventService2 {
           email: outlet.email,
           isFromCrawler: false,
           businessProfile: business._id,
+          spotId: spot._id,
         }),
         this.createSchedule(createdEvent.id, data, user),
       ]);
@@ -8018,11 +8023,96 @@ export class EventService2 {
         { $addToSet: { locations: location._id } },
       );
 
-      const createdPinDrop = await this.eventModel.findById(createdEvent.id).populate('files');
+      const createdPinDrop = await this.eventModel
+        .findById(createdEvent.id)
+        .populate('files');
 
       return {
         success: true,
         message: 'Pindrop created successfully',
+        data: createdPinDrop,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async updatePinDropV2(id: string, user: DecodedUser, data: PinDropV2Dto) {
+    try {
+      const event = await this.eventModel.findById(id);
+      if (!event) {
+        return {
+          success: false,
+          message: 'PinDrop not found',
+        };
+      }
+
+      if (data.spotId) {
+        const spot = await this.mobileSpotsModel.findById(data.spotId);
+        if (!spot) {
+          return {
+            success: false,
+            message: 'No Spot found',
+          };
+        }
+        const [outlet, deleteLoc, deleLoc2] = await Promise.all([
+          this.outletModel.findOne({ _id: spot.outlet }),
+          this.eventLocationModel.deleteMany({
+            event: new mongoose.Types.ObjectId(id),
+          }),
+          this.eventModel.updateOne(
+            {
+              _id: new mongoose.Types.ObjectId(id),
+            },
+            {
+              $set: { locations: [] },
+            },
+          ),
+        ]);
+
+        const location = await this.eventLocationModel.create({
+          event: event._id,
+          businessLocationId: outlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          address1: spot.address1,
+          city: spot.city,
+          state: spot.state,
+          zip: spot.postalCode,
+          email: outlet.email,
+          isFromCrawler: false,
+          businessProfile: event.businessProfile,
+          spotId: new mongoose.Types.ObjectId(data.spotId),
+        });
+        await this.eventModel.updateOne(
+          { _id: event._id },
+          { $addToSet: { locations: location._id } },
+        );
+      }
+      if (data.scheduleType) {
+        await Promise.all([
+          this.eventModel.updateOne(
+            { _id: event._id },
+            { $set: { eventSchedule: [] } },
+          ),
+          this.scheduleModel.deleteMany({ event: event._id }),
+        ]);
+        await this.createSchedule(event.id, data, user);
+      }
+
+      const createdPinDrop = await this.eventModel
+        .findById(event.id)
+        .populate('files');
+
+      return {
+        success: true,
+        message: 'Pindrop updated successfully',
         data: createdPinDrop,
       };
     } catch (error) {

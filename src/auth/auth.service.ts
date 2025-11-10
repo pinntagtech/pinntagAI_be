@@ -825,7 +825,7 @@ export class AuthService {
       let firstName = '';
       let lastName = '';
 
-      if (data.name) {
+      if (userInfo.name) {
         const nameParts = data.name.trim().split(/\s+/); // split on spaces
         firstName = nameParts[0] || '';
         lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''; // everything after first name
@@ -835,7 +835,7 @@ export class AuthService {
         firstName,
         lastName,
         name: data.name ? data.name : '',
-        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
+        profilePhoto: userInfo.profilePhoto ? userInfo.profilePhoto : '',
         email: validToken.email,
         isEmailVerified: true,
         isOAuth: true,

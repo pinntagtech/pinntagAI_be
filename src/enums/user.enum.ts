@@ -30,7 +30,7 @@ export const BusinessPopulates = {
 
 export const LocationPopulates = {
   FOREIGN:
-    'id _id name latitude longitude location accuracy address1 address2 city state zip website email phone businessLocationId',
+    'id _id name latitude longitude location accuracy address1 address2 city state zip website email phone businessLocationId spotId',
 };
 
 export const ImagePopulates = {
