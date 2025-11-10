@@ -51,7 +51,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from './model/businessIndustry.model';
-import { privateDecrypt } from 'crypto';
+import { privateDecrypt, Sign } from 'crypto';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -97,7 +97,7 @@ import {
 import { Department, DepartmentDocument } from './model/department.model';
 import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
-import { User } from 'src/user/models/user.model';
+import { SignupMethod, User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { LocationPopulates } from 'src/enums/user.enum';
@@ -255,28 +255,95 @@ export class BusinessService {
 
   async createBusinessUser(data: CreateBusinessUserDto) {
     try {
-      const foundUser = await this.businessUserModel
-        .findOne({
-          email: data.email,
-        })
-        .select('-password');
+      let createObj = {};
 
-      if (foundUser) {
-        if (
-          foundUser.status === ProfileStatus.INITIATED &&
-          foundUser.isEmailVerified === false
-        ) {
-          this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (!data.email) {
           return {
-            success: true,
-            message: 'Business User already found with this email, OTP resent',
-            data: foundUser,
+            success: false,
+            message: 'Please provide your email address.',
           };
         }
-        return {
-          success: false,
-          message: 'Business User already found with this email',
-        };
+
+        let foundUser = await this.businessUserModel
+          .findOne({
+            email: data.email,
+          })
+          .select('-password');
+
+        if (foundUser) {
+          if (
+            foundUser.status === ProfileStatus.INITIATED &&
+            foundUser.isEmailVerified === false
+          ) {
+            this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+            return {
+              success: true,
+              message:
+                'Business User already found with this email, OTP resent',
+              data: foundUser,
+            };
+          }
+          return {
+            success: false,
+            message: 'Business User already found with this email',
+          };
+        }
+
+        createObj['email'] = data.email;
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (!data.phone) {
+          return {
+            success: false,
+            message: 'Please provide phone number',
+          };
+        }
+        if (!data.countryCode) {
+          return {
+            success: false,
+            message: 'Please provide your Country Code',
+          };
+        }
+        let phoneNumber = parsePhoneNumberFromString(
+          `${data.countryCode}${data.phone}`,
+        );
+        var fullPhoneNumber = phoneNumber.format('E.164');
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          return {
+            success: false,
+            message: 'Invalid phone number',
+          };
+        }
+
+        let foundUser = await this.businessUserModel
+          .findOne({
+            email: data.phone,
+            countryCode: data.countryCode,
+          })
+          .select('-password');
+
+        if (foundUser) {
+          if (
+            foundUser.status === ProfileStatus.INITIATED &&
+            foundUser.isMobileVerified === false
+          ) {
+            //insteab of mail send mobile otp
+            this.smsService.sendSMS(foundUser.id, fullPhoneNumber, SMSType.OTP);
+            return {
+              success: true,
+              message:
+                'Business User already found with this mobile, OTP resent',
+              data: foundUser,
+            };
+          }
+          return {
+            success: false,
+            message: 'Business User already found with this email',
+          };
+        }
+
+        createObj['phone'] = data.phone;
+        createObj['countryCode'] = data.countryCode;
       }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -294,10 +361,10 @@ export class BusinessService {
         isBusinessOwner: true,
       });
 
-      let createObj = {
+      createObj = {
+        ...createObj,
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
-        email: data.email,
         password: hashedPassword,
         name: data.name,
         forcePasswordReset: false,
@@ -365,7 +432,12 @@ export class BusinessService {
           });
         }
       }
-      this.mailService.sendBusinessUserVerificationMail(createdUser.id);
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        this.mailService.sendBusinessUserVerificationMail(createdUser.id);
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        console.log('fullPhoneNumber:', fullPhoneNumber);
+        this.smsService.sendSMS(createdUser.id, fullPhoneNumber, SMSType.OTP);
+      }
 
       const updatedUser = await this.businessUserModel
         .findById(createdUser.id)
@@ -386,23 +458,38 @@ export class BusinessService {
 
   async verifyUser(data: VerifyEmailDto) {
     try {
-      const user = await this.businessUserModel.findOne({ email: data.email });
+      const user = await this.businessUserModel.findById(data.userId);
       if (!user) {
         return {
           success: false,
           message: 'Business User not found!',
         };
       }
-      if (user.isEmailVerified) {
-        return {
-          success: false,
-          message: 'Email already verified!',
-        };
+      let foundOtpDoc = null;
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (user.isEmailVerified) {
+          return {
+            success: false,
+            message: 'Email already verified!',
+          };
+        }
+        foundOtpDoc = await this.otpModel.findOne({
+          user: new mongoose.Types.ObjectId(user.id),
+          type: OtpTypes.EMAIL,
+        });
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (user.isMobileVerified) {
+          return {
+            success: false,
+            message: 'Mobile phone already verified!',
+          };
+        }
+
+        foundOtpDoc = await this.otpModel.findOne({
+          user: new mongoose.Types.ObjectId(user.id),
+          type: OtpTypes.MOBILE,
+        });
       }
-      const foundOtpDoc = await this.otpModel.findOne({
-        user: new mongoose.Types.ObjectId(user.id),
-        type: OtpTypes.EMAIL,
-      });
       if (!foundOtpDoc) {
         return {
           success: false,
@@ -418,12 +505,27 @@ export class BusinessService {
         };
       }
       await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
-      await this.businessUserModel.updateOne(
-        { _id: user.id },
-        {
-          $set: { isEmailVerified: true, status: ProfileStatus.EMAIL_VERIFIED },
-        },
-      );
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        await this.businessUserModel.updateOne(
+          { _id: user.id },
+          {
+            $set: {
+              isEmailVerified: true,
+              status: ProfileStatus.EMAIL_VERIFIED,
+            },
+          },
+        );
+      }else if (data.signupMethod === SignupMethod.PHONE){
+        await this.businessUserModel.updateOne(
+          { _id: user.id },
+          {
+            $set: {
+              isMobilelVerified: true,
+              status: ProfileStatus.EMAIL_VERIFIED,
+            },
+          },
+        );
+      } 
       const token = await this.authService.generateJWT(
         {
           id: user.id,
@@ -1363,9 +1465,9 @@ export class BusinessService {
   }
 
   //helper
-  async validateBusinessUser(email: string, password: string) {
+  async validateBusinessUser(userId: string, password: string) {
     // logger.info(`email password: ${email} ${password}`);
-    const user = await this.businessUserModel.findOne({ email });
+    const user = await this.businessUserModel.findById(userId);
     // console.log('User::', user);
     if (user) {
       const validPassword = await bcrypt.compare(password, user.password);
@@ -1399,8 +1501,33 @@ export class BusinessService {
   }
 
   async login(loginDto: LoginBusinessDto) {
+    let userId = null;
+    if (loginDto.signupMethod === SignupMethod.EMAIL) {
+      const userFound = await this.businessUserModel.findOne({
+        email: loginDto.email,
+      });
+      if (!userFound) {
+        return {
+          success: false,
+          message: 'user is not found with this email',
+        };
+      }
+      userId = userFound.id;
+    } else if (loginDto.signupMethod === SignupMethod.PHONE) {
+      const userFound = await this.businessUserModel.findOne({
+        phone: loginDto.phone,
+        countryCode: loginDto.countryCode,
+      });
+      if (!userFound) {
+        return {
+          success: false,
+          message: 'user is not found with this email',
+        };
+      }
+      userId = userFound.id;
+    }
     const validatedBusinessUser = await this.validateBusinessUser(
-      loginDto.email,
+      userId,
       loginDto.password,
     );
     // logger.info(
@@ -4691,17 +4818,22 @@ export class BusinessService {
       },
       businessId: business._id,
     });
-    await this.eventModel.updateOne({_id:createdEvent._id},{
-      $push:{
-        eventSchedule: schedule._id
-      }
-    })
+    await this.eventModel.updateOne(
+      { _id: createdEvent._id },
+      {
+        $push: {
+          eventSchedule: schedule._id,
+        },
+      },
+    );
   }
 
   async uploadEventsInBulk(file: Express.Multer.File, user: DecodedUser) {
     try {
-
-      const [businessUser,business] = await Promise.all([this.businessUserModel.findById(user.id),this.businessModel.findById(user.businessProfile)])
+      const [businessUser, business] = await Promise.all([
+        this.businessUserModel.findById(user.id),
+        this.businessModel.findById(user.businessProfile),
+      ]);
 
       if (!businessUser || !business) {
         return {
