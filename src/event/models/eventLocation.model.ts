@@ -41,6 +41,8 @@ export class EventLocation {
   email: string;
   @Prop()
   phone: string;
+  @Prop({ ref: 'MobileSpots' })
+  spotId: mongoose.Types.ObjectId;
 }
 
 export const EventLocationSchema = SchemaFactory.createForClass(EventLocation);

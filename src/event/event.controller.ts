@@ -41,7 +41,7 @@ import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
-import { PinDropDto, PinDropV2Dto } from './dto/pinDrop.dto';
+import { PinDropDto, PinDropV2Dto, UpdatePinDropV2Dto } from './dto/pinDrop.dto';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { SubscriptionGuard } from 'src/subscription/guards/subscription.guard';
@@ -195,7 +195,7 @@ export class EventController {
       throw new BadRequestException({
         message: result.message,
       });
-    };
+    }
   }
 
   @Get('created/v2')
@@ -629,7 +629,7 @@ export class EventController {
     @Query('limit') limit: string,
     @Query('industry') industry: string,
   ) {
-    console.log("Industry:",industry);
+    console.log('Industry:', industry);
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
     const result = await this.eventService.getDefaultTemplates(
@@ -1137,7 +1137,7 @@ export class EventController {
     @Param('id') id: string,
     @Body() body: UpdateOfferDto,
     @TokenDecoder() user: DecodedUser,
-      @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ) {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
@@ -1158,7 +1158,7 @@ export class EventController {
   @UseGuards(JwtGuard2)
   async updateEventLocations(
     @Param('id') id: string,
-    @Body('locations') locations: string[], 
+    @Body('locations') locations: string[],
     @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.eventService.updateEventLocations(
@@ -1215,13 +1215,10 @@ export class EventController {
   @Post('pinDropV2')
   @UseGuards(JwtGuard2)
   async pinDropV2(
-    @TokenDecoder() user:DecodedUser,
-    @Body() data: PinDropV2Dto
-  ){
-      const result = await this.eventService.pinDropV2(
-      user,
-      data
-    );
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: PinDropV2Dto,
+  ) {
+    const result = await this.eventService.pinDropV2(user, data);
     if (result.success) {
       return {
         message: result.message,
@@ -1234,7 +1231,26 @@ export class EventController {
     }
   }
 
-  
+  @Put('pinDropV2/:id')
+  @UseGuards(JwtGuard2)
+  async updatePinDropV2(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: PinDropV2Dto,
+  ) {
+    const result = await this.eventService.updatePinDropV2(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
   @Post('pinDrop/:id')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
