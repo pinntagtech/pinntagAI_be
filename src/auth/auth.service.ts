@@ -181,8 +181,10 @@ export class AuthService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
-    @InjectModel(RewardLocation.name) private readonly rewardLocationModel: Model<RewardLocationDocument>,
-    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(RewardLocation.name)
+    private readonly rewardLocationModel: Model<RewardLocationDocument>,
+    @InjectModel(FeaturedAsset.name)
+    private readonly featuredAssetModel: Model<FeaturedAsset>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -451,7 +453,7 @@ export class AuthService {
           );
 
           // Send email OTP
-          console.log("Log BEFORE SENDING MAIL:::")
+          console.log('Log BEFORE SENDING MAIL:::');
           this.mailService.sendUserVerificationMail(foundUser.id);
 
           return {
@@ -733,22 +735,27 @@ export class AuthService {
     const updateObj: Record<string, any> = Object.fromEntries(
       Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
-    if(updateObj.email){
-      const userFound = await this.userModel.findOne({email:updateObj.email});
-      if(userFound){
+    if (updateObj.email) {
+      const userFound = await this.userModel.findOne({
+        email: updateObj.email,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
-    if(updateObj.phone && updateObj.countryCode){
-      const userFound = await this.userModel.findOne({phone:updateObj.phone,countryCode:updateObj.countryCode});
-       if(userFound){
+    if (updateObj.phone && updateObj.countryCode) {
+      const userFound = await this.userModel.findOne({
+        phone: updateObj.phone,
+        countryCode: updateObj.countryCode,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
 
@@ -801,14 +808,17 @@ export class AuthService {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log('Valid Token:', validToken);
 
-    const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: {
-      Authorization: `Bearer ${data.oAuthToken}`,
-    },
-  });
+    const userInfoResponse = await axios.get(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${data.oAuthToken}`,
+        },
+      },
+    );
 
-  const userInfo = userInfoResponse.data;
-  console.log('User Info:', userInfo);
+    const userInfo = userInfoResponse.data;
+    console.log('User Info:', userInfo);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -3393,8 +3403,8 @@ export class AuthService {
           name: { $first: '$businessDetails.name' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
-          coverThumbnail:{ $first: '$businessDetails.coverThumbnail'},
-          logoThumbnail:{ $first: '$businessDetails.logoThumbnail'},
+          coverThumbnail: { $first: '$businessDetails.coverThumbnail' },
+          logoThumbnail: { $first: '$businessDetails.logoThumbnail' },
           industry: { $first: '$industryDetails' },
           description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
@@ -5982,7 +5992,7 @@ export class AuthService {
           userType,
         );
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-         this.mailService.sendEmailVerificationMail(
+        this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
           resetLink,
@@ -7218,8 +7228,6 @@ export class AuthService {
         success: false,
         message: 'Something went wrong.',
       };
-    } 
+    }
   }
-
-
 }
