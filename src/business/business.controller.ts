@@ -18,6 +18,7 @@ import {
   UploadedFile,
   UseInterceptors,
   UploadedFiles,
+  HttpCode,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -56,6 +57,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { Prop } from '@nestjs/mongoose';
 import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
+import { OAuth2Dto } from 'src/auth/dto/oAuth2.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -199,6 +201,22 @@ export class BusinessController {
     } else {
       throw new BadRequestException(result.message);
     }
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async loginWithGoogle(@Req() req: Request, @Body() body: OAuth2Dto) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.businessService.loginWithGoogle(body, userAgent, ip);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
   }
 
   @Post('user/verify')
@@ -1268,10 +1286,7 @@ export class BusinessController {
       throw new BadRequestException('File is required');
     }
 
-    const result = await this.businessService.uploadEventsInBulk(
-      file,
-      user,
-    );
+    const result = await this.businessService.uploadEventsInBulk(file, user);
     if (result.success) {
       return {
         message: result.message,
@@ -1281,7 +1296,7 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-  
+
   @Post('invitation')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -1515,9 +1530,7 @@ export class BusinessController {
 
   @Post('user/delete')
   @UseGuards(JwtGuard2)
-  async deleteBusinessUser(
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async deleteBusinessUser(@TokenDecoder() user: DecodedUser) {
     const result = await this.businessService.deleteBusinessUser(user.id);
     if (result.success) {
       return {
