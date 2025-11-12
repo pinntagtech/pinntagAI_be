@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { BusinessUser, BusinessUserDocument } from './model/businessUser.model';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import {
   DefaultBusinessDepartmentRoles,
   DefaultBusinessRoles,
@@ -693,6 +694,281 @@ export class BusinessService {
         email: userInfo.email,
         name: userInfo.name,
         profilePhoto: userInfo.profilePhoto ? userInfo.profilePhoto : '',
+        role: [new mongoose.Types.ObjectId(ownerRole.id)],
+        creatorType: BusinessUserCreatorType.SELF,
+        forcePasswordReset: false,
+        isEmailVerified: true,
+      };
+
+      //append creator to roles
+      const createdUser = await this.businessUserModel.create(createObj);
+      await this.roleModel.updateOne(
+        { _id: ownerRole.id },
+        { $set: { creator: createdUser._id } },
+      );
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+      const payload: JwtPayload = {
+        id: createdUser.id,
+        // email: user.email,
+        userType: UserTypes.BUSINESS,
+        role: String(createdUser.role),
+        business: String(createdUser.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      return {
+        success: true,
+        message: 'User Logged In Successfully',
+        token,
+      };
+    }
+  }
+
+  async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
+    console.log('Apple Login Data:', data);
+    const tokenData = jwt.decode(data.oAuthToken) as any;
+        console.log('Apple Login Data:', tokenData);
+    const userFound = await this.businessUserModel.findOne({
+      email: tokenData.email,
+    });
+    if (userFound) {
+      // login logic
+      const payload: JwtPayload = {
+        id: userFound.id,
+        // email: user.email,
+        userType: UserTypes.BUSINESS,
+        role: String(userFound.role),
+        business: String(userFound.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      let userDoc = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles', // collection name for Role model
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // collection name for Business model
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets', // collection name for Outlet model
+                  localField: 'outlets',
+                  foreignField: '_id',
+                  as: 'outlets',
+                  pipeline: [
+                    {
+                      $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                        (acc, field) => {
+                          acc[field] = 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'events', // collection name for Event model
+                  localField: 'initialOfferId',
+                  foreignField: '_id',
+                  as: 'initialOfferId',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        categories: 1,
+                        drivePath: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'businessindustries', // collection name for BusinessIndustry model
+                  localField: 'businessIndustry',
+                  foreignField: '_id',
+                  as: 'businessIndustry',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        darkIcon: 1,
+                        lightIcon: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'subscriptions',
+                  localField: 'activeSubscription',
+                  foreignField: '_id',
+                  as: 'activeSubscription',
+                  pipeline: [
+                    {
+                      $lookup: {
+                        from: 'subscriptionproducts',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'product',
+                        pipeline: [
+                          {
+                            $project: {
+                              _id: 1,
+                              name: 1,
+                              price: 1,
+                              description: 1,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    { $unwind: '$product' },
+                    {
+                      $project: {
+                        _id: 1,
+                        source: 1,
+                        product: 1,
+                        startDate: 1,
+                        endDate: 1,
+                        status: 1,
+                        remainingDays: {
+                          $dateDiff: {
+                            startDate: currentDateTz(),
+                            endDate: '$endDate',
+                            unit: 'day',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                  businessIndustry: {
+                    $arrayElemAt: ['$businessIndustry', 0],
+                  },
+                  activeSubscription: {
+                    $arrayElemAt: ['$activeSubscription', 0],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        // {
+        //   $addFields: {
+        //     role: { $arrayElemAt: ['$role', 0] },
+        //     business: { $arrayElemAt: ['$business', 0] },
+        //   },
+        // },
+      ]);
+      userDoc = userDoc[0];
+
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+
+      // console.log('userDetails:', userDetails);
+      return {
+        success: true,
+        status: true,
+        message: 'User logged in successfully',
+        user: userDoc,
+        token,
+      };
+    } else {
+      //registration logic
+      const superAdmin = await this.adminModel.findOne({
+        isSuperAdmin: true,
+      });
+
+      //seed business owner default role:
+      const ownerRole = await this.roleModel.create({
+        name: 'Owner',
+        creator: new mongoose.Types.ObjectId(superAdmin.id),
+        creatorType: RoleCreatorType.BUSINESS,
+        belongsTo: RoleBelonging.BUSINESS,
+        isBusinessOwner: true,
+      });
+
+      let createObj = {
+        email: tokenData.email,
+        name: data.name,
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
         forcePasswordReset: false,

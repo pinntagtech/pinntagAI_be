@@ -218,6 +218,21 @@ export class BusinessController {
       token: result.token,
     };
   }
+  @Post('apple')
+  @HttpCode(HttpStatus.OK)
+  async loginWithApple(@Req() req: Request, @Body() body: OAuth2Dto) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.businessService.loginWithGoogle(body, userAgent, ip);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      user: result.user,
+      token: result.token,
+    };
+  }
 
   @Post('user/verify')
   async verifyUser(@Body() data: VerifyEmailDto) {

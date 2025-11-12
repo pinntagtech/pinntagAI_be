@@ -947,9 +947,9 @@ export class AuthService {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
       user = await this.userModel.create({
         role: role._id,
-        firstName: tokenData.name ? tokenData.name.split(' ')[0] : '',
-        lastName: tokenData.name ? tokenData.name.split(' ')[1] : '',
-        name: tokenData.name,
+        firstName: data.name ? data.name.split(' ')[0] : '',
+        lastName: data.name ? data.name.split(' ')[1] : '',
+        name: data.name,
         profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
         email: tokenData.email,
         isEmailVerified: true,
