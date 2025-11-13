@@ -60,6 +60,7 @@ import { DynamicLinkService } from 'src/notification/dynamicLink.service';
 import { from } from 'rxjs';
 import { BusinessService } from 'src/business/business.service';
 import { File, FileDocument } from 'src/drive/models/file.model';
+import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 
 @Injectable()
 export class RewardsService {
@@ -87,7 +88,7 @@ export class RewardsService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-
+    @InjectModel(UserSearchActivity.name) private readonly userSearchActivityModel: Model<UserSearchActivity>,
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
@@ -1454,6 +1455,10 @@ export class RewardsService {
 
       let match = {};
       if (search) {
+        this.userSearchActivityModel.create({
+                user:new mongoose.Types.ObjectId(user.id),
+                searchText: search
+              });
         // Search matching business profile name
         const matchingBusinesses = await this.businessModel.find({
           name: { $regex: search, $options: 'i' },

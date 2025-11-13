@@ -137,6 +137,7 @@ import {
   RewardLocationDocument,
 } from 'src/rewards/model/rewardLocation.model';
 import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
+import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 
 @Injectable()
 export class AuthService {
@@ -181,8 +182,12 @@ export class AuthService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
-    @InjectModel(RewardLocation.name) private readonly rewardLocationModel: Model<RewardLocationDocument>,
-    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(RewardLocation.name)
+    private readonly rewardLocationModel: Model<RewardLocationDocument>,
+    @InjectModel(FeaturedAsset.name)
+    private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(UserSearchActivity.name)
+    private readonly userSearchActivityModel: Model<UserSearchActivity>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -451,7 +456,7 @@ export class AuthService {
           );
 
           // Send email OTP
-          console.log("Log BEFORE SENDING MAIL:::")
+          console.log('Log BEFORE SENDING MAIL:::');
           this.mailService.sendUserVerificationMail(foundUser.id);
 
           return {
@@ -733,22 +738,27 @@ export class AuthService {
     const updateObj: Record<string, any> = Object.fromEntries(
       Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
-    if(updateObj.email){
-      const userFound = await this.userModel.findOne({email:updateObj.email});
-      if(userFound){
+    if (updateObj.email) {
+      const userFound = await this.userModel.findOne({
+        email: updateObj.email,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
-    if(updateObj.phone && updateObj.countryCode){
-      const userFound = await this.userModel.findOne({phone:updateObj.phone,countryCode:updateObj.countryCode});
-       if(userFound){
+    if (updateObj.phone && updateObj.countryCode) {
+      const userFound = await this.userModel.findOne({
+        phone: updateObj.phone,
+        countryCode: updateObj.countryCode,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
 
@@ -801,14 +811,17 @@ export class AuthService {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log('Valid Token:', validToken);
 
-    const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: {
-      Authorization: `Bearer ${data.oAuthToken}`,
-    },
-  });
+    const userInfoResponse = await axios.get(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${data.oAuthToken}`,
+        },
+      },
+    );
 
-  const userInfo = userInfoResponse.data;
-  console.log('User Info:', userInfo);
+    const userInfo = userInfoResponse.data;
+    console.log('User Info:', userInfo);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -928,7 +941,7 @@ export class AuthService {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // console.log("validToken:", validToken);
     const tokenData = jwt.decode(data.oAuthToken) as any;
-    console.log("Data from FrontEnd:",data);
+    console.log('Data from FrontEnd:', data);
     console.log('Token Data', tokenData);
     let user = await this.userModel
       .findOne({ email: tokenData.email })
@@ -2579,7 +2592,7 @@ export class AuthService {
               in: {
                 _id: '$$file._id',
                 url: '$$file.metaData.url',
-                thumbnail: '$$file.metaData.thumbnailUrl'
+                thumbnail: '$$file.metaData.thumbnailUrl',
               },
             },
           },
@@ -3397,8 +3410,8 @@ export class AuthService {
           name: { $first: '$businessDetails.name' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
-          coverThumbnail:{ $first: '$businessDetails.coverThumbnail'},
-          logoThumbnail:{ $first: '$businessDetails.logoThumbnail'},
+          coverThumbnail: { $first: '$businessDetails.coverThumbnail' },
+          logoThumbnail: { $first: '$businessDetails.logoThumbnail' },
           industry: { $first: '$industryDetails' },
           description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
@@ -5986,7 +5999,7 @@ export class AuthService {
           userType,
         );
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-         this.mailService.sendEmailVerificationMail(
+        this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
           resetLink,
@@ -6741,9 +6754,34 @@ export class AuthService {
       throw new Error(`Error generating password: ${error.message}`);
     }
   }
+  private async userSearchEntry(userId: string, text: string) {
+    const findSearch = await this.userSearchActivityModel.findOne({
+      user: new mongoose.Types.ObjectId(userId),
+      searchText: text,
+    });
+    console.log('FindSearch:', findSearch);
+    if (findSearch) {
+      await this.userSearchActivityModel.updateOne(
+        { user: new mongoose.Types.ObjectId(userId), searchText: text },
+        {
+          $inc: {
+            count: 1,
+          },
+        },
+      );
+    } else {
+      await this.userSearchActivityModel.create({
+        user: new mongoose.Types.ObjectId(userId),
+        searchText: text,
+      });
+    }
+  }
 
   async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
     let { search, carouselType, latitude, longitude, distance } = data;
+    if (data.type !== 'all' && search) {
+      this.userSearchEntry(user.id, data.search);
+    }
     let result = null;
     let total = 0;
 
@@ -7132,6 +7170,7 @@ export class AuthService {
 
   async dashboardAllSearch(user: DecodedUser, data: DashboardSearchDto) {
     try {
+      this.userSearchEntry(user.id, data.search);
       const [deals, listings, mobile, rewards] = await Promise.all([
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7140,6 +7179,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7148,6 +7188,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7156,6 +7197,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.getDashboardRewards(
           user,
@@ -7222,8 +7264,26 @@ export class AuthService {
         success: false,
         message: 'Something went wrong.',
       };
-    } 
+    }
   }
 
+  async getRecentSearches(userId: string) {
+    try {
+      const recents = await this.userSearchActivityModel
+        .find({ user: new mongoose.Types.ObjectId(userId) })
+        .sort({ createdAt: -1 }) // sort newest → oldest
+        .limit(5);
 
+      return {
+        success: true,
+        message: "Data fetched successfully.",
+        data: recents
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
 }

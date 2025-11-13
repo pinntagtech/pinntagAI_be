@@ -173,6 +173,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.model';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 
 @Module({
   imports: [
@@ -248,7 +249,8 @@ import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.mode
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
     ]),
   ],
   controllers: [AdminController],

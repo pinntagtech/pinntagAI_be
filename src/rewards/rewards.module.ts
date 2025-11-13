@@ -179,6 +179,7 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 
 @Module({
   imports: [
@@ -263,6 +264,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
     ]),
   ],
   controllers: [RewardsController],

@@ -932,6 +932,20 @@ export class AuthController {
       data: result.data,
     };
   }
+  @Get('getRecentSearches')
+  @UseGuards(JwtGuard2)
+  async getRecentSearches(
+    @TokenDecoder()user:DecodedUser,
+  ) {
+    const result = await this.authService.getRecentSearches(user.id);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
 
 
 

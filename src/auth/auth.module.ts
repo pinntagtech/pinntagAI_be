@@ -152,6 +152,7 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 
 @Module({
   imports: [
@@ -219,6 +220,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

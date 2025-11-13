@@ -1195,19 +1195,28 @@ export class BusinessService {
       }
 
       if (
-        updateObj.cover &&
-        findBusiness.cover === DEFAULT_IMAGES.BUSINESS_COVER
+        updateObj.cover || updateObj.logo
       ) {
         let profileCompletionPercentage =
           (BusinessStatus.COVER_ADDED /
             BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
           100;
+
+          let tempUpdateObj = {
+            profileCompletionPercentage:profileCompletionPercentage,
+            status:BusinessStatus.COVER_ADDED
+          }
+          if(updateObj.cover && !updateObj.logo){
+            tempUpdateObj['logo'] = DEFAULT_IMAGES.BUSINESS_LOGO
+          }
+          if(updateObj.logo && !updateObj.cover){
+            tempUpdateObj['cover'] = DEFAULT_IMAGES.BUSINESS_COVER
+          }
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           {
             $set: {
-              status: BusinessStatus.COVER_ADDED,
-              profileCompletionPercentage,
+              ...tempUpdateObj,
             },
           },
         );

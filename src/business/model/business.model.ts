@@ -71,12 +71,12 @@ export class Business {
   // })
   // status: number;
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+    default: null,
   })
   logo: string;
 
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+    default: null,
   })
   logoThumbnail: string;
 
@@ -93,11 +93,11 @@ export class Business {
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_COVER,
+    default: null,
   })
   cover: string;
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_COVER,
+    default: null,
   })
   coverThumbnail: string;
 

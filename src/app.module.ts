@@ -179,6 +179,7 @@ import { FeedService } from './feed/feed.service';
 import { FeedModule } from './feed/feed.module';
 import { Feed, FeedSchema } from './feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from './admin/models/featuredAssets.model';
+import { UserSearchActivity, UserSearchActivitySchema } from './user/models/userSearchActivity.model';
 
 @Module({
   imports: [
@@ -275,6 +276,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from './admin/models/featuredAsset
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
     ]),
     StripeeModule,
     AuthModule,

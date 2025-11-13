@@ -192,6 +192,7 @@ import { BusinessActivation, BusinessActivationSchema } from 'src/business/model
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 
 @Module({
   imports: [
@@ -280,6 +281,7 @@ import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.m
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: MobileSpots.name, schema:MobileSpotsSchema},
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
