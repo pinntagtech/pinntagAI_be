@@ -149,6 +149,7 @@ import { ExpectedOutletHeaders } from 'src/outlet/enums/outlet.enum';
 import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { MobileSpots } from 'src/business/model/mobileSpots.model';
+import { EventCategory } from 'src/seeder/data';
 
 @Injectable()
 export class EventService2 {
@@ -4972,6 +4973,7 @@ export class EventService2 {
     eventId: string,
     data: CreateScheduleDto,
     user: DecodedUser,
+    outletId?: string,
   ) {
     try {
       console.log('SCHEDULE DATA:', JSON.stringify(data));
@@ -5153,6 +5155,11 @@ export class EventService2 {
                   },
                 );
               }
+
+              if (outletId) {
+                scheduleObj['outletId'] = new mongoose.Types.ObjectId(outletId);
+              }
+
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
               scheduleList.push(createdSchedule._id);
@@ -5264,7 +5271,13 @@ export class EventService2 {
             },
             businessId: new mongoose.Types.ObjectId(user.businessProfile),
           };
+
           const createdSchedule = await this.scheduleModel.create(scheduleObj);
+
+          if (outletId) {
+            scheduleObj['outletId'] = new mongoose.Types.ObjectId(outletId);
+          }
+
           scheduleList.push(createdSchedule._id);
         }
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
@@ -7976,7 +7989,7 @@ export class EventService2 {
         };
       }
       const category = await this.categoryModel.findOne({
-        title: 'Food Trucks',
+        title: EventCategory.FOOD_TRUCKS_AND_POPUPS,
       });
       if (!category) {
         return {
@@ -8016,7 +8029,7 @@ export class EventService2 {
           businessProfile: business._id,
           spotId: spot._id,
         }),
-        this.createSchedule(createdEvent.id, data, user),
+        this.createSchedule(createdEvent.id, data, user, outlet.id),
       ]);
       await this.eventModel.updateOne(
         { _id: createdEvent._id },

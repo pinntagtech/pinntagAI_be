@@ -164,6 +164,9 @@ export class EventSchedule {
   event: mongoose.Types.ObjectId;
 
   @Prop()
+  outletId: mongoose.Types.ObjectId;
+
+  @Prop()
   fixedSchedule: FixedSchedule;
 
   @Prop()
