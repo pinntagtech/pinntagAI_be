@@ -2513,7 +2513,9 @@ export class AuthService {
             _id: '$businessProfileDetails._id',
             name: '$businessProfileDetails.name',
             cover: '$businessProfileDetails.cover',
+            coverThumbnail: '$businessProfileDetails.coverThumbnail',
             logo: '$businessProfileDetails.logo',
+            logoThumbnail: '$businessProfileDetails.logoThumbnail',
             // email: '$businessProfileDetails.email',
             // bio: '$businessProfileDetails.bio',
             // description: '$businessProfileDetails.description',
@@ -2576,6 +2578,7 @@ export class AuthService {
               in: {
                 _id: '$$file._id',
                 url: '$$file.metaData.url',
+                thumbnail: '$$file.metaData.thumbnailUrl'
               },
             },
           },
