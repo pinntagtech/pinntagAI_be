@@ -24,6 +24,7 @@ import { File, FileSchema } from 'src/drive/models/file.model';
 import { S3Service } from 'src/s3.service';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
+import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.m
       { name: File.name, schema: FileSchema},
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: MobileSpots.name, schema: MobileSpotsSchema },
+      { name: EventSchedule.name, schema: EventScheduleSchema}
         
     ])
   ],

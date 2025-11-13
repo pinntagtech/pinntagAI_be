@@ -3,7 +3,11 @@ import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
 import { Category } from 'src/models/contentCategory.model';
-import { CreateOutletDto, CreateOutletDtoV2, UpdateMobileOutletDto } from './dto/create-outlet.dto';
+import {
+  CreateOutletDto,
+  CreateOutletDtoV2,
+  UpdateMobileOutletDto,
+} from './dto/create-outlet.dto';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -36,6 +40,13 @@ import {
 import { DriveService } from 'src/drive/drive.service';
 import { CreateSpotDto, UpdateSpotDto } from './dto/create-spot.dto';
 import { MobileSpots } from 'src/business/model/mobileSpots.model';
+import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import { Event, EventDocument } from 'src/event/models/event.model';
+import {
+  EventSchedule,
+  EventScheduleDocument,
+  ScheduleTypes,
+} from 'src/event/models/event-schedule.model';
 
 @Injectable()
 export class OutletService {
@@ -55,6 +66,9 @@ export class OutletService {
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
     @InjectModel(MobileSpots.name)
     private readonly mobileSpotsModel: Model<MobileSpots>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly scheduleModel: Model<EventScheduleDocument>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -446,20 +460,30 @@ export class OutletService {
         };
       }
 
-       const folder = await this.driveService.createFolder(user.businessProfile, {
+      const folder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
           parentDirectory: business.drive,
           parentType: 'Drive',
           folderName: createObj.name,
-        });
-        createObj['drivePath'] = folder.data._id;
-        const fileCategory = await this.fileCategoryModel.findOne({name:FileCategoryTypes.GALLERY_IMAGE});
-      const coverUpload = await this.driveService.uploadAndCreateImage(image,String(folder.data._id),'Folder',user.id,fileCategory.id);
+        },
+      );
+      createObj['drivePath'] = folder.data._id;
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+      const coverUpload = await this.driveService.uploadAndCreateImage(
+        image,
+        String(folder.data._id),
+        'Folder',
+        user.id,
+        fileCategory.id,
+      );
 
       createObj['cover'] = coverUpload.metaData.url;
       createObj['category'] = OutletCategoryList.MOBILE;
 
       console.log('CREATEOBJ:', createObj);
-      
 
       const outlet = await this.outletModel.create(createObj);
       console.log('OUTLET:', outlet);
@@ -778,34 +802,239 @@ export class OutletService {
           $lt: new Date(date.setHours(23, 59, 59, 999)),
         };
       }
-      if(vehicleType){
+      if (vehicleType) {
         match['vehicleType'] = vehicleType;
       }
       console.log('Match:::', match);
       console.log('business:::', user.businessProfile);
-      const outlets = await this.outletModel
-        .find({
-          ...match,
-          // creator: new mongoose.Types.ObjectId(userDetails._id),
-          business: new mongoose.Types.ObjectId(user.businessProfile),
-          // isDeleted: false,
-        })
-        .populate({
-          path: 'manager',
-          select: 'name email phone countryCode profilePhoto',
-          match: { manager: { $ne: '' } },
-        })
-        .populate('creator', 'name email phone countryCode profilePhoto')
-        // .populate({
-        //   path: 'creator',
-        //   select: 'name email phone countryCode profilePhoto',
-        //   match: { _id: { $ne: '' } },
-        // })
-        .populate('business', 'name email phone countryCode logo')
-        .populate('spots')
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
+      // let outletsO = await this.outletModel
+      //   .find({
+      //     ...match,
+      //     // creator: new mongoose.Types.ObjectId(userDetails._id),
+      //     business: new mongoose.Types.ObjectId(user.businessProfile),
+      //     // isDeleted: false,
+      //   })
+      //   .populate({
+      //     path: 'manager',
+      //     select: 'name email phone countryCode profilePhoto',
+      //     match: { manager: { $ne: '' } },
+      //   })
+      //   .populate('creator', 'name email phone countryCode profilePhoto')
+      //   .populate('business', 'name email phone countryCode logo')
+      //   .populate('spots')
+      //   .sort({ createdAt: -1 })
+      //   .skip((page - 1) * limit)
+      //   .limit(limit)
+      //   .lean();
+
+      let outlets = await this.outletModel.aggregate([
+        {
+          $match: {
+            ...match,
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $skip: (page - 1) * limit,
+        },
+        {
+          $limit: limit,
+        },
+        {
+          $lookup: {
+            from: 'businessusers', // Replace with your actual manager collection name
+            localField: 'manager',
+            foreignField: '_id',
+            as: 'manager',
+            pipeline: [
+              {
+                $match: {
+                  manager: { $ne: '' },
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$manager',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businessusers', // Replace with your actual creator collection name
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creator',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$creator',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // Replace with your actual business collection name
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  logo: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$business',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'mobilespots', // Replace with your actual spots collection name
+            localField: 'spots',
+            foreignField: '_id',
+            as: 'spots',
+          },
+        },
+        {
+          $lookup: {
+            from: 'eventschedules', // Replace with your actual schedules collection name
+            localField: '_id',
+            foreignField: 'outletId',
+            as: 'schedules',
+          },
+        },
+        // Lookup events for the schedules
+        {
+          $lookup: {
+            from: 'events', // Replace with your actual events collection name
+            let: { scheduleEvents: '$schedules.event' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: ['$_id', '$$scheduleEvents'],
+                  },
+                  status: EventStatus.PUBLISHED,
+                  type: EventTypes.DROPPED_PIN,
+                },
+              },
+            ],
+            as: 'validEvents',
+          },
+        },
+        // Add isDroppedPin field
+        {
+          $addFields: {
+            isDroppedPin: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $gt: [{ $size: '$schedules' }, 0] },
+                    { $gt: [{ $size: '$validEvents' }, 0] },
+                    {
+                      $anyElementTrue: {
+                        $map: {
+                          input: '$schedules',
+                          as: 'schedule',
+                          in: {
+                            $or: [
+                              // Check for FIXED schedule
+                              {
+                                $and: [
+                                  {
+                                    $eq: [
+                                      '$$schedule.type',
+                                      ScheduleTypes.FIXED,
+                                    ],
+                                  },
+                                  {
+                                    $gte: [
+                                      '$$schedule.fixedSchedule.date',
+                                      new Date(),
+                                    ],
+                                  },
+                                ],
+                              },
+                              // Check for RECURRING schedule
+                              {
+                                $and: [
+                                  {
+                                    $eq: [
+                                      '$$schedule.type',
+                                      ScheduleTypes.RECURRING,
+                                    ],
+                                  },
+                                  {
+                                    $lte: [
+                                      '$$schedule.recurringSchedule.startDate',
+                                      new Date(),
+                                    ],
+                                  },
+                                  {
+                                    $gte: [
+                                      '$$schedule.recurringSchedule.endDate',
+                                      new Date(),
+                                    ],
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        // Remove temporary fields
+        {
+          $project: {
+            schedules: 0,
+            validEvents: 0,
+          },
+        },
+      ]);
 
       const total = await this.outletModel.countDocuments({
         creator: new mongoose.Types.ObjectId(userDetails._id),
