@@ -30,7 +30,7 @@ export const BusinessPopulates = {
 
 export const LocationPopulates = {
   FOREIGN:
-    'id _id name latitude longitude location accuracy address1 address2 city state zip website email phone businessLocationId',
+    'id _id name latitude longitude location accuracy address1 address2 city state zip website email phone businessLocationId spotId',
 };
 
 export const ImagePopulates = {
@@ -95,4 +95,12 @@ export enum ReceiptStatus {
 export enum CurrencyTypes {
   USD = 'USD',
   EUR = 'EUR',
+}
+
+
+export enum MuteDuration {
+  EIGHT_HOURS = '8h',
+  ONE_WEEK = '1w',
+  ALWAYS = 'always',
+  NONE = 'none'
 }

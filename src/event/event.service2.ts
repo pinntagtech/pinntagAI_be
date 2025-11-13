@@ -45,6 +45,7 @@ import {
   ExmpLocKeys,
   ImagePopulates,
   LocationPopulates,
+  MuteDuration,
   UserPopulates,
 } from 'src/enums/user.enum';
 import {
@@ -132,7 +133,11 @@ import { OutletCategoryList } from 'src/outlet/outlet.enum';
 import { Drive } from 'src/drive/models/drive.model';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { LocationClass } from 'src/business/model/types.model';
-import { PinDropDto } from './dto/pinDrop.dto';
+import {
+  PinDropDto,
+  PinDropV2Dto,
+  UpdatePinDropV2Dto,
+} from './dto/pinDrop.dto';
 import { GoogleService } from 'src/google/google.service';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { BusinessService } from 'src/business/business.service';
@@ -143,6 +148,8 @@ import * as streamifier from 'streamifier';
 import { ExpectedOutletHeaders } from 'src/outlet/enums/outlet.enum';
 import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { MobileSpots } from 'src/business/model/mobileSpots.model';
+import { EventCategory } from 'src/seeder/data';
 
 @Injectable()
 export class EventService2 {
@@ -196,7 +203,8 @@ export class EventService2 {
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
-
+    @InjectModel(MobileSpots.name)
+    private readonly mobileSpotsModel: Model<MobileSpots>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -425,9 +433,9 @@ export class EventService2 {
               let durations = schedule.fixedSchedule.durations;
               for (let j = 0; j < durations.length; j++) {
                 console.log('Durations:', durations[j]);
-                if (new Date(durations[j].startTime) >= new Date()) {
-                  console.log('Start time:', durations[j].startTime);
-                  requiredSchedule = durations[j].startTime;
+                if (new Date(durations[j].endTime) >= new Date()) {
+                  console.log('End time:', durations[j].endTime);
+                  requiredSchedule = durations[j].endTime;
                   break;
                 }
                 // else {
@@ -1959,6 +1967,21 @@ export class EventService2 {
     }
   }
 
+  private isMuteExpired(mutedUntil: Date | null): boolean {
+    if (!mutedUntil) return false;
+    return new Date() > mutedUntil;
+  }
+  private isCurrentlyMuted(follower: any): boolean {
+    if (!follower.muted) return false;
+
+    if (follower.muteDuration === MuteDuration.ALWAYS) return true;
+
+    if (this.isMuteExpired(follower.mutedUntil)) {
+      return false;
+    }
+    return true;
+  }
+
   async togglePublishEvent(data: PublishEventDto, user: DecodedUser) {
     const id = data.id;
     if (!mongoose.isValidObjectId(id)) {
@@ -2055,7 +2078,7 @@ export class EventService2 {
                   console.log('Skipping null follower at index:', i);
                   continue;
                 }
-                if (!followers[i].muted) {
+                if (!this.isCurrentlyMuted(followers[i])) {
                   const fcmTokens = await this.tokenModel.find({
                     user: new mongoose.Types.ObjectId(
                       followers[i].follower['_id'],
@@ -4950,6 +4973,7 @@ export class EventService2 {
     eventId: string,
     data: CreateScheduleDto,
     user: DecodedUser,
+    outletId?: string,
   ) {
     try {
       console.log('SCHEDULE DATA:', JSON.stringify(data));
@@ -5131,6 +5155,11 @@ export class EventService2 {
                   },
                 );
               }
+
+              if (outletId) {
+                scheduleObj['outletId'] = new mongoose.Types.ObjectId(outletId);
+              }
+
               const createdSchedule =
                 await this.scheduleModel.create(scheduleObj);
               scheduleList.push(createdSchedule._id);
@@ -5140,87 +5169,116 @@ export class EventService2 {
           data.scheduleType == ScheduleTypes.RECURRING &&
           data.recurringSchedule
         ) {
-          // let startDate = new Date(data.recurringSchedule.startDate);
-          // let endDate = new Date(data.recurringSchedule.endDate);
-          // if (startDate < new Date(Date.now())) {
-          //   return {
-          //     success: false,
-          //     message: `Start date cannot be in past`,
-          //   };
-          // }
-          // if (endDate < new Date(Date.now())) {
-          //   return {
-          //     success: false,
-          //     message: `End date cannot be in past`,
-          //   };
-          // }
-          // data.recurringSchedule.startDate = startDate;
-          // data.recurringSchedule.endDate = endDate;
-          // console.log('Check:2', startDate, endDate);
-          // if (startDate > endDate) {
-          //   return {
-          //     success: false,
-          //     message: `Start date cannot be greater than end date for this schedule`,
-          //   };
-          // }
-          // let week = data.recurringSchedule.weekDays;
-          // for (let i = 0; i < Object.keys(week).length; i++) {
-          //   let day = Object.keys(week)[i];
-          //   let dayObj = week[day];
-          //   console.log('day:', day);
-          //   console.log('Day Data:', dayObj);
-          //   if (dayObj.included) {
-          //     if (dayObj.durations.length == 0) {
-          //       return {
-          //         success: false,
-          //         message: `Please provide the duration for the ${day}`,
-          //       };
-          //     }
-          //     //durations array
-          //     for (let j = 0; j < dayObj.durations.length; j++) {
-          //       console.log('Duration:', dayObj.durations[j]);
-          //       let duration = dayObj.durations[j];
-          //       // let startTime = duration.startTime;
-          //       // let endTime = duration.endTime;
-          //       let startHour = duration.startHour;
-          //       let startMinute = duration.startMinute;
-          //       let endHour = duration.endHour;
-          //       let endMinute = duration.endMinute;
-          //       const isValid = this.isValidTimeRange(
-          //         startHour,
-          //         startMinute,
-          //         endHour,
-          //         endMinute,
-          //       );
-          //       if (!isValid) {
-          //         return {
-          //           success: false,
-          //           message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
-          //         };
-          //       }
-          //     }
-          //     dayObj.durations.sort((a, b) => {
-          //       return (
-          //         a.startHour * 60 +
-          //         a.startMinute -
-          //         (b.startHour * 60 + b.startMinute)
-          //       );
-          //     });
-          //     data.recurringSchedule.weekDays[day] = dayObj;
-          //   }
-          // }
-          // let scheduleObj = {
-          //   type: data.scheduleType,
-          //   event: new mongoose.Types.ObjectId(eventId),
-          //   recurringSchedule: {
-          //     startDate: data.recurringSchedule.startDate,
-          //     endDate: data.recurringSchedule.endDate,
-          //     weekDays: data.recurringSchedule.weekDays,
-          //   },
-          //   businessId: new mongoose.Types.ObjectId(user.businessProfile),
-          // };
-          // const createdSchedule = await this.scheduleModel.create(scheduleObj);
-          // scheduleList.push(createdSchedule._id);
+          let startDate = new Date(data.recurringSchedule.startDate);
+          let endDate = new Date(data.recurringSchedule.endDate);
+          if (startDate < new Date(Date.now())) {
+            return {
+              success: false,
+              message: `Start date cannot be in past`,
+            };
+          }
+          if (endDate < new Date(Date.now())) {
+            return {
+              success: false,
+              message: `End date cannot be in past`,
+            };
+          }
+          data.recurringSchedule.startDate = startDate;
+          data.recurringSchedule.endDate = endDate;
+          console.log('Check:2', startDate, endDate);
+          console.log(
+            'startDate Day:',
+            startDate.getUTCDay(),
+            endDate.getUTCDay(),
+          );
+
+          if (startDate > endDate) {
+            return {
+              success: false,
+              message: `Start date cannot be greater than end date for this schedule`,
+            };
+          }
+          let week = data.recurringSchedule.weekDays;
+          let allowedWeekdays = [];
+          let daysMap = {
+            monday: 1,
+            tuesday: 2,
+            wednesday: 3,
+            thursday: 4,
+            friday: 5,
+            saturday: 6,
+            sunday: 7,
+          };
+          for (let i = 0; i < Object.keys(week).length; i++) {
+            let day = Object.keys(week)[i];
+            let dayObj = week[day];
+            console.log('day:', day);
+            allowedWeekdays.push(daysMap[day]);
+            console.log('Day Data:', dayObj);
+            if (dayObj.included) {
+              if (dayObj.durations.length == 0) {
+                return {
+                  success: false,
+                  message: `Please provide the duration for the ${day}`,
+                };
+              }
+              //durations array
+              for (let j = 0; j < dayObj.durations.length; j++) {
+                console.log('Duration:', dayObj.durations[j]);
+                let duration = dayObj.durations[j];
+                // let startTime = duration.startTime;
+                // let endTime = duration.endTime;
+                let startHour = duration.startHour;
+                let startMinute = duration.startMinute;
+                let endHour = duration.endHour;
+                let endMinute = duration.endMinute;
+                const isValid = this.isValidTimeRange(
+                  startHour,
+                  startMinute,
+                  endHour,
+                  endMinute,
+                );
+                if (!isValid) {
+                  return {
+                    success: false,
+                    message: `Start time cannot be greater than end time for the day ${Object.keys(day)} and duration at index ${j}`,
+                  };
+                }
+              }
+              dayObj.durations.sort((a, b) => {
+                return (
+                  a.startHour * 60 +
+                  a.startMinute -
+                  (b.startHour * 60 + b.startMinute)
+                );
+              });
+              data.recurringSchedule.weekDays[day] = dayObj;
+            }
+          }
+          if (!allowedWeekdays.includes(endDate.getUTCDay())) {
+            return {
+              success: false,
+              message: 'endDate should only be allowed for selected weekdays',
+            };
+          }
+          let scheduleObj = {
+            type: data.scheduleType,
+            event: new mongoose.Types.ObjectId(eventId),
+            recurringSchedule: {
+              startDate: data.recurringSchedule.startDate,
+              endDate: data.recurringSchedule.endDate,
+              weekDays: data.recurringSchedule.weekDays,
+            },
+            businessId: new mongoose.Types.ObjectId(user.businessProfile),
+          };
+
+          const createdSchedule = await this.scheduleModel.create(scheduleObj);
+
+          if (outletId) {
+            scheduleObj['outletId'] = new mongoose.Types.ObjectId(outletId);
+          }
+
+          scheduleList.push(createdSchedule._id);
         }
         const updatedEvent = await this.eventModel.findByIdAndUpdate(
           eventId,
@@ -6157,6 +6215,7 @@ export class EventService2 {
             QR_CODE: 1,
             images: 1,
             keywords: 1,
+            title: 1,
             description: 1,
             locations: 1,
             minTargetAge: 1,
@@ -6368,11 +6427,14 @@ export class EventService2 {
       data.isFree = data.isFree === 'true';
 
       // Create folder
-      const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
-        folderName: data.title,
-      });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: data.title,
+        },
+      );
 
       // Prepare event object
       const createObj = {
@@ -7069,7 +7131,7 @@ export class EventService2 {
           const businessFolder = await this.driveService.createFolder(
             businessUser.id,
             {
-              parentDirectory: businessDetails.drivePath,
+              parentDirectory: businessDetails.drive,
               parentType: Folder.name,
               folderName: data.title,
             },
@@ -7293,7 +7355,7 @@ export class EventService2 {
         const eventFolder = await this.driveService.createFolder(
           businessUser.id,
           {
-            parentDirectory: businessDetails.drivePath,
+            parentDirectory: businessDetails.drive,
             parentType: Folder.name,
             folderName: data.title,
           },
@@ -7550,7 +7612,7 @@ export class EventService2 {
         const eventFolder = await this.driveService.createFolder(
           businessUser.id,
           {
-            parentDirectory: businessDetails.drivePath,
+            parentDirectory: businessDetails.drive,
             parentType: Folder.name,
             folderName: data.title,
           },
@@ -7859,11 +7921,14 @@ export class EventService2 {
         }
         data.categories = categoriesInObjectId;
       }
-      const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
-        folderName: data.title,
-      });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: data.title,
+        },
+      );
       let createObj: any = {
         ...data,
         type: data.eventType,
@@ -7883,7 +7948,7 @@ export class EventService2 {
       // });
       if (images.length > 0) {
         await this.driveService.multiImageUpload(
-          user.id,
+          user.businessProfile,
           String(event.drivePath),
           images,
         );
@@ -7904,6 +7969,174 @@ export class EventService2 {
       };
     }
   }
+
+  async pinDropV2(user: DecodedUser, data: PinDropV2Dto) {
+    try {
+      const [business, outlet] = await Promise.all([
+        this.businessModel.findById(user.businessProfile),
+        this.outletModel.findById(data.outletId),
+      ]);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found',
+        };
+      }
+      if (outlet.category !== OutletCategoryList.MOBILE) {
+        return {
+          success: false,
+          message: 'Only Mobile Outlet can pinDrop',
+        };
+      }
+      const category = await this.categoryModel.findOne({
+        title: EventCategory.FOOD_TRUCKS_AND_POPUPS,
+      });
+      if (!category) {
+        return {
+          success: false,
+          message: 'Food Truck category not found',
+        };
+      }
+      //create event, upload that stupid cover to files, eventLocation entry, schedule
+      const [createdEvent, spot] = await Promise.all([
+        this.eventModel.create({
+          type: EventTypes.DROPPED_PIN,
+          creatorType: 'BusinessUser',
+          user: new mongoose.Types.ObjectId(user.id),
+          businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+          categories: [category._id],
+          drivePath: outlet.drivePath,
+          title: outlet.name,
+          description: outlet.description,
+        }),
+        this.mobileSpotsModel.findById(data.spotId),
+      ]);
+
+      const [location, schedule] = await Promise.all([
+        this.eventLocationModel.create({
+          event: createdEvent._id,
+          businessLocationId: outlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          address1: spot.address1,
+          city: spot.city,
+          state: spot.state,
+          zip: spot.postalCode,
+          email: outlet.email,
+          isFromCrawler: false,
+          businessProfile: business._id,
+          spotId: spot._id,
+        }),
+        this.createSchedule(createdEvent.id, data, user, outlet.id),
+      ]);
+      await this.eventModel.updateOne(
+        { _id: createdEvent._id },
+        { $addToSet: { locations: location._id } },
+      );
+
+      const createdPinDrop = await this.eventModel
+        .findById(createdEvent.id)
+        .populate('files');
+
+      return {
+        success: true,
+        message: 'Pindrop created successfully',
+        data: createdPinDrop,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async updatePinDropV2(id: string, user: DecodedUser, data: PinDropV2Dto) {
+    try {
+      const event = await this.eventModel.findById(id);
+      if (!event) {
+        return {
+          success: false,
+          message: 'PinDrop not found',
+        };
+      }
+
+      if (data.spotId) {
+        const spot = await this.mobileSpotsModel.findById(data.spotId);
+        if (!spot) {
+          return {
+            success: false,
+            message: 'No Spot found',
+          };
+        }
+        const [outlet, deleteLoc, deleLoc2] = await Promise.all([
+          this.outletModel.findOne({ _id: spot.outlet }),
+          this.eventLocationModel.deleteMany({
+            event: new mongoose.Types.ObjectId(id),
+          }),
+          this.eventModel.updateOne(
+            {
+              _id: new mongoose.Types.ObjectId(id),
+            },
+            {
+              $set: { locations: [] },
+            },
+          ),
+        ]);
+
+        const location = await this.eventLocationModel.create({
+          event: event._id,
+          businessLocationId: outlet._id,
+          location: {
+            type: 'Point',
+            coordinates: [spot.longitude, spot.latitude],
+          },
+          address1: spot.address1,
+          city: spot.city,
+          state: spot.state,
+          zip: spot.postalCode,
+          email: outlet.email,
+          isFromCrawler: false,
+          businessProfile: event.businessProfile,
+          spotId: new mongoose.Types.ObjectId(data.spotId),
+        });
+        await this.eventModel.updateOne(
+          { _id: event._id },
+          { $addToSet: { locations: location._id } },
+        );
+      }
+      if (data.scheduleType) {
+        await Promise.all([
+          this.eventModel.updateOne(
+            { _id: event._id },
+            { $set: { eventSchedule: [] } },
+          ),
+          this.scheduleModel.deleteMany({ event: event._id }),
+        ]);
+        await this.createSchedule(event.id, data, user);
+      }
+
+      const createdPinDrop = await this.eventModel
+        .findById(event.id)
+        .populate('files');
+
+      return {
+        success: true,
+        message: 'Pindrop updated successfully',
+        data: createdPinDrop,
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
   async updatePinDropEvent(
     eventId: string,
     data: UpdatePinDropDto,
@@ -8094,7 +8327,7 @@ export class EventService2 {
 
       let file = await this.driveService.uploadFile(
         user.id,
-        business.drivePath.toString(),
+        business.drive.toString(),
         fileCategory.id,
         thumbnail,
       );
@@ -8171,7 +8404,7 @@ export class EventService2 {
 
         let file = await this.driveService.uploadFile(
           user.id,
-          business.drivePath.toString(),
+          business.drive.toString(),
           fileCategory.id,
           thumbnail,
         );

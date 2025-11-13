@@ -11,9 +11,9 @@ import { ConfigureDashboardDto } from 'src/admin/dto/configureDashboard.dto';
 import { LoginDto } from 'src/admin/dto/login.dto';
 import { PlatformConfigDto } from 'src/admin/dto/platformConfig.dto';
 import { UpdateConfigureDashboardDto } from 'src/admin/dto/updateDashConfig.dto';
-import * as fs from 'fs';
 import * as streamifier from 'streamifier';
 import csv from 'csv-parser';
+import axios from 'axios';
 import {
   DashboardConfig,
   DashboardConfigDocument,
@@ -44,7 +44,10 @@ import {
   EventLocationDocument,
 } from 'src/event/models/eventLocation.model';
 import { Image, ImageDocument } from 'src/event/models/image.model';
-import { manipulateImageName } from 'src/helpers/upload.helpers';
+import {
+  FileUploadUtils,
+  manipulateImageName,
+} from 'src/helpers/upload.helpers';
 import { AgeGroup, AgeGroupDocument } from 'src/models/ageGroup.model';
 import {
   Category,
@@ -77,7 +80,11 @@ import {
 } from 'src/roles/enums/roles.enum';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Token } from 'aws-sdk';
-import { Business, BusinessDocument } from 'src/business/model/business.model';
+import {
+  Business,
+  BusinessDocument,
+  CreatorType,
+} from 'src/business/model/business.model';
 import { AuthService } from 'src/auth/auth.service';
 import {
   BusinessIndustry,
@@ -115,7 +122,7 @@ import {
   BusinessUserDocument,
 } from 'src/business/model/businessUser.model';
 import { SeederService } from 'src/seeder/seeder.service';
-import { Drive } from 'src/drive/models/drive.model';
+import { Drive, DriveDocument } from 'src/drive/models/drive.model';
 import { DriveService } from 'src/drive/drive.service';
 import { DefaultBusinessDepartmentRoles } from 'src/business/resourceInits/template-roles';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
@@ -143,7 +150,10 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
-import { ExpectedDownlineAdminHeaders } from './enums/admin.enum';
+import {
+  ExpectedBusinessListingHeaders,
+  ExpectedDownlineAdminHeaders,
+} from './enums/admin.enum';
 import { createObjectCsvStringifier } from 'csv-writer';
 import { Readable } from 'stream';
 import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLeads.model';
@@ -152,6 +162,7 @@ import { Coupon } from 'src/subscription/models/coupon.model';
 import { EtlDataDto } from './dto/etl-data.dto';
 import { Folder } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
+import { FeaturedAsset } from './models/featuredAssets.model';
 
 @Injectable()
 export class AdminService {
@@ -208,6 +219,9 @@ export class AdminService {
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
     @InjectModel(EventSchedule.name)
     private readonly eventScheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(FeaturedAsset.name)
+    private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -814,7 +828,7 @@ export class AdminService {
         TokenTypes.RESET_PASSWORD,
       );
       const resetLink = `${origin}/reset-password?token=${token}`;
-      await this.mailService.sendForgotPasswordMail2(
+      this.mailService.sendForgotPasswordMail2(
         admin.name,
         admin.email,
         resetLink,
@@ -1139,17 +1153,20 @@ export class AdminService {
     };
   }
 
-  async parseCsv(file: Express.Multer.File): Promise<any[]> {
+  async parseCsv(file: Express.Multer.File, type: string): Promise<any[]> {
     const rows: any[] = [];
     const stream = streamifier.createReadStream(file.buffer);
+    let expectedHeaders = [];
+    if (type === 'downlineAdmin')
+      expectedHeaders = ExpectedDownlineAdminHeaders;
+    if (type === 'businessListings')
+      expectedHeaders = ExpectedBusinessListingHeaders;
 
     return new Promise((resolve, reject) => {
       stream
         .pipe(csv())
         .on('headers', (headers: string[]) => {
-          const missing = ExpectedDownlineAdminHeaders.filter(
-            (h) => !headers.includes(h),
-          );
+          const missing = expectedHeaders.filter((h) => !headers.includes(h));
           if (missing.length > 0) {
             reject(
               new BadRequestException(`Missing columns: ${missing.join(', ')}`),
@@ -1237,6 +1254,228 @@ export class AdminService {
       );
     }
   }
+  async createBusinessFromRow(row: any, user: DecodedUser) {
+    try {
+      const trimIfString = (v) => (typeof v === 'string' ? v.trim() : v);
+      const {
+        cover,
+        logo,
+        name,
+        description,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        country,
+        postalCode,
+        latitude,
+        longitude,
+        phone,
+        countryCode,
+        email,
+        website,
+        openingTime,
+        closingTime,
+        busyTime,
+        slowTime,
+        rating,
+        menu,
+        categories,
+        industry,
+        scalabilityFactor,
+      } = Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [k, trimIfString(v)]),
+      );
+      console.log('ROWW:', row);
+      const foundBusiness = await this.businessModel.findOne({
+        email: email.trim(),
+      });
+      if (foundBusiness) {
+        throw new BadRequestException(
+          'Business already exists with this email',
+        );
+      }
+      const businessUser = await this.businessUserModel.findOne({
+        email: process.env.PINNTAG_BUSINESS_USER_EMAIL,
+      });
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Pinntag Business user not seeded',
+        };
+      }
+      const foundAdmin = await this.adminModel.findById(user.id);
+      if (!foundAdmin) {
+        return {
+          success: false,
+          message: 'Pinntag Admin user not found',
+        };
+      }
+
+      let lat = latitude,
+        long = longitude;
+      if (!lat && !long) {
+        let placeList = await this.googleService.googleRecommendation({
+          address: addressLine1,
+        });
+        let placeDetails = await this.googleService.getPlaceDetails(
+          placeList.data[0].placePrediction.placeId,
+          placeList.sessionToken,
+          addressLine1.trim(),
+        );
+        lat = placeDetails.data['latitude']
+          ? parseFloat(placeDetails.data['latitude'])
+          : 0;
+        long = placeDetails.data['longitude']
+          ? parseFloat(placeDetails.data['longitude'])
+          : 0;
+      }
+      let categoryNames = categories.split(',');
+      let categoryIds = [];
+      for (let category of categoryNames) {
+        const foundCategory = await this.businessCategoryModel.findOne({
+          title: category.trim(),
+        });
+        if (!foundCategory) {
+          throw new BadRequestException('Business Category Not found!');
+        }
+        categoryIds.push(foundCategory._id);
+      }
+      const foundIndustry = await this.industryModel.findOne({
+        title: industry,
+      });
+      if (!foundIndustry) {
+        throw new BadRequestException('Business Industry Not found!');
+      }
+
+      let createObj = {
+        status: 6.1,
+        logo: logo,
+        businessCategories: categoryIds,
+        businessIndustry: foundIndustry._id,
+        cover: cover,
+        description: description,
+        authorisedUser: businessUser._id,
+        creatorType: CreatorType.Admin,
+        creator: foundAdmin._id,
+        name: name,
+        phone: phone,
+        countryCode: countryCode,
+        email: email,
+        website: website,
+        addressLine1: addressLine1,
+        addressLine2: addressLine2,
+        city: city,
+        state: state,
+        country: country,
+        latitude: Number(lat),
+        longitude: Number(long),
+        isActive: false,
+        postalCode: postalCode,
+        scalabilityFactor: Number(scalabilityFactor),
+        rating: Number(rating),
+        menus: menu,
+      };
+
+      if (openingTime && closingTime) {
+        let [openingHour, openingMinute] = openingTime.split(':');
+        let [closingHour, closingMinute] = closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
+      }
+      if (busyTime) {
+        let [startTime, endTime] = busyTime.split('-');
+        let [openingHour, openingMinute] = startTime.trim().split(':');
+        let [closingHour, closingMinute] = endTime.trim().split(':');
+        createObj['busyTime'] = {
+          startTime: {
+            hour: openingHour,
+            minute: openingMinute,
+          },
+          endTime: {
+            hour: closingHour,
+            minute: closingMinute,
+          },
+        };
+      }
+      if (slowTime) {
+        let [startTime, endTime] = slowTime.split('-');
+        let [openingHour, openingMinute] = startTime.trim().split(':');
+        let [closingHour, closingMinute] = endTime.trim().split(':');
+        createObj['slowTime'] = {
+          startTime: {
+            hour: openingHour,
+            minute: openingMinute,
+          },
+          endTime: {
+            hour: closingHour,
+            minute: closingMinute,
+          },
+        };
+      }
+      const createdBusiness = await this.businessModel.create(createObj);
+      let driveDetails = await this.seederService.createDrive(
+        createdBusiness._id,
+        Business.name,
+      );
+      await this.businessUserModel.updateOne(
+        { _id: businessUser._id },
+        {
+          $addToSet: {
+            business: createdBusiness._id,
+          },
+          $set: {
+            // status: ProfileStatus.BUSINESS_CREATED,
+            selectedBusiness: createdBusiness._id,
+          },
+        },
+      );
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: driveDetails._id } },
+      );
+
+      if (createdBusiness) {
+        // create physical outlet for this business
+        const outlet = await this.outletModel.create({
+          category: OutletCategoryList.PHYSICAL,
+          name: createdBusiness.name,
+          address1: createdBusiness.addressLine1,
+          city: createdBusiness.city,
+          state: createdBusiness.state,
+          country: createdBusiness.country,
+          postalCode: createdBusiness.postalCode,
+          countryCode: createdBusiness.countryCode,
+          phone: createdBusiness.phone,
+          email: createdBusiness.email,
+          latitude: createdBusiness.latitude,
+          longitude: createdBusiness.longitude,
+          website: createdBusiness.website,
+          creator: createdBusiness.creator,
+          location: {
+            type: 'Point',
+            coordinates: [createdBusiness.longitude, createdBusiness.latitude],
+          },
+          business: createdBusiness._id,
+        });
+        await this.businessModel.updateOne(
+          { _id: createdBusiness._id },
+          { $push: { outlets: new mongoose.Types.ObjectId(outlet.id) } },
+        );
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        'Error creating business from row: ' + error.message,
+      );
+    }
+  }
 
   async createDownlineAdminsInBulk(
     file: Express.Multer.File,
@@ -1249,10 +1488,10 @@ export class AdminService {
       }
       if (!admin.isSuperAdmin) {
         throw new BadRequestException(
-          'Only super admin can create use this functionality',
+          'Only super admin can use this functionality',
         );
       }
-      const rows = await this.parseCsv(file);
+      const rows = await this.parseCsv(file, 'downlineAdmin');
       let failure = 0;
       let result = null;
       const results = await Promise.all(
@@ -1309,6 +1548,139 @@ export class AdminService {
             filename: 'downline_users_status.csv',
             path: '',
             stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
+          };
+          const uploadResult = await this.driveService.uploadFile(
+            admin.id,
+            String(admin.drive),
+            fileCategory.id,
+            fakeFile,
+          );
+          result = uploadResult.data.metaData.url;
+        } catch (err) {
+          console.log('Error:', err);
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Users created successfully in bulk.',
+        file: result, // You can return the created outlets data if needed
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async uploadBusinessesInBulk(file: Express.Multer.File, user: DecodedUser) {
+    try {
+      const admin = await this.adminModel.findById(user.id);
+      if (!admin) {
+        throw new BadRequestException('admin not found');
+      }
+      if (!admin.isSuperAdmin) {
+        throw new BadRequestException(
+          'Only super admin can use this functionality',
+        );
+      }
+      const rows = await this.parseCsv(file, 'businessListings');
+      let failure = 0;
+      let result = null;
+      const results = await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await this.createBusinessFromRow(row, user);
+            return { ...row, status: 'Created', message: '' };
+          } catch (err) {
+            failure++;
+            return { ...row, status: 'Failed', message: err.message };
+          }
+        }),
+      );
+      console.log('Failure:', failure);
+      if (failure > 0) {
+        const failedRecords = results.filter((r) => r.status === 'Failed');
+        try {
+          const csvStringifier = createObjectCsvStringifier({
+            header: [
+              { id: 'cover', title: 'Cover' },
+              { id: 'logo', title: 'Logo' },
+              { id: 'name', title: 'Name' },
+              { id: 'description', title: 'Description' },
+              { id: 'addressLine1', title: 'AddressLine1' },
+              { id: 'addressLine2', title: 'AddressLine2' },
+              { id: 'city', title: 'City' },
+              { id: 'state', title: 'State' },
+              { id: 'country', title: 'Country' },
+              { id: 'postalCode', title: 'PostalCode' },
+              { id: 'latitude', title: 'Latitude' },
+              { id: 'longitude', title: 'Longitude' },
+              { id: 'phone', title: 'Phone' },
+              { id: 'countryCode', title: 'CountryCode' },
+              { id: 'email', title: 'Email' },
+              { id: 'website', title: 'Website' },
+              { id: 'openingTime', title: 'OpeningTime' },
+              { id: 'closingTime', title: 'ClosingTime' },
+              { id: 'busyTime', title: 'BusyTime' },
+              { id: 'slowTime', title: 'SlowTime' },
+              { id: 'rating', title: 'Rating' },
+              { id: 'menu', title: 'Menu' },
+              { id: 'categories', title: 'Categories' },
+              { id: 'industry', title: 'Industry' },
+              { id: 'scalabilityFactor', title: 'ScalabilityFactor' },
+              { id: 'status', title: 'Status' },
+              { id: 'message', title: 'ErrorMessage' },
+            ],
+          });
+
+          const header = csvStringifier.getHeaderString();
+          const records = failedRecords.map((r) => ({
+            cover: r.cover,
+            logo: r.logo,
+            name: r.name,
+            description: r.description,
+            addressLine1: r.addressLine1,
+            addressLine2: r.addressLine2,
+            city: r.city,
+            state: r.state,
+            country: r.country,
+            postalCode: r.postalCode,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            phone: r.phone,
+            countryCode: r.countryCode,
+            email: r.email,
+            website: r.website,
+            openingTime: r.openingTime,
+            closingTime: r.closingTime,
+            busyTime: r.busyTime,
+            slowTime: r.slowTime,
+            rating: r.rating,
+            menu: r.menu,
+            categories: r.categories,
+            industry: r.industry,
+            scalabilityFactor: r.scalabilityFactor,
+            status: r.status,
+            message: r.message || '',
+          }));
+          const csvContent = header + csvStringifier.stringifyRecords(records);
+          const csvBuffer = Buffer.from(csvContent, 'utf-8');
+          const fileCategory = await this.fileCategoryModel.findOne({
+            name: FileCategoryTypes.OTHER,
+          });
+
+          const fakeFile: Express.Multer.File = {
+            fieldname: 'file',
+            originalname: 'business_listings_bulk_status.csv',
+            encoding: '7bit',
+            mimetype: 'text/csv',
+            buffer: csvBuffer,
+            size: csvBuffer.length,
+            destination: '',
+            filename: 'business_listings_bulk_status.csv',
+            path: '',
+            stream: Readable.from(csvBuffer) as any,
           };
           const uploadResult = await this.driveService.uploadFile(
             admin.id,
@@ -2316,15 +2688,6 @@ export class AdminService {
           message: `Business already exist with given email:${data.businessEmail} `,
         };
       }
-
-      const businessFolder = await this.driveService.createFolder(
-        String(createdUser._id),
-        {
-          parentDirectory: createdUser.drive,
-          parentType: Drive.name,
-          folderName: data.businessName,
-        },
-      );
       let businessCategoriesIds = [];
       if (data.businessCategories) {
         // data.businessCategories = data.businessCategories.split(',');
@@ -2386,7 +2749,6 @@ export class AdminService {
         state: data.state,
         country: data.country,
         zipCode: data.zipCode,
-        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessCreatorType.ADMIN,
         creator: new mongoose.Types.ObjectId(user.id),
         authorisedUser: new mongoose.Types.ObjectId(createdUser._id),
@@ -2404,7 +2766,6 @@ export class AdminService {
         businessObj['cover'] = coverUrl;
       }
       businessObj['postalCode'] = data.zipCode;
-      console.log("'BusinessObjXXXXXXXXXXXX:", businessObj);
 
       const createdBusiness = await this.businessModel.create(businessObj);
       await this.businessUserModel.updateOne(
@@ -2414,6 +2775,16 @@ export class AdminService {
             business: createdBusiness._id,
           },
         },
+      );
+
+      let businessDriveDetails = await this.seederService.createDrive(
+        createdBusiness._id,
+        Business.name,
+      );
+
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: businessDriveDetails._id } },
       );
       await this.roleModel.updateOne(
         { _id: ownerRole._id },
@@ -3251,25 +3622,278 @@ export class AdminService {
   // }
 
   async runDbQueries() {
-    const duplicates = await this.eventModel.aggregate([
-      {
-        $group: {
-          _id: '$title',
-          ids: { $push: '$_id' },
-          count: { $sum: 1 },
-        },
-      },
-      { $match: { count: { $gt: 1 } } },
-    ]);
-    console.log("Duplicates:",duplicates);
-    // Step 2: For each duplicate group, keep one and delete the rest
-    duplicates.forEach(async (group) => {
-      // Keep the first document and remove others
-      const idsToDelete = group.ids.slice(1); // all except the first
-      if (idsToDelete.length > 0) {
-        await this.eventModel.deleteMany({ _id: { $in: idsToDelete },isFromCrawler:true });
-        console.log("IdsToDelete::",idsToDelete)
+    //Query for drive issueee:
+    // const bUsers = await this.businessUserModel.find();
+    // for (let user of bUsers) {
+    //   //1. find user's drive
+    //   const userDrive = await this.driveModel.findById(user.drive);
+    //   if (!userDrive) {
+    //     console.error('Exception No user drive found!');
+    //     continue;
+    //   }
+
+    //   for (let i = 0; i < user.business.length; i++) {
+    //     const foundBusiness = await this.businessModel.findById(
+    //       user.business[i],
+    //     );
+    //     if (!foundBusiness) {
+    //       console.error('Exception business not found!');
+    //       continue;
+    //     }
+    //     if (
+    //       foundBusiness.drive
+    //     ) {
+    //       console.error('Already according to new regime!!');
+    //       continue;
+    //     }
+    //     if (i == 0) {
+    //       await Promise.all([
+    //         this.businessModel.updateOne(
+    //           { _id: new mongoose.Types.ObjectId(user.business[i]) },
+    //           { $set: { drive: userDrive._id } },
+    //         ),
+    //         this.driveModel.updateOne(
+    //           { _id: userDrive._id },
+    //           {
+    //             $set: {
+    //               owner: new mongoose.Types.ObjectId(user.business[i]),
+    //               ownerType: 'Business',
+    //             },
+    //           },
+    //         ),
+    //       ]);
+    //     } else {
+    //       const createdDrive = await this.seederService.createDrive(
+    //         new mongoose.Types.ObjectId(user.business[i]),
+    //         Business.name,
+    //       );
+    //       await this.businessModel.updateOne(
+    //         { _id: new mongoose.Types.ObjectId(user.business[i]) },
+    //         { $set: { drive: createdDrive._id } },
+    //       );
+    //     }
+    //   }
+    // }
+
+    // query to create cover thumbnails:
+    try {
+      const businesses = await this.businessModel.find({
+        // _id: new mongoose.Types.ObjectId('68a0d9072e19fc726daa1345'),
+      });
+      const getBuffer = async (url: string) => {
+        try {
+          const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            timeout: 150000,
+            maxContentLength: 50 * 1024 * 1024,
+            validateStatus: (status) => status === 200,
+          });
+
+          // const contentType = response.headers['content-type'];
+          // if (!contentType?.startsWith('image/')) {
+          //   console.warn(`⚠️ Not an image URL: ${url} (${contentType})`);
+          //   return null;
+          // }
+
+          return response.data;
+        } catch (err) {
+          console.error(`❌ Failed to fetch buffer for ${url}:`, err.message);
+          return null;
+        }
+      };
+      for (let business of businesses) {
+        console.log('🟢 Processing business:', business._id);
+        console.log('Cover:', business.cover);
+        console.log('Logo:', business.logo);
+
+        const coverBuffer = await getBuffer(business.cover);
+        const logoBuffer = await getBuffer(business.logo);
+
+        if (!coverBuffer && !logoBuffer) {
+          console.warn(`⚠️ Skipping ${business._id}: No valid image found`);
+          continue;
+        }
+
+        let coverThumbnailBuffer = null;
+        let logoThumbnailBuffer = null;
+
+        try {
+          if (coverBuffer)
+            coverThumbnailBuffer =
+              await FileUploadUtils.compressThumbnail(coverBuffer);
+        } catch (err) {
+          console.error(
+            '❌ Cover compression failed for',
+            business._id,
+            err.message,
+          );
+        }
+
+        try {
+          if (logoBuffer)
+            logoThumbnailBuffer =
+              await FileUploadUtils.compressThumbnail(logoBuffer);
+        } catch (err) {
+          console.error(
+            '❌ Logo compression failed for',
+            business._id,
+            err.message,
+          );
+        }
+
+        const coverThumbnail = coverThumbnailBuffer
+          ? await this.s3Service.s3_upload(
+              coverThumbnailBuffer.buffer,
+              process.env.AWS_S3_BUCKET_NAME,
+              `thumbnails/${manipulateImageName('cover')}`,
+              'image/jpeg',
+            )
+          : null;
+
+        const logoThumbnail = logoThumbnailBuffer
+          ? await this.s3Service.s3_upload(
+              logoThumbnailBuffer.buffer,
+              process.env.AWS_S3_BUCKET_NAME,
+              `thumbnails/${manipulateImageName('logo')}`,
+              'image/jpeg',
+            )
+          : null;
+
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: {
+              ...(coverThumbnail && {
+                coverThumbnail: coverThumbnail.Location,
+              }),
+              ...(logoThumbnail && { logoThumbnail: logoThumbnail.Location }),
+            },
+          },
+        );
+
+        console.log(`✅ Successfully updated business: ${business._id}`);
       }
-    });
+    } catch (error) {
+      console.error('💥 runDbQueries Error:', error);
+    }
+  }
+
+  async uploadFeaturedVideo(
+    adminId: string,
+    video: Express.Multer.File,
+    title: string,
+    description: string,
+  ) {
+    try {
+      const admin = await this.adminModel.findById(adminId);
+      if (!admin) {
+        return {
+          success: false,
+          message: 'Admin not found',
+        };
+      }
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.PROMOTIONAL_VIDEO,
+      });
+      if (!fileCategory) {
+        return {
+          success: false,
+          message: 'File category not found',
+        };
+      }
+      const fileRecord = await this.driveService.uploadVideo(
+        adminId,
+        admin.drive.toString(),
+        fileCategory.id,
+        video,
+      );
+
+      const featuredVideo = await this.featuredAssetModel.create({
+        title,
+        description,
+        file: new mongoose.Types.ObjectId(fileRecord.data.id),
+        isActive: false,
+      });
+
+      return {
+        success: true,
+        message: 'Featured video uploaded successfully',
+        data: featuredVideo,
+      };
+    } catch (error) {
+      console.error('Error in uploadFeaturedVideo:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while uploading featured video.',
+      };
+    }
+  }
+
+  async fetchFeaturedVideos(isActive: string, page: number, limit: number) {
+    try {
+      const videos = await this.featuredAssetModel
+        .find(isActive ? { isActive: isActive === 'true' } : {})
+        .populate('file')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      return {
+        success: true,
+        message: 'Featured videos fetched successfully',
+        data: videos,
+      };
+    } catch (error) {
+      console.error('Error in fetchFeaturedVideos:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while fetching featured videos.',
+      };
+    }
+  }
+
+  async updateFeaturedVideoStatus(
+    id: string,
+    isActive: boolean,
+    user: DecodedUser,
+  ) {
+    try {
+      const video = await this.featuredAssetModel.findById(id);
+      if (!video) {
+        return {
+          success: false,
+          message: 'Featured video not found',
+        };
+      }
+      video.isActive = isActive;
+      await video.save();
+      return {
+        success: true,
+        message: `Featured video ${
+          isActive ? 'activated' : 'deactivated'
+        } successfully`,
+        data: video,
+      };
+    } catch (error) {
+      console.error('Error in toggleFeaturedVideoStatus:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while updating featured video status.',
+      };
+    }
+  }
+  async deleteFeaturedVideo(id: string, user: DecodedUser) {
+    try {
+      await this.driveService.deleteFile(id, user);
+      return {
+        success: true,
+        message: 'Featured video deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error in deleteFeaturedVideo:', error);
+      return {
+        success: false,
+        message: 'Something went wrong while deleting featured video.',
+      };
+    }
   }
 }

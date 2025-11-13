@@ -178,6 +178,7 @@ import { FeedController } from './feed/feed.controller';
 import { FeedService } from './feed/feed.service';
 import { FeedModule } from './feed/feed.module';
 import { Feed, FeedSchema } from './feed/models/feed.model';
+import { FeaturedAsset, FeaturedAssetSchema } from './admin/models/featuredAssets.model';
 
 @Module({
   imports: [
@@ -272,7 +273,8 @@ import { Feed, FeedSchema } from './feed/models/feed.model';
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
     ]),
     StripeeModule,
     AuthModule,

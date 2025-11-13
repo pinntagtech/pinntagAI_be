@@ -3,7 +3,11 @@ import mongoose, { get, Model } from 'mongoose';
 import { BusinessUserCreatorType } from 'src/business/enums/business.enum';
 import { DefaultBusinessRoles } from 'src/business/resourceInits/template-roles';
 import { Category } from 'src/models/contentCategory.model';
-import { CreateOutletDto } from './dto/create-outlet.dto';
+import {
+  CreateOutletDto,
+  CreateOutletDtoV2,
+  UpdateMobileOutletDto,
+} from './dto/create-outlet.dto';
 import { JwtPayload } from 'src/auth/interfaces/tokenPayload.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -34,6 +38,15 @@ import {
   FileCategoryDocument,
 } from 'src/drive/models/fileCategory.model';
 import { DriveService } from 'src/drive/drive.service';
+import { CreateSpotDto, UpdateSpotDto } from './dto/create-spot.dto';
+import { MobileSpots } from 'src/business/model/mobileSpots.model';
+import { EventStatus, EventTypes } from 'src/enums/event.enums';
+import { Event, EventDocument } from 'src/event/models/event.model';
+import {
+  EventSchedule,
+  EventScheduleDocument,
+  ScheduleTypes,
+} from 'src/event/models/event-schedule.model';
 
 @Injectable()
 export class OutletService {
@@ -51,6 +64,11 @@ export class OutletService {
     private readonly businessModel: Model<BusinessDocument>,
     @InjectModel(FileCategory.name)
     private readonly fileCategoryModel: Model<FileCategoryDocument>,
+    @InjectModel(MobileSpots.name)
+    private readonly mobileSpotsModel: Model<MobileSpots>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(EventSchedule.name)
+    private readonly scheduleModel: Model<EventScheduleDocument>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -207,7 +225,7 @@ export class OutletService {
     }
   }
 
-  async createOutlet(data: CreateOutletDto, user: any) {
+  async createOutlet(data: CreateOutletDto, user: DecodedUser) {
     try {
       console.log('data:', data);
       const businessUser = await this.businessUserModel.findById(user.id);
@@ -233,23 +251,7 @@ export class OutletService {
       }
       let {
         category,
-        // type,
-        // refId,
         name,
-        // manager,
-        city,
-        state,
-        country,
-        postalCode,
-        countryCode,
-        phone,
-        email,
-        // whatsappNumber,
-        website,
-        // facebook,
-        // instagram,
-        // twitter,
-        // googleMyBusinessId,
         address1,
         address2,
         // posSystemId,
@@ -301,15 +303,38 @@ export class OutletService {
         type: 'Point',
         coordinates: [data.longitude, data.latitude],
       };
-      if (data.openingTime) {
-        createObj['openingTime'] = new Date(data.openingTime);
-      }
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
 
-      if (data.closingTime) {
-        createObj['closingTime'] = new Date(data.closingTime);
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
       }
-
+      console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
+
+      // const spot = await this.mobileSpotsModel.create({
+      //   name: outlet.name,
+      //   business: outlet.business,
+      //   outlet: outlet._id,
+      //   creator: outlet.creator,
+      //   accuracy: outlet.accuracy,
+      //   address1: outlet.address1,
+      //   address2: outlet.address2,
+      //   city: outlet.city,
+      //   state: outlet.state,
+      //   country: outlet.country,
+      //   postalCode: outlet.postalCode,
+      //   latitude: outlet.latitude,
+      //   longitude: outlet.longitude,
+      //   location: outlet.location,
+      // });
 
       let updateObj: any = {};
       if (outlet.category === OutletCategoryList.PHYSICAL) {
@@ -319,6 +344,11 @@ export class OutletService {
         updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
       }
       console.log('Business User Id:', businessUser.id);
+
+      // await this.outletModel.updateOne(
+      //   { _id: outlet.id },
+      //   { $push: { spots: spot._id } },
+      // );
 
       // if (createObj.manager) {
       //   const isUserUpdated = await this.businessUserModel.updateOne(
@@ -351,6 +381,231 @@ export class OutletService {
       };
     }
   }
+  async createMobileOutlet(
+    data: CreateOutletDtoV2,
+    user: any,
+    image: Express.Multer.File,
+  ) {
+    try {
+      console.log('data:', data);
+      const businessUser = await this.businessUserModel.findById(user.id);
+      if (!businessUser) {
+        return {
+          success: false,
+          message: 'Business User not found!',
+        };
+      }
+      if (!user.businessProfile) {
+        return {
+          success: false,
+          message: 'Business Profile not found!',
+        };
+      }
+
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      let {
+        name,
+        address1,
+        address2,
+        // posSystemId,
+        // vehicleRegistrationNumber,
+        vehicleType,
+        // gpsTrackerEnabled,
+        openingTime,
+        closingTime,
+      } = data;
+      const foundOutlet = await this.outletModel.findOne({
+        address1: address1,
+        business: business._id,
+      });
+      console.log('foundOutlet', foundOutlet);
+      if (foundOutlet) {
+        return {
+          success: false,
+          message: 'Outlet already exists with given address.',
+        };
+      }
+
+      let createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
+      });
+      createObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      createObj['business'] = new mongoose.Types.ObjectId(business.id);
+      createObj['latitude'] = Number(data.latitude);
+      createObj['longitude'] = Number(data.longitude);
+      createObj['location'] = {
+        type: 'Point',
+        coordinates: [Number(data.longitude), Number(data.latitude)],
+      };
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
+      }
+
+      const folder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: createObj.name,
+        },
+      );
+      createObj['drivePath'] = folder.data._id;
+      const fileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.GALLERY_IMAGE,
+      });
+      const coverUpload = await this.driveService.uploadAndCreateImage(
+        image,
+        String(folder.data._id),
+        'Folder',
+        user.id,
+        fileCategory.id,
+      );
+
+      createObj['cover'] = coverUpload.metaData.url;
+      createObj['category'] = OutletCategoryList.MOBILE;
+
+      console.log('CREATEOBJ:', createObj);
+
+      const outlet = await this.outletModel.create(createObj);
+      console.log('OUTLET:', outlet);
+
+      // const spot = await this.mobileSpotsModel.create({
+      //   name: outlet.name,
+      //   business: outlet.business,
+      //   outlet: outlet._id,
+      //   creator: outlet.creator,
+      //   accuracy: outlet.accuracy,
+      //   address1: outlet.address1,
+      //   address2: outlet.address2,
+      //   city: outlet.city,
+      //   state: outlet.state,
+      //   country: outlet.country,
+      //   postalCode: outlet.postalCode,
+      //   latitude: outlet.latitude,
+      //   longitude: outlet.longitude,
+      //   location: outlet.location,
+      // });
+
+      let updateObj: any = {};
+      if (outlet.category === OutletCategoryList.PHYSICAL) {
+        updateObj['physicalUnitsCreated'] = business.physicalUnitsCreated + 1;
+      }
+      if (outlet.category === OutletCategoryList.MOBILE) {
+        updateObj['mobileUnitsCreated'] = business.mobileUnitsCreated + 1;
+      }
+      console.log('Business User Id:', businessUser.id);
+
+      // await this.outletModel.updateOne(
+      //   { _id: outlet.id },
+      //   { $push: { spots: spot._id } },
+      // );
+
+      // if (createObj.manager) {
+      //   const isUserUpdated = await this.businessUserModel.updateOne(
+      //     { _id: createObj.manager },
+      //     { $addToSet: { assignedOutlets: outlet.id } },
+      //   );
+      // }
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        {
+          $push: { outlets: new mongoose.Types.ObjectId(outlet.id) },
+          $set: { ...updateObj },
+        },
+      );
+      await this.businessUserModel.updateOne(
+        { _id: businessUser.id },
+        { $addToSet: { assignedOutlets: outlet.id } },
+      );
+
+      return {
+        success: true,
+        message: 'Outlet created successfully.',
+        data: outlet,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async updateMobileOutlet(
+    id: string,
+    data: UpdateMobileOutletDto,
+    user: any,
+    image: Express.Multer.File,
+  ) {
+    try {
+      const foundOutlet = await this.outletModel.findById(id);
+
+      let createObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          createObj[key] = data[key];
+        }
+      });
+      if (data.openingTime && data.closingTime) {
+        let [openingHour, openingMinute] = data.openingTime.split(':');
+        let [closingHour, closingMinute] = data.closingTime.split(':');
+
+        createObj['openingTime'] = {
+          hour: openingHour,
+          minute: openingMinute,
+        };
+        createObj['closingTime'] = {
+          hour: closingHour,
+          minute: closingMinute,
+        };
+      }
+      if (image) {
+        let coverUrl = await this.driveService.noDriveUpload(image);
+        createObj['cover'] = coverUrl;
+      }
+
+      console.log('CREATEOBJ:', createObj);
+
+      const outlet = await this.outletModel.findOneAndUpdate(
+        { _id: foundOutlet._id },
+        { $set: createObj },
+        { new: true },
+      );
+      console.log('OUTLET:', outlet);
+
+      return {
+        success: true,
+        message: 'Outlet updated successfully.',
+        data: outlet,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
   async updateOutlet(data: UpdateOutletDto, user: any, id: string) {
     try {
       const businessUser = await this.businessUserModel.findById(user.id);
@@ -488,6 +743,7 @@ export class OutletService {
     search: string,
     type: string,
     creationDate: string,
+    vehicleType: string,
     page: number,
     limit: number,
   ) {
@@ -546,30 +802,239 @@ export class OutletService {
           $lt: new Date(date.setHours(23, 59, 59, 999)),
         };
       }
-      console.log("Match:::",match);
-      console.log("business:::",user.businessProfile);
-      const outlets = await this.outletModel
-        .find({
-          ...match,
-          // creator: new mongoose.Types.ObjectId(userDetails._id),
-          business: new mongoose.Types.ObjectId(user.businessProfile),
-          // isDeleted: false,
-        })
-        .populate({
-          path: 'manager',
-          select: 'name email phone countryCode profilePhoto',
-          match: { manager: { $ne: '' } },
-        })
-        .populate('creator', 'name email phone countryCode profilePhoto')
-        // .populate({
-        //   path: 'creator',
-        //   select: 'name email phone countryCode profilePhoto',
-        //   match: { _id: { $ne: '' } },
-        // })
-        .populate('business', 'name email phone countryCode logo')
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit);
+      if (vehicleType) {
+        match['vehicleType'] = vehicleType;
+      }
+      console.log('Match:::', match);
+      console.log('business:::', user.businessProfile);
+      // let outletsO = await this.outletModel
+      //   .find({
+      //     ...match,
+      //     // creator: new mongoose.Types.ObjectId(userDetails._id),
+      //     business: new mongoose.Types.ObjectId(user.businessProfile),
+      //     // isDeleted: false,
+      //   })
+      //   .populate({
+      //     path: 'manager',
+      //     select: 'name email phone countryCode profilePhoto',
+      //     match: { manager: { $ne: '' } },
+      //   })
+      //   .populate('creator', 'name email phone countryCode profilePhoto')
+      //   .populate('business', 'name email phone countryCode logo')
+      //   .populate('spots')
+      //   .sort({ createdAt: -1 })
+      //   .skip((page - 1) * limit)
+      //   .limit(limit)
+      //   .lean();
+
+      let outlets = await this.outletModel.aggregate([
+        {
+          $match: {
+            ...match,
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $skip: (page - 1) * limit,
+        },
+        {
+          $limit: limit,
+        },
+        {
+          $lookup: {
+            from: 'businessusers', // Replace with your actual manager collection name
+            localField: 'manager',
+            foreignField: '_id',
+            as: 'manager',
+            pipeline: [
+              {
+                $match: {
+                  manager: { $ne: '' },
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$manager',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businessusers', // Replace with your actual creator collection name
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creator',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$creator',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // Replace with your actual business collection name
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  logo: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$business',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'mobilespots', // Replace with your actual spots collection name
+            localField: 'spots',
+            foreignField: '_id',
+            as: 'spots',
+          },
+        },
+        {
+          $lookup: {
+            from: 'eventschedules', // Replace with your actual schedules collection name
+            localField: '_id',
+            foreignField: 'outletId',
+            as: 'schedules',
+          },
+        },
+        // Lookup events for the schedules
+        {
+          $lookup: {
+            from: 'events', // Replace with your actual events collection name
+            let: { scheduleEvents: '$schedules.event' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: ['$_id', '$$scheduleEvents'],
+                  },
+                  status: EventStatus.PUBLISHED,
+                  type: EventTypes.DROPPED_PIN,
+                },
+              },
+            ],
+            as: 'validEvents',
+          },
+        },
+        // Add isDroppedPin field
+        {
+          $addFields: {
+            isDroppedPin: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $gt: [{ $size: '$schedules' }, 0] },
+                    { $gt: [{ $size: '$validEvents' }, 0] },
+                    {
+                      $anyElementTrue: {
+                        $map: {
+                          input: '$schedules',
+                          as: 'schedule',
+                          in: {
+                            $or: [
+                              // Check for FIXED schedule
+                              {
+                                $and: [
+                                  {
+                                    $eq: [
+                                      '$$schedule.type',
+                                      ScheduleTypes.FIXED,
+                                    ],
+                                  },
+                                  {
+                                    $gte: [
+                                      '$$schedule.fixedSchedule.date',
+                                      new Date(),
+                                    ],
+                                  },
+                                ],
+                              },
+                              // Check for RECURRING schedule
+                              {
+                                $and: [
+                                  {
+                                    $eq: [
+                                      '$$schedule.type',
+                                      ScheduleTypes.RECURRING,
+                                    ],
+                                  },
+                                  {
+                                    $lte: [
+                                      '$$schedule.recurringSchedule.startDate',
+                                      new Date(),
+                                    ],
+                                  },
+                                  {
+                                    $gte: [
+                                      '$$schedule.recurringSchedule.endDate',
+                                      new Date(),
+                                    ],
+                                  },
+                                ],
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        // Remove temporary fields
+        {
+          $project: {
+            schedules: 0,
+            validEvents: 0,
+          },
+        },
+      ]);
 
       const total = await this.outletModel.countDocuments({
         creator: new mongoose.Types.ObjectId(userDetails._id),
@@ -868,7 +1333,7 @@ export class OutletService {
           };
           const uploadResult = await this.driveService.uploadFile(
             businessUser.id,
-            String(business.drivePath),
+            String(business.drive),
             fileCategory.id,
             fakeFile,
           );
@@ -918,7 +1383,7 @@ export class OutletService {
       await this.businessModel.updateOne(
         { _id: outlet.business },
         { $pull: { outlets: outlet._id } },
-      );  
+      );
       return {
         success: true,
         message: 'Outlet deleted successfully.',
@@ -931,4 +1396,107 @@ export class OutletService {
     }
   }
 
+  async createSpot(id: string, user: DecodedUser, data: CreateSpotDto) {
+    try {
+      const outlet = await this.outletModel.findById(id);
+      if (!outlet) {
+        return {
+          success: false,
+          message: 'Outlet not found!',
+        };
+      }
+
+      let spotObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          spotObj[key] = data[key];
+        }
+      });
+      spotObj['creator'] = new mongoose.Types.ObjectId(user.id);
+      spotObj['outlet'] = new mongoose.Types.ObjectId(outlet.id);
+      spotObj['business'] = new mongoose.Types.ObjectId(outlet.business);
+
+      const spot = await this.mobileSpotsModel.create(spotObj);
+
+      // const spotExists = outlet.spots.some(
+      //   (spot) => spot.name === spotObj.name,
+      // );
+      // if (spotExists) {
+      //   return {
+      //     success: false,
+      //     message: 'Spot with the same name already exists in this outlet.',
+      //   };
+      // }
+      await this.outletModel.updateOne(
+        { _id: outlet.id },
+        { $addToSet: { spots: spot._id } },
+      );
+
+      return {
+        success: true,
+        message: 'Spot created successfully.',
+        data: spot,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async updateSpot(id: string, user: DecodedUser, data: UpdateSpotDto) {
+    try {
+      const foundSpot = await this.mobileSpotsModel.findById(id);
+      if (!foundSpot) {
+        return {
+          success: false,
+          message: 'Spot not found.',
+        };
+      }
+      if (user.businessProfile.toString() !== foundSpot.business.toString()) {
+        return {
+          success: false,
+          message: 'Only authorised to update your own spot.',
+        };
+      }
+
+      let spotObj: any = {};
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined) {
+          spotObj[key] = data[key];
+        }
+      });
+
+      const spot = await this.mobileSpotsModel.findByIdAndUpdate(
+        { _id: foundSpot._id },
+        {
+          $set: spotObj,
+        },
+        {
+          new: true,
+        },
+      );
+
+      // const spotExists = outlet.spots.some(
+      //   (spot) => spot.name === spotObj.name,
+      // );
+      // if (spotExists) {
+      //   return {
+      //     success: false,
+      //     message: 'Spot with the same name already exists in this outlet.',
+      //   };
+      // }
+
+      return {
+        success: true,
+        message: 'Spot updated successfully.',
+        data: spot,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
 }

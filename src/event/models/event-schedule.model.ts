@@ -164,12 +164,15 @@ export class EventSchedule {
   event: mongoose.Types.ObjectId;
 
   @Prop()
+  outletId: mongoose.Types.ObjectId;
+
+  @Prop()
   fixedSchedule: FixedSchedule;
 
   @Prop()
   recurringSchedule: RecurringSchedule;
 
-  @Prop({ ref: Business.name })
+  @Prop({ ref: 'Business' })
   businessId: mongoose.Types.ObjectId;
   @Prop({ default: false })
   isFromCrawler: boolean;

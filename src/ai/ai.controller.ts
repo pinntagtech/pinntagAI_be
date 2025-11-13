@@ -4,8 +4,11 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
   Post,
+  Put,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,10 +19,15 @@ import { UserGuard } from 'src/auth/guards/user.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
+import { PinntagAiService } from './pinntag-ai.service';
+import { ConnectableObservable } from 'rxjs';
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly pinntagAiService: PinntagAiService,
+  ) {}
 
   @Post('/event-description')
   @UseGuards(JwtGuard2)
@@ -37,7 +45,7 @@ export class AiController {
       category,
       dealType,
       title,
-      tags
+      tags,
     );
     console.log('RESULT:', result);
     if (result.success) {
@@ -84,7 +92,6 @@ export class AiController {
     }
   }
 
-
   @Post('/business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
@@ -114,8 +121,8 @@ export class AiController {
     @Query('tags') tags: string,
   ) {
     let tagsArray = [];
-    console.log("Tags:",tags)
-    if(tags && tags != ''){
+    console.log('Tags:', tags);
+    if (tags && tags != '') {
       tagsArray = tags.split(',');
     }
     const result = await this.aiService.getTitleSuggestions(
@@ -137,4 +144,13 @@ export class AiController {
       });
     }
   }
+
+  @Post('pinntagAgent')
+  async createAgent(@Body() body) {
+    return this.pinntagAiService.createAgent(body);
   }
+  @Put('update/pinntagAgent/:id')
+  async updateAgent(@Body() body, @Param('id') id: string) {
+    return this.pinntagAiService.updateAgent(body, id);
+  }
+}

@@ -11,16 +11,18 @@ import {
   BadRequestException,
   UploadedFile,
   UseInterceptors,
+  Put,
 } from '@nestjs/common';
 import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { CreateOutletDto } from './dto/create-outlet.dto';
+import { CreateOutletDto, CreateOutletDtoV2, UpdateMobileOutletDto } from './dto/create-outlet.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateSpotDto, UpdateSpotDto } from './dto/create-spot.dto';
 
 @Controller('outlet')
 export class OutletController {
@@ -110,9 +112,54 @@ export class OutletController {
   @UseGuards(JwtGuard2)
   async createOutlet(
     @Body() createOutletDto: CreateOutletDto,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
   ) {
     const result = await this.outletService.createOutlet(createOutletDto, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Post('mobile')
+  @UseGuards(JwtGuard2)
+   @UseInterceptors(
+      FileInterceptor('file', {
+        limits: { fileSize: 50000000 },
+      }),
+    )
+  async createOutletV2(
+    @Body() createOutletDto: CreateOutletDtoV2,
+    @TokenDecoder() user: JwtPayload,
+     @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.outletService.createMobileOutlet(createOutletDto, user,image);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('mobile/:id')
+  @UseGuards(JwtGuard2)
+   @UseInterceptors(
+      FileInterceptor('file', {
+        limits: { fileSize: 50000000 },
+      }),
+    )
+  async updateMobileOutlet(
+    @Param('id') id: string,
+    @Body() updateOutletDto: UpdateMobileOutletDto,
+    @TokenDecoder() user: JwtPayload,
+     @UploadedFile() image: Express.Multer.File,
+  ) {
+    const result = await this.outletService.updateMobileOutlet(id,updateOutletDto, user,image);
     if (result.success) {
       return {
         message: result.message,
@@ -180,6 +227,7 @@ export class OutletController {
     @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('type') type: string,
+    @Query('vehicleType') vehicleType: string,
     @Query('creationDate') creationDate: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
@@ -189,6 +237,7 @@ export class OutletController {
       search,
       type,
       creationDate,
+      vehicleType,
       pageNumber,
       limitNumber,
     );
@@ -273,4 +322,40 @@ export class OutletController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Post('createSpot/:id')
+  @UseGuards(JwtGuard2)
+  async createSpot(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: CreateSpotDto,
+  ) {
+    const result = await this.outletService.createSpot(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('updateSpot/:id')
+  @UseGuards(JwtGuard2)
+  async updateSpot(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body() data: UpdateSpotDto,
+  ) {
+    const result = await this.outletService.updateSpot(id, user, data);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

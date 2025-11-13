@@ -31,6 +31,7 @@ import {
 import {
   BusinessPopulates,
   LocationPopulates,
+  MuteDuration,
   UserPopulates,
 } from 'src/enums/user.enum';
 import {
@@ -98,6 +99,21 @@ export class RewardsService {
     private readonly businessService: BusinessService,
   ) {}
 
+  private isMuteExpired(mutedUntil: Date | null): boolean {
+      if (!mutedUntil) return false;
+      return new Date() > mutedUntil;
+    }
+    private isCurrentlyMuted(follower: any): boolean {
+      if (!follower.muted) return false;
+  
+      if (follower.muteDuration === MuteDuration.ALWAYS) return true;
+      
+      if (this.isMuteExpired(follower.mutedUntil)) {
+        return false;
+      }
+      return true;
+    }
+
   // Create Offer
 
   async createReward(
@@ -122,9 +138,9 @@ export class RewardsService {
       const business = await this.businessModel.findById(user.businessProfile);
       if (!business) return { success: false, message: 'Business not found.' };
 
-      const businessFolder = await this.driveService.createFolder(userId, {
-        parentDirectory: business.drivePath,
-        parentType: Folder.name,
+      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
+        parentDirectory: business.drive,
+        parentType: 'Drive',
         folderName: data.title,
       });
       const now = new Date(data.startDate).setHours(0, 0, 0, 0);
@@ -183,7 +199,7 @@ export class RewardsService {
 
       // Upload images async (fire and forget)
       await this.driveService.multiImageUpload(
-        userId,
+        user.businessProfile,
         businessFolder.data.id,
         images,
       );
@@ -283,7 +299,7 @@ export class RewardsService {
           const message = `${business.name} published a new Reward called ${reward.title}`;
 
           for (const follower of followers) {
-            if (!follower.muted) {
+            if (!this.isCurrentlyMuted(follower)) {
               const fcmTokens = await this.tokenModel.find({
                 user: follower.follower['_id'],
                 type: TokenTypes.FCM,

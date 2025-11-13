@@ -17,6 +17,9 @@ export class CreateCheckoutDto {
   @IsString()
   couponCode?: string; // Optional coupon/referral at checkout
 
+  @IsOptional()
+  quantity?: number; // Quantity of the subscription
+
   // @IsOptional()
   // @IsString()
   // promotionCode?: string; // Optional promotion code at checkout

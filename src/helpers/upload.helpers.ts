@@ -28,7 +28,6 @@ export const manipulateImageName = (filename: string) => {
   return `${nameWithoutExtension}${Date.now()}${extenstion}`;
 };
 
-
 export class FileUploadUtils {
   // static Image = {
   //   limits: { fileSize: 1000000 },
@@ -52,15 +51,19 @@ export class FileUploadUtils {
   static compressThumbnail = async function (
     file: Express.Multer.File,
   ): Promise<Express.Multer.File> {
-    const compressedThumbnailBuffer = await sharp(file.buffer)
-      .resize(200, 200, { fit: 'cover' })
-      .jpeg({ quality: 50 })
-      .toBuffer();
-    return {
-      ...file,
-      buffer: compressedThumbnailBuffer,
-      mimetype: 'image/jpeg',
-      size: compressedThumbnailBuffer.length,
-    };
+    try {
+      const compressedThumbnailBuffer = await sharp(file.buffer)
+        .resize(200, 200, { fit: 'cover' })
+        .jpeg({ quality: 50 })
+        .toBuffer();
+      return {
+        ...file,
+        buffer: compressedThumbnailBuffer,
+        mimetype: 'image/jpeg',
+        size: compressedThumbnailBuffer.length,
+      };
+    } catch (err) {
+      console.error('Error:', err);
+    }
   };
 }

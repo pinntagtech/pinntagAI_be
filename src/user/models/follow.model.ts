@@ -18,6 +18,8 @@ export class Follow {
   isBlocked: boolean;
   @Prop({default:false})
   muted:boolean;
+  @Prop()
+  mutedUntil: Date;
 }
 
 export const FollowSchema = SchemaFactory.createForClass(Follow);
