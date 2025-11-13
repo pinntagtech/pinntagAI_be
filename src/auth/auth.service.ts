@@ -900,7 +900,8 @@ export class AuthService {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // console.log("validToken:", validToken);
     const tokenData = jwt.decode(data.oAuthToken) as any;
-    console.log('Apple Login Data:', tokenData);
+    console.log("Data from FrontEnd:",data);
+    console.log('Token Data', tokenData);
     let user = await this.userModel
       .findOne({ email: tokenData.email })
       .populate('role', '_id name')
@@ -909,9 +910,9 @@ export class AuthService {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
       user = await this.userModel.create({
         role: role._id,
-        firstName: tokenData.name ? tokenData.name.split(' ')[0] : '',
-        lastName: tokenData.name ? tokenData.name.split(' ')[1] : '',
-        name: tokenData.name,
+        firstName: data.name ? tokenData.name.split(' ')[0] : '',
+        lastName: data.name ? tokenData.name.split(' ')[1] : '',
+        name: data.name,
         profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
         email: tokenData.email,
         isEmailVerified: true,
