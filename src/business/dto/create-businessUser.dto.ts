@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -8,14 +9,28 @@ import {
   Matches,
   MinLength,
 } from 'class-validator';
+import { SignupMethod } from 'src/user/models/user.model';
 
 export class CreateBusinessUserDto {
-  @IsNotEmpty()
-  @IsEmail()
+
+  @IsOptional()
   @IsString()
   @Transform(({ value }) => value.toLowerCase())
   @Transform(({ value }) => value.trim())
   email: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([SignupMethod.EMAIL, SignupMethod.PHONE])
+  signupMethod: string;
 
   @IsNotEmpty()
   @IsString()
@@ -34,7 +49,13 @@ export class CreateBusinessUserDto {
 
   @IsNotEmpty()
   @IsString()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }
+    return value;
+  })
   name: string;
 
   @IsOptional()
