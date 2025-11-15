@@ -2,17 +2,25 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 
 export enum FeatureLimitList {
-  AI_IMAGE = 'aiImage',
-  AI_TEXT = 'aiText',
-  CONTENT_CREATION = 'contentCreation',
-  DROP_PIN = 'dropPinn',
+  // AI_IMAGE = 'aiImage',
+  // AI_TEXT = 'aiText',
+  // DROP_PIN = 'dropPinn',
+  // TEMPLATES = 'templates',
+  // ANALYTICS = 'analytics',
+  // REGIONS = 'regions',
+  // ROLES = 'roles',
+  // DEPARTMENT = 'departments',
+  // STORAGE = 'storage',
+  
   LOCATIONS = 'locations',
-  TEMPLATES = 'templates',
-  ANALYTICS = 'analytics',
-  REGIONS = 'regions',
-  ROLES = 'roles',
-  DEPARTMENT = 'departments',
-  STORAGE = 'storage',
+  CONTENT_SCHEDULING = 'contentScheduling',
+  PUBLISHING_DROP_PIN = 'publishingDropPin',
+  BOOKINGS = 'bookings',
+  BROADCAST_FEED_POSTS = 'broadcastFeedPosts',
+  BOOSTS_FEATURED = 'boostsFeatured',
+
+
+
 }
 
 @Schema({ timestamps: true })

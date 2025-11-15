@@ -401,55 +401,55 @@ export class SubscriptionService {
       for (const f of subscription.featureLimits) limits.set(f.key, f.value);
 
       let data: any;
-      switch (title) {
-        case FeatureLimitList.AI_IMAGE:
-          data = await this.aiImageLimit(limits);
-          break;
-        case FeatureLimitList.AI_TEXT:
-          data = await this.aiTextLimit(limits);
-          break;
-        case FeatureLimitList.CONTENT_CREATION:
-          data = await this.contentCreationLimit(
-            limits,
-            this.eventModel,
-            businessProfile,
-          );
-          break;
-        case FeatureLimitList.DEPARTMENT:
-          data = await this.departmentLimit(limits);
-          break;
-        case FeatureLimitList.DROP_PIN:
-          data = await this.dropPinLimit(
-            limits,
-            this.eventModel,
-            businessProfile,
-          );
-          break;
-        case FeatureLimitList.LOCATIONS:
-          data = await this.locationsLimit(
-            limits,
-            this.outletModel,
-            businessProfile,
-            dataCount,
-          );
-          break;
-        case FeatureLimitList.REGIONS:
-          data = await this.regionsLimit(limits);
-          break;
-        case FeatureLimitList.ROLES:
-          data = await this.rolesLimit(limits);
-          break;
-        case FeatureLimitList.STORAGE:
-          data = await this.storageLimit(
-            limits,
-            this.driveModel,
-            business.creator.toString(),
-          );
-          break;
-        case FeatureLimitList.TEMPLATES:
-          data = await this.templatesLimit(limits);
-          break;
-      }
+      // switch (title) {
+      //   case FeatureLimitList.AI_IMAGE:
+      //     data = await this.aiImageLimit(limits);
+      //     break;
+      //   case FeatureLimitList.AI_TEXT:
+      //     data = await this.aiTextLimit(limits);
+      //     break;
+      //   case FeatureLimitList.CONTENT_CREATION:
+      //     data = await this.contentCreationLimit(
+      //       limits,
+      //       this.eventModel,
+      //       businessProfile,
+      //     );
+      //     break;
+      //   case FeatureLimitList.DEPARTMENT:
+      //     data = await this.departmentLimit(limits);
+      //     break;
+      //   case FeatureLimitList.DROP_PIN:
+      //     data = await this.dropPinLimit(
+      //       limits,
+      //       this.eventModel,
+      //       businessProfile,
+      //     );
+      //     break;
+      //   case FeatureLimitList.LOCATIONS:
+      //     data = await this.locationsLimit(
+      //       limits,
+      //       this.outletModel,
+      //       businessProfile,
+      //       dataCount,
+      //     );
+      //     break;
+      //   case FeatureLimitList.REGIONS:
+      //     data = await this.regionsLimit(limits);
+      //     break;
+      //   case FeatureLimitList.ROLES:
+      //     data = await this.rolesLimit(limits);
+      //     break;
+      //   case FeatureLimitList.STORAGE:
+      //     data = await this.storageLimit(
+      //       limits,
+      //       this.driveModel,
+      //       business.creator.toString(),
+      //     );
+      //     break;
+      //   case FeatureLimitList.TEMPLATES:
+      //     data = await this.templatesLimit(limits);
+      //     break;
+      // }
 
       return { success: true, data };
     } catch (error) {
@@ -470,53 +470,53 @@ export class SubscriptionService {
     };
   }
 
-  async aiImageLimit(limits: Map<string, string>) {
-    return this.responseData(limits.get(FeatureLimitList.AI_IMAGE) ?? '0', 0);
-  }
+  // async aiImageLimit(limits: Map<string, string>) {
+  //   return this.responseData(limits.get(FeatureLimitList.AI_IMAGE) ?? '0', 0);
+  // }
 
-  async aiTextLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.AI_TEXT);
-    if (val === 'enabled') return { isLimitExceeded: false };
-    if (val === 'disabled') return { isLimitExceeded: true };
-    return { isLimitExceeded: true };
-  }
+  // async aiTextLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.AI_TEXT);
+  //   if (val === 'enabled') return { isLimitExceeded: false };
+  //   if (val === 'disabled') return { isLimitExceeded: true };
+  //   return { isLimitExceeded: true };
+  // }
 
-  async contentCreationLimit(
-    limits: Map<string, string>,
-    eventModel: mongoose.Model<EventDocument>,
-    businessProfile: string,
-  ) {
-    const content = await eventModel.countDocuments({
-      businessProfile: new mongoose.Types.ObjectId(businessProfile),
-      type: { $ne: EventTypes.DROPPED_PIN },
-      status: EventStatus.PUBLISHED,
-    });
-    return this.responseData(
-      limits.get(FeatureLimitList.CONTENT_CREATION) ?? '0',
-      content,
-    );
-  }
+  // async contentCreationLimit(
+  //   limits: Map<string, string>,
+  //   eventModel: mongoose.Model<EventDocument>,
+  //   businessProfile: string,
+  // ) {
+  //   const content = await eventModel.countDocuments({
+  //     businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //     type: { $ne: EventTypes.DROPPED_PIN },
+  //     status: EventStatus.PUBLISHED,
+  //   });
+  //   return this.responseData(
+  //     limits.get(FeatureLimitList.CONTENT_CREATION) ?? '0',
+  //     content,
+  //   );
+  // }
 
-  async departmentLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.DEPARTMENT);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async departmentLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.DEPARTMENT);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
-  async dropPinLimit(
-    limits: Map<string, string>,
-    eventModel: mongoose.Model<EventDocument>,
-    businessProfile: string,
-  ) {
-    const count = await eventModel.countDocuments({
-      businessProfile: new mongoose.Types.ObjectId(businessProfile),
-      type: EventTypes.DROPPED_PIN,
-      status: EventStatus.PUBLISHED,
-    });
-    return this.responseData(
-      limits.get(FeatureLimitList.DROP_PIN) ?? '0',
-      count,
-    );
-  }
+  // async dropPinLimit(
+  //   limits: Map<string, string>,
+  //   eventModel: mongoose.Model<EventDocument>,
+  //   businessProfile: string,
+  // ) {
+  //   const count = await eventModel.countDocuments({
+  //     businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //     type: EventTypes.DROPPED_PIN,
+  //     status: EventStatus.PUBLISHED,
+  //   });
+  //   return this.responseData(
+  //     limits.get(FeatureLimitList.DROP_PIN) ?? '0',
+  //     count,
+  //   );
+  // }
 
   async locationsLimit(
     limits: Map<string, string>,
@@ -530,15 +530,15 @@ export class SubscriptionService {
     );
   }
 
-  async regionsLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.REGIONS);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async regionsLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.REGIONS);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
-  async rolesLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.ROLES);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async rolesLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.ROLES);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
   async storageLimit(
     limits: Map<string, string>,
@@ -550,8 +550,8 @@ export class SubscriptionService {
     return this.responseData(String(drive.TotalSpace), drive.AvailableSpace);
   }
 
-  async templatesLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.TEMPLATES);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async templatesLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.TEMPLATES);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 }

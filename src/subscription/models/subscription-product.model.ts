@@ -47,6 +47,12 @@ export class SubscriptionProduct extends Document {
 
   @Prop({ default: false })
   isFree: boolean;
+
+  @Prop()
+  minLocations?: number;
+  
+  @Prop()
+  maxLocations?: number;
 }
 
 export const SubscriptionProductSchema =

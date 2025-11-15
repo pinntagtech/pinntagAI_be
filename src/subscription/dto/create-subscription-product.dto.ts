@@ -37,4 +37,10 @@ export class CreateSubscriptionProductDto {
 
   @IsOptional()
   isFree: boolean;
+
+  @IsOptional()
+  minLocations?: number;
+  
+  @IsOptional()
+  maxLocations?: number;
 }
