@@ -15,7 +15,7 @@ export class Otp {
   type: string;
   @Prop({ required: true })
   otp: number;
-  @Prop({ required: true, ref: User.name })
+  @Prop({ required: true})
   user: mongoose.Types.ObjectId;
 
   @Prop()

@@ -3,13 +3,13 @@ import { IsEmail, IsNotEmpty, IsNumber, IsString, MaxLength, MinLength } from "c
 
 export class VerifyEmailDto {
 
+  @IsNotEmpty()
+  @IsString()
+  userId:string;
 
   @IsNotEmpty()
-    @IsEmail()
-    @IsString()
-    @Transform(({ value }) => value.toLowerCase())
-    @Transform(({ value }) => value.trim())
-    email: string;
+  @IsString()
+  signupMethod: string;
 
 
   @IsNotEmpty()

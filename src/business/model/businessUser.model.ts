@@ -47,10 +47,16 @@ export class BusinessUser {
   countryCode: string;
   @Prop()
   phone: string;
-  @Prop({ required: true, unique: true })
+  @Prop()
   email: string;
   @Prop({ default: false })
   isEmailVerified: boolean;
+  @Prop({ default: false })
+  isMobileVerified: boolean;
+
+
+
+
   @Prop()
   password: string;
   @Prop({ ref: Business.name })
