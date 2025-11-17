@@ -86,7 +86,7 @@ import {
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendUserOtpDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { UserService } from 'src/user/user.service';
@@ -176,7 +176,7 @@ import {
 } from 'src/event/models/event-schedule.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { OAuth2Dto } from 'src/auth/dto/oAuth2.dto';
-import { Auth } from 'googleapis';
+import { Auth, google } from 'googleapis';
 
 @Injectable()
 export class BusinessService {
@@ -256,7 +256,11 @@ export class BusinessService {
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
-  ) {}
+  ) {
+    const clientID = process.env.GOOGLE_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_SECRET;
+        this.oAuth2Client = new google.auth.OAuth2(clientID, clientSecret);
+  }
 
   async createBusinessUser(data: CreateBusinessUserDto) {
     try {
@@ -642,6 +646,12 @@ export class BusinessService {
       ]);
       userDoc = userDoc[0];
 
+      const fcmExists = await this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        user: userFound._id,
+        deviceType: data.deviceType ? data.deviceType : 'web',
+      });
+
       if (data.fcmToken) {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
@@ -675,6 +685,7 @@ export class BusinessService {
         message: 'User logged in successfully',
         user: userDoc,
         token,
+        fcmExists: fcmExists ? true : false,
       };
     } else {
       //registration logic
@@ -751,7 +762,7 @@ export class BusinessService {
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     console.log('Apple Login Data:', data);
     const tokenData = jwt.decode(data.oAuthToken) as any;
-        console.log('Apple Login Data:', tokenData);
+    console.log('Apple Login Data:', tokenData);
     const userFound = await this.businessUserModel.findOne({
       email: tokenData.email,
     });
@@ -982,6 +993,11 @@ export class BusinessService {
         { _id: ownerRole.id },
         { $set: { creator: createdUser._id } },
       );
+      const fcmExists = await this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        user: createdUser._id,
+        deviceType: data.deviceType ? data.deviceType : 'web',
+      });
       if (data.fcmToken) {
         const foundFcmToken = await this.tokenModel.findOneAndUpdate(
           {
@@ -1015,9 +1031,164 @@ export class BusinessService {
         business: String(createdUser.business),
       };
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+
+      let userDoc = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles', // collection name for Role model
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // collection name for Business model
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets', // collection name for Outlet model
+                  localField: 'outlets',
+                  foreignField: '_id',
+                  as: 'outlets',
+                  pipeline: [
+                    {
+                      $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                        (acc, field) => {
+                          acc[field] = 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'events', // collection name for Event model
+                  localField: 'initialOfferId',
+                  foreignField: '_id',
+                  as: 'initialOfferId',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        categories: 1,
+                        drivePath: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'businessindustries', // collection name for BusinessIndustry model
+                  localField: 'businessIndustry',
+                  foreignField: '_id',
+                  as: 'businessIndustry',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        darkIcon: 1,
+                        lightIcon: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'subscriptions',
+                  localField: 'activeSubscription',
+                  foreignField: '_id',
+                  as: 'activeSubscription',
+                  pipeline: [
+                    {
+                      $lookup: {
+                        from: 'subscriptionproducts',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'product',
+                        pipeline: [
+                          {
+                            $project: {
+                              _id: 1,
+                              name: 1,
+                              price: 1,
+                              description: 1,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    { $unwind: '$product' },
+                    {
+                      $project: {
+                        _id: 1,
+                        source: 1,
+                        product: 1,
+                        startDate: 1,
+                        endDate: 1,
+                        status: 1,
+                        remainingDays: {
+                          $dateDiff: {
+                            startDate: currentDateTz(),
+                            endDate: '$endDate',
+                            unit: 'day',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                  businessIndustry: {
+                    $arrayElemAt: ['$businessIndustry', 0],
+                  },
+                  activeSubscription: {
+                    $arrayElemAt: ['$activeSubscription', 0],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        // {
+        //   $addFields: {
+        //     role: { $arrayElemAt: ['$role', 0] },
+        //     business: { $arrayElemAt: ['$business', 0] },
+        //   },
+        // },
+      ]);
+      userDoc = userDoc[0];
       return {
         success: true,
         message: 'User Logged In Successfully',
+        user: userDoc,
+        fcmExists: fcmExists ? true : false,
         token,
       };
     }
@@ -1084,7 +1255,7 @@ export class BusinessService {
           },
         );
       } else if (data.signupMethod === SignupMethod.PHONE) {
-        console.log('Verifying MOBILE PHONE:',user.id);
+        console.log('Verifying MOBILE PHONE:', user.id);
         await this.businessUserModel.updateOne(
           { _id: user.id },
           {
@@ -1119,22 +1290,36 @@ export class BusinessService {
       };
     }
   }
-  async resendOtp(email: string) {
+  async resendOtp(data: ResendUserOtpDto) {
     try {
-      const user = await this.businessUserModel.findOne({ email: email });
+      const user = await this.businessUserModel.findById(data.userId);
       if (!user) {
         return {
           success: false,
           message: 'Business User not found!',
         };
       }
-      if (user.isEmailVerified) {
-        return {
-          success: false,
-          message: 'Email already verified!',
-        };
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (user.isEmailVerified) {
+          return {
+            success: false,
+            message: 'Email already verified!',
+          };
+        }
+        this.mailService.sendBusinessUserVerificationMail(user.id);
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (user.isMobileVerified) {
+          return {
+            success: false,
+            message: 'Mobile phone already verified!',
+          };
+        }
+        const phoneNumber = parsePhoneNumberFromString(
+          `${user.countryCode}${user.phone}`,
+        );
+        const fullPhoneNumber = phoneNumber.format('E.164');
+        this.smsService.sendSMS(user.id, fullPhoneNumber, SMSType.OTP);
       }
-      this.mailService.sendBusinessUserVerificationMail(user.id);
       return {
         success: true,
         message: 'Otp resent successfully!',
@@ -1866,24 +2051,22 @@ export class BusinessService {
         );
       }
 
-      if (
-        updateObj.cover || updateObj.logo
-      ) {
+      if (updateObj.cover || updateObj.logo) {
         let profileCompletionPercentage =
           (BusinessStatus.COVER_ADDED /
             BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
           100;
 
-          let tempUpdateObj = {
-            profileCompletionPercentage:profileCompletionPercentage,
-            status:BusinessStatus.COVER_ADDED
-          }
-          if(updateObj.cover && !updateObj.logo){
-            tempUpdateObj['logo'] = DEFAULT_IMAGES.BUSINESS_LOGO
-          }
-          if(updateObj.logo && !updateObj.cover){
-            tempUpdateObj['cover'] = DEFAULT_IMAGES.BUSINESS_COVER
-          }
+        let tempUpdateObj = {
+          profileCompletionPercentage: profileCompletionPercentage,
+          status: BusinessStatus.COVER_ADDED,
+        };
+        if (updateObj.cover && !updateObj.logo) {
+          tempUpdateObj['logo'] = DEFAULT_IMAGES.BUSINESS_LOGO;
+        }
+        if (updateObj.logo && !updateObj.cover) {
+          tempUpdateObj['cover'] = DEFAULT_IMAGES.BUSINESS_COVER;
+        }
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           {
@@ -2044,7 +2227,11 @@ export class BusinessService {
   }
 
   //helper
-  async validateBusinessUser(userId: string, password: string, signupMethod: string) {
+  async validateBusinessUser(
+    userId: string,
+    password: string,
+    signupMethod: string,
+  ) {
     // logger.info(`email password: ${email} ${password}`);
     const user = await this.businessUserModel.findById(userId);
     // console.log('User::', user);
@@ -2053,7 +2240,7 @@ export class BusinessService {
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
       }
-      if(signupMethod === SignupMethod.EMAIL && !user.isEmailVerified) {
+      if (signupMethod === SignupMethod.EMAIL && !user.isEmailVerified) {
         return {
           success: false,
           message: 'Email is not verified',
@@ -2065,7 +2252,7 @@ export class BusinessService {
           },
         };
       }
-      if(signupMethod === SignupMethod.PHONE && !user.isMobileVerified) {
+      if (signupMethod === SignupMethod.PHONE && !user.isMobileVerified) {
         return {
           success: false,
           message: 'Phone number is not verified',

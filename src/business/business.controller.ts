@@ -35,7 +35,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { Privilege } from 'src/roles/privilege.decorator';
 import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendUserOtpDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
@@ -213,9 +213,11 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
     return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
+       message: result.message,
+        user: result.user,
+        status: result.status,
+        token: result.token,
+        fcmExists: result.fcmExists,
     };
   }
   @Post('apple')
@@ -223,14 +225,16 @@ export class BusinessController {
   async loginWithApple(@Req() req: Request, @Body() body: OAuth2Dto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
-    const result = await this.businessService.loginWithGoogle(body, userAgent, ip);
+    const result = await this.businessService.loginWithApple(body, userAgent, ip);
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
     return {
-      message: result.message,
-      user: result.user,
-      token: result.token,
+       message: result.message,
+        user: result.user,
+        status: result.status,
+        token: result.token,
+        fcmExists: result.fcmExists,
     };
   }
 
@@ -249,8 +253,8 @@ export class BusinessController {
   }
 
   @Post('user/resendOtp')
-  async resendOtp(@Body('email') email: string) {
-    const result = await this.businessService.resendOtp(email);
+  async resendOtp(@Body() data: ResendUserOtpDto) {
+    const result = await this.businessService.resendOtp(data);
     if (result.success) {
       return {
         message: result.message,
