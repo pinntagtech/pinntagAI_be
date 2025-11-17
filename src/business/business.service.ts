@@ -349,6 +349,7 @@ export class BusinessService {
 
         createObj['phone'] = data.phone;
         createObj['countryCode'] = data.countryCode;
+        createObj['fullPhoneNumber'] = fullPhoneNumber;
       }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -1070,7 +1071,8 @@ export class BusinessService {
           message: 'Invalid Otp',
         };
       }
-      await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+      this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+
       if (data.signupMethod === SignupMethod.EMAIL) {
         await this.businessUserModel.updateOne(
           { _id: user.id },
@@ -1082,11 +1084,12 @@ export class BusinessService {
           },
         );
       } else if (data.signupMethod === SignupMethod.PHONE) {
+        console.log('Verifying MOBILE PHONE:',user.id);
         await this.businessUserModel.updateOne(
           { _id: user.id },
           {
             $set: {
-              isMobilelVerified: true,
+              isMobileVerified: true,
               status: ProfileStatus.EMAIL_VERIFIED,
             },
           },
@@ -1101,11 +1104,12 @@ export class BusinessService {
         TokenTypes.ACCESS,
         UserTypes.BUSINESS,
       );
+
       // const updatedUser = await this.businessUserModel.findById(user.id);
 
       return {
         success: true,
-        message: 'Email Verified Successfully!',
+        message: 'Details Verified Successfully!',
         token: token,
       };
     } catch (error) {
@@ -2040,7 +2044,7 @@ export class BusinessService {
   }
 
   //helper
-  async validateBusinessUser(userId: string, password: string) {
+  async validateBusinessUser(userId: string, password: string, signupMethod: string) {
     // logger.info(`email password: ${email} ${password}`);
     const user = await this.businessUserModel.findById(userId);
     // console.log('User::', user);
@@ -2049,7 +2053,7 @@ export class BusinessService {
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
       }
-      if (!user.isEmailVerified) {
+      if(signupMethod === SignupMethod.EMAIL && !user.isEmailVerified) {
         return {
           success: false,
           message: 'Email is not verified',
@@ -2057,6 +2061,19 @@ export class BusinessService {
             _id: user._id,
             email: user.email,
             isEmailVerified: user.isEmailVerified,
+            status: user.status,
+          },
+        };
+      }
+      if(signupMethod === SignupMethod.PHONE && !user.isMobileVerified) {
+        return {
+          success: false,
+          message: 'Phone number is not verified',
+          data: {
+            _id: user._id,
+            phone: user.phone,
+            countryCode: user.countryCode,
+            isMobileVerified: user.isMobileVerified,
             status: user.status,
           },
         };
@@ -2104,6 +2121,7 @@ export class BusinessService {
     const validatedBusinessUser = await this.validateBusinessUser(
       userId,
       loginDto.password,
+      loginDto.signupMethod,
     );
     // logger.info(
     //   `Winston Log: Validated Business User: ${validatedBusinessUser}`,

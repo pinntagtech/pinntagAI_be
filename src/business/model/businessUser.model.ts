@@ -47,15 +47,16 @@ export class BusinessUser {
   countryCode: string;
   @Prop()
   phone: string;
-  @Prop()
+
+  @Prop({ unique: true, sparse: true })
+  fullPhoneNumber: string;
+
+  @Prop({ unique: true, sparse: true })
   email: string;
   @Prop({ default: false })
   isEmailVerified: boolean;
   @Prop({ default: false })
   isMobileVerified: boolean;
-
-
-
 
   @Prop()
   password: string;
