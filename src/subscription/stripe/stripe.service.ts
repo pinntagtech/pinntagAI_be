@@ -368,8 +368,10 @@ export class StripeService {
       if (coupon.redeemBy && dayjs().isAfter(dayjs(coupon.redeemBy))) {
         throw new BadRequestException('This coupon code has expired');
       }
-      if( coupon.maxRedemptions && coupon.usedCount >= coupon.maxRedemptions){
-        throw new BadRequestException('This coupon code has reached its maximum redemptions');
+      if (coupon.maxRedemptions && coupon.usedCount >= coupon.maxRedemptions) {
+        throw new BadRequestException(
+          'This coupon code has reached its maximum redemptions',
+        );
       }
 
       //stripe discount
@@ -473,11 +475,13 @@ export class StripeService {
 
   /** When hosted checkout completes */
   private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
-    console.log(`Checkout completed for session: ${session}`);
+    console.log('Checkout completed for session:::', JSON.stringify(session));
     const customerId = session.customer as string | null;
     const subscriptionId = session.subscription as string | null;
     const businessId = session.metadata?.businessId;
     const couponId = session.metadata?.couponId;
+    console.log('Customer ID from session metadata: ', customerId);
+    console.log('Subscription ID from session metadata: ', subscriptionId);
     console.log(`Coupon ID from session metadata: ${couponId}`);
     if (!customerId || !subscriptionId || !businessId) return;
 
@@ -559,7 +563,7 @@ export class StripeService {
     const subscriptionId = invoice.subscription as string | null;
     if (!subscriptionId) return;
 
-    await this.subscriptionModel.findOneAndUpdate(
+    const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
         status: SubscriptionStatus.ACTIVE,
@@ -569,25 +573,43 @@ export class StripeService {
       },
     );
 
+    let updateObj = {
+      description: `Invoice paid for subscription ${subscriptionId}`,
+      amountMinor: invoice.total, // or amount: invoice.total/100
+      currency: invoice.currency?.toUpperCase(),
+      quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+      status: TransactionStatus.SUCCESS, // mark success now
+      success: true,
+      transactionDate: invoice.status_transitions?.paid_at
+        ? new Date(invoice.status_transitions.paid_at * 1000)
+        : new Date(),
+      startDate: invoice.lines?.data?.[0]?.period?.start
+        ? new Date(invoice.lines.data[0].period.start * 1000)
+        : undefined,
+      endDate: invoice.lines?.data?.[0]?.period?.end
+        ? new Date(invoice.lines.data[0].period.end * 1000)
+        : undefined,
+    };
+
+    if (invoice.discount && invoice.discount.coupon) {
+      const couponCode = invoice.discount.coupon.id;
+      const coupon = await this.couponModel.findOne({ code: couponCode });
+      if (coupon) {
+        await this.couponModel.updateOne(
+          { _id: coupon._id },
+          {
+            $addToSet: { usedBy: internalSub.business },
+            $inc: { usedCount: 1 },
+          },
+        );
+        updateObj['coupon'] = coupon._id;
+      }
+    }
     await this.transactionModel.updateOne(
       { stripeInvoiceId: invoice.id },
       {
         $set: {
-          description: `Invoice paid for subscription ${subscriptionId}`,
-          amountMinor: invoice.total, // or amount: invoice.total/100
-          currency: invoice.currency?.toUpperCase(),
-          quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
-          status: TransactionStatus.SUCCESS, // mark success now
-          success: true,
-          transactionDate: invoice.status_transitions?.paid_at
-            ? new Date(invoice.status_transitions.paid_at * 1000)
-            : new Date(),
-          startDate: invoice.lines?.data?.[0]?.period?.start
-            ? new Date(invoice.lines.data[0].period.start * 1000)
-            : undefined,
-          endDate: invoice.lines?.data?.[0]?.period?.end
-            ? new Date(invoice.lines.data[0].period.end * 1000)
-            : undefined,
+          ...updateObj,
         },
         $setOnInsert: {
           platform: SubscriptionSource.STRIPE,
@@ -1185,8 +1207,15 @@ export class StripeService {
   }
 
   async createCoupon(couponData: CreateCouponDto) {
-    const { code, percentOff,amountOff,duration, durationInMonths, maxRedemptions, redeemBy } =
-      couponData;
+    const {
+      code,
+      percentOff,
+      amountOff,
+      duration,
+      durationInMonths,
+      maxRedemptions,
+      redeemBy,
+    } = couponData;
 
     const couponParams: Stripe.CouponCreateParams = {
       id: code,
@@ -1208,7 +1237,7 @@ export class StripeService {
 
     try {
       const coupon = await this.stripe.coupons.create(couponParams);
-      console.log("Created coupon:", coupon);
+      console.log('Created coupon:', coupon);
       return coupon;
     } catch (err: any) {
       throw new InternalServerErrorException(

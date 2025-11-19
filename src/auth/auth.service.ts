@@ -3331,8 +3331,6 @@ export class AuthService {
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Match:', match);
-    console.log('DISTANCE:', distance);
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -3445,7 +3443,6 @@ export class AuthService {
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
-    console.log('EVENTSRESULTTTS:', eventsResult);
 
     return eventsResult;
   }
