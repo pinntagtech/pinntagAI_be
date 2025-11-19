@@ -12,6 +12,7 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.919.0",
+		"@types/node-cron": "^3.0.11",
 		"@types/ws": "^8.18.1",
 		"axios": "^1.7.7",
 		"cors": "^2.8.5",
@@ -19,6 +20,7 @@
 		"express": "^4.19.2",
 		"helmet": "^7.1.0",
 		"mongoose": "^8.6.1",
+		"node-cron": "^4.2.1",
 		"openai": "^6.7.0",
 		"pino": "^9.4.0",
 		"pino-http": "^10.3.0",
