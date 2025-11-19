@@ -13,10 +13,6 @@ export class AIController {
     try {
       const business = req.body;
       console.log("Received createAgent request with body:", business);
-      console.log(
-        "Received createAgent request with body:",
-        business.businessId
-      );
 
       // Validate required fields
       if (!business || !business.name) {
@@ -53,6 +49,12 @@ export class AIController {
           error: "Category must be a string",
         });
       }
+      if (business.subCategories && !Array.isArray(business.subCategories)) {
+        return res.status(400).json({
+          success: false,
+          error: "SubCategories must be an array of strings",
+        });
+      }
       if (!business.businessId) {
         return res.status(400).json({
           success: false,
@@ -77,13 +79,13 @@ export class AIController {
         });
       }
       if (
-        !business.categories ||
-        !Array.isArray(business.categories) ||
-        business.categories.length === 0
+        !business.subCategories ||
+        !Array.isArray(business.subCategories) ||
+        business.subCategories.length === 0
       ) {
         return res.status(400).json({
           success: false,
-          error: "Categories are required",
+          error: "SubCategories are required",
         });
       }
       if (
@@ -182,10 +184,34 @@ export class AIController {
           error: "Name must be a string",
         });
       }
-      if (updates.categories && !Array.isArray(updates.categories)) {
+      if (updates.category && typeof updates.category !== "string") {
         return res.status(400).json({
           success: false,
-          error: "Categories must be an array of strings",
+          error: "Category must be a string",
+        });
+      }
+      if (updates.subCategories && !Array.isArray(updates.subCategories)) {
+        return res.status(400).json({
+          success: false,
+          error: "SubCategories must be an array of strings",
+        });
+      }
+      if (updates.category && typeof updates.category !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Category must be a string",
+        });
+      }
+      if (updates.subCategories && !Array.isArray(updates.subCategories)) {
+        return res.status(400).json({
+          success: false,
+          error: "SubCategories must be an array of strings",
+        });
+      }
+      if (updates.category && typeof updates.category !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Category must be a string",
         });
       }
       if (updates.tags && !Array.isArray(updates.tags)) {
@@ -215,6 +241,48 @@ export class AIController {
       return res.status(500).json({
         success: false,
         error: error.message || "Failed to update AI agent",
+      });
+    }
+  }
+
+  async trainYourAgent(req: Request, res: Response) {
+    try {
+      const { businessId } = req.body;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+        });
+      }
+
+      const result = await AIService.trainYourAgent(businessId);
+
+      return res.status(200).json({ success: true, data: result });
+    } catch (error: any) {
+      logger.error(
+        { error, businessId: req.body.businessId },
+        "Error training AI agent"
+      );
+
+      // Handle not found errors
+      if (
+        error.message?.includes("not found") ||
+        error.message?.includes("No AI agent")
+      ) {
+        return res.status(404).json({ success: false, error: error.message });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to train AI agent",
       });
     }
   }
@@ -381,13 +449,143 @@ export class AIController {
       });
     }
   }
+
+  /**
+   * GET /ai/generate-tags/:businessId
+   * Generates relevant tags based on business data from database
+   */
+  async generateTags(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      // Validate businessId format
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+        });
+      }
+
+      const tags = await AIService.generateTagsForBusiness(businessId);
+
+      logger.info(
+        { businessId, tagsCount: tags.length },
+        "Generated tags for business"
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: { tags },
+        message: "Tags generated successfully",
+      });
+    } catch (error: any) {
+      logger.error(
+        { error, businessId: req.params.businessId },
+        "Error generating tags"
+      );
+
+      // Handle not found errors
+      if (
+        error.message?.includes("not found") ||
+        error.message?.includes("No AI agent")
+      ) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to generate tags",
+      });
+    }
+  }
+
+  /**
+   * GET /ai/generate-description/:businessId
+   * Generates an AI description based on business data from database
+   */
+  async generateDescription(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      // Validate businessId format
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+        });
+      }
+
+      const description = await AIService.generateDescriptionForBusiness(
+        businessId
+      );
+
+      logger.info({ businessId }, "Generated description for business");
+
+      return res.status(200).json({
+        success: true,
+        data: { description },
+        message: "Description generated successfully",
+      });
+    } catch (error: any) {
+      logger.error(
+        { error, businessId: req.params.businessId },
+        "Error generating description"
+      );
+
+      // Handle not found errors
+      if (
+        error.message?.includes("not found") ||
+        error.message?.includes("No AI agent")
+      ) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      // Handle missing tags error
+      if (error.message?.includes("Tags are required")) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to generate description",
+      });
+    }
+  }
 }
 
 const controller = new AIController();
 export const aiController = {
   createAgent: controller.createAgent.bind(controller),
   updateAgent: controller.updateAgent.bind(controller),
+  trainYourAgent: controller.trainYourAgent.bind(controller),
   chatWithAgent: controller.chatWithAgent.bind(controller),
   askBusinessAssistant: controller.askBusinessAssistant.bind(controller),
   getBusinessAgent: controller.getBusinessAgent.bind(controller),
+  generateDescription: controller.generateDescription.bind(controller),
+  generateTags: controller.generateTags.bind(controller),
 };

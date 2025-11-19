@@ -22,7 +22,8 @@ export type Business = {
   tone: string;
   description?: string;
   tags: string[];
-  categories: string[];
+  subCategories: string[];
+  category: string;
 };
 
 const openai = new OpenAI({
@@ -146,9 +147,11 @@ async function createBusinessAgent(biz: Business) {
       logger.error(msg);
       throw new Error(msg);
     }
-    const vectorStore = await openai.vectorStores.create({
-      name: `${biz.name} Knowledge`,
-    });
+
+    // 1) Create a vector store for the business knowledge base
+    // const vectorStore = await openai.vectorStores.create({
+    //   name: `${biz.name} Knowledge`,
+    // });
 
     // 2) Create the assistant with biz-specific instructions + tools
     let assistant;
@@ -161,7 +164,8 @@ async function createBusinessAgent(biz: Business) {
         `Name: ${biz.name}`,
         `Description: ${biz.description}`,
         `Tags: ${biz.tags.join(", ")}`,
-        `Categories: ${biz.categories.join(", ")}`,
+        `Category: ${biz.category}`,
+        `Subcategories: ${biz.subCategories.join(", ")}`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
         `Tone: ${biz.tone ?? "professional, warm, succinct"}.`,
         `If you don't know, say so briefly and ask for missing info.`,
@@ -204,31 +208,38 @@ async function createBusinessAgent(biz: Business) {
       ],
       // Connect the vector store for retrieval (you can attach later too)
       tool_resources: {
-        file_search: {
-          vector_store_ids: [vectorStore.id],
-        },
+        // file_search: {
+        //   vector_store_ids: [vectorStore.id],
+        // },
       },
     });
 
     const thread = await openai.beta.threads.create();
+    //   await openai.beta.threads.messages.create(thread.id, {
+    //   role: "user",
+    //   content: userMessage,
+    //   });
 
     // 3) Persist ids for future use
     await BusinessAIAssistantModel.create({
       businessId: new mongoose.Types.ObjectId(biz.businessId),
       assistantId: assistant.id,
-      vectorStoreId: vectorStore.id,
+      // vectorStoreId: vectorStore.id,
       businessName: biz.businessName,
       name: biz.name,
       description: biz.description,
       tags: biz.tags,
-      categories: biz.categories,
+      category: biz.category,
+      subCategories: biz.subCategories,
       tone: biz.tone,
-      industry: biz.industry,
       website: biz.website,
       threadId: thread.id,
     });
 
-    return { assistantId: assistant.id, vectorStoreId: vectorStore.id };
+    return {
+      assistantId: assistant.id,
+      // vectorStoreId: vectorStore.id
+    };
   } catch (err: any) {
     // If the OpenAI SDK throws an HTTP error, try to extract status/body
     logger.error(
@@ -396,10 +407,11 @@ export class AIService {
         `Tags: ${
           updates.tags ? updates.tags.join(", ") : (agent.tags ?? []).join(", ")
         }`,
-        `Categories: ${
-          updates.categories
-            ? updates.categories.join(", ")
-            : (agent.categories ?? []).join(", ")
+        `Category: ${updates.category ? updates.category : agent.category}`,
+        `Subcategories: ${
+          updates.subCategories
+            ? updates.subCategories.join(", ")
+            : (agent.subCategories ?? []).join(", ")
         }`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
         `Tone: ${
@@ -425,10 +437,11 @@ export class AIService {
           name: updates.name ?? agent.name,
           description: updates.description ?? agent.description,
           tags: updates.tags ?? agent.tags,
-          categories: updates.categories ?? agent.categories,
+          category: updates.category ?? agent.category,
+          subCategories: updates.subCategories ?? agent.subCategories,
           tone: updates.tone ?? agent.tone,
-          industry: updates.industry ?? agent.industry,
           website: updates.website ?? agent.website,
+          instructions: updatedInstructions,
         },
         { new: true }
       );
@@ -436,6 +449,46 @@ export class AIService {
       return updatedAssistant;
     } catch (error: any) {
       logger.error("Error updating business agent:", error);
+      throw error;
+    }
+  }
+
+  static async trainYourAgent(businessId: string) {
+    try {
+      /*
+      Service to retrain or update the AI agent's knowledge base.
+      All questions are organized into 5 categories:
+
+      business_info - Business identity, services, products
+      customer_profile - Target audience demographics and behavior
+      operations - Hours, capacity, busy/slow periods
+      marketing - Past promotions, discount preferences, goals
+      goals - Primary objectives for AI agent assistance
+      */
+      const agent: IBusiness_AI_Assistant = await getBusinessAssistant(
+        businessId
+      );
+
+      // Update the agent's knowledge base
+      await openai.beta.assistants.update(agent.assistantId, {
+        instructions: agent.instructions,
+      });
+      // Add local files
+      // if (localPaths && localPaths.length > 0) {
+      //   await AIService.addFilesToVectorStore(
+      //     agent.vectorStoreId,
+      //     localPaths
+      //   );
+      // }
+
+      // // Add S3 files
+      // if (s3Keys && s3Keys.length > 0) {
+      //   await AIService.addS3FilesToVectorStore(agent.vectorStoreId, s3Keys);
+      // }
+
+      return { message: "Training initiated successfully." };
+    } catch (error: any) {
+      logger.error("Error training your agent:", error);
       throw error;
     }
   }
@@ -530,6 +583,388 @@ export class AIService {
       return businessAI;
     } catch (error: any) {
       logger.error("Error getting agent by business ID:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generates an AI description for an agent based on business context
+   */
+  static async generateAgentDescription(params: {
+    category: string;
+    subcategory?: string;
+    tags: string[];
+    businessName?: string;
+    website?: string;
+    aboutSection?: string;
+  }): Promise<string> {
+    try {
+      const {
+        category,
+        subcategory,
+        tags,
+        businessName,
+        website,
+        aboutSection,
+      } = params;
+
+      // Build context for description generation
+      const contextParts = [
+        `Generate a concise, professional business description for an AI agent.`,
+        `Business Category: ${category}`,
+      ];
+
+      if (subcategory) {
+        contextParts.push(`Subcategory: ${subcategory}`);
+      }
+
+      if (tags && tags.length > 0) {
+        contextParts.push(`Selected Tags: ${tags.join(", ")}`);
+      }
+
+      if (businessName) {
+        contextParts.push(`Business Name: ${businessName}`);
+      }
+
+      // If website is provided, scrape content to extract additional information
+      let websiteContent = null;
+      if (website) {
+        websiteContent = await this.scrapeWebsiteContent(website);
+        if (websiteContent) {
+          contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
+        } else {
+          contextParts.push(`Website: ${website}`);
+        }
+      }
+
+      if (aboutSection) {
+        contextParts.push(`About the Business: ${aboutSection}`);
+      }
+
+      contextParts.push(
+        `\nBased on the above information, generate a clear, informative description (2-3 sentences) that describes this business to the Pinntag app. Explain what products or services this business provides, their industry/niche, and what types of customer inquiries they handle. If you can find the year the business was established from the website content, include it in the description. This will help the app understand and route users appropriately.`
+      );
+
+      const prompt = contextParts.join("\n");
+
+      // Use OpenAI to generate description
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a business analyst writing descriptions for the Pinntag app. Generate concise, informative descriptions that help the app understand what the business does, what industry they serve, what types of customer inquiries they handle, and when they were established (if available).",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 200,
+      });
+
+      const generatedDescription =
+        response.choices[0]?.message?.content?.trim();
+
+      if (!generatedDescription) {
+        throw new Error("Failed to generate description from OpenAI");
+      }
+
+      logger.info(
+        { params, generatedDescription },
+        "Generated AI agent description"
+      );
+
+      return generatedDescription;
+    } catch (error: any) {
+      logger.error("Error generating agent description:", error);
+      throw new Error(`Failed to generate agent description: ${error.message}`);
+    }
+  }
+
+  /**
+   * Scrapes website content to extract relevant information for tag generation
+   */
+  private static async scrapeWebsiteContent(
+    website: string
+  ): Promise<string | null> {
+    try {
+      const response = await fetch(website, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; PinntagBot/1.0)",
+        },
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      if (!response.ok) {
+        logger.warn(
+          { website, status: response.status },
+          "Failed to fetch website"
+        );
+        return null;
+      }
+
+      const html = await response.text();
+
+      // Extract text content from HTML (basic extraction)
+      // Remove script and style tags
+      let text = html.replace(
+        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+        ""
+      );
+      text = text.replace(
+        /<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi,
+        ""
+      );
+
+      // Remove HTML tags
+      text = text.replace(/<[^>]+>/g, " ");
+
+      // Decode HTML entities
+      text = text.replace(/&nbsp;/g, " ");
+      text = text.replace(/&amp;/g, "&");
+      text = text.replace(/&lt;/g, "<");
+      text = text.replace(/&gt;/g, ">");
+      text = text.replace(/&quot;/g, '"');
+
+      // Clean up whitespace
+      text = text.replace(/\s+/g, " ").trim();
+
+      // Limit to first 3000 characters for token efficiency
+      const excerpt = text.substring(0, 3000);
+
+      logger.info(
+        { website, excerptLength: excerpt.length },
+        "Successfully scraped website content"
+      );
+
+      return excerpt;
+    } catch (error: any) {
+      logger.warn({ website, error: error.message }, "Error scraping website");
+      return null;
+    }
+  }
+
+  /**
+   * Generates relevant tags based on category, subcategory, and optional website
+   */
+  private static async generateTagsFromContext(params: {
+    category: string;
+    subcategory?: string;
+    website?: string;
+    maxTags?: number;
+  }): Promise<string[]> {
+    try {
+      const { category, subcategory, website, maxTags = 10 } = params;
+
+      // Build context for tag generation
+      const contextParts = [
+        `Generate relevant tags for a business based on the following information:`,
+        `Category: ${category}`,
+      ];
+
+      if (subcategory) {
+        contextParts.push(`Subcategory: ${subcategory}`);
+      }
+
+      // If website is provided, try to scrape content
+      let websiteContent = null;
+      if (website) {
+        websiteContent = await this.scrapeWebsiteContent(website);
+        if (websiteContent) {
+          contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
+        } else {
+          contextParts.push(`Website URL: ${website} (content not available)`);
+        }
+      }
+
+      contextParts.push(
+        `\nGenerate ${maxTags} relevant, specific tags that focus on this business's brand specialties and the types of deals they offer.`,
+        `Tags should describe:`,
+        `- Brand specialties (unique offerings, signature products/services, expertise areas)`,
+        `- Deal types (discounts, promotions, packages, seasonal offers)`,
+        `- Product/service categories they specialize in`,
+        `- Customer segments they serve`,
+        `\nTag formatting requirements:`,
+        `- Lowercase`,
+        `- Short (1-3 words)`,
+        `- Specific and descriptive`,
+        `- Relevant to the business category`,
+        `\nReturn ONLY a JSON array of strings, nothing else. Example: ["tag1", "tag2", "tag3"]`
+      );
+
+      const prompt = contextParts.join("\n");
+
+      // Use OpenAI to generate tags
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON array of strings.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.6,
+        max_tokens: 300,
+        response_format: { type: "json_object" },
+      });
+
+      const responseContent = response.choices[0]?.message?.content?.trim();
+
+      if (!responseContent) {
+        throw new Error("Failed to generate tags from OpenAI");
+      }
+
+      // Parse the JSON response
+      let tags: string[];
+      try {
+        const parsed = JSON.parse(responseContent);
+        // Handle different possible response formats
+        if (Array.isArray(parsed)) {
+          tags = parsed;
+        } else if (parsed.tags && Array.isArray(parsed.tags)) {
+          tags = parsed.tags;
+        } else if (parsed.data && Array.isArray(parsed.data)) {
+          tags = parsed.data;
+        } else {
+          throw new Error("Unexpected response format");
+        }
+      } catch (parseError) {
+        logger.error(
+          { responseContent, parseError },
+          "Failed to parse tag response"
+        );
+        throw new Error("Failed to parse generated tags");
+      }
+
+      // Validate and clean tags
+      tags = tags
+        .filter(
+          (tag): tag is string =>
+            typeof tag === "string" && tag.trim().length > 0
+        )
+        .map((tag) => tag.toLowerCase().trim())
+        .slice(0, maxTags);
+
+      if (tags.length === 0) {
+        throw new Error("No valid tags generated");
+      }
+
+      logger.info(
+        { params, tags, websiteScraped: Boolean(websiteContent) },
+        "Generated tags"
+      );
+
+      return tags;
+    } catch (error: any) {
+      logger.error("Error generating tags:", error);
+      throw new Error(`Failed to generate tags: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generates tags for a business by fetching data from the database
+   */
+  static async generateTagsForBusiness(businessId: string): Promise<string[]> {
+    try {
+      // Fetch business AI assistant data
+      const businessAI = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      if (!businessAI) {
+        throw new Error(`No AI agent found for business ID: ${businessId}`);
+      }
+
+      console.log("Business AI data:", businessAI);
+
+      // Extract category and subcategory from categories array
+      const category = businessAI.category || "";
+      const subcategory = businessAI.subCategories?.[0] || undefined;
+
+      if (!category) {
+        throw new Error("Business category is required to generate tags");
+      }
+
+      // Generate tags using business context
+      const tags = await this.generateTagsFromContext({
+        category,
+        subcategory,
+        website: businessAI.website,
+        maxTags: 5,
+      });
+
+      logger.info(
+        { businessId, category, subcategory, tagsCount: tags.length },
+        "Generated tags for business"
+      );
+
+      return tags;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error generating tags for business");
+      throw error;
+    }
+  }
+
+  /**
+   * Generates description for a business by fetching data from the database
+   */
+  static async generateDescriptionForBusiness(
+    businessId: string
+  ): Promise<string> {
+    try {
+      // Fetch business AI assistant data
+      const businessAI = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      if (!businessAI) {
+        throw new Error(`No AI agent found for business ID: ${businessId}`);
+      }
+
+      // Extract category and subcategory from categories array
+      const category = businessAI.category || "";
+      const subcategory = businessAI.subCategories?.[0] || undefined;
+
+      if (!category) {
+        throw new Error(
+          "Business category is required to generate description"
+        );
+      }
+
+      if (!businessAI.tags || businessAI.tags.length === 0) {
+        throw new Error(
+          "Tags are required to generate description. Please generate and save tags first."
+        );
+      }
+
+      // Generate description using business context
+      const description = await this.generateAgentDescription({
+        category,
+        subcategory,
+        tags: businessAI.tags,
+        businessName: businessAI.businessName,
+        website: businessAI.website,
+      });
+
+      logger.info(
+        { businessId, category, subcategory },
+        "Generated description for business"
+      );
+
+      return description;
+    } catch (error: any) {
+      logger.error(
+        { businessId, error },
+        "Error generating description for business"
+      );
       throw error;
     }
   }

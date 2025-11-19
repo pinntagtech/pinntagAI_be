@@ -2,6 +2,8 @@ import { Router } from "express";
 import { etlService } from "../services/etl.service.js";
 import { etlRoutes } from "./etl.routes.js";
 import { aiRoutes } from "./ai.routes.js";
+import { aiTrainingRoutes } from "./aiTraining.routes.js";
+import templateRoutes from "./template.routes.js";
 
 // Import your route modules here
 // Example:
@@ -14,6 +16,8 @@ const router = Router();
 // router.use('/ai', aiRouter);
 router.use("/etl", etlRoutes);
 router.use("/ai", aiRoutes);
+router.use("/ai/training", aiTrainingRoutes);
+router.use("/templates", templateRoutes);
 
 // Setup global event handlers
 etlService.on("jobUpdate", (update) => {

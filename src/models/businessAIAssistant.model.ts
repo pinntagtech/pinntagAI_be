@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
   {
+    tone: { type: String },
     businessId: {
       type: mongoose.Types.ObjectId,
       required: true,
@@ -10,34 +11,37 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     },
     businessName: { type: String, required: true },
     tags: { type: [String], default: [] },
-    categories: { type: [String], default: [] },
+    category: { type: String },
+    subCategories: { type: [String], default: [] },
     name: { type: String, required: true },
     description: { type: String },
-    industry: { type: String },
     website: { type: String },
     contactEmail: { type: String },
     metadata: { type: Schema.Types.Mixed },
-    vectorStoreId: { type: String, required: true },
+    vectorStoreId: { type: String, required: false },
     assistantId: { type: String, required: true },
     threadId: { type: String },
+    instructions: { type: String },
   },
   { timestamps: true, versionKey: false }
 );
 
 export interface IBusiness_AI_Assistant extends Document {
+  tone?: string;
   businessId: string | Schema.Types.ObjectId;
   businessName: string;
-  categories: string[];
+  category: string;
+  subCategories: string[];
   tags?: string[];
   name: string;
-  vectorStoreId: string;
+  vectorStoreId?: string;
   assistantId: string;
   description?: string;
-  industry?: string;
   website?: string;
   contactEmail?: string;
   metadata?: Record<string, any>;
   threadId?: string;
+  instructions?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,4 +59,4 @@ export const BusinessAIAssistantModel = mongoose.model<IBusiness_AI_Assistant>(
   BusinessAIAssistantSchema
 );
 
-// categories Array, description, tags, website, business name, business id, industry
+// category,subCategories Array, description, tags, website, business name, business id, industry
