@@ -11,10 +11,22 @@ export class Coupon extends Document {
   @Prop({ required: true, unique: true })
   code: string;
 
-  @Prop({ required: true, default: 20 })
-  amount: number;
+  @Prop()
+  percentageOff: number;
 
-  @Prop({ ref: 'User' })
+  @Prop()
+  amountOff: number;
+
+  @Prop({ required: true, enum: ['once', 'repeating', 'forever'] })
+  duration: string;
+
+  @Prop()
+  type: 'percent' | 'flat';
+
+  @Prop()
+  durationInMonths: number;
+
+  @Prop({ ref: 'Business' })
   usedBy: Array<mongoose.Types.ObjectId>;
 
   @Prop({ default: false })
@@ -24,10 +36,13 @@ export class Coupon extends Document {
   couponType: string;
 
   @Prop()
-  expiresAt: Date;
+  redeemBy: Date;
 
   @Prop()
-  maxUses: number;
+  maxRedemptions: number;
+
+  @Prop({default: 0})
+  usedCount: number;
 
   @Prop({ ref: 'Admin' })
   createdBy: mongoose.Types.ObjectId;

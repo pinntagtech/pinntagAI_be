@@ -46,6 +46,7 @@ export class StripeController {
 
     const { url } = await this.stripeService.createCheckoutSession({
       businessId: user.businessProfile,
+      productId: dto.productId,
       priceId: dto.priceId,
       couponCode: dto.couponCode,
       // promotionCode: dto.promotionCode,

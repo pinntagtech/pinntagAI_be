@@ -33,6 +33,8 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
+import { SubscriptionProduct } from '../models/subscription-product.model';
+import { CreateCouponDto } from './dtos/create-coupon.dto';
 
 @Injectable()
 export class StripeService {
@@ -49,6 +51,8 @@ export class StripeService {
     private readonly webhookSnapshotModel: Model<WebhookSnapshotDocument>,
     @InjectModel(SubscriptionPrice.name)
     private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(SubscriptionProduct.name)
+    private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
   ) {}
 
@@ -165,27 +169,31 @@ export class StripeService {
     nickname?: string;
     metadata?: Record<string, string>;
   }) {
-    const { productId, unitAmount, currency, interval, trialPeriodDays } =
-      params;
-    return await this.stripe.prices.create({
+    const {
+      productId,
+      unitAmount,
+      currency,
+      interval,
+      trialPeriodDays,
+      nickname,
+      metadata,
+    } = params;
+    const priceCreateParams: any = {
       product: productId,
       unit_amount: unitAmount,
       currency,
       recurring: {
         interval,
       },
-      nickname: params.nickname,
-      metadata: params.metadata,
-      // Add trial period if specified (only for subscriptions)
-      ...(trialPeriodDays
-        ? {
-            tiers_mode: 'volume',
-            billing_scheme: 'per_unit',
-            // Note: Stripe does not support trial_period_days directly on Price
-            // It should be set on the Subscription object when creating a subscription
-          }
-        : {}),
-    });
+      billing_scheme: 'per_unit',
+    };
+    if (nickname) {
+      priceCreateParams.nickname = params.nickname;
+    }
+    if (metadata) {
+      priceCreateParams.metadata = params.metadata;
+    }
+    return await this.stripe.prices.create(priceCreateParams);
   }
 
   async updatePriceMetadata(priceId: string, metadata: Record<string, string>) {
@@ -302,16 +310,40 @@ export class StripeService {
   /** Create a hosted Checkout session (mode: subscription) */
   async createCheckoutSession(params: {
     businessId: string;
+    productId: string;
     priceId: string;
     quantity?: number;
     successUrl: string;
     cancelUrl: string;
     couponCode?: string;
   }): Promise<{ url: string }> {
-    const { businessId, priceId, successUrl, cancelUrl, couponCode } = params;
+    const {
+      businessId,
+      productId,
+      priceId,
+      successUrl,
+      cancelUrl,
+      couponCode,
+    } = params;
 
     const business = await this.businessModel.findById(businessId);
     if (!business) throw new NotFoundException('Business not found');
+
+    const productDoc = await this.subscriptionProductModel.findById(productId);
+    if (!productDoc)
+      throw new NotFoundException('Subscription product not found');
+
+    if (productDoc.pricingModel === 'per_location') {
+      if (
+        !params.quantity ||
+        params.quantity < productDoc.minLocations ||
+        params.quantity > productDoc.maxLocations!
+      ) {
+        throw new BadRequestException(
+          'Quantity must be between min and max locations allowed for this product',
+        );
+      }
+    }
 
     const customerId = await this.ensureStripeCustomer(business.id);
     const priceDoc = await this.subscriptionPriceModel.findById(priceId);
@@ -333,8 +365,11 @@ export class StripeService {
       if (coupon.isBlacklisted) {
         throw new BadRequestException('This coupon code is not valid');
       }
-      if (coupon.expiresAt && dayjs().isAfter(dayjs(coupon.expiresAt))) {
+      if (coupon.redeemBy && dayjs().isAfter(dayjs(coupon.redeemBy))) {
         throw new BadRequestException('This coupon code has expired');
+      }
+      if( coupon.maxRedemptions && coupon.usedCount >= coupon.maxRedemptions){
+        throw new BadRequestException('This coupon code has reached its maximum redemptions');
       }
 
       //stripe discount
@@ -465,7 +500,12 @@ export class StripeService {
         product: internalSubPrice.product,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
+        invoiceStartDate: new Date(
+          (stripeSub.current_period_start || 0) * 1000,
+        ),
+        invoiceEndDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
+        isTrialActive: false,
         // Optionally also store stripe customer on Business (already done in ensure)
       },
       { upsert: true, new: true },
@@ -1140,5 +1180,38 @@ export class StripeService {
       }
     }
     return isForProrate;
+  }
+
+  async createCoupon(couponData: CreateCouponDto) {
+    const { code, percentOff,amountOff,duration, durationInMonths, maxRedemptions, redeemBy } =
+      couponData;
+
+    const couponParams: Stripe.CouponCreateParams = {
+      id: code,
+      duration: duration,
+      duration_in_months: durationInMonths,
+      max_redemptions: maxRedemptions,
+    };
+
+    if (couponData.type === 'percent' && percentOff) {
+      couponParams.percent_off = percentOff;
+    } else if (couponData.type === 'flat' && couponData.amountOff) {
+      couponParams.amount_off = couponData.amountOff;
+      couponParams.currency = 'usd'; // Set your desired currency
+    }
+    if (redeemBy) {
+      couponParams.redeem_by = Math.floor(new Date(redeemBy).getTime() / 1000);
+    }
+    console.log('Creating coupon with params:', couponParams);
+
+    try {
+      const coupon = await this.stripe.coupons.create(couponParams);
+      console.log("Created coupon:", coupon);
+      return coupon;
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Stripe coupon creation error: ${err.message}`,
+      );
+    }
   }
 }

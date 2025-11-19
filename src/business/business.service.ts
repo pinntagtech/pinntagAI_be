@@ -492,7 +492,7 @@ export class BusinessService {
         role: String(userFound.role),
         business: String(userFound.business),
       };
-      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS); 
       let userDoc = await this.businessUserModel.aggregate([
         {
           $match: { _id: new mongoose.Types.ObjectId(userFound._id) },

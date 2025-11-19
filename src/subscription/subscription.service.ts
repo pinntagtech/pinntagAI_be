@@ -77,6 +77,9 @@ export class SubscriptionService {
         description: data.description,
         createdBy: new mongoose.Types.ObjectId(user.id),
         isRecommended: data.isRecommended || false,
+        minLocations: data.minLocations,
+        maxLocations: data.maxLocations,
+        pricingModel: data.pricingModel,
       });
       const createdStripeProduct = await this.stripeService.createProduct(
         data.name,
@@ -278,6 +281,8 @@ export class SubscriptionService {
           data.billingInterval == BillingInterval.MONTHLY ? 'month' : 'year',
         metadata: {
           isCustom: data.isCustom ? 'true' : 'false',
+          minLocations: String(subscriptionProduct.minLocations) || '0',
+          maxLocations: String(subscriptionProduct.maxLocations) || '0',
         },
         nickname: `${subscriptionProduct.name} - ${data.billingInterval} - ${data.currency.toUpperCase()}${(data.price / 100).toFixed(2)}`,
         trialPeriodDays: undefined,
@@ -292,6 +297,9 @@ export class SubscriptionService {
         price: data.price,
         appleProductId: data.appleProductId,
         googleProductId: data.googleProductId,
+        pricingModel: subscriptionProduct.pricingModel,
+        minLocations: subscriptionProduct.minLocations,
+        maxLocations: subscriptionProduct.maxLocations,
       });
       await this.subscriptionProductModel.findByIdAndUpdate(
         subscriptionProduct._id,

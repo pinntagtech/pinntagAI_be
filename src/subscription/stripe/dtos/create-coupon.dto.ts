@@ -1,17 +1,7 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsNumber,
-  IsMongoId,
-  IsBoolean,
-  IsDateString,
-  IsEnum,
-} from 'class-validator';
-import { CouponType } from 'src/subscription/models/coupon.model';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateCouponDto {
- @IsNotEmpty()
+  @IsNotEmpty()
   @IsString()
   code: string; // Unique code for the coupon
 
@@ -36,22 +26,4 @@ export class CreateCouponDto {
 
   @IsOptional()
   redeemBy?: Date; // Optional expiration date for the coupon
-}
-
-export class UpdateCouponDto {
-  @IsNumber()
-  @IsOptional()
-  amount?: number;
-
-  @IsBoolean()
-  @IsOptional()
-  isBlacklisted?: boolean;
-
-  @IsEnum(CouponType)
-  @IsOptional()
-  couponType?: CouponType;
-
-  @IsDateString()
-  @IsOptional()
-  expiresAt?: Date;
 }

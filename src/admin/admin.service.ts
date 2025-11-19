@@ -163,6 +163,7 @@ import { EtlDataDto } from './dto/etl-data.dto';
 import { Folder } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
 import { FeaturedAsset } from './models/featuredAssets.model';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 
 @Injectable()
 export class AdminService {
@@ -231,6 +232,7 @@ export class AdminService {
     private readonly seederService: SeederService,
     private readonly driveService: DriveService,
     private readonly googleService: GoogleService,
+    private readonly stripeService: StripeService,
   ) {}
 
   calculateExpirationDate(expiresIn: string): Date {
@@ -3367,6 +3369,9 @@ export class AdminService {
       if (existing) {
         return { success: false, message: 'Coupon code already exists.' };
       }
+      //stripe coupon
+      const stripeCoupon = await this.stripeService.createCoupon(data);
+      
 
       const created = await this.couponModel.create({
         ...data,

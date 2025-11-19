@@ -271,6 +271,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
     GoogleService,
     FirebaseService,
     RedisBullService,
+    StripeService,
   ],
 })
 export class AdminModule {}

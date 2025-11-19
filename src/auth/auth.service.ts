@@ -2778,6 +2778,8 @@ export class AuthService {
         });
 
         let nextScheduleDate = null;
+        console.log('nextSchedule::', nextSchedule);
+        if(!nextSchedule) return 0;
         if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
         } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
