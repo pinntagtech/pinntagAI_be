@@ -231,7 +231,6 @@ export class AuthService {
     const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
       signupAuthDto;
 
-    console.log('Signup DTO:', signupAuthDto);
     if (!phone && !email) {
       return {
         success: false,
@@ -351,7 +350,6 @@ export class AuthService {
     try {
       const { email, phone, countryCode, signupMethod, fcmToken, deviceType } =
         authDto;
-      console.log('Unified OTP DTO:', authDto);
 
       // Validation
       if (!email && !phone) {
@@ -456,7 +454,6 @@ export class AuthService {
           );
 
           // Send email OTP
-          console.log('Log BEFORE SENDING MAIL:::');
           this.mailService.sendUserVerificationMail(foundUser.id);
 
           return {
@@ -765,7 +762,6 @@ export class AuthService {
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
 
-    console.log('updateObj::', updateObj);
 
     await this.userModel.updateOne({ _id: id }, { $set: updateObj });
 
@@ -807,9 +803,7 @@ export class AuthService {
   }
 
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-    console.log('Google Login Data:', data);
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    console.log('Valid Token:', validToken);
 
     const userInfoResponse = await axios.get(
       'https://www.googleapis.com/oauth2/v3/userinfo',
@@ -821,7 +815,6 @@ export class AuthService {
     );
 
     const userInfo = userInfoResponse.data;
-    console.log('User Info:', userInfo);
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -1323,7 +1316,6 @@ export class AuthService {
           },
         );
 
-        console.log('foundFcmToken::', foundFcmToken);
         if (!foundFcmToken) {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
@@ -2122,10 +2114,6 @@ export class AuthService {
     } else if (carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
-    console.log('Match:', match);
-
-    console.log('START DATE:', startDate);
-    console.log('END DATE:', endDate);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -2778,7 +2766,6 @@ export class AuthService {
         });
 
         let nextScheduleDate = null;
-        console.log('nextSchedule::', nextSchedule);
         if(!nextSchedule) return 0;
         if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
@@ -4338,8 +4325,6 @@ export class AuthService {
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
-    console.log('START DATE:', start);
-    console.log('Match:', match);
 
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
@@ -4513,7 +4498,6 @@ export class AuthService {
     endDate?: Date,
     dealType?: string,
   ) {
-    console.log('Service Category IDs:', categoryIds);
     let match = {};
     // if (categoryIds.length) {
     //   match['event.categories'] = {
@@ -4581,8 +4565,6 @@ export class AuthService {
     }
 
     let totalCount = 0;
-    console.log('Match:', match);
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -4596,7 +4578,6 @@ export class AuthService {
       endDate,
       dealType,
     );
-    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard data fetched successfully',
@@ -4687,8 +4668,6 @@ export class AuthService {
     }
 
     let totalCount = 0;
-    console.log('Match:', match);
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -5747,7 +5726,6 @@ export class AuthService {
         },
       },
     ]);
-    console.log('event', event);
 
     if (!event) {
       return {
@@ -6391,7 +6369,6 @@ export class AuthService {
           // },
         ]);
         userDoc = userDoc[0];
-        console.log('Business User Doc:', userDoc);
 
         if (!userDoc) {
           return {
@@ -6761,7 +6738,6 @@ export class AuthService {
       user: new mongoose.Types.ObjectId(userId),
       searchText: text,
     });
-    console.log('FindSearch:', findSearch);
     if (findSearch) {
       await this.userSearchActivityModel.updateOne(
         { user: new mongoose.Types.ObjectId(userId), searchText: text },
@@ -6884,7 +6860,6 @@ export class AuthService {
         limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
-      console.log('LISTINGRESULT:::', listingResult);
       result = listingResult.data;
       total = listingResult.totalCount;
     }
@@ -6945,7 +6920,6 @@ export class AuthService {
         match['reward.schedule.endDate'] = { $gte: now };
       }
       if (activityType.length > 0) {
-        console.log('ADDING ACTIVITY TYPE TO MATCH:::', activityType);
         match['reward.activityType'] = { $in: activityType };
       }
       if (data.rewardType && data.rewardType.length > 0) {
@@ -7140,7 +7114,6 @@ export class AuthService {
       ];
 
       const result = await this.rewardLocationModel.aggregate(pipeline);
-      console.log('REWARDSS DATA:::', result);
 
       // const result = await this.rewardModel
       //   .find()
@@ -7162,7 +7135,7 @@ export class AuthService {
         limit: limit,
       };
     } catch (error) {
-      console.log('Error in getDashboardRewards:', error);
+      console.error('Error in getDashboardRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -7242,7 +7215,7 @@ export class AuthService {
         data: result,
       };
     } catch (error) {
-      console.log('Error in getDashboardRewards:', error);
+      console.error('Error in getDashboardRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',

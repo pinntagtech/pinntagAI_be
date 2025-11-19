@@ -473,10 +473,12 @@ export class StripeService {
 
   /** When hosted checkout completes */
   private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
+    console.log(`Checkout completed for session: ${session}`);
     const customerId = session.customer as string | null;
     const subscriptionId = session.subscription as string | null;
     const businessId = session.metadata?.businessId;
-
+    const couponId = session.metadata?.couponId;
+    console.log(`Coupon ID from session metadata: ${couponId}`);
     if (!customerId || !subscriptionId || !businessId) return;
 
     // Find or create our internal Subscription record
