@@ -135,6 +135,7 @@ export class Business {
   bio: string;
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
+
   @Prop()
   countryCode: string;
   @Prop()

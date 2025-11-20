@@ -281,10 +281,12 @@ export class StripeService {
     subscriptionItemId: string,
     newPriceId: string,
     prorationBehavior: Stripe.SubscriptionItemUpdateParams.ProrationBehavior = 'none',
+    quantity?: number,
   ) {
     return this.stripe.subscriptionItems.update(subscriptionItemId, {
       price: newPriceId,
       proration_behavior: prorationBehavior,
+      ...(quantity !== undefined ? { quantity } : {}),
     });
   }
 
@@ -1244,5 +1246,27 @@ export class StripeService {
         `Stripe coupon creation error: ${err.message}`,
       );
     }
+  }
+
+  async createCheckoutSessionForUpgradationPlan(businessId: string) {
+    const business = await this.businessModel.findById(businessId);
+    if (!business) {
+      throw new NotFoundException('Business not found');
+    }
+    const subscription = await this.subscriptionModel.findOne({
+      _id: new mongoose.Types.ObjectId(business.activeSubscription),
+    });
+    if (!subscription || !subscription.stripeSubscriptionId) {
+      throw new NotFoundException('Active subscription not found');
+    }
+    const subscriptionItem = await this.stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+      {
+        expand: ['items'],
+      },
+    );
+    const subscriptionItemId = subscriptionItem.items.data[0].id;
+    // const session = await this.switchSubscriptionItemPrice(subscriptionItemId,)
+
   }
 }

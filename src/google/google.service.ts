@@ -99,27 +99,70 @@ export class GoogleService {
     }
   }
   mapGoogleAddressToSchema(addressComponents: any[] = []) {
+    const getComponent = (type: string) =>
+      addressComponents.find((c) => c.types?.includes(type));
+
     const getComponentValue = (type: string) => {
-      const component = addressComponents.find((c) => c.types?.includes(type));
-      return component?.longText || component?.long_name || '';
+      const component = getComponent(type);
+      // Google usually sends long_name / short_name
+      return (
+        component?.longText ||
+        component?.long_name ||
+        component?.short_name ||
+        ''
+      ).trim();
     };
 
+    // Build address1 with sensible fallbacks:
+    // 1) street_number + route
+    // 2) premise / establishment
+    // 3) plus_code (last resort for rural/open areas)
+    let address1 = [
+      getComponentValue('street_number'),
+      getComponentValue('route'),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    if (!address1) {
+      address1 =
+        getComponentValue('premise') ||
+        getComponentValue('establishment') ||
+        getComponentValue('plus_code') || // from your data: "HMQX+CW5"
+        '';
+    }
+
+    // address2 as locality / village / sublocality
+    const address2 =
+      getComponentValue('sublocality') ||
+      getComponentValue('locality') ||
+      getComponentValue('neighborhood') ||
+      '';
+
+    // City: prefer admin_area_3 (district) over locality for India
+    const city =
+      getComponentValue('administrative_area_level_3') || // Muzaffarnagar
+      getComponentValue('locality') || // Rohana Khurd
+      getComponentValue('postal_town') ||
+      getComponentValue('administrative_area_level_2') ||
+      '';
+
+    const state =
+      getComponentValue('administrative_area_level_1') ||
+      getComponentValue('administrative_area_level_2') ||
+      '';
+
+    const country = getComponentValue('country');
+    const postalCode = getComponentValue('postal_code');
+
     return {
-      address1:
-        `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(),
-      address2:
-        `${getComponentValue('street_number')} ${getComponentValue('route')}`.trim(), // You can optionally include floor/unit if available
-      city:
-        getComponentValue('locality') ||
-        getComponentValue('sublocality') ||
-        getComponentValue('postal_town') ||
-        '',
-      state:
-        getComponentValue('administrative_area_level_1') ||
-        getComponentValue('administrative_area_level_2') ||
-        '',
-      country: getComponentValue('country'),
-      postalCode: getComponentValue('postal_code'),
+      address1,
+      address2,
+      city,
+      state,
+      country,
+      postalCode,
     };
   }
 
@@ -211,6 +254,7 @@ export class GoogleService {
         },
       );
       const results = response.data.results;
+      console.log('Geocode results:', JSON.stringify(results));
       if (!results.length) {
         return { success: false, message: 'No address found for coordinates' };
       }

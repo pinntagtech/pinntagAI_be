@@ -16,7 +16,7 @@ import {
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { CreateCheckoutDto } from './dtos/create-checkout.dto';
+import { CreateCheckoutDto, UpgradeCheckoutDto } from './dtos/create-checkout.dto';
 import Stripe from 'stripe';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
@@ -120,4 +120,13 @@ export class StripeController {
       );
     }
   }
+
+  @Post('checkout/upgradation-plan')
+  @UseGuards(JwtGuard2)
+  async checkoutUpgradationPlan(@TokenDecoder() user: DecodedUser,@Body() dto: UpgradeCheckoutDto) {
+    const result = await this.stripeService.createCheckoutSessionForUpgradationPlan(user.businessProfile);
+    return result;
+  }
+
+
 }

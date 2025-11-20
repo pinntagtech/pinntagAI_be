@@ -47,6 +47,8 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
+import { Subscription } from 'src/subscription/models/subscription.model';
+import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
 
 @Injectable()
 export class OutletService {
@@ -67,8 +69,9 @@ export class OutletService {
     @InjectModel(MobileSpots.name)
     private readonly mobileSpotsModel: Model<MobileSpots>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
-    @InjectModel(EventSchedule.name)
-    private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(EventSchedule.name) private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(Subscription.name) private readonly subscriptionModel: Model<Subscription>,
+    @InjectModel(SubscriptionPrice.name) private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -374,6 +377,44 @@ export class OutletService {
         message: 'Outlet created successfully.',
         data: outlet,
       };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async outletSummationCompetence(businessId: string) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      const totalLocations =
+        business.physicalUnitsCreated + business.mobileUnitsCreated;
+      const subscription = await this.subscriptionModel.findById(
+        business.activeSubscription,
+      );
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'Subscription not found!',
+        };
+      }
+      const subscriptionPrice = await this.subscriptionPriceModel.findById(subscription.price);
+      if (!subscriptionPrice) {
+        return {
+          success: false,
+          message: 'Subscription Price not found!',
+        };
+      }
+
+
+
+
     } catch (error) {
       return {
         success: false,
@@ -1037,14 +1078,14 @@ export class OutletService {
       ]);
 
       const total = await this.outletModel.countDocuments({
-        creator: new mongoose.Types.ObjectId(userDetails._id),
+        // creator: new mongoose.Types.ObjectId(userDetails._id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
       });
 
       const numerics = await this.outletModel.aggregate([
         {
           $match: {
-            creator: new mongoose.Types.ObjectId(userDetails._id),
+            // creator: new mongoose.Types.ObjectId(userDetails._id),
             business: new mongoose.Types.ObjectId(user.businessProfile),
           },
         },

@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsString, IsOptional, IsMongoId } from 'class-validator';
 
 export class CreateCheckoutDto {
@@ -24,3 +25,5 @@ export class CreateCheckoutDto {
   // @IsString()
   // promotionCode?: string; // Optional promotion code at checkout
 }
+
+export class UpgradeCheckoutDto extends PartialType(CreateCheckoutDto) {}
