@@ -49,6 +49,7 @@ import {
 } from 'src/event/models/event-schedule.model';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
+import { PricingModel } from 'src/subscription/models/subscription-product.model';
 
 @Injectable()
 export class OutletService {
@@ -69,9 +70,12 @@ export class OutletService {
     @InjectModel(MobileSpots.name)
     private readonly mobileSpotsModel: Model<MobileSpots>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
-    @InjectModel(EventSchedule.name) private readonly scheduleModel: Model<EventScheduleDocument>,
-    @InjectModel(Subscription.name) private readonly subscriptionModel: Model<Subscription>,
-    @InjectModel(SubscriptionPrice.name) private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(EventSchedule.name)
+    private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(Subscription.name)
+    private readonly subscriptionModel: Model<Subscription>,
+    @InjectModel(SubscriptionPrice.name)
+    private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -404,7 +408,9 @@ export class OutletService {
           message: 'Subscription not found!',
         };
       }
-      const subscriptionPrice = await this.subscriptionPriceModel.findById(subscription.price);
+      const subscriptionPrice = await this.subscriptionPriceModel.findById(
+        subscription.price,
+      );
       if (!subscriptionPrice) {
         return {
           success: false,
@@ -412,9 +418,40 @@ export class OutletService {
         };
       }
 
-
-
-
+      if (subscriptionPrice.pricingModel === PricingModel.FLAT) {
+        if (totalLocations < subscriptionPrice.maxLocations) {
+          return {
+            success: true,
+            message: 'Within subscription limits',
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Please upgrade your subscription to add more outlets',
+            data: {
+              statusCode: 204 //to send new flat product and price
+            }
+          };
+        }
+      } else if (subscriptionPrice.pricingModel === PricingModel.PER_LOCATION) {
+        if (totalLocations < subscriptionPrice.maxLocations) {
+          return {
+            success: true,
+            message: 'Pay per location model - Within subscription limits',
+            data: {
+              statusCode: 205, //to send new quantity only
+            }
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Pay per location model - Please upgrade your subscription to add more outlets',
+            data: {
+              statusCode: 206, //to send new per_location product, price, and quantity
+            }
+          };
+        }
+      }
     } catch (error) {
       return {
         success: false,
@@ -450,6 +487,8 @@ export class OutletService {
           message: 'Business not found!',
         };
       }
+
+      // await this.outletSummationCompetence(business.id);
       let {
         name,
         address1,

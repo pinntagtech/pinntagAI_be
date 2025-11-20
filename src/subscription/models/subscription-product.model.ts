@@ -5,7 +5,7 @@ import { FeatureLimit } from './feature-limit.model';
 
 export const PricingModel = {
   FLAT: 'flat',
-  PER_LOCAION: 'per_location',
+  PER_LOCATION: 'per_location',
 }
 @Schema({ timestamps: true })
 export class SubscriptionProduct extends Document {

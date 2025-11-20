@@ -25,5 +25,3 @@ export class CreateCheckoutDto {
   // @IsString()
   // promotionCode?: string; // Optional promotion code at checkout
 }
-
-export class UpgradeCheckoutDto extends PartialType(CreateCheckoutDto) {}

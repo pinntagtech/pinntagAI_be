@@ -35,6 +35,7 @@ import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
 import { SubscriptionProduct } from '../models/subscription-product.model';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
+import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 
 @Injectable()
 export class StripeService {
@@ -1248,14 +1249,41 @@ export class StripeService {
     }
   }
 
-  async createCheckoutSessionForUpgradationPlan(businessId: string) {
+  async createCheckoutSessionForUpgradationPlan(
+    businessId: string,
+    data: UpgradePlanDto,
+  ) {
+    if (data.statusCode === 204) {
+      if (!data.newProductId || !data.newPriceId) {
+        throw new BadRequestException(
+          'New Product ID and Price ID are required for upgrade',
+        );
+      }
+    }
+    if (data.statusCode === 205) {
+      if (!data.quantity) {
+        throw new BadRequestException(
+          'Quantity is required for scaling locations',
+        );
+      }
+    }
+    if (data.statusCode === 206) {
+      if (!data.newProductId || !data.newPriceId || !data.quantity) {
+        throw new BadRequestException(
+          'New Product ID and Price ID and quantity are required for upgrade',
+        );
+      }
+    }
+
     const business = await this.businessModel.findById(businessId);
     if (!business) {
       throw new NotFoundException('Business not found');
     }
+    console.log("business active subscription:", business.activeSubscription); 
     const subscription = await this.subscriptionModel.findOne({
       _id: new mongoose.Types.ObjectId(business.activeSubscription),
     });
+    console.log("subscription stripe found:", subscription.stripeSubscriptionId);
     if (!subscription || !subscription.stripeSubscriptionId) {
       throw new NotFoundException('Active subscription not found');
     }
@@ -1266,7 +1294,24 @@ export class StripeService {
       },
     );
     const subscriptionItemId = subscriptionItem.items.data[0].id;
-    // const session = await this.switchSubscriptionItemPrice(subscriptionItemId,)
+    console.log("subscription item id:", subscriptionItemId);
 
+    if (data.statusCode === 204) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        price: data.newPriceId,
+        proration_behavior: 'always_invoice',
+      });
+    } else if (data.statusCode === 205) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        quantity: data.quantity,
+        proration_behavior: 'always_invoice',
+      });
+    } else if (data.statusCode === 206) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        price: data.newPriceId,
+        quantity: data.quantity,
+        proration_behavior: 'always_invoice', // bill the extra immediately
+      });
+    }
   }
 }
