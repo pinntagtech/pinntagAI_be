@@ -471,18 +471,18 @@ export class BusinessService {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log('Valid Token:', validToken);
 
-    const userInfoResponse = await axios.get(
-      'https://www.googleapis.com/oauth2/v3/userinfo',
-      {
-        headers: {
-          Authorization: `Bearer ${data.oAuthToken}`,
-        },
-      },
-    );
-    const userInfo = userInfoResponse.data;
-    console.log("UserInfo from google:",userInfo);
+    // const userInfoResponse = await axios.get(
+    //   'https://www.googleapis.com/oauth2/v3/userinfo',
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${data.oAuthToken}`,
+    //     },
+    //   },
+    // );
+    // const userInfo = userInfoResponse.data;
+    // console.log("UserInfo from google:",userInfo);
     const userFound = await this.businessUserModel.findOne({
-      email: userInfo.email,
+      email: data.email,
     });
     if (userFound) {
       // login logic
@@ -704,9 +704,9 @@ export class BusinessService {
       });
 
       let createObj = {
-        email: userInfo.email,
-        name: userInfo.name,
-        profilePhoto: userInfo.profilePhoto ? userInfo.profilePhoto : '',
+        email: data.email,
+        name: data.name,
+        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
         forcePasswordReset: false,
