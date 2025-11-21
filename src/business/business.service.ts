@@ -480,6 +480,7 @@ export class BusinessService {
       },
     );
     const userInfo = userInfoResponse.data;
+    console.log("UserInfo from google:",userInfo);
     const userFound = await this.businessUserModel.findOne({
       email: userInfo.email,
     });
