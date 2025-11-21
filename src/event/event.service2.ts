@@ -8326,12 +8326,12 @@ export class EventService2 {
       });
 
       let file = await this.driveService.uploadFile(
-        user.id,
+        user.businessProfile,
         business.drive.toString(),
         fileCategory.id,
         thumbnail,
       );
-
+      console.log('Uploaded File:', file);
       const template = await this.templateModel.create({
         ...data,
         categories: categoriesInObjectId,

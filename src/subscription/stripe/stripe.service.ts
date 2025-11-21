@@ -580,7 +580,8 @@ export class StripeService {
       description: `Invoice paid for subscription ${subscriptionId}`,
       amountMinor: invoice.total, // or amount: invoice.total/100
       currency: invoice.currency?.toUpperCase(),
-      quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+      // quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+       quantity: invoice.lines?.data?.[invoice.lines.data.length - 1]?.quantity ?? 1,
       status: TransactionStatus.SUCCESS, // mark success now
       success: true,
       transactionDate: invoice.status_transitions?.paid_at
