@@ -615,34 +615,34 @@ export class AuthService {
         message: 'User not found',
       };
     }
-    if (foundUser.isEmailVerified && foundUser.isPhoneVerified) {
-      return {
-        success: false,
-        message: 'Email and Mobile both already verified',
-      };
-    }
-    if (foundUser.isPhoneVerified && !foundUser.isEmailVerified && !email) {
-      return {
-        success: false,
-        message: 'Please Provide Email address to verify!',
-      };
-    }
-    if (foundUser.isEmailVerified && !foundUser.isPhoneVerified) {
-      if (!phone) {
-        return {
-          success: false,
-          message: 'Please Provide mobile number to verify!',
-        };
-      }
-      if (!countryCode) {
-        return {
-          success: false,
-          message: 'Country Code is missing',
-        };
-      }
-    }
+    // if (foundUser.isEmailVerified && foundUser.isPhoneVerified) {
+    //   return {
+    //     success: false,
+    //     message: 'Email and Mobile both already verified',
+    //   };
+    // }
+    // if (foundUser.isPhoneVerified && !foundUser.isEmailVerified && !email) {
+    //   return {
+    //     success: false,
+    //     message: 'Please Provide Email address to verify!',
+    //   };
+    // }
+    // if (foundUser.isEmailVerified && !foundUser.isPhoneVerified) {
+    //   if (!phone) {
+    //     return {
+    //       success: false,
+    //       message: 'Please Provide mobile number to verify!',
+    //     };
+    //   }
+    //   if (!countryCode) {
+    //     return {
+    //       success: false,
+    //       message: 'Country Code is missing',
+    //     };
+    //   }
+    // }
 
-    if (!foundUser.isEmailVerified && email) {
+    if (email) {
       const checkExistingEmail = await this.userModel.findOne({
         email,
       });
@@ -657,16 +657,16 @@ export class AuthService {
       await this.userModel.updateOne(
         { _id: id },
         {
-          $set: { email },
+          $set: { email,isEmailVerified: false  },
         },
       );
       this.mailService.sendUserVerificationMail(id);
       return {
         success: true,
-        message: 'Email saved successfully and OTP sent to verify it.',
+        message: 'OTP sent to verify your email.',
       };
     }
-    if (!foundUser.isPhoneVerified && phone && countryCode) {
+    else if (phone && countryCode) {
       const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
       if (!phoneNumber || !phoneNumber.isValid()) {
         return {
@@ -691,6 +691,7 @@ export class AuthService {
             fullPhoneNumber: fullPhoneNumber,
             phone: phone,
             countryCode: countryCode,
+            isPhoneVerified: false,
           },
         },
       );
@@ -698,7 +699,7 @@ export class AuthService {
       await this.smsService.sendSMS(id, fullPhoneNumber, SMSType.OTP);
       return {
         success: true,
-        message: 'Phone Number saved successfully and OTP sent to verify it.',
+        message: 'OTP sent to verify your phone number.',
       };
     }
 

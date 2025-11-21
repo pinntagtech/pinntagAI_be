@@ -11,12 +11,7 @@ export class OAuth2Dto {
   profilePhoto: string;
 
   @IsOptional()
-//   @Transform(({ value }) => {
-//   console.log("User entered email:", value);
-//   return value;
-// })
   @IsString()
-  // @IsEmail()
   email: string;
 
   @IsOptional()
@@ -30,4 +25,8 @@ export class OAuth2Dto {
   @IsOptional()
   @IsString()
   deviceType: string;
+
+  @IsOptional()
+  @IsString()
+  socialId: string;
 }
