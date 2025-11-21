@@ -257,8 +257,8 @@ export class BusinessService {
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
   ) {
-    const clientID = process.env.GOOGLE_CLIENT_ID;
-        const clientSecret = process.env.GOOGLE_SECRET;
+    const clientID = process.env.GOOGLE_BUSINESS_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_BUSINESS_SECRET;
         this.oAuth2Client = new google.auth.OAuth2(clientID, clientSecret);
   }
 
@@ -471,16 +471,16 @@ export class BusinessService {
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     console.log('Valid Token:', validToken);
 
-    // const userInfoResponse = await axios.get(
-    //   'https://www.googleapis.com/oauth2/v3/userinfo',
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${data.oAuthToken}`,
-    //     },
-    //   },
-    // );
-    // const userInfo = userInfoResponse.data;
-    // console.log("UserInfo from google:",userInfo);
+    const userInfoResponse = await axios.get(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${data.oAuthToken}`,
+        },
+      },
+    );
+    const userInfo = userInfoResponse.data;
+    console.log("UserInfo from google:",userInfo);
     const userFound = await this.businessUserModel.findOne({
       email: data.email,
     });

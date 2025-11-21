@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class OAuth2Dto {
@@ -10,6 +11,10 @@ export class OAuth2Dto {
   profilePhoto: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+  console.log("User entered email:", value);
+  return value;
+})
   @IsString()
   @IsEmail()
   email: string;
