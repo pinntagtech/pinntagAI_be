@@ -11,12 +11,12 @@ export class OAuth2Dto {
   profilePhoto: string;
 
   @IsOptional()
-  @Transform(({ value }) => {
-  console.log("User entered email:", value);
-  return value;
-})
+//   @Transform(({ value }) => {
+//   console.log("User entered email:", value);
+//   return value;
+// })
   @IsString()
-  @IsEmail()
+  // @IsEmail()
   email: string;
 
   @IsOptional()
