@@ -95,12 +95,12 @@ export class AiController {
   @Post('/business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
-    // const result = await this.aiService.getBusinessDescription(
-    //   user.businessProfile,
-    // );
-    const result = await this.pinntagAiService.generateBusinessDescription(
+    const result = await this.aiService.getBusinessDescription(
       user.businessProfile,
     );
+    // const result = await this.pinntagAiService.generateBusinessDescription(
+    //   user.businessProfile,
+    // );
     console.log('RESULT:', result);
     if (result.success) {
       return {
@@ -124,18 +124,18 @@ export class AiController {
     @Query('tags') tags: string,
   ) {
     let tagsArray = [];
-    // console.log('Tags:', tags);
-    // if (tags && tags != '') {
-    //   tagsArray = tags.split(',');
-    // }
-    // const result = await this.aiService.getTitleSuggestions(
-    //   contentType,
-    //   category,
-    //   dealType,
-    //   suggestion,
-    //   tagsArray,
-    // );
-    const result = await this.pinntagAiService.getTitleSuggestions(user.businessProfile);
+    console.log('Tags:', tags);
+    if (tags && tags != '') {
+      tagsArray = tags.split(',');
+    }
+    const result = await this.aiService.getTitleSuggestions(
+      contentType,
+      category,
+      dealType,
+      suggestion,
+      tagsArray,
+    );
+    // const result = await this.pinntagAiService.getTitleSuggestions(user.businessProfile);
     console.log('RESULT:', result);
     if (result.success) {
       return {
