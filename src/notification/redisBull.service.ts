@@ -11,7 +11,7 @@ import {
   Notification,
   NotificationDocument,
 } from './models/notification.model';
-import { User } from 'src/user/models/user.model';
+import { User, UserDocument } from 'src/user/models/user.model';
 import { Business } from 'src/business/model/business.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
@@ -31,7 +31,8 @@ export class RedisBullService {
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Follow.name)
     private readonly followModel: Model<FollowDocument>,
-    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
+    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>, 
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>, 
     private readonly firebaseService: FirebaseService,
     private readonly userService: UserService,
   ) {
@@ -86,10 +87,14 @@ export class RedisBullService {
       { userId },
       { delay },
     );
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { accountDeletionSchedulerId: job.id } },
+    );
     console.log('Job added to queue:', job.id, job.data);
   }
 
-  async removeBroadcastJob(jobId: string) {
+  async removeRedisQueueJob(jobId: string) {
     const job = await this.broadcastQueue.getJob(jobId);
     if (job) {
       await job.remove();

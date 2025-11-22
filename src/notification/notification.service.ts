@@ -468,7 +468,7 @@ export class NotificationService {
       };
     }
     if (broadcast.schedulerId && broadcast.schedulerId !== '') {
-      await this.redisBullService.removeBroadcastJob(broadcast.schedulerId);
+      await this.redisBullService.removeRedisQueueJob(broadcast.schedulerId);
     }
 
     const result = await this.broadcastModel.updateOne(

@@ -1138,12 +1138,12 @@ export class UserService {
     await this.otpModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });
-    await this.businessModel.deleteMany({
-      createdBy: new mongoose.Types.ObjectId(userId),
-    });
-    await this.eventModel.deleteMany({
-      user: new mongoose.Types.ObjectId(userId),
-    });
+    // await this.businessModel.deleteMany({
+    //   createdBy: new mongoose.Types.ObjectId(userId),
+    // });
+    // await this.eventModel.deleteMany({
+    //   user: new mongoose.Types.ObjectId(userId),
+    // });
     await this.reportModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });

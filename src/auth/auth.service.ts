@@ -511,6 +511,9 @@ export class AuthService {
     ipAddress: string,
   ) {
     // Update user info
+    if(foundUser.isDeleted){
+      this.redisBullService.removeRedisQueueJob(foundUser.accountDeletionSchedulerId);
+    }
     await foundUser.updateOne(
       { _id: foundUser.id },
       { $set: { userAgent, ipAddress, isDeleted: false } },
@@ -5865,17 +5868,17 @@ export class AuthService {
     let date = currentDateTz();
     date.setDate(date.getDate() + 30);
 
-    nodeSchedule.scheduleJob(date, async () => {
-      if (foundUser.isDeleted) {
-        await this.userService.deleteAccount(user.id);
-      }
-    });
+    // nodeSchedule.scheduleJob(date, async () => {
+    //   if (foundUser.isDeleted) {
+    //     await this.userService.deleteAccount(user.id);
+    //   }
+    // });
     let delay = date.getTime() - Date.now();
     this.redisBullService.addDeleteUserJob(foundUser.id, delay);
 
     return {
       success: true,
-      message: 'User deleted successfully',
+      message: 'User delet',
     };
   }
 

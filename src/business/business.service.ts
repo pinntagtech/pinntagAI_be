@@ -1552,6 +1552,14 @@ export class BusinessService {
         createdBusiness._id,
         Business.name,
       );
+      const galleryFolder = this.driveService.createFolder(
+        createdBusiness.id,
+        {
+          parentDirectory: driveDetails.id,
+          parentType: 'Drive',
+          folderName: 'Gallery',
+        },
+      );
       await this.businessModel.updateOne(
         { _id: createdBusiness._id },
         { $set: { drive: driveDetails._id } },
