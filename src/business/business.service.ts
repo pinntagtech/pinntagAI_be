@@ -1586,16 +1586,16 @@ export class BusinessService {
       const createdBusiness = await this.businessModel.create(createObj);
 
       //ai-agent creation
-      let agentName = `${createdBusiness.name} Assistant`;
-      this.pinnAiService.createAgent({
-        name: agentName,
-        tone: 'Professional',
-        businessId: createdBusiness._id.toString(),
-        categories: businessCategoryTitles,
-        industry: findBusinessIndustry ? findBusinessIndustry.title : null,
-        website: createdBusiness.website ? createdBusiness.website : null,
-        businessName: createdBusiness.name,
-      });
+      // let agentName = `${createdBusiness.name} Assistant`;
+      // this.pinnAiService.createAgent({
+      //   name: agentName,
+      //   tone: 'Professional',
+      //   businessId: createdBusiness._id.toString(),
+      //   categories: businessCategoryTitles,
+      //   industry: findBusinessIndustry ? findBusinessIndustry.title : null,
+      //   website: createdBusiness.website ? createdBusiness.website : null,
+      //   businessName: createdBusiness.name,
+      // });
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
@@ -2106,12 +2106,12 @@ export class BusinessService {
           { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
         );
 
-        this.pinnAiService.updateAgent(
-          {
-            description: updateObj.description,
-          },
-          businessId,
-        );
+        // this.pinnAiService.updateAgent(
+        //   {
+        //     description: updateObj.description,
+        //   },
+        //   businessId,
+        // );
       }
 
       if (updateObj.cover || updateObj.logo) {
@@ -2149,12 +2149,12 @@ export class BusinessService {
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.TAGS } },
         );
-        this.pinnAiService.updateAgent(
-          {
-            tags: updateObj.tags,
-          },
-          businessId,
-        );
+        // this.pinnAiService.updateAgent(
+        //   {
+        //     tags: updateObj.tags,
+        //   },
+        //   businessId,
+        // );
       }
 
       if (updateObj.confettiCompleted) {

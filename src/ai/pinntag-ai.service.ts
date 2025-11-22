@@ -4,7 +4,7 @@ import axios from 'axios';
 
 @Injectable()
 export class PinntagAiService {
-  private baseUrl = 'http://localhost:4200'; // same instance, internal call
+  private baseUrl = 'http://localhost:4001'; // same instance, internal call
   private internalKey = 'change-me';
 
   async createAgent(payload: any) {
