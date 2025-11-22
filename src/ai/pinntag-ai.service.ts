@@ -36,4 +36,30 @@ export class PinntagAiService {
     return response.data;
   }
 
+  
+  async generateBusinessDescription(businessId: string) {
+    const response = await axios.post(
+      `${this.baseUrl}/ai/generate-description/${businessId}`,
+      {
+        headers: {
+          'x-internal-api-key': this.internalKey,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    return response.data;
+  }
+  async getTitleSuggestions(businessId: string) {
+    const response = await axios.post(
+      `${this.baseUrl}/ai/generate-tags/${businessId}`,
+      {
+        headers: {
+          'x-internal-api-key': this.internalKey,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    return response.data;
+  }
+
 }

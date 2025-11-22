@@ -95,14 +95,17 @@ export class AiController {
   @Post('/business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
-    const result = await this.aiService.getBusinessDescription(
+    // const result = await this.aiService.getBusinessDescription(
+    //   user.businessProfile,
+    // );
+    const result = await this.pinntagAiService.generateBusinessDescription(
       user.businessProfile,
     );
     console.log('RESULT:', result);
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        data: result.data.description,
       };
     } else {
       return new BadRequestException({
@@ -121,17 +124,18 @@ export class AiController {
     @Query('tags') tags: string,
   ) {
     let tagsArray = [];
-    console.log('Tags:', tags);
-    if (tags && tags != '') {
-      tagsArray = tags.split(',');
-    }
-    const result = await this.aiService.getTitleSuggestions(
-      contentType,
-      category,
-      dealType,
-      suggestion,
-      tagsArray,
-    );
+    // console.log('Tags:', tags);
+    // if (tags && tags != '') {
+    //   tagsArray = tags.split(',');
+    // }
+    // const result = await this.aiService.getTitleSuggestions(
+    //   contentType,
+    //   category,
+    //   dealType,
+    //   suggestion,
+    //   tagsArray,
+    // );
+    const result = await this.pinntagAiService.getTitleSuggestions(user.businessProfile);
     console.log('RESULT:', result);
     if (result.success) {
       return {

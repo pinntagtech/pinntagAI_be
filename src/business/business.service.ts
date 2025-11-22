@@ -258,8 +258,8 @@ export class BusinessService {
     private readonly pinnAiService: PinntagAiService,
   ) {
     const clientID = process.env.GOOGLE_BUSINESS_CLIENT_ID;
-        const clientSecret = process.env.GOOGLE_BUSINESS_SECRET;
-        this.oAuth2Client = new google.auth.OAuth2(clientID, clientSecret);
+    const clientSecret = process.env.GOOGLE_BUSINESS_SECRET;
+    this.oAuth2Client = new google.auth.OAuth2(clientID, clientSecret);
   }
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -480,7 +480,7 @@ export class BusinessService {
       },
     );
     const userInfo = userInfoResponse.data;
-    console.log("UserInfo from google:",userInfo);
+    console.log('UserInfo from google:', userInfo);
     const userFound = await this.businessUserModel.findOne({
       email: data.email,
     });
@@ -493,7 +493,7 @@ export class BusinessService {
         role: String(userFound.role),
         business: String(userFound.business),
       };
-      const token = await this.generateJWT(payload, TokenTypes.ACCESS); 
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
       let userDoc = await this.businessUserModel.aggregate([
         {
           $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
@@ -1542,9 +1542,10 @@ export class BusinessService {
         authorisedUser: new mongoose.Types.ObjectId(userId),
         roleOfCreator: data.roleOfCreator,
       };
-
-       if (data.businessIndustry && data.businessCategories) {
-        const findBusinessIndustry = await this.businessIndModel.findById(
+      let businessCategoryTitles = [];
+      let findBusinessIndustry = null;
+      if (data.businessIndustry && data.businessCategories) {
+        findBusinessIndustry = await this.businessIndModel.findById(
           data.businessIndustry,
         );
         if (!findBusinessIndustry) {
@@ -1570,6 +1571,7 @@ export class BusinessService {
             };
           }
           businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+          businessCategoryTitles.push(findBusinessCategory.title);
         }
 
         createObj['businessIndustry'] = new mongoose.Types.ObjectId(
@@ -1578,26 +1580,33 @@ export class BusinessService {
         createObj['businessCategories'] = businessCategoriesIds;
       }
 
-
-
       if (data.website) createObj['website'] = data.website;
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
       const createdBusiness = await this.businessModel.create(createObj);
+
+      //ai-agent creation
+      let agentName = `${createdBusiness.name} Assistant`;
+      this.pinnAiService.createAgent({
+        name: agentName,
+        tone: 'Professional',
+        businessId: createdBusiness._id.toString(),
+        categories: businessCategoryTitles,
+        industry: findBusinessIndustry ? findBusinessIndustry.title : null,
+        website: createdBusiness.website ? createdBusiness.website : null,
+        businessName: createdBusiness.name,
+      });
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdBusiness._id,
         Business.name,
       );
-      const galleryFolder = this.driveService.createFolder(
-        createdBusiness.id,
-        {
-          parentDirectory: driveDetails.id,
-          parentType: 'Drive',
-          folderName: 'Gallery',
-        },
-      );
+      const galleryFolder = this.driveService.createFolder(createdBusiness.id, {
+        parentDirectory: driveDetails.id,
+        parentType: 'Drive',
+        folderName: 'Gallery',
+      });
       await this.businessModel.updateOne(
         { _id: createdBusiness._id },
         { $set: { drive: driveDetails._id } },
@@ -2096,6 +2105,13 @@ export class BusinessService {
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
         );
+
+        this.pinnAiService.updateAgent(
+          {
+            description: updateObj.description,
+          },
+          businessId,
+        );
       }
 
       if (updateObj.cover || updateObj.logo) {
@@ -2132,6 +2148,12 @@ export class BusinessService {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           { $set: { status: BusinessStatus.TAGS } },
+        );
+        this.pinnAiService.updateAgent(
+          {
+            tags: updateObj.tags,
+          },
+          businessId,
         );
       }
 
