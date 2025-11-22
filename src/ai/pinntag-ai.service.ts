@@ -39,7 +39,7 @@ export class PinntagAiService {
   
   async generateBusinessDescription(businessId: string) {
     console.log("businessId:",businessId);
-    const response = await axios.post(
+    const response = await axios.get(
       `${this.baseUrl}/ai/generate-description/${businessId}`,
       {
         headers: {
@@ -51,7 +51,7 @@ export class PinntagAiService {
     return response.data;
   }
   async generateTitleSuggestions(businessId: string) {
-    const response = await axios.post(
+    const response = await axios.get(
       `${this.baseUrl}/ai/generate-tags/${businessId}`,
       {
         headers: {
