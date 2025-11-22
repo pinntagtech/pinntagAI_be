@@ -4,6 +4,8 @@ import { etlRoutes } from "./etl.routes.js";
 import { aiRoutes } from "./ai.routes.js";
 import { aiTrainingRoutes } from "./aiTraining.routes.js";
 import templateRoutes from "./template.routes.js";
+import { engagementRoutes } from "./engagement.routes.js";
+import { consumerAIRoutes } from "./consumerAI.routes.js";
 
 // Import your route modules here
 // Example:
@@ -18,6 +20,8 @@ router.use("/etl", etlRoutes);
 router.use("/ai", aiRoutes);
 router.use("/ai/training", aiTrainingRoutes);
 router.use("/templates", templateRoutes);
+router.use("/engagement", engagementRoutes);
+router.use("/consumer-ai", consumerAIRoutes);
 
 // Setup global event handlers
 etlService.on("jobUpdate", (update) => {

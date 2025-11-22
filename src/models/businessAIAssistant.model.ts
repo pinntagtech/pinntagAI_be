@@ -1,8 +1,9 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { Tone } from "../utils/types/types.js";
 
 export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
   {
-    tone: { type: String },
+    tone: { type: String, enum: Object.values(Tone) },
     businessId: {
       type: mongoose.Types.ObjectId,
       required: true,
@@ -27,7 +28,7 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
 );
 
 export interface IBusiness_AI_Assistant extends Document {
-  tone?: string;
+  tone?: Tone;
   businessId: string | Schema.Types.ObjectId;
   businessName: string;
   category: string;

@@ -28,10 +28,32 @@ export interface DealTemplate {
   };
   callToAction: string;
   marketingTips: string[];
+  tags: string[];
+  dealType: string;
+  termsAndConditions: string;
+  image: string;
 }
 
+// Day-specific occasion types
+export type DaySpecificOccasion =
+  | "monday_motivation"
+  | "tuesday_twofer"
+  | "wednesday_midweek"
+  | "thursday_throwback"
+  | "friday_deals"
+  | "saturday_special"
+  | "sunday_selfcare";
+
+export type TemplateOccasion =
+  | "holiday"
+  | "seasonal"
+  | "slow_period"
+  | "general"
+  | "trending"
+  | DaySpecificOccasion;
+
 export interface TemplateGenerationOptions {
-  occasion?: "holiday" | "seasonal" | "slow_period" | "general" | "trending";
+  occasion?: TemplateOccasion;
   specificHoliday?: string;
   promotionalGoal?: string;
   // Database template options
@@ -289,7 +311,7 @@ export class DealTemplateGeneratorService {
 
     return {
       creatorType: TemplateCreatorType.SYSTEM,
-      type: TemplateType.OFFER,
+      type: template.dealType as TemplateType || TemplateType.OFFER,
       scope,
       businessId: isGeneric ? undefined : (new mongoose.Types.ObjectId(businessAgent.businessId) as any),
       discountValue,
@@ -308,7 +330,7 @@ export class DealTemplateGeneratorService {
       isFree: false,
       participationCost: "",
       termsApplied: true,
-      termsAndConditions: "Valid on selected items only. Terms and conditions apply.",
+      termsAndConditions: template.termsAndConditions,
       businessIndustry: options.businessIndustryId
         ? (new mongoose.Types.ObjectId(options.businessIndustryId) as any)
         : training?.industry
@@ -316,7 +338,8 @@ export class DealTemplateGeneratorService {
         : undefined,
       businessCategories:
         options.businessCategoryIds?.map(c => new mongoose.Types.ObjectId(c) as any) || [],
-      thumbnail: options.thumbnailUrl || this.getDefaultThumbnail(options.occasion),
+      thumbnail: options.thumbnailUrl || template.image,
+      tags: template.tags,
       generatedByAI: true,
       aiGenerationData: {
         occasion: options.occasion,
@@ -439,6 +462,14 @@ export class DealTemplateGeneratorService {
       slow_period: `${baseUrl}Off_Peak_Deal.jpg`,
       trending: `${baseUrl}Trending_Now.jpg`,
       general: `${baseUrl}Special_Offer.jpg`,
+      // Day-specific thumbnails
+      monday_motivation: `${baseUrl}Monday_Motivation.jpg`,
+      tuesday_twofer: `${baseUrl}Tuesday_Twofer.jpg`,
+      wednesday_midweek: `${baseUrl}Wednesday_Midweek.jpg`,
+      thursday_throwback: `${baseUrl}Thursday_Throwback.jpg`,
+      friday_deals: `${baseUrl}Friday_Deals.jpg`,
+      saturday_special: `${baseUrl}Saturday_Special.jpg`,
+      sunday_selfcare: `${baseUrl}Sunday_Selfcare.jpg`,
     };
 
     return thumbnails[occasion || "general"] || thumbnails.general;
@@ -526,6 +557,70 @@ export class DealTemplateGeneratorService {
         );
         break;
 
+      // Day-specific templates
+      case "monday_motivation":
+        template = this.createMondayMotivationTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "tuesday_twofer":
+        template = this.createTuesdayTwoferTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "wednesday_midweek":
+        template = this.createWednesdayMidweekTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "thursday_throwback":
+        template = this.createThursdayThrowbackTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "friday_deals":
+        template = this.createFridayDealsTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "saturday_special":
+        template = this.createSaturdaySpecialTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
+      case "sunday_selfcare":
+        template = this.createSundaySelfcareTemplate(
+          businessName,
+          targetAudience,
+          discountRange,
+          suggestedHours
+        );
+        break;
+
       default:
         template = this.createGeneralTemplate(
           businessName,
@@ -544,19 +639,20 @@ export class DealTemplateGeneratorService {
 
   private static createHolidayTemplate(
     businessName: string,
-    industry: string,
+    _industry: string,
     targetAudience: string[],
     discountRange: string,
     suggestedDays: string[],
     suggestedHours: string[],
     specificHoliday?: string,
-    brandVoice: string[] = []
+    _brandVoice: string[] = []
   ): DealTemplate {
     const holiday = specificHoliday || "the holiday season";
     const discount = this.extractDiscountNumber(discountRange);
+    const title = `${holiday} Special - Save ${discount}%!`;
 
     return {
-      title: `${holiday} Special - Save ${discount}%!`,
+      title,
       description: `Celebrate ${holiday} with us! Enjoy ${discount}% off and make this ${holiday} memorable. Perfect for ${targetAudience.join(" and ").toLowerCase()}.`,
       suggestedDiscount: discountRange,
       targetAudience,
@@ -573,24 +669,29 @@ export class DealTemplateGeneratorService {
         "Cross-promote on social media with holiday hashtags",
         "Consider gift card promotions for holiday gifting",
       ],
+      tags: this.generateTags("holiday", title, targetAudience, [holiday.toLowerCase().replace(/\s+/g, "-")]),
+      dealType: this.getDealType("holiday"),
+      termsAndConditions: this.generateTermsAndConditions("holiday", discount),
+      image: this.getDefaultThumbnail("holiday"),
     };
   }
 
   private static createSeasonalTemplate(
     businessName: string,
-    industry: string,
+    _industry: string,
     targetAudience: string[],
     discountRange: string,
     suggestedDays: string[],
     suggestedHours: string[],
-    brandVoice: string[],
-    responseMap: Map<string, any>
+    _brandVoice: string[],
+    _responseMap: Map<string, any>
   ): DealTemplate {
     const discount = this.extractDiscountNumber(discountRange);
     const currentSeason = this.getCurrentSeason();
+    const title = `${currentSeason} Savings - ${discount}% Off`;
 
     return {
-      title: `${currentSeason} Savings - ${discount}% Off`,
+      title,
       description: `Welcome ${currentSeason.toLowerCase()} with our special offer! Get ${discount}% off and enjoy the best of the season at ${businessName}.`,
       suggestedDiscount: discountRange,
       targetAudience,
@@ -607,26 +708,32 @@ export class DealTemplateGeneratorService {
         "Consider bundling seasonal items",
         "Leverage weather-related messaging",
       ],
+      tags: this.generateTags("seasonal", title, targetAudience, [currentSeason.toLowerCase()]),
+      dealType: this.getDealType("seasonal"),
+      termsAndConditions: this.generateTermsAndConditions("seasonal", discount),
+      image: this.getDefaultThumbnail("seasonal"),
     };
   }
 
   private static createSlowPeriodTemplate(
     businessName: string,
-    industry: string,
+    _industry: string,
     targetAudience: string[],
     discountRange: string,
     slowPeriods: string[],
     suggestedHours: string[],
-    brandVoice: string[]
+    _brandVoice: string[]
   ): DealTemplate {
     const discount = this.extractDiscountNumber(discountRange);
     const periodDesc = slowPeriods.length > 0 ? slowPeriods[0] : "weekday";
+    const title = `Beat the Rush - ${discount}% Off During Off-Peak Hours!`;
+    const extendedAudience = [...targetAudience, "Budget-conscious customers"];
 
     return {
-      title: `Beat the Rush - ${discount}% Off During Off-Peak Hours!`,
+      title,
       description: `Skip the crowds and save! Visit us during ${periodDesc.toLowerCase()} and enjoy ${discount}% off. Experience the same great service with no wait.`,
       suggestedDiscount: discountRange,
-      targetAudience: [...targetAudience, "Budget-conscious customers"],
+      targetAudience: extendedAudience,
       bestTiming: {
         days: this.getSlowDays([]),
         hours: suggestedHours,
@@ -640,22 +747,27 @@ export class DealTemplateGeneratorService {
         "Consider loyalty program tie-ins",
         "Use social proof with customer testimonials",
       ],
+      tags: this.generateTags("slow_period", title, extendedAudience),
+      dealType: this.getDealType("slow_period"),
+      termsAndConditions: this.generateTermsAndConditions("slow_period", discount),
+      image: this.getDefaultThumbnail("slow_period"),
     };
   }
 
   private static createTrendingTemplate(
     businessName: string,
-    industry: string,
+    _industry: string,
     targetAudience: string[],
     discountRange: string,
     suggestedDays: string[],
     suggestedHours: string[],
-    brandVoice: string[]
+    _brandVoice: string[]
   ): DealTemplate {
     const discount = this.extractDiscountNumber(discountRange);
+    const title = `Trending Now - Limited Time ${discount}% Off!`;
 
     return {
-      title: `Trending Now - Limited Time ${discount}% Off!`,
+      title,
       description: `Join the trend! Everyone's talking about ${businessName}. Get ${discount}% off and see what the hype is all about.`,
       suggestedDiscount: discountRange,
       targetAudience,
@@ -672,23 +784,28 @@ export class DealTemplateGeneratorService {
         "Partner with local influencers",
         "Make it Instagram/TikTok worthy",
       ],
+      tags: this.generateTags("trending", title, targetAudience, ["viral", "hype"]),
+      dealType: this.getDealType("trending"),
+      termsAndConditions: this.generateTermsAndConditions("trending", discount),
+      image: this.getDefaultThumbnail("trending"),
     };
   }
 
   private static createGeneralTemplate(
     businessName: string,
-    industry: string,
+    _industry: string,
     targetAudience: string[],
     discountRange: string,
     suggestedDays: string[],
     suggestedHours: string[],
-    marketingGoals: string[],
-    brandVoice: string[]
+    _marketingGoals: string[],
+    _brandVoice: string[]
   ): DealTemplate {
     const discount = this.extractDiscountNumber(discountRange);
+    const title = `Special Offer - Save ${discount}% at ${businessName}`;
 
     return {
-      title: `Special Offer - Save ${discount}% at ${businessName}`,
+      title,
       description: `Discover quality and value at ${businessName}! Enjoy ${discount}% off your visit. Perfect for ${targetAudience.join(", ").toLowerCase()}.`,
       suggestedDiscount: discountRange,
       targetAudience,
@@ -704,10 +821,359 @@ export class DealTemplateGeneratorService {
         "Create urgency with limited-time framing",
         "Follow up with customers after their visit",
       ],
+      tags: this.generateTags("general", title, targetAudience),
+      dealType: this.getDealType("general"),
+      termsAndConditions: this.generateTermsAndConditions("general", discount),
+      image: this.getDefaultThumbnail("general"),
+    };
+  }
+
+  // Day-specific template creation methods
+  private static createMondayMotivationTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Motivation Monday - ${discount}% Off to Start Your Week!`;
+
+    return {
+      title,
+      description: `Kickstart your week with energy! Get ${discount}% off at ${businessName} this Monday. Start strong and save big.`,
+      suggestedDiscount: discountRange,
+      targetAudience,
+      bestTiming: {
+        days: ["Monday"],
+        hours: suggestedHours,
+        seasonalNote: "Best for morning and lunch hours when people need motivation",
+      },
+      callToAction: `Beat the Monday blues - visit ${businessName} today!`,
+      marketingTips: [
+        "Focus on energizing, positive messaging",
+        "Target professionals and students starting their week",
+        "Promote through morning social media posts",
+        "Partner with coffee/breakfast offerings if applicable",
+        "Use motivational quotes and imagery",
+      ],
+      tags: this.generateTags("monday_motivation", title, targetAudience),
+      dealType: this.getDealType("monday_motivation"),
+      termsAndConditions: this.generateTermsAndConditions("monday_motivation", discount),
+      image: this.getDefaultThumbnail("monday_motivation"),
+    };
+  }
+
+  private static createTuesdayTwoferTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Two-for-Tuesday - Buy One Get One ${discount}% Off!`;
+    const extendedAudience = [...targetAudience, "Groups", "Friends", "Couples"];
+
+    return {
+      title,
+      description: `Double the value this Tuesday! Buy one, get the second at ${discount}% off at ${businessName}. Perfect for sharing with friends or family.`,
+      suggestedDiscount: discountRange,
+      targetAudience: extendedAudience,
+      bestTiming: {
+        days: ["Tuesday"],
+        hours: suggestedHours,
+        seasonalNote: "Great for lunch and after-work hours",
+      },
+      callToAction: `Bring a friend and save - visit ${businessName} this Tuesday!`,
+      marketingTips: [
+        "Emphasize sharing and social experiences",
+        "Target groups, couples, and friends",
+        "Create shareable social media content",
+        "Consider referral bonuses",
+        "Use pair/duo imagery in marketing",
+      ],
+      tags: this.generateTags("tuesday_twofer", title, extendedAudience),
+      dealType: this.getDealType("tuesday_twofer"),
+      termsAndConditions: this.generateTermsAndConditions("tuesday_twofer", discount),
+      image: this.getDefaultThumbnail("tuesday_twofer"),
+    };
+  }
+
+  private static createWednesdayMidweekTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Midweek Madness - ${discount}% Off Wednesday Special!`;
+
+    return {
+      title,
+      description: `Beat the midweek slump! Enjoy ${discount}% off at ${businessName} this Wednesday. You're halfway to the weekend - treat yourself!`,
+      suggestedDiscount: discountRange,
+      targetAudience,
+      bestTiming: {
+        days: ["Wednesday"],
+        hours: suggestedHours,
+        seasonalNote: "Target lunch breaks and after-work hours",
+      },
+      callToAction: `Break up your week - visit ${businessName} this Wednesday!`,
+      marketingTips: [
+        "Use 'hump day' messaging",
+        "Emphasize treating yourself mid-week",
+        "Target lunch crowds and after-work customers",
+        "Create urgency with one-day-only framing",
+        "Highlight stress relief and self-reward themes",
+      ],
+      tags: this.generateTags("wednesday_midweek", title, targetAudience),
+      dealType: this.getDealType("wednesday_midweek"),
+      termsAndConditions: this.generateTermsAndConditions("wednesday_midweek", discount),
+      image: this.getDefaultThumbnail("wednesday_midweek"),
+    };
+  }
+
+  private static createThursdayThrowbackTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Throwback Thursday - ${discount}% Off Classic Favorites!`;
+
+    return {
+      title,
+      description: `Celebrate Throwback Thursday at ${businessName}! Get ${discount}% off our classic offerings. Nostalgia never felt so good.`,
+      suggestedDiscount: discountRange,
+      targetAudience,
+      bestTiming: {
+        days: ["Thursday"],
+        hours: suggestedHours,
+        seasonalNote: "Leverage #TBT social media trend",
+      },
+      callToAction: `Relive the classics - visit ${businessName} this Thursday!`,
+      marketingTips: [
+        "Use #TBT and #ThrowbackThursday hashtags",
+        "Feature classic/legacy products or services",
+        "Share nostalgic content and old photos",
+        "Appeal to long-time customers",
+        "Create vintage-style marketing materials",
+      ],
+      tags: this.generateTags("thursday_throwback", title, targetAudience, ["tbt"]),
+      dealType: this.getDealType("thursday_throwback"),
+      termsAndConditions: this.generateTermsAndConditions("thursday_throwback", discount),
+      image: this.getDefaultThumbnail("thursday_throwback"),
+    };
+  }
+
+  private static createFridayDealsTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Friday Deals & Offers - ${discount}% Off Weekend Kickoff!`;
+    const extendedAudience = [...targetAudience, "Weekend planners", "Party-goers"];
+
+    return {
+      title,
+      description: `Start your weekend right! Get ${discount}% off at ${businessName} this Friday. Celebrate the end of the week with amazing deals.`,
+      suggestedDiscount: discountRange,
+      targetAudience: extendedAudience,
+      bestTiming: {
+        days: ["Friday"],
+        hours: suggestedHours.length > 0 ? suggestedHours : ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
+        seasonalNote: "Peak times are lunch and after-work hours",
+      },
+      callToAction: `Kick off your weekend - visit ${businessName} this Friday!`,
+      marketingTips: [
+        "Create excitement around weekend plans",
+        "Target after-work crowds",
+        "Use celebratory, upbeat messaging",
+        "Promote happy hour style deals",
+        "Leverage TGIF sentiment in marketing",
+        "Consider extended hours promotions",
+      ],
+      tags: this.generateTags("friday_deals", title, extendedAudience),
+      dealType: this.getDealType("friday_deals"),
+      termsAndConditions: this.generateTermsAndConditions("friday_deals", discount),
+      image: this.getDefaultThumbnail("friday_deals"),
+    };
+  }
+
+  private static createSaturdaySpecialTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Saturday Special - ${discount}% Off Family & Friends!`;
+    const extendedAudience = [...targetAudience, "Families", "Groups", "Weekend shoppers"];
+
+    return {
+      title,
+      description: `Make Saturday memorable! Bring the whole crew and get ${discount}% off at ${businessName}. Perfect for family outings and friend gatherings.`,
+      suggestedDiscount: discountRange,
+      targetAudience: extendedAudience,
+      bestTiming: {
+        days: ["Saturday"],
+        hours: suggestedHours.length > 0 ? suggestedHours : ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
+        seasonalNote: "Target families and groups during peak weekend hours",
+      },
+      callToAction: `Make it a Saturday to remember - visit ${businessName}!`,
+      marketingTips: [
+        "Target families and larger groups",
+        "Emphasize quality time together",
+        "Offer group/family packages",
+        "Create Instagram-worthy experiences",
+        "Consider kid-friendly promotions",
+        "Highlight convenient weekend hours",
+      ],
+      tags: this.generateTags("saturday_special", title, extendedAudience),
+      dealType: this.getDealType("saturday_special"),
+      termsAndConditions: this.generateTermsAndConditions("saturday_special", discount),
+      image: this.getDefaultThumbnail("saturday_special"),
+    };
+  }
+
+  private static createSundaySelfcareTemplate(
+    businessName: string,
+    targetAudience: string[],
+    discountRange: string,
+    suggestedHours: string[]
+  ): DealTemplate {
+    const discount = this.extractDiscountNumber(discountRange);
+    const title = `Self-Care Sunday - ${discount}% Off Relaxation!`;
+    const extendedAudience = [...targetAudience, "Wellness seekers", "Self-care enthusiasts"];
+
+    return {
+      title,
+      description: `Treat yourself this Sunday! Enjoy ${discount}% off at ${businessName}. Relax, recharge, and prepare for the week ahead.`,
+      suggestedDiscount: discountRange,
+      targetAudience: extendedAudience,
+      bestTiming: {
+        days: ["Sunday"],
+        hours: suggestedHours.length > 0 ? suggestedHours : ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
+        seasonalNote: "Focus on relaxation and preparation for the week",
+      },
+      callToAction: `Recharge your soul - visit ${businessName} this Sunday!`,
+      marketingTips: [
+        "Use calming, peaceful imagery",
+        "Emphasize relaxation and self-care",
+        "Target wellness-focused customers",
+        "Promote stress relief benefits",
+        "Consider brunch or spa-like experiences",
+        "Use #SelfCareSunday hashtag",
+      ],
+      tags: this.generateTags("sunday_selfcare", title, extendedAudience),
+      dealType: this.getDealType("sunday_selfcare"),
+      termsAndConditions: this.generateTermsAndConditions("sunday_selfcare", discount),
+      image: this.getDefaultThumbnail("sunday_selfcare"),
     };
   }
 
   // Helper methods
+
+  /**
+   * Generate tags based on occasion and template content
+   */
+  private static generateTags(
+    occasion: string,
+    title: string,
+    targetAudience: string[],
+    additionalTags: string[] = []
+  ): string[] {
+    const baseTags: string[] = [];
+
+    // Add occasion-based tags
+    const occasionTags: Record<string, string[]> = {
+      holiday: ["holiday", "celebration", "festive", "seasonal"],
+      seasonal: ["seasonal", "limited-time", "special"],
+      slow_period: ["off-peak", "value", "savings", "budget-friendly"],
+      trending: ["trending", "popular", "viral", "must-try"],
+      general: ["deal", "offer", "savings", "discount"],
+      monday_motivation: ["monday", "motivation", "start-of-week", "energy"],
+      tuesday_twofer: ["tuesday", "bogo", "two-for-one", "sharing"],
+      wednesday_midweek: ["wednesday", "midweek", "hump-day", "treat"],
+      thursday_throwback: ["thursday", "throwback", "classic", "nostalgia"],
+      friday_deals: ["friday", "weekend", "tgif", "celebration"],
+      saturday_special: ["saturday", "weekend", "family", "friends"],
+      sunday_selfcare: ["sunday", "self-care", "relaxation", "wellness"],
+    };
+
+    baseTags.push(...(occasionTags[occasion] || occasionTags.general));
+
+    // Add audience-based tags
+    const audienceTags = targetAudience
+      .slice(0, 3)
+      .map(a => a.toLowerCase().replace(/\s+/g, "-"));
+    baseTags.push(...audienceTags);
+
+    // Add any additional tags
+    baseTags.push(...additionalTags);
+
+    // Extract key words from title
+    const titleWords = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter(word => word.length > 3)
+      .slice(0, 3);
+    baseTags.push(...titleWords);
+
+    // Remove duplicates and return
+    return [...new Set(baseTags)].slice(0, 10);
+  }
+
+  /**
+   * Get deal type based on occasion
+   */
+  private static getDealType(occasion: string): string {
+    const dealTypeMap: Record<string, string> = {
+      holiday: "offer",
+      seasonal: "offer",
+      slow_period: "flashdeal",
+      trending: "spotlight",
+      general: "offer",
+      monday_motivation: "offer",
+      tuesday_twofer: "offer",
+      wednesday_midweek: "offer",
+      thursday_throwback: "offer",
+      friday_deals: "offer",
+      saturday_special: "social_event",
+      sunday_selfcare: "offer",
+    };
+
+    return dealTypeMap[occasion] || "offer";
+  }
+
+  /**
+   * Generate terms and conditions based on occasion
+   */
+  private static generateTermsAndConditions(occasion: string, discount: string): string {
+    const baseTerms = `Valid on selected items only. ${discount}% discount applied at checkout. `;
+
+    const occasionTerms: Record<string, string> = {
+      holiday: "Offer valid during holiday period only. Cannot be combined with other promotions. ",
+      seasonal: "Seasonal offer subject to availability. Limited quantities may apply. ",
+      slow_period: "Valid only during specified off-peak hours. ",
+      trending: "Limited time offer while supplies last. ",
+      general: "Standard terms and conditions apply. ",
+      monday_motivation: "Valid on Mondays only. ",
+      tuesday_twofer: "Buy one get one offer. Second item must be of equal or lesser value. Valid on Tuesdays only. ",
+      wednesday_midweek: "Valid on Wednesdays only. ",
+      thursday_throwback: "Valid on Thursdays only. Applies to classic/featured items. ",
+      friday_deals: "Valid on Fridays only. ",
+      saturday_special: "Valid on Saturdays only. Group size limits may apply. ",
+      sunday_selfcare: "Valid on Sundays only. ",
+    };
+
+    return baseTerms + (occasionTerms[occasion] || occasionTerms.general) +
+      "Management reserves the right to modify or cancel this offer at any time. Not valid with other offers or discounts.";
+  }
+
   private static extractDiscountNumber(discountRange: string): string {
     // Extract the first number from discount range (e.g., "10-20%" -> "10")
     const match = discountRange.match(/\d+/);

@@ -6,6 +6,7 @@ import {
   BusinessAIAssistantModel,
   IBusiness_AI_Assistant,
 } from "../../models/businessAIAssistant.model.js";
+import { Tone } from "../../utils/types/types.js";
 import { logger } from "../../utils/logger.js";
 import { getS3ObjectStream } from "../../utils/s3.js";
 
@@ -19,7 +20,7 @@ export type Business = {
   name: string;
   industry: string;
   website?: string;
-  tone: string;
+  tone?: Tone | string;
   description?: string;
   tags: string[];
   subCategories: string[];
@@ -415,7 +416,9 @@ export class AIService {
         }`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
         `Tone: ${
-          updates.tone ?? agent.tone ?? "professional, warm, succinct"
+          (updates.tone as any) ??
+          (agent.tone as any) ??
+          "professional, warm, succinct"
         }.`,
         `If you don't know, say so briefly and ask for missing info.`,
         `Use the provided tools to fetch live data from the business backend when relevant.`,

@@ -9,8 +9,14 @@ export enum TemplateCreatorType {
 }
 
 export enum TemplateType {
+  FORMAL = "business_event",
+  INFORMAL = "social_event",
   OFFER = "offer",
+  PRIVATE = "private",
   FLASHDEAL = "flashdeal",
+  SPOTLIGHT = "spotlight",
+  DROPPED_PIN = "dropped_pin",
+  // Legacy alias
   BUSINESS_EVENT = "business_event",
 }
 
@@ -42,6 +48,7 @@ export interface IDealTemplate {
   businessIndustry?: string | Schema.Types.ObjectId;
   businessCategories: Array<string | Schema.Types.ObjectId>;
   thumbnail?: string;
+  tags?: string[];
   // AI-generated metadata
   generatedByAI?: boolean;
   aiGenerationData?: {
@@ -87,6 +94,7 @@ export const DealTemplateSchema = new Schema<IDealTemplate>(
     businessIndustry: { type: Schema.Types.ObjectId, ref: "Industry" },
     businessCategories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
     thumbnail: { type: String },
+    tags: [{ type: String }],
     generatedByAI: { type: Boolean, default: false },
     aiGenerationData: {
       occasion: { type: String },

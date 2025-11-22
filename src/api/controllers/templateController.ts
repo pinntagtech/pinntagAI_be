@@ -328,19 +328,27 @@ export const generateGenericForIndustry = async (req: Request, res: Response) =>
  */
 export const triggerScheduledJob = async (req: Request, res: Response) => {
   try {
-    const { jobName } = req.body;
+    const { jobName, dayOfWeek } = req.body;
 
     if (!jobName) {
       return res.status(400).json({
         success: false,
-        error: "jobName is required. Use 'template-update' to trigger the overnight update job.",
+        error: "jobName is required. Use 'template-update' or 'daily-template' to trigger jobs.",
       });
     }
 
-    logger.info({ jobName }, "Manually triggering scheduled job");
+    // Validate dayOfWeek if provided
+    if (dayOfWeek !== undefined && (dayOfWeek < 0 || dayOfWeek > 6)) {
+      return res.status(400).json({
+        success: false,
+        error: "dayOfWeek must be between 0 (Sunday) and 6 (Saturday)",
+      });
+    }
+
+    logger.info({ jobName, dayOfWeek }, "Manually triggering scheduled job");
 
     // Trigger the job asynchronously
-    JobScheduler.triggerJob(jobName)
+    JobScheduler.triggerJob(jobName, { dayOfWeek })
       .then(() => {
         logger.info({ jobName }, "Scheduled job completed successfully");
       })
@@ -352,12 +360,79 @@ export const triggerScheduledJob = async (req: Request, res: Response) => {
       success: true,
       message: `Scheduled job '${jobName}' triggered successfully`,
       note: "Job is running asynchronously. Check logs for completion status.",
+      ...(dayOfWeek !== undefined && { dayOfWeek }),
     });
   } catch (error: any) {
     logger.error({ error }, "Error triggering scheduled job");
     return res.status(500).json({
       success: false,
       error: error.message || "Failed to trigger scheduled job",
+    });
+  }
+};
+
+/**
+ * Trigger daily template generation for a specific day
+ * POST /api/templates/trigger-daily-template
+ */
+export const triggerDailyTemplate = async (req: Request, res: Response) => {
+  try {
+    const { dayOfWeek } = req.body;
+
+    // Validate dayOfWeek if provided
+    if (dayOfWeek !== undefined && (dayOfWeek < 0 || dayOfWeek > 6)) {
+      return res.status(400).json({
+        success: false,
+        error: "dayOfWeek must be between 0 (Sunday) and 6 (Saturday)",
+        dayMapping: {
+          0: "Sunday (Self-Care Sunday)",
+          1: "Monday (Motivation Monday)",
+          2: "Tuesday (Two-for-Tuesday)",
+          3: "Wednesday (Midweek Madness)",
+          4: "Thursday (Throwback Thursday)",
+          5: "Friday (Friday Deals & Offers)",
+          6: "Saturday (Saturday Special)",
+        },
+      });
+    }
+
+    const dayNames = [
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday"
+    ];
+    const themes = [
+      "Self-Care Sunday", "Motivation Monday", "Two-for-Tuesday",
+      "Midweek Madness", "Throwback Thursday", "Friday Deals & Offers",
+      "Saturday Special"
+    ];
+
+    const targetDay = dayOfWeek !== undefined ? dayOfWeek : new Date().getDay();
+    const dayName = dayNames[targetDay];
+    const theme = themes[targetDay];
+
+    logger.info({ dayOfWeek: targetDay, dayName, theme }, "Triggering daily template generation");
+
+    // Trigger the job asynchronously
+    JobScheduler.triggerJob("daily-template", { dayOfWeek: targetDay })
+      .then(() => {
+        logger.info({ dayName, theme }, "Daily template generation completed successfully");
+      })
+      .catch((error) => {
+        logger.error({ error, dayName }, "Daily template generation failed");
+      });
+
+    return res.status(202).json({
+      success: true,
+      message: `Daily template generation triggered for ${dayName}`,
+      theme,
+      dayOfWeek: targetDay,
+      note: "Job is running asynchronously. Check logs for completion status.",
+    });
+  } catch (error: any) {
+    logger.error({ error }, "Error triggering daily template generation");
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to trigger daily template generation",
     });
   }
 };

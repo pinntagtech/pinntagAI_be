@@ -9,7 +9,7 @@ aiRouter.use(internalApiKeyGuard);
 
 /**
  * POST /ai/create-agent
- * Body: { id?: string, name: string, category?: string, website?: string, tone?: string, businessId: string, subCategories?: string[] }
+ * Body: { id?: string, name: string, category?: string, website?: string, tone?: "professional" | "casual" | "friendly", businessId: string, subCategories?: string[] }
  * Creates a new AI agent for a business
  */
 aiRouter.post("/create-agent", aiController.createAgent);

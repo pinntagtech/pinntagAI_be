@@ -1,14 +1,15 @@
 import { Router } from "express";
 import {
-  generateTemplate,
-  generateMultipleTemplates,
-  getTemplates,
-  getTemplateById,
-  triggerTemplateUpdate,
   generateForAllBusinesses,
   generateGenericForIndustry,
-  triggerScheduledJob,
+  generateMultipleTemplates,
+  generateTemplate,
   getSchedulerStatus,
+  getTemplateById,
+  getTemplates,
+  triggerDailyTemplate,
+  triggerScheduledJob,
+  triggerTemplateUpdate,
 } from "../controllers/templateController.js";
 
 const router = Router();
@@ -76,9 +77,20 @@ router.post("/generate-generic-for-industry", generateGenericForIndustry);
  * @route   POST /api/templates/trigger-scheduled-job
  * @desc    Manually trigger a scheduled job on demand (for testing)
  * @access  Public (should be protected in production)
- * @body    { jobName: "template-update" }
+ * @body    { jobName: "template-update" | "daily-template", dayOfWeek?: 0-6 }
  */
 router.post("/trigger-scheduled-job", triggerScheduledJob);
+
+/**
+ * @route   POST /api/templates/trigger-daily-template
+ * @desc    Trigger daily themed template generation for a specific day
+ * @access  Public (should be protected in production)
+ * @body    { dayOfWeek?: 0-6 } (0=Sunday, 5=Friday, etc. Defaults to today)
+ * @examples
+ *   POST /api/templates/trigger-daily-template - Generate today's themed templates
+ *   POST /api/templates/trigger-daily-template { "dayOfWeek": 5 } - Generate Friday Deals & Offers
+ */
+router.post("/trigger-daily-template", triggerDailyTemplate);
 
 /**
  * @route   GET /api/templates/scheduler-status

@@ -27,12 +27,12 @@ export class AIController {
           error: "Business name is required",
         });
       }
-      if (business.website && !/^https?:\/\/.+\..+/.test(business.website)) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid website URL format",
-        });
-      }
+      // if (business.website && !/^https?:\/\/.+\..+/.test(business.website)) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     error: "Invalid website URL format",
+      //   });
+      // }
       if (
         business.tone &&
         !["professional", "casual", "friendly"].includes(business.tone)
@@ -88,16 +88,16 @@ export class AIController {
           error: "SubCategories are required",
         });
       }
-      if (
-        !business.tags ||
-        !Array.isArray(business.tags) ||
-        business.tags.length === 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          error: "Tags are required",
-        });
-      }
+      // if (
+      //   !business.tags ||
+      //   !Array.isArray(business.tags) ||
+      //   business.tags.length === 0
+      // ) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     error: "Tags are required",
+      //   });
+      // }
       const result = await AIService.createAgentForBusiness(business);
       logger.info({ result }, "Created business agent");
 

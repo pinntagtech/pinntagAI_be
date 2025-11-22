@@ -29,3 +29,10 @@ export interface StreamingJobUpdate {
   timestamp: string;
   eventType: "status_change" | "progress_update" | "log_entry";
 }
+
+// Central enum for allowed assistant tones
+export enum Tone {
+  Professional = "professional",
+  Casual = "casual",
+  Friendly = "friendly",
+}

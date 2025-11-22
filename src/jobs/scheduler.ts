@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { logger } from "../utils/logger.js";
 import { TemplateUpdateJob } from "./templateUpdateJob.js";
+import { DailyTemplateJob } from "./dailyTemplateJob.js";
 
 /**
  * Job Scheduler
@@ -26,6 +27,21 @@ export class JobScheduler {
           await TemplateUpdateJob.execute();
         } catch (error: any) {
           logger.error({ error }, "Scheduled template update job failed");
+        }
+      }
+    );
+
+    // Schedule daily themed template generation
+    // Runs every day at 6:00 AM to generate day-specific templates
+    this.scheduleJob(
+      "daily-template",
+      "0 6 * * *", // Cron expression: At 06:00 AM every day
+      async () => {
+        logger.info("Running daily template generation job");
+        try {
+          await DailyTemplateJob.execute();
+        } catch (error: any) {
+          logger.error({ error }, "Daily template generation job failed");
         }
       }
     );
@@ -113,12 +129,19 @@ export class JobScheduler {
   /**
    * Manually trigger a job by name
    */
-  static async triggerJob(name: string): Promise<void> {
-    logger.info({ jobName: name }, "Manually triggering job");
+  static async triggerJob(name: string, options?: { dayOfWeek?: number }): Promise<void> {
+    logger.info({ jobName: name, options }, "Manually triggering job");
 
     switch (name) {
       case "template-update":
         await TemplateUpdateJob.execute();
+        break;
+      case "daily-template":
+        if (options?.dayOfWeek !== undefined) {
+          await DailyTemplateJob.executeForDay(options.dayOfWeek);
+        } else {
+          await DailyTemplateJob.execute();
+        }
         break;
       default:
         throw new Error(`Unknown job: ${name}`);
