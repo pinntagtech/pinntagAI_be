@@ -4,7 +4,7 @@ import axios from 'axios';
 
 @Injectable()
 export class PinntagAiService {
-  private baseUrl = 'http://localhost:4001'; // same instance, internal call
+  private baseUrl = 'http://localhost:4200'; // same instance, internal call
   private internalKey = 'change-me';
 
   async createAgent(payload: any) {
@@ -38,6 +38,7 @@ export class PinntagAiService {
 
   
   async generateBusinessDescription(businessId: string) {
+    console.log("businessId:",businessId);
     const response = await axios.post(
       `${this.baseUrl}/ai/generate-description/${businessId}`,
       {
