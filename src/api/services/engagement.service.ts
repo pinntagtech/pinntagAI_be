@@ -294,7 +294,7 @@ class EngagementService {
     ]);
 
     return {
-      items: items as IEngagement[],
+      items: items as unknown as IEngagement[],
       total,
       hasMore: offset + items.length < total,
     };
