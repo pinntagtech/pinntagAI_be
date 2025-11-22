@@ -50,7 +50,7 @@ export class PinntagAiService {
     );
     return response.data;
   }
-  async getTitleSuggestions(businessId: string) {
+  async generateTitleSuggestions(businessId: string) {
     const response = await axios.post(
       `${this.baseUrl}/ai/generate-tags/${businessId}`,
       {

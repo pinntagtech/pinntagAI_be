@@ -1586,16 +1586,16 @@ export class BusinessService {
       const createdBusiness = await this.businessModel.create(createObj);
 
       //ai-agent creation
-      // let agentName = `${createdBusiness.name} Assistant`;
-      // this.pinnAiService.createAgent({
-      //   name: agentName,
-      //   tone: 'Professional',
-      //   businessId: createdBusiness._id.toString(),
-      //   categories: businessCategoryTitles,
-      //   industry: findBusinessIndustry ? findBusinessIndustry.title : null,
-      //   website: createdBusiness.website ? createdBusiness.website : null,
-      //   businessName: createdBusiness.name,
-      // });
+      let agentName = `${createdBusiness.name} Assistant`;
+      this.pinnAiService.createAgent({
+        name: agentName,
+        tone: 'professional',
+        businessId: createdBusiness._id.toString(),
+        subCategories: businessCategoryTitles,
+        category: findBusinessIndustry ? findBusinessIndustry.title : null,
+        website: createdBusiness.website ? createdBusiness.website : null,
+        businessName: createdBusiness.name,
+      });
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
