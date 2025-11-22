@@ -1542,6 +1542,44 @@ export class BusinessService {
         authorisedUser: new mongoose.Types.ObjectId(userId),
         roleOfCreator: data.roleOfCreator,
       };
+
+       if (data.businessIndustry && data.businessCategories) {
+        const findBusinessIndustry = await this.businessIndModel.findById(
+          data.businessIndustry,
+        );
+        if (!findBusinessIndustry) {
+          return {
+            success: false,
+            message: 'Please provide valid Business Industry',
+          };
+        }
+        let businessCategoriesIds = [];
+        for (let category of data.businessCategories) {
+          if (!isValidObjectId(category)) {
+            return {
+              success: false,
+              message: `Please provide valid Business Category Id:${category}`,
+            };
+          }
+          const findBusinessCategory =
+            await this.businessCategoryModel.findById(category);
+          if (!findBusinessCategory) {
+            return {
+              success: false,
+              message: `Please provide valid Business Category Id:${category}`,
+            };
+          }
+          businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+        }
+
+        createObj['businessIndustry'] = new mongoose.Types.ObjectId(
+          data.businessIndustry,
+        );
+        createObj['businessCategories'] = businessCategoriesIds;
+      }
+
+
+
       if (data.website) createObj['website'] = data.website;
       // if (data.brand && isValidObjectId(data.brand))
       // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);

@@ -52,6 +52,14 @@ export class CreateBusinessDto {
   @IsNumber()
   scalabilityFactor: number;
 
+  @IsOptional()
+  @IsString()
+  businessIndustry: string;
+
+  @IsOptional()
+  @IsArray()
+  businessCategories: Array<string | mongoose.Types.ObjectId>;
+
   // @IsString()
   // brand:string;
 
