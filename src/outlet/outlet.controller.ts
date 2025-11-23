@@ -17,7 +17,11 @@ import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
-import { CreateOutletDto, CreateOutletDtoV2, UpdateMobileOutletDto } from './dto/create-outlet.dto';
+import {
+  CreateOutletDto,
+  CreateOutletDtoV2,
+  UpdateMobileOutletDto,
+} from './dto/create-outlet.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { JwtPayload } from 'jsonwebtoken';
 import { UpdateOutletDto } from './dto/update-outlet.dto';
@@ -126,17 +130,21 @@ export class OutletController {
   }
   @Post('mobile')
   @UseGuards(JwtGuard2)
-   @UseInterceptors(
-      FileInterceptor('file', {
-        limits: { fileSize: 50000000 },
-      }),
-    )
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50000000 },
+    }),
+  )
   async createOutletV2(
     @Body() createOutletDto: CreateOutletDtoV2,
     @TokenDecoder() user: JwtPayload,
-     @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.outletService.createMobileOutlet(createOutletDto, user,image);
+    const result = await this.outletService.createMobileOutlet(
+      createOutletDto,
+      user,
+      image,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -148,18 +156,23 @@ export class OutletController {
   }
   @Put('mobile/:id')
   @UseGuards(JwtGuard2)
-   @UseInterceptors(
-      FileInterceptor('file', {
-        limits: { fileSize: 50000000 },
-      }),
-    )
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50000000 },
+    }),
+  )
   async updateMobileOutlet(
     @Param('id') id: string,
     @Body() updateOutletDto: UpdateMobileOutletDto,
     @TokenDecoder() user: JwtPayload,
-     @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ) {
-    const result = await this.outletService.updateMobileOutlet(id,updateOutletDto, user,image);
+    const result = await this.outletService.updateMobileOutlet(
+      id,
+      updateOutletDto,
+      user,
+      image,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -358,4 +371,35 @@ export class OutletController {
     }
   }
 
+  @Post('activate/:id')
+  @UseGuards(JwtGuard2)
+  async activateOutlet(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.outletService.activateOutlet(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Post('deactivate/:id')
+  @UseGuards(JwtGuard2)
+  async deactivateOutlet(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.outletService.deactivateOutlet(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

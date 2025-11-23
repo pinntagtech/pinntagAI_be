@@ -132,6 +132,8 @@ export class Outlet {
   drivePath: mongoose.Types.ObjectId;
   @Prop({ ref: MobileSpots.name })
   spots: mongoose.Types.ObjectId[];
+  @Prop({default: false})
+  isActive: boolean;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);

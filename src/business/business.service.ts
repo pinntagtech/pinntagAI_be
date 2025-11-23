@@ -1587,26 +1587,27 @@ export class BusinessService {
 
       //ai-agent creation
       let agentName = `${createdBusiness.name} Assistant`;
-      this.pinnAiService.createAgent({
-        name: agentName,
-        tone: 'professional',
-        businessId: createdBusiness._id.toString(),
-        subCategories: businessCategoryTitles,
-        category: findBusinessIndustry ? findBusinessIndustry.title : null,
-        website: createdBusiness.website ? createdBusiness.website : null,
-        businessName: createdBusiness.name,
-      });
+      // this.pinnAiService.createAgent({
+      //   name: agentName,
+      //   tone: 'professional',
+      //   businessId: createdBusiness._id.toString(),
+      //   subCategories: businessCategoryTitles,
+      //   category: findBusinessIndustry ? findBusinessIndustry.title : null,
+      //   website: createdBusiness.website ? createdBusiness.website : null,
+      //   businessName: createdBusiness.name,
+      // });
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdBusiness._id,
         Business.name,
       );
-      const galleryFolder = this.driveService.createFolder(createdBusiness.id, {
+      this.driveService.createFolder(createdBusiness.id, {
         parentDirectory: driveDetails.id,
         parentType: 'Drive',
         folderName: 'Gallery',
       });
+
       await this.businessModel.updateOne(
         { _id: createdBusiness._id },
         { $set: { drive: driveDetails._id } },

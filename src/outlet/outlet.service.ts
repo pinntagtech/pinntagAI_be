@@ -1579,4 +1579,37 @@ export class OutletService {
       };
     }
   }
+
+  async activateOutlet(id: string, user: DecodedUser) {
+    try{
+      await this.outletSummationCompetence(user.businessProfile);
+      await this.outletModel.findByIdAndUpdate(
+        id,
+        { isActive: true },
+        { new: true },
+      );
+      return {
+        success: true,
+        message: 'Outlet activated successfully.',
+      };
+    }catch(error){
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async deactivateOutlet(id: string, user: DecodedUser) {
+    try{
+      return {
+        sucess: true,
+        message: 'Outlet deactivated successfully.',
+      }
+    }catch(error){
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
 }
