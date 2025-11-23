@@ -177,6 +177,8 @@ import {
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { OAuth2Dto } from 'src/auth/dto/oAuth2.dto';
 import { Auth, google } from 'googleapis';
+import { File, FileDocument } from 'src/drive/models/file.model';
+import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 
 @Injectable()
 export class BusinessService {
@@ -246,6 +248,9 @@ export class BusinessService {
     private readonly categoryModel: Model<CategoryDocument>,
     @InjectModel(EventSchedule.name)
     private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(Folder.name)
+    private readonly folderModel: Model<FolderDocument>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -3819,6 +3824,7 @@ export class BusinessService {
               },
             },
             isMuted: { $first: '$isMuted' },
+            drive: { $first: '$businessDetails.drive' },
           },
         },
         { $sort: { createdAt: -1, _id: 1 } },
@@ -3832,6 +3838,18 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
+      const galleryFolder = await this.folderModel
+        .findOne({
+          folderName: 'Gallery',
+          drive: business.drive,
+        });
+      let galleryFiles = [];
+      if (galleryFolder) {
+        galleryFiles = await this.fileModel.find({
+          parentDirectory: galleryFolder._id,
+        }).select({ _id: 1, metaData: { url: 1, thumbnailUrl: 1, mimeType: 1 } });
+      }
+      business.galleryFiles = galleryFiles;
 
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 
