@@ -807,7 +807,7 @@ export class AIService {
           {
             role: "system",
             content:
-              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON array of strings.",
+              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON object containing a 'tags' array of strings. IMPORTANT: Always generate tags based on the provided category and any available information. Even if website content seems unrelated or mismatched with the category, generate tags based on the category provided. Never return an error - always generate useful tags.",
           },
           {
             role: "user",
@@ -836,6 +836,17 @@ export class AIService {
           tags = parsed.tags;
         } else if (parsed.data && Array.isArray(parsed.data)) {
           tags = parsed.data;
+        } else if (parsed.error) {
+          // AI returned an error message instead of tags
+          logger.warn(
+            { errorMessage: parsed.error, params },
+            "AI returned error instead of tags, generating fallback tags"
+          );
+          // Generate basic tags from category and subcategory
+          tags = [
+            category.toLowerCase(),
+            ...(subcategory ? [subcategory.toLowerCase()] : []),
+          ];
         } else {
           throw new Error("Unexpected response format");
         }
