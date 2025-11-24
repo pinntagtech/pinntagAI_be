@@ -499,16 +499,16 @@ export class BusinessService {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // await this.verifyBusinessToken(data.oAuthToken);
 
-    const userInfoResponse = await axios.get(
-      'https://www.googleapis.com/oauth2/v3/userinfo',
-      {
-        headers: {
-          Authorization: `Bearer ${data.oAuthToken}`,
-        },
-      },
-    );
-    const userInfo = userInfoResponse.data;
-    console.log('UserInfo from google:', userInfo);
+    // const userInfoResponse = await axios.get(
+    //   'https://www.googleapis.com/oauth2/v3/userinfo',
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${data.oAuthToken}`,
+    //     },
+    //   },
+    // );
+    // const userInfo = userInfoResponse.data;
+    // console.log('UserInfo from google:', userInfo);
     const userFound = await this.businessUserModel.findOne({
       email: data.email,
     });

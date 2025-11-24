@@ -95,12 +95,12 @@ export class AiController {
   @Post('/business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
-    // const result = await this.aiService.getBusinessDescription(
-    //   user.businessProfile,
-    // );
-    const result = await this.pinntagAiService.generateBusinessDescription(
+    const result = await this.aiService.getBusinessDescription(
       user.businessProfile,
     );
+    // const result = await this.pinntagAiService.generateBusinessDescription(
+    //   user.businessProfile,
+    // );
     console.log('RESULT:', result);
     if (result.success) {
       return {
