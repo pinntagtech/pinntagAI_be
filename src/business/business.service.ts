@@ -781,16 +781,15 @@ export class BusinessService {
 
   async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     console.log('Apple Login Data:', data);
-    const tokenData = jwt.decode(data.oAuthToken) as any;
-    console.log('Apple Login Data:', tokenData);
+    // const tokenData = jwt.decode(data.oAuthToken) as any;
+    // console.log('Apple Login Data:', tokenData);
     const userFound = await this.businessUserModel.findOne({
-      email: tokenData.email,
+      email: data.oAuthToken,
     });
     if (userFound) {
       // login logic
       const payload: JwtPayload = {
         id: userFound.id,
-        // email: user.email,
         userType: UserTypes.BUSINESS,
         role: String(userFound.role),
         business: String(userFound.business),
@@ -999,7 +998,7 @@ export class BusinessService {
       });
 
       let createObj = {
-        email: tokenData.email,
+        email: data.oAuthToken,
         name: data.name,
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,

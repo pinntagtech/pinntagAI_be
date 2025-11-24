@@ -941,7 +941,7 @@ export class AuthService {
     console.log('Data from FrontEnd:', data);
     console.log('Token Data', tokenData);
     let user = await this.userModel
-      .findOne({ email: tokenData.email })
+      .findOne({ email: tokenData.sub })
       .populate('role', '_id name')
       .exec();
     if (!user) {
@@ -952,7 +952,7 @@ export class AuthService {
         lastName: data.name ? data.name.split(' ')[1] : '',
         name: data.name,
         profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
-        email: tokenData.email,
+        email: tokenData.sub,
         isEmailVerified: true,
         isOAuth: true,
         oAuthProvider: 'apple',
