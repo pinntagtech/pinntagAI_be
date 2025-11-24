@@ -983,6 +983,7 @@ export class BusinessService {
         token,
       };
     } else {
+      console.log("started creating new user");
       //registration logic
       const superAdmin = await this.adminModel.findOne({
         isSuperAdmin: true,
@@ -996,6 +997,7 @@ export class BusinessService {
         belongsTo: RoleBelonging.BUSINESS,
         isBusinessOwner: true,
       });
+      console.log("Owner role created:", ownerRole.id);
 
       let createObj = {
         email: data.oAuthToken,
@@ -1008,6 +1010,7 @@ export class BusinessService {
 
       //append creator to roles
       const createdUser = await this.businessUserModel.create(createObj);
+      console.log("Business user created:", createdUser.id);
       await this.roleModel.updateOne(
         { _id: ownerRole.id },
         { $set: { creator: createdUser._id } },
@@ -1050,6 +1053,7 @@ export class BusinessService {
         business: String(createdUser.business),
       };
       const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      console.log("token::::",token);
 
       let userDoc = await this.businessUserModel.aggregate([
         {
@@ -1203,6 +1207,7 @@ export class BusinessService {
         // },
       ]);
       userDoc = userDoc[0];
+      console.log("userDoc::::",userDoc[0]);
       return {
         success: true,
         message: 'User Logged In Successfully',
