@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +8,7 @@ import { BusinessUser, BusinessUserDocument } from './model/businessUser.model';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import {
   DefaultBusinessDepartmentRoles,
   DefaultBusinessRoles,
@@ -261,10 +262,23 @@ export class BusinessService {
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
-  ) {
-    const clientID = process.env.GOOGLE_BUSINESS_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_BUSINESS_SECRET;
-    this.oAuth2Client = new google.auth.OAuth2(clientID, clientSecret);
+  ) {}
+  private oAuthClient = new OAuth2Client();
+
+  async verifyBusinessToken(idToken: string) {
+    const businessAndroidClientId =
+      process.env.GOOGLE_BUSINESS_ANDROID_CLIENT_ID;
+    const businessIosClientId = process.env.GOOGLE_BUSINESS_IOS_CLIENT_ID;
+    const ticket = await this.oAuthClient.verifyIdToken({
+      idToken,
+      audience: [businessAndroidClientId, businessIosClientId], // BOTH allowed
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) throw new UnauthorizedException('Invalid Google token');
+
+    // you get: payload.sub (google user id), email, name, picture, etc.
+    return payload;
   }
 
   async createBusinessUser(data: CreateBusinessUserDto) {
@@ -473,8 +487,8 @@ export class BusinessService {
 
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     console.log('Google Login Data:', data);
-    const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    console.log('Valid Token:', validToken);
+    // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    await this.verifyBusinessToken(data.oAuthToken);
 
     const userInfoResponse = await axios.get(
       'https://www.googleapis.com/oauth2/v3/userinfo',
@@ -3838,16 +3852,20 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
-      const galleryFolder = await this.folderModel
-        .findOne({
-          folderName: 'Gallery',
-          drive: business.drive,
-        });
+      const galleryFolder = await this.folderModel.findOne({
+        folderName: 'Gallery',
+        drive: business.drive,
+      });
       let galleryFiles = [];
       if (galleryFolder) {
-        galleryFiles = await this.fileModel.find({
-          parentDirectory: galleryFolder._id,
-        }).select({ _id: 1, metaData: { url: 1, thumbnailUrl: 1, mimeType: 1 } });
+        galleryFiles = await this.fileModel
+          .find({
+            parentDirectory: galleryFolder._id,
+          })
+          .select({
+            _id: 1,
+            metaData: { url: 1, thumbnailUrl: 1, mimeType: 1 },
+          });
       }
       business.galleryFiles = galleryFiles;
 
