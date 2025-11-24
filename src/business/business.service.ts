@@ -1606,15 +1606,15 @@ export class BusinessService {
 
       //ai-agent creation
       let agentName = `${createdBusiness.name} Assistant`;
-      // this.pinnAiService.createAgent({
-      //   name: agentName,
-      //   tone: 'professional',
-      //   businessId: createdBusiness._id.toString(),
-      //   subCategories: businessCategoryTitles,
-      //   category: findBusinessIndustry ? findBusinessIndustry.title : null,
-      //   website: createdBusiness.website ? createdBusiness.website : null,
-      //   businessName: createdBusiness.name,
-      // });
+      this.pinnAiService.createAgent({
+        name: agentName,
+        tone: 'professional',
+        businessId: createdBusiness._id.toString(),
+        subCategories: businessCategoryTitles,
+        category: findBusinessIndustry ? findBusinessIndustry.title : null,
+        website: createdBusiness.website ? createdBusiness.website : null,
+        businessName: createdBusiness.name,
+      });
 
       //create drive
       let driveDetails = await this.seederService.createDrive(
