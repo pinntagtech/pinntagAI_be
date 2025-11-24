@@ -1057,7 +1057,7 @@ export class BusinessService {
 
       let userDoc = await this.businessUserModel.aggregate([
         {
-          $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
+          $match: { _id: new mongoose.Types.ObjectId(createdUser._id) },
         },
         {
           $lookup: {
