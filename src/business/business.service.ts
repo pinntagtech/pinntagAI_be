@@ -497,7 +497,7 @@ export class BusinessService {
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
     console.log('Google Login Data:', data);
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    await this.verifyBusinessToken(data.oAuthToken);
+    // await this.verifyBusinessToken(data.oAuthToken);
 
     const userInfoResponse = await axios.get(
       'https://www.googleapis.com/oauth2/v3/userinfo',
