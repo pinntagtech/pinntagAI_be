@@ -234,6 +234,193 @@ export class FeedService {
       };
     }
   }
+  async getBusinessCardFeed(
+    user: DecodedUser,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      let query: any = {
+        creator: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+      let userId = new mongoose.Types.ObjectId(user.id);
+      let pipeline: PipelineStage[] = [
+        { $match: query },
+        {
+          $addFields: {
+            isLiked: {
+              $in: [userId, { $ifNull: ['$likes', []] }],
+            },
+          },
+        },
+        // {
+        //   $match: {
+        //     $or: [
+        //       { visibility: { $ne: FeedVisibility.FOLLOWERS } },
+        //       { isFollowedByMe: true },
+        //     ],
+        //   },
+        // },
+
+        {
+          $lookup: {
+            from: 'media',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Media'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'mediaContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'broadcasts',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Broadcast'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'broadcastContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'news',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'News'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'newsContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'agendas',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Agenda'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'agendaContent',
+          },
+        },
+        // Merge all content into a single field
+        {
+          $addFields: {
+            contentDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$feedType', 'Media'] },
+                    then: { $arrayElemAt: ['$mediaContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Broadcast'] },
+                    then: { $arrayElemAt: ['$broadcastContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'News'] },
+                    then: { $arrayElemAt: ['$newsContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Agenda'] },
+                    then: { $arrayElemAt: ['$agendaContent', 0] },
+                  },
+                ],
+                default: null,
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'contentDetails.business',
+            foreignField: '_id',
+            as: 'businessDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $project: {
+            feedType: 1,
+            contentDetails: 1,
+            createdAt: 1,
+            visibility: 1,
+            isFollowedByMe: 1,
+            isLiked: 1,
+            totalLikes: 1,
+            businessDetails: {
+              logo: '$businessDetails.logo',
+              cover: '$businessDetails.cover',
+              name: '$businessDetails.name',
+              id: '$businessDetails._id',
+            },
+          },
+        },
+
+        // Sort and limit (optional)
+        { $sort: { createdAt: -1 } },
+      ];
+      const feed = await this.feedModel.aggregate(pipeline);
+
+      return {
+        success: true,
+        message: 'Feed fetched successfully',
+        data: feed,
+        total: 0,
+        totalPages: 0,
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to fetch feed',
+        error: error.message,
+      };
+    }
+  }
   async getPopularFeed(
     user: DecodedUser,
     type: string,
