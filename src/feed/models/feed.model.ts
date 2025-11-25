@@ -44,6 +44,9 @@ export class Feed extends Document {
   likes: mongoose.Types.ObjectId[];
   @Prop({ default: 0 })
   totalLikes: number;
+
+  @Prop()
+  shareableLink: string;
 }
 
 export const FeedSchema = SchemaFactory.createForClass(Feed);

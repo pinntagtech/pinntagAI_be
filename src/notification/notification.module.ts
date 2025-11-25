@@ -75,9 +75,13 @@ import {
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { DynamicLinkService } from './dynamicLink.service';
+import { AppsOnAirLinkService } from './appsonair.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
       { name: User.name, schema: UserSchema },
@@ -135,6 +139,8 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
     UserService,
     Logger,
     StripeService,
+    DynamicLinkService,
+    AppsOnAirLinkService,
   ],
 })
 export class NotificationModule {}

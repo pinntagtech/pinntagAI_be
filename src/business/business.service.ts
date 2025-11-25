@@ -6370,11 +6370,13 @@ export class BusinessService {
       }
 
       // Create folder and upload images
+      console.log("Check 1");
       const docFolder = await this.driveService.createFolder(businessID, {
         parentDirectory: business.drive.toString(),
         parentType: 'Drive',
         folderName: 'Verification Documents',
       });
+      console.log("Check 2",docFolder);
 
       if (!docFolder?.data?.id) {
         return {

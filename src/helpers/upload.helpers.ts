@@ -23,9 +23,10 @@ export const editFileName = (req, file, callback) => {
 };
 
 export const manipulateImageName = (filename: string) => {
-  const extenstion = extname(filename);
-  const nameWithoutExtension = filename.replace(extenstion, '');
-  return `${nameWithoutExtension}${Date.now()}${extenstion}`;
+  const extension = extname(filename);
+  const nameWithoutExtension = filename.replace(extension, '');
+  const cleanedName = nameWithoutExtension.replace(/\s+/g, '');
+  return `${cleanedName}${Date.now()}${extension}`;
 };
 
 export class FileUploadUtils {

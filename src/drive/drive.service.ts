@@ -406,6 +406,7 @@ export class DriveService {
       let driveDetails = await this.driveModel.findOne({
         owner: new mongoose.Types.ObjectId(businessId),
       });
+      console.log("Drive Details:", driveDetails);
       if (
         folderData.parentDirectory &&
         !isValidObjectId(folderData.parentDirectory)
@@ -419,7 +420,7 @@ export class DriveService {
         folderName: 'Gallery',
         drive: driveDetails._id,
       });
-      if (findGalleryFolder) {
+      if (findGalleryFolder && folderData.folderName === 'Gallery') {
         return {
           success: false,
           message: 'Folder name "Gallery" is reserved and cannot be used.',
