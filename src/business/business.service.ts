@@ -3828,10 +3828,15 @@ export class BusinessService {
     }
   }
 
-  async getBusinessCardFeed(user: DecodedUser, page: number, limit: number) {
+  async getBusinessCardFeed(
+    user: DecodedUser,
+    businessId: string,
+    page: number,
+    limit: number,
+  ) {
     try {
       let query: any = {
-        creator: new mongoose.Types.ObjectId(user.businessProfile),
+        creator: new mongoose.Types.ObjectId(businessId),
       };
       let userId = new mongoose.Types.ObjectId(user.id);
       let pipeline: PipelineStage[] = [
@@ -3843,15 +3848,6 @@ export class BusinessService {
             },
           },
         },
-        // {
-        //   $match: {
-        //     $or: [
-        //       { visibility: { $ne: FeedVisibility.FOLLOWERS } },
-        //       { isFollowedByMe: true },
-        //     ],
-        //   },
-        // },
-
         {
           $lookup: {
             from: 'media',
@@ -3928,7 +3924,6 @@ export class BusinessService {
             as: 'agendaContent',
           },
         },
-        // Merge all content into a single field
         {
           $addFields: {
             contentDetails: {
@@ -3970,7 +3965,6 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
-
         {
           $project: {
             feedType: 1,
@@ -3988,18 +3982,34 @@ export class BusinessService {
             },
           },
         },
-
-        // Sort and limit (optional)
         { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          },
+        },
+        {
+          $project: {
+            data: 1,
+            total: { $arrayElemAt: ['$metadata.total', 0] },
+          },
+        },
       ];
-      const feed = await this.feedModel.aggregate(pipeline);
+
+      // Execute the pipeline
+      const result = await this.feedModel.aggregate(pipeline);
+
+      // Access the results
+      const feeds = result[0]?.data || [];
+      const total = result[0]?.total || 0;
 
       return {
         success: true,
         message: 'Feed fetched successfully',
-        data: feed,
-        total: 0,
-        totalPages: 0,
+        data: feeds,
+        total: total,
+        totalPages: Math.ceil(total / limit),
         page: page,
         limit: limit,
       };

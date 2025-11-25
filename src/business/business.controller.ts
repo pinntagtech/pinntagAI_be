@@ -208,16 +208,20 @@ export class BusinessController {
   async loginWithGoogle(@Req() req: Request, @Body() body: OAuth2Dto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
-    const result = await this.businessService.loginWithGoogle(body, userAgent, ip);
+    const result = await this.businessService.loginWithGoogle(
+      body,
+      userAgent,
+      ip,
+    );
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
     return {
-       message: result.message,
-        user: result.user,
-        status: result.status,
-        token: result.token,
-        fcmExists: result.fcmExists,
+      message: result.message,
+      user: result.user,
+      status: result.status,
+      token: result.token,
+      fcmExists: result.fcmExists,
     };
   }
   @Post('apple')
@@ -225,16 +229,20 @@ export class BusinessController {
   async loginWithApple(@Req() req: Request, @Body() body: OAuth2Dto) {
     const userAgent = req.headers['user-agent'];
     const ip = req.ip;
-    const result = await this.businessService.loginWithApple(body, userAgent, ip);
+    const result = await this.businessService.loginWithApple(
+      body,
+      userAgent,
+      ip,
+    );
     if (!result.success) {
       throw new BadRequestException(result.message);
     }
     return {
-       message: result.message,
-        user: result.user,
-        status: result.status,
-        token: result.token,
-        fcmExists: result.fcmExists,
+      message: result.message,
+      user: result.user,
+      status: result.status,
+      token: result.token,
+      fcmExists: result.fcmExists,
     };
   }
 
@@ -1365,12 +1373,38 @@ export class BusinessController {
       parseFloat(longitude),
     );
 
-    // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Get('card/feed/:businessId')
+  @UseGuards(JwtGuard2)
+  async getBusinessCardFeed(
+    @Param('businessId') businessId: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.getBusinessCardFeed(
+      user,
+      businessId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
 
     if (result.success) {
       return {
         message: result.message,
         data: result.data,
+        total: result.total,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException(result.message);
@@ -1431,11 +1465,11 @@ export class BusinessController {
 
   @Post('verification-docs')
   @UseGuards(JwtGuard2)
- @UseInterceptors(
-     FilesInterceptor('images', 5, {
-       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
-     }),
-   )
+  @UseInterceptors(
+    FilesInterceptor('images', 5, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+    }),
+  )
   async verificationDocs(
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
