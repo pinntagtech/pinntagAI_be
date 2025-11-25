@@ -6326,82 +6326,113 @@ export class BusinessService {
   async uploadVerificationDocs(
     user: DecodedUser,
     images: Express.Multer.File[],
-    businessId: string,
+    businessId?: string,
   ) {
     try {
-      let businessID = user.businessProfile;
-      if (businessId) {
-        businessID = businessId;
+      // Early validation
+      if (!images?.length) {
+        return {
+          success: false,
+          message: 'No images provided',
+        };
       }
-      const business = await this.businessModel.findById(businessID);
+
+      const businessID = businessId || user.businessProfile;
+
+      // Parallel fetch for business and superAdmin
+      const [business, superAdmin] = await Promise.all([
+        this.businessModel.findById(businessID).lean(),
+        this.adminModel.findOne({ isSuperAdmin: true }).lean(),
+      ]);
+
       if (!business) {
         return {
           success: false,
           message: 'Business not found',
         };
       }
-      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-      // Upload the image to a cloud storage or local storage
 
-      // documents folder:
-      let docFolder = await this.driveService.createFolder(business.id, {
+      if (!superAdmin) {
+        return {
+          success: false,
+          message: 'Super admin not configured',
+        };
+      }
+
+      // Create folder and upload images
+      const docFolder = await this.driveService.createFolder(businessID, {
         parentDirectory: business.drive.toString(),
         parentType: 'Drive',
         folderName: 'Verification Documents',
       });
 
-      // const fileCategory = await this.fileCategoryModel.findOne({
-      //   name: FileCategoryTypes.VERIFICATION_DOCUMENT,
-      // });
+      if (!docFolder?.data?.id) {
+        return {
+          success: false,
+          message: 'Failed to create document folder',
+        };
+      }
+
       const uploadResult = await this.driveService.multiImageUpload(
-        user.id,
+        user.businessProfile,
         docFolder.data.id,
         images,
       );
-      if (!uploadResult.success) {
+      if (!uploadResult.success || !uploadResult.data?.length) {
         return {
           success: false,
-          message: 'Failed to upload image',
+          message: 'Failed to upload images',
         };
       }
-      let profileCompletionPercentage =
+
+      // Extract URLs
+      const uploadedUrls = uploadResult.data.map((file) => file.metaData.url);
+
+      // Calculate completion percentage
+      const profileCompletionPercentage =
         (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
           BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
         100;
 
-      const uploadedUrls = uploadResult.data.map((file) => file.metaData.url);
-
-      await this.businessModel.updateOne(
-        { _id: business._id },
-        {
-          $set: {
-            addressVerificationDocs: uploadedUrls,
-            addressVerificationStatus: VerificationStatus.PENDING,
-            profileCompletionPercentage,
+      // Parallel operations for update, create, and email
+      Promise.all([
+        this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: {
+              addressVerificationDocs: uploadedUrls,
+              addressVerificationStatus: VerificationStatus.PENDING,
+              profileCompletionPercentage,
+            },
           },
-        },
-      );
-      await this.businessDocVerificationLeadsModel.create({
-        businessId: business._id,
-        userId: new mongoose.Types.ObjectId(user.id),
-        documentUrls: uploadedUrls,
-        documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
-      });
-      await this.mailService.businessDocVerificationRequest(
-        superAdmin.email,
-        business.uniqueId ? business.uniqueId : business.id,
-        BusinessDocumentTypesList.ADDRESS_VERIFICATION,
-      );
+        ),
+        this.businessDocVerificationLeadsModel.create({
+          businessId: business._id,
+          userId: new mongoose.Types.ObjectId(user.id),
+          documentUrls: uploadedUrls,
+          documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        }),
+        this.mailService.businessDocVerificationRequest(
+          superAdmin.email,
+          businessID,
+          BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        ),
+      ]);
 
       return {
         success: true,
         message: 'Address verification document uploaded successfully',
-        data: business,
+        data: {
+          businessId: businessID,
+          documentUrls: uploadedUrls,
+        },
       };
     } catch (error) {
+      console.error('Error uploading verification docs:', error);
       return {
         success: false,
-        message: error.message,
+        message:
+          error?.message || 'An error occurred while uploading documents',
       };
     }
   }

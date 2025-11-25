@@ -403,12 +403,6 @@ export class DriveService {
 
   async createFolder(businessId: string, folderData: Partial<any>) {
     try {
-      // if(folderData.folderName === 'Gallery'){
-      //   return {
-      //     success: false,
-      //     message: 'Folder name "Gallery" is reserved and cannot be used.',
-      //   }
-      // }
       let driveDetails = await this.driveModel.findOne({
         owner: new mongoose.Types.ObjectId(businessId),
       });
@@ -431,8 +425,6 @@ export class DriveService {
           message: 'Folder name "Gallery" is reserved and cannot be used.',
         }
       }
-
-      console.log('FOLDER DATA:,', folderData);
       if (!folderData.parentDirectory) {
         folderData.parentDirectory = driveDetails.id;
       }
