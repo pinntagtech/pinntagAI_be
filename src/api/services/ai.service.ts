@@ -8,7 +8,22 @@ import {
 } from "../../models/businessAIAssistant.model.js";
 import { Tone } from "../../utils/types/types.js";
 import { logger } from "../../utils/logger.js";
+import {
+  BroadcastContentParams,
+  OfferContentParams,
+  RewardContentParams,
+  EventContentParams,
+  ImproveContentParams,
+  GeneratedContent,
+  ContentType,
+} from "../../utils/types/aiAssist.types.js";
+import {
+  checkContentAssistAccess,
+  recordFeatureUsage,
+} from "../../utils/subscription.utils.js";
 import { getS3ObjectStream } from "../../utils/s3.js";
+import { UsageTrackingService } from "./usageTracking.service.js";
+import { UsageType } from "../../models/aiUsage.model.js";
 
 // ===========================
 // Types & Constants
@@ -150,9 +165,9 @@ async function createBusinessAgent(biz: Business) {
     }
 
     // 1) Create a vector store for the business knowledge base
-    // const vectorStore = await openai.vectorStores.create({
-    //   name: `${biz.name} Knowledge`,
-    // });
+    const vectorStore = await openai.vectorStores.create({
+      name: `${biz.name} Knowledge`,
+    });
 
     // 2) Create the assistant with biz-specific instructions + tools
     let assistant;
@@ -209,9 +224,9 @@ async function createBusinessAgent(biz: Business) {
       ],
       // Connect the vector store for retrieval (you can attach later too)
       tool_resources: {
-        // file_search: {
-        //   vector_store_ids: [vectorStore.id],
-        // },
+        file_search: {
+          vector_store_ids: [vectorStore.id],
+        },
       },
     });
 
@@ -980,6 +995,515 @@ export class AIService {
         "Error generating description for business"
       );
       throw error;
+    }
+  }
+
+  // ===========================
+  // Content Assist Methods
+  // ===========================
+
+  /**
+   * Helper to generate content using the business's AI agent
+   */
+  private static async generateContentWithAgent(
+    businessId: string,
+    prompt: string,
+    contentType: string
+  ): Promise<GeneratedContent> {
+    // Get business agent
+    const businessAI = await BusinessAIAssistantModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+
+    if (!businessAI?.assistantId) {
+      throw new Error(
+        "Business AI agent not found. Please create an agent first."
+      );
+    }
+
+    // Create a new thread for this generation
+    const thread = await openai.beta.threads.create();
+
+    // Add the generation request
+    await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: prompt,
+    });
+
+    // Run the assistant
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: businessAI.assistantId,
+    });
+
+    // Poll until complete
+    await pollRunUntilComplete(thread.id, run.id);
+
+    // Get the final run to extract usage
+    const finalRun = await openai.beta.threads.runs.retrieve(run.id, {
+      thread_id: thread.id,
+    });
+
+    // Get the response
+    const messages = await openai.beta.threads.messages.list(thread.id, {
+      limit: 1,
+    });
+
+    const assistantMessage = messages.data.find((m) => m.role === "assistant");
+    const responseText =
+      assistantMessage?.content
+        ?.map((c) => (c.type === "text" ? c.text.value : ""))
+        .join("\n") ?? "";
+
+    // Parse JSON from response (extract JSON if wrapped in markdown)
+    let jsonContent = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonContent = jsonMatch[1].trim();
+    }
+
+    try {
+      const content = JSON.parse(jsonContent) as GeneratedContent;
+
+      // Track usage with token counts
+      await UsageTrackingService.trackUsage({
+        businessId,
+        type: UsageType.CONTENT_GENERATION,
+        subType: contentType,
+        promptTokens: finalRun.usage?.prompt_tokens || 0,
+        completionTokens: finalRun.usage?.completion_tokens || 0,
+        totalTokens: finalRun.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: true,
+        metadata: { threadId: thread.id, runId: run.id },
+      });
+
+      logger.info(
+        { businessId, contentType },
+        `Generated ${contentType} content with agent`
+      );
+      return content;
+    } catch (error) {
+      // Track failed usage
+      await UsageTrackingService.trackUsage({
+        businessId,
+        type: UsageType.CONTENT_GENERATION,
+        subType: contentType,
+        promptTokens: finalRun.usage?.prompt_tokens || 0,
+        completionTokens: finalRun.usage?.completion_tokens || 0,
+        totalTokens: finalRun.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: false,
+        errorMessage: "Failed to parse JSON response",
+      });
+
+      // If JSON parsing fails, try to extract structured data
+      logger.warn(
+        { businessId, responseText },
+        "Failed to parse agent response as JSON"
+      );
+      throw new Error("Failed to parse generated content. Please try again.");
+    }
+  }
+
+  /**
+   * Generate broadcast content for a business
+   */
+  static async generateBroadcastContent(
+    params: BroadcastContentParams
+  ): Promise<GeneratedContent> {
+    const {
+      businessId,
+      purpose,
+      keyMessage,
+      urgency,
+      tone,
+      targetAudience,
+      additionalContext,
+      category,
+      subcategory,
+      tags,
+    } = params;
+
+    // Check subscription access
+    const access = await checkContentAssistAccess(businessId);
+    if (!access.hasAccess) {
+      throw new Error(access.reason || "Content assist not available");
+    }
+
+    try {
+      const prompt = `Generate marketing content for a business broadcast.
+
+Content Details:
+- Purpose: ${purpose}
+- Key Message: ${keyMessage}
+- Urgency Level: ${urgency || "medium"}
+- Preferred Tone: ${tone || "use your configured tone"}
+- Target Audience: ${targetAudience || "general customers"}
+${category ? `- Category: ${category}` : ""}
+${subcategory ? `- Subcategory: ${subcategory}` : ""}
+${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
+
+Using your knowledge of this business, generate content that aligns with the brand identity and resonates with the target audience.
+
+Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "title": "Catchy, attention-grabbing title (max 60 chars)",
+  "description": "Engaging description that conveys the message clearly (100-200 words)",
+  "callToAction": "Clear call-to-action phrase",
+  "hashtags": ["relevant", "hashtags", "for", "social"],
+  "keywords": ["seo", "keywords"],
+  "suggestedTiming": {
+    "bestDays": ["Monday", "Wednesday"],
+    "bestHours": ["9am-11am", "2pm-4pm"],
+    "seasonalNote": "any seasonal considerations"
+  },
+  "marketingTips": ["tip1", "tip2"]
+}`;
+
+      const content = await this.generateContentWithAgent(
+        businessId,
+        prompt,
+        "broadcast"
+      );
+
+      // Record usage
+      await recordFeatureUsage(businessId, "content", 1);
+
+      return content;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error generating broadcast content");
+      throw new Error(`Failed to generate broadcast content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate offer content for a business
+   */
+  static async generateOfferContent(
+    params: OfferContentParams
+  ): Promise<GeneratedContent> {
+    const {
+      businessId,
+      offerType,
+      discountValue,
+      discountType,
+      product,
+      validityPeriod,
+      minPurchase,
+      tone,
+      targetAudience,
+      additionalContext,
+      category,
+      subcategory,
+      tags,
+    } = params;
+
+    // Check subscription access
+    const access = await checkContentAssistAccess(businessId);
+    if (!access.hasAccess) {
+      throw new Error(access.reason || "Content assist not available");
+    }
+
+    try {
+      const prompt = `Generate compelling offer content for a business promotion.
+
+Offer Details:
+- Offer Type: ${offerType}
+- Discount Value: ${discountValue || "not specified"}
+- Discount Type: ${discountType || "percentage"}
+- Product/Service: ${product || "general"}
+- Validity Period: ${validityPeriod || "limited time"}
+- Minimum Purchase: ${minPurchase ? `$${minPurchase}` : "none"}
+- Preferred Tone: ${tone || "use your configured tone"}
+- Target Audience: ${targetAudience || "general customers"}
+${category ? `- Category: ${category}` : ""}
+${subcategory ? `- Subcategory: ${subcategory}` : ""}
+${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
+
+Using your knowledge of this business, generate an offer that aligns with the brand identity and creates urgency for the target audience.
+
+Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "title": "Attention-grabbing offer title (max 60 chars)",
+  "description": "Compelling offer description that creates urgency (100-150 words)",
+  "callToAction": "Strong call-to-action",
+  "hashtags": ["deal", "discount", "related", "tags"],
+  "keywords": ["offer", "keywords"],
+  "termsAndConditions": "Clear terms and conditions",
+  "promoCode": "SUGGESTED_CODE",
+  "suggestedTiming": {
+    "bestDays": ["Friday", "Saturday"],
+    "bestHours": ["10am-12pm", "6pm-8pm"],
+    "seasonalNote": "any timing considerations"
+  },
+  "marketingTips": ["tip1", "tip2"]
+}`;
+
+      const content = await this.generateContentWithAgent(
+        businessId,
+        prompt,
+        "offer"
+      );
+
+      // Record usage
+      await recordFeatureUsage(businessId, "content", 1);
+
+      return content;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error generating offer content");
+      throw new Error(`Failed to generate offer content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate reward content for a business
+   */
+  static async generateRewardContent(
+    params: RewardContentParams
+  ): Promise<GeneratedContent> {
+    const {
+      businessId,
+      rewardType,
+      rewardValue,
+      conditions,
+      expiryDays,
+      tone,
+      targetAudience,
+      additionalContext,
+      category,
+      subcategory,
+      tags,
+    } = params;
+
+    // Check subscription access
+    const access = await checkContentAssistAccess(businessId);
+    if (!access.hasAccess) {
+      throw new Error(access.reason || "Content assist not available");
+    }
+
+    try {
+      const prompt = `Generate engaging reward content for a customer loyalty program.
+
+Reward Details:
+- Reward Type: ${rewardType}
+- Reward Value: ${rewardValue || "special reward"}
+- Conditions: ${conditions || "for loyal customers"}
+- Expiry: ${expiryDays ? `${expiryDays} days` : "no expiry"}
+- Preferred Tone: ${tone || "use your configured tone"}
+- Target Audience: ${targetAudience || "loyal customers"}
+${category ? `- Category: ${category}` : ""}
+${subcategory ? `- Subcategory: ${subcategory}` : ""}
+${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
+
+Using your knowledge of this business, generate reward content that makes customers feel valued and appreciated.
+
+Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "title": "Exciting reward title that makes customers feel valued (max 60 chars)",
+  "description": "Warm, appreciative description that explains the reward clearly (100-150 words)",
+  "callToAction": "Encouraging call-to-action",
+  "hashtags": ["loyalty", "rewards", "related", "tags"],
+  "keywords": ["reward", "keywords"],
+  "termsAndConditions": "Clear eligibility and redemption terms",
+  "suggestedTiming": {
+    "bestDays": ["Monday"],
+    "bestHours": ["morning"],
+    "seasonalNote": "timing considerations"
+  },
+  "marketingTips": ["tip1", "tip2"]
+}`;
+
+      const content = await this.generateContentWithAgent(
+        businessId,
+        prompt,
+        "reward"
+      );
+
+      // Record usage
+      await recordFeatureUsage(businessId, "content", 1);
+
+      return content;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error generating reward content");
+      throw new Error(`Failed to generate reward content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate event content for a business
+   */
+  static async generateEventContent(
+    params: EventContentParams
+  ): Promise<GeneratedContent> {
+    const {
+      businessId,
+      eventType,
+      eventName,
+      date,
+      time,
+      location,
+      capacity,
+      isFree,
+      cost,
+      tone,
+      targetAudience,
+      additionalContext,
+      category,
+      subcategory,
+      tags,
+    } = params;
+
+    // Check subscription access
+    const access = await checkContentAssistAccess(businessId);
+    if (!access.hasAccess) {
+      throw new Error(access.reason || "Content assist not available");
+    }
+
+    try {
+      const prompt = `Generate compelling event content for a business event.
+
+Event Details:
+- Event Type: ${eventType}
+- Event Name: ${eventName || "upcoming event"}
+- Date: ${date || "TBD"}
+- Time: ${time || "TBD"}
+- Location: ${location || "at our location"}
+- Capacity: ${capacity || "limited spots"}
+- Cost: ${isFree ? "Free" : cost ? `$${cost}` : "TBD"}
+- Preferred Tone: ${tone || "use your configured tone"}
+- Target Audience: ${targetAudience || "community"}
+${category ? `- Category: ${category}` : ""}
+${subcategory ? `- Subcategory: ${subcategory}` : ""}
+${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
+
+Using your knowledge of this business, generate event content that builds excitement and drives attendance.
+
+Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "title": "Exciting event title that creates anticipation (max 60 chars)",
+  "description": "Engaging event description with all key details (150-200 words)",
+  "callToAction": "Clear registration/attendance CTA",
+  "hashtags": ["event", "community", "related", "tags"],
+  "keywords": ["event", "keywords"],
+  "termsAndConditions": "Event policies, cancellation, etc.",
+  "suggestedTiming": {
+    "bestDays": ["days to promote"],
+    "bestHours": ["best times to post"],
+    "seasonalNote": "promotion timing tips"
+  },
+  "marketingTips": ["promotion tip 1", "promotion tip 2"]
+}`;
+
+      const content = await this.generateContentWithAgent(
+        businessId,
+        prompt,
+        "event"
+      );
+
+      // Record usage
+      await recordFeatureUsage(businessId, "content", 1);
+
+      return content;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error generating event content");
+      throw new Error(`Failed to generate event content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Improve existing content based on feedback
+   */
+  static async improveContent(
+    params: ImproveContentParams
+  ): Promise<GeneratedContent> {
+    const {
+      businessId,
+      contentType,
+      existingContent,
+      feedback,
+      aspectToImprove,
+    } = params;
+
+    // Check subscription access
+    const access = await checkContentAssistAccess(businessId);
+    if (!access.hasAccess) {
+      throw new Error(access.reason || "Content assist not available");
+    }
+
+    try {
+      const prompt = `Improve the following ${contentType} content based on feedback.
+
+Current Content:
+- Title: ${existingContent.title || "not provided"}
+- Description: ${existingContent.description || "not provided"}
+- Call to Action: ${existingContent.callToAction || "not provided"}
+- Terms: ${existingContent.terms || "not provided"}
+
+User Feedback: ${feedback}
+Aspect to Focus On: ${aspectToImprove || "overall improvement"}
+
+Using your knowledge of this business, improve the content while maintaining brand consistency.
+
+Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "title": "Improved title",
+  "description": "Improved description",
+  "callToAction": "Improved CTA",
+  "hashtags": ["updated", "hashtags"],
+  "keywords": ["updated", "keywords"],
+  "termsAndConditions": "Improved terms if applicable",
+  "marketingTips": ["improvement suggestions"]
+}
+
+Make meaningful improvements while preserving the core message. Focus on the specified aspect.`;
+
+      const content = await this.generateContentWithAgent(
+        businessId,
+        prompt,
+        `${contentType}-improvement`
+      );
+
+      // Record usage
+      await recordFeatureUsage(businessId, "content", 1);
+
+      logger.info(
+        { businessId, contentType, aspectToImprove },
+        "Improved content"
+      );
+
+      return content;
+    } catch (error: any) {
+      logger.error({ businessId, error }, "Error improving content");
+      throw new Error(`Failed to improve content: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate content for any type (generic method)
+   */
+  static async generateContent(
+    contentType: ContentType,
+    params:
+      | BroadcastContentParams
+      | OfferContentParams
+      | RewardContentParams
+      | EventContentParams
+  ): Promise<GeneratedContent> {
+    switch (contentType) {
+      case "broadcast":
+        return this.generateBroadcastContent(params as BroadcastContentParams);
+      case "offer":
+        return this.generateOfferContent(params as OfferContentParams);
+      case "reward":
+        return this.generateRewardContent(params as RewardContentParams);
+      case "event":
+        return this.generateEventContent(params as EventContentParams);
+      default:
+        throw new Error(`Unknown content type: ${contentType}`);
     }
   }
 }

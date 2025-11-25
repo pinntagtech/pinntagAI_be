@@ -6,6 +6,7 @@ import { aiTrainingRoutes } from "./aiTraining.routes.js";
 import templateRoutes from "./template.routes.js";
 import { engagementRoutes } from "./engagement.routes.js";
 import { consumerAIRoutes } from "./consumerAI.routes.js";
+import aiAssistRoutes from "./aiAssist.routes.js";
 
 // Import your route modules here
 // Example:
@@ -19,6 +20,7 @@ const router = Router();
 router.use("/etl", etlRoutes);
 router.use("/ai", aiRoutes);
 router.use("/ai/training", aiTrainingRoutes);
+router.use("/ai-assist", aiAssistRoutes);
 router.use("/templates", templateRoutes);
 router.use("/engagement", engagementRoutes);
 router.use("/consumer-ai", consumerAIRoutes);
