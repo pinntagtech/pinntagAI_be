@@ -1429,28 +1429,21 @@ export class BusinessController {
     }
   }
 
-  @Post('upload-address-verification-doc')
+  @Post('verification-docs')
   @UseGuards(JwtGuard2)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 10000000 },
-    }),
-  )
-  async uploadAddressVerificationDoc(
+ @UseInterceptors(
+     FilesInterceptor('images', 5, {
+       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
+     }),
+   )
+  async verificationDocs(
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles() images: Express.Multer.File[],
     @Query('businessId') businessId: string,
   ) {
-    const result = await this.businessService.uploadAddressVerificationDoc(
+    const result = await this.businessService.uploadVerificationDocs(
       user,
-      image,
+      images,
       businessId,
     );
     if (result.success) {

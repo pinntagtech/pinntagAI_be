@@ -14,7 +14,7 @@ export class BusinessDocVerificationLeads extends Document {
     userId: mongoose.Types.ObjectId;
 
     @Prop()
-    documentUrl: string;
+    documentUrls: string[];
 
     @Prop()
     documentType: string;

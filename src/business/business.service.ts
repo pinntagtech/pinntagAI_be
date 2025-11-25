@@ -258,7 +258,8 @@ export class BusinessService {
     @InjectModel(EventSchedule.name)
     private readonly scheduleModel: Model<EventScheduleDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(Folder.name) private readonly folderModel: Model<FolderDocument>,
+    @InjectModel(Folder.name)
+    private readonly folderModel: Model<FolderDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
@@ -3827,193 +3828,189 @@ export class BusinessService {
     }
   }
 
-   async getBusinessCardFeed(
-      user: DecodedUser,
-      page: number,
-      limit: number,
-    ) {
-      try {
-        let query: any = {
-          creator: new mongoose.Types.ObjectId(user.businessProfile),
-        };
-        let userId = new mongoose.Types.ObjectId(user.id);
-        let pipeline: PipelineStage[] = [
-          { $match: query },
-          {
-            $addFields: {
-              isLiked: {
-                $in: [userId, { $ifNull: ['$likes', []] }],
+  async getBusinessCardFeed(user: DecodedUser, page: number, limit: number) {
+    try {
+      let query: any = {
+        creator: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+      let userId = new mongoose.Types.ObjectId(user.id);
+      let pipeline: PipelineStage[] = [
+        { $match: query },
+        {
+          $addFields: {
+            isLiked: {
+              $in: [userId, { $ifNull: ['$likes', []] }],
+            },
+          },
+        },
+        // {
+        //   $match: {
+        //     $or: [
+        //       { visibility: { $ne: FeedVisibility.FOLLOWERS } },
+        //       { isFollowedByMe: true },
+        //     ],
+        //   },
+        // },
+
+        {
+          $lookup: {
+            from: 'media',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Media'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'mediaContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'broadcasts',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Broadcast'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'broadcastContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'news',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'News'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'newsContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'agendas',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Agenda'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'agendaContent',
+          },
+        },
+        // Merge all content into a single field
+        {
+          $addFields: {
+            contentDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$feedType', 'Media'] },
+                    then: { $arrayElemAt: ['$mediaContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Broadcast'] },
+                    then: { $arrayElemAt: ['$broadcastContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'News'] },
+                    then: { $arrayElemAt: ['$newsContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Agenda'] },
+                    then: { $arrayElemAt: ['$agendaContent', 0] },
+                  },
+                ],
+                default: null,
               },
             },
           },
-          // {
-          //   $match: {
-          //     $or: [
-          //       { visibility: { $ne: FeedVisibility.FOLLOWERS } },
-          //       { isFollowedByMe: true },
-          //     ],
-          //   },
-          // },
-  
-          {
-            $lookup: {
-              from: 'media',
-              let: { contentId: '$content', feedType: '$feedType' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$$feedType', 'Media'] },
-                        { $eq: ['$_id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-              ],
-              as: 'mediaContent',
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'contentDetails.business',
+            foreignField: '_id',
+            as: 'businessDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        {
+          $project: {
+            feedType: 1,
+            contentDetails: 1,
+            createdAt: 1,
+            visibility: 1,
+            isFollowedByMe: 1,
+            isLiked: 1,
+            totalLikes: 1,
+            businessDetails: {
+              logo: '$businessDetails.logo',
+              cover: '$businessDetails.cover',
+              name: '$businessDetails.name',
+              id: '$businessDetails._id',
             },
           },
-          {
-            $lookup: {
-              from: 'broadcasts',
-              let: { contentId: '$content', feedType: '$feedType' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$$feedType', 'Broadcast'] },
-                        { $eq: ['$_id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-              ],
-              as: 'broadcastContent',
-            },
-          },
-          {
-            $lookup: {
-              from: 'news',
-              let: { contentId: '$content', feedType: '$feedType' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$$feedType', 'News'] },
-                        { $eq: ['$_id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-              ],
-              as: 'newsContent',
-            },
-          },
-          {
-            $lookup: {
-              from: 'agendas',
-              let: { contentId: '$content', feedType: '$feedType' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        { $eq: ['$$feedType', 'Agenda'] },
-                        { $eq: ['$_id', '$$contentId'] },
-                      ],
-                    },
-                  },
-                },
-              ],
-              as: 'agendaContent',
-            },
-          },
-          // Merge all content into a single field
-          {
-            $addFields: {
-              contentDetails: {
-                $switch: {
-                  branches: [
-                    {
-                      case: { $eq: ['$feedType', 'Media'] },
-                      then: { $arrayElemAt: ['$mediaContent', 0] },
-                    },
-                    {
-                      case: { $eq: ['$feedType', 'Broadcast'] },
-                      then: { $arrayElemAt: ['$broadcastContent', 0] },
-                    },
-                    {
-                      case: { $eq: ['$feedType', 'News'] },
-                      then: { $arrayElemAt: ['$newsContent', 0] },
-                    },
-                    {
-                      case: { $eq: ['$feedType', 'Agenda'] },
-                      then: { $arrayElemAt: ['$agendaContent', 0] },
-                    },
-                  ],
-                  default: null,
-                },
-              },
-            },
-          },
-          {
-            $lookup: {
-              from: 'businesses',
-              localField: 'contentDetails.business',
-              foreignField: '_id',
-              as: 'businessDetails',
-            },
-          },
-          {
-            $unwind: {
-              path: '$businessDetails',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-  
-          {
-            $project: {
-              feedType: 1,
-              contentDetails: 1,
-              createdAt: 1,
-              visibility: 1,
-              isFollowedByMe: 1,
-              isLiked: 1,
-              totalLikes: 1,
-              businessDetails: {
-                logo: '$businessDetails.logo',
-                cover: '$businessDetails.cover',
-                name: '$businessDetails.name',
-                id: '$businessDetails._id',
-              },
-            },
-          },
-  
-          // Sort and limit (optional)
-          { $sort: { createdAt: -1 } },
-        ];
-        const feed = await this.feedModel.aggregate(pipeline);
-  
-        return {
-          success: true,
-          message: 'Feed fetched successfully',
-          data: feed,
-          total: 0,
-          totalPages: 0,
-          page: page,
-          limit: limit,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          message: 'Failed to fetch feed',
-          error: error.message,
-        };
-      }
+        },
+
+        // Sort and limit (optional)
+        { $sort: { createdAt: -1 } },
+      ];
+      const feed = await this.feedModel.aggregate(pipeline);
+
+      return {
+        success: true,
+        message: 'Feed fetched successfully',
+        data: feed,
+        total: 0,
+        totalPages: 0,
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to fetch feed',
+        error: error.message,
+      };
     }
+  }
 
   async updateSelectedBusiness(userId: string, businessId: string) {
     try {
@@ -6326,9 +6323,9 @@ export class BusinessService {
     }
   }
 
-  async uploadAddressVerificationDoc(
+  async uploadVerificationDocs(
     user: DecodedUser,
-    image: Express.Multer.File,
+    images: Express.Multer.File[],
     businessId: string,
   ) {
     try {
@@ -6345,14 +6342,21 @@ export class BusinessService {
       }
       const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
       // Upload the image to a cloud storage or local storage
-      const fileCategory = await this.fileCategoryModel.findOne({
-        name: FileCategoryTypes.VERIFICATION_DOCUMENT,
+
+      // documents folder:
+      let docFolder = await this.driveService.createFolder(business.id, {
+        parentDirectory: business.drive.toString(),
+        parentType: 'Drive',
+        folderName: 'Verification Documents',
       });
-      const uploadResult = await this.driveService.uploadFile(
+
+      // const fileCategory = await this.fileCategoryModel.findOne({
+      //   name: FileCategoryTypes.VERIFICATION_DOCUMENT,
+      // });
+      const uploadResult = await this.driveService.multiImageUpload(
         user.id,
-        business.drive.toString(),
-        fileCategory.id,
-        image,
+        docFolder.data.id,
+        images,
       );
       if (!uploadResult.success) {
         return {
@@ -6364,11 +6368,14 @@ export class BusinessService {
         (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
           BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
         100;
+
+      const uploadedUrls = uploadResult.data.map((file) => file.metaData.url);
+
       await this.businessModel.updateOne(
         { _id: business._id },
         {
           $set: {
-            addressVerificationDoc: uploadResult.data.metaData.url,
+            addressVerificationDocs: uploadedUrls,
             addressVerificationStatus: VerificationStatus.PENDING,
             profileCompletionPercentage,
           },
@@ -6377,7 +6384,7 @@ export class BusinessService {
       await this.businessDocVerificationLeadsModel.create({
         businessId: business._id,
         userId: new mongoose.Types.ObjectId(user.id),
-        documentUrl: uploadResult.data.metaData.url,
+        documentUrls: uploadedUrls,
         documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
       });
       await this.mailService.businessDocVerificationRequest(

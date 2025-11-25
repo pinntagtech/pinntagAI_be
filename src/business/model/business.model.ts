@@ -317,7 +317,7 @@ export class Business {
   tags: string[];
 
   @Prop()
-  addressVerificationDoc: string;
+  addressVerificationDocs: string[];
 
   @Prop({
     enum: Object.values(VerificationStatus),
