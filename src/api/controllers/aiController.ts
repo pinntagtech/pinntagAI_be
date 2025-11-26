@@ -4,6 +4,28 @@ import { AIService } from "../services/ai.service.js";
 import { logger } from "../../utils/logger.js";
 import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
 
+/**
+ * Normalizes website URL by adding https:// if missing
+ * Handles URLs with www, .com, .org, .in, etc.
+ */
+function normalizeWebsiteUrl(website: string): string {
+  if (!website) return website;
+
+  const trimmed = website.trim();
+
+  // If already has protocol, return as is
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  // If it looks like a domain (has www or a TLD like .com, .org, etc.)
+  if (/^(www\.|\w+\.\w+)/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+}
+
 export class AIController {
   /**
    * POST /ai/create-agent
@@ -27,12 +49,19 @@ export class AIController {
           error: "Business name is required",
         });
       }
-      // if (business.website && !/^https?:\/\/.+\..+/.test(business.website)) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     error: "Invalid website URL format",
-      //   });
-      // }
+
+      // Normalize website URL if provided
+      if (business.website) {
+        business.website = normalizeWebsiteUrl(business.website);
+
+        // Validate website format after normalization
+        if (!/^https?:\/\/.+\..+/.test(business.website)) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid website URL format",
+          });
+        }
+      }
       if (
         business.tone &&
         !["professional", "casual", "friendly"].includes(business.tone)
@@ -162,11 +191,18 @@ export class AIController {
           error: "Updates must be an object",
         });
       }
-      if (updates.website && !/^https?:\/\/.+\..+/.test(updates.website)) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid website URL format",
-        });
+
+      // Normalize website URL if provided
+      if (updates.website) {
+        updates.website = normalizeWebsiteUrl(updates.website);
+
+        // Validate website format after normalization
+        if (!/^https?:\/\/.+\..+/.test(updates.website)) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid website URL format",
+          });
+        }
       }
       if (
         updates.tone &&

@@ -4,18 +4,18 @@ import { GeminiService } from "../services/gemini.service.js";
 import { logger } from "../../utils/logger.js";
 import {
   BroadcastContentParams,
-  OfferContentParams,
-  RewardContentParams,
-  EventContentParams,
-  ImproveContentParams,
-  ImageGenerationParams,
-  ImageEditParams,
   ContentImageParams,
   ContentType,
+  EventContentParams,
+  ImageEditParams,
+  ImageGenerationParams,
+  ImproveContentParams,
+  OfferContentParams,
+  RewardContentParams,
 } from "../../utils/types/aiAssist.types.js";
 import {
-  checkImageGenerationAccess,
   checkContentAssistAccess,
+  checkImageGenerationAccess,
   getRemainingUsage,
 } from "../../utils/subscription.utils.js";
 import { UsageTrackingService } from "../services/usageTracking.service.js";
@@ -57,7 +57,10 @@ export async function generateBroadcastContent(
       content,
     });
   } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating broadcast content");
+    logger.error(
+      { error: error.message },
+      "Error generating broadcast content"
+    );
     res.status(500).json({
       success: false,
       error: error.message,
@@ -621,7 +624,7 @@ export async function getUsageAnalytics(
 ): Promise<void> {
   try {
     const { businessId } = req.params;
-    const days = parseInt(req.query.days as string) || 30;
+    const days = parseInt(req.query.days as string, 10) || 30;
 
     if (!businessId) {
       res.status(400).json({ error: "businessId is required" });
@@ -656,14 +659,17 @@ export async function getRecentUsage(
 ): Promise<void> {
   try {
     const { businessId } = req.params;
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = parseInt(req.query.limit as string, 10) || 50;
 
     if (!businessId) {
       res.status(400).json({ error: "businessId is required" });
       return;
     }
 
-    const records = await UsageTrackingService.getRecentUsage(businessId, limit);
+    const records = await UsageTrackingService.getRecentUsage(
+      businessId,
+      limit
+    );
 
     res.status(200).json({
       success: true,
@@ -688,7 +694,7 @@ export async function getAllBusinessUsage(
   res: Response
 ): Promise<void> {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
+    const limit = parseInt(req.query.limit as string, 10) || 100;
 
     const usages = await UsageTrackingService.getAllBusinessUsage(limit);
 
@@ -727,12 +733,16 @@ export async function updateTagsAndGenerateDescription(
     }
 
     if (!tags || !Array.isArray(tags) || tags.length === 0) {
-      res.status(400).json({ error: "tags array is required and cannot be empty" });
+      res
+        .status(400)
+        .json({ error: "tags array is required and cannot be empty" });
       return;
     }
 
     // Import required models and services
-    const { BusinessAIAssistantModel } = await import("../../models/businessAIAssistant.model.js");
+    const { BusinessAIAssistantModel } = await import(
+      "../../models/businessAIAssistant.model.js"
+    );
     const { AIService } = await import("../services/ai.service.js");
     const mongoose = await import("mongoose");
 
@@ -766,7 +776,9 @@ export async function updateTagsAndGenerateDescription(
     );
 
     // Generate description based on updated tags
-    const description = await AIService.generateDescriptionForBusiness(businessId);
+    const description = await AIService.generateDescriptionForBusiness(
+      businessId
+    );
 
     logger.info({ businessId }, "Generated description for business");
 
@@ -779,7 +791,10 @@ export async function updateTagsAndGenerateDescription(
       message: "Tags updated and description generated successfully",
     });
   } catch (error: any) {
-    logger.error({ error: error.message }, "Error updating tags and generating description");
+    logger.error(
+      { error: error.message },
+      "Error updating tags and generating description"
+    );
     res.status(500).json({
       success: false,
       error: error.message,
