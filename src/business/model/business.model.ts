@@ -321,9 +321,9 @@ export class Business {
 
   @Prop({
     enum: Object.values(VerificationStatus),
-    default: VerificationStatus.PENDING,
+    default: VerificationStatus.NOT_VERIFIED,
   })
-  addressVerificationStatus: string;
+  verificationStatus: string;
 
   @Prop({ ref: Admin.name })
   addressVerifiedBy: mongoose.Types.ObjectId;

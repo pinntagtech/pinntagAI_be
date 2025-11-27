@@ -14,6 +14,12 @@ export const BusinessStatus = {
   CONTENT_CREATION_START: 6.2,
   VERIFICATION_DOCS_UPLOADED: 7,
   VERIFICATION_DOCS_SUCCESSFULL: 8,
+
+  // CREATED: 0, //-> Business Created
+  // VERIFIED: 1,
+  // ADDRESS_ADDED: 2, //-> Business Address Added
+  // TAGS_DESCRIPTION_ADDED: 3, //-> Business Tags and Description Added
+  // COVER_ADDED: 4, //-> Business Cover Added
 };
 
 export const OfferStatus = {
@@ -777,7 +783,9 @@ export const BusinessDocumentTypesList = {
 };
 
 export const VerificationStatus = {
+  NOT_VERIFIED: 'Not Verified',
   PENDING: 'Pending',
+  // REQUEST_FOR_REVERIFICATION: 'Request for Reverification',
   VERIFIED: 'Verified',
   REJECTED: 'Rejected',
 };

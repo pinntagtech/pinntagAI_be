@@ -1470,7 +1470,8 @@ export class BusinessService {
 
       //ai-agent creation
       let agentName = `${createdBusiness.name} Assistant`;
-      this.pinnAiService.createAgent({
+      try{
+        this.pinnAiService.createAgent({
         name: agentName,
         tone: 'professional',
         businessId: createdBusiness._id.toString(),
@@ -1479,7 +1480,10 @@ export class BusinessService {
         website: createdBusiness.website ? createdBusiness.website : null,
         businessName: createdBusiness.name,
       });
-
+      }catch(err){
+        console.error('Error creating AI agent in Create Business Catch Block:', err);
+      }
+      
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdBusiness._id,

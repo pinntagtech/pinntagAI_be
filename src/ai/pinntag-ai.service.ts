@@ -5,7 +5,7 @@ import { error } from 'console';
 
 @Injectable()
 export class PinntagAiService {
-  private baseUrl = 'http://localhost:4001'; // same instance, internal call
+  private baseUrl = 'https://ai.pinntag.com'; // same instance, internal call
   private internalKey = 'change-me';
 
   async createAgent(payload: any) {

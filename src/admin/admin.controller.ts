@@ -1413,9 +1413,10 @@ export class AdminController {
   async updateDocVerificationLeadStatus(
     @Param('id') id: string,
     @Body('status') status: boolean,
+    @Body('remarks') remarks: string,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.verifyDocument(id, user.id, status);
+    const result = await this.adminService.verifyDocument(id, user.id, status, remarks);
     if (result.success) {
       return {
         message: result.message,

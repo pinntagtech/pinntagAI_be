@@ -3271,7 +3271,7 @@ export class AdminService {
             _id: 1,
             businessId: 1,
             documentType: 1,
-            documentUrl: 1,
+            documentUrls: 1,
             addressVerificationStatus: 1,
             createdAt: 1,
             updatedAt: 1,
@@ -3311,7 +3311,12 @@ export class AdminService {
     }
   }
 
-  async verifyDocument(id: string, adminId: string, status: boolean) {
+  async verifyDocument(
+    id: string,
+    adminId: string,
+    status: boolean,
+    remarks?: string,
+  ) {
     try {
       const lead = await this.docVerificationLeadModel.findById(id);
       if (!lead) {
@@ -3320,17 +3325,23 @@ export class AdminService {
           message: 'Lead not found',
         };
       }
-      // Perform verification logic here
-      let verificationStatus = VerificationStatus.REJECTED;
-      if (status) {
-        verificationStatus = VerificationStatus.VERIFIED;
+      if(lead.verificationStatus === VerificationStatus.VERIFIED || lead.verificationStatus === VerificationStatus.REJECTED){
+        return {
+          success: false,
+          message: `Document already ${lead.verificationStatus.toLowerCase()}`,
+        };
       }
+      // Perform verification logic here
+      let verificationStatus = status
+        ? VerificationStatus.VERIFIED
+        : VerificationStatus.REJECTED;
       await this.docVerificationLeadModel.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
         {
           $set: {
-            addressVerificationStatus: verificationStatus,
+            verificationStatus: verificationStatus,
             verifiedBy: new mongoose.Types.ObjectId(adminId),
+            remarks: remarks ? remarks : '',
           },
         },
       );
@@ -3343,7 +3354,7 @@ export class AdminService {
           {
             $set: {
               addressVerifiedBy: new mongoose.Types.ObjectId(adminId),
-              isAddressVerified: status,
+              verificationStatus: verificationStatus,
               profileCompletionPercentage: 100,
             },
           },
@@ -3371,7 +3382,6 @@ export class AdminService {
       }
       //stripe coupon
       const stripeCoupon = await this.stripeService.createCoupon(data);
-      
 
       const created = await this.couponModel.create({
         ...data,
