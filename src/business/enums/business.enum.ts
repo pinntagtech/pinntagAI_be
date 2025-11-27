@@ -783,11 +783,11 @@ export const BusinessDocumentTypesList = {
 };
 
 export const VerificationStatus = {
-  NOT_VERIFIED: 'Not Verified',
-  PENDING: 'Pending',
+  NOT_VERIFIED: 'not verified',
+  PENDING: 'pending',
   // REQUEST_FOR_REVERIFICATION: 'Request for Reverification',
-  VERIFIED: 'Verified',
-  REJECTED: 'Rejected',
+  VERIFIED: 'verified',
+  REJECTED: 'rejected',
 };
 
 export const DEFAULT_IMAGES = {

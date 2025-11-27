@@ -325,6 +325,9 @@ export class Business {
   })
   verificationStatus: string;
 
+  @Prop()
+  verificationRemarks: string;
+
   @Prop({ ref: Admin.name })
   addressVerifiedBy: mongoose.Types.ObjectId;
 

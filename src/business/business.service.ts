@@ -6417,17 +6417,18 @@ export class BusinessService {
           {
             $set: {
               addressVerificationDocs: uploadedUrls,
-              addressVerificationStatus: VerificationStatus.PENDING,
+              verificationStatus: VerificationStatus.PENDING,
               profileCompletionPercentage,
+
             },
           },
         ),
-        this.businessDocVerificationLeadsModel.create({
-          businessId: business._id,
-          userId: new mongoose.Types.ObjectId(user.id),
-          documentUrls: uploadedUrls,
-          documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
-        }),
+        // this.businessDocVerificationLeadsModel.create({
+        //   businessId: business._id,
+        //   userId: new mongoose.Types.ObjectId(user.id),
+        //   documentUrls: uploadedUrls,
+        //   documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        // }),
         this.mailService.businessDocVerificationRequest(
           superAdmin.email,
           businessID,

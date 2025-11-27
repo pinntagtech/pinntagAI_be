@@ -1922,7 +1922,12 @@ export class AdminService {
     }
   }
 
-  async getBusinessesList(page: number, limit: number, search: string) {
+  async getBusinessesList(
+    page: number,
+    limit: number,
+    search: string,
+    verificationStatus: string,
+  ) {
     try {
       const query: any = {};
       if (search) {
@@ -1934,6 +1939,9 @@ export class AdminService {
           { city: { $regex: search, $options: 'i' } },
           { state: { $regex: search, $options: 'i' } },
         ];
+      }
+      if (verificationStatus) {
+        query['verificationStatus'] = verificationStatus;
       }
       const businesses = await this.businessModel
         .find(query)
@@ -3318,48 +3326,35 @@ export class AdminService {
     remarks?: string,
   ) {
     try {
-      const lead = await this.docVerificationLeadModel.findById(id);
-      if (!lead) {
+      const business = await this.businessModel.findById(id);
+      if (!business) {
         return {
           success: false,
-          message: 'Lead not found',
+          message: 'Business not found',
         };
       }
-      if(lead.verificationStatus === VerificationStatus.VERIFIED || lead.verificationStatus === VerificationStatus.REJECTED){
+      if (business.verificationStatus === VerificationStatus.VERIFIED) {
         return {
           success: false,
-          message: `Document already ${lead.verificationStatus.toLowerCase()}`,
+          message: `Document already ${business.verificationStatus.toLowerCase()}`,
         };
       }
       // Perform verification logic here
       let verificationStatus = status
         ? VerificationStatus.VERIFIED
         : VerificationStatus.REJECTED;
-      await this.docVerificationLeadModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(id) },
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
         {
           $set: {
+            addressVerifiedBy: new mongoose.Types.ObjectId(adminId),
             verificationStatus: verificationStatus,
-            verifiedBy: new mongoose.Types.ObjectId(adminId),
-            remarks: remarks ? remarks : '',
+            verificationRemarks: remarks ? remarks : '',
+            profileCompletionPercentage: 100,
           },
         },
       );
-
-      if (
-        lead.documentType === BusinessDocumentTypesList.ADDRESS_VERIFICATION
-      ) {
-        await this.businessModel.updateOne(
-          { _id: lead.businessId },
-          {
-            $set: {
-              addressVerifiedBy: new mongoose.Types.ObjectId(adminId),
-              verificationStatus: verificationStatus,
-              profileCompletionPercentage: 100,
-            },
-          },
-        );
-      }
 
       return {
         success: true,

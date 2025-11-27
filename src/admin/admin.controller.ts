@@ -832,6 +832,7 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('verificationStatus') verificationStatus: string,
     @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
@@ -840,6 +841,7 @@ export class AdminController {
       pageNumber,
       limitNumber,
       search,
+      verificationStatus,
     );
     if (result.success) {
       return {
