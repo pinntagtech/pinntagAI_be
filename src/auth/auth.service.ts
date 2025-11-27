@@ -138,6 +138,7 @@ import {
 } from 'src/rewards/model/rewardLocation.model';
 import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
 import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
+import { messaging } from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -7260,6 +7261,22 @@ export class AuthService {
         success: false,
         message: 'Something went wrong.',
       };
+    }
+  }
+
+  async getCheckInList(user: DecodedUser, latitude: number, longitude: number, page: number, limit: number) {
+    try{
+
+      return {
+        success: true,
+        message: 'Data fetched successfully',
+        data: []  
+      }
+    }catch(error){
+      return {
+        success: false,
+        message:'Something went wrong'
+      }
     }
   }
 }

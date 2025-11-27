@@ -947,6 +947,30 @@ export class AuthController {
     };
   }
 
+  @Get('checkInList')
+  @UseGuards(JwtGuard2)
+  async getCheckInList(
+    @TokenDecoder()user:DecodedUser,
+    @Query('latitude') latitude:any,
+    @Query('longitude') longitude:any,
+    @Query('page') page: any,
+    @Query('limit') limit: any,
+  ) {
+    latitude = latitude ? Number(latitude) : 0;
+    longitude = longitude ? Number(longitude) : 0;
+    page = page ? Number(page) : 1;
+    limit = limit ? Number(limit) : 10;
+    const result = await this.authService.getCheckInList(user, latitude, longitude, page, limit);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
+
+
 
 
 }

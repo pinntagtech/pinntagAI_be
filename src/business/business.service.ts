@@ -1470,20 +1470,22 @@ export class BusinessService {
 
       //ai-agent creation
       let agentName = `${createdBusiness.name} Assistant`;
-      try{
-        this.pinnAiService.createAgent({
-        name: agentName,
-        tone: 'professional',
-        businessId: createdBusiness._id.toString(),
-        subCategories: businessCategoryTitles,
-        category: findBusinessIndustry ? findBusinessIndustry.title : null,
-        website: createdBusiness.website ? createdBusiness.website : null,
-        businessName: createdBusiness.name,
-      });
-      }catch(err){
-        console.error('Error creating AI agent in Create Business Catch Block:', err);
-      }
-      
+      this.pinnAiService
+        .createAgent({
+          name: agentName,
+          tone: 'professional',
+          subCategories: businessCategoryTitles,
+          category: findBusinessIndustry ? findBusinessIndustry.title : null,
+          website: createdBusiness.website ? createdBusiness.website : null,
+          businessName: createdBusiness.name,
+        })
+        .catch((err) => {
+          console.error(
+            'Error creating AI agent in Create Business Catch Block:',
+            err,
+          );
+        });
+
       //create drive
       let driveDetails = await this.seederService.createDrive(
         createdBusiness._id,
@@ -1784,7 +1786,6 @@ export class BusinessService {
     data: UpdateBusinessDto,
   ) {
     try {
-      console.log('Updateddd DATAAAA:', data);
       const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
         return {
@@ -1794,7 +1795,6 @@ export class BusinessService {
       }
       logger.info(`Business ID: ${businessId}`);
       const findBusiness = await this.businessModel.findById(businessId);
-      console.log('Find Businessss:', findBusiness);
       if (!findBusiness) {
         return {
           success: false,
@@ -2059,7 +2059,6 @@ export class BusinessService {
       }
 
       updatedDetails = await this.businessModel.findById(businessId);
-      logger.info(`udpatedDetails: ${JSON.stringify(updatedDetails)}`);
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -6374,13 +6373,13 @@ export class BusinessService {
       }
 
       // Create folder and upload images
-      console.log("Check 1");
+      console.log('Check 1');
       const docFolder = await this.driveService.createFolder(businessID, {
         parentDirectory: business.drive.toString(),
         parentType: 'Drive',
         folderName: 'Verification Documents',
       });
-      console.log("Check 2",docFolder);
+      console.log('Check 2', docFolder);
 
       if (!docFolder?.data?.id) {
         return {
@@ -6419,7 +6418,6 @@ export class BusinessService {
               addressVerificationDocs: uploadedUrls,
               verificationStatus: VerificationStatus.PENDING,
               profileCompletionPercentage,
-
             },
           },
         ),
