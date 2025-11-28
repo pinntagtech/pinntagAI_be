@@ -1972,26 +1972,26 @@ export class BusinessService {
           { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
-      if (
-        updateObj.businessIndustry &&
-        updateObj.businessCategories &&
-        !findBusiness.businessIndustry &&
-        findBusiness.businessCategories &&
-        findBusiness.businessCategories.length == 0
-      ) {
-        await this.businessModel.updateOne(
-          { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.TYPE_ADDED } },
-        );
-      }
+      // if (
+      //   updateObj.businessIndustry &&
+      //   updateObj.businessCategories &&
+      //   !findBusiness.businessIndustry &&
+      //   findBusiness.businessCategories &&
+      //   findBusiness.businessCategories.length == 0
+      // ) {
+      //   await this.businessModel.updateOne(
+      //     { _id: new mongoose.Types.ObjectId(businessId) },
+      //     { $set: { status: BusinessStatus.TYPE_ADDED } },
+      //   );
+      // }
       if (
         updateObj.description &&
         updateObj.description.length > 0 &&
-        !findBusiness.description
+        !findBusiness.description 
       ) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
+          { $set: { status: BusinessStatus.TAGS_DESCRIPTION_ADDED } },
         );
 
         // this.pinnAiService.updateAgent(
@@ -2005,7 +2005,7 @@ export class BusinessService {
       if (updateObj.cover || updateObj.logo) {
         let profileCompletionPercentage =
           (BusinessStatus.COVER_ADDED /
-            BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
+            BusinessStatus.COVER_ADDED) *
           100;
 
         let tempUpdateObj = {
@@ -2035,7 +2035,7 @@ export class BusinessService {
       ) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.TAGS } },
+          { $set: { status: BusinessStatus.TAGS_DESCRIPTION_ADDED } },
         );
         // this.pinnAiService.updateAgent(
         //   {
@@ -6404,10 +6404,10 @@ export class BusinessService {
       const uploadedUrls = uploadResult.data.map((file) => file.metaData.url);
 
       // Calculate completion percentage
-      const profileCompletionPercentage =
-        (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
-          BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
-        100;
+      // const profileCompletionPercentage =
+      //   (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
+      //     BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
+      //   100;
 
       // Parallel operations for update, create, and email
       Promise.all([
@@ -6417,7 +6417,7 @@ export class BusinessService {
             $set: {
               addressVerificationDocs: uploadedUrls,
               verificationStatus: VerificationStatus.PENDING,
-              profileCompletionPercentage,
+              // profileCompletionPercentage,
             },
           },
         ),

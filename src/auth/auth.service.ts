@@ -7266,11 +7266,37 @@ export class AuthService {
 
   async getCheckInList(user: DecodedUser, latitude: number, longitude: number, page: number, limit: number) {
     try{
+      const list = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        {},
+        page,
+        limit,
+        1, // Default distance if not provided
+      );
+      return {
+        success: true,
+        message: 'Data fetched successfully',
+        data: list[0].data,
+        total: list[0].totalCount,
+        page: page,
+        limit: limit,
+      }
+    }catch(error){
+      return {
+        success: false,
+        message:'Something went wrong'
+      }
+    }
+  }
+  async userCheckIn(businessId:string,user: DecodedUser, latitude: number, longitude: number) {
+    try{
 
       return {
         success: true,
         message: 'Data fetched successfully',
-        data: []  
+        data: {},
       }
     }catch(error){
       return {

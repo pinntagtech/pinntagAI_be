@@ -970,6 +970,17 @@ export class AuthController {
     };
   }
 
+  @Post('check-in/:businessId')
+  @UseGuards(JwtGuard2)
+  async userCheckIn(
+    @Param('businessId')businessId: string,
+    @TokenDecoder() user:DecodedUser,
+     @Body('latitude') latitude:number,
+    @Body('longitude') longitude:number,
+  ){
+    const result = await this.authService.userCheckIn(businessId,user,latitude,longitude);
+  }
+
 
 
 

@@ -41,7 +41,7 @@ export class BusinessUser {
       'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+business+user.png',
   })
   profilePhoto: string;
-  @Prop({ required: true })
+  @Prop()
   name: string;
   @Prop()
   countryCode: string;
