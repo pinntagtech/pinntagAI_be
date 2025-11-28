@@ -12,7 +12,8 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.919.0",
-		"@google/genai": "^1.30.0",
+		"@google/generative-ai": "^0.24.1",
+		"@smithy/node-http-handler": "^4.4.5",
 		"@types/node-cron": "^3.0.11",
 		"@types/ws": "^8.18.1",
 		"axios": "^1.7.7",

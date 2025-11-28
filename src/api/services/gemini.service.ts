@@ -1,7 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../../utils/logger.js";
+import { setDefaultAutoSelectFamily } from "node:net";
 import {
   ImageGenerationParams,
   ImageEditParams,
@@ -21,16 +23,16 @@ import { UsageType } from "../../models/aiUsage.model.js";
 // Configuration
 // ===========================
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_GEMINI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
-const s3 = new S3Client({ region: process.env.AWS_REGION });
-const S3_BUCKET = process.env.AWS_S3_BUCKET!;
+// Backblaze B2 configuration constants
+const S3_BUCKET = process.env.B2_BUCKET_NAME!;
+const CDN_DOMAIN = process.env.CDN_DOMAIN!;
 const S3_IMAGE_PREFIX = "ai-generated-images";
 
 // Model for image generation
-const IMAGE_MODEL = "gemini-2.0-flash-exp-image-generation";
+// Using Gemini 2.5 Flash Image (aka "Nano Banana") for fast image generation
+const IMAGE_MODEL = "gemini-2.5-flash-image";
 
 // ===========================
 // Helper Functions
@@ -102,7 +104,7 @@ function buildImagePrompt(params: {
 }
 
 /**
- * Upload image buffer to S3 and return the URL
+ * Upload image buffer to Backblaze B2 and return the CDN URL
  */
 async function uploadImageToS3(
   imageBuffer: Buffer,
@@ -112,20 +114,101 @@ async function uploadImageToS3(
   const extension = mimeType.split("/")[1] || "png";
   const key = `${S3_IMAGE_PREFIX}/${businessId}/${uuidv4()}.${extension}`;
 
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: S3_BUCKET,
-      Key: key,
-      Body: imageBuffer,
-      ContentType: mimeType,
-      // Make publicly accessible for easy sharing
-      // ACL: "public-read",
-    })
+  logger.info(
+    {
+      businessId,
+      bucket: S3_BUCKET,
+      key,
+      imageSize: imageBuffer.length,
+      mimeType,
+    },
+    "Uploading image to Backblaze B2"
   );
 
-  const url = `https://${S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  // Retry logic for network issues
+  let lastError: any;
+  const maxRetries = 3;
 
-  return { url, key };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      logger.info(
+        { businessId, attempt, maxRetries },
+        `Upload attempt ${attempt}/${maxRetries}`
+      );
+
+      // Create a fresh S3 client for each upload to avoid connection pooling issues
+      // Force IPv4 to avoid IPv6 timeout issues
+      setDefaultAutoSelectFamily(false);
+
+      const s3Client = new S3Client({
+        region: process.env.B2_REGION!,
+        endpoint: process.env.B2_ENDPOINT!,
+        credentials: {
+          accessKeyId: process.env.B2_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
+        },
+        forcePathStyle: true,
+        maxAttempts: 1, // Disable SDK's internal retry to use our own
+        requestHandler: new NodeHttpHandler({
+          connectionTimeout: 60000,
+          requestTimeout: 120000,
+          socketTimeout: 60000,
+        }),
+      });
+
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: key,
+          Body: imageBuffer,
+          ContentType: mimeType,
+          // Make publicly accessible for easy sharing
+          // ACL: "public-read",
+        })
+      );
+
+      // Destroy the client after use
+      s3Client.destroy();
+
+      // Use CDN domain for public access
+      const url = `https://${CDN_DOMAIN}/${key}`;
+
+      logger.info({ businessId, url, key, attempt }, "Image uploaded successfully to B2");
+
+      return { url, key };
+    } catch (error: any) {
+      lastError = error;
+      logger.warn(
+        {
+          businessId,
+          attempt,
+          error: error.message,
+          errorCode: error.code,
+        },
+        `Upload attempt ${attempt} failed`
+      );
+
+      // If not last attempt, wait before retry (exponential backoff)
+      if (attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        logger.info({ businessId, waitTime }, "Waiting before retry");
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  // All retries failed
+  logger.error(
+    {
+      businessId,
+      error: lastError.message,
+      errorCode: lastError.code,
+      bucket: S3_BUCKET,
+      endpoint: process.env.B2_ENDPOINT,
+    },
+    "Failed to upload image to Backblaze B2 after all retries"
+  );
+  throw lastError;
 }
 
 /**
@@ -189,13 +272,9 @@ export class GeminiService {
       );
 
       // Generate image using Gemini
-      const response = await genAI.models.generateContent({
-        model: IMAGE_MODEL,
-        contents: finalPrompt,
-        config: {
-          responseModalities: ["Text", "Image"],
-        },
-      });
+      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
+      const result = await model.generateContent(finalPrompt);
+      const response = result.response;
 
       // Extract image from response
       let imageData: string | null = null;
@@ -258,6 +337,7 @@ export class GeminiService {
       };
     } catch (error: any) {
       // Track failed usage
+      const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_GENERATION,
@@ -265,14 +345,19 @@ export class GeminiService {
         imageCount: 0,
         model: IMAGE_MODEL,
         success: false,
-        errorMessage: error.message,
+        errorMessage,
       });
 
       logger.error(
-        { businessId, error: error.message },
+        {
+          businessId,
+          error: errorMessage,
+          errorStack: error.stack,
+          errorDetails: JSON.stringify(error, null, 2)
+        },
         "Error generating image with Gemini"
       );
-      throw new Error(`Image generation failed: ${error.message}`);
+      throw new Error(`Image generation failed: ${errorMessage}`);
     }
   }
 
@@ -312,21 +397,17 @@ export class GeminiService {
       );
 
       // Send image + prompt to Gemini
-      const response = await genAI.models.generateContent({
-        model: IMAGE_MODEL,
-        contents: [
-          {
-            inlineData: {
-              data: imageBase64,
-              mimeType: imageMimeType,
-            },
+      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            data: imageBase64,
+            mimeType: imageMimeType,
           },
-          fullPrompt,
-        ],
-        config: {
-          responseModalities: ["Text", "Image"],
         },
-      });
+        { text: fullPrompt },
+      ]);
+      const response = result.response;
 
       // Extract edited image from response
       let imageData: string | null = null;
@@ -386,20 +467,26 @@ export class GeminiService {
       };
     } catch (error: any) {
       // Track failed usage
+      const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_EDIT,
         imageCount: 0,
         model: IMAGE_MODEL,
         success: false,
-        errorMessage: error.message,
+        errorMessage,
       });
 
       logger.error(
-        { businessId, error: error.message },
+        {
+          businessId,
+          error: errorMessage,
+          errorStack: error.stack,
+          errorDetails: JSON.stringify(error, null, 2)
+        },
         "Error editing image with Gemini"
       );
-      throw new Error(`Image editing failed: ${error.message}`);
+      throw new Error(`Image editing failed: ${errorMessage}`);
     }
   }
 
