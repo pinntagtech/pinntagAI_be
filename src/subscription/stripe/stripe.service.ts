@@ -346,6 +346,8 @@ export class StripeService {
           'Quantity must be between min and max locations allowed for this product',
         );
       }
+    }else if (productDoc.pricingModel === 'flat'){
+      params.quantity = 1;
     }
 
     const customerId = await this.ensureStripeCustomer(business.id);

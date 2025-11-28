@@ -193,6 +193,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 
 @Module({
   imports: [
@@ -282,7 +283,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: MobileSpots.name, schema:MobileSpotsSchema},
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
-      
+      { name: CheckIn.name, schema: CheckInSchema}, 
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },

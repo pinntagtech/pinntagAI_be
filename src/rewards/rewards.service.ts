@@ -88,7 +88,8 @@ export class RewardsService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
-    @InjectModel(UserSearchActivity.name) private readonly userSearchActivityModel: Model<UserSearchActivity>,
+    @InjectModel(UserSearchActivity.name)
+    private readonly userSearchActivityModel: Model<UserSearchActivity>,
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
@@ -101,19 +102,19 @@ export class RewardsService {
   ) {}
 
   private isMuteExpired(mutedUntil: Date | null): boolean {
-      if (!mutedUntil) return false;
-      return new Date() > mutedUntil;
+    if (!mutedUntil) return false;
+    return new Date() > mutedUntil;
+  }
+  private isCurrentlyMuted(follower: any): boolean {
+    if (!follower.muted) return false;
+
+    if (follower.muteDuration === MuteDuration.ALWAYS) return true;
+
+    if (this.isMuteExpired(follower.mutedUntil)) {
+      return false;
     }
-    private isCurrentlyMuted(follower: any): boolean {
-      if (!follower.muted) return false;
-  
-      if (follower.muteDuration === MuteDuration.ALWAYS) return true;
-      
-      if (this.isMuteExpired(follower.mutedUntil)) {
-        return false;
-      }
-      return true;
-    }
+    return true;
+  }
 
   // Create Offer
 
@@ -139,11 +140,14 @@ export class RewardsService {
       const business = await this.businessModel.findById(user.businessProfile);
       if (!business) return { success: false, message: 'Business not found.' };
 
-      const businessFolder = await this.driveService.createFolder(user.businessProfile, {
-        parentDirectory: business.drive,
-        parentType: 'Drive',
-        folderName: data.title,
-      });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: data.title,
+        },
+      );
       const now = new Date(data.startDate).setHours(0, 0, 0, 0);
       // if (new Date(data.startDate) < new Date(now)) {
       //   return { success: false, message: 'Start date cannot be in the past.' };
@@ -1456,9 +1460,9 @@ export class RewardsService {
       let match = {};
       if (search) {
         this.userSearchActivityModel.create({
-                user:new mongoose.Types.ObjectId(user.id),
-                searchText: search
-              });
+          user: new mongoose.Types.ObjectId(user.id),
+          searchText: search,
+        });
         // Search matching business profile name
         const matchingBusinesses = await this.businessModel.find({
           name: { $regex: search, $options: 'i' },
@@ -1652,7 +1656,7 @@ export class RewardsService {
             rewardType: 1,
             targetCount: 1,
             redemptionMode: 1,
-             locations: { $slice: ['$locations', 1] },
+            locations: { $slice: ['$locations', 1] },
             drivePath: 1,
             files: 1,
             QR_CODE: 1,

@@ -170,6 +170,7 @@ import { BusinessActivation, BusinessActivationSchema } from './model/businessAc
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 
 @Module({
   imports: [
@@ -261,6 +262,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
+      { name: CheckIn.name, schema: CheckInSchema}, 
     ]),
   ],
   controllers: [BusinessController],

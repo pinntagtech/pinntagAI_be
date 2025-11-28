@@ -174,6 +174,7 @@ import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLo
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.model';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 
 @Module({
   imports: [
@@ -251,6 +252,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
+      { name: CheckIn.name, schema: CheckInSchema}, 
     ]),
   ],
   controllers: [AdminController],

@@ -139,6 +139,7 @@ import {
 import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
 import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 import { messaging } from 'firebase-admin';
+import { CheckIn } from './models/check-ins.model';
 
 @Injectable()
 export class AuthService {
@@ -189,6 +190,7 @@ export class AuthService {
     private readonly featuredAssetModel: Model<FeaturedAsset>,
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
+    @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -512,8 +514,10 @@ export class AuthService {
     ipAddress: string,
   ) {
     // Update user info
-    if(foundUser.isDeleted){
-      this.redisBullService.removeRedisQueueJob(foundUser.accountDeletionSchedulerId);
+    if (foundUser.isDeleted) {
+      this.redisBullService.removeRedisQueueJob(
+        foundUser.accountDeletionSchedulerId,
+      );
     }
     await foundUser.updateOne(
       { _id: foundUser.id },
@@ -661,7 +665,7 @@ export class AuthService {
       await this.userModel.updateOne(
         { _id: id },
         {
-          $set: { email,isEmailVerified: false  },
+          $set: { email, isEmailVerified: false },
         },
       );
       this.mailService.sendUserVerificationMail(id);
@@ -669,8 +673,7 @@ export class AuthService {
         success: true,
         message: 'OTP sent to verify your email.',
       };
-    }
-    else if (phone && countryCode) {
+    } else if (phone && countryCode) {
       const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
       if (!phoneNumber || !phoneNumber.isValid()) {
         return {
@@ -766,7 +769,6 @@ export class AuthService {
 
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
-
 
     await this.userModel.updateOne({ _id: id }, { $set: updateObj });
 
@@ -2771,7 +2773,7 @@ export class AuthService {
         });
 
         let nextScheduleDate = null;
-        if(!nextSchedule) return 0;
+        if (!nextSchedule) return 0;
         if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
         } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
@@ -7253,9 +7255,9 @@ export class AuthService {
 
       return {
         success: true,
-        message: "Data fetched successfully.",
-        data: recents
-      }
+        message: 'Data fetched successfully.',
+        data: recents,
+      };
     } catch (error) {
       return {
         success: false,
@@ -7264,8 +7266,14 @@ export class AuthService {
     }
   }
 
-  async getCheckInList(user: DecodedUser, latitude: number, longitude: number, page: number, limit: number) {
-    try{
+  async getCheckInList(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    page: number,
+    limit: number,
+  ) {
+    try {
       const list = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
@@ -7282,27 +7290,75 @@ export class AuthService {
         total: list[0].totalCount,
         page: page,
         limit: limit,
-      }
-    }catch(error){
+      };
+    } catch (error) {
       return {
         success: false,
-        message:'Something went wrong'
-      }
+        message: 'Something went wrong',
+      };
     }
   }
-  async userCheckIn(businessId:string,user: DecodedUser, latitude: number, longitude: number) {
-    try{
-
+  async userCheckIn(
+    businessId: string,
+    locationId: string,
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+  ) {
+    try {
+      const location = await this.outletModel.findById(locationId);
+      console.log("location:",location);
+      if (!location) {
+        return {
+          success: false,
+          message: 'outlet not found',
+        };
+      }
+      const checkDistance = await this.outletModel.aggregate([
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [longitude, latitude], // IMPORTANT: [lng, lat]
+            },
+            distanceField: 'distance', // distance in METERS
+            maxDistance: 500, // 500 meters
+            spherical: true,
+            query: {
+              _id: new mongoose.Types.ObjectId(locationId), // only this document
+            },
+          },
+        },
+        { $limit: 1 },
+      ]);
+      console.log("checkDistance:",checkDistance);
+      if(checkDistance.length === 0){
+        return {
+          success: false,
+          message: 'please be present in business\'s proximity.'
+        }
+      }
+      this.checkInModel.create({
+        user: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(businessId),
+        locationId: new mongoose.Types.ObjectId(locationId),
+        latitude: latitude,
+        longitude: longitude,
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+      });
       return {
         success: true,
         message: 'Data fetched successfully',
         data: {},
-      }
-    }catch(error){
+      };
+    } catch (error) {
       return {
         success: false,
-        message:'Something went wrong'
-      }
+        message: 'Something went wrong',
+      };
     }
   }
 }
