@@ -63,6 +63,7 @@ import { File, FileDocument } from 'src/drive/models/file.model';
 import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 import { CheckIn } from 'src/auth/models/check-ins.model';
 import { RewardVisit } from './model/rewardVisit.model';
+import { Scratch, ScratchStatus } from 'src/business/model/scratch.model';
 
 @Injectable()
 export class RewardsService {
@@ -93,7 +94,10 @@ export class RewardsService {
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
-    @InjectModel(RewardVisit.name) private readonly rewardVisitModel: Model<RewardVisit>,
+    @InjectModel(RewardVisit.name)
+    private readonly rewardVisitModel: Model<RewardVisit>,
+    @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
+
     // @InjectModel(File.name) private readonly fileModel: Model<File>,
     // @InjectModel(FileCategory.name)
     // private readonly fileCategoryModel: Model<FileCategory>,
@@ -1952,7 +1956,7 @@ export class RewardsService {
 
       const userCheckIn = await this.checkInModel.findOne({
         business: userReward.businessProfile,
-        user: user.id,
+        user: new mongoose.Types.ObjectId(user.id),
         expiry: { $gt: new Date() },
       });
       if (!userCheckIn) {
@@ -1973,7 +1977,7 @@ export class RewardsService {
 
       const reward = await this.rewardModel
         .findById(userReward.rewardId)
-        .populate('QR_CODE');
+        .populate('QR_CODE','_id metaData');
       if (!reward) {
         return {
           success: false,
@@ -2006,6 +2010,18 @@ export class RewardsService {
         };
       }
 
+      const scratchDoc = await this.scratchModel.create({
+        user: new mongoose.Types.ObjectId(user.id),
+        business: reward.businessProfile,
+        locationId: userCheckIn.locationId,
+        checkInId: userCheckIn._id,
+        reward: reward._id,
+        validUntil: new Date(Date.now() + 10 * 60 * 1000),
+        status:ScratchStatus.CONFIRMED
+      });
+      const scratch = scratchDoc.toObject();
+      
+
       await this.userRewardModel.findByIdAndUpdate(userRewardLink._id, {
         $set: {
           claimStatus: ClaimStatus.CLAIMED,
@@ -2023,7 +2039,10 @@ export class RewardsService {
       return {
         success: true,
         message: 'Reward claimed successfully.',
-        // data: userRewardLink,
+        data: {
+          ...scratch,
+          QR_CODE: reward.QR_CODE
+        },
       };
     } catch (error) {
       console.log('Error in claimReward:', error);
@@ -2427,109 +2446,110 @@ export class RewardsService {
     };
   }
 
- async handleScanReward(rewardId: string, userId: string) {
-  try {
-    // Parallel fetch for reward and user
-    const [foundReward, user] = await Promise.all([
-      this.rewardModel.findById(rewardId).lean(),
-      this.userModel.findById(userId).lean(),
-    ]);
+  async handleScanReward(rewardId: string, userId: string) {
+    try {
+      // Parallel fetch for reward and user
+      const [foundReward, user] = await Promise.all([
+        this.rewardModel.findById(rewardId).lean(),
+        this.userModel.findById(userId).lean(),
+      ]);
 
-    // Early validation checks
-    if (!foundReward) {
-      return {
-        success: false,
-        message: 'Reward Expired',
-      };
-    }
+      // Early validation checks
+      if (!foundReward) {
+        return {
+          success: false,
+          message: 'Reward Expired',
+        };
+      }
 
-    if (!user) {
-      return {
-        success: false,
-        message: 'User not found.',
-      };
-    }
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found.',
+        };
+      }
 
-    // Combined validation for reward status and expiry
-    if (
-      foundReward.schedule.endDate < new Date() ||
-      foundReward.status !== RewardStatus.PUBLISHED
-    ) {
-      return {
-        success: false,
-        message: foundReward.schedule.endDate < new Date() 
-          ? 'Reward Expired' 
-          : 'Reward is closed.',
-      };
-    }
+      // Combined validation for reward status and expiry
+      if (
+        foundReward.schedule.endDate < new Date() ||
+        foundReward.status !== RewardStatus.PUBLISHED
+      ) {
+        return {
+          success: false,
+          message:
+            foundReward.schedule.endDate < new Date()
+              ? 'Reward Expired'
+              : 'Reward is closed.',
+        };
+      }
 
-    // Parallel fetch for check-in and user reward
-    const [userCheckIn, userReward] = await Promise.all([
-      this.checkInModel
-        .findOne({
+      // Parallel fetch for check-in and user reward
+      const [userCheckIn, userReward] = await Promise.all([
+        this.checkInModel
+          .findOne({
+            user: new mongoose.Types.ObjectId(userId),
+            business: foundReward.businessProfile,
+            expiry: { $gt: new Date() },
+          })
+          .lean(),
+        this.userRewardModel
+          .findOne({
+            userId,
+            rewardId,
+          })
+          .lean(),
+      ]);
+
+      if (!userCheckIn) {
+        return {
+          success: false,
+          message: 'Check In the business First',
+        };
+      }
+
+      if (!userReward) {
+        return {
+          success: false,
+          message: 'Please Enroll this reward first.',
+        };
+      }
+
+      if (userReward.progress >= userReward.target) {
+        return {
+          success: false,
+          message: 'Reward already completed.',
+        };
+      }
+
+      // Parallel creation and update
+      const [, updatedReward] = await Promise.all([
+        this.rewardVisitModel.create({
           user: userId,
           business: foundReward.businessProfile,
-          expiry: { $gt: new Date() },
-        })
-        .lean(),
-      this.userRewardModel
-        .findOne({
-          userId,
-          rewardId,
-        })
-        .lean(),
-    ]);
+          locationId: userCheckIn.locationId,
+          reward: foundReward._id,
+          checkInId: userCheckIn._id,
+        }),
+        this.userRewardModel.findByIdAndUpdate(
+          userReward._id,
+          { $inc: { progress: 1 } },
+          { new: true, lean: true },
+        ),
+      ]);
 
-    if (!userCheckIn) {
+      return {
+        success: true,
+        message: 'Reward scanned successfully.',
+        data: updatedReward,
+      };
+    } catch (error) {
+      console.error('Error in handleScanReward:', error);
       return {
         success: false,
-        message: 'Check In the business First',
+        message: 'Something went wrong.',
       };
     }
-
-    if (!userReward) {
-      return {
-        success: false,
-        message: 'Please Enroll this reward first.',
-      };
-    }
-
-    if (userReward.progress >= userReward.target) {
-      return {
-        success: false,
-        message: 'Reward already completed.',
-      };
-    }
-
-    // Parallel creation and update
-    const [, updatedReward] = await Promise.all([
-      this.rewardVisitModel.create({
-        user: userId,
-        business: foundReward.businessProfile,
-        locationId: userCheckIn.locationId,
-        reward: foundReward._id,
-        checkInId: userCheckIn._id,
-      }),
-      this.userRewardModel.findByIdAndUpdate(
-        userReward._id,
-        { $inc: { progress: 1 } },
-        { new: true, lean: true }
-      ),
-    ]);
-
-    return {
-      success: true,
-      message: 'Reward scanned successfully.',
-      data: updatedReward,
-    };
-  } catch (error) {
-    console.error('Error in handleScanReward:', error);
-    return {
-      success: false,
-      message: 'Something went wrong.',
-    };
   }
-}
 
   async generateRewardUrl({
     title,

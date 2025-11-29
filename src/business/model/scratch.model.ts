@@ -24,10 +24,10 @@ export enum BusinessVoteStatus {
 @Schema({ timestamps: true })
 export class Scratch extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  userId: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Business', required: true })
-  businessId: mongoose.Types.ObjectId;
+  business: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Outlet', required: true })
   locationId: mongoose.Types.ObjectId;
@@ -40,7 +40,7 @@ export class Scratch extends Document {
   dealId?: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reward' })
-  rewardId?: mongoose.Types.ObjectId;
+  reward?: mongoose.Types.ObjectId;
 
   @Prop({
     type: String,

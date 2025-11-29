@@ -191,6 +191,7 @@ import {
 } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
+import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
 
 @Module({
   imports: [
@@ -278,6 +279,7 @@ import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
       { name: CheckIn.name, schema: CheckInSchema },
       { name: RewardVisit.name, schema: RewardVisitSchema },
+      { name: Scratch.name, schema: ScratchSchema},
     ]),
   ],
   controllers: [RewardsController],
