@@ -999,4 +999,24 @@ export class AuthController {
       };
     }
   }
+
+  @Get('checkedin/cardview/:checkInId')
+  @UseGuards(JwtGuard2)
+  async businessCheckedInCard(
+    @TokenDecoder() user: DecodedUser,
+    @Param('checkInId') checkInId: string,
+  ) {
+    const result = await this.authService.businessCheckedInCard(
+      user.id,
+      checkInId,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

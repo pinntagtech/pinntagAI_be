@@ -65,6 +65,32 @@ export class PinntagAiService {
       throw error;
     }
   }
+  async generateBusinessDescriptionWithTagsUpdate(
+    businessId: string,
+    tags: Array<string>,
+  ) {
+    try {
+      console.log('businessId:', businessId);
+      let data = JSON.stringify({
+        businessId: businessId,
+        tags: tags,
+      });
+      const response = await axios.post(
+        `${this.baseUrl}/ai-assist/update-tags-and-description`,
+        {
+          headers: {
+            'x-internal-api-key': this.internalKey,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error generating business description:', error);
+      throw error;
+    }
+  }
+
   async generateTitleSuggestions(businessId: string) {
     try {
       const response = await axios.get(

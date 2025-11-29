@@ -1987,7 +1987,7 @@ export class BusinessService {
       if (
         updateObj.description &&
         updateObj.description.length > 0 &&
-        !findBusiness.description 
+        !findBusiness.description
       ) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
@@ -2004,9 +2004,7 @@ export class BusinessService {
 
       if (updateObj.cover || updateObj.logo) {
         let profileCompletionPercentage =
-          (BusinessStatus.COVER_ADDED /
-            BusinessStatus.COVER_ADDED) *
-          100;
+          (BusinessStatus.COVER_ADDED / BusinessStatus.COVER_ADDED) * 100;
 
         let tempUpdateObj = {
           profileCompletionPercentage: profileCompletionPercentage,

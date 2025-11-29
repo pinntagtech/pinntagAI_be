@@ -1586,4 +1586,5 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+ 
 }

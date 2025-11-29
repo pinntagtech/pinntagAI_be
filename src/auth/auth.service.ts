@@ -7307,7 +7307,7 @@ export class AuthService {
   ) {
     try {
       const location = await this.outletModel.findById(locationId);
-      console.log("location:",location);
+      console.log('location:', location);
       if (!location) {
         return {
           success: false,
@@ -7331,14 +7331,14 @@ export class AuthService {
         },
         { $limit: 1 },
       ]);
-      console.log("checkDistance:",checkDistance);
-      if(checkDistance.length === 0){
+      console.log('checkDistance:', checkDistance);
+      if (checkDistance.length === 0) {
         return {
           success: false,
-          message: 'please be present in business\'s proximity.'
-        }
+          message: "please be present in business's proximity.",
+        };
       }
-      this.checkInModel.create({
+      const checkInDetails = await this.checkInModel.create({
         user: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(businessId),
         locationId: new mongoose.Types.ObjectId(locationId),
@@ -7351,13 +7351,368 @@ export class AuthService {
       });
       return {
         success: true,
-        message: 'Data fetched successfully',
-        data: {},
+        message: 'Checked-In Successfully.',
+        data: checkInDetails,
       };
     } catch (error) {
       return {
         success: false,
         message: 'Something went wrong',
+      };
+    }
+  }
+
+  async businessCheckedInCard(userId: string, checkInId: string) {
+    try {
+      const checkIN = await this.checkInModel.findById(checkInId);
+
+      console.log('BusinessID:', checkIN.business);
+      const businessObjectId = new mongoose.Types.ObjectId(checkIN.business);
+      const userObjectId = new mongoose.Types.ObjectId(checkIN.user);
+      const locationObjectId = new mongoose.Types.ObjectId(checkIN.locationId);
+      const currentDate = new Date();
+
+      const optimizedPipeline: any[] = [
+        // 1. Geo-spatial search (ensure 2dsphere index on location field)
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [checkIN.longitude, checkIN.latitude],
+            },
+            distanceField: 'distance',
+            maxDistance: 100000000 * 1609.34,
+            spherical: true,
+            query: {
+              business: businessObjectId,
+              _id: locationObjectId,
+            }, // Move match into geoNear for better performance
+          },
+        },
+
+        // 2. Lookup business details with projection
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'business',
+            foreignField: '_id',
+            as: 'businessDetails',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  cover: 1,
+                  logo: 1,
+                  description: 1,
+                  email: 1,
+                  isActive: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  website: 1,
+                  businessIndustry: 1,
+                  drive: 1,
+                },
+              },
+            ],
+          },
+        },
+        { $unwind: '$businessDetails' },
+
+        // 3. Lookup industry details
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessDetails.businessIndustry',
+            foreignField: '_id',
+            as: 'industryDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$industryDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // 4. Lookup follow status
+        {
+          $lookup: {
+            from: 'follows',
+            let: {
+              targetId: '$businessDetails._id',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', userObjectId] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', Business.name] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  muted: 1,
+                  mutedUntil: 1,
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+
+        // 5. Calculate follow and mute status
+        {
+          $addFields: {
+            isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
+            userFollow: { $arrayElemAt: ['$userFollow', 0] },
+          },
+        },
+        {
+          $addFields: {
+            isMuted: {
+              $cond: {
+                if: { $eq: ['$userFollow', null] },
+                then: false,
+                else: {
+                  $cond: {
+                    if: { $eq: ['$userFollow.muted', false] },
+                    then: false,
+                    else: {
+                      $cond: {
+                        if: {
+                          $and: [
+                            { $ifNull: ['$userFollow.mutedUntil', false] },
+                            {
+                              $gt: [
+                                { $toDate: '$userFollow.mutedUntil' },
+                                currentDate,
+                              ],
+                            },
+                          ],
+                        },
+                        then: true,
+                        else: false,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        // 6. Sort by distance
+        { $sort: { distance: 1 } },
+
+        // // 7. Group locations by business
+        {
+          $group: {
+            _id: '$businessDetails._id',
+            name: { $first: '$businessDetails.name' },
+            cover: { $first: '$businessDetails.cover' },
+            logo: { $first: '$businessDetails.logo' },
+            description: { $first: '$businessDetails.description' },
+            email: { $first: '$businessDetails.email' },
+            isActive: { $first: '$businessDetails.isActive' },
+            phone: { $first: '$businessDetails.phone' },
+            countryCode: { $first: '$businessDetails.countryCode' },
+            website: { $first: '$businessDetails.website' },
+            industry: { $first: '$industryDetails' },
+            isFollowedByMe: { $first: '$isFollowedByMe' },
+            isMuted: { $first: '$isMuted' },
+            drive: { $first: '$businessDetails.drive' },
+            locations: {
+              $push: {
+                _id: '$_id',
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$postalCode',
+                website: '$website',
+                email: '$email',
+                phone: '$phone',
+                countryCode: '$countryCode',
+                opentingTime: '$opentingTime',
+                closingTime: '$closingTime',
+                location: '$location',
+                distance: { $divide: ['$distance', 1609.34] },
+              },
+            },
+          },
+        },
+
+        // 8. Lookup menus with images in one go
+        {
+          $lookup: {
+            from: 'menus',
+            let: { businessId: '$_id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$business', '$$businessId'] } } },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: 'images',
+                  foreignField: '_id',
+                  as: 'images',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  description: 1,
+                  images: {
+                    $map: {
+                      input: '$images',
+                      as: 'image',
+                      in: {
+                        _id: '$$image._id',
+                        url: '$$image.metaData.url',
+                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+            as: 'menus',
+          },
+        },
+
+        // 9. Lookup gallery files
+        {
+          $lookup: {
+            from: 'folders',
+            let: { driveId: '$drive' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$folderName', 'Gallery'] },
+                      { $eq: ['$drive', '$$driveId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: '_id',
+                  foreignField: 'parentDirectory',
+                  as: 'files',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                        'metaData.mimeType': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  files: 1,
+                },
+              },
+            ],
+            as: 'galleryFolder',
+          },
+        },
+        {
+          $addFields: {
+            galleryFiles: {
+              $ifNull: [{ $arrayElemAt: ['$galleryFolder.files', 0] }, []],
+            },
+          },
+        },
+
+        // 10. Clean up temporary fields
+        {
+          $project: {
+            userFollow: 0,
+            galleryFolder: 0,
+          },
+        },
+        {
+          $lookup: {
+            from: 'checkins',
+            let: {
+              businessId: businessObjectId,
+              locationId: locationObjectId,
+              userId: userObjectId,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$business', '$$businessId'] },
+                      { $eq: ['$locationId', '$$locationId'] },
+                      { $eq: ['$user', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'checkIns',
+          },
+        },
+        {
+          $addFields: {
+            isCheckedIn: {
+              $gt: [{ $size: '$checkIns' }, 0],
+            },
+          },
+        },
+        {
+          $project: {
+            checkIns: 0,
+          },
+        },
+      ];
+
+      // Execute the optimized pipeline
+      const [business] = await this.outletModel.aggregate(optimizedPipeline);
+      console.log('Business:', business);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      // const activeRewards = await this.userRewardModel.find({})
+
+      // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
+
+      return {
+        success: true,
+        message: 'Business fetched Successfully!',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
       };
     }
   }
