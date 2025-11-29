@@ -131,7 +131,7 @@ import { start } from 'repl';
 import { RewardsService } from 'src/rewards/rewards.service';
 import { GetRewardDashboardDto } from 'src/rewards/dto/get-rewards-dashboard.dto';
 import { PipelineStage } from 'mongoose';
-import { RewardStatus } from 'src/rewards/enums/rewards.enum';
+import { ClaimStatus, RewardStatus } from 'src/rewards/enums/rewards.enum';
 import {
   RewardLocation,
   RewardLocationDocument,
@@ -140,6 +140,7 @@ import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
 import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 import { messaging } from 'firebase-admin';
 import { CheckIn } from './models/check-ins.model';
+import { UserReward, UserRewardDocument } from 'src/rewards/model/userReward.model';
 
 @Injectable()
 export class AuthService {
@@ -191,6 +192,7 @@ export class AuthService {
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
+    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -7314,6 +7316,19 @@ export class AuthService {
           message: 'outlet not found',
         };
       }
+      const foundCheckIn = await this.checkInModel.findOne({
+         user: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(businessId),
+        // locationId: new mongoose.Types.ObjectId(locationId),
+        expiry: { $gt: new Date()}
+      })
+      if(foundCheckIn){
+        return {
+          sucess: true,
+          message: "User already CheckedIn",
+          data: foundCheckIn
+        }
+      }
       const checkDistance = await this.outletModel.aggregate([
         {
           $geoNear: {
@@ -7331,7 +7346,6 @@ export class AuthService {
         },
         { $limit: 1 },
       ]);
-      console.log('checkDistance:', checkDistance);
       if (checkDistance.length === 0) {
         return {
           success: false,
@@ -7348,6 +7362,7 @@ export class AuthService {
           type: 'Point',
           coordinates: [longitude, latitude],
         },
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
       return {
         success: true,
@@ -7694,14 +7709,15 @@ export class AuthService {
       // Execute the optimized pipeline
       const [business] = await this.outletModel.aggregate(optimizedPipeline);
       console.log('Business:', business);
+
       if (!business) {
         return {
           success: false,
           message: 'Business not found with given ID',
         };
       }
-      // const activeRewards = await this.userRewardModel.find({})
-
+      const userActiveRewards = await this.userRewardModel.find({userId:userObjectId,businessProfile:businessObjectId,claimStatus:ClaimStatus.ACTIVE});
+      business['userActiveRewards'] = userActiveRewards;
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 
       return {

@@ -156,6 +156,7 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 
 @Global()
 @Module({
@@ -223,6 +224,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema}, 
+      { name: UserReward.name, schema: UserRewardSchema},
     ]),
     MailerModule.forRoot({
       transport: {

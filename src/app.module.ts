@@ -181,6 +181,7 @@ import { Feed, FeedSchema } from './feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from './admin/models/featuredAssets.model';
 import { UserSearchActivity, UserSearchActivitySchema } from './user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from './auth/models/check-ins.model';
+import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
 
 @Module({
   imports: [
@@ -279,6 +280,7 @@ import { CheckIn, CheckInSchema } from './auth/models/check-ins.model';
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema},
+      { name: UserReward.name, schema: UserRewardSchema},
     ]),
     StripeeModule,
     AuthModule,

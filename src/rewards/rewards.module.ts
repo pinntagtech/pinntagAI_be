@@ -176,11 +176,21 @@ import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
-import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
-import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import {
+  BusinessActivation,
+  BusinessActivationSchema,
+} from 'src/business/model/businessActivation.model';
+import {
+  FeaturedAsset,
+  FeaturedAssetSchema,
+} from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
-import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import {
+  UserSearchActivity,
+  UserSearchActivitySchema,
+} from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
 
 @Module({
   imports: [
@@ -265,8 +275,9 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
-      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
-      { name: CheckIn.name, schema: CheckInSchema}, 
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
+      { name: CheckIn.name, schema: CheckInSchema },
+      { name: RewardVisit.name, schema: RewardVisitSchema },
     ]),
   ],
   controllers: [RewardsController],

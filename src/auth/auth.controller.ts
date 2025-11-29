@@ -996,6 +996,7 @@ export class AuthController {
     if (result.success) {
       return {
         message: result.message,
+        data: result.data
       };
     }
   }
