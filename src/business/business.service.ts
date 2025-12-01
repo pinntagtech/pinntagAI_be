@@ -6496,37 +6496,39 @@ export class BusinessService {
 
   async getTagRecommendations(businessId: string) {
     try {
-      const business = await this.businessModel.findById(businessId);
-      if (!business) {
-        return {
-          success: false,
-          message: 'Business not found with given ID',
-        };
-      }
-      const tagsByCategory = await Promise.all(
-        business.businessCategories.map(async (catId) => {
-          const tags = await this.tagModel.aggregate([
-            { $match: { relatedId: catId } },
-            { $sample: { size: 3 } }, // pick 3 random docs
-            { $project: { _id: 0, title: 1 } }, // only keep title
-          ]);
+      // const business = await this.businessModel.findById(businessId);
+      // if (!business) {
+      //   return {
+      //     success: false,
+      //     message: 'Business not found with given ID',
+      //   };
+      // }
+      // const tagsByCategory = await Promise.all(
+      //   business.businessCategories.map(async (catId) => {
+      //     const tags = await this.tagModel.aggregate([
+      //       { $match: { relatedId: catId } },
+      //       { $sample: { size: 3 } }, // pick 3 random docs
+      //       { $project: { _id: 0, title: 1 } }, // only keep title
+      //     ]);
 
-          return {
-            categoryId: catId,
-            tags,
-          };
-        }),
-      );
-      const allTitles = tagsByCategory.flatMap((cat) =>
-        cat.tags.map((t) => t.title),
-      );
+      //     return {
+      //       categoryId: catId,
+      //       tags,
+      //     };
+      //   }),
+      // );
+      // const allTitles = tagsByCategory.flatMap((cat) =>
+      //   cat.tags.map((t) => t.title),
+      // );
 
-      console.log('Tag Recommendations:', allTitles);
+      const result = await this.pinnAiService.generateBusinessTagsSuggestions(businessId);
+
+      // console.log('Tag Recommendations:', allTitles);
 
       return {
         success: true,
         message: 'Tag recommendations fetched successfully',
-        data: allTitles,
+        data: result.data.tags,
       };
     } catch (error) {
       return {
