@@ -1474,6 +1474,7 @@ export class BusinessService {
         .createAgent({
           name: agentName,
           tone: 'professional',
+          businessId: createdBusiness.id,
           subCategories: businessCategoryTitles,
           category: findBusinessIndustry ? findBusinessIndustry.title : null,
           website: createdBusiness.website ? createdBusiness.website : null,

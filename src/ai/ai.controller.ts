@@ -123,20 +123,20 @@ export class AiController {
     @Query('suggestion') suggestion: string,
     @Query('tags') tags: string,
   ) {
-    // let tagsArray = [];
-    // console.log('Tags:', tags);
-    // if (tags && tags != '') {
-    //   tagsArray = tags.split(',');
-    // }
-    // const result = await this.aiService.getTitleSuggestions(
-    //   contentType,
-    //   category,
-    //   dealType,
-    //   suggestion,
-    //   tagsArray,
-    // );
-    const result = await this.pinntagAiService.generateTitleSuggestions(user.businessProfile);
-    console.log('RESULT:', result);
+    let tagsArray = [];
+    console.log('Tags:', tags);
+    if (tags && tags != '') {
+      tagsArray = tags.split(',');
+    }
+    const result = await this.aiService.getTitleSuggestions(
+      contentType,
+      category,
+      dealType,
+      suggestion,
+      tagsArray,
+    );
+    // const result = await this.pinntagAiService.generateTitleSuggestions(user.businessProfile);
+    // console.log('RESULT:', result);
     if (result.success) {
       return {
         message: result.message,
@@ -157,9 +157,13 @@ export class AiController {
   async generateBusinessDescription(@Param('businessId') businessId: string) {
     return this.pinntagAiService.generateBusinessDescription(businessId);
   }
-  @Post('pinntagAi/titleSuggestions/:businessId')
+  @Post('pinntagAi/tags/:businessId')
   async generateTitleSuggestions(@Param('businessId') businessId: string) {
-    return this.pinntagAiService.generateTitleSuggestions(businessId);
+    return this.pinntagAiService.generateBusinessTagsSuggestions(businessId);
+  }
+  @Post('pinntagAi/businessDescription/tags')
+  async generateBusinessDescriptionWithTagsUpdate(@Body() body) {
+    return this.pinntagAiService.generateBusinessDescriptionWithTagsUpdate(body);
   }
 
   @Put('update/pinntagAgent/:id')

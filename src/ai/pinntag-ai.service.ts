@@ -1,6 +1,6 @@
 // src/pinntag-ai/pinntag-ai.service.ts
 import { Injectable } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { error } from 'console';
 
 @Injectable()
@@ -22,9 +22,8 @@ export class PinntagAiService {
         },
       );
       return response.data;
-    } catch (error) {
-      console.error('Error creating agent:', error);
-      throw error;
+    } catch (Error: AxiosError | any) {
+      console.error('Error creating agent:', error)
     }
   }
   async updateAgent(payload: any, businessId: string) {
@@ -66,17 +65,13 @@ export class PinntagAiService {
     }
   }
   async generateBusinessDescriptionWithTagsUpdate(
-    businessId: string,
-    tags: Array<string>,
+    payload: any,
   ) {
     try {
-      console.log('businessId:', businessId);
-      let data = JSON.stringify({
-        businessId: businessId,
-        tags: tags,
-      });
+      const body = JSON.stringify(payload);
       const response = await axios.post(
         `${this.baseUrl}/ai-assist/update-tags-and-description`,
+        body,
         {
           headers: {
             'x-internal-api-key': this.internalKey,
@@ -91,7 +86,7 @@ export class PinntagAiService {
     }
   }
 
-  async generateTitleSuggestions(businessId: string) {
+  async generateBusinessTagsSuggestions(businessId: string) {
     try {
       const response = await axios.get(
         `${this.baseUrl}/ai/generate-tags/${businessId}`,
