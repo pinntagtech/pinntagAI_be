@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { logger } from "../utils/logger.js";
 import { TemplateUpdateJob } from "./templateUpdateJob.js";
 import { DailyTemplateJob } from "./dailyTemplateJob.js";
+import { AgentTemplateGenerationJob } from "./agentTemplateGenerationJob.js";
 
 /**
  * Job Scheduler
@@ -42,6 +43,21 @@ export class JobScheduler {
           await DailyTemplateJob.execute();
         } catch (error: any) {
           logger.error({ error }, "Daily template generation job failed");
+        }
+      }
+    );
+
+    // Schedule overnight agent template generation
+    // Runs every night at 3:00 AM to generate templates for all AI agents
+    this.scheduleJob(
+      "agent-template-generation",
+      "0 3 * * *", // Cron expression: At 03:00 AM every day
+      async () => {
+        logger.info("Running agent template generation job");
+        try {
+          await AgentTemplateGenerationJob.execute();
+        } catch (error: any) {
+          logger.error({ error }, "Agent template generation job failed");
         }
       }
     );
@@ -142,6 +158,9 @@ export class JobScheduler {
         } else {
           await DailyTemplateJob.execute();
         }
+        break;
+      case "agent-template-generation":
+        await AgentTemplateGenerationJob.execute();
         break;
       default:
         throw new Error(`Unknown job: ${name}`);

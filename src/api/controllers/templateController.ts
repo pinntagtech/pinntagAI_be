@@ -3,6 +3,7 @@ import { logger } from "../../utils/logger.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
 import { TemplateUpdateJob } from "../../jobs/templateUpdateJob.js";
 import { JobScheduler } from "../../jobs/scheduler.js";
+import { AgentTemplateGenerationJob } from "../../jobs/agentTemplateGenerationJob.js";
 import {
   findActiveTemplates,
   findTemplatesByType,
@@ -455,6 +456,33 @@ export const getSchedulerStatus = async (_req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: error.message || "Failed to get scheduler status",
+    });
+  }
+};
+
+/**
+ * Generate templates for all AI agents (trained and untrained)
+ * POST /api/templates/generate-for-all-agents
+ */
+export const generateForAllAgents = async (_req: Request, res: Response) => {
+  try {
+    logger.info("Generating templates for all AI agents");
+
+    // Run the job asynchronously
+    AgentTemplateGenerationJob.execute().catch((error) => {
+      logger.error({ error }, "Agent template generation job failed");
+    });
+
+    return res.status(202).json({
+      success: true,
+      message: "Template generation for all AI agents triggered successfully",
+      note: "Job is running asynchronously. Check logs for completion status. This will generate templates with AI images for all agents based on their training status.",
+    });
+  } catch (error: any) {
+    logger.error({ error }, "Error generating templates for all AI agents");
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to generate templates for all AI agents",
     });
   }
 };

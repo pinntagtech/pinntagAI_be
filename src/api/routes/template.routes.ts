@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   generateForAllBusinesses,
+  generateForAllAgents,
   generateGenericForIndustry,
   generateMultipleTemplates,
   generateTemplate,
@@ -66,6 +67,17 @@ router.post("/update-all", triggerTemplateUpdate);
 router.post("/generate-for-all-businesses", generateForAllBusinesses);
 
 /**
+ * @route   POST /api/templates/generate-for-all-agents
+ * @desc    Generate templates for ALL AI agents (trained and untrained) with AI-generated images
+ * @access  Public (should be protected in production)
+ * @details
+ *   - For trained agents: Uses training data to generate business-specific templates
+ *   - For untrained agents: Uses agent metadata (category, subcategories, tags, description) to generate templates
+ *   - All templates include AI-generated images with GENERIC content
+ */
+router.post("/generate-for-all-agents", generateForAllAgents);
+
+/**
  * @route   POST /api/templates/generate-generic-for-industry
  * @desc    Generate generic templates for a specific industry
  * @access  Public (should be protected in production)
@@ -77,7 +89,7 @@ router.post("/generate-generic-for-industry", generateGenericForIndustry);
  * @route   POST /api/templates/trigger-scheduled-job
  * @desc    Manually trigger a scheduled job on demand (for testing)
  * @access  Public (should be protected in production)
- * @body    { jobName: "template-update" | "daily-template", dayOfWeek?: 0-6 }
+ * @body    { jobName: "template-update" | "daily-template" | "agent-template-generation", dayOfWeek?: 0-6 }
  */
 router.post("/trigger-scheduled-job", triggerScheduledJob);
 

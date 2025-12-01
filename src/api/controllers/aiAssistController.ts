@@ -3,6 +3,11 @@ import { AIService } from "../services/ai.service.js";
 import { GeminiService } from "../services/gemini.service.js";
 import { logger } from "../../utils/logger.js";
 import {
+  ensureImageAccess,
+  validateRequiredFields,
+  withControllerError,
+} from "./controller.utils.js";
+import {
   BroadcastContentParams,
   ContentImageParams,
   ContentType,
@@ -24,6 +29,13 @@ import { UsageTrackingService } from "../services/usageTracking.service.js";
 // Content Generation Endpoints
 // ===========================
 
+const VALID_CONTENT_TYPES: ContentType[] = [
+  "broadcast",
+  "offer",
+  "reward",
+  "event",
+];
+
 /**
  * Generate broadcast content
  * POST /ai-assist/broadcast
@@ -32,40 +44,30 @@ export async function generateBroadcastContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const params: BroadcastContentParams = req.body;
+  await withControllerError(
+    res,
+    "Error generating broadcast content",
+    async () => {
+      const params: BroadcastContentParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
+      if (
+        !validateRequiredFields(res, params, [
+          { key: "businessId" },
+          { key: "purpose" },
+          { key: "keyMessage" },
+        ])
+      ) {
+        return;
+      }
+
+      const content = await AIService.generateBroadcastContent(params);
+
+      res.status(200).json({
+        success: true,
+        content,
+      });
     }
-
-    if (!params.purpose) {
-      res.status(400).json({ error: "purpose is required" });
-      return;
-    }
-
-    if (!params.keyMessage) {
-      res.status(400).json({ error: "keyMessage is required" });
-      return;
-    }
-
-    const content = await AIService.generateBroadcastContent(params);
-
-    res.status(200).json({
-      success: true,
-      content,
-    });
-  } catch (error: any) {
-    logger.error(
-      { error: error.message },
-      "Error generating broadcast content"
-    );
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  );
 }
 
 /**
@@ -76,16 +78,15 @@ export async function generateOfferContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error generating offer content", async () => {
     const params: OfferContentParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
-    }
-
-    if (!params.offerType) {
-      res.status(400).json({ error: "offerType is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "offerType" },
+      ])
+    ) {
       return;
     }
 
@@ -95,13 +96,7 @@ export async function generateOfferContent(
       success: true,
       content,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating offer content");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -112,32 +107,29 @@ export async function generateRewardContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const params: RewardContentParams = req.body;
+  await withControllerError(
+    res,
+    "Error generating reward content",
+    async () => {
+      const params: RewardContentParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
+      if (
+        !validateRequiredFields(res, params, [
+          { key: "businessId" },
+          { key: "rewardType" },
+        ])
+      ) {
+        return;
+      }
+
+      const content = await AIService.generateRewardContent(params);
+
+      res.status(200).json({
+        success: true,
+        content,
+      });
     }
-
-    if (!params.rewardType) {
-      res.status(400).json({ error: "rewardType is required" });
-      return;
-    }
-
-    const content = await AIService.generateRewardContent(params);
-
-    res.status(200).json({
-      success: true,
-      content,
-    });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating reward content");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  );
 }
 
 /**
@@ -148,16 +140,15 @@ export async function generateEventContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error generating event content", async () => {
     const params: EventContentParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
-    }
-
-    if (!params.eventType) {
-      res.status(400).json({ error: "eventType is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "eventType" },
+      ])
+    ) {
       return;
     }
 
@@ -167,13 +158,7 @@ export async function generateEventContent(
       success: true,
       content,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating event content");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -184,26 +169,17 @@ export async function improveContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error improving content", async () => {
     const params: ImproveContentParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
-    }
-
-    if (!params.contentType) {
-      res.status(400).json({ error: "contentType is required" });
-      return;
-    }
-
-    if (!params.existingContent) {
-      res.status(400).json({ error: "existingContent is required" });
-      return;
-    }
-
-    if (!params.feedback) {
-      res.status(400).json({ error: "feedback is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "contentType" },
+        { key: "existingContent" },
+        { key: "feedback" },
+      ])
+    ) {
       return;
     }
 
@@ -213,13 +189,7 @@ export async function improveContent(
       success: true,
       content,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error improving content");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -230,40 +200,48 @@ export async function generateContent(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const { type, params } = req.body;
+  await withControllerError(res, "Error generating content", async () => {
+    const type = req.body.type as ContentType | undefined;
+    const params = req.body.params as
+      | BroadcastContentParams
+      | OfferContentParams
+      | RewardContentParams
+      | EventContentParams
+      | undefined;
 
-    if (!type) {
-      res.status(400).json({ error: "type is required" });
+    if (!validateRequiredFields(res, { type }, [{ key: "type" }])) {
       return;
     }
 
-    if (!params || !params.businessId) {
-      res.status(400).json({ error: "params with businessId is required" });
+    if (!validateRequiredFields(res, params || {}, [{ key: "businessId" }])) {
       return;
     }
 
-    const validTypes: ContentType[] = ["broadcast", "offer", "reward", "event"];
-    if (!validTypes.includes(type)) {
+    // Ensure params is present at runtime so TypeScript can infer it's not undefined
+    if (!params) {
+      res.status(400).json({ error: "params are required" });
+      return;
+    }
+
+    if (!VALID_CONTENT_TYPES.includes(type as ContentType)) {
       res.status(400).json({
-        error: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+        error: `Invalid type. Must be one of: ${VALID_CONTENT_TYPES.join(
+          ", "
+        )}`,
       });
       return;
     }
 
-    const content = await AIService.generateContent(type, params);
+    const content = await AIService.generateContent(
+      type as ContentType,
+      params
+    );
 
     res.status(200).json({
       success: true,
       content,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating content");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 // ===========================
@@ -278,35 +256,20 @@ export async function generateImage(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error generating image", async () => {
     const params: ImageGenerationParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "prompt" },
+        { key: "contentType" },
+      ])
+    ) {
       return;
     }
 
-    if (!params.prompt) {
-      res.status(400).json({ error: "prompt is required" });
-      return;
-    }
-
-    if (!params.contentType) {
-      res.status(400).json({ error: "contentType is required" });
-      return;
-    }
-
-    // Check subscription before processing
-    const access = await checkImageGenerationAccess(params.businessId);
-    if (!access.hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: access.reason,
-        subscriptionRequired: true,
-        currentPlan: access.currentPlan,
-        requiredPlan: access.requiredPlan,
-        upgradeUrl: access.upgradeUrl,
-      });
+    if (!(await ensureImageAccess(res, params.businessId))) {
       return;
     }
 
@@ -316,13 +279,7 @@ export async function generateImage(
       success: true,
       image,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating image");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -330,35 +287,20 @@ export async function generateImage(
  * POST /ai-assist/edit-image
  */
 export async function editImage(req: Request, res: Response): Promise<void> {
-  try {
+  await withControllerError(res, "Error editing image", async () => {
     const params: ImageEditParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "imageUrl" },
+        { key: "editPrompt" },
+      ])
+    ) {
       return;
     }
 
-    if (!params.imageUrl) {
-      res.status(400).json({ error: "imageUrl is required" });
-      return;
-    }
-
-    if (!params.editPrompt) {
-      res.status(400).json({ error: "editPrompt is required" });
-      return;
-    }
-
-    // Check subscription before processing
-    const access = await checkImageGenerationAccess(params.businessId);
-    if (!access.hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: access.reason,
-        subscriptionRequired: true,
-        currentPlan: access.currentPlan,
-        requiredPlan: access.requiredPlan,
-        upgradeUrl: access.upgradeUrl,
-      });
+    if (!(await ensureImageAccess(res, params.businessId))) {
       return;
     }
 
@@ -368,13 +310,7 @@ export async function editImage(req: Request, res: Response): Promise<void> {
       success: true,
       image,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error editing image");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -385,35 +321,20 @@ export async function generateContentImage(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error generating content image", async () => {
     const params: ContentImageParams = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "contentType" },
+        { key: "title" },
+      ])
+    ) {
       return;
     }
 
-    if (!params.contentType) {
-      res.status(400).json({ error: "contentType is required" });
-      return;
-    }
-
-    if (!params.title) {
-      res.status(400).json({ error: "title is required" });
-      return;
-    }
-
-    // Check subscription before processing
-    const access = await checkImageGenerationAccess(params.businessId);
-    if (!access.hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: access.reason,
-        subscriptionRequired: true,
-        currentPlan: access.currentPlan,
-        requiredPlan: access.requiredPlan,
-        upgradeUrl: access.upgradeUrl,
-      });
+    if (!(await ensureImageAccess(res, params.businessId))) {
       return;
     }
 
@@ -423,13 +344,7 @@ export async function generateContentImage(
       success: true,
       image,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating content image");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -440,47 +355,40 @@ export async function generateImageVariations(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const { params, count = 3 } = req.body;
+  await withControllerError(
+    res,
+    "Error generating image variations",
+    async () => {
+      const { params, count = 3 } = req.body as {
+        params?: ImageGenerationParams;
+        count?: number;
+      };
 
-    if (!params || !params.businessId) {
-      res.status(400).json({ error: "params with businessId is required" });
-      return;
-    }
+      if (
+        !validateRequiredFields(res, params || {}, [
+          { key: "businessId" },
+          { key: "prompt" },
+        ])
+      ) {
+        return;
+      }
 
-    if (!params.prompt) {
-      res.status(400).json({ error: "params.prompt is required" });
-      return;
-    }
+      if (!(await ensureImageAccess(res, params!.businessId))) {
+        return;
+      }
 
-    // Check subscription before processing
-    const access = await checkImageGenerationAccess(params.businessId);
-    if (!access.hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: access.reason,
-        subscriptionRequired: true,
-        currentPlan: access.currentPlan,
-        requiredPlan: access.requiredPlan,
-        upgradeUrl: access.upgradeUrl,
+      const images = await GeminiService.generateImageVariations(
+        params as ImageGenerationParams,
+        count
+      );
+
+      res.status(200).json({
+        success: true,
+        images,
+        count: images.length,
       });
-      return;
     }
-
-    const images = await GeminiService.generateImageVariations(params, count);
-
-    res.status(200).json({
-      success: true,
-      images,
-      count: images.length,
-    });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating image variations");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  );
 }
 
 /**
@@ -491,30 +399,19 @@ export async function generateTextImage(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error generating text image", async () => {
     const params = req.body;
 
-    if (!params.businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "businessId" },
+        { key: "headline" },
+      ])
+    ) {
       return;
     }
 
-    if (!params.headline) {
-      res.status(400).json({ error: "headline is required" });
-      return;
-    }
-
-    // Check subscription before processing
-    const access = await checkImageGenerationAccess(params.businessId);
-    if (!access.hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: access.reason,
-        subscriptionRequired: true,
-        currentPlan: access.currentPlan,
-        requiredPlan: access.requiredPlan,
-        upgradeUrl: access.upgradeUrl,
-      });
+    if (!(await ensureImageAccess(res, params.businessId))) {
       return;
     }
 
@@ -524,13 +421,7 @@ export async function generateTextImage(
       success: true,
       image,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error generating text image");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 // ===========================
@@ -542,11 +433,14 @@ export async function generateTextImage(
  * GET /ai-assist/access/:businessId
  */
 export async function checkAccess(req: Request, res: Response): Promise<void> {
-  try {
+  await withControllerError(res, "Error checking access", async () => {
     const { businessId } = req.params;
 
-    if (!businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, req.params as Record<string, any>, [
+        { key: "businessId" },
+      ])
+    ) {
       return;
     }
 
@@ -570,13 +464,7 @@ export async function checkAccess(req: Request, res: Response): Promise<void> {
           remainingContent === -1 ? "unlimited" : remainingContent,
       },
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error checking access");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 // ===========================
@@ -591,11 +479,14 @@ export async function getUsageSummary(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error getting usage summary", async () => {
     const { businessId } = req.params;
 
-    if (!businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, req.params as Record<string, any>, [
+        { key: "businessId" },
+      ])
+    ) {
       return;
     }
 
@@ -605,13 +496,7 @@ export async function getUsageSummary(
       success: true,
       summary,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error getting usage summary");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -622,12 +507,15 @@ export async function getUsageAnalytics(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error getting usage analytics", async () => {
     const { businessId } = req.params;
     const days = parseInt(req.query.days as string, 10) || 30;
 
-    if (!businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, req.params as Record<string, any>, [
+        { key: "businessId" },
+      ])
+    ) {
       return;
     }
 
@@ -640,13 +528,7 @@ export async function getUsageAnalytics(
       success: true,
       analytics,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error getting usage analytics");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -657,12 +539,15 @@ export async function getRecentUsage(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
+  await withControllerError(res, "Error getting recent usage", async () => {
     const { businessId } = req.params;
     const limit = parseInt(req.query.limit as string, 10) || 50;
 
-    if (!businessId) {
-      res.status(400).json({ error: "businessId is required" });
+    if (
+      !validateRequiredFields(res, req.params as Record<string, any>, [
+        { key: "businessId" },
+      ])
+    ) {
       return;
     }
 
@@ -676,13 +561,7 @@ export async function getRecentUsage(
       records,
       count: records.length,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error getting recent usage");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  });
 }
 
 /**
@@ -693,23 +572,21 @@ export async function getAllBusinessUsage(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const limit = parseInt(req.query.limit as string, 10) || 100;
+  await withControllerError(
+    res,
+    "Error getting all business usage",
+    async () => {
+      const limit = parseInt(req.query.limit as string, 10) || 100;
 
-    const usages = await UsageTrackingService.getAllBusinessUsage(limit);
+      const usages = await UsageTrackingService.getAllBusinessUsage(limit);
 
-    res.status(200).json({
-      success: true,
-      usages,
-      count: usages.length,
-    });
-  } catch (error: any) {
-    logger.error({ error: error.message }, "Error getting all business usage");
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+      res.status(200).json({
+        success: true,
+        usages,
+        count: usages.length,
+      });
+    }
+  );
 }
 
 // ===========================
@@ -724,80 +601,76 @@ export async function updateTagsAndGenerateDescription(
   req: Request,
   res: Response
 ): Promise<void> {
-  try {
-    const { businessId, tags } = req.body;
+  await withControllerError(
+    res,
+    "Error updating tags and generating description",
+    async () => {
+      const { businessId, tags } = req.body;
 
-    if (!businessId) {
-      res.status(400).json({ error: "businessId is required" });
-      return;
-    }
+      if (
+        !validateRequiredFields(res, { businessId }, [{ key: "businessId" }])
+      ) {
+        return;
+      }
 
-    if (!tags || !Array.isArray(tags) || tags.length === 0) {
-      res
-        .status(400)
-        .json({ error: "tags array is required and cannot be empty" });
-      return;
-    }
+      if (!tags || !Array.isArray(tags) || tags.length === 0) {
+        res
+          .status(400)
+          .json({ error: "tags array is required and cannot be empty" });
+        return;
+      }
 
-    // Import required models and services
-    const { BusinessAIAssistantModel } = await import(
-      "../../models/businessAIAssistant.model.js"
-    );
-    const { AIService } = await import("../services/ai.service.js");
-    const mongoose = await import("mongoose");
+      // Import required models and services
+      const { BusinessAIAssistantModel } = await import(
+        "../../models/businessAIAssistant.model.js"
+      );
+      const { AIService } = await import("../services/ai.service.js");
+      const mongoose = await import("mongoose");
 
-    // Validate businessId format
-    if (!mongoose.Types.ObjectId.isValid(businessId)) {
-      res.status(400).json({
-        error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+      // Validate businessId format
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        res.status(400).json({
+          error: "Invalid Business ID format. Must be a valid MongoDB ObjectId",
+        });
+        return;
+      }
+
+      // Find the business AI assistant
+      const businessAI = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
       });
-      return;
-    }
 
-    // Find the business AI assistant
-    const businessAI = await BusinessAIAssistantModel.findOne({
-      businessId: new mongoose.Types.ObjectId(businessId),
-    });
+      if (!businessAI) {
+        res.status(404).json({
+          error: `No AI agent found for business ID: ${businessId}`,
+        });
+        return;
+      }
 
-    if (!businessAI) {
-      res.status(404).json({
-        error: `No AI agent found for business ID: ${businessId}`,
+      // Update tags
+      businessAI.tags = tags;
+      await businessAI.save();
+
+      logger.info(
+        { businessId, tagsCount: tags.length },
+        "Updated tags for business AI assistant"
+      );
+
+      // Generate description based on updated tags
+      const description = await AIService.generateDescriptionForBusiness(
+        businessId
+      );
+
+      logger.info({ businessId }, "Generated description for business");
+
+      res.status(200).json({
+        success: true,
+        data: {
+          tags,
+          description,
+        },
+        message: "Tags updated and description generated successfully",
       });
-      return;
     }
-
-    // Update tags
-    businessAI.tags = tags;
-    await businessAI.save();
-
-    logger.info(
-      { businessId, tagsCount: tags.length },
-      "Updated tags for business AI assistant"
-    );
-
-    // Generate description based on updated tags
-    const description = await AIService.generateDescriptionForBusiness(
-      businessId
-    );
-
-    logger.info({ businessId }, "Generated description for business");
-
-    res.status(200).json({
-      success: true,
-      data: {
-        tags,
-        description,
-      },
-      message: "Tags updated and description generated successfully",
-    });
-  } catch (error: any) {
-    logger.error(
-      { error: error.message },
-      "Error updating tags and generating description"
-    );
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
+  );
 }
