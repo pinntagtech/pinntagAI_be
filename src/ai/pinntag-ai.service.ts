@@ -49,6 +49,7 @@ export class PinntagAiService {
   async generateBusinessDescription(businessId: string) {
     try {
       console.log('businessId:', businessId);
+      console.log("WHY IT IS COMING HEREEEE:");
       const response = await axios.get(
         `${this.baseUrl}/ai/generate-description/${businessId}`,
         {
@@ -69,6 +70,7 @@ export class PinntagAiService {
   ) {
     try {
       const body = JSON.stringify(payload);
+      console.log("BODY:::",body);
       const response = await axios.post(
         `${this.baseUrl}/ai-assist/update-tags-and-description`,
         body,

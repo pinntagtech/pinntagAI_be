@@ -191,7 +191,7 @@ export class RewardsService {
         generatedQR = await this.driveService.generateQrCode(
           reward.id,
           reward.title,
-          userId,
+          business.id,
           QR_ImageCategory.id,
           businessFolder.data.id,
         );
@@ -290,7 +290,7 @@ export class RewardsService {
         status: RewardStatus.PUBLISHED,
         QR_CODE: QRCodeDetails?._id || null,
       };
-
+      console.log("Generated QR:",generatedQR);
       if (generatedQR) {
         updateRewardObj['activityQrCode'] = generatedQR.data.metaData.url;
       }

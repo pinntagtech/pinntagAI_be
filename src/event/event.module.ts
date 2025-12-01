@@ -194,6 +194,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
 
 @Module({
   imports: [
@@ -284,6 +285,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
       { name: MobileSpots.name, schema:MobileSpotsSchema},
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema}, 
+      { name: Scratch.name, schema: ScratchSchema}, 
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },

@@ -150,6 +150,8 @@ import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { MobileSpots } from 'src/business/model/mobileSpots.model';
 import { EventCategory } from 'src/seeder/data';
+import { CheckIn } from 'src/auth/models/check-ins.model';
+import { Scratch, ScratchStatus } from 'src/business/model/scratch.model';
 
 @Injectable()
 export class EventService2 {
@@ -206,6 +208,8 @@ export class EventService2 {
     @InjectModel(MobileSpots.name)
     private readonly mobileSpotsModel: Model<MobileSpots>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
+    @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly facebookService: FacebookService,
@@ -8420,6 +8424,64 @@ export class EventService2 {
         success: true,
         message: 'Template updated successfully.',
         data: updatedTemplate,
+      };
+    } catch (error) {
+      console.error('Error in editTemplate:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async redeemOffer(id: string, user: DecodedUser) {
+    try {
+       const offer = await this.eventModel.findById(id).populate('QR_CODE','_id metaData');
+      if(!offer){
+        return {
+          success: false,
+          message: 'Offer not found',
+        };
+      }
+
+      const userCheckIn = await this.checkInModel.findOne({
+        business: offer.businessProfile,
+        user: new mongoose.Types.ObjectId(user.id),
+        expiry: { $gt: new Date() },
+      });
+      if (!userCheckIn) {
+        return {
+          success: false,
+          message: 'Please Check In first',
+        };
+      }
+     
+      if(offer.type !== EventTypes.OFFER || !offer.QR_CODE ){
+        return {
+          success: false,
+          message: 'Only Offers are redeemable',
+        };
+      }
+      const scratchDoc = await this.scratchModel.create({
+              user: new mongoose.Types.ObjectId(user.id),
+              business: offer.businessProfile,
+              locationId: userCheckIn.locationId,
+              checkInId: userCheckIn._id,
+              offer: offer._id,
+              validUntil: new Date(Date.now() + 10 * 60 * 1000),
+              status:ScratchStatus.CONFIRMED
+            });
+            const scratch = scratchDoc.toObject();
+
+
+
+      return {
+        success: true,
+        message: 'Template updated successfully.',
+        data: {
+          ...scratch,
+          QR_CODE: offer.QR_CODE
+        },
       };
     } catch (error) {
       console.error('Error in editTemplate:', error);

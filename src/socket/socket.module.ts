@@ -179,6 +179,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
 
 @Module({
   imports: [
@@ -275,6 +276,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema},
+      { name: Scratch.name, schema: ScratchSchema}, 
     ]),
   ],
   providers: [

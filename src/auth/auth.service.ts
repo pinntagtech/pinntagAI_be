@@ -140,7 +140,10 @@ import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
 import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
 import { messaging } from 'firebase-admin';
 import { CheckIn } from './models/check-ins.model';
-import { UserReward, UserRewardDocument } from 'src/rewards/model/userReward.model';
+import {
+  UserReward,
+  UserRewardDocument,
+} from 'src/rewards/model/userReward.model';
 
 @Injectable()
 export class AuthService {
@@ -192,7 +195,8 @@ export class AuthService {
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
-    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(UserReward.name)
+    private readonly userRewardModel: Model<UserRewardDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -6309,6 +6313,24 @@ export class AuthService {
                 },
                 {
                   $lookup: {
+                    from: 'businesscategories', // collection name for BusinessIndustry model
+                    localField: 'businessCategories',
+                    foreignField: '_id',
+                    as: 'businessCategories',
+                    pipeline: [
+                      {
+                        $project: {
+                          _id: 1,
+                          title: 1,
+                          darkIcon: 1,
+                          lightIcon: 1,
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  $lookup: {
                     from: 'subscriptions',
                     localField: 'activeSubscription',
                     foreignField: '_id',
@@ -7317,17 +7339,17 @@ export class AuthService {
         };
       }
       const foundCheckIn = await this.checkInModel.findOne({
-         user: new mongoose.Types.ObjectId(user.id),
+        user: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(businessId),
         // locationId: new mongoose.Types.ObjectId(locationId),
-        expiry: { $gt: new Date()}
-      })
-      if(foundCheckIn){
+        expiry: { $gt: new Date() },
+      });
+      if (foundCheckIn) {
         return {
           sucess: true,
-          message: "User already CheckedIn",
-          data: foundCheckIn
-        }
+          message: 'User already CheckedIn',
+          data: foundCheckIn,
+        };
       }
       const checkDistance = await this.outletModel.aggregate([
         {
@@ -7362,7 +7384,7 @@ export class AuthService {
           type: 'Point',
           coordinates: [longitude, latitude],
         },
-        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
       return {
         success: true,
@@ -7386,7 +7408,7 @@ export class AuthService {
       const userObjectId = new mongoose.Types.ObjectId(checkIN.user);
       const locationObjectId = new mongoose.Types.ObjectId(checkIN.locationId);
       const currentDate = new Date();
-
+      console.log('CheckIn:', checkIN);
       const optimizedPipeline: any[] = [
         // 1. Geo-spatial search (ensure 2dsphere index on location field)
         {
@@ -7583,6 +7605,7 @@ export class AuthService {
                         _id: 1,
                         'metaData.url': 1,
                         'metaData.thumbnailUrl': 1,
+                        'metaData.mimeType': 1,
                       },
                     },
                   ],
@@ -7600,6 +7623,7 @@ export class AuthService {
                         _id: '$$image._id',
                         url: '$$image.metaData.url',
                         thumbnailUrl: '$$image.metaData.thumbnailUrl',
+                        mimeType: '$$image.metaDate.mimeType',
                       },
                     },
                   },
@@ -7646,7 +7670,18 @@ export class AuthService {
               },
               {
                 $project: {
-                  files: 1,
+                  files: {
+                    $map: {
+                      input: '$files',
+                      as: 'file',
+                      in: {
+                        _id: '$$file._id',
+                        url: '$$file.metaData.url',
+                        thumbnailUrl: '$$file.metaData.thumbnailUrl',
+                        mimeType: '$$file.metaData.mimeType',
+                      },
+                    },
+                  },
                 },
               },
             ],
@@ -7716,7 +7751,11 @@ export class AuthService {
           message: 'Business not found with given ID',
         };
       }
-      const userActiveRewards = await this.userRewardModel.find({userId:userObjectId,businessProfile:businessObjectId,claimStatus:ClaimStatus.ACTIVE});
+      const userActiveRewards = await this.userRewardModel.find({
+        userId: userObjectId,
+        businessProfile: businessObjectId,
+        claimStatus: ClaimStatus.ACTIVE,
+      });
       business['userActiveRewards'] = userActiveRewards;
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 

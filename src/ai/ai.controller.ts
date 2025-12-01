@@ -153,15 +153,19 @@ export class AiController {
   async createAgent(@Body() body) {
     return this.pinntagAiService.createAgent(body);
   }
+
+
   @Post('pinntagAi/businessDescription/:businessId')
   async generateBusinessDescription(@Param('businessId') businessId: string) {
     return this.pinntagAiService.generateBusinessDescription(businessId);
   }
+
+
   @Post('pinntagAi/tags/:businessId')
   async generateTitleSuggestions(@Param('businessId') businessId: string) {
     return this.pinntagAiService.generateBusinessTagsSuggestions(businessId);
   }
-  @Post('pinntagAi/businessDescription/tags')
+  @Post('pinntagAi/businessDescAndUpdateTags')
   async generateBusinessDescriptionWithTagsUpdate(@Body() body) {
     return this.pinntagAiService.generateBusinessDescriptionWithTagsUpdate(body);
   }

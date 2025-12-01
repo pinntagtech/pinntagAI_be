@@ -1586,5 +1586,17 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Get('scratches')
+  @UseGuards(JwtGuard2)
+  async getScratches(@TokenDecoder() user:DecodedUser,@Query('status') status: string){
+     const result = await this.businessService.getScratches(user,status);
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
  
 }

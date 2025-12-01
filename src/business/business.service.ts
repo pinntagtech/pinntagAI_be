@@ -187,6 +187,7 @@ import { File, FileDocument } from 'src/drive/models/file.model';
 import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 import { Feed } from 'src/feed/models/feed.model';
 import { PipelineStage } from 'mongoose';
+import { Scratch } from './model/scratch.model';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -261,6 +262,7 @@ export class BusinessService {
     @InjectModel(Folder.name)
     private readonly folderModel: Model<FolderDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
+    @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -6667,4 +6669,29 @@ export class BusinessService {
       };
     }
   }
+
+  async getScratches(user:DecodedUser,status:string){
+    try{
+      const scratches = await this.scratchModel.aggregate([
+        {
+          $match: {
+            status:status,
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+      ])
+      return {
+        success:true,
+        message:"Scratches list fetched successfully.",
+        data: scratches
+      }
+    }catch(error){
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
 }

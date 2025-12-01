@@ -36,8 +36,8 @@ export class Scratch extends Document {
   checkInId: mongoose.Types.ObjectId;
 
   // One of these should be set:
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Deal' })
-  dealId?: mongoose.Types.ObjectId;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Event' })
+  offer?: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reward' })
   reward?: mongoose.Types.ObjectId;
