@@ -73,7 +73,18 @@ export class AITrainingController {
         message: "Training initialized successfully",
       });
     } catch (error: any) {
-      logger.error({ error }, "Error initializing training");
+      logger.error(
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+            name: error?.name,
+            ...error,
+          },
+          businessId: req.body?.businessId,
+        },
+        "Error initializing training"
+      );
 
       if (error.message?.includes("not found")) {
         return res.status(404).json({
@@ -374,7 +385,8 @@ export class AITrainingController {
 
       return res.status(500).json({
         success: false,
-        error: error.message || "Failed to get training questions with defaults",
+        error:
+          error.message || "Failed to get training questions with defaults",
       });
     }
   }
@@ -481,7 +493,8 @@ export const aiTrainingController = {
   completeTraining: controller.completeTraining.bind(controller),
   getTrainingStatus: controller.getTrainingStatus.bind(controller),
   getTrainingQuestions: controller.getTrainingQuestions.bind(controller),
-  getTrainingQuestionsWithDefaults: controller.getTrainingQuestionsWithDefaults.bind(controller),
+  getTrainingQuestionsWithDefaults:
+    controller.getTrainingQuestionsWithDefaults.bind(controller),
   getTrainingResponses: controller.getTrainingResponses.bind(controller),
   resetTraining: controller.resetTraining.bind(controller),
 };

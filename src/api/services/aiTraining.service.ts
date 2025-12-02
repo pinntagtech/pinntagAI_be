@@ -416,10 +416,20 @@ export class AITrainingService {
     subCategory?: BusinessSubCategory
   ) {
     try {
+      logger.info(
+        { businessId, industry, subCategory },
+        "Starting training initialization"
+      );
+
       // Check if business exists
       const businessAgent = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
+
+      logger.info(
+        { businessId, foundAgent: !!businessAgent },
+        "Business agent lookup result"
+      );
 
       if (!businessAgent) {
         throw new Error(`No AI agent found for business ID: ${businessId}`);
@@ -430,19 +440,26 @@ export class AITrainingService {
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
+      logger.info(
+        { businessId, existingTraining: !!existingTraining },
+        "Existing training check"
+      );
+
       if (existingTraining) {
         return {
           message: "Training already initialized",
           training: existingTraining,
+          questions: existingTraining.questions || [],
         };
       }
 
       // Get questions for this industry
+      logger.info({ industry, subCategory }, "Fetching questions");
       const questions = getAI_Training_Questionnaire_Types(
         industry,
         subCategory
       );
-      console.log("QUESTIONS===========================>", questions);
+      logger.info({ questionCount: questions.length }, "Questions fetched");
       const requiredQuestions = getRequiredQuestions(industry, subCategory);
 
       // automatically answer the questionnaire based on business data (if available) business name and description and change the answers to the response map
@@ -489,10 +506,30 @@ export class AITrainingService {
         questions: filteredQuestions,
       });
 
-      logger.info({ businessId, industry }, "Training initialized");
+      logger.info(
+        {
+          businessId,
+          industry,
+          trainingId: training._id,
+          questionCount: filteredQuestions.length,
+        },
+        "Training initialized successfully"
+      );
       return { training, questions: filteredQuestions };
     } catch (error: any) {
-      logger.error({ error, businessId }, "Error initializing training");
+      logger.error(
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+            name: error?.name,
+          },
+          businessId,
+          industry,
+          subCategory,
+        },
+        "Error initializing training"
+      );
       throw error;
     }
   }
