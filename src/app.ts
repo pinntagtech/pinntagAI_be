@@ -9,6 +9,7 @@ import indexRouter from "./api/routes/index.routes.js";
 const allowedOrigins = [
   "http://localhost:4200",
   "https://your-frontend-domain.com",
+  "https://pre-dev.api.pinntag.com",
 ];
 
 export const buildApp = () => {
