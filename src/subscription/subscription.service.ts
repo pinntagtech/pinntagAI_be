@@ -158,7 +158,7 @@ export class SubscriptionService {
             localField: 'features',
             foreignField: '_id',
             as: 'features',
-            pipeline: [{ $project: { key: 1, value: 1 } }],
+            pipeline: [{ $project: { key: 1, value: 1, label: 1 } }],
           },
         },
         {
