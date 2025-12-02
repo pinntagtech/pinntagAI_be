@@ -10,6 +10,7 @@ const allowedOrigins = [
   "http://localhost:4200",
   "https://your-frontend-domain.com",
   "https://pre-dev.api.pinntag.com",
+  "http://localhost:5173",
 ];
 
 export const buildApp = () => {
