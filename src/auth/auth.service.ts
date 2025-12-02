@@ -2609,6 +2609,43 @@ export class AuthService {
           },
         },
       },
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$businessProfileDetails._id',
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $gt: [{ $size: '$checkIns' }, 0],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
+        },
+      },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
       {
         $facet: {
@@ -3434,6 +3471,45 @@ export class AuthService {
             },
           },
           distance: { $min: { $divide: ['$distance', 1609.34] } },
+        },
+      },
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$_id',
+            // locationId: locationObjectId,
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    // { $eq: ['$locationId', '$$locationId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $gt: [{ $size: '$checkIns' }, 0],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
         },
       },
       { $match: { ...match } },
@@ -7731,6 +7807,9 @@ export class AuthService {
           $addFields: {
             isCheckedIn: {
               $gt: [{ $size: '$checkIns' }, 0],
+            },
+            checkedInLocationId: {
+              $arrayElemAt: ['$checkIns.locationId', 0],
             },
           },
         },

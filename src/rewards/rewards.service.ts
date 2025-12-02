@@ -290,7 +290,7 @@ export class RewardsService {
         status: RewardStatus.PUBLISHED,
         QR_CODE: QRCodeDetails?._id || null,
       };
-      console.log("Generated QR:",generatedQR);
+      console.log('Generated QR:', generatedQR);
       if (generatedQR) {
         updateRewardObj['activityQrCode'] = generatedQR.data.metaData.url;
       }
@@ -1977,7 +1977,7 @@ export class RewardsService {
 
       const reward = await this.rewardModel
         .findById(userReward.rewardId)
-        .populate('QR_CODE','_id metaData');
+        .populate('QR_CODE', '_id metaData');
       if (!reward) {
         return {
           success: false,
@@ -2017,10 +2017,9 @@ export class RewardsService {
         checkInId: userCheckIn._id,
         reward: reward._id,
         validUntil: new Date(Date.now() + 10 * 60 * 1000),
-        status:ScratchStatus.CONFIRMED
+        status: ScratchStatus.CONFIRMED,
       });
       const scratch = scratchDoc.toObject();
-      
 
       await this.userRewardModel.findByIdAndUpdate(userRewardLink._id, {
         $set: {
@@ -2041,7 +2040,7 @@ export class RewardsService {
         message: 'Reward claimed successfully.',
         data: {
           ...scratch,
-          QR_CODE: reward.QR_CODE
+          QR_CODE: reward.QR_CODE,
         },
       };
     } catch (error) {
@@ -2072,6 +2071,7 @@ export class RewardsService {
           message: 'Please Enroll first',
         };
       }
+      const userId = new mongoose.Types.ObjectId(user.id);
 
       const QR_ImageCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
@@ -2207,18 +2207,34 @@ export class RewardsService {
             foreignField: '_id',
             as: 'locations',
             pipeline: [
-              {
-                $lookup: {
-                  from: 'outlets',
-                  localField: 'businessLocationId',
-                  foreignField: '_id',
-                  as: 'businessLocation',
-                },
-              },
+              // {
+              //   $lookup: {
+              //     from: 'outlets',
+              //     localField: 'businessLocationId',
+              //     foreignField: '_id',
+              //     as: 'businessLocation',
+              //   },
+              // },
               {
                 $unwind: {
                   path: '$businessLocation',
                   preserveNullAndEmptyArrays: true,
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  location: 1,
+                  businessLocationId: 1,
+                  address1: 1,
+                  address2: 1,
+                  city: 1,
+                  state: 1,
+                  zip: 1,
+                  website: 1,
+                  email: 1,
+                  phone: 1,
+                  distance: 1,
                 },
               },
             ],
@@ -2295,6 +2311,51 @@ export class RewardsService {
             },
             progress: '$userReward.progress',
             claimStatus: '$userReward.claimStatus',
+          },
+        },
+        {
+          $lookup: {
+            from: 'checkins',
+            let: {
+              businessId: '$businessProfileDetails._id',
+              userId: userId,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$business', '$$businessId'] },
+                      { $eq: ['$user', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'checkIns',
+          },
+        },
+        {
+          $addFields: {
+            isCheckedIn: {
+              $and: [
+                { $gt: [{ $size: '$checkIns' }, 0] },
+                {
+                  $in: [
+                    { $arrayElemAt: ['$checkIns.locationId', 0] },
+                    '$locations.businessLocationId',
+                  ],
+                },
+              ],
+            },
+            checkedInLocationId: {
+              $arrayElemAt: ['$checkIns.locationId', 0],
+            },
+          },
+        },
+        {
+          $project: {
+            checkIns: 0,
           },
         },
       ];
