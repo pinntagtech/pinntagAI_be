@@ -5118,6 +5118,7 @@ export class AuthService {
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
+    const userId = new mongoose.Types.ObjectId(user.id);
 
     let [event] = await this.eventLocationModel.aggregate([
       {
@@ -5357,6 +5358,7 @@ export class AuthService {
               zip: '$zip',
               website: '$website',
               _id: '$_id',
+              businessLocationId:'$businessLocationId',
               email: '$email',
               phone: '$phone',
               distance: { $divide: ['$distance', 1609.34] },
@@ -5588,6 +5590,52 @@ export class AuthService {
           isReported: 1,
           locations: 1,
           schedules: 1,
+        },
+      },
+
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$businessProfileDetails._id',
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $and: [
+              { $gt: [{ $size: '$checkIns' }, 0] },
+              {
+                $in: [
+                  { $arrayElemAt: ['$checkIns.locationId', 0] },
+                  '$locations.businessLocationId',
+                ],
+              },
+            ],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
         },
       },
     ]);

@@ -19,9 +19,16 @@ export enum FeatureLimitList {
   BROADCAST_FEED_POSTS = 'broadcastFeedPosts',
   BOOSTS_FEATURED = 'boostsFeatured',
 
-
-
 }
+// export const FeatureLimitLabels = {
+//   LOCATIONS : 'locations',
+//   CONTENT_SCHEDULING : 'Content Scheduling',
+//   PUBLISHING_DROP_PIN : 'Publishing/Drop Pins',
+//   BOOKINGS : 'Bookings',
+//   BROADCAST_FEED_POSTS : 'Broadcasts/Feed posts',
+//   BOOSTS_FEATURED : 'Access to Boosts/featured',
+// }
+
 
 @Schema({ timestamps: true })
 export class FeatureLimit extends Document {
@@ -37,6 +44,9 @@ export class FeatureLimit extends Document {
 
   @Prop({ required: true })
   value: string; // examples: "unlimited", "enabled", "5"
+
+  @Prop()
+  label: string;
 }
 
 export const FeatureLimitSchema = SchemaFactory.createForClass(FeatureLimit);

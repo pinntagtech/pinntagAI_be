@@ -88,10 +88,11 @@ export class SubscriptionService {
       );
       console.log('Created Stripe Product:', createdStripeProduct);
       let featureLimits = [];
-      for (const feature of Object.keys(data.features)) {
+      for (const feature of data.features) {
         const createdFeatureLimit = await this.featureLimitModel.create({
-          key: feature,
-          value: data.features[feature],
+          key: feature['key'],
+          value: feature['value'],
+          label: feature['label'],
           product: createdProduct._id,
         });
         featureLimits.push(createdFeatureLimit._id);
@@ -117,10 +118,6 @@ export class SubscriptionService {
     }
   }
   featureLabels: Record<string, (v: string) => string> = {
-    aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
-    aiText: (v) => (v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`),
-    contentCreation: (v) => `${v} Content Creation`,
-    dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
     locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
     templates: (v) =>
       v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
@@ -129,7 +126,6 @@ export class SubscriptionService {
     roles: (v) => (v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled'),
     departments: (v) =>
       v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
-    storage: (v) => `${v}GB Storage`,
   };
 
   async getProducts(user: DecodedUser, billingInterval?: string) {
@@ -238,21 +234,22 @@ export class SubscriptionService {
       const products = await this.subscriptionProductModel.aggregate(pipeline);
 
       // Enrich features
-      const enrichedProducts = products.map((product) => {
-        const enrichedFeatures = product.features.map((feature) => {
-          const label = this.featureLabels[feature.key];
-          return {
-            ...feature,
-            label: label ? label(feature.value) : feature.value,
-          };
-        });
-        return {
-          ...product,
-          features: enrichedFeatures,
-        };
-      });
+      // const enrichedProducts = products.map((product) => {
+      //   const enrichedFeatures = product.features.map((feature) => {
+      //     const label = this.featureLabels[feature.key];
+      //     return {
+      //       ...feature,
+      //       label: label ? label(feature.value) : feature.value,
+      //     };
+      //   });
+      //   return {
+      //     ...product,
+      //     features: enrichedFeatures,
+      //   };
+      // });
 
-      return enrichedProducts;
+      // return enrichedProducts;
+      return products;
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];

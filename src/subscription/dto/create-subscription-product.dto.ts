@@ -25,7 +25,7 @@ export class CreateSubscriptionProductDto {
   @IsNotEmpty()
   // @IsArray()
   // @Validate(FeatureLimitData, { each: true })
-  features: Object; // Array of feature limits
+  features: Array<Object>; // Array of feature limits
 
   @IsOptional()
   description?: string;
