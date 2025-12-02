@@ -21,6 +21,7 @@ export interface IAI_Training {
     requiredQuestions: number;
     completionPercentage: number;
   };
+  questions?: any[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +97,11 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
         completionPercentage: { type: Number },
       },
       required: false,
+    },
+    questions: {
+      type: [Schema.Types.Mixed],
+      required: false,
+      default: [],
     },
   },
   { timestamps: true, versionKey: false }
