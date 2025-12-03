@@ -1635,4 +1635,25 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Put('scratch/vote/:scratchId')
+  @UseGuards(JwtGuard2)
+  async voteScratch(
+    @TokenDecoder() user: DecodedUser,
+    @Param('scratchId') scratchId: string,
+    @Body('status') status:boolean,
+  ) {
+    const result = await this.businessService.voteScratch(
+      scratchId,
+      user,
+      status
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

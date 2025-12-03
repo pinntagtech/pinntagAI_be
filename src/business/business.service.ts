@@ -187,7 +187,11 @@ import { File, FileDocument } from 'src/drive/models/file.model';
 import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 import { Feed } from 'src/feed/models/feed.model';
 import { PipelineStage } from 'mongoose';
-import { Scratch, ScratchStatus } from './model/scratch.model';
+import {
+  BusinessVoteStatus,
+  Scratch,
+  ScratchStatus,
+} from './model/scratch.model';
 import {
   RewardVisit,
   RewardVisitSchema,
@@ -6899,6 +6903,31 @@ export class BusinessService {
       return {
         success: true,
         message: 'Reward Visit marked Suspicious',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async voteScratch(scratchId: string, user: DecodedUser, status: boolean) {
+    try {
+      await this.scratchModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(scratchId),
+        },
+        {
+          $set: {
+            businessVoteStatus: status
+              ? BusinessVoteStatus.CONFIRMED
+              : BusinessVoteStatus.REJECTED,
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Scratch up-voted successfully',
       };
     } catch (error) {
       return {
