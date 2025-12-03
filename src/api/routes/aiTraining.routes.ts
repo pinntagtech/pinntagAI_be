@@ -8,11 +8,19 @@ export const aiTrainingRouter = Router();
 aiTrainingRouter.use(internalApiKeyGuard);
 
 /**
- * POST /ai/training/initialize
- * Body: { businessId: string, industry: BusinessIndustries, subCategory?: BusinessSubCategory }
- * Initializes training for a business
+ * GET /ai/training/state/:businessId
+ * Params: businessId
+ * Gets comprehensive training state (current phase, answered/remaining questions, progress)
+ * This is the primary API for getting all training information
  */
-aiTrainingRouter.post("/initialize", aiTrainingController.initializeTraining);
+aiTrainingRouter.get("/state/:businessId", aiTrainingController.getTrainingState);
+
+/**
+ * GET /ai/training/initialize/:businessId
+ * Params: businessId
+ * Initializes training for a business (fetches industry/subCategory from business_AI_assistant)
+ */
+aiTrainingRouter.get("/initialize/:businessId", aiTrainingController.initializeTraining);
 
 /**
  * POST /ai/training/submit
@@ -22,11 +30,11 @@ aiTrainingRouter.post("/initialize", aiTrainingController.initializeTraining);
 aiTrainingRouter.post("/submit", aiTrainingController.submitResponses);
 
 /**
- * POST /ai/training/complete
- * Body: { businessId: string }
+ * GET /ai/training/complete/:businessId
+ * Params: businessId
  * Completes training and updates the AI assistant with enhanced instructions
  */
-aiTrainingRouter.post("/complete", aiTrainingController.completeTraining);
+aiTrainingRouter.get("/complete/:businessId", aiTrainingController.completeTraining);
 
 /**
  * GET /ai/training/status/:businessId
@@ -40,6 +48,14 @@ aiTrainingRouter.get("/status/:businessId", aiTrainingController.getTrainingStat
  * Gets training questions for an industry
  */
 aiTrainingRouter.get("/questions", aiTrainingController.getTrainingQuestions);
+
+/**
+ * GET /ai/training/questions-by-phase/:businessId
+ * Params: businessId
+ * Query: phase (required - basic, standard, advanced)
+ * Gets training questions by phase for a business
+ */
+aiTrainingRouter.get("/questions-by-phase/:businessId", aiTrainingController.getQuestionsByPhase);
 
 /**
  * GET /ai/training/questions-with-defaults

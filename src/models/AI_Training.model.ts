@@ -13,6 +13,8 @@ export interface IAI_Training {
   subCategory?: string;
   responses: ITrainingResponse[];
   trainingStatus: "not_started" | "in_progress" | "completed";
+  currentPhase: "basic" | "standard" | "advanced";
+  completedPhases: ("basic" | "standard" | "advanced")[];
   completedAt?: Date;
   lastUpdated: Date;
   metadata?: {
@@ -20,6 +22,11 @@ export interface IAI_Training {
     answeredQuestions: number;
     requiredQuestions: number;
     completionPercentage: number;
+    phaseProgress?: {
+      basic: { total: number; answered: number; completed: boolean };
+      standard: { total: number; answered: number; completed: boolean };
+      advanced: { total: number; answered: number; completed: boolean };
+    };
   };
   questions?: any[];
   createdAt: Date;
@@ -81,6 +88,17 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
       default: "not_started",
       required: true,
     },
+    currentPhase: {
+      type: String,
+      enum: ["basic", "standard", "advanced"],
+      default: "basic",
+      required: true,
+    },
+    completedPhases: {
+      type: [String],
+      enum: ["basic", "standard", "advanced"],
+      default: [],
+    },
     completedAt: {
       type: Date,
       required: false,
@@ -95,6 +113,31 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
         answeredQuestions: { type: Number },
         requiredQuestions: { type: Number },
         completionPercentage: { type: Number },
+        phaseProgress: {
+          type: {
+            basic: {
+              type: {
+                total: { type: Number },
+                answered: { type: Number },
+                completed: { type: Boolean },
+              },
+            },
+            standard: {
+              type: {
+                total: { type: Number },
+                answered: { type: Number },
+                completed: { type: Boolean },
+              },
+            },
+            advanced: {
+              type: {
+                total: { type: Number },
+                answered: { type: Number },
+                completed: { type: Boolean },
+              },
+            },
+          },
+        },
       },
       required: false,
     },

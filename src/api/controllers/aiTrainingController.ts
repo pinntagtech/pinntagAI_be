@@ -5,17 +5,19 @@ import { logger } from "../../utils/logger.js";
 import {
   BusinessIndustries,
   BusinessSubCategory,
+  TrainingPhase,
 } from "../../utils/AI_Training_questionnaire.js";
 
 export class AITrainingController {
   /**
-   * POST /ai/training/initialize
+   * GET /ai/training/initialize/:businessId
    * Initializes training for a business
-   * Body: { businessId: string, industry: BusinessIndustries, subCategory?: BusinessSubCategory }
+   * Params: businessId
+   * Fetches industry and subCategory from business_AI_assistant
    */
   async initializeTraining(req: Request, res: Response) {
     try {
-      const { businessId, industry, subCategory } = req.body;
+      const { businessId } = req.params;
 
       // Validate businessId
       if (!businessId) {
@@ -32,44 +34,13 @@ export class AITrainingController {
         });
       }
 
-      // Validate industry
-      if (!industry) {
-        return res.status(400).json({
-          success: false,
-          error: "Industry is required",
-        });
-      }
-
-      if (!Object.values(BusinessIndustries).includes(industry)) {
-        return res.status(400).json({
-          success: false,
-          error: `Invalid industry. Must be one of: ${Object.values(
-            BusinessIndustries
-          ).join(", ")}`,
-        });
-      }
-
-      // Validate subCategory if provided
-      if (
-        subCategory &&
-        !Object.values(BusinessSubCategory).includes(subCategory)
-      ) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid sub-category",
-        });
-      }
-
-      const result = await AITrainingService.initializeTraining(
-        businessId,
-        industry,
-        subCategory
-      );
+      const result = await AITrainingService.initializeTraining(businessId);
 
       return res.status(201).json({
         success: true,
         data: result.training,
         questions: result.questions,
+        phaseSummary: result.phaseSummary,
         message: "Training initialized successfully",
       });
     } catch (error: any) {
@@ -81,7 +52,7 @@ export class AITrainingController {
             name: error?.name,
             ...error,
           },
-          businessId: req.body?.businessId,
+          businessId: req.params?.businessId,
         },
         "Error initializing training"
       );
@@ -170,13 +141,13 @@ export class AITrainingController {
   }
 
   /**
-   * POST /ai/training/complete
+   * GET /ai/training/complete/:businessId
    * Completes training and updates AI assistant
-   * Body: { businessId: string }
+   * Params: businessId
    */
   async completeTraining(req: Request, res: Response) {
     try {
-      const { businessId } = req.body;
+      const { businessId } = req.params;
 
       // Validate businessId
       if (!businessId) {
@@ -324,6 +295,75 @@ export class AITrainingController {
       return res.status(500).json({
         success: false,
         error: error.message || "Failed to get training questions",
+      });
+    }
+  }
+
+  /**
+   * GET /ai/training/questions-by-phase/:businessId
+   * Gets training questions by phase for a business
+   * Params: businessId
+   * Query: phase (basic, standard, advanced)
+   */
+  async getQuestionsByPhase(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+      const { phase } = req.query;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format",
+        });
+      }
+
+      // Validate phase
+      if (!phase) {
+        return res.status(400).json({
+          success: false,
+          error: "Phase query parameter is required",
+        });
+      }
+
+      if (!Object.values(TrainingPhase).includes(phase as TrainingPhase)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid phase. Must be one of: ${Object.values(
+            TrainingPhase
+          ).join(", ")}`,
+        });
+      }
+
+      const result = await AITrainingService.getQuestionsByPhase(
+        businessId,
+        phase as TrainingPhase
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error({ error, businessId: req.params?.businessId }, "Error getting questions by phase");
+
+      if (error.message?.includes("not found")) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to get questions by phase",
       });
     }
   }
@@ -484,6 +524,53 @@ export class AITrainingController {
       });
     }
   }
+
+  /**
+   * GET /ai/training/state/:businessId
+   * Gets comprehensive training state for a business
+   * Returns: current phase, answered/remaining questions, progress across all phases
+   */
+  async getTrainingState(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format",
+        });
+      }
+
+      const result = await AITrainingService.getTrainingState(businessId);
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error({ error, businessId: req.params?.businessId }, "Error getting training state");
+
+      if (error.message?.includes("not found")) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to get training state",
+      });
+    }
+  }
 }
 
 const controller = new AITrainingController();
@@ -493,8 +580,10 @@ export const aiTrainingController = {
   completeTraining: controller.completeTraining.bind(controller),
   getTrainingStatus: controller.getTrainingStatus.bind(controller),
   getTrainingQuestions: controller.getTrainingQuestions.bind(controller),
+  getQuestionsByPhase: controller.getQuestionsByPhase.bind(controller),
   getTrainingQuestionsWithDefaults:
     controller.getTrainingQuestionsWithDefaults.bind(controller),
   getTrainingResponses: controller.getTrainingResponses.bind(controller),
   resetTraining: controller.resetTraining.bind(controller),
+  getTrainingState: controller.getTrainingState.bind(controller),
 };

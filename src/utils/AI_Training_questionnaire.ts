@@ -3,6 +3,12 @@
     This file contains the structure and types for the AI training questionnaire used to gather information from businesses.
 */
 
+export enum TrainingPhase {
+  BASIC = "basic",
+  STANDARD = "standard",
+  ADVANCED = "advanced",
+}
+
 export interface AI_Training_Questionnaire_Type {
   id: string;
   question: string;
@@ -21,6 +27,7 @@ export interface AI_Training_Questionnaire_Type {
     | "operations"
     | "marketing"
     | "goals";
+  phase?: TrainingPhase; // Phase this question belongs to (auto-assigned if not provided)
   helpText?: string;
   suggestedAnswers?: string[]; // Pre-selected options based on business context
 }
@@ -155,6 +162,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "text",
       required: true,
       category: "business_info",
+      phase: TrainingPhase.BASIC,
     },
     {
       id: "business_description",
@@ -163,6 +171,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "text",
       required: true,
       category: "business_info",
+      phase: TrainingPhase.BASIC,
       helpText: "This helps the AI understand your brand voice and positioning",
     },
     {
@@ -180,6 +189,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "customer_profile",
+      phase: TrainingPhase.BASIC,
     },
     {
       id: "customer_income_level",
@@ -188,6 +198,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       options: ["Budget-conscious", "Mid-range", "Premium", "Luxury", "Mixed"],
       required: true,
       category: "customer_profile",
+      phase: TrainingPhase.BASIC,
     },
     {
       id: "operating_hours",
@@ -195,6 +206,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "text",
       required: true,
       category: "operations",
+      phase: TrainingPhase.BASIC,
       helpText: "e.g., Mon-Fri 9AM-6PM, Sat 10AM-4PM",
     },
     {
@@ -212,6 +224,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "operations",
+      phase: TrainingPhase.STANDARD,
     },
     {
       id: "busiest_hours",
@@ -228,6 +241,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "operations",
+      phase: TrainingPhase.STANDARD,
     },
     {
       id: "slow_periods",
@@ -244,6 +258,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "operations",
+      phase: TrainingPhase.STANDARD,
     },
     {
       id: "typical_discount_range",
@@ -259,6 +274,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "marketing",
+      phase: TrainingPhase.BASIC,
     },
     {
       id: "marketing_goals",
@@ -277,6 +293,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "goals",
+      phase: TrainingPhase.BASIC,
     },
     {
       id: "previous_successful_promotions",
@@ -284,6 +301,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "text",
       required: false,
       category: "marketing",
+      phase: TrainingPhase.ADVANCED,
       helpText: "This helps the AI learn what resonates with your customers",
     },
     {
@@ -292,6 +310,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "boolean",
       required: true,
       category: "operations",
+      phase: TrainingPhase.STANDARD,
     },
     {
       id: "important_seasons",
@@ -314,6 +333,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: false,
       category: "operations",
+      phase: TrainingPhase.ADVANCED,
     },
     {
       id: "competitor_awareness",
@@ -321,6 +341,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       type: "text",
       required: false,
       category: "marketing",
+      phase: TrainingPhase.ADVANCED,
     },
     {
       id: "brand_voice",
@@ -338,6 +359,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       ],
       required: true,
       category: "business_info",
+      phase: TrainingPhase.BASIC,
     },
   ];
 
@@ -2194,6 +2216,141 @@ export function getInitialResponsesWithDefaults(
   return getSmartDefaults(industry, subCategory);
 }
 
+// ============================================
+// PHASE-BASED QUESTIONNAIRE FUNCTIONS
+// ============================================
+
+/**
+ * Automatically assign phases to questions that don't have them
+ * Basic: Most critical questions (business_info, most required questions)
+ * Standard: Important operational questions
+ * Advanced: Optional questions and detailed insights
+ */
+function assignPhaseToQuestion(question: any): AI_Training_Questionnaire_Type {
+  // If phase is already assigned, return as is
+  if (question.phase) {
+    return question;
+  }
+
+  // Assign phase based on category and required status
+  let phase: TrainingPhase;
+
+  if (question.required) {
+    // Required questions from basic categories
+    if (question.category === "business_info" || question.category === "customer_profile" || question.category === "goals") {
+      phase = TrainingPhase.BASIC;
+    }
+    // Required operational questions
+    else if (question.category === "operations") {
+      phase = TrainingPhase.STANDARD;
+    }
+    // Required marketing questions
+    else if (question.category === "marketing") {
+      phase = TrainingPhase.BASIC;
+    }
+    else {
+      phase = TrainingPhase.STANDARD;
+    }
+  } else {
+    // Non-required questions go to advanced
+    phase = TrainingPhase.ADVANCED;
+  }
+
+  return {
+    ...question,
+    phase,
+  };
+}
+
+/**
+ * Get questions filtered by phase
+ */
+export function getQuestionsByPhase(
+  industry: BusinessIndustries,
+  phase: TrainingPhase,
+  subCategory?: BusinessSubCategory
+): AI_Training_Questionnaire_Type[] {
+  const allQuestions = getAI_Training_Questionnaire_Types(industry, subCategory);
+
+  // Assign phases to questions that don't have them
+  const questionsWithPhases = allQuestions.map(assignPhaseToQuestion);
+
+  return questionsWithPhases.filter((q) => q.phase! === phase);
+}
+
+/**
+ * Get all questions up to a certain phase (inclusive)
+ * e.g., if phase is STANDARD, returns BASIC + STANDARD questions
+ */
+export function getQuestionsUpToPhase(
+  industry: BusinessIndustries,
+  phase: TrainingPhase,
+  subCategory?: BusinessSubCategory
+): AI_Training_Questionnaire_Type[] {
+  const allQuestions = getAI_Training_Questionnaire_Types(industry, subCategory);
+  const questionsWithPhases = allQuestions.map(assignPhaseToQuestion);
+
+  const phaseOrder = [TrainingPhase.BASIC, TrainingPhase.STANDARD, TrainingPhase.ADVANCED];
+  const phaseIndex = phaseOrder.indexOf(phase);
+
+  if (phaseIndex === -1) {
+    return [];
+  }
+
+  const includedPhases = phaseOrder.slice(0, phaseIndex + 1);
+
+  return questionsWithPhases.filter((q) => q.phase && includedPhases.includes(q.phase));
+}
+
+/**
+ * Get questions grouped by phase
+ */
+export function getQuestionsGroupedByPhase(
+  industry: BusinessIndustries,
+  subCategory?: BusinessSubCategory
+): Record<TrainingPhase, AI_Training_Questionnaire_Type[]> {
+  const allQuestions = getAI_Training_Questionnaire_Types(industry, subCategory);
+  const questionsWithPhases = allQuestions.map(assignPhaseToQuestion);
+
+  return {
+    [TrainingPhase.BASIC]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.BASIC),
+    [TrainingPhase.STANDARD]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.STANDARD),
+    [TrainingPhase.ADVANCED]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.ADVANCED),
+  };
+}
+
+/**
+ * Get phase summary with question counts
+ */
+export function getPhaseSummary(
+  industry: BusinessIndustries,
+  subCategory?: BusinessSubCategory
+): {
+  phase: TrainingPhase;
+  totalQuestions: number;
+  requiredQuestions: number;
+}[] {
+  const grouped = getQuestionsGroupedByPhase(industry, subCategory);
+
+  return [
+    {
+      phase: TrainingPhase.BASIC,
+      totalQuestions: grouped[TrainingPhase.BASIC].length,
+      requiredQuestions: grouped[TrainingPhase.BASIC].filter((q) => q.required).length,
+    },
+    {
+      phase: TrainingPhase.STANDARD,
+      totalQuestions: grouped[TrainingPhase.STANDARD].length,
+      requiredQuestions: grouped[TrainingPhase.STANDARD].filter((q) => q.required).length,
+    },
+    {
+      phase: TrainingPhase.ADVANCED,
+      totalQuestions: grouped[TrainingPhase.ADVANCED].length,
+      requiredQuestions: grouped[TrainingPhase.ADVANCED].filter((q) => q.required).length,
+    },
+  ];
+}
+
 export default {
   coreAI_Training_Questionnaire_Types,
   foodDrinkQuestions,
@@ -2213,4 +2370,8 @@ export default {
   getSmartDefaults,
   getQuestionsWithSmartDefaults,
   getInitialResponsesWithDefaults,
+  getQuestionsByPhase,
+  getQuestionsUpToPhase,
+  getQuestionsGroupedByPhase,
+  getPhaseSummary,
 };
