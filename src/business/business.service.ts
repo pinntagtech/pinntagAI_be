@@ -6848,6 +6848,28 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          $lookup: {
+            from: 'checkins',
+            localField: 'checkInId',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  createdAt: 1,
+                  updatedAt: 1,
+                },
+              },
+            ],
+            as: 'CheckInDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$CheckInDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
       ]);
       return {
         success: true,
