@@ -193,6 +193,7 @@ import {
   RewardVisitSchema,
   RewardVisitStatus,
 } from 'src/rewards/model/rewardVisit.model';
+import { program } from '@babel/template';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -6683,14 +6684,65 @@ export class BusinessService {
     try {
       let query = {
         business: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+      if (
+        status &&
+        (status === ScratchStatus.CONFIRMED ||
+          status === ScratchStatus.REJECTED)
+      ) {
+        query['status'] = status;
       }
-      if(status && (status === ScratchStatus.CONFIRMED || status ===ScratchStatus.REJECTED)){
-        query['status'] = status
-      }
-      console.log("Query",query);
+      console.log('Query', query);
       const scratches = await this.scratchModel.aggregate([
         {
-          $match: query
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'userDetails',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$userDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  title: 1,
+                },
+              },
+            ],
+            as: 'rewardDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$rewardDetails',
+            preserveNullAndEmptyArrays: true,
+          },
         },
       ]);
       return {
@@ -6711,6 +6763,88 @@ export class BusinessService {
         {
           $match: {
             business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'userDetails',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$userDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: {
+              rewardId: '$reward',
+              userId: '$user',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      { $eq: ['$userId', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  claimStatus: 1,
+                  target: 1,
+                  progress: 1,
+                },
+              },
+            ],
+            as: 'userReward',
+          },
+        },
+        {
+          $unwind: {
+            path: '$userReward',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  title: 1,
+                },
+              },
+            ],
+            as: 'rewardDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$rewardDetails',
+            preserveNullAndEmptyArrays: true,
           },
         },
       ]);
@@ -6735,7 +6869,7 @@ export class BusinessService {
         {
           $set: {
             status: RewardVisitStatus.MARKED_WRONG,
-             markedWrongBy:new mongoose.Types.ObjectId(user.id),
+            markedWrongBy: new mongoose.Types.ObjectId(user.id),
           },
         },
       );
