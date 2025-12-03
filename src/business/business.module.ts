@@ -172,6 +172,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchSchema } from './model/scratch.model';
+import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.model';
 
 @Module({
   imports: [
@@ -265,6 +266,7 @@ import { Scratch, ScratchSchema } from './model/scratch.model';
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: Scratch.name, schema: ScratchSchema},
+      { name: RewardVisit.name, schema: RewardVisitSchema},
     ]),
   ],
   controllers: [BusinessController],

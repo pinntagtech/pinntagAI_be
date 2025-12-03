@@ -1358,6 +1358,20 @@ export class BusinessController {
     }
   }
 
+  @Get('scratches')
+  @UseGuards(JwtGuard2)
+  async getScratches(@TokenDecoder() user:DecodedUser,@Query('status') status: string){
+     const result = await this.businessService.getScratches(user,status);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get(':id')
   @UseGuards(JwtGuard2)
   async fetchBusiness(
@@ -1586,10 +1600,11 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-  @Get('scratches')
-  @UseGuards(JwtGuard2)
-  async getScratches(@TokenDecoder() user:DecodedUser,@Query('status') status: string){
-     const result = await this.businessService.getScratches(user,status);
+  
+  @Get('reward/visits')
+   @UseGuards(JwtGuard2)
+  async getRewardVisits(@TokenDecoder() user:DecodedUser){
+     const result = await this.businessService.getRewardVisits(user);
     if (result.success) {
       return {
         message: result.message,
@@ -1598,5 +1613,6 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
  
 }

@@ -188,6 +188,7 @@ import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 import { Feed } from 'src/feed/models/feed.model';
 import { PipelineStage } from 'mongoose';
 import { Scratch } from './model/scratch.model';
+import { RewardVisit } from 'src/rewards/model/rewardVisit.model';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -263,6 +264,7 @@ export class BusinessService {
     private readonly folderModel: Model<FolderDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
+    @InjectModel(RewardVisit.name) private readonly rewardVisitModel: Model<RewardVisit>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -6685,6 +6687,27 @@ export class BusinessService {
         success:true,
         message:"Scratches list fetched successfully.",
         data: scratches
+      }
+    }catch(error){
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async getRewardVisits(user:DecodedUser){
+    try{
+      const visitors = await this.rewardVisitModel.aggregate([
+        {
+          $match: {
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+      ])
+      return {
+        success:true,
+        message:"Visitors list fetched successfully.",
+        data: visitors
       }
     }catch(error){
       return {
