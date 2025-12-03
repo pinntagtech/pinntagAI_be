@@ -138,7 +138,6 @@ export class SubscriptionService {
       const userSubscription = business.activeSubscription
         ? await this.subscriptionModel.findById(business.activeSubscription)
         : null;
-
       console.log('User Subscription:', userSubscription);
 
       if (!userSubscription) {
