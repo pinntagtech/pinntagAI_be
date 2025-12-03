@@ -1360,12 +1360,15 @@ export class BusinessController {
 
   @Get('scratches')
   @UseGuards(JwtGuard2)
-  async getScratches(@TokenDecoder() user:DecodedUser,@Query('status') status: string){
-     const result = await this.businessService.getScratches(user,status);
+  async getScratches(
+    @TokenDecoder() user: DecodedUser,
+    @Query('status') status: string,
+  ) {
+    const result = await this.businessService.getScratches(user, status);
     if (result.success) {
       return {
         message: result.message,
-        data: result.data
+        data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);
@@ -1600,11 +1603,30 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-  
+
   @Get('reward/visits')
-   @UseGuards(JwtGuard2)
-  async getRewardVisits(@TokenDecoder() user:DecodedUser){
-     const result = await this.businessService.getRewardVisits(user);
+  @UseGuards(JwtGuard2)
+  async getRewardVisits(@TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.getRewardVisits(user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('reward/visit/suspicious/:visitId')
+  @UseGuards(JwtGuard2)
+  async markRewardVisitSuspicious(
+    @TokenDecoder() user: DecodedUser,
+    @Param('visitId') visitId: string,
+  ) {
+    const result = await this.businessService.markRewardVisitSuspicious(
+      visitId,
+      user,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1613,6 +1635,4 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
- 
 }

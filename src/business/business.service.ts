@@ -187,8 +187,12 @@ import { File, FileDocument } from 'src/drive/models/file.model';
 import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 import { Feed } from 'src/feed/models/feed.model';
 import { PipelineStage } from 'mongoose';
-import { Scratch } from './model/scratch.model';
-import { RewardVisit } from 'src/rewards/model/rewardVisit.model';
+import { Scratch, ScratchStatus } from './model/scratch.model';
+import {
+  RewardVisit,
+  RewardVisitSchema,
+  RewardVisitStatus,
+} from 'src/rewards/model/rewardVisit.model';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -264,7 +268,8 @@ export class BusinessService {
     private readonly folderModel: Model<FolderDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
-    @InjectModel(RewardVisit.name) private readonly rewardVisitModel: Model<RewardVisit>,
+    @InjectModel(RewardVisit.name)
+    private readonly rewardVisitModel: Model<RewardVisit>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -1020,7 +1025,7 @@ export class BusinessService {
         creatorType: BusinessUserCreatorType.SELF,
         forcePasswordReset: false,
         isEmailVerified: true,
-        status: ProfileStatus.EMAIL_VERIFIED
+        status: ProfileStatus.EMAIL_VERIFIED,
       };
 
       //append creator to roles
@@ -6526,7 +6531,8 @@ export class BusinessService {
       //   cat.tags.map((t) => t.title),
       // );
 
-      const result = await this.pinnAiService.generateBusinessTagsSuggestions(businessId);
+      const result =
+        await this.pinnAiService.generateBusinessTagsSuggestions(businessId);
 
       // console.log('Tag Recommendations:', allTitles);
 
@@ -6673,49 +6679,75 @@ export class BusinessService {
     }
   }
 
-  async getScratches(user:DecodedUser,status:string){
-    try{
+  async getScratches(user: DecodedUser, status: string) {
+    try {
+      let query = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      }
+      if(status && (status === ScratchStatus.CONFIRMED || status ===ScratchStatus.REJECTED)){
+        query['status'] = status
+      }
+      console.log("Query",query);
       const scratches = await this.scratchModel.aggregate([
         {
-          $match: {
-            status:status,
-            business: new mongoose.Types.ObjectId(user.businessProfile),
-          },
+          $match: query
         },
-      ])
+      ]);
       return {
-        success:true,
-        message:"Scratches list fetched successfully.",
-        data: scratches
-      }
-    }catch(error){
+        success: true,
+        message: 'Scratches list fetched successfully.',
+        data: scratches,
+      };
+    } catch (error) {
       return {
         success: false,
         message: error.message,
       };
     }
   }
-  async getRewardVisits(user:DecodedUser){
-    try{
+  async getRewardVisits(user: DecodedUser) {
+    try {
       const visitors = await this.rewardVisitModel.aggregate([
         {
           $match: {
             business: new mongoose.Types.ObjectId(user.businessProfile),
           },
         },
-      ])
+      ]);
       return {
-        success:true,
-        message:"Visitors list fetched successfully.",
-        data: visitors
-      }
-    }catch(error){
+        success: true,
+        message: 'Visitors list fetched successfully.',
+        data: visitors,
+      };
+    } catch (error) {
       return {
         success: false,
         message: error.message,
       };
     }
   }
-
-
+  async markRewardVisitSuspicious(visitId: string, user: DecodedUser) {
+    try {
+      await this.rewardVisitModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(visitId),
+        },
+        {
+          $set: {
+            status: RewardVisitStatus.MARKED_WRONG,
+             markedWrongBy:new mongoose.Types.ObjectId(user.id),
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Reward Visit marked Suspicious',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }
