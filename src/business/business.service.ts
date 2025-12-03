@@ -750,6 +750,7 @@ export class BusinessService {
         creatorType: BusinessUserCreatorType.SELF,
         forcePasswordReset: false,
         isEmailVerified: true,
+        status: ProfileStatus.EMAIL_VERIFIED,
       };
 
       //append creator to roles
