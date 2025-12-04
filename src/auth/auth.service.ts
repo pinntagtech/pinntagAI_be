@@ -6489,6 +6489,8 @@ export class AuthService {
                           product: 1,
                           startDate: 1,
                           endDate: 1,
+                          invoiceStartDate:1,
+                          invoiceEndDate:1,
                           status: 1,
                           remainingDays: {
                             $dateDiff: {

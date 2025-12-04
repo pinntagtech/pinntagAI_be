@@ -217,6 +217,35 @@ export class SubscriptionService {
                 },
               },
             },
+            currentPlanDetails: {
+              $cond: {
+                if: {
+                  $cond: {
+                    if: { $eq: [{ $size: '$prices' }, 0] },
+                    then: { $eq: ['$_id', userSubscription.product] },
+                    else: {
+                      $and: [
+                        { $eq: ['$_id', userSubscription.product] },
+                        {
+                          $eq: [
+                            userSubscription.price,
+                            { $arrayElemAt: ['$prices._id', 0] },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                },
+                then: {
+                  $literal: {
+                    locationsAllowed: userSubscription.locationsAllowed,
+                    invoiceStartDate: userSubscription.invoiceStartDate,
+                    invoiceEndDate: userSubscription.invoiceEndDate,
+                  },
+                },
+                else: null,
+              },
+            },
           },
         });
       } else {
