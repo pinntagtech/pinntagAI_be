@@ -226,7 +226,7 @@ export class CreateOutletDtoV2 {
   closingTime: string;
 
   @IsOptional()
-  isActive: boolean;
+  isActive: string;
 
   // @IsOptional()
   // @IsString()

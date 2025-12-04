@@ -582,7 +582,7 @@ export class OutletService {
       createObj['category'] = OutletCategoryList.MOBILE;
       if (data.isActive !== undefined) {
         createObj['isActive'] = data.isActive;
-        if (data.isActive == true) {
+        if (data.isActive == 'true') {
           await this.outletSummationCompetence(user.businessProfile);
         }
       }
@@ -641,7 +641,7 @@ export class OutletService {
         { _id: businessUser.id },
         { $addToSet: { assignedOutlets: outlet._id } },
       );
-      if (data.isActive !== undefined && data.isActive == true) {
+      if (data.isActive !== undefined && data.isActive == 'true') {
         await this.businessModel.updateOne(
           { _id: business._id },
           {
