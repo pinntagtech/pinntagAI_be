@@ -6483,10 +6483,28 @@ export class AuthService {
                       },
                       { $unwind: '$product' },
                       {
+                        $lookup: {
+                          from: 'subscriptionprices',
+                          localField: 'price',
+                          foreignField: '_id',
+                          as: 'price',
+                          pipeline: [
+                            {
+                              $project: {
+                                _id: 1,
+                                billingInterval:1
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      { $unwind: '$price' },
+                      {
                         $project: {
                           _id: 1,
                           source: 1,
                           product: 1,
+                          price:1,
                           startDate: 1,
                           endDate: 1,
                           invoiceStartDate:1,
@@ -6500,6 +6518,7 @@ export class AuthService {
                             },
                           },
                           locationsAllowed: 1,
+                          isFreePlan:1,
                         },
                       },
                     ],
