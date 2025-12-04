@@ -10,6 +10,7 @@ import {
   BusinessIndustries,
   BusinessSubCategory,
   TrainingPhase,
+  AI_Training_Questionnaire_Type,
   getAI_Training_Questionnaire_Types,
   getRequiredQuestions,
   validateTrainingData,
@@ -567,6 +568,138 @@ export class AITrainingService {
   }
 
   /**
+   * Validates a response against its question definition
+   */
+  private static validateResponse(
+    response: { questionId: string; answer: any },
+    question: AI_Training_Questionnaire_Type
+  ): { valid: boolean; error?: string } {
+    const { answer } = response;
+    const { type, options, required } = question;
+
+    // Check for empty/null answers on required questions
+    if (required) {
+      if (answer === null || answer === undefined) {
+        return { valid: false, error: `Answer is required for question: ${question.id}` };
+      }
+
+      if (type === "text" && typeof answer === "string" && answer.trim() === "") {
+        return { valid: false, error: `Answer cannot be empty for question: ${question.id}` };
+      }
+
+      if (type === "multi_select" && Array.isArray(answer) && answer.length === 0) {
+        return {
+          valid: false,
+          error: `At least one option must be selected for question: ${question.id}`,
+        };
+      }
+    }
+
+    // Type validation based on question type
+    switch (type) {
+      case "text":
+        if (typeof answer !== "string") {
+          return {
+            valid: false,
+            error: `Answer must be a string for question: ${question.id}`,
+          };
+        }
+        break;
+
+      case "multiple_choice":
+        if (typeof answer !== "string") {
+          return {
+            valid: false,
+            error: `Answer must be a single string for multiple_choice question: ${question.id}`,
+          };
+        }
+        // Validate against options
+        if (options && !options.includes(answer)) {
+          return {
+            valid: false,
+            error: `Answer "${answer}" is not a valid option for question: ${question.id}. Valid options: ${options.join(", ")}`,
+          };
+        }
+        break;
+
+      case "multi_select":
+        if (!Array.isArray(answer)) {
+          return {
+            valid: false,
+            error: `Answer must be an array for multi_select question: ${question.id}`,
+          };
+        }
+        // Validate each selection against options
+        if (options) {
+          for (const selection of answer) {
+            if (typeof selection !== "string") {
+              return {
+                valid: false,
+                error: `All selections must be strings for question: ${question.id}`,
+              };
+            }
+            if (!options.includes(selection)) {
+              return {
+                valid: false,
+                error: `Selection "${selection}" is not a valid option for question: ${question.id}. Valid options: ${options.join(", ")}`,
+              };
+            }
+          }
+        }
+        break;
+
+      case "number":
+        if (typeof answer !== "number") {
+          return {
+            valid: false,
+            error: `Answer must be a number for question: ${question.id}`,
+          };
+        }
+        if (isNaN(answer)) {
+          return {
+            valid: false,
+            error: `Answer must be a valid number for question: ${question.id}`,
+          };
+        }
+        break;
+
+      case "boolean":
+        if (typeof answer !== "boolean") {
+          return {
+            valid: false,
+            error: `Answer must be a boolean for question: ${question.id}`,
+          };
+        }
+        break;
+
+      case "time":
+        if (typeof answer !== "string") {
+          return {
+            valid: false,
+            error: `Answer must be a string for time question: ${question.id}`,
+          };
+        }
+        // Basic time format validation (HH:MM)
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(answer)) {
+          return {
+            valid: false,
+            error: `Answer must be in HH:MM format for time question: ${question.id}`,
+          };
+        }
+        break;
+
+      default:
+        return {
+          valid: false,
+          error: `Unknown question type: ${type} for question: ${question.id}`,
+        };
+    }
+
+    return { valid: true };
+  }
+
+  /**
    * Submits training responses for a business
    */
   static async submitTrainingResponses(
@@ -585,7 +718,41 @@ export class AITrainingService {
         throw new Error(`No training found for business ID: ${businessId}`);
       }
 
-      // Update or add responses
+      // Get all questions for validation
+      const allQuestions = getAI_Training_Questionnaire_Types(
+        training.industry as BusinessIndustries,
+        training.subCategory as BusinessSubCategory
+      );
+
+      // Create a map for quick question lookup
+      const questionMap = new Map(allQuestions.map((q) => [q.id, q]));
+
+      // Validate all responses before saving
+      const validationErrors: string[] = [];
+
+      for (const response of responses) {
+        // Check if question exists
+        const question = questionMap.get(response.questionId);
+        if (!question) {
+          validationErrors.push(
+            `Question ID "${response.questionId}" does not exist for this business`
+          );
+          continue;
+        }
+
+        // Validate response against question definition
+        const validation = this.validateResponse(response, question);
+        if (!validation.valid) {
+          validationErrors.push(validation.error!);
+        }
+      }
+
+      // If there are validation errors, throw them
+      if (validationErrors.length > 0) {
+        throw new Error(`Validation failed: ${validationErrors.join("; ")}`);
+      }
+
+      // All validations passed, now save the responses
       for (const response of responses) {
         const existingIndex = training.responses.findIndex(
           (r) => r.questionId === response.questionId
@@ -605,11 +772,63 @@ export class AITrainingService {
         }
       }
 
+      // Update metadata
+      if (training.metadata) {
+        training.metadata.answeredQuestions = training.responses.length;
+        training.metadata.completionPercentage = Math.round(
+          (training.responses.length / (training.metadata.totalQuestions || 1)) * 100
+        );
+
+        // Update phase progress
+        if (training.metadata.phaseProgress) {
+          const responseIds = new Set(training.responses.map((r) => r.questionId));
+
+          // Get questions by phase
+          const basicQuestions = getQuestionsByPhaseUtil(
+            training.industry as BusinessIndustries,
+            TrainingPhase.BASIC,
+            training.subCategory as BusinessSubCategory
+          );
+          const standardQuestions = getQuestionsByPhaseUtil(
+            training.industry as BusinessIndustries,
+            TrainingPhase.STANDARD,
+            training.subCategory as BusinessSubCategory
+          );
+          const advancedQuestions = getQuestionsByPhaseUtil(
+            training.industry as BusinessIndustries,
+            TrainingPhase.ADVANCED,
+            training.subCategory as BusinessSubCategory
+          );
+
+          // Count answered questions per phase
+          const basicAnswered = basicQuestions.filter((q) => responseIds.has(q.id)).length;
+          const standardAnswered = standardQuestions.filter((q) => responseIds.has(q.id)).length;
+          const advancedAnswered = advancedQuestions.filter((q) => responseIds.has(q.id)).length;
+
+          training.metadata.phaseProgress.basic.answered = basicAnswered;
+          training.metadata.phaseProgress.basic.completed =
+            basicAnswered === training.metadata.phaseProgress.basic.total;
+
+          training.metadata.phaseProgress.standard.answered = standardAnswered;
+          training.metadata.phaseProgress.standard.completed =
+            standardAnswered === training.metadata.phaseProgress.standard.total;
+
+          training.metadata.phaseProgress.advanced.answered = advancedAnswered;
+          training.metadata.phaseProgress.advanced.completed =
+            advancedAnswered === training.metadata.phaseProgress.advanced.total;
+        }
+      }
+
+      // Update training status
+      if (training.trainingStatus === "not_started") {
+        training.trainingStatus = "in_progress";
+      }
+
       await training.save();
 
       logger.info(
         { businessId, responseCount: responses.length },
-        "Training responses submitted"
+        "Training responses submitted successfully"
       );
 
       return training;
@@ -1014,13 +1233,6 @@ export class AITrainingService {
         });
       }
 
-      // Get questions for current phase
-      const currentPhaseQuestions = getQuestionsByPhaseUtil(
-        training.industry as BusinessIndustries,
-        training.currentPhase as TrainingPhase,
-        training.subCategory as BusinessSubCategory
-      );
-
       // Get phase summary
       const phaseSummary = getPhaseSummary(
         training.industry as BusinessIndustries,
@@ -1032,8 +1244,52 @@ export class AITrainingService {
         training.responses.map((r) => [r.questionId, r])
       );
 
+      // Check if current phase is completed and advance to next phase if needed
+      let phaseChanged = false;
+      const currentPhaseQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        training.currentPhase as TrainingPhase,
+        training.subCategory as BusinessSubCategory
+      );
+
+      // Count answered questions in current phase
+      const currentPhaseAnswered = currentPhaseQuestions.filter((q) =>
+        responseMap.has(q.id)
+      ).length;
+
+      // If all questions in current phase are answered, advance to next phase
+      if (currentPhaseAnswered === currentPhaseQuestions.length) {
+        let nextPhase: TrainingPhase | null = null;
+
+        if (training.currentPhase === TrainingPhase.BASIC) {
+          nextPhase = TrainingPhase.STANDARD;
+        } else if (training.currentPhase === TrainingPhase.STANDARD) {
+          nextPhase = TrainingPhase.ADVANCED;
+        }
+
+        // Advance to next phase if available and not already completed
+        if (nextPhase && !training.completedPhases.includes(training.currentPhase as any)) {
+          training.completedPhases.push(training.currentPhase as any);
+          training.currentPhase = nextPhase;
+          phaseChanged = true;
+          await training.save();
+
+          logger.info(
+            { businessId, oldPhase: training.completedPhases[training.completedPhases.length - 1], newPhase: nextPhase },
+            "Advanced to next phase"
+          );
+        }
+      }
+
+      // Get questions for the (potentially updated) current phase
+      const activePhaseQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        training.currentPhase as TrainingPhase,
+        training.subCategory as BusinessSubCategory
+      );
+
       // Add isAnswered status and answer to each question
-      const questionsWithStatus = currentPhaseQuestions.map((q) => {
+      const questionsWithStatus = activePhaseQuestions.map((q) => {
         const response = responseMap.get(q.id);
         const isAnswered = !!response;
 
@@ -1055,9 +1311,10 @@ export class AITrainingService {
         completedPhases: training.completedPhases,
         totalPhases: 3,
         phaseSummary,
+        phaseAdvanced: phaseChanged,
         currentPhaseData: {
           phase: training.currentPhase,
-          totalQuestions: currentPhaseQuestions.length,
+          totalQuestions: activePhaseQuestions.length,
           answeredCount,
           remainingCount,
           questions: questionsWithStatus,
