@@ -33,7 +33,7 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
-import { SubscriptionProduct } from '../models/subscription-product.model';
+import { PricingModel, SubscriptionProduct } from '../models/subscription-product.model';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 
@@ -501,6 +501,9 @@ export class StripeService {
     });
     if (!internalSubPrice) return;
 
+     const invoice = await this.stripe.invoices.retrieve(
+      stripeSub.latest_invoice as string,
+    );
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
@@ -517,6 +520,7 @@ export class StripeService {
         invoiceEndDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
         isTrialActive: false,
+        locationsAllowed: internalSubPrice.pricingModel === PricingModel.FLAT? internalSubPrice.maxLocations:invoice.lines?.data?.[0]?.quantity,
         // Optionally also store stripe customer on Business (already done in ensure)
       },
       { upsert: true, new: true },
@@ -529,9 +533,7 @@ export class StripeService {
         },
       },
     );
-    const invoice = await this.stripe.invoices.retrieve(
-      stripeSub.latest_invoice as string,
-    );
+   
     // Upsert by stripeInvoiceId to make it idempotent
     await this.transactionModel.updateOne(
       { stripeInvoiceId: invoice.id }, // unique key

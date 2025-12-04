@@ -323,6 +323,12 @@ export class OutletService {
           minute: closingMinute,
         };
       }
+      if(data.isActive !== undefined){
+        createObj['isActive'] = data.isActive;
+        if(data.isActive == true){
+          await this.outletSummationCompetence(user.businessProfile);
+        }
+      }
       console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
 
@@ -563,6 +569,12 @@ export class OutletService {
 
       createObj['cover'] = coverUpload.metaData.url;
       createObj['category'] = OutletCategoryList.MOBILE;
+      if(data.isActive !== undefined){
+        createObj['isActive'] = data.isActive;
+        if(data.isActive == true){
+          await this.outletSummationCompetence(user.businessProfile);
+        }
+      }
 
       console.log('CREATEOBJ:', createObj);
 

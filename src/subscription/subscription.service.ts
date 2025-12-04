@@ -424,6 +424,7 @@ export class SubscriptionService {
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
         product: trialSubscriptionProduct._id,
+        locationsAllowed: trialSubscriptionProduct.maxLocations,
       };
 
       return { success: true, data: createSubscription };

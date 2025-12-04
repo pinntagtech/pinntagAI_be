@@ -82,6 +82,9 @@ export class Subscription extends Document {
   @Prop({ default: false })
     isFreePlan: boolean;
 
+  @Prop({default: 1})
+  locationsAllowed: number;
+
 }
 
 export type SubscriptionDocument = Subscription & Document;
