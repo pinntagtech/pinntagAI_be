@@ -264,7 +264,7 @@ export class SubscriptionService {
 
       // Step 5: Sort
       pipeline.push({
-        $sort: { 'prices.price': 1 },
+        $sort: { isCurrentPlan: -1, 'prices.price': 1 },
       });
 
       // Execute aggregation
