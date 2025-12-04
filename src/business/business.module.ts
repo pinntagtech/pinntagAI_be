@@ -11,6 +11,7 @@ import { MailService } from 'src/mail/mail.service';
 import { JwtService } from '@nestjs/jwt';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { User, UserSchema } from 'src/user/models/user.model';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 import {
   OutletCategory,
   OutletCategorySchema,
@@ -173,6 +174,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchSchema } from './model/scratch.model';
 import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -267,6 +269,7 @@ import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.mo
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: Scratch.name, schema: ScratchSchema},
       { name: RewardVisit.name, schema: RewardVisitSchema},
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
     ]),
   ],
   controllers: [BusinessController],
@@ -287,6 +290,7 @@ import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.mo
     RedisBullService,
     AppsOnAirLinkService,
     PinntagAiService,
+    SubscriptionService,
   ],
 })
 export class BusinessModule {}

@@ -368,6 +368,7 @@ export class SubscriptionService {
         isTrialActive: false,
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
+        isFreePlan: true,
       };
       const freeSubscriptionProduct =
         await this.subscriptionProductModel.findOne({ isFree: true });
@@ -385,6 +386,84 @@ export class SubscriptionService {
       return { success: true, data: freeSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+  async createTrialCheckoutSession(user: DecodedUser) {
+    try {
+      const trialSubscriptionProduct =
+        await this.subscriptionProductModel.findOne({ isTrial: true });
+      if (!trialSubscriptionProduct) {
+        return {
+          success: false,
+          message: 'Free subscription product not found',
+        };
+      }
+      const alreadyTried = await this.subscriptionModel.findOne({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        product: trialSubscriptionProduct._id,
+      });
+      if (alreadyTried) {
+        return {
+          success: false,
+          message: 'This user is already enjoying their trial plan.',
+        };
+      }
+
+      const createSubscription = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        source: SubscriptionSource.FREE,
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        invoiceStartDate: new Date(),
+        invoiceEndDate: new Date(
+          new Date().setMonth(new Date().getMonth() + 1),
+        ),
+        isCancelled: false,
+        isTrialActive: false,
+        status: SubscriptionStatus.ACTIVE,
+        iapPlatform: 'none',
+        product: trialSubscriptionProduct._id,
+      };
+
+      return { success: true, data: createSubscription };
+    } catch (error) {
+      console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+
+  async downgradeToFreePlan(businessId: string) {
+    try {
+      const freeSubscription = await this.subscriptionModel.findOne({
+        business: new mongoose.Types.ObjectId(businessId),
+        isFreePlan: true,
+      });
+      // deactivate all locations
+      await this.outletModel.updateMany(
+        {
+          business: new mongoose.Types.ObjectId(businessId),
+        },
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+      );
+      //draft all content
+
+      await this.businessModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(businessId),
+        },
+        {
+          $set: {
+            activeSubscription: freeSubscription._id,
+          },
+        },
+      );
+    } catch (error) {
+      console.error('Error in downgradeToFreePlan:', error);
       return { success: false, message: 'Something went wrong' };
     }
   }
@@ -562,7 +641,6 @@ export class SubscriptionService {
     if (!drive) return { isLimitExceeded: true };
     return this.responseData(String(drive.TotalSpace), drive.AvailableSpace);
   }
-
   // async templatesLimit(limits: Map<string, string>) {
   //   const val = limits.get(FeatureLimitList.TEMPLATES);
   //   return { isLimitExceeded: val === 'disabled' };

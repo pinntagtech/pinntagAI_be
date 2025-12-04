@@ -125,6 +125,20 @@ export class SubscriptionController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('checkout/trial')
+  @UseGuards(JwtGuard2)
+  async createTrialCheckoutSession(@TokenDecoder() user: DecodedUser) {
+    const result =
+      await this.subscriptionService.createTrialCheckoutSession(user);
+    if (result.success) {
+      return {
+        message: 'Trial checkout session created',
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Get('fetchFeatureLimits/:title')
   @UseGuards(JwtGuard2)

@@ -53,6 +53,9 @@ export class SubscriptionProduct extends Document {
   @Prop({ default: false })
   isFree: boolean;
 
+  @Prop({ default: false })
+  isTrial: boolean;
+
   @Prop()
   minLocations?: number;
   

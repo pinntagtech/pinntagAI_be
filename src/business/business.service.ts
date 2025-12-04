@@ -1700,6 +1700,7 @@ export class BusinessService {
       status: SubscriptionStatus.ACTIVE,
       iapPlatform: 'none',
       product: freeSubscriptionProduct._id,
+      isFreePlan: true,
     });
 
     // Fire-and-forget async operations (non-blocking)
@@ -5327,6 +5328,7 @@ export class BusinessService {
         ]);
 
       const businessDetails = {
+        _id: business._id,
         name: business.name,
         logo: business.logo,
         coverImage: business.cover,

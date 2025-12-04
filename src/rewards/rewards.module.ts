@@ -29,6 +29,10 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from 'src/auth/models/guestSession.model';
+import {
+  FeatureLimit,
+  FeatureLimitSchema,
+} from 'src/subscription/models/feature-limit.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
 import { JwtService } from '@nestjs/jwt';
@@ -192,6 +196,7 @@ import {
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
 import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -279,7 +284,8 @@ import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
       { name: CheckIn.name, schema: CheckInSchema },
       { name: RewardVisit.name, schema: RewardVisitSchema },
-      { name: Scratch.name, schema: ScratchSchema},
+      { name: Scratch.name, schema: ScratchSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema },
     ]),
   ],
   controllers: [RewardsController],
@@ -301,6 +307,7 @@ import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
     RedisBullService,
     AppsOnAirLinkService,
     PinntagAiService,
+    SubscriptionService,
   ],
 })
 export class RewardsModule {}

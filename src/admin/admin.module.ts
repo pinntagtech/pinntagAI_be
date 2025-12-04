@@ -10,6 +10,7 @@ import {
 import { EventSchema } from 'src/event/models/event.model';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 // import {
 //   BusinessLocation,
 //   BusinessLocationSchema,
@@ -176,6 +177,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.mode
 import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -255,6 +257,7 @@ import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model
       { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: UserReward.name, schema: UserRewardSchema},
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
     ]),
   ],
   controllers: [AdminController],
@@ -276,6 +279,7 @@ import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model
     FirebaseService,
     RedisBullService,
     StripeService,
+    SubscriptionService,
   ],
 })
 export class AdminModule {}

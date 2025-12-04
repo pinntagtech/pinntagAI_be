@@ -86,6 +86,10 @@ import { GoogleModule } from './google/google.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { Template, TemplateSchema } from './event/models/template.model';
 import {
+  FeatureLimit,
+  FeatureLimitSchema,
+} from 'src/subscription/models/feature-limit.model';
+import {
   DashboardConfig,
   DashboardConfigSchema,
 } from './auth/models/dashboardConfig.model';
@@ -173,15 +177,25 @@ import {
 } from './subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from './subscription/models/coupon.model';
 import multer from 'multer';
-import { RewardLocation, RewardLocationSchema } from './rewards/model/rewardLocation.model';
+import {
+  RewardLocation,
+  RewardLocationSchema,
+} from './rewards/model/rewardLocation.model';
 import { FeedController } from './feed/feed.controller';
 import { FeedService } from './feed/feed.service';
 import { FeedModule } from './feed/feed.module';
 import { Feed, FeedSchema } from './feed/models/feed.model';
-import { FeaturedAsset, FeaturedAssetSchema } from './admin/models/featuredAssets.model';
-import { UserSearchActivity, UserSearchActivitySchema } from './user/models/userSearchActivity.model';
+import {
+  FeaturedAsset,
+  FeaturedAssetSchema,
+} from './admin/models/featuredAssets.model';
+import {
+  UserSearchActivity,
+  UserSearchActivitySchema,
+} from './user/models/userSearchActivity.model';
 import { CheckIn, CheckInSchema } from './auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
+import { SubscriptionService } from './subscription/subscription.service';
 
 @Module({
   imports: [
@@ -278,9 +292,10 @@ import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
-      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
-      { name: CheckIn.name, schema: CheckInSchema},
-      { name: UserReward.name, schema: UserRewardSchema},
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
+      { name: CheckIn.name, schema: CheckInSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema },
     ]),
     StripeeModule,
     AuthModule,
@@ -322,19 +337,20 @@ import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
     FirebaseService,
     RedisBullService,
     FeedService,
+    SubscriptionService,
   ],
 })
 export class AppModule {
-// export class AppModule implements NestModule {
-//   configure(consumer: MiddlewareConsumer) {
-//     consumer
-//       .apply((req, res, next) => {
-//         // Only parse multipart/form-data
-//         if (req.is('multipart/form-data')) {
-//           return multer().any()(req, res, next);
-//         }
-//         next();
-//       })
-//       .forRoutes('*'); // or specific routes
-//   }
+  // export class AppModule implements NestModule {
+  //   configure(consumer: MiddlewareConsumer) {
+  //     consumer
+  //       .apply((req, res, next) => {
+  //         // Only parse multipart/form-data
+  //         if (req.is('multipart/form-data')) {
+  //           return multer().any()(req, res, next);
+  //         }
+  //         next();
+  //       })
+  //       .forRoutes('*'); // or specific routes
+  //   }
 }

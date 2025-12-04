@@ -78,6 +78,9 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { DynamicLinkService } from './dynamicLink.service';
 import { AppsOnAirLinkService } from './appsonair.service';
 import { HttpModule } from '@nestjs/axios';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
@@ -125,7 +128,9 @@ import { HttpModule } from '@nestjs/axios';
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
       { name: Coupon.name, schema: CouponSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
+      { name: Outlet.name, schema: OutletSchema },
     ]),
   ],
   controllers: [NotificationController],
@@ -141,6 +146,7 @@ import { HttpModule } from '@nestjs/axios';
     StripeService,
     DynamicLinkService,
     AppsOnAirLinkService,
+    SubscriptionService,
   ],
 })
 export class NotificationModule {}

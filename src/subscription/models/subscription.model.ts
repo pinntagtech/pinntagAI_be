@@ -76,6 +76,12 @@ export class Subscription extends Document {
   @Prop()
   autoRenew?: boolean;
 
+  @Prop()
+  downgradeJobId:string;
+
+  @Prop({ default: false })
+    isFreePlan: boolean;
+
 }
 
 export type SubscriptionDocument = Subscription & Document;
