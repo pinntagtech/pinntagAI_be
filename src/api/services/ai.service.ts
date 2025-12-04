@@ -265,8 +265,39 @@ async function createBusinessAgent(biz: Business) {
       );
     }
 
+    // 5) Generate description for the business (uses cached data if available after background scraping)
+    let description: string | undefined;
+    try {
+      description = await AIService.generateAgentDescription({
+        category: biz.category || "",
+        subcategory: biz.subCategories?.[0],
+        tags: biz.tags,
+        businessName: biz.businessName,
+        website: biz.website,
+        businessId: biz.businessId,
+      });
+
+      // Update the business agent with the generated description
+      await BusinessAIAssistantModel.updateOne(
+        { businessId: new mongoose.Types.ObjectId(biz.businessId) },
+        { $set: { description } }
+      );
+
+      logger.info(
+        { businessId: biz.businessId, descriptionLength: description.length },
+        "Generated and saved description during agent creation"
+      );
+    } catch (descError: any) {
+      logger.warn(
+        { businessId: biz.businessId, error: descError },
+        "Failed to generate description during agent creation"
+      );
+      // Don't fail agent creation if description generation fails
+    }
+
     return {
       assistantId: assistant.id,
+      description,
       // vectorStoreId: vectorStore.id
     };
   } catch (err: any) {
@@ -838,15 +869,17 @@ export class AIService {
 
   /**
    * Generates relevant tags based on category, subcategory, and optional website
+   * Uses cached websiteData if available to avoid scraping
    */
   private static async generateTagsFromContext(params: {
     category: string;
     subcategory?: string;
     website?: string;
+    businessId?: string;
     maxTags?: number;
   }): Promise<string[]> {
     try {
-      const { category, subcategory, website, maxTags = 10 } = params;
+      const { category, subcategory, website, businessId, maxTags = 10 } = params;
 
       // Build context for tag generation
       const contextParts = [
@@ -858,15 +891,34 @@ export class AIService {
         contextParts.push(`Subcategory: ${subcategory}`);
       }
 
-      // If website is provided, try to scrape content
+      // Try to use cached website data first, fall back to scraping if not available
       let websiteContent = null;
-      if (website) {
-        websiteContent = await this.scrapeWebsiteContent(website);
-        if (websiteContent) {
-          contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
-        } else {
-          contextParts.push(`Website URL: ${website} (content not available)`);
+      if (businessId) {
+        const businessAgent = await BusinessAIAssistantModel.findOne({
+          businessId: new mongoose.Types.ObjectId(businessId),
+        });
+        if (businessAgent?.websiteData) {
+          websiteContent = businessAgent.websiteData;
+          logger.info(
+            { businessId },
+            "Using cached website data for tag generation"
+          );
         }
+      }
+
+      // If no cached data and website is provided, scrape (legacy behavior)
+      if (!websiteContent && website) {
+        logger.info(
+          { businessId, website },
+          "No cached website data, scraping website for tag generation"
+        );
+        websiteContent = await this.scrapeWebsiteContent(website);
+      }
+
+      if (websiteContent) {
+        contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
+      } else if (website) {
+        contextParts.push(`Website URL: ${website} (content not available)`);
       }
 
       contextParts.push(
@@ -993,11 +1045,12 @@ export class AIService {
         throw new Error("Business category is required to generate tags");
       }
 
-      // Generate tags using business context
+      // Generate tags using business context with cached website data
       const tags = await this.generateTagsFromContext({
         category,
         subcategory,
         website: businessAI.website,
+        businessId, // Pass businessId to use cached website data
         maxTags: 5,
       });
 
