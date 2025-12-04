@@ -6497,6 +6497,7 @@ export class AuthService {
                               unit: 'day',
                             },
                           },
+                          locationsAllowed: 1,
                         },
                       },
                     ],
