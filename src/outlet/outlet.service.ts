@@ -323,14 +323,25 @@ export class OutletService {
           minute: closingMinute,
         };
       }
-      if(data.isActive !== undefined){
+      if (data.isActive !== undefined) {
         createObj['isActive'] = data.isActive;
-        if(data.isActive == true){
+        if (data.isActive == true) {
           await this.outletSummationCompetence(user.businessProfile);
         }
       }
       console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
+
+       if (data.isActive !== undefined && data.isActive == true) {
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $addToSet: {
+              activatedOutlets: outlet._id,
+            },
+          },
+        );
+      }
 
       // const spot = await this.mobileSpotsModel.create({
       //   name: outlet.name,
@@ -569,9 +580,9 @@ export class OutletService {
 
       createObj['cover'] = coverUpload.metaData.url;
       createObj['category'] = OutletCategoryList.MOBILE;
-      if(data.isActive !== undefined){
+      if (data.isActive !== undefined) {
         createObj['isActive'] = data.isActive;
-        if(data.isActive == true){
+        if (data.isActive == true) {
           await this.outletSummationCompetence(user.businessProfile);
         }
       }
@@ -628,8 +639,18 @@ export class OutletService {
       );
       await this.businessUserModel.updateOne(
         { _id: businessUser.id },
-        { $addToSet: { assignedOutlets: outlet.id } },
+        { $addToSet: { assignedOutlets: outlet._id } },
       );
+      if (data.isActive !== undefined && data.isActive == true) {
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $addToSet: {
+              activatedOutlets: outlet._id,
+            },
+          },
+        );
+      }
 
       return {
         success: true,
