@@ -81,9 +81,18 @@ export class SubscriptionService {
         maxLocations: data.maxLocations,
         pricingModel: data.pricingModel,
       });
+      console.log('data.features:', data.features);
+      const featuresMetadata = data.features.reduce(
+        (acc, feature) => {
+          acc[feature['key']] = feature['value'];
+          acc[`${feature['key']}_label`] = feature['label'];
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
       const createdStripeProduct = await this.stripeService.createProduct(
         data.name,
-        data.features,
+        featuresMetadata,
         data.description,
       );
       console.log('Created Stripe Product:', createdStripeProduct);

@@ -123,7 +123,7 @@ export class StripeService {
     );
   }
 
-  async createProduct(name: string, metadata: Object, description?: string) {
+  async createProduct(name: string, metadata: any, description?: string) {
     return await this.stripe.products.create({
       name,
       description,

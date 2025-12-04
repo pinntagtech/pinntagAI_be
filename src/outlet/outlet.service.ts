@@ -429,8 +429,8 @@ export class OutletService {
             success: true,
             message: 'Please upgrade your subscription to add more outlets',
             data: {
-              statusCode: 204 //to send new flat product and price
-            }
+              statusCode: 204, //to send new flat product and price
+            },
           };
         }
       } else if (subscriptionPrice.pricingModel === PricingModel.PER_LOCATION) {
@@ -440,15 +440,16 @@ export class OutletService {
             message: 'Pay per location model - Within subscription limits',
             data: {
               statusCode: 205, //to send new quantity only
-            }
+            },
           };
         } else {
           return {
             success: true,
-            message: 'Pay per location model - Please upgrade your subscription to add more outlets',
+            message:
+              'Pay per location model - Please upgrade your subscription to add more outlets',
             data: {
               statusCode: 206, //to send new per_location product, price, and quantity
-            }
+            },
           };
         }
       }
@@ -1581,18 +1582,26 @@ export class OutletService {
   }
 
   async activateOutlet(id: string, user: DecodedUser) {
-    try{
+    try {
       await this.outletSummationCompetence(user.businessProfile);
       await this.outletModel.findByIdAndUpdate(
         id,
         { isActive: true },
         { new: true },
       );
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(user.businessProfile) },
+        {
+          $addToSet: {
+            activatedOutlets: new mongoose.Types.ObjectId(id),
+          },
+        },
+      );
       return {
         success: true,
         message: 'Outlet activated successfully.',
       };
-    }catch(error){
+    } catch (error) {
       return {
         success: false,
         message: error,
@@ -1600,12 +1609,12 @@ export class OutletService {
     }
   }
   async deactivateOutlet(id: string, user: DecodedUser) {
-    try{
+    try {
       return {
         sucess: true,
         message: 'Outlet deactivated successfully.',
-      }
-    }catch(error){
+      };
+    } catch (error) {
       return {
         success: false,
         message: error,

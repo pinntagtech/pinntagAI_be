@@ -136,6 +136,9 @@ export class Business {
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
 
+  @Prop({ref: Outlet.name})
+  activatedOutlets: Array<mongoose.Types.ObjectId>;
+
   @Prop()
   countryCode: string;
   @Prop()
