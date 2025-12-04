@@ -237,7 +237,7 @@ async function createBusinessAgent(biz: Business) {
     //   });
 
     // 3) Persist ids for future use
-    await BusinessAIAssistantModel.create({
+    const businessAgent = await BusinessAIAssistantModel.create({
       businessId: new mongoose.Types.ObjectId(biz.businessId),
       assistantId: assistant.id,
       // vectorStoreId: vectorStore.id,
@@ -251,6 +251,19 @@ async function createBusinessAgent(biz: Business) {
       website: biz.website,
       threadId: thread.id,
     });
+
+    // 4) Scrape website in background if website is provided
+    if (biz.website) {
+      // Don't await - let it run in background
+      AIService.scrapeAndCacheWebsiteData(biz.businessId, biz.website).catch(
+        (error) => {
+          logger.warn(
+            { businessId: biz.businessId, website: biz.website, error },
+            "Background website scraping failed"
+          );
+        }
+      );
+    }
 
     return {
       assistantId: assistant.id,
@@ -606,15 +619,53 @@ export class AIService {
   }
 
   /**
+   * Scrapes website content and caches it in the business_ai_assistant model
+   * This runs in the background during agent creation to optimize description generation
+   */
+  static async scrapeAndCacheWebsiteData(
+    businessId: string,
+    website: string
+  ): Promise<void> {
+    try {
+      logger.info(
+        { businessId, website },
+        "Starting background website scraping"
+      );
+
+      const websiteData = await this.scrapeWebsiteContent(website);
+
+      if (websiteData) {
+        await BusinessAIAssistantModel.updateOne(
+          { businessId: new mongoose.Types.ObjectId(businessId) },
+          { $set: { websiteData } }
+        );
+
+        logger.info(
+          { businessId, websiteDataLength: websiteData.length },
+          "Successfully cached website data"
+        );
+      }
+    } catch (error: any) {
+      logger.error(
+        { businessId, website, error },
+        "Error scraping and caching website data"
+      );
+      // Don't throw - this is a background operation
+    }
+  }
+
+  /**
    * Generates an AI description for an agent based on business context
+   * Uses cached websiteData if available to avoid scraping during description generation
    */
   static async generateAgentDescription(params: {
     category: string;
     subcategory?: string;
-    tags: string[];
+    tags?: string[]; // Made optional
     businessName?: string;
     website?: string;
     aboutSection?: string;
+    businessId?: string; // Added to fetch cached website data
   }): Promise<string> {
     try {
       const {
@@ -624,6 +675,7 @@ export class AIService {
         businessName,
         website,
         aboutSection,
+        businessId,
       } = params;
 
       // Build context for description generation
@@ -644,15 +696,34 @@ export class AIService {
         contextParts.push(`Business Name: ${businessName}`);
       }
 
-      // If website is provided, scrape content to extract additional information
+      // Try to use cached website data first, fall back to scraping if not available
       let websiteContent = null;
-      if (website) {
-        websiteContent = await this.scrapeWebsiteContent(website);
-        if (websiteContent) {
-          contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
-        } else {
-          contextParts.push(`Website: ${website}`);
+      if (businessId) {
+        const businessAgent = await BusinessAIAssistantModel.findOne({
+          businessId: new mongoose.Types.ObjectId(businessId),
+        });
+        if (businessAgent?.websiteData) {
+          websiteContent = businessAgent.websiteData;
+          logger.info(
+            { businessId },
+            "Using cached website data for description generation"
+          );
         }
+      }
+
+      // If no cached data and website is provided, scrape (legacy behavior)
+      if (!websiteContent && website) {
+        logger.info(
+          { businessId, website },
+          "No cached website data, scraping website for description generation"
+        );
+        websiteContent = await this.scrapeWebsiteContent(website);
+      }
+
+      if (websiteContent) {
+        contextParts.push(`\nWebsite Content (excerpt): ${websiteContent}`);
+      } else if (website) {
+        contextParts.push(`Website: ${website}`);
       }
 
       if (aboutSection) {
@@ -968,19 +1039,15 @@ export class AIService {
         );
       }
 
-      if (!businessAI.tags || businessAI.tags.length === 0) {
-        throw new Error(
-          "Tags are required to generate description. Please generate and save tags first."
-        );
-      }
-
-      // Generate description using business context
+      // Tags are now optional - will use category and other metadata if tags not available
+      // Generate description using business context with cached website data
       const description = await this.generateAgentDescription({
         category,
         subcategory,
         tags: businessAI.tags,
         businessName: businessAI.businessName,
         website: businessAI.website,
+        businessId, // Pass businessId to use cached website data
       });
 
       logger.info(

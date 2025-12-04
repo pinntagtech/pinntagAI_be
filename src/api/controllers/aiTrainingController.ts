@@ -526,13 +526,15 @@ export class AITrainingController {
   }
 
   /**
-   * GET /ai/training/state/:businessId
+   * GET /ai/training/state/:businessId?phase=basic|standard|advanced
    * Gets comprehensive training state for a business
+   * Query: phase (optional) - If provided, returns questions from this specific phase
    * Returns: current phase, answered/remaining questions, progress across all phases
    */
   async getTrainingState(req: Request, res: Response) {
     try {
       const { businessId } = req.params;
+      const { phase } = req.query;
 
       // Validate businessId
       if (!businessId) {
@@ -549,7 +551,18 @@ export class AITrainingController {
         });
       }
 
-      const result = await AITrainingService.getTrainingState(businessId);
+      // Validate phase if provided
+      if (phase && !["basic", "standard", "advanced"].includes(phase as string)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid phase. Must be one of: basic, standard, advanced",
+        });
+      }
+
+      const result = await AITrainingService.getTrainingState(
+        businessId,
+        phase as TrainingPhase | undefined
+      );
 
       return res.status(200).json({
         success: true,

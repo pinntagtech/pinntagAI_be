@@ -17,6 +17,7 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     name: { type: String, required: true },
     description: { type: String },
     website: { type: String },
+    websiteData: { type: String }, // Cached website content for faster description generation
     contactEmail: { type: String },
     metadata: { type: Schema.Types.Mixed },
     vectorStoreId: { type: String, required: false },
@@ -39,6 +40,7 @@ export interface IBusiness_AI_Assistant extends Document {
   assistantId: string;
   description?: string;
   website?: string;
+  websiteData?: string; // Cached website content
   contactEmail?: string;
   metadata?: Record<string, any>;
   threadId?: string;

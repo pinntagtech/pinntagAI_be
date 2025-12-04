@@ -854,22 +854,28 @@ export class AITrainingService {
         throw new Error(`No training found for business ID: ${businessId}`);
       }
 
-      // Validate training data
+      // Only validate BASIC phase required questions for completion
+      // Standard and Advanced phases are optional
+      const basicQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.BASIC,
+        training.subCategory as BusinessSubCategory
+      );
+
+      const requiredBasicQuestions = basicQuestions.filter((q) => q.required);
       const responsesMap = Object.fromEntries(
         training.responses.map((r) => [r.questionId, r.answer])
       );
 
-      const validation = validateTrainingData(
-        responsesMap,
-        training.industry as BusinessIndustries,
-        training.subCategory as BusinessSubCategory
-      );
+      const missingBasicRequired = requiredBasicQuestions
+        .filter((q) => !responsesMap.hasOwnProperty(q.id))
+        .map((q) => q.id);
 
-      if (!validation.isValid) {
+      if (missingBasicRequired.length > 0) {
         throw new Error(
-          `Training incomplete. Missing required questions: ${validation.missingRequired.join(
+          `Training incomplete. Missing required BASIC phase questions: ${missingBasicRequired.join(
             ", "
-          )}`
+          )}. Please complete at least the Basic phase before finishing training.`
         );
       }
 
@@ -899,21 +905,76 @@ export class AITrainingService {
       const finalInstructions = enhancedInstructions + industryInsights;
 
       // Update OpenAI assistant with enhanced instructions
-      await openai.beta.assistants.update(businessAgent.assistantId, {
-        instructions: finalInstructions,
-      });
+      try {
+        await openai.beta.assistants.update(businessAgent.assistantId, {
+          instructions: finalInstructions,
+        });
+        logger.info(
+          { businessId, assistantId: businessAgent.assistantId },
+          "Assistant updated successfully"
+        );
+      } catch (assistantError: any) {
+        // Log the assistant update error
+        logger.error(
+          { error: assistantError, businessId, assistantId: businessAgent.assistantId },
+          "Failed to update OpenAI assistant"
+        );
+
+        // Check if it's a 404 error (assistant doesn't exist)
+        if (assistantError.status === 404 || assistantError.message?.includes("404")) {
+          logger.warn(
+            { businessId, assistantId: businessAgent.assistantId },
+            "Assistant not found in OpenAI. Attempting to create new assistant with training data..."
+          );
+
+          try {
+            // Create a new assistant with the training data
+            const newAssistant = await openai.beta.assistants.create({
+              name: businessAgent.businessName,
+              model: "gpt-4o",
+              instructions: finalInstructions,
+              tools: [
+                { type: "file_search" },
+              ],
+            });
+
+            // Update the business agent with new assistant ID
+            businessAgent.assistantId = newAssistant.id;
+            await businessAgent.save();
+
+            logger.info(
+              {
+                businessId,
+                oldAssistantId: assistantError.message,
+                newAssistantId: newAssistant.id,
+              },
+              "Successfully created new assistant with training data"
+            );
+          } catch (createError: any) {
+            logger.error(
+              { error: createError, businessId },
+              "Failed to create new assistant. Training will be marked as completed without assistant."
+            );
+          }
+        }
+
+        // Continue to mark training as completed even if assistant operations fail
+      }
 
       // Mark training as completed
       training.trainingStatus = "completed";
       training.completedAt = new Date();
       await training.save();
 
-      logger.info({ businessId }, "Training completed and assistant updated");
+      logger.info({ businessId }, "Training completed");
 
       return {
         message: "Training completed successfully",
         training,
         assistantId: businessAgent.assistantId,
+        warning: training.trainingStatus === "completed" && !finalInstructions
+          ? undefined
+          : "Assistant update may have failed, but training is marked as completed",
       };
     } catch (error: any) {
       logger.error({ error, businessId }, "Error completing training");
@@ -1135,8 +1196,10 @@ export class AITrainingService {
    * - Questions for current phase (answered and remaining)
    * - Progress tracking across all phases
    * - Phase summary information
+   * @param businessId - The business ID
+   * @param queryPhase - Optional phase to query. If provided, returns questions from this phase instead of current phase
    */
-  static async getTrainingState(businessId: string) {
+  static async getTrainingState(businessId: string, queryPhase?: TrainingPhase) {
     try {
       // Check if business exists
       const businessAgent = await BusinessAIAssistantModel.findOne({
@@ -1281,10 +1344,14 @@ export class AITrainingService {
         }
       }
 
-      // Get questions for the (potentially updated) current phase
+      // Determine which phase to return questions for
+      // If queryPhase is provided, use that; otherwise use current phase
+      const phaseToReturn = queryPhase || training.currentPhase as TrainingPhase;
+
+      // Get questions for the queried/current phase
       const activePhaseQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
-        training.currentPhase as TrainingPhase,
+        phaseToReturn,
         training.subCategory as BusinessSubCategory
       );
 
@@ -1312,8 +1379,9 @@ export class AITrainingService {
         totalPhases: 3,
         phaseSummary,
         phaseAdvanced: phaseChanged,
+        queriedPhase: queryPhase || null, // Indicate if a specific phase was queried
         currentPhaseData: {
-          phase: training.currentPhase,
+          phase: phaseToReturn,
           totalQuestions: activePhaseQuestions.length,
           answeredCount,
           remainingCount,
