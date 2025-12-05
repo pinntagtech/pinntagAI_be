@@ -439,7 +439,7 @@ export class SubscriptionService {
         };
       }
 
-      const createSubscription = {
+      const trialSubscription = await this.subscriptionModel.create({
         business: new mongoose.Types.ObjectId(user.businessProfile),
         source: SubscriptionSource.FREE,
         startDate: new Date(),
@@ -454,9 +454,20 @@ export class SubscriptionService {
         iapPlatform: 'none',
         product: trialSubscriptionProduct._id,
         locationsAllowed: trialSubscriptionProduct.maxLocations,
-      };
+      });
 
-      return { success: true, data: createSubscription };
+      await this.businessModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(user.businessProfile),
+        },
+        {
+          $set: {
+            activeSubscription: trialSubscription._id,
+          },
+        },
+      );
+
+      return { success: true, data: trialSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
       return { success: false, message: 'Something went wrong' };
