@@ -31,6 +31,7 @@ import { DirectoryService } from 'aws-sdk';
 import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { CreateSampleDocumentDto } from './dto/createSampleDocument.dto';
 import { ApiHeader } from '@nestjs/swagger';
+import { UserTypes } from 'src/enums/auth.enums';
 
 @Controller('drive')
 export class DriveController {
@@ -50,8 +51,12 @@ export class DriveController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    let parentId = user.id;
+    if(user.userType === UserTypes.BUSINESS){
+      parentId = user.businessProfile;
+    }
     const result = await this.driveService.uploadFile(
-      user.businessProfile,
+      parentId,
       locationId,
       fileCategoryId,
       file,
