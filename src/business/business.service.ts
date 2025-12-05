@@ -1739,17 +1739,13 @@ export class BusinessService {
 
       Promise.all([
         // AI agent creation
-        this.pinnAiService
-          .createAgent({
-            name: `${createdBusiness.name} Assistant`,
-            tone: 'professional',
-            businessId: createdBusiness.id,
-            subCategories: businessCategoryTitles,
-            category: findBusinessIndustry?.title || null,
-            website: createdBusiness.website || null,
-            businessName: createdBusiness.name,
-          })
-          .catch((err) => logger.error('Error creating AI agent:', err)),
+        this.createBusinessAiAgent(
+          createdBusiness.name,
+          createdBusiness.id,
+          businessCategoryTitles,
+          findBusinessIndustry.title,
+          createdBusiness.website,
+        ),
 
         // SMS
         this.smsService
@@ -1812,6 +1808,49 @@ export class BusinessService {
         message: 'Something went wrong.',
       };
     }
+  }
+
+  private async createBusinessAiAgent(
+    businessName: string,
+    id: string,
+    subCategories: Array<string>,
+    category: string,
+    website: string,
+  ) {
+    console.log('Is business creation started');
+    const businessDetails = await this.businessModel.findById(id);
+    const agentResp = await this.pinnAiService.createAgent({
+      name: `${businessName} Assistant`,
+      tone: 'professional',
+      businessId: id,
+      subCategories: subCategories,
+      category: category || null,
+      website: website || null,
+      businessName: businessName,
+    });
+    console.log('agentResponse:', agentResp);
+    if (agentResp !== undefined && agentResp.success === true) {
+      let updateObj = {
+        isAgentCreated: true,
+      };
+      let desc = agentResp.data.description;
+      if (
+        desc !== undefined &&
+        (businessDetails.description == undefined ||
+          businessDetails.description.length === 0)
+      ) {
+        updateObj['description'] = desc;
+      }
+      await this.businessModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+        {
+          $set: updateObj,
+        },
+      );
+    }
+    // .catch((err) => logger.error('Error creating AI agent:', err));
   }
 
   async verifyBusiness(
@@ -4342,6 +4381,29 @@ export class BusinessService {
           message: 'Business is not mapped with Logged in User.',
         };
       }
+
+      if (
+        business.isAgentCreated === undefined ||
+        business.isAgentCreated === false
+      ) {
+        let [categories, industry] = await Promise.all([
+          this.businessCategoryModel
+            .find({
+              _id: { $in: business.businessCategories },
+            })
+            .lean(),
+          this.businessIndModel.findById(business.businessIndustry).lean(),
+        ]);
+        let businessCategoryTitles = categories.map((cat) => cat.title);
+        this.createBusinessAiAgent(
+          business.name,
+          business.id,
+          businessCategoryTitles,
+          industry.title,
+          business.website,
+        );
+      }
+
       const updatedToken = await this.jwtService.signAsync(
         {
           id: userId,

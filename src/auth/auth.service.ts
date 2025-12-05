@@ -7045,7 +7045,7 @@ export class AuthService {
         match,
         page,
         limit,
-        distance ? distance : 1000000000000, // Default distance if not provided
+        distance ? distance : 1000000, // Default distance if not provided
       );
       result = listingResult.data;
       total = listingResult.totalCount;
