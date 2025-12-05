@@ -29,6 +29,10 @@ import {
   GuestSession,
   GuestSessionSchema,
 } from 'src/auth/models/guestSession.model';
+import {
+  FeatureLimit,
+  FeatureLimitSchema,
+} from 'src/subscription/models/feature-limit.model';
 import { Token, TokenSchema } from 'src/auth/models/token.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
 import { JwtService } from '@nestjs/jwt';
@@ -176,9 +180,23 @@ import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
-import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
-import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import {
+  BusinessActivation,
+  BusinessActivationSchema,
+} from 'src/business/model/businessActivation.model';
+import {
+  FeaturedAsset,
+  FeaturedAssetSchema,
+} from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
+import {
+  UserSearchActivity,
+  UserSearchActivitySchema,
+} from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
+import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -263,6 +281,11 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
+      { name: CheckIn.name, schema: CheckInSchema },
+      { name: RewardVisit.name, schema: RewardVisitSchema },
+      { name: Scratch.name, schema: ScratchSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema },
     ]),
   ],
   controllers: [RewardsController],
@@ -284,6 +307,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
     RedisBullService,
     AppsOnAirLinkService,
     PinntagAiService,
+    SubscriptionService,
   ],
 })
 export class RewardsModule {}

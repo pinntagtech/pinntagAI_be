@@ -131,12 +131,19 @@ import { start } from 'repl';
 import { RewardsService } from 'src/rewards/rewards.service';
 import { GetRewardDashboardDto } from 'src/rewards/dto/get-rewards-dashboard.dto';
 import { PipelineStage } from 'mongoose';
-import { RewardStatus } from 'src/rewards/enums/rewards.enum';
+import { ClaimStatus, RewardStatus } from 'src/rewards/enums/rewards.enum';
 import {
   RewardLocation,
   RewardLocationDocument,
 } from 'src/rewards/model/rewardLocation.model';
 import { FeaturedAsset } from 'src/admin/models/featuredAssets.model';
+import { UserSearchActivity } from 'src/user/models/userSearchActivity.model';
+import { messaging } from 'firebase-admin';
+import { CheckIn } from './models/check-ins.model';
+import {
+  UserReward,
+  UserRewardDocument,
+} from 'src/rewards/model/userReward.model';
 
 @Injectable()
 export class AuthService {
@@ -181,8 +188,15 @@ export class AuthService {
     private readonly outletModel: Model<OutletDocument>,
     @InjectModel(BusinessIndustry.name)
     private readonly businessIndustryModel: Model<BusinessIndustryDocument>,
-    @InjectModel(RewardLocation.name) private readonly rewardLocationModel: Model<RewardLocationDocument>,
-    @InjectModel(FeaturedAsset.name) private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(RewardLocation.name)
+    private readonly rewardLocationModel: Model<RewardLocationDocument>,
+    @InjectModel(FeaturedAsset.name)
+    private readonly featuredAssetModel: Model<FeaturedAsset>,
+    @InjectModel(UserSearchActivity.name)
+    private readonly userSearchActivityModel: Model<UserSearchActivity>,
+    @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
+    @InjectModel(UserReward.name)
+    private readonly userRewardModel: Model<UserRewardDocument>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -226,7 +240,6 @@ export class AuthService {
     const { signupMethod, email, phone, countryCode, fcmToken, deviceType } =
       signupAuthDto;
 
-    console.log('Signup DTO:', signupAuthDto);
     if (!phone && !email) {
       return {
         success: false,
@@ -346,7 +359,6 @@ export class AuthService {
     try {
       const { email, phone, countryCode, signupMethod, fcmToken, deviceType } =
         authDto;
-      console.log('Unified OTP DTO:', authDto);
 
       // Validation
       if (!email && !phone) {
@@ -451,7 +463,6 @@ export class AuthService {
           );
 
           // Send email OTP
-          console.log("Log BEFORE SENDING MAIL:::")
           this.mailService.sendUserVerificationMail(foundUser.id);
 
           return {
@@ -509,6 +520,11 @@ export class AuthService {
     ipAddress: string,
   ) {
     // Update user info
+    if (foundUser.isDeleted) {
+      this.redisBullService.removeRedisQueueJob(
+        foundUser.accountDeletionSchedulerId,
+      );
+    }
     await foundUser.updateOne(
       { _id: foundUser.id },
       { $set: { userAgent, ipAddress, isDeleted: false } },
@@ -613,34 +629,34 @@ export class AuthService {
         message: 'User not found',
       };
     }
-    if (foundUser.isEmailVerified && foundUser.isPhoneVerified) {
-      return {
-        success: false,
-        message: 'Email and Mobile both already verified',
-      };
-    }
-    if (foundUser.isPhoneVerified && !foundUser.isEmailVerified && !email) {
-      return {
-        success: false,
-        message: 'Please Provide Email address to verify!',
-      };
-    }
-    if (foundUser.isEmailVerified && !foundUser.isPhoneVerified) {
-      if (!phone) {
-        return {
-          success: false,
-          message: 'Please Provide mobile number to verify!',
-        };
-      }
-      if (!countryCode) {
-        return {
-          success: false,
-          message: 'Country Code is missing',
-        };
-      }
-    }
+    // if (foundUser.isEmailVerified && foundUser.isPhoneVerified) {
+    //   return {
+    //     success: false,
+    //     message: 'Email and Mobile both already verified',
+    //   };
+    // }
+    // if (foundUser.isPhoneVerified && !foundUser.isEmailVerified && !email) {
+    //   return {
+    //     success: false,
+    //     message: 'Please Provide Email address to verify!',
+    //   };
+    // }
+    // if (foundUser.isEmailVerified && !foundUser.isPhoneVerified) {
+    //   if (!phone) {
+    //     return {
+    //       success: false,
+    //       message: 'Please Provide mobile number to verify!',
+    //     };
+    //   }
+    //   if (!countryCode) {
+    //     return {
+    //       success: false,
+    //       message: 'Country Code is missing',
+    //     };
+    //   }
+    // }
 
-    if (!foundUser.isEmailVerified && email) {
+    if (email) {
       const checkExistingEmail = await this.userModel.findOne({
         email,
       });
@@ -655,16 +671,15 @@ export class AuthService {
       await this.userModel.updateOne(
         { _id: id },
         {
-          $set: { email },
+          $set: { email, isEmailVerified: false },
         },
       );
       this.mailService.sendUserVerificationMail(id);
       return {
         success: true,
-        message: 'Email saved successfully and OTP sent to verify it.',
+        message: 'OTP sent to verify your email.',
       };
-    }
-    if (!foundUser.isPhoneVerified && phone && countryCode) {
+    } else if (phone && countryCode) {
       const phoneNumber = parsePhoneNumberFromString(`${countryCode}${phone}`);
       if (!phoneNumber || !phoneNumber.isValid()) {
         return {
@@ -689,6 +704,7 @@ export class AuthService {
             fullPhoneNumber: fullPhoneNumber,
             phone: phone,
             countryCode: countryCode,
+            isPhoneVerified: false,
           },
         },
       );
@@ -696,7 +712,7 @@ export class AuthService {
       await this.smsService.sendSMS(id, fullPhoneNumber, SMSType.OTP);
       return {
         success: true,
-        message: 'Phone Number saved successfully and OTP sent to verify it.',
+        message: 'OTP sent to verify your phone number.',
       };
     }
 
@@ -733,29 +749,32 @@ export class AuthService {
     const updateObj: Record<string, any> = Object.fromEntries(
       Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
-    if(updateObj.email){
-      const userFound = await this.userModel.findOne({email:updateObj.email});
-      if(userFound){
+    if (updateObj.email) {
+      const userFound = await this.userModel.findOne({
+        email: updateObj.email,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
-    if(updateObj.phone && updateObj.countryCode){
-      const userFound = await this.userModel.findOne({phone:updateObj.phone,countryCode:updateObj.countryCode});
-       if(userFound){
+    if (updateObj.phone && updateObj.countryCode) {
+      const userFound = await this.userModel.findOne({
+        phone: updateObj.phone,
+        countryCode: updateObj.countryCode,
+      });
+      if (userFound) {
         return {
           success: false,
-          message: 'User with this mail already exists!'
-        }
+          message: 'User with this mail already exists!',
+        };
       }
     }
 
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
-
-    console.log('updateObj::', updateObj);
 
     await this.userModel.updateOne({ _id: id }, { $set: updateObj });
 
@@ -797,18 +816,18 @@ export class AuthService {
   }
 
   async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
-    console.log('Google Login Data:', data);
     const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
-    console.log('Valid Token:', validToken);
 
-    const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: {
-      Authorization: `Bearer ${data.oAuthToken}`,
-    },
-  });
+    const userInfoResponse = await axios.get(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${data.oAuthToken}`,
+        },
+      },
+    );
 
-  const userInfo = userInfoResponse.data;
-  console.log('User Info:', userInfo);
+    const userInfo = userInfoResponse.data;
 
     // const ticket = await this.oAuth2Client.verifyIdToken({
     //   idToken: data.oAuthToken,
@@ -928,21 +947,21 @@ export class AuthService {
     // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
     // console.log("validToken:", validToken);
     const tokenData = jwt.decode(data.oAuthToken) as any;
-    console.log("Data from FrontEnd:",data);
+    console.log('Data from FrontEnd:', data);
     console.log('Token Data', tokenData);
     let user = await this.userModel
-      .findOne({ email: tokenData.email })
+      .findOne({ email: tokenData.sub })
       .populate('role', '_id name')
       .exec();
     if (!user) {
       const role = await this.roleModel.findOne({ name: Roles.USER }).exec();
       user = await this.userModel.create({
         role: role._id,
-        firstName: data.name ? tokenData.name.split(' ')[0] : '',
-        lastName: data.name ? tokenData.name.split(' ')[1] : '',
+        firstName: data.name ? data.name.split(' ')[0] : '',
+        lastName: data.name ? data.name.split(' ')[1] : '',
         name: data.name,
         profilePhoto: tokenData.profilePhoto ? tokenData.profilePhoto : '',
-        email: tokenData.email,
+        email: tokenData.sub,
         isEmailVerified: true,
         isOAuth: true,
         oAuthProvider: 'apple',
@@ -1310,7 +1329,6 @@ export class AuthService {
           },
         );
 
-        console.log('foundFcmToken::', foundFcmToken);
         if (!foundFcmToken) {
           await this.tokenModel.create({
             token: loginDto.fcmToken,
@@ -2109,10 +2127,6 @@ export class AuthService {
     } else if (carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
-    console.log('Match:', match);
-
-    console.log('START DATE:', startDate);
-    console.log('END DATE:', endDate);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -2579,7 +2593,7 @@ export class AuthService {
               in: {
                 _id: '$$file._id',
                 url: '$$file.metaData.url',
-                thumbnail: '$$file.metaData.thumbnailUrl'
+                thumbnail: '$$file.metaData.thumbnailUrl',
               },
             },
           },
@@ -2593,6 +2607,43 @@ export class AuthService {
               sortBy: { 'fixedSchedule.date': 1 }, // ascending order
             },
           },
+        },
+      },
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$businessProfileDetails._id',
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $gt: [{ $size: '$checkIns' }, 0],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
         },
       },
       { $sort: { distance: 1, createdAt: -1, _id: 1 } },
@@ -2765,6 +2816,7 @@ export class AuthService {
         });
 
         let nextScheduleDate = null;
+        if (!nextSchedule) return 0;
         if (nextSchedule['type'] === ScheduleTypes.FIXED) {
           nextScheduleDate = new Date(nextSchedule.fixedSchedule.date);
         } else if (nextSchedule['type'] === ScheduleTypes.RECURRING) {
@@ -3329,8 +3381,6 @@ export class AuthService {
     endDate = endDate
       ? new Date(endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-    console.log('Match:', match);
-    console.log('DISTANCE:', distance);
     const basePipeline: any[] = [
       {
         $geoNear: {
@@ -3397,8 +3447,8 @@ export class AuthService {
           name: { $first: '$businessDetails.name' },
           cover: { $first: '$businessDetails.cover' },
           logo: { $first: '$businessDetails.logo' },
-          coverThumbnail:{ $first: '$businessDetails.coverThumbnail'},
-          logoThumbnail:{ $first: '$businessDetails.logoThumbnail'},
+          coverThumbnail: { $first: '$businessDetails.coverThumbnail' },
+          logoThumbnail: { $first: '$businessDetails.logoThumbnail' },
           industry: { $first: '$industryDetails' },
           description: { $first: '$businessDetails.description' },
           isFollowedByMe: { $first: '$isFollowedByMe' },
@@ -3423,6 +3473,45 @@ export class AuthService {
           distance: { $min: { $divide: ['$distance', 1609.34] } },
         },
       },
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$_id',
+            // locationId: locationObjectId,
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    // { $eq: ['$locationId', '$$locationId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $gt: [{ $size: '$checkIns' }, 0],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
+        },
+      },
       { $match: { ...match } },
       { $sort: { distance: 1, _id: 1 } },
       // Use $facet for both paginated results and total count
@@ -3443,7 +3532,6 @@ export class AuthService {
     ];
 
     let eventsResult = await this.outletModel.aggregate(basePipeline);
-    console.log('EVENTSRESULTTTS:', eventsResult);
 
     return eventsResult;
   }
@@ -4323,8 +4411,6 @@ export class AuthService {
     const currentDate = currentDateTz(timeZone);
 
     let start = getZeroDateTz(new Date(), timeZone);
-    console.log('START DATE:', start);
-    console.log('Match:', match);
 
     // if (!startDate && !endDate) {
     //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
@@ -4498,7 +4584,6 @@ export class AuthService {
     endDate?: Date,
     dealType?: string,
   ) {
-    console.log('Service Category IDs:', categoryIds);
     let match = {};
     // if (categoryIds.length) {
     //   match['event.categories'] = {
@@ -4566,8 +4651,6 @@ export class AuthService {
     }
 
     let totalCount = 0;
-    console.log('Match:', match);
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -4581,7 +4664,6 @@ export class AuthService {
       endDate,
       dealType,
     );
-    console.log('Total:::::::', totalCount);
     return {
       success: true,
       message: 'Dashboard data fetched successfully',
@@ -4672,8 +4754,6 @@ export class AuthService {
     }
 
     let totalCount = 0;
-    console.log('Match:', match);
-    console.log('query from carousel dashboard:', query);
     [eventsResult, totalCount] = await this.fetchEventsV2(
       new mongoose.Types.ObjectId(user.id),
       longitude,
@@ -5038,6 +5118,7 @@ export class AuthService {
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
+    const userId = new mongoose.Types.ObjectId(user.id);
 
     let [event] = await this.eventLocationModel.aggregate([
       {
@@ -5277,6 +5358,7 @@ export class AuthService {
               zip: '$zip',
               website: '$website',
               _id: '$_id',
+              businessLocationId:'$businessLocationId',
               email: '$email',
               phone: '$phone',
               distance: { $divide: ['$distance', 1609.34] },
@@ -5510,6 +5592,52 @@ export class AuthService {
           schedules: 1,
         },
       },
+
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$businessProfileDetails._id',
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $and: [
+              { $gt: [{ $size: '$checkIns' }, 0] },
+              {
+                $in: [
+                  { $arrayElemAt: ['$checkIns.locationId', 0] },
+                  '$locations.businessLocationId',
+                ],
+              },
+            ],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
+        },
+      },
     ]);
     if (!event) {
       return {
@@ -5732,7 +5860,6 @@ export class AuthService {
         },
       },
     ]);
-    console.log('event', event);
 
     if (!event) {
       return {
@@ -5874,17 +6001,17 @@ export class AuthService {
     let date = currentDateTz();
     date.setDate(date.getDate() + 30);
 
-    nodeSchedule.scheduleJob(date, async () => {
-      if (foundUser.isDeleted) {
-        await this.userService.deleteAccount(user.id);
-      }
-    });
+    // nodeSchedule.scheduleJob(date, async () => {
+    //   if (foundUser.isDeleted) {
+    //     await this.userService.deleteAccount(user.id);
+    //   }
+    // });
     let delay = date.getTime() - Date.now();
     this.redisBullService.addDeleteUserJob(foundUser.id, delay);
 
     return {
       success: true,
-      message: 'User deleted successfully',
+      message: 'User delet',
     };
   }
 
@@ -5986,7 +6113,7 @@ export class AuthService {
           userType,
         );
         resetLink = process.env.FORGOT_PASSWORD_REDIRECT_URL + token;
-         this.mailService.sendEmailVerificationMail(
+        this.mailService.sendEmailVerificationMail(
           user.name,
           user.email,
           resetLink,
@@ -6310,6 +6437,24 @@ export class AuthService {
                 },
                 {
                   $lookup: {
+                    from: 'businesscategories', // collection name for BusinessIndustry model
+                    localField: 'businessCategories',
+                    foreignField: '_id',
+                    as: 'businessCategories',
+                    pipeline: [
+                      {
+                        $project: {
+                          _id: 1,
+                          title: 1,
+                          darkIcon: 1,
+                          lightIcon: 1,
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  $lookup: {
                     from: 'subscriptions',
                     localField: 'activeSubscription',
                     foreignField: '_id',
@@ -6328,6 +6473,9 @@ export class AuthService {
                                 name: 1,
                                 price: 1,
                                 description: 1,
+                                pricingModel:1,
+                                minLocations: 1,
+                                maxLocations: 1,
                               },
                             },
                           ],
@@ -6335,12 +6483,32 @@ export class AuthService {
                       },
                       { $unwind: '$product' },
                       {
+                        $lookup: {
+                          from: 'subscriptionprices',
+                          localField: 'price',
+                          foreignField: '_id',
+                          as: 'price',
+                          pipeline: [
+                            {
+                              $project: {
+                                _id: 1,
+                                billingInterval:1
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      { $unwind: '$price' },
+                      {
                         $project: {
                           _id: 1,
                           source: 1,
                           product: 1,
+                          price:1,
                           startDate: 1,
                           endDate: 1,
+                          invoiceStartDate:1,
+                          invoiceEndDate:1,
                           status: 1,
                           remainingDays: {
                             $dateDiff: {
@@ -6349,6 +6517,8 @@ export class AuthService {
                               unit: 'day',
                             },
                           },
+                          locationsAllowed: 1,
+                          isFreePlan:1,
                         },
                       },
                     ],
@@ -6376,7 +6546,6 @@ export class AuthService {
           // },
         ]);
         userDoc = userDoc[0];
-        console.log('Business User Doc:', userDoc);
 
         if (!userDoc) {
           return {
@@ -6741,9 +6910,33 @@ export class AuthService {
       throw new Error(`Error generating password: ${error.message}`);
     }
   }
+  private async userSearchEntry(userId: string, text: string) {
+    const findSearch = await this.userSearchActivityModel.findOne({
+      user: new mongoose.Types.ObjectId(userId),
+      searchText: text,
+    });
+    if (findSearch) {
+      await this.userSearchActivityModel.updateOne(
+        { user: new mongoose.Types.ObjectId(userId), searchText: text },
+        {
+          $inc: {
+            count: 1,
+          },
+        },
+      );
+    } else {
+      await this.userSearchActivityModel.create({
+        user: new mongoose.Types.ObjectId(userId),
+        searchText: text,
+      });
+    }
+  }
 
   async dashboardSearch(user: DecodedUser, data: DashboardSearchDto) {
     let { search, carouselType, latitude, longitude, distance } = data;
+    if (data.type !== 'all' && search) {
+      this.userSearchEntry(user.id, data.search);
+    }
     let result = null;
     let total = 0;
 
@@ -6844,7 +7037,6 @@ export class AuthService {
         limit,
         distance ? distance : 1000000000000, // Default distance if not provided
       );
-      console.log('LISTINGRESULT:::', listingResult);
       result = listingResult.data;
       total = listingResult.totalCount;
     }
@@ -6905,7 +7097,6 @@ export class AuthService {
         match['reward.schedule.endDate'] = { $gte: now };
       }
       if (activityType.length > 0) {
-        console.log('ADDING ACTIVITY TYPE TO MATCH:::', activityType);
         match['reward.activityType'] = { $in: activityType };
       }
       if (data.rewardType && data.rewardType.length > 0) {
@@ -7100,7 +7291,6 @@ export class AuthService {
       ];
 
       const result = await this.rewardLocationModel.aggregate(pipeline);
-      console.log('REWARDSS DATA:::', result);
 
       // const result = await this.rewardModel
       //   .find()
@@ -7122,7 +7312,7 @@ export class AuthService {
         limit: limit,
       };
     } catch (error) {
-      console.log('Error in getDashboardRewards:', error);
+      console.error('Error in getDashboardRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -7132,6 +7322,7 @@ export class AuthService {
 
   async dashboardAllSearch(user: DecodedUser, data: DashboardSearchDto) {
     try {
+      this.userSearchEntry(user.id, data.search);
       const [deals, listings, mobile, rewards] = await Promise.all([
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7140,6 +7331,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7148,6 +7340,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.dashboardSearch(user, {
           latitude: data.latitude,
@@ -7156,6 +7349,7 @@ export class AuthService {
           search: data.search,
           page: 1,
           limit: 5,
+          type: data.type,
         }),
         this.getDashboardRewards(
           user,
@@ -7198,7 +7392,7 @@ export class AuthService {
         data: result,
       };
     } catch (error) {
-      console.log('Error in getDashboardRewards:', error);
+      console.error('Error in getDashboardRewards:', error);
       return {
         success: false,
         message: 'Something went wrong.',
@@ -7222,8 +7416,511 @@ export class AuthService {
         success: false,
         message: 'Something went wrong.',
       };
-    } 
+    }
   }
 
+  async getRecentSearches(userId: string) {
+    try {
+      const recents = await this.userSearchActivityModel
+        .find({ user: new mongoose.Types.ObjectId(userId) })
+        .sort({ createdAt: -1 }) // sort newest → oldest
+        .limit(5);
 
+      return {
+        success: true,
+        message: 'Data fetched successfully.',
+        data: recents,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
+  }
+
+  async getCheckInList(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      const list = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        {},
+        page,
+        limit,
+        1, // Default distance if not provided
+      );
+      return {
+        success: true,
+        message: 'Data fetched successfully',
+        data: list[0].data,
+        total: list[0].totalCount,
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong',
+      };
+    }
+  }
+  async userCheckIn(
+    businessId: string,
+    locationId: string,
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+  ) {
+    try {
+      const location = await this.outletModel.findById(locationId);
+      console.log('location:', location);
+      if (!location) {
+        return {
+          success: false,
+          message: 'outlet not found',
+        };
+      }
+      const foundCheckIn = await this.checkInModel.findOne({
+        user: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(businessId),
+        // locationId: new mongoose.Types.ObjectId(locationId),
+        expiry: { $gt: new Date() },
+      });
+      if (foundCheckIn) {
+        return {
+          sucess: true,
+          message: 'User already CheckedIn',
+          data: foundCheckIn,
+        };
+      }
+      const checkDistance = await this.outletModel.aggregate([
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [longitude, latitude], // IMPORTANT: [lng, lat]
+            },
+            distanceField: 'distance', // distance in METERS
+            maxDistance: 500, // 500 meters
+            spherical: true,
+            query: {
+              _id: new mongoose.Types.ObjectId(locationId), // only this document
+            },
+          },
+        },
+        { $limit: 1 },
+      ]);
+      if (checkDistance.length === 0) {
+        return {
+          success: false,
+          message: "please be present in business's proximity.",
+        };
+      }
+      const checkInDetails = await this.checkInModel.create({
+        user: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(businessId),
+        locationId: new mongoose.Types.ObjectId(locationId),
+        latitude: latitude,
+        longitude: longitude,
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+      return {
+        success: true,
+        message: 'Checked-In Successfully.',
+        data: checkInDetails,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong',
+      };
+    }
+  }
+
+  async businessCheckedInCard(userId: string, checkInId: string) {
+    try {
+      const checkIN = await this.checkInModel.findById(checkInId);
+
+      console.log('BusinessID:', checkIN.business);
+      const businessObjectId = new mongoose.Types.ObjectId(checkIN.business);
+      const userObjectId = new mongoose.Types.ObjectId(checkIN.user);
+      const locationObjectId = new mongoose.Types.ObjectId(checkIN.locationId);
+      const currentDate = new Date();
+      console.log('CheckIn:', checkIN);
+      const optimizedPipeline: any[] = [
+        // 1. Geo-spatial search (ensure 2dsphere index on location field)
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [checkIN.longitude, checkIN.latitude],
+            },
+            distanceField: 'distance',
+            maxDistance: 100000000 * 1609.34,
+            spherical: true,
+            query: {
+              business: businessObjectId,
+              _id: locationObjectId,
+            }, // Move match into geoNear for better performance
+          },
+        },
+
+        // 2. Lookup business details with projection
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'business',
+            foreignField: '_id',
+            as: 'businessDetails',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  cover: 1,
+                  logo: 1,
+                  description: 1,
+                  email: 1,
+                  isActive: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  website: 1,
+                  businessIndustry: 1,
+                  drive: 1,
+                },
+              },
+            ],
+          },
+        },
+        { $unwind: '$businessDetails' },
+
+        // 3. Lookup industry details
+        {
+          $lookup: {
+            from: 'businessindustries',
+            localField: 'businessDetails.businessIndustry',
+            foreignField: '_id',
+            as: 'industryDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$industryDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+
+        // 4. Lookup follow status
+        {
+          $lookup: {
+            from: 'follows',
+            let: {
+              targetId: '$businessDetails._id',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$follower', userObjectId] },
+                      { $eq: ['$followerType', 'User'] },
+                      { $eq: ['$following', '$$targetId'] },
+                      { $eq: ['$followingType', Business.name] },
+                      { $eq: ['$isBlocked', false] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  muted: 1,
+                  mutedUntil: 1,
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+
+        // 5. Calculate follow and mute status
+        {
+          $addFields: {
+            isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
+            userFollow: { $arrayElemAt: ['$userFollow', 0] },
+          },
+        },
+        {
+          $addFields: {
+            isMuted: {
+              $cond: {
+                if: { $eq: ['$userFollow', null] },
+                then: false,
+                else: {
+                  $cond: {
+                    if: { $eq: ['$userFollow.muted', false] },
+                    then: false,
+                    else: {
+                      $cond: {
+                        if: {
+                          $and: [
+                            { $ifNull: ['$userFollow.mutedUntil', false] },
+                            {
+                              $gt: [
+                                { $toDate: '$userFollow.mutedUntil' },
+                                currentDate,
+                              ],
+                            },
+                          ],
+                        },
+                        then: true,
+                        else: false,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        // 6. Sort by distance
+        { $sort: { distance: 1 } },
+
+        // // 7. Group locations by business
+        {
+          $group: {
+            _id: '$businessDetails._id',
+            name: { $first: '$businessDetails.name' },
+            cover: { $first: '$businessDetails.cover' },
+            logo: { $first: '$businessDetails.logo' },
+            description: { $first: '$businessDetails.description' },
+            email: { $first: '$businessDetails.email' },
+            isActive: { $first: '$businessDetails.isActive' },
+            phone: { $first: '$businessDetails.phone' },
+            countryCode: { $first: '$businessDetails.countryCode' },
+            website: { $first: '$businessDetails.website' },
+            industry: { $first: '$industryDetails' },
+            isFollowedByMe: { $first: '$isFollowedByMe' },
+            isMuted: { $first: '$isMuted' },
+            drive: { $first: '$businessDetails.drive' },
+            locations: {
+              $push: {
+                _id: '$_id',
+                accuracy: '$accuracy',
+                address1: '$address1',
+                address2: '$address2',
+                city: '$city',
+                state: '$state',
+                zip: '$postalCode',
+                website: '$website',
+                email: '$email',
+                phone: '$phone',
+                countryCode: '$countryCode',
+                opentingTime: '$opentingTime',
+                closingTime: '$closingTime',
+                location: '$location',
+                distance: { $divide: ['$distance', 1609.34] },
+              },
+            },
+          },
+        },
+
+        // 8. Lookup menus with images in one go
+        {
+          $lookup: {
+            from: 'menus',
+            let: { businessId: '$_id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$business', '$$businessId'] } } },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: 'images',
+                  foreignField: '_id',
+                  as: 'images',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                        'metaData.mimeType': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  description: 1,
+                  images: {
+                    $map: {
+                      input: '$images',
+                      as: 'image',
+                      in: {
+                        _id: '$$image._id',
+                        url: '$$image.metaData.url',
+                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
+                        mimeType: '$$image.metaDate.mimeType',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+            as: 'menus',
+          },
+        },
+
+        // 9. Lookup gallery files
+        {
+          $lookup: {
+            from: 'folders',
+            let: { driveId: '$drive' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$folderName', 'Gallery'] },
+                      { $eq: ['$drive', '$$driveId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: '_id',
+                  foreignField: 'parentDirectory',
+                  as: 'files',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                        'metaData.mimeType': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  files: {
+                    $map: {
+                      input: '$files',
+                      as: 'file',
+                      in: {
+                        _id: '$$file._id',
+                        url: '$$file.metaData.url',
+                        thumbnailUrl: '$$file.metaData.thumbnailUrl',
+                        mimeType: '$$file.metaData.mimeType',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+            as: 'galleryFolder',
+          },
+        },
+        {
+          $addFields: {
+            galleryFiles: {
+              $ifNull: [{ $arrayElemAt: ['$galleryFolder.files', 0] }, []],
+            },
+          },
+        },
+
+        // 10. Clean up temporary fields
+        {
+          $project: {
+            userFollow: 0,
+            galleryFolder: 0,
+          },
+        },
+        {
+          $lookup: {
+            from: 'checkins',
+            let: {
+              businessId: businessObjectId,
+              locationId: locationObjectId,
+              userId: userObjectId,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$business', '$$businessId'] },
+                      { $eq: ['$locationId', '$$locationId'] },
+                      { $eq: ['$user', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'checkIns',
+          },
+        },
+        {
+          $addFields: {
+            isCheckedIn: {
+              $gt: [{ $size: '$checkIns' }, 0],
+            },
+            checkedInLocationId: {
+              $arrayElemAt: ['$checkIns.locationId', 0],
+            },
+          },
+        },
+        {
+          $project: {
+            checkIns: 0,
+          },
+        },
+      ];
+
+      // Execute the optimized pipeline
+      const [business] = await this.outletModel.aggregate(optimizedPipeline);
+      console.log('Business:', business);
+
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const userActiveRewards = await this.userRewardModel.find({
+        userId: userObjectId,
+        businessProfile: businessObjectId,
+        claimStatus: ClaimStatus.ACTIVE,
+      });
+      business['userActiveRewards'] = userActiveRewards;
+      // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
+
+      return {
+        success: true,
+        message: 'Business fetched Successfully!',
+        data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
 }

@@ -75,9 +75,16 @@ import {
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
+import { DynamicLinkService } from './dynamicLink.service';
+import { AppsOnAirLinkService } from './appsonair.service';
+import { HttpModule } from '@nestjs/axios';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
+import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 
 @Module({
   imports: [
+    HttpModule,
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
       { name: User.name, schema: UserSchema },
@@ -121,7 +128,9 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
       { name: WebhookSnapshot.name, schema: WebhookSnapshotSchema },
       { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema },
       { name: Coupon.name, schema: CouponSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
+      { name: Outlet.name, schema: OutletSchema },
     ]),
   ],
   controllers: [NotificationController],
@@ -135,6 +144,9 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
     UserService,
     Logger,
     StripeService,
+    DynamicLinkService,
+    AppsOnAirLinkService,
+    SubscriptionService,
   ],
 })
 export class NotificationModule {}

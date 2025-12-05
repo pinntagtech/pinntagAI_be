@@ -106,4 +106,5 @@ export const BusinessResourceTypes = {
   SUBSCRIPTION: 'subscription',
   BUSINESS_PROFILE: 'business_profile',
   FEED: 'feed',
+  CHECKIN_AND_REDEMPTION: 'Check-ins & Redemptions'
 };

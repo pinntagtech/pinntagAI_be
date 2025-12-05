@@ -33,6 +33,9 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
+import { PricingModel, SubscriptionProduct } from '../models/subscription-product.model';
+import { CreateCouponDto } from './dtos/create-coupon.dto';
+import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 
 @Injectable()
 export class StripeService {
@@ -49,6 +52,8 @@ export class StripeService {
     private readonly webhookSnapshotModel: Model<WebhookSnapshotDocument>,
     @InjectModel(SubscriptionPrice.name)
     private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(SubscriptionProduct.name)
+    private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
   ) {}
 
@@ -118,7 +123,7 @@ export class StripeService {
     );
   }
 
-  async createProduct(name: string, metadata: Object, description?: string) {
+  async createProduct(name: string, metadata: any, description?: string) {
     return await this.stripe.products.create({
       name,
       description,
@@ -165,27 +170,31 @@ export class StripeService {
     nickname?: string;
     metadata?: Record<string, string>;
   }) {
-    const { productId, unitAmount, currency, interval, trialPeriodDays } =
-      params;
-    return await this.stripe.prices.create({
+    const {
+      productId,
+      unitAmount,
+      currency,
+      interval,
+      trialPeriodDays,
+      nickname,
+      metadata,
+    } = params;
+    const priceCreateParams: any = {
       product: productId,
       unit_amount: unitAmount,
       currency,
       recurring: {
         interval,
       },
-      nickname: params.nickname,
-      metadata: params.metadata,
-      // Add trial period if specified (only for subscriptions)
-      ...(trialPeriodDays
-        ? {
-            tiers_mode: 'volume',
-            billing_scheme: 'per_unit',
-            // Note: Stripe does not support trial_period_days directly on Price
-            // It should be set on the Subscription object when creating a subscription
-          }
-        : {}),
-    });
+      billing_scheme: 'per_unit',
+    };
+    if (nickname) {
+      priceCreateParams.nickname = params.nickname;
+    }
+    if (metadata) {
+      priceCreateParams.metadata = params.metadata;
+    }
+    return await this.stripe.prices.create(priceCreateParams);
   }
 
   async updatePriceMetadata(priceId: string, metadata: Record<string, string>) {
@@ -273,10 +282,12 @@ export class StripeService {
     subscriptionItemId: string,
     newPriceId: string,
     prorationBehavior: Stripe.SubscriptionItemUpdateParams.ProrationBehavior = 'none',
+    quantity?: number,
   ) {
     return this.stripe.subscriptionItems.update(subscriptionItemId, {
       price: newPriceId,
       proration_behavior: prorationBehavior,
+      ...(quantity !== undefined ? { quantity } : {}),
     });
   }
 
@@ -302,16 +313,42 @@ export class StripeService {
   /** Create a hosted Checkout session (mode: subscription) */
   async createCheckoutSession(params: {
     businessId: string;
+    productId: string;
     priceId: string;
     quantity?: number;
     successUrl: string;
     cancelUrl: string;
     couponCode?: string;
   }): Promise<{ url: string }> {
-    const { businessId, priceId, successUrl, cancelUrl, couponCode } = params;
+    const {
+      businessId,
+      productId,
+      priceId,
+      successUrl,
+      cancelUrl,
+      couponCode,
+    } = params;
 
     const business = await this.businessModel.findById(businessId);
     if (!business) throw new NotFoundException('Business not found');
+
+    const productDoc = await this.subscriptionProductModel.findById(productId);
+    if (!productDoc)
+      throw new NotFoundException('Subscription product not found');
+
+    if (productDoc.pricingModel === 'per_location') {
+      if (
+        !params.quantity ||
+        params.quantity < productDoc.minLocations ||
+        params.quantity > productDoc.maxLocations!
+      ) {
+        throw new BadRequestException(
+          'Quantity must be between min and max locations allowed for this product',
+        );
+      }
+    }else if (productDoc.pricingModel === 'flat'){
+      params.quantity = 1;
+    }
 
     const customerId = await this.ensureStripeCustomer(business.id);
     const priceDoc = await this.subscriptionPriceModel.findById(priceId);
@@ -333,8 +370,13 @@ export class StripeService {
       if (coupon.isBlacklisted) {
         throw new BadRequestException('This coupon code is not valid');
       }
-      if (coupon.expiresAt && dayjs().isAfter(dayjs(coupon.expiresAt))) {
+      if (coupon.redeemBy && dayjs().isAfter(dayjs(coupon.redeemBy))) {
         throw new BadRequestException('This coupon code has expired');
+      }
+      if (coupon.maxRedemptions && coupon.usedCount >= coupon.maxRedemptions) {
+        throw new BadRequestException(
+          'This coupon code has reached its maximum redemptions',
+        );
       }
 
       //stripe discount
@@ -438,10 +480,14 @@ export class StripeService {
 
   /** When hosted checkout completes */
   private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
+    console.log('Checkout completed for session:::', JSON.stringify(session));
     const customerId = session.customer as string | null;
     const subscriptionId = session.subscription as string | null;
     const businessId = session.metadata?.businessId;
-
+    const couponId = session.metadata?.couponId;
+    console.log('Customer ID from session metadata: ', customerId);
+    console.log('Subscription ID from session metadata: ', subscriptionId);
+    console.log(`Coupon ID from session metadata: ${couponId}`);
     if (!customerId || !subscriptionId || !businessId) return;
 
     // Find or create our internal Subscription record
@@ -455,6 +501,9 @@ export class StripeService {
     });
     if (!internalSubPrice) return;
 
+     const invoice = await this.stripe.invoices.retrieve(
+      stripeSub.latest_invoice as string,
+    );
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
@@ -465,7 +514,13 @@ export class StripeService {
         product: internalSubPrice.product,
         startDate: new Date((stripeSub.current_period_start || 0) * 1000),
         endDate: new Date((stripeSub.current_period_end || 0) * 1000),
+        invoiceStartDate: new Date(
+          (stripeSub.current_period_start || 0) * 1000,
+        ),
+        invoiceEndDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
+        isTrialActive: false,
+        locationsAllowed: internalSubPrice.pricingModel === PricingModel.FLAT? internalSubPrice.maxLocations:invoice.lines?.data?.[0]?.quantity,
         // Optionally also store stripe customer on Business (already done in ensure)
       },
       { upsert: true, new: true },
@@ -478,9 +533,7 @@ export class StripeService {
         },
       },
     );
-    const invoice = await this.stripe.invoices.retrieve(
-      stripeSub.latest_invoice as string,
-    );
+   
     // Upsert by stripeInvoiceId to make it idempotent
     await this.transactionModel.updateOne(
       { stripeInvoiceId: invoice.id }, // unique key
@@ -517,7 +570,7 @@ export class StripeService {
     const subscriptionId = invoice.subscription as string | null;
     if (!subscriptionId) return;
 
-    await this.subscriptionModel.findOneAndUpdate(
+    const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
       {
         status: SubscriptionStatus.ACTIVE,
@@ -527,25 +580,44 @@ export class StripeService {
       },
     );
 
+    let updateObj = {
+      description: `Invoice paid for subscription ${subscriptionId}`,
+      amountMinor: invoice.total, // or amount: invoice.total/100
+      currency: invoice.currency?.toUpperCase(),
+      // quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
+       quantity: invoice.lines?.data?.[invoice.lines.data.length - 1]?.quantity ?? 1,
+      status: TransactionStatus.SUCCESS, // mark success now
+      success: true,
+      transactionDate: invoice.status_transitions?.paid_at
+        ? new Date(invoice.status_transitions.paid_at * 1000)
+        : new Date(),
+      startDate: invoice.lines?.data?.[0]?.period?.start
+        ? new Date(invoice.lines.data[0].period.start * 1000)
+        : undefined,
+      endDate: invoice.lines?.data?.[0]?.period?.end
+        ? new Date(invoice.lines.data[0].period.end * 1000)
+        : undefined,
+    };
+
+    if (invoice.discount && invoice.discount.coupon) {
+      const couponCode = invoice.discount.coupon.id;
+      const coupon = await this.couponModel.findOne({ code: couponCode });
+      if (coupon) {
+        await this.couponModel.updateOne(
+          { _id: coupon._id },
+          {
+            $addToSet: { usedBy: internalSub.business },
+            $inc: { usedCount: 1 },
+          },
+        );
+        updateObj['coupon'] = coupon._id;
+      }
+    }
     await this.transactionModel.updateOne(
       { stripeInvoiceId: invoice.id },
       {
         $set: {
-          description: `Invoice paid for subscription ${subscriptionId}`,
-          amountMinor: invoice.total, // or amount: invoice.total/100
-          currency: invoice.currency?.toUpperCase(),
-          quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
-          status: TransactionStatus.SUCCESS, // mark success now
-          success: true,
-          transactionDate: invoice.status_transitions?.paid_at
-            ? new Date(invoice.status_transitions.paid_at * 1000)
-            : new Date(),
-          startDate: invoice.lines?.data?.[0]?.period?.start
-            ? new Date(invoice.lines.data[0].period.start * 1000)
-            : undefined,
-          endDate: invoice.lines?.data?.[0]?.period?.end
-            ? new Date(invoice.lines.data[0].period.end * 1000)
-            : undefined,
+          ...updateObj,
         },
         $setOnInsert: {
           platform: SubscriptionSource.STRIPE,
@@ -1140,5 +1212,111 @@ export class StripeService {
       }
     }
     return isForProrate;
+  }
+
+  async createCoupon(couponData: CreateCouponDto) {
+    const {
+      code,
+      percentOff,
+      amountOff,
+      duration,
+      durationInMonths,
+      maxRedemptions,
+      redeemBy,
+    } = couponData;
+
+    const couponParams: Stripe.CouponCreateParams = {
+      id: code,
+      duration: duration,
+      duration_in_months: durationInMonths,
+      max_redemptions: maxRedemptions,
+    };
+
+    if (couponData.type === 'percent' && percentOff) {
+      couponParams.percent_off = percentOff;
+    } else if (couponData.type === 'flat' && couponData.amountOff) {
+      couponParams.amount_off = couponData.amountOff;
+      couponParams.currency = 'usd'; // Set your desired currency
+    }
+    if (redeemBy) {
+      couponParams.redeem_by = Math.floor(new Date(redeemBy).getTime() / 1000);
+    }
+    console.log('Creating coupon with params:', couponParams);
+
+    try {
+      const coupon = await this.stripe.coupons.create(couponParams);
+      console.log('Created coupon:', coupon);
+      return coupon;
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Stripe coupon creation error: ${err.message}`,
+      );
+    }
+  }
+
+  async createCheckoutSessionForUpgradationPlan(
+    businessId: string,
+    data: UpgradePlanDto,
+  ) {
+    if (data.statusCode === 204) {
+      if (!data.newProductId || !data.newPriceId) {
+        throw new BadRequestException(
+          'New Product ID and Price ID are required for upgrade',
+        );
+      }
+    }
+    if (data.statusCode === 205) {
+      if (!data.quantity) {
+        throw new BadRequestException(
+          'Quantity is required for scaling locations',
+        );
+      }
+    }
+    if (data.statusCode === 206) {
+      if (!data.newProductId || !data.newPriceId || !data.quantity) {
+        throw new BadRequestException(
+          'New Product ID and Price ID and quantity are required for upgrade',
+        );
+      }
+    }
+
+    const business = await this.businessModel.findById(businessId);
+    if (!business) {
+      throw new NotFoundException('Business not found');
+    }
+    console.log("business active subscription:", business.activeSubscription); 
+    const subscription = await this.subscriptionModel.findOne({
+      _id: new mongoose.Types.ObjectId(business.activeSubscription),
+    });
+    console.log("subscription stripe found:", subscription.stripeSubscriptionId);
+    if (!subscription || !subscription.stripeSubscriptionId) {
+      throw new NotFoundException('Active subscription not found');
+    }
+    const subscriptionItem = await this.stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+      {
+        expand: ['items'],
+      },
+    );
+    const subscriptionItemId = subscriptionItem.items.data[0].id;
+    console.log("subscription item id:", subscriptionItemId);
+
+    if (data.statusCode === 204) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        price: data.newPriceId,
+        proration_behavior: 'always_invoice',
+      });
+    } else if (data.statusCode === 205) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        quantity: data.quantity,
+        proration_behavior: 'always_invoice',
+      });
+    } else if (data.statusCode === 206) {
+      return await this.stripe.subscriptionItems.update(subscriptionItemId, {
+        price: data.newPriceId,
+        quantity: data.quantity,
+        proration_behavior: 'always_invoice', // bill the extra immediately
+      });
+    }
   }
 }

@@ -41,7 +41,11 @@ import { AdminGuard2 } from 'src/auth/guards2/admin2.guard';
 import { UpdateOfferDto } from './dto/update-offer.dto';
 import { BadRequestError } from 'openai';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
-import { PinDropDto, PinDropV2Dto, UpdatePinDropV2Dto } from './dto/pinDrop.dto';
+import {
+  PinDropDto,
+  PinDropV2Dto,
+  UpdatePinDropV2Dto,
+} from './dto/pinDrop.dto';
 import { UpdatePinDropDto } from './dto/update-pindrop.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { SubscriptionGuard } from 'src/subscription/guards/subscription.guard';
@@ -1360,6 +1364,25 @@ export class EventController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     const result = await this.eventService.editTemplate(id, user, data, image);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('redeem/:id')
+  @UseGuards(JwtGuard2)
+  async redeemOffer(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.eventService.redeemOffer(id, user);
     if (result.success) {
       return {
         message: result.message,

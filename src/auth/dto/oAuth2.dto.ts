@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class OAuth2Dto {
@@ -11,7 +12,6 @@ export class OAuth2Dto {
 
   @IsOptional()
   @IsString()
-  @IsEmail()
   email: string;
 
   @IsOptional()
@@ -25,4 +25,8 @@ export class OAuth2Dto {
   @IsOptional()
   @IsString()
   deviceType: string;
+
+  @IsOptional()
+  @IsString()
+  socialId: string;
 }

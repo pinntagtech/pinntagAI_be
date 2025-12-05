@@ -472,8 +472,6 @@ export class UserService {
       manipulateImageName(profilePhoto.originalname),
       'image/jpeg',
     );
-    const [base, rest] = uploadResult.Location.split('amazonaws');
-    const url = `${base}${process.env.AWS_REGION}.amazonaws${rest}`;
     const thumbnail = await FileUploadUtils.compressThumbnail(profilePhoto);
     const thumbnailS3 = await this.s3Service.s3_upload(
       thumbnail.buffer,
@@ -481,10 +479,9 @@ export class UserService {
       `thumbnails/${manipulateImageName(profilePhoto.originalname)}`,
       thumbnail.mimetype,
     );
-    const thumbnailUrl = `${base}${process.env.AWS_REGION}.amazonaws${thumbnailS3.Location.split('amazonaws')[1]}`;
 
-    user.profilePhoto = url;
-    user.thumbnail = thumbnailUrl;
+    user.profilePhoto = uploadResult.Location;
+    user.thumbnail = thumbnailS3.Location;
     await user.save();
     return {
       success: true,
@@ -1138,12 +1135,12 @@ export class UserService {
     await this.otpModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });
-    await this.businessModel.deleteMany({
-      createdBy: new mongoose.Types.ObjectId(userId),
-    });
-    await this.eventModel.deleteMany({
-      user: new mongoose.Types.ObjectId(userId),
-    });
+    // await this.businessModel.deleteMany({
+    //   createdBy: new mongoose.Types.ObjectId(userId),
+    // });
+    // await this.eventModel.deleteMany({
+    //   user: new mongoose.Types.ObjectId(userId),
+    // });
     await this.reportModel.deleteMany({
       user: new mongoose.Types.ObjectId(userId),
     });

@@ -77,18 +77,31 @@ export class SubscriptionService {
         description: data.description,
         createdBy: new mongoose.Types.ObjectId(user.id),
         isRecommended: data.isRecommended || false,
+        minLocations: data.minLocations,
+        maxLocations: data.maxLocations,
+        pricingModel: data.pricingModel,
       });
+      console.log('data.features:', data.features);
+      const featuresMetadata = data.features.reduce(
+        (acc, feature) => {
+          acc[feature['key']] = feature['value'];
+          acc[`${feature['key']}_label`] = feature['label'];
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
       const createdStripeProduct = await this.stripeService.createProduct(
         data.name,
-        data.features,
+        featuresMetadata,
         data.description,
       );
       console.log('Created Stripe Product:', createdStripeProduct);
       let featureLimits = [];
-      for (const feature of Object.keys(data.features)) {
+      for (const feature of data.features) {
         const createdFeatureLimit = await this.featureLimitModel.create({
-          key: feature,
-          value: data.features[feature],
+          key: feature['key'],
+          value: feature['value'],
+          label: feature['label'],
           product: createdProduct._id,
         });
         featureLimits.push(createdFeatureLimit._id);
@@ -114,10 +127,6 @@ export class SubscriptionService {
     }
   }
   featureLabels: Record<string, (v: string) => string> = {
-    aiImage: (v) => `${v} AI Image${v === '1' ? '' : 's'}`,
-    aiText: (v) => (v === 'unlimited' ? 'Unlimited AI Text' : `${v} AI Text`),
-    contentCreation: (v) => `${v} Content Creation`,
-    dropPinn: (v) => `${v} DropPin${v === '1' ? '' : 's'}`,
     locations: (v) => `${v} Location${v === '1' ? '' : 's'}`,
     templates: (v) =>
       v === 'enabled' ? 'Templates Enabled' : 'Templates Disabled',
@@ -126,7 +135,6 @@ export class SubscriptionService {
     roles: (v) => (v === 'enabled' ? 'Roles Enabled' : 'Roles Disabled'),
     departments: (v) =>
       v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
-    storage: (v) => `${v}GB Storage`,
   };
 
   async getProducts(user: DecodedUser, billingInterval?: string) {
@@ -139,7 +147,6 @@ export class SubscriptionService {
       const userSubscription = business.activeSubscription
         ? await this.subscriptionModel.findById(business.activeSubscription)
         : null;
-
       console.log('User Subscription:', userSubscription);
 
       if (!userSubscription) {
@@ -159,7 +166,7 @@ export class SubscriptionService {
             localField: 'features',
             foreignField: '_id',
             as: 'features',
-            pipeline: [{ $project: { key: 1, value: 1 } }],
+            pipeline: [{ $project: { key: 1, value: 1, label: 1 } }],
           },
         },
         {
@@ -210,6 +217,35 @@ export class SubscriptionService {
                 },
               },
             },
+            currentPlanDetails: {
+              $cond: {
+                if: {
+                  $cond: {
+                    if: { $eq: [{ $size: '$prices' }, 0] },
+                    then: { $eq: ['$_id', userSubscription.product] },
+                    else: {
+                      $and: [
+                        { $eq: ['$_id', userSubscription.product] },
+                        {
+                          $eq: [
+                            userSubscription.price,
+                            { $arrayElemAt: ['$prices._id', 0] },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                },
+                then: {
+                  $literal: {
+                    locationsAllowed: userSubscription.locationsAllowed,
+                    invoiceStartDate: userSubscription.invoiceStartDate,
+                    invoiceEndDate: userSubscription.invoiceEndDate,
+                  },
+                },
+                else: null,
+              },
+            },
           },
         });
       } else {
@@ -228,28 +264,29 @@ export class SubscriptionService {
 
       // Step 5: Sort
       pipeline.push({
-        $sort: { 'prices.price': 1 },
+        $sort: { isCurrentPlan: -1, 'prices.price': 1 },
       });
 
       // Execute aggregation
       const products = await this.subscriptionProductModel.aggregate(pipeline);
 
       // Enrich features
-      const enrichedProducts = products.map((product) => {
-        const enrichedFeatures = product.features.map((feature) => {
-          const label = this.featureLabels[feature.key];
-          return {
-            ...feature,
-            label: label ? label(feature.value) : feature.value,
-          };
-        });
-        return {
-          ...product,
-          features: enrichedFeatures,
-        };
-      });
+      // const enrichedProducts = products.map((product) => {
+      //   const enrichedFeatures = product.features.map((feature) => {
+      //     const label = this.featureLabels[feature.key];
+      //     return {
+      //       ...feature,
+      //       label: label ? label(feature.value) : feature.value,
+      //     };
+      //   });
+      //   return {
+      //     ...product,
+      //     features: enrichedFeatures,
+      //   };
+      // });
 
-      return enrichedProducts;
+      // return enrichedProducts;
+      return products;
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];
@@ -278,6 +315,8 @@ export class SubscriptionService {
           data.billingInterval == BillingInterval.MONTHLY ? 'month' : 'year',
         metadata: {
           isCustom: data.isCustom ? 'true' : 'false',
+          minLocations: String(subscriptionProduct.minLocations) || '0',
+          maxLocations: String(subscriptionProduct.maxLocations) || '0',
         },
         nickname: `${subscriptionProduct.name} - ${data.billingInterval} - ${data.currency.toUpperCase()}${(data.price / 100).toFixed(2)}`,
         trialPeriodDays: undefined,
@@ -292,6 +331,9 @@ export class SubscriptionService {
         price: data.price,
         appleProductId: data.appleProductId,
         googleProductId: data.googleProductId,
+        pricingModel: subscriptionProduct.pricingModel,
+        minLocations: subscriptionProduct.minLocations,
+        maxLocations: subscriptionProduct.maxLocations,
       });
       await this.subscriptionProductModel.findByIdAndUpdate(
         subscriptionProduct._id,
@@ -355,6 +397,7 @@ export class SubscriptionService {
         isTrialActive: false,
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
+        isFreePlan: true,
       };
       const freeSubscriptionProduct =
         await this.subscriptionProductModel.findOne({ isFree: true });
@@ -372,6 +415,85 @@ export class SubscriptionService {
       return { success: true, data: freeSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+  async createTrialCheckoutSession(user: DecodedUser) {
+    try {
+      const trialSubscriptionProduct =
+        await this.subscriptionProductModel.findOne({ isTrial: true });
+      if (!trialSubscriptionProduct) {
+        return {
+          success: false,
+          message: 'Free subscription product not found',
+        };
+      }
+      const alreadyTried = await this.subscriptionModel.findOne({
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        product: trialSubscriptionProduct._id,
+      });
+      if (alreadyTried) {
+        return {
+          success: false,
+          message: 'This user is already enjoying their trial plan.',
+        };
+      }
+
+      const createSubscription = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+        source: SubscriptionSource.FREE,
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        invoiceStartDate: new Date(),
+        invoiceEndDate: new Date(
+          new Date().setMonth(new Date().getMonth() + 1),
+        ),
+        isCancelled: false,
+        isTrialActive: false,
+        status: SubscriptionStatus.ACTIVE,
+        iapPlatform: 'none',
+        product: trialSubscriptionProduct._id,
+        locationsAllowed: trialSubscriptionProduct.maxLocations,
+      };
+
+      return { success: true, data: createSubscription };
+    } catch (error) {
+      console.error('Error creating free checkout session:', error);
+      return { success: false, message: 'Something went wrong' };
+    }
+  }
+
+  async downgradeToFreePlan(businessId: string) {
+    try {
+      const freeSubscription = await this.subscriptionModel.findOne({
+        business: new mongoose.Types.ObjectId(businessId),
+        isFreePlan: true,
+      });
+      // deactivate all locations
+      await this.outletModel.updateMany(
+        {
+          business: new mongoose.Types.ObjectId(businessId),
+        },
+        {
+          $set: {
+            isActive: false,
+          },
+        },
+      );
+      //draft all content
+
+      await this.businessModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(businessId),
+        },
+        {
+          $set: {
+            activeSubscription: freeSubscription._id,
+          },
+        },
+      );
+    } catch (error) {
+      console.error('Error in downgradeToFreePlan:', error);
       return { success: false, message: 'Something went wrong' };
     }
   }
@@ -401,55 +523,55 @@ export class SubscriptionService {
       for (const f of subscription.featureLimits) limits.set(f.key, f.value);
 
       let data: any;
-      switch (title) {
-        case FeatureLimitList.AI_IMAGE:
-          data = await this.aiImageLimit(limits);
-          break;
-        case FeatureLimitList.AI_TEXT:
-          data = await this.aiTextLimit(limits);
-          break;
-        case FeatureLimitList.CONTENT_CREATION:
-          data = await this.contentCreationLimit(
-            limits,
-            this.eventModel,
-            businessProfile,
-          );
-          break;
-        case FeatureLimitList.DEPARTMENT:
-          data = await this.departmentLimit(limits);
-          break;
-        case FeatureLimitList.DROP_PIN:
-          data = await this.dropPinLimit(
-            limits,
-            this.eventModel,
-            businessProfile,
-          );
-          break;
-        case FeatureLimitList.LOCATIONS:
-          data = await this.locationsLimit(
-            limits,
-            this.outletModel,
-            businessProfile,
-            dataCount,
-          );
-          break;
-        case FeatureLimitList.REGIONS:
-          data = await this.regionsLimit(limits);
-          break;
-        case FeatureLimitList.ROLES:
-          data = await this.rolesLimit(limits);
-          break;
-        case FeatureLimitList.STORAGE:
-          data = await this.storageLimit(
-            limits,
-            this.driveModel,
-            business.creator.toString(),
-          );
-          break;
-        case FeatureLimitList.TEMPLATES:
-          data = await this.templatesLimit(limits);
-          break;
-      }
+      // switch (title) {
+      //   case FeatureLimitList.AI_IMAGE:
+      //     data = await this.aiImageLimit(limits);
+      //     break;
+      //   case FeatureLimitList.AI_TEXT:
+      //     data = await this.aiTextLimit(limits);
+      //     break;
+      //   case FeatureLimitList.CONTENT_CREATION:
+      //     data = await this.contentCreationLimit(
+      //       limits,
+      //       this.eventModel,
+      //       businessProfile,
+      //     );
+      //     break;
+      //   case FeatureLimitList.DEPARTMENT:
+      //     data = await this.departmentLimit(limits);
+      //     break;
+      //   case FeatureLimitList.DROP_PIN:
+      //     data = await this.dropPinLimit(
+      //       limits,
+      //       this.eventModel,
+      //       businessProfile,
+      //     );
+      //     break;
+      //   case FeatureLimitList.LOCATIONS:
+      //     data = await this.locationsLimit(
+      //       limits,
+      //       this.outletModel,
+      //       businessProfile,
+      //       dataCount,
+      //     );
+      //     break;
+      //   case FeatureLimitList.REGIONS:
+      //     data = await this.regionsLimit(limits);
+      //     break;
+      //   case FeatureLimitList.ROLES:
+      //     data = await this.rolesLimit(limits);
+      //     break;
+      //   case FeatureLimitList.STORAGE:
+      //     data = await this.storageLimit(
+      //       limits,
+      //       this.driveModel,
+      //       business.creator.toString(),
+      //     );
+      //     break;
+      //   case FeatureLimitList.TEMPLATES:
+      //     data = await this.templatesLimit(limits);
+      //     break;
+      // }
 
       return { success: true, data };
     } catch (error) {
@@ -470,53 +592,53 @@ export class SubscriptionService {
     };
   }
 
-  async aiImageLimit(limits: Map<string, string>) {
-    return this.responseData(limits.get(FeatureLimitList.AI_IMAGE) ?? '0', 0);
-  }
+  // async aiImageLimit(limits: Map<string, string>) {
+  //   return this.responseData(limits.get(FeatureLimitList.AI_IMAGE) ?? '0', 0);
+  // }
 
-  async aiTextLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.AI_TEXT);
-    if (val === 'enabled') return { isLimitExceeded: false };
-    if (val === 'disabled') return { isLimitExceeded: true };
-    return { isLimitExceeded: true };
-  }
+  // async aiTextLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.AI_TEXT);
+  //   if (val === 'enabled') return { isLimitExceeded: false };
+  //   if (val === 'disabled') return { isLimitExceeded: true };
+  //   return { isLimitExceeded: true };
+  // }
 
-  async contentCreationLimit(
-    limits: Map<string, string>,
-    eventModel: mongoose.Model<EventDocument>,
-    businessProfile: string,
-  ) {
-    const content = await eventModel.countDocuments({
-      businessProfile: new mongoose.Types.ObjectId(businessProfile),
-      type: { $ne: EventTypes.DROPPED_PIN },
-      status: EventStatus.PUBLISHED,
-    });
-    return this.responseData(
-      limits.get(FeatureLimitList.CONTENT_CREATION) ?? '0',
-      content,
-    );
-  }
+  // async contentCreationLimit(
+  //   limits: Map<string, string>,
+  //   eventModel: mongoose.Model<EventDocument>,
+  //   businessProfile: string,
+  // ) {
+  //   const content = await eventModel.countDocuments({
+  //     businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //     type: { $ne: EventTypes.DROPPED_PIN },
+  //     status: EventStatus.PUBLISHED,
+  //   });
+  //   return this.responseData(
+  //     limits.get(FeatureLimitList.CONTENT_CREATION) ?? '0',
+  //     content,
+  //   );
+  // }
 
-  async departmentLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.DEPARTMENT);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async departmentLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.DEPARTMENT);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
-  async dropPinLimit(
-    limits: Map<string, string>,
-    eventModel: mongoose.Model<EventDocument>,
-    businessProfile: string,
-  ) {
-    const count = await eventModel.countDocuments({
-      businessProfile: new mongoose.Types.ObjectId(businessProfile),
-      type: EventTypes.DROPPED_PIN,
-      status: EventStatus.PUBLISHED,
-    });
-    return this.responseData(
-      limits.get(FeatureLimitList.DROP_PIN) ?? '0',
-      count,
-    );
-  }
+  // async dropPinLimit(
+  //   limits: Map<string, string>,
+  //   eventModel: mongoose.Model<EventDocument>,
+  //   businessProfile: string,
+  // ) {
+  //   const count = await eventModel.countDocuments({
+  //     businessProfile: new mongoose.Types.ObjectId(businessProfile),
+  //     type: EventTypes.DROPPED_PIN,
+  //     status: EventStatus.PUBLISHED,
+  //   });
+  //   return this.responseData(
+  //     limits.get(FeatureLimitList.DROP_PIN) ?? '0',
+  //     count,
+  //   );
+  // }
 
   async locationsLimit(
     limits: Map<string, string>,
@@ -530,15 +652,15 @@ export class SubscriptionService {
     );
   }
 
-  async regionsLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.REGIONS);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async regionsLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.REGIONS);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
-  async rolesLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.ROLES);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async rolesLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.ROLES);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 
   async storageLimit(
     limits: Map<string, string>,
@@ -549,9 +671,8 @@ export class SubscriptionService {
     if (!drive) return { isLimitExceeded: true };
     return this.responseData(String(drive.TotalSpace), drive.AvailableSpace);
   }
-
-  async templatesLimit(limits: Map<string, string>) {
-    const val = limits.get(FeatureLimitList.TEMPLATES);
-    return { isLimitExceeded: val === 'disabled' };
-  }
+  // async templatesLimit(limits: Map<string, string>) {
+  //   const val = limits.get(FeatureLimitList.TEMPLATES);
+  //   return { isLimitExceeded: val === 'disabled' };
+  // }
 }

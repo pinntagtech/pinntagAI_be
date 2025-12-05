@@ -136,6 +136,9 @@ export class Transaction extends Document {
 
   @Prop()
   eventTime?: number; // Google event timestamp (ms)
+
+  @Prop({ref: 'Coupon'})
+  coupon?: mongoose.Types.ObjectId; // Applied coupon code, if any
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

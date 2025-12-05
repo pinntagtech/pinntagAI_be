@@ -11,12 +11,14 @@ import {
   Notification,
   NotificationDocument,
 } from './models/notification.model';
-import { User } from 'src/user/models/user.model';
-import { Business } from 'src/business/model/business.model';
+import { User, UserDocument } from 'src/user/models/user.model';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { UserService } from 'src/user/user.service';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
 import { Feed, FeedVisibility } from 'src/feed/models/feed.model';
 import { MuteDuration } from 'src/enums/user.enum';
+import { Subscription, SubscriptionDocument } from 'src/subscription/models/subscription.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Injectable()
 export class RedisBullService {
@@ -31,9 +33,13 @@ export class RedisBullService {
     private readonly notificationModel: Model<NotificationDocument>,
     @InjectModel(Follow.name)
     private readonly followModel: Model<FollowDocument>,
-    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
+    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>, 
+    @InjectModel(Business.name) private readonly businessModel: Model<BusinessDocument>, 
+    @InjectModel(Subscription.name) private readonly subscriptionModel: Model<SubscriptionDocument>, 
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>, 
     private readonly firebaseService: FirebaseService,
     private readonly userService: UserService,
+    private readonly subscriptionService: SubscriptionService,
   ) {
     const redisConfig = { host: 'localhost', port: 6379 };
     this.broadcastQueue = new Queue('broadcastQueue', {
@@ -53,6 +59,10 @@ export class RedisBullService {
 
           case 'deleteConsumer':
             await this.userService.deleteAccount(job.data.userId);
+            break;
+          
+          case 'backToFreeSubscription':
+            await this.subscriptionService.downgradeToFreePlan(job.data.businessId);
             break;
 
           default:
@@ -86,10 +96,14 @@ export class RedisBullService {
       { userId },
       { delay },
     );
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { accountDeletionSchedulerId: job.id } },
+    );
     console.log('Job added to queue:', job.id, job.data);
   }
 
-  async removeBroadcastJob(jobId: string) {
+  async removeRedisQueueJob(jobId: string) {
     const job = await this.broadcastQueue.getJob(jobId);
     if (job) {
       await job.remove();
@@ -215,5 +229,20 @@ export class RedisBullService {
       );
       console.error('Error triggering broadcast:', error);
     }
+  }
+
+  async addShiftToFreeSubscriptionJob(businessId:string,delay:number){
+     console.log('Subscription expired :', businessId);
+     const job = await this.broadcastQueue.add(
+      'backToFreeSubscription',
+      { businessId },
+      { delay },
+    );
+    const business = await this.businessModel.findById(businessId);
+    await this.subscriptionModel.updateOne(
+      { _id: business.activeSubscription },
+      { $set: { downgradeJobId: job.id } },
+    );
+    console.log('Job added to queue:', job.id, job.data);
   }
 }

@@ -25,6 +25,8 @@ import { S3Service } from 'src/s3.service';
 import { SampleDocument, SampleDocumentSchema } from 'src/admin/models/sampleDocuments.model';
 import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.model';
 import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
+import { Subscription, SubscriptionSchema } from 'src/subscription/models/subscription.model';
+import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
 
 @Module({
   imports: [
@@ -47,7 +49,9 @@ import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-sched
       { name: File.name, schema: FileSchema},
       { name: SampleDocument.name, schema: SampleDocumentSchema },
       { name: MobileSpots.name, schema: MobileSpotsSchema },
-      { name: EventSchedule.name, schema: EventScheduleSchema}
+      { name: EventSchedule.name, schema: EventScheduleSchema},
+      { name: Subscription.name, schema: SubscriptionSchema},
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema}
         
     ])
   ],

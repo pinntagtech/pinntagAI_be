@@ -16,12 +16,15 @@ import {
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { CreateCheckoutDto } from './dtos/create-checkout.dto';
+import {
+  CreateCheckoutDto,
+} from './dtos/create-checkout.dto';
 import Stripe from 'stripe';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { BusinessProfileGuard } from 'src/auth/guards/business.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
+import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 
 @Controller('stripe')
 export class StripeController {
@@ -46,6 +49,7 @@ export class StripeController {
 
     const { url } = await this.stripeService.createCheckoutSession({
       businessId: user.businessProfile,
+      productId: dto.productId,
       priceId: dto.priceId,
       couponCode: dto.couponCode,
       // promotionCode: dto.promotionCode,
@@ -60,7 +64,9 @@ export class StripeController {
   @Post('cancel')
   @UseGuards(JwtGuard2)
   async cancelSubscription(@TokenDecoder() user: DecodedUser) {
-    const result = await this.stripeService.cancelSubscription(user.businessProfile);
+    const result = await this.stripeService.cancelSubscription(
+      user.businessProfile,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -118,5 +124,19 @@ export class StripeController {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  @Post('checkout/upgradation-plan')
+  @UseGuards(JwtGuard2)
+  async checkoutUpgradationPlan(
+    @TokenDecoder() user: DecodedUser,
+    @Body() dto: UpgradePlanDto,
+  ) {
+    const result =
+      await this.stripeService.createCheckoutSessionForUpgradationPlan(
+        user.businessProfile,
+        dto,
+      );
+    return result;
   }
 }

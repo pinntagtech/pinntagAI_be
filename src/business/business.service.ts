@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import * as bcrypt from 'bcrypt';
@@ -6,6 +11,9 @@ import { CreateBusinessUserDto } from './dto/create-businessUser.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { BusinessUser, BusinessUserDocument } from './model/businessUser.model';
 import mongoose, { isValidObjectId, Model } from 'mongoose';
+import axios from 'axios';
+import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import {
   DefaultBusinessDepartmentRoles,
   DefaultBusinessRoles,
@@ -51,7 +59,7 @@ import {
   BusinessIndustry,
   BusinessIndustryDocument,
 } from './model/businessIndustry.model';
-import { privateDecrypt } from 'crypto';
+import { privateDecrypt, Sign } from 'crypto';
 import {
   BusinessCategory,
   BusinessCategoryDocument,
@@ -84,7 +92,7 @@ import {
 import { Privilege, PrivilegeDocument } from 'src/roles/models/privilege.model';
 import { Resource, ResourceDocument } from 'src/roles/models/resource.model';
 import { Action, ActionDocument } from 'src/roles/models/actions.model';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendUserOtpDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { Otp, OtpDocument } from 'src/auth/models/otp.model';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { UserService } from 'src/user/user.service';
@@ -97,10 +105,14 @@ import {
 import { Department, DepartmentDocument } from './model/department.model';
 import { Types } from 'aws-sdk/clients/acm';
 import { Follow, FollowDocument } from 'src/user/models/follow.model';
-import { User } from 'src/user/models/user.model';
+import { SignupMethod, User } from 'src/user/models/user.model';
 import { UpdateDownlineBusinessUserDto } from './dto/update-downline-businessUser.dto';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
-import { LocationPopulates } from 'src/enums/user.enum';
+import {
+  LocationPopulates,
+  SubscriptionSource,
+  SubscriptionStatus,
+} from 'src/enums/user.enum';
 import { Template, TemplateDocument } from 'src/event/models/template.model';
 import { Seeder } from 'src/seeder/data';
 import { Region, RegionDocument } from './model/region.model';
@@ -173,9 +185,30 @@ import {
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
+import { OAuth2Dto } from 'src/auth/dto/oAuth2.dto';
+import { Auth, google } from 'googleapis';
+import { File, FileDocument } from 'src/drive/models/file.model';
+import { Folder, FolderDocument } from 'src/drive/models/folder.model';
+import { Feed } from 'src/feed/models/feed.model';
+import { PipelineStage } from 'mongoose';
+import {
+  BusinessVoteStatus,
+  Scratch,
+  ScratchStatus,
+} from './model/scratch.model';
+import {
+  RewardVisit,
+  RewardVisitSchema,
+  RewardVisitStatus,
+} from 'src/rewards/model/rewardVisit.model';
+import { program } from '@babel/template';
+import { Subscription } from 'src/subscription/models/subscription.model';
+import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
+// import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
 export class BusinessService {
+  private oAuth2Client: Auth.OAuth2Client;
   constructor(
     @InjectModel(BusinessUser.name)
     private readonly businessUserModel: Model<BusinessUserDocument>,
@@ -241,6 +274,15 @@ export class BusinessService {
     private readonly categoryModel: Model<CategoryDocument>,
     @InjectModel(EventSchedule.name)
     private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(File.name) private readonly fileModel: Model<FileDocument>,
+    @InjectModel(Folder.name)
+    private readonly folderModel: Model<FolderDocument>,
+    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
+    @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
+    @InjectModel(Subscription.name) private readonly subscriptionModel: Model<Subscription>,
+    @InjectModel(SubscriptionProduct.name) private readonly subscriptionProductModel: Model<SubscriptionProduct>,
+    @InjectModel(RewardVisit.name)
+    private readonly rewardVisitModel: Model<RewardVisit>,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
     private readonly seederService: SeederService,
@@ -251,32 +293,118 @@ export class BusinessService {
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
+    // private readonly feedService: FeedService,
   ) {}
+  private oAuthClient = new OAuth2Client();
+
+  async verifyBusinessToken(idToken: string) {
+    const businessAndroidClientId =
+      process.env.GOOGLE_BUSINESS_ANDROID_CLIENT_ID;
+    const businessIosClientId = process.env.GOOGLE_BUSINESS_IOS_CLIENT_ID;
+    const ticket = await this.oAuthClient.verifyIdToken({
+      idToken,
+      audience: [businessAndroidClientId, businessIosClientId], // BOTH allowed
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) throw new UnauthorizedException('Invalid Google token');
+
+    // you get: payload.sub (google user id), email, name, picture, etc.
+    return payload;
+  }
 
   async createBusinessUser(data: CreateBusinessUserDto) {
     try {
-      const foundUser = await this.businessUserModel
-        .findOne({
-          email: data.email,
-        })
-        .select('-password');
+      let createObj = {};
 
-      if (foundUser) {
-        if (
-          foundUser.status === ProfileStatus.INITIATED &&
-          foundUser.isEmailVerified === false
-        ) {
-          this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (!data.email) {
           return {
-            success: true,
-            message: 'Business User already found with this email, OTP resent',
-            data: foundUser,
+            success: false,
+            message: 'Please provide your email address.',
           };
         }
-        return {
-          success: false,
-          message: 'Business User already found with this email',
-        };
+
+        let foundUser = await this.businessUserModel
+          .findOne({
+            email: data.email,
+          })
+          .select('-password');
+
+        if (foundUser) {
+          if (
+            foundUser.status === ProfileStatus.INITIATED &&
+            foundUser.isEmailVerified === false
+          ) {
+            this.mailService.sendBusinessUserVerificationMail(foundUser.id);
+            return {
+              success: true,
+              message:
+                'Business User already found with this email, OTP resent',
+              data: foundUser,
+            };
+          }
+          return {
+            success: false,
+            message: 'Business User already found with this email',
+          };
+        }
+
+        createObj['email'] = data.email;
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (!data.phone) {
+          return {
+            success: false,
+            message: 'Please provide phone number',
+          };
+        }
+        if (!data.countryCode) {
+          return {
+            success: false,
+            message: 'Please provide your Country Code',
+          };
+        }
+        let phoneNumber = parsePhoneNumberFromString(
+          `${data.countryCode}${data.phone}`,
+        );
+        var fullPhoneNumber = phoneNumber.format('E.164');
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          return {
+            success: false,
+            message: 'Invalid phone number',
+          };
+        }
+
+        let foundUser = await this.businessUserModel
+          .findOne({
+            email: data.phone,
+            countryCode: data.countryCode,
+          })
+          .select('-password');
+
+        if (foundUser) {
+          if (
+            foundUser.status === ProfileStatus.INITIATED &&
+            foundUser.isMobileVerified === false
+          ) {
+            //insteab of mail send mobile otp
+            this.smsService.sendSMS(foundUser.id, fullPhoneNumber, SMSType.OTP);
+            return {
+              success: true,
+              message:
+                'Business User already found with this mobile, OTP resent',
+              data: foundUser,
+            };
+          }
+          return {
+            success: false,
+            message: 'Business User already found with this email',
+          };
+        }
+
+        createObj['phone'] = data.phone;
+        createObj['countryCode'] = data.countryCode;
+        createObj['fullPhoneNumber'] = fullPhoneNumber;
       }
 
       const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -294,10 +422,10 @@ export class BusinessService {
         isBusinessOwner: true,
       });
 
-      let createObj = {
+      createObj = {
+        ...createObj,
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
-        email: data.email,
         password: hashedPassword,
         name: data.name,
         forcePasswordReset: false,
@@ -365,7 +493,12 @@ export class BusinessService {
           });
         }
       }
-      this.mailService.sendBusinessUserVerificationMail(createdUser.id);
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        this.mailService.sendBusinessUserVerificationMail(createdUser.id);
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        console.log('fullPhoneNumber:', fullPhoneNumber);
+        this.smsService.sendSMS(createdUser.id, fullPhoneNumber, SMSType.OTP);
+      }
 
       const updatedUser = await this.businessUserModel
         .findById(createdUser.id)
@@ -384,25 +517,625 @@ export class BusinessService {
     }
   }
 
+  async loginWithGoogle(data: OAuth2Dto, userAgent: string, ipAddress: string) {
+    console.log('Google Login Data:', data);
+    // const validToken = await this.oAuth2Client.getTokenInfo(data.oAuthToken);
+    // await this.verifyBusinessToken(data.oAuthToken);
+
+    // const userInfoResponse = await axios.get(
+    //   'https://www.googleapis.com/oauth2/v3/userinfo',
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${data.oAuthToken}`,
+    //     },
+    //   },
+    // );
+    // const userInfo = userInfoResponse.data;
+    // console.log('UserInfo from google:', userInfo);
+    const userFound = await this.businessUserModel.findOne({
+      email: data.email,
+    });
+    if (userFound) {
+      // login logic
+      const payload: JwtPayload = {
+        id: userFound.id,
+        // email: user.email,
+        userType: UserTypes.BUSINESS,
+        role: String(userFound.role),
+        business: String(userFound.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      let userDoc = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles', // collection name for Role model
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // collection name for Business model
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets', // collection name for Outlet model
+                  localField: 'outlets',
+                  foreignField: '_id',
+                  as: 'outlets',
+                  pipeline: [
+                    {
+                      $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                        (acc, field) => {
+                          acc[field] = 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'events', // collection name for Event model
+                  localField: 'initialOfferId',
+                  foreignField: '_id',
+                  as: 'initialOfferId',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        categories: 1,
+                        drivePath: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'businessindustries', // collection name for BusinessIndustry model
+                  localField: 'businessIndustry',
+                  foreignField: '_id',
+                  as: 'businessIndustry',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        darkIcon: 1,
+                        lightIcon: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'subscriptions',
+                  localField: 'activeSubscription',
+                  foreignField: '_id',
+                  as: 'activeSubscription',
+                  pipeline: [
+                    {
+                      $lookup: {
+                        from: 'subscriptionproducts',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'product',
+                        pipeline: [
+                          {
+                            $project: {
+                              _id: 1,
+                              name: 1,
+                              price: 1,
+                              description: 1,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    { $unwind: '$product' },
+                    {
+                      $project: {
+                        _id: 1,
+                        source: 1,
+                        product: 1,
+                        startDate: 1,
+                        endDate: 1,
+                        status: 1,
+                        remainingDays: {
+                          $dateDiff: {
+                            startDate: currentDateTz(),
+                            endDate: '$endDate',
+                            unit: 'day',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                  businessIndustry: {
+                    $arrayElemAt: ['$businessIndustry', 0],
+                  },
+                  activeSubscription: {
+                    $arrayElemAt: ['$activeSubscription', 0],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        // {
+        //   $addFields: {
+        //     role: { $arrayElemAt: ['$role', 0] },
+        //     business: { $arrayElemAt: ['$business', 0] },
+        //   },
+        // },
+      ]);
+      userDoc = userDoc[0];
+
+      const fcmExists = await this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        user: userFound._id,
+        deviceType: data.deviceType ? data.deviceType : 'web',
+      });
+
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+
+      // console.log('userDetails:', userDetails);
+      return {
+        success: true,
+        status: true,
+        message: 'User logged in successfully',
+        user: userDoc,
+        token,
+        fcmExists: fcmExists ? true : false,
+      };
+    } else {
+      //registration logic
+      const superAdmin = await this.adminModel.findOne({
+        isSuperAdmin: true,
+      });
+
+      //seed business owner default role:
+      const ownerRole = await this.roleModel.create({
+        name: 'Owner',
+        creator: new mongoose.Types.ObjectId(superAdmin.id),
+        creatorType: RoleCreatorType.BUSINESS,
+        belongsTo: RoleBelonging.BUSINESS,
+        isBusinessOwner: true,
+      });
+
+      let createObj = {
+        email: data.email,
+        name: data.name,
+        profilePhoto: data.profilePhoto ? data.profilePhoto : '',
+        role: [new mongoose.Types.ObjectId(ownerRole.id)],
+        creatorType: BusinessUserCreatorType.SELF,
+        forcePasswordReset: false,
+        isEmailVerified: true,
+        status: ProfileStatus.EMAIL_VERIFIED,
+      };
+
+      //append creator to roles
+      const createdUser = await this.businessUserModel.create(createObj);
+      await this.roleModel.updateOne(
+        { _id: ownerRole.id },
+        { $set: { creator: createdUser._id } },
+      );
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+      const payload: JwtPayload = {
+        id: createdUser.id,
+        // email: user.email,
+        userType: UserTypes.BUSINESS,
+        role: String(createdUser.role),
+        business: String(createdUser.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      return {
+        success: true,
+        message: 'User Logged In Successfully',
+        token,
+      };
+    }
+  }
+
+  async loginWithApple(data: OAuth2Dto, userAgent: string, ipAddress: string) {
+    console.log('Apple Login Data:', data);
+    // const tokenData = jwt.decode(data.oAuthToken) as any;
+    // console.log('Apple Login Data:', tokenData);
+    const userFound = await this.businessUserModel.findOne({
+      email: data.oAuthToken,
+    });
+    if (userFound) {
+      // login logic
+      const payload: JwtPayload = {
+        id: userFound.id,
+        userType: UserTypes.BUSINESS,
+        role: String(userFound.role),
+        business: String(userFound.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      let userDoc = await this.businessUserModel.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(userFound._id) },
+        },
+        {
+          $lookup: {
+            from: 'roles', // collection name for Role model
+            localField: 'role',
+            foreignField: '_id',
+            as: 'role',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  description: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses', // collection name for Business model
+            localField: 'business',
+            foreignField: '_id',
+            as: 'business',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'outlets', // collection name for Outlet model
+                  localField: 'outlets',
+                  foreignField: '_id',
+                  as: 'outlets',
+                  pipeline: [
+                    {
+                      $project: LocationPopulates.FOREIGN.split(' ').reduce(
+                        (acc, field) => {
+                          acc[field] = 1;
+                          return acc;
+                        },
+                        {},
+                      ),
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'events', // collection name for Event model
+                  localField: 'initialOfferId',
+                  foreignField: '_id',
+                  as: 'initialOfferId',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        description: 1,
+                        categories: 1,
+                        drivePath: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'businessindustries', // collection name for BusinessIndustry model
+                  localField: 'businessIndustry',
+                  foreignField: '_id',
+                  as: 'businessIndustry',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        title: 1,
+                        darkIcon: 1,
+                        lightIcon: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $lookup: {
+                  from: 'subscriptions',
+                  localField: 'activeSubscription',
+                  foreignField: '_id',
+                  as: 'activeSubscription',
+                  pipeline: [
+                    {
+                      $lookup: {
+                        from: 'subscriptionproducts',
+                        localField: 'product',
+                        foreignField: '_id',
+                        as: 'product',
+                        pipeline: [
+                          {
+                            $project: {
+                              _id: 1,
+                              name: 1,
+                              price: 1,
+                              description: 1,
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    { $unwind: '$product' },
+                    {
+                      $project: {
+                        _id: 1,
+                        source: 1,
+                        product: 1,
+                        startDate: 1,
+                        endDate: 1,
+                        status: 1,
+                        remainingDays: {
+                          $dateDiff: {
+                            startDate: currentDateTz(),
+                            endDate: '$endDate',
+                            unit: 'day',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $addFields: {
+                  initialOfferId: { $arrayElemAt: ['$initialOfferId', 0] },
+                  businessIndustry: {
+                    $arrayElemAt: ['$businessIndustry', 0],
+                  },
+                  activeSubscription: {
+                    $arrayElemAt: ['$activeSubscription', 0],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        // {
+        //   $addFields: {
+        //     role: { $arrayElemAt: ['$role', 0] },
+        //     business: { $arrayElemAt: ['$business', 0] },
+        //   },
+        // },
+      ]);
+      userDoc = userDoc[0];
+
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: userFound._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+
+      // console.log('userDetails:', userDetails);
+      return {
+        success: true,
+        status: true,
+        message: 'User logged in successfully',
+        user: userDoc,
+        token,
+      };
+    } else {
+      console.log('started creating new user');
+      //registration logic
+      const superAdmin = await this.adminModel.findOne({
+        isSuperAdmin: true,
+      });
+
+      //seed business owner default role:
+      const ownerRole = await this.roleModel.create({
+        name: 'Owner',
+        creator: new mongoose.Types.ObjectId(superAdmin.id),
+        creatorType: RoleCreatorType.BUSINESS,
+        belongsTo: RoleBelonging.BUSINESS,
+        isBusinessOwner: true,
+      });
+      console.log('Owner role created:', ownerRole.id);
+
+      let createObj = {
+        email: data.oAuthToken,
+        name: data.name,
+        role: [new mongoose.Types.ObjectId(ownerRole.id)],
+        creatorType: BusinessUserCreatorType.SELF,
+        forcePasswordReset: false,
+        isEmailVerified: true,
+        status: ProfileStatus.EMAIL_VERIFIED,
+      };
+
+      //append creator to roles
+      const createdUser = await this.businessUserModel.create(createObj);
+      console.log('Business user created:', createdUser.id);
+      await this.roleModel.updateOne(
+        { _id: ownerRole.id },
+        { $set: { creator: createdUser._id } },
+      );
+      const fcmExists = await this.tokenModel.exists({
+        type: TokenTypes.FCM,
+        user: createdUser._id,
+        deviceType: data.deviceType ? data.deviceType : 'web',
+      });
+      if (data.fcmToken) {
+        const foundFcmToken = await this.tokenModel.findOneAndUpdate(
+          {
+            type: TokenTypes.FCM,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          },
+          {
+            $set: {
+              token: data.fcmToken,
+            },
+          },
+        );
+
+        console.log('foundFcmToken::', foundFcmToken);
+        if (!foundFcmToken) {
+          await this.tokenModel.create({
+            token: data.fcmToken,
+            type: TokenTypes.FCM,
+            userType: UserTypes.BUSINESS,
+            user: createdUser._id,
+            deviceType: data.deviceType ? data.deviceType : 'web',
+          });
+        }
+      }
+      const payload: JwtPayload = {
+        id: createdUser.id,
+        // email: user.email,
+        userType: UserTypes.BUSINESS,
+        role: String(createdUser.role),
+        business: String(createdUser.business),
+      };
+      const token = await this.generateJWT(payload, TokenTypes.ACCESS);
+      console.log('token::::', token);
+
+      const createdUserWithRole = await this.businessUserModel
+        .findById(createdUser.id)
+        .populate('role', '_id name');
+      return {
+        success: true,
+        message: 'User Created Successfully',
+        user: createdUserWithRole,
+        fcmExists: fcmExists ? true : false,
+        token,
+      };
+    }
+  }
+
   async verifyUser(data: VerifyEmailDto) {
     try {
-      const user = await this.businessUserModel.findOne({ email: data.email });
+      const user = await this.businessUserModel.findById(data.userId);
       if (!user) {
         return {
           success: false,
           message: 'Business User not found!',
         };
       }
-      if (user.isEmailVerified) {
-        return {
-          success: false,
-          message: 'Email already verified!',
-        };
+      let foundOtpDoc = null;
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (user.isEmailVerified) {
+          return {
+            success: false,
+            message: 'Email already verified!',
+          };
+        }
+        foundOtpDoc = await this.otpModel.findOne({
+          user: new mongoose.Types.ObjectId(user.id),
+          type: OtpTypes.EMAIL,
+        });
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (user.isMobileVerified) {
+          return {
+            success: false,
+            message: 'Mobile phone already verified!',
+          };
+        }
+
+        foundOtpDoc = await this.otpModel.findOne({
+          user: new mongoose.Types.ObjectId(user.id),
+          type: OtpTypes.MOBILE,
+        });
       }
-      const foundOtpDoc = await this.otpModel.findOne({
-        user: new mongoose.Types.ObjectId(user.id),
-        type: OtpTypes.EMAIL,
-      });
       if (!foundOtpDoc) {
         return {
           success: false,
@@ -417,13 +1150,30 @@ export class BusinessService {
           message: 'Invalid Otp',
         };
       }
-      await this.otpModel.deleteOne({ _id: foundOtpDoc.id });
-      await this.businessUserModel.updateOne(
-        { _id: user.id },
-        {
-          $set: { isEmailVerified: true, status: ProfileStatus.EMAIL_VERIFIED },
-        },
-      );
+      this.otpModel.deleteOne({ _id: foundOtpDoc.id });
+
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        await this.businessUserModel.updateOne(
+          { _id: user.id },
+          {
+            $set: {
+              isEmailVerified: true,
+              status: ProfileStatus.EMAIL_VERIFIED,
+            },
+          },
+        );
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        console.log('Verifying MOBILE PHONE:', user.id);
+        await this.businessUserModel.updateOne(
+          { _id: user.id },
+          {
+            $set: {
+              isMobileVerified: true,
+              status: ProfileStatus.EMAIL_VERIFIED,
+            },
+          },
+        );
+      }
       const token = await this.authService.generateJWT(
         {
           id: user.id,
@@ -433,11 +1183,12 @@ export class BusinessService {
         TokenTypes.ACCESS,
         UserTypes.BUSINESS,
       );
+
       // const updatedUser = await this.businessUserModel.findById(user.id);
 
       return {
         success: true,
-        message: 'Email Verified Successfully!',
+        message: 'Details Verified Successfully!',
         token: token,
       };
     } catch (error) {
@@ -447,22 +1198,36 @@ export class BusinessService {
       };
     }
   }
-  async resendOtp(email: string) {
+  async resendOtp(data: ResendUserOtpDto) {
     try {
-      const user = await this.businessUserModel.findOne({ email: email });
+      const user = await this.businessUserModel.findById(data.userId);
       if (!user) {
         return {
           success: false,
           message: 'Business User not found!',
         };
       }
-      if (user.isEmailVerified) {
-        return {
-          success: false,
-          message: 'Email already verified!',
-        };
+      if (data.signupMethod === SignupMethod.EMAIL) {
+        if (user.isEmailVerified) {
+          return {
+            success: false,
+            message: 'Email already verified!',
+          };
+        }
+        this.mailService.sendBusinessUserVerificationMail(user.id);
+      } else if (data.signupMethod === SignupMethod.PHONE) {
+        if (user.isMobileVerified) {
+          return {
+            success: false,
+            message: 'Mobile phone already verified!',
+          };
+        }
+        const phoneNumber = parsePhoneNumberFromString(
+          `${user.countryCode}${user.phone}`,
+        );
+        const fullPhoneNumber = phoneNumber.format('E.164');
+        this.smsService.sendSMS(user.id, fullPhoneNumber, SMSType.OTP);
       }
-      this.mailService.sendBusinessUserVerificationMail(user.id);
       return {
         success: true,
         message: 'Otp resent successfully!',
@@ -619,177 +1384,394 @@ export class BusinessService {
   //   }
   // }
 
-  async createBusiness(userId: string, token: string, data: CreateBusinessDto) {
-    try {
-      //unique business check
-      const findBusiness = await this.businessModel.findOne({
-        $or: [
-          { email: data.email },
-          // { registrationNumber: data.registrationNumber },
-        ],
-      });
-      if (findBusiness) {
-        return {
-          success: false,
-          message: `Business already exist with given email:${data.email}`,
-        };
-      }
-      if (userId && !isValidObjectId(userId)) {
-        return {
-          success: false,
-          message: 'Please provide valid Business User Id',
-        };
-      }
 
-      let userDetails = await this.businessUserModel
-        .findById(userId)
-        .select({ password: 0 });
-      if (!userDetails) {
-        return {
-          success: false,
-          message: 'Business User not found with given ID',
-        };
-      }
-      const phoneNumber = parsePhoneNumberFromString(
-        `${data.countryCode}${data.phone}`,
-      );
-      if (!phoneNumber || !phoneNumber.isValid()) {
-        return { success: false, message: 'Invalid phone number' };
-      }
+  //  async createBusiness(userId: string, token: string, data: CreateBusinessDto) {
+  //   try {
+  //     //unique business check
+  //     const findBusiness = await this.businessModel.findOne({
+  //       $or: [
+  //         { email: data.email },
+  //       ],
+  //     });
+  //     if (findBusiness) {
+  //       return {
+  //         success: false,
+  //         message: `Business already exist with given email:${data.email}`,
+  //       };
+  //     }
+  //     if (userId && !isValidObjectId(userId)) {
+  //       return {
+  //         success: false,
+  //         message: 'Please provide valid Business User Id',
+  //       };
+  //     }
 
-      if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
-        return {
-          success: false,
-          message: 'Business User email not verified',
-          data: userDetails,
-        };
-      }
-      if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
-        return {
-          success: false,
-          message: 'Please provide valid Scalability Factor',
-        };
-      }
+  //     let userDetails = await this.businessUserModel
+  //       .findById(userId)
+  //       .select({ password: 0 });
+  //     if (!userDetails) {
+  //       return {
+  //         success: false,
+  //         message: 'Business User not found with given ID',
+  //       };
+  //     }
+  //     const phoneNumber = parsePhoneNumberFromString(
+  //       `${data.countryCode}${data.phone}`,
+  //     );
+  //     if (!phoneNumber || !phoneNumber.isValid()) {
+  //       return { success: false, message: 'Invalid phone number' };
+  //     }
 
-      let createObj = {
-        name: data.name,
-        email: data.email,
-        // businessCategory: businessCategoriesIds,
-        // businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
-        phone: data.phone,
-        countryCode: data.countryCode,
-        scalabilityFactor: data.scalabilityFactor,
-        creatorType: BusinessCreatorType.BUSINESS_USER,
-        creator: new mongoose.Types.ObjectId(userId),
-        authorisedUser: new mongoose.Types.ObjectId(userId),
-        roleOfCreator: data.roleOfCreator,
-      };
-      if (data.website) createObj['website'] = data.website;
-      // if (data.brand && isValidObjectId(data.brand))
-      // createObj['brand'] = new mongoose.Types.ObjectId(data.brand);
-      const createdBusiness = await this.businessModel.create(createObj);
+  //     if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
+  //       return {
+  //         success: false,
+  //         message: 'Business User email not verified',
+  //         data: userDetails,
+  //       };
+  //     }
+  //     if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
+  //       return {
+  //         success: false,
+  //         message: 'Please provide valid Scalability Factor',
+  //       };
+  //     }
 
-      //create drive
-      let driveDetails = await this.seederService.createDrive(
-        createdBusiness._id,
-        Business.name,
-      );
-      await this.businessModel.updateOne(
-        { _id: createdBusiness._id },
-        { $set: { drive: driveDetails._id } },
-      );
+  //     let createObj = {
+  //       name: data.name,
+  //       email: data.email,
+  //       // businessCategory: businessCategoriesIds,
+  //       // businessIndustry: new mongoose.Types.ObjectId(data.businessIndustry),
+  //       phone: data.phone,
+  //       countryCode: data.countryCode,
+  //       scalabilityFactor: data.scalabilityFactor,
+  //       creatorType: BusinessCreatorType.BUSINESS_USER,
+  //       creator: new mongoose.Types.ObjectId(userId),
+  //       authorisedUser: new mongoose.Types.ObjectId(userId),
+  //       roleOfCreator: data.roleOfCreator,
+  //     };
+  //     let businessCategoryTitles = [];
+  //     let findBusinessIndustry = null;
+  //     if (data.businessIndustry && data.businessCategories) {
+  //       findBusinessIndustry = await this.businessIndModel.findById(
+  //         data.businessIndustry,
+  //       );
+  //       if (!findBusinessIndustry) {
+  //         return {
+  //           success: false,
+  //           message: 'Please provide valid Business Industry',
+  //         };
+  //       }
+  //       let businessCategoriesIds = [];
+  //       for (let category of data.businessCategories) {
+  //         if (!isValidObjectId(category)) {
+  //           return {
+  //             success: false,
+  //             message: `Please provide valid Business Category Id:${category}`,
+  //           };
+  //         }
+  //         const findBusinessCategory =
+  //           await this.businessCategoryModel.findById(category);
+  //         if (!findBusinessCategory) {
+  //           return {
+  //             success: false,
+  //             message: `Please provide valid Business Category Id:${category}`,
+  //           };
+  //         }
+  //         businessCategoriesIds.push(new mongoose.Types.ObjectId(category));
+  //         businessCategoryTitles.push(findBusinessCategory.title);
+  //       }
 
-      if (createdBusiness.authorisedUser) {
-        await this.businessUserModel.updateOne(
-          { _id: createdBusiness.authorisedUser },
-          {
-            $addToSet: {
-              business: createdBusiness._id,
-            },
-            $set: {
-              // status: ProfileStatus.BUSINESS_CREATED,
-              selectedBusiness: createdBusiness._id,
-            },
-          },
-        );
-      }
-      logger.info('OLD ROLES SEEDER');
-      // const rolePromises = Object.keys(DefaultBusinessRoles).map(
-      //   async (roleName) => {
-      //     const roleData = DefaultBusinessRoles[roleName];
-      //     // Create the role
-      //     const createdRole = await this.roleModel.create({
-      //       name: roleData.name,
-      //       creator: new mongoose.Types.ObjectId(userId),
-      //       creatorType: RoleCreatorType.BUSINESS,
-      //       belongsTo: RoleBelonging.BUSINESS,
-      //       business: createdBusiness._id,
-      //     });
-      //     // Create privileges for this role concurrently
-      //     const privilegePromises = Object.keys(roleData.privileges).map(
-      //       async (privilegeKey) => {
-      //         // Get or create the resource document
-      //         let resourceDetails = await this.resourceModel.findOne({
-      //           title: ResourceTypes[privilegeKey],
-      //         });
-      //         if (!resourceDetails) {
-      //           resourceDetails = await this.resourceModel.create({
-      //             title: ResourceTypes[privilegeKey],
-      //           });
-      //         }
-      //         // For each action in the privilege, get or create the action document and create a privilege record
-      //         const actionPromises = roleData.privileges[privilegeKey].map(
-      //           async (actionKey) => {
-      //             let actionDetails = await this.actionModel.findOne({
-      //               title: Actions[actionKey],
-      //             });
-      //             if (!actionDetails) {
-      //               actionDetails = await this.actionModel.create({
-      //                 title: Actions[actionKey],
-      //               });
-      //             }
-      //             return this.privilegeModel.create({
-      //               role: createdRole._id,
-      //               resource: resourceDetails.title,
-      //               action: actionDetails.title,
-      //             });
-      //           },
-      //         );
-      //         return Promise.all(actionPromises);
-      //       },
-      //     );
-      //     await Promise.all(privilegePromises);
-      //   },
-      // );
-      // await Promise.all(rolePromises);
+  //       createObj['businessIndustry'] = new mongoose.Types.ObjectId(
+  //         data.businessIndustry,
+  //       );
+  //       createObj['businessCategories'] = businessCategoriesIds;
+  //     }
 
-      //shoot. otps
-      // this.mailService.sendBusinessVerificationMail(createdBusiness._id);
-      //shoot mobile otp
+  //     if (data.website) createObj['website'] = data.website;
+  //     const createdBusiness = await this.businessModel.create(createObj);
+  //     const freeSubscriptionProduct =
+  //       await this.subscriptionProductModel.findOne({ isFree: true });
+  //     const subscription = await this.subscriptionModel.create({
+  //       business: new mongoose.Types.ObjectId(createdBusiness._id),
+  //       source: SubscriptionSource.FREE,
+  //       startDate: new Date(),
+  //       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+  //       invoiceStartDate: new Date(),
+  //       invoiceEndDate: new Date(
+  //         new Date().setFullYear(new Date().getFullYear() + 1),
+  //       ),
+  //       isCancelled: false,
+  //       isTrialActive: false,
+  //       status: SubscriptionStatus.ACTIVE,
+  //       iapPlatform: 'none',
+  //       product: freeSubscriptionProduct._id,
+  //     });
 
-      const fullPhoneNumber = phoneNumber.format('E.164');
-      this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP);
-      this.generateBusinessQR(createdBusiness.id);
-      this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
-        .then(() => logger.info('Business roles seeded successfully'))
-        .catch((err) => logger.error('Error seeding business roles:', err));
 
-      logger.info(`businessId: ${createdBusiness.id}`);
+  //     //ai-agent creation
+  //     let agentName = `${createdBusiness.name} Assistant`;
+  //     this.pinnAiService
+  //       .createAgent({
+  //         name: agentName,
+  //         tone: 'professional',
+  //         businessId: createdBusiness.id,
+  //         subCategories: businessCategoryTitles,
+  //         category: findBusinessIndustry ? findBusinessIndustry.title : null,
+  //         website: createdBusiness.website ? createdBusiness.website : null,
+  //         businessName: createdBusiness.name,
+  //       })
+  //       .catch((err) => {
+  //         console.error(
+  //           'Error creating AI agent in Create Business Catch Block:',
+  //           err,
+  //         );
+  //       });
 
-      return {
-        success: true,
-        message: 'Business Created Successfully!',
-        data: createdBusiness,
-        // token: updatedToken,
-      };
-    } catch (error) {
-      logger.error('Error:', error);
+  //     //create drive
+  //     let driveDetails = await this.seederService.createDrive(
+  //       createdBusiness._id,
+  //       Business.name,
+  //     );
+  //     this.driveService.createFolder(createdBusiness.id, {
+  //       parentDirectory: driveDetails.id,
+  //       parentType: 'Drive',
+  //       folderName: 'Gallery',
+  //     });
+
+  //     await this.businessModel.updateOne(
+  //       { _id: createdBusiness._id },
+  //       { $set: { drive: driveDetails._id,activeSubscription:subscription._id } },
+  //     );
+
+  //     if (createdBusiness.authorisedUser) {
+  //       await this.businessUserModel.updateOne(
+  //         { _id: createdBusiness.authorisedUser },
+  //         {
+  //           $addToSet: {
+  //             business: createdBusiness._id,
+  //           },
+  //           $set: {
+  //             // status: ProfileStatus.BUSINESS_CREATED,
+  //             selectedBusiness: createdBusiness._id,
+  //           },
+  //         },
+  //       );
+  //     }
+  //     const fullPhoneNumber = phoneNumber.format('E.164');
+  //     this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP);
+  //     this.generateBusinessQR(createdBusiness.id);
+  //     this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
+  //       .then(() => logger.info('Business roles seeded successfully'))
+  //       .catch((err) => logger.error('Error seeding business roles:', err));
+
+  //     logger.info(`businessId: ${createdBusiness.id}`);
+
+  //     return {
+  //       success: true,
+  //       message: 'Business Created Successfully!',
+  //       data: createdBusiness,
+  //       // token: updatedToken,
+  //     };
+  //   } catch (error) {
+  //     logger.error('Error:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Something went wrong.',
+  //     };
+  //   }
+  // }
+
+ async createBusiness(userId: string, token: string, data: CreateBusinessDto):Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+}> {
+  try {
+    // Validate userId early
+    if (!isValidObjectId(userId)) {
+      return { success: false, message: 'Please provide valid Business User Id' };
+    }
+
+    // Parallel fetch operations for better performance
+    const [findBusiness, userDetails, freeSubscriptionProduct] = await Promise.all([
+      this.businessModel.findOne({ email: data.email }).lean(),
+      this.businessUserModel.findById(userId).select('-password').lean(),
+      this.subscriptionProductModel.findOne({ isFree: true }).lean(),
+    ]);
+
+    // Early validation checks
+    if (findBusiness) {
       return {
         success: false,
-        message: 'Something went wrong.',
+        message: `Business already exist with given email: ${data.email}`,
       };
     }
+
+    if (!userDetails) {
+      return { success: false, message: 'Business User not found with given ID' };
+    }
+
+    if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
+      return {
+        success: false,
+        message: 'Business User email not verified',
+        data: userDetails,
+      };
+    }
+
+    // Validate phone number
+    const phoneNumber = parsePhoneNumberFromString(`${data.countryCode}${data.phone}`);
+    if (!phoneNumber?.isValid()) {
+      return { success: false, message: 'Invalid phone number' };
+    }
+
+    // Validate scalability factor
+    if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
+      return { success: false, message: 'Please provide valid Scalability Factor' };
+    }
+
+    // Build base creation object
+    const createObj: any = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      countryCode: data.countryCode,
+      scalabilityFactor: data.scalabilityFactor,
+      creatorType: BusinessCreatorType.BUSINESS_USER,
+      creator: new mongoose.Types.ObjectId(userId),
+      authorisedUser: new mongoose.Types.ObjectId(userId),
+      roleOfCreator: data.roleOfCreator,
+    };
+
+    if (data.website) {
+      createObj.website = data.website;
+    }
+
+    // Handle business industry and categories
+    let businessCategoryTitles: string[] = [];
+    let findBusinessIndustry = null;
+
+    if (data.businessIndustry && data.businessCategories?.length) {
+      // Validate all category IDs upfront
+      if (!data.businessCategories.every(isValidObjectId)) {
+        const invalidId = data.businessCategories.find(id => !isValidObjectId(id));
+        return {
+          success: false,
+          message: `Please provide valid Business Category Id: ${invalidId}`,
+        };
+      }
+
+      // Parallel fetch for industry and categories
+      const [industry, categories] = await Promise.all([
+        this.businessIndModel.findById(data.businessIndustry).lean(),
+        this.businessCategoryModel.find({
+          _id: { $in: data.businessCategories }
+        }).lean(),
+      ]);
+
+      if (!industry) {
+        return { success: false, message: 'Please provide valid Business Industry' };
+      }
+
+      if (categories.length !== data.businessCategories.length) {
+        return { success: false, message: 'One or more Business Category IDs are invalid' };
+      }
+
+      findBusinessIndustry = industry;
+      businessCategoryTitles = categories.map(cat => cat.title);
+      createObj.businessIndustry = new mongoose.Types.ObjectId(data.businessIndustry);
+      createObj.businessCategories = data.businessCategories.map(
+        id => new mongoose.Types.ObjectId(id)
+      );
+    }
+
+    // Create business and subscription
+    const createdBusiness = await this.businessModel.create(createObj);
+    
+    const subscription = await this.subscriptionModel.create({
+      business: createdBusiness._id,
+      source: SubscriptionSource.FREE,
+      startDate: new Date(),
+      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      invoiceStartDate: new Date(),
+      invoiceEndDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      isCancelled: false,
+      isTrialActive: false,
+      status: SubscriptionStatus.ACTIVE,
+      iapPlatform: 'none',
+      product: freeSubscriptionProduct._id,
+      isFreePlan: true,
+    });
+
+    // Fire-and-forget async operations (non-blocking)
+    const fullPhoneNumber = phoneNumber.format('E.164');
+    
+    Promise.all([
+      // AI agent creation
+      this.pinnAiService.createAgent({
+        name: `${createdBusiness.name} Assistant`,
+        tone: 'professional',
+        businessId: createdBusiness.id,
+        subCategories: businessCategoryTitles,
+        category: findBusinessIndustry?.title || null,
+        website: createdBusiness.website || null,
+        businessName: createdBusiness.name,
+      }).catch(err => logger.error('Error creating AI agent:', err)),
+      
+      // SMS
+      this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP)
+        .catch(err => logger.error('Error sending SMS:', err)),
+      
+      // QR generation
+      this.generateBusinessQR(createdBusiness.id)
+        .catch(err => logger.error('Error generating QR:', err)),
+      
+      // Seed roles
+      this.seedBusinessDepartmentRoles(userId, createdBusiness._id)
+        .catch(err => logger.error('Error seeding business roles:', err)),
+    ]);
+
+    // Create drive and folder sequentially (drive needed first)
+    const driveDetails = await this.seederService.createDrive(
+      createdBusiness._id,
+      Business.name,
+    );
+
+    // Parallel updates
+    await Promise.all([
+      this.driveService.createFolder(createdBusiness.id, {
+        parentDirectory: driveDetails.id,
+        parentType: 'Drive',
+        folderName: 'Gallery',
+      }),
+      this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { drive: driveDetails._id, activeSubscription: subscription._id } },
+      ),
+      this.businessUserModel.updateOne(
+        { _id: createdBusiness.authorisedUser },
+        {
+          $addToSet: { business: createdBusiness._id },
+          $set: { selectedBusiness: createdBusiness._id },
+        },
+      ),
+    ]);
+
+    logger.info(`Business created successfully: ${createdBusiness.id}`);
+
+    return {
+      success: true,
+      message: 'Business Created Successfully!',
+      data: createdBusiness,
+    };
+  } catch (error) {
+    logger.error('Error creating business:', error);
+    return {
+      success: false,
+      message: 'Something went wrong.',
+    };
   }
+}
 
   async verifyBusiness(
     user: DecodedUser,
@@ -983,7 +1965,6 @@ export class BusinessService {
     data: UpdateBusinessDto,
   ) {
     try {
-      console.log('Updateddd DATAAAA:', data);
       const businessUser = await this.businessUserModel.findById(userId);
       if (!businessUser) {
         return {
@@ -993,7 +1974,6 @@ export class BusinessService {
       }
       logger.info(`Business ID: ${businessId}`);
       const findBusiness = await this.businessModel.findById(businessId);
-      console.log('Find Businessss:', findBusiness);
       if (!findBusiness) {
         return {
           success: false,
@@ -1171,18 +2151,18 @@ export class BusinessService {
           { $set: { status: BusinessStatus.ADDRESS_ADDED } },
         );
       }
-      if (
-        updateObj.businessIndustry &&
-        updateObj.businessCategories &&
-        !findBusiness.businessIndustry &&
-        findBusiness.businessCategories &&
-        findBusiness.businessCategories.length == 0
-      ) {
-        await this.businessModel.updateOne(
-          { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.TYPE_ADDED } },
-        );
-      }
+      // if (
+      //   updateObj.businessIndustry &&
+      //   updateObj.businessCategories &&
+      //   !findBusiness.businessIndustry &&
+      //   findBusiness.businessCategories &&
+      //   findBusiness.businessCategories.length == 0
+      // ) {
+      //   await this.businessModel.updateOne(
+      //     { _id: new mongoose.Types.ObjectId(businessId) },
+      //     { $set: { status: BusinessStatus.TYPE_ADDED } },
+      //   );
+      // }
       if (
         updateObj.description &&
         updateObj.description.length > 0 &&
@@ -1190,24 +2170,36 @@ export class BusinessService {
       ) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.DESCRIPTION_ADDED } },
+          { $set: { status: BusinessStatus.TAGS_DESCRIPTION_ADDED } },
         );
+
+        // this.pinnAiService.updateAgent(
+        //   {
+        //     description: updateObj.description,
+        //   },
+        //   businessId,
+        // );
       }
 
-      if (
-        updateObj.cover &&
-        findBusiness.cover === DEFAULT_IMAGES.BUSINESS_COVER
-      ) {
+      if (updateObj.cover || updateObj.logo) {
         let profileCompletionPercentage =
-          (BusinessStatus.COVER_ADDED /
-            BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
-          100;
+          (BusinessStatus.COVER_ADDED / BusinessStatus.COVER_ADDED) * 100;
+
+        let tempUpdateObj = {
+          profileCompletionPercentage: profileCompletionPercentage,
+          status: BusinessStatus.COVER_ADDED,
+        };
+        if (updateObj.cover && !updateObj.logo) {
+          tempUpdateObj['logo'] = DEFAULT_IMAGES.BUSINESS_LOGO;
+        }
+        if (updateObj.logo && !updateObj.cover) {
+          tempUpdateObj['cover'] = DEFAULT_IMAGES.BUSINESS_COVER;
+        }
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
           {
             $set: {
-              status: BusinessStatus.COVER_ADDED,
-              profileCompletionPercentage,
+              ...tempUpdateObj,
             },
           },
         );
@@ -1220,8 +2212,14 @@ export class BusinessService {
       ) {
         await this.businessModel.updateOne(
           { _id: new mongoose.Types.ObjectId(businessId) },
-          { $set: { status: BusinessStatus.TAGS } },
+          { $set: { status: BusinessStatus.TAGS_DESCRIPTION_ADDED } },
         );
+        // this.pinnAiService.updateAgent(
+        //   {
+        //     tags: updateObj.tags,
+        //   },
+        //   businessId,
+        // );
       }
 
       if (updateObj.confettiCompleted) {
@@ -1238,7 +2236,6 @@ export class BusinessService {
       }
 
       updatedDetails = await this.businessModel.findById(businessId);
-      logger.info(`udpatedDetails: ${JSON.stringify(updatedDetails)}`);
       return {
         success: true,
         message: 'Business Updated Successfully!',
@@ -1363,16 +2360,20 @@ export class BusinessService {
   }
 
   //helper
-  async validateBusinessUser(email: string, password: string) {
+  async validateBusinessUser(
+    userId: string,
+    password: string,
+    signupMethod: string,
+  ) {
     // logger.info(`email password: ${email} ${password}`);
-    const user = await this.businessUserModel.findOne({ email });
+    const user = await this.businessUserModel.findById(userId);
     // console.log('User::', user);
     if (user) {
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return { success: false, message: 'Incorrect password' };
       }
-      if (!user.isEmailVerified) {
+      if (signupMethod === SignupMethod.EMAIL && !user.isEmailVerified) {
         return {
           success: false,
           message: 'Email is not verified',
@@ -1380,6 +2381,19 @@ export class BusinessService {
             _id: user._id,
             email: user.email,
             isEmailVerified: user.isEmailVerified,
+            status: user.status,
+          },
+        };
+      }
+      if (signupMethod === SignupMethod.PHONE && !user.isMobileVerified) {
+        return {
+          success: false,
+          message: 'Phone number is not verified',
+          data: {
+            _id: user._id,
+            phone: user.phone,
+            countryCode: user.countryCode,
+            isMobileVerified: user.isMobileVerified,
             status: user.status,
           },
         };
@@ -1399,9 +2413,35 @@ export class BusinessService {
   }
 
   async login(loginDto: LoginBusinessDto) {
+    let userId = null;
+    if (loginDto.signupMethod === SignupMethod.EMAIL) {
+      const userFound = await this.businessUserModel.findOne({
+        email: loginDto.email,
+      });
+      if (!userFound) {
+        return {
+          success: false,
+          message: 'user is not found with this email',
+        };
+      }
+      userId = userFound.id;
+    } else if (loginDto.signupMethod === SignupMethod.PHONE) {
+      const userFound = await this.businessUserModel.findOne({
+        phone: loginDto.phone,
+        countryCode: loginDto.countryCode,
+      });
+      if (!userFound) {
+        return {
+          success: false,
+          message: 'user is not found with this email',
+        };
+      }
+      userId = userFound.id;
+    }
     const validatedBusinessUser = await this.validateBusinessUser(
-      loginDto.email,
+      userId,
       loginDto.password,
+      loginDto.signupMethod,
     );
     // logger.info(
     //   `Winston Log: Validated Business User: ${validatedBusinessUser}`,
@@ -2662,29 +3702,51 @@ export class BusinessService {
       //   .populate('outlets', LocationPopulates.FOREIGN);
       console.log('BusinessID:', businessId);
       const now = new Date();
-      const basePipeline: any[] = [
+      const businessObjectId = new mongoose.Types.ObjectId(businessId);
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const currentDate = new Date();
+
+      const optimizedPipeline: any[] = [
+        // 1. Geo-spatial search (ensure 2dsphere index on location field)
         {
           $geoNear: {
             near: { type: 'Point', coordinates: [longitude, latitude] },
             distanceField: 'distance',
             maxDistance: 100000000 * 1609.34,
             spherical: true,
+            query: { business: businessObjectId }, // Move match into geoNear for better performance
           },
         },
-        {
-          $match: {
-            business: new mongoose.Types.ObjectId(businessId),
-          },
-        },
+
+        // 2. Lookup business details with projection
         {
           $lookup: {
             from: 'businesses',
             localField: 'business',
             foreignField: '_id',
             as: 'businessDetails',
+            pipeline: [
+              {
+                $project: {
+                  name: 1,
+                  cover: 1,
+                  logo: 1,
+                  description: 1,
+                  email: 1,
+                  isActive: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  website: 1,
+                  businessIndustry: 1,
+                  drive: 1,
+                },
+              },
+            ],
           },
         },
         { $unwind: '$businessDetails' },
+
+        // 3. Lookup industry details
         {
           $lookup: {
             from: 'businessindustries',
@@ -2699,114 +3761,84 @@ export class BusinessService {
             preserveNullAndEmptyArrays: true,
           },
         },
-        // {
-        //   $lookup: {
-        //     from: 'menus',
-        //     localField: 'businessDetails.menus',
-        //     foreignField: '_id',
-        //     as: 'menuDetails',
-        //     pipeline: [
-        //       {
-        //         $lookup: {
-        //           from: 'files',
-        //           localField: 'images',
-        //           foreignField: '_id',
-        //           as: 'imageDetails',
-        //         },
-        //       },
-        //       {
-        //         $project: {
-        //           _id: 1,
-        //           name: 1,
-        //           description: 1,
-        //           imageDetails: {
-        //             $map: {
-        //               input: '$imageDetails',
-        //               as: 'image',
-        //               in: {
-        //                 _id: '$$image._id',
-        //                 url: '$$image.metaData.url',
-        //                 thumbnailUrl: '$$image.metaData.thumbnailUrl',
-        //               },
-        //             },
-        //           },
-        //         },
-        //       },
-        //     ],
-        //   },
-        // },
+
+        // 4. Lookup follow status
         {
           $lookup: {
-            from: 'follows', // make sure it's the actual collection name
+            from: 'follows',
             let: {
-              userId: new mongoose.Types.ObjectId(userId), // assuming userId is available in the scope
               targetId: '$businessDetails._id',
-              targetType: Business.name,
             },
             pipeline: [
               {
                 $match: {
                   $expr: {
                     $and: [
-                      { $eq: ['$follower', '$$userId'] },
+                      { $eq: ['$follower', userObjectId] },
                       { $eq: ['$followerType', 'User'] },
                       { $eq: ['$following', '$$targetId'] },
-                      { $eq: ['$followingType', '$$targetType'] },
+                      { $eq: ['$followingType', Business.name] },
                       { $eq: ['$isBlocked', false] },
                     ],
                   },
+                },
+              },
+              {
+                $project: {
+                  muted: 1,
+                  mutedUntil: 1,
                 },
               },
             ],
             as: 'userFollow',
           },
         },
+
+        // 5. Calculate follow and mute status
         {
           $addFields: {
-            isFollowedByMe: {
-              $gt: [{ $size: '$userFollow' }, 0],
-            },
-          },
-        },
-        {
-          $unwind: {
-            path: '$userFollow',
-            preserveNullAndEmptyArrays: true,
+            isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
+            userFollow: { $arrayElemAt: ['$userFollow', 0] },
           },
         },
         {
           $addFields: {
             isMuted: {
-              $cond: [
-                {
-                  $or: [
-                    { $eq: ['$userFollow', null] }, // no userFollow
-                    { $eq: ['$userFollow.muted', false] }, // not muted
-                  ],
-                },
-                false,
-                {
-                  $cond: [
-                    {
-                      $and: [
-                        { $ifNull: ['$userFollow.mutedUntil', false] },
-                        {
-                          $gt: [
-                            { $toDate: '$userFollow.mutedUntil' },
-                            new Date(),
+              $cond: {
+                if: { $eq: ['$userFollow', null] },
+                then: false,
+                else: {
+                  $cond: {
+                    if: { $eq: ['$userFollow.muted', false] },
+                    then: false,
+                    else: {
+                      $cond: {
+                        if: {
+                          $and: [
+                            { $ifNull: ['$userFollow.mutedUntil', false] },
+                            {
+                              $gt: [
+                                { $toDate: '$userFollow.mutedUntil' },
+                                currentDate,
+                              ],
+                            },
                           ],
                         },
-                      ],
+                        then: true,
+                        else: false,
+                      },
                     },
-                    true,
-                    false,
-                  ],
+                  },
                 },
-              ],
+              },
             },
           },
         },
+
+        // 6. Sort by distance
         { $sort: { distance: 1 } },
+
+        // 7. Group locations by business
         {
           $group: {
             _id: '$businessDetails._id',
@@ -2821,9 +3853,11 @@ export class BusinessService {
             website: { $first: '$businessDetails.website' },
             industry: { $first: '$industryDetails' },
             isFollowedByMe: { $first: '$isFollowedByMe' },
-            menus: { $first: '$menuDetails' },
+            isMuted: { $first: '$isMuted' },
+            drive: { $first: '$businessDetails.drive' },
             locations: {
               $push: {
+                _id: '$_id',
                 accuracy: '$accuracy',
                 address1: '$address1',
                 address2: '$address2',
@@ -2831,7 +3865,6 @@ export class BusinessService {
                 state: '$state',
                 zip: '$postalCode',
                 website: '$website',
-                _id: '$_id',
                 email: '$email',
                 phone: '$phone',
                 countryCode: '$countryCode',
@@ -2841,13 +3874,117 @@ export class BusinessService {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
-            isMuted: { $first: '$isMuted' },
           },
         },
-        { $sort: { createdAt: -1, _id: 1 } },
+
+        // 8. Lookup menus with images in one go
+        {
+          $lookup: {
+            from: 'menus',
+            let: { businessId: '$_id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$business', '$$businessId'] } } },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: 'images',
+                  foreignField: '_id',
+                  as: 'images',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  description: 1,
+                  images: {
+                    $map: {
+                      input: '$images',
+                      as: 'image',
+                      in: {
+                        _id: '$$image._id',
+                        url: '$$image.metaData.url',
+                        thumbnailUrl: '$$image.metaData.thumbnailUrl',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+            as: 'menus',
+          },
+        },
+
+        // 9. Lookup gallery files
+        {
+          $lookup: {
+            from: 'folders',
+            let: { driveId: '$drive' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$folderName', 'Gallery'] },
+                      { $eq: ['$drive', '$$driveId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $lookup: {
+                  from: 'files',
+                  localField: '_id',
+                  foreignField: 'parentDirectory',
+                  as: 'files',
+                  pipeline: [
+                    {
+                      $project: {
+                        _id: 1,
+                        'metaData.url': 1,
+                        'metaData.thumbnailUrl': 1,
+                        'metaData.mimeType': 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                $project: {
+                  files: 1,
+                },
+              },
+            ],
+            as: 'galleryFolder',
+          },
+        },
+        {
+          $addFields: {
+            galleryFiles: {
+              $ifNull: [{ $arrayElemAt: ['$galleryFolder.files', 0] }, []],
+            },
+          },
+        },
+
+        // 10. Clean up temporary fields
+        {
+          $project: {
+            userFollow: 0,
+            galleryFolder: 0,
+          },
+        },
       ];
 
-      let [business] = await this.outletModel.aggregate(basePipeline);
+      // Execute the optimized pipeline
+      const [business] = await this.outletModel.aggregate(optimizedPipeline);
 
       if (!business) {
         return {
@@ -2867,6 +4004,200 @@ export class BusinessService {
       return {
         success: false,
         message: error,
+      };
+    }
+  }
+
+  async getBusinessCardFeed(
+    user: DecodedUser,
+    businessId: string,
+    page: number,
+    limit: number,
+  ) {
+    try {
+      let query: any = {
+        creator: new mongoose.Types.ObjectId(businessId),
+      };
+      let userId = new mongoose.Types.ObjectId(user.id);
+      let pipeline: PipelineStage[] = [
+        { $match: query },
+        {
+          $addFields: {
+            isLiked: {
+              $in: [userId, { $ifNull: ['$likes', []] }],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'media',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Media'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'mediaContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'broadcasts',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Broadcast'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'broadcastContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'news',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'News'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'newsContent',
+          },
+        },
+        {
+          $lookup: {
+            from: 'agendas',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'Agenda'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'agendaContent',
+          },
+        },
+        {
+          $addFields: {
+            contentDetails: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: ['$feedType', 'Media'] },
+                    then: { $arrayElemAt: ['$mediaContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Broadcast'] },
+                    then: { $arrayElemAt: ['$broadcastContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'News'] },
+                    then: { $arrayElemAt: ['$newsContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'Agenda'] },
+                    then: { $arrayElemAt: ['$agendaContent', 0] },
+                  },
+                ],
+                default: null,
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'businesses',
+            localField: 'contentDetails.business',
+            foreignField: '_id',
+            as: 'businessDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$businessDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            feedType: 1,
+            contentDetails: 1,
+            createdAt: 1,
+            visibility: 1,
+            isFollowedByMe: 1,
+            isLiked: 1,
+            totalLikes: 1,
+            businessDetails: {
+              logo: '$businessDetails.logo',
+              cover: '$businessDetails.cover',
+              name: '$businessDetails.name',
+              id: '$businessDetails._id',
+            },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          },
+        },
+        {
+          $project: {
+            data: 1,
+            total: { $arrayElemAt: ['$metadata.total', 0] },
+          },
+        },
+      ];
+
+      // Execute the pipeline
+      const result = await this.feedModel.aggregate(pipeline);
+
+      // Access the results
+      const feeds = result[0]?.data || [];
+      const total = result[0]?.total || 0;
+
+      return {
+        success: true,
+        message: 'Feed fetched successfully',
+        data: feeds,
+        total: total,
+        totalPages: Math.ceil(total / limit),
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to fetch feed',
+        error: error.message,
       };
     }
   }
@@ -3997,6 +5328,7 @@ export class BusinessService {
         ]);
 
       const businessDetails = {
+        _id: business._id,
         name: business.name,
         logo: business.logo,
         coverImage: business.cover,
@@ -4691,17 +6023,22 @@ export class BusinessService {
       },
       businessId: business._id,
     });
-    await this.eventModel.updateOne({_id:createdEvent._id},{
-      $push:{
-        eventSchedule: schedule._id
-      }
-    })
+    await this.eventModel.updateOne(
+      { _id: createdEvent._id },
+      {
+        $push: {
+          eventSchedule: schedule._id,
+        },
+      },
+    );
   }
 
   async uploadEventsInBulk(file: Express.Multer.File, user: DecodedUser) {
     try {
-
-      const [businessUser,business] = await Promise.all([this.businessUserModel.findById(user.id),this.businessModel.findById(user.businessProfile)])
+      const [businessUser, business] = await Promise.all([
+        this.businessUserModel.findById(user.id),
+        this.businessModel.findById(user.businessProfile),
+      ]);
 
       if (!businessUser || !business) {
         return {
@@ -5177,75 +6514,118 @@ export class BusinessService {
     }
   }
 
-  async uploadAddressVerificationDoc(
+  async uploadVerificationDocs(
     user: DecodedUser,
-    image: Express.Multer.File,
-    businessId: string,
+    images: Express.Multer.File[],
+    businessId?: string,
   ) {
     try {
-      let businessID = user.businessProfile;
-      if (businessId) {
-        businessID = businessId;
+      // Early validation
+      if (!images?.length) {
+        return {
+          success: false,
+          message: 'No images provided',
+        };
       }
-      const business = await this.businessModel.findById(businessID);
+
+      const businessID = businessId || user.businessProfile;
+
+      // Parallel fetch for business and superAdmin
+      const [business, superAdmin] = await Promise.all([
+        this.businessModel.findById(businessID).lean(),
+        this.adminModel.findOne({ isSuperAdmin: true }).lean(),
+      ]);
+
       if (!business) {
         return {
           success: false,
           message: 'Business not found',
         };
       }
-      const superAdmin = await this.adminModel.findOne({ isSuperAdmin: true });
-      // Upload the image to a cloud storage or local storage
-      const fileCategory = await this.fileCategoryModel.findOne({
-        name: FileCategoryTypes.VERIFICATION_DOCUMENT,
-      });
-      const uploadResult = await this.driveService.uploadFile(
-        user.id,
-        business.drive.toString(),
-        fileCategory.id,
-        image,
-      );
-      if (!uploadResult.success) {
+
+      if (!superAdmin) {
         return {
           success: false,
-          message: 'Failed to upload image',
+          message: 'Super admin not configured',
         };
       }
-      let profileCompletionPercentage =
-        (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
-          BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
-        100;
-      await this.businessModel.updateOne(
-        { _id: business._id },
-        {
-          $set: {
-            addressVerificationDoc: uploadResult.data.metaData.url,
-            addressVerificationStatus: VerificationStatus.PENDING,
-            profileCompletionPercentage,
-          },
-        },
-      );
-      await this.businessDocVerificationLeadsModel.create({
-        businessId: business._id,
-        userId: new mongoose.Types.ObjectId(user.id),
-        documentUrl: uploadResult.data.metaData.url,
-        documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+
+      // Create folder and upload images
+      console.log('Check 1');
+      const docFolder = await this.driveService.createFolder(businessID, {
+        parentDirectory: business.drive.toString(),
+        parentType: 'Drive',
+        folderName: 'Verification Documents',
       });
-      await this.mailService.businessDocVerificationRequest(
-        superAdmin.email,
-        business.uniqueId ? business.uniqueId : business.id,
-        BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+      console.log('Check 2', docFolder);
+
+      if (!docFolder?.data?.id) {
+        return {
+          success: false,
+          message: 'Failed to create document folder',
+        };
+      }
+
+      const uploadResult = await this.driveService.multiImageUpload(
+        user.businessProfile,
+        docFolder.data.id,
+        images,
       );
+      if (!uploadResult.success || !uploadResult.data?.length) {
+        return {
+          success: false,
+          message: 'Failed to upload images',
+        };
+      }
+
+      // Extract URLs
+      const uploadedUrls = uploadResult.data.map((file) => file.metaData.url);
+
+      // Calculate completion percentage
+      // const profileCompletionPercentage =
+      //   (BusinessStatus.VERIFICATION_DOCS_UPLOADED /
+      //     BusinessStatus.VERIFICATION_DOCS_SUCCESSFULL) *
+      //   100;
+
+      // Parallel operations for update, create, and email
+      Promise.all([
+        this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: {
+              addressVerificationDocs: uploadedUrls,
+              verificationStatus: VerificationStatus.PENDING,
+              // profileCompletionPercentage,
+            },
+          },
+        ),
+        // this.businessDocVerificationLeadsModel.create({
+        //   businessId: business._id,
+        //   userId: new mongoose.Types.ObjectId(user.id),
+        //   documentUrls: uploadedUrls,
+        //   documentType: BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        // }),
+        this.mailService.businessDocVerificationRequest(
+          superAdmin.email,
+          businessID,
+          BusinessDocumentTypesList.ADDRESS_VERIFICATION,
+        ),
+      ]);
 
       return {
         success: true,
         message: 'Address verification document uploaded successfully',
-        data: business,
+        data: {
+          businessId: businessID,
+          documentUrls: uploadedUrls,
+        },
       };
     } catch (error) {
+      console.error('Error uploading verification docs:', error);
       return {
         success: false,
-        message: error.message,
+        message:
+          error?.message || 'An error occurred while uploading documents',
       };
     }
   }
@@ -5295,37 +6675,40 @@ export class BusinessService {
 
   async getTagRecommendations(businessId: string) {
     try {
-      const business = await this.businessModel.findById(businessId);
-      if (!business) {
-        return {
-          success: false,
-          message: 'Business not found with given ID',
-        };
-      }
-      const tagsByCategory = await Promise.all(
-        business.businessCategories.map(async (catId) => {
-          const tags = await this.tagModel.aggregate([
-            { $match: { relatedId: catId } },
-            { $sample: { size: 3 } }, // pick 3 random docs
-            { $project: { _id: 0, title: 1 } }, // only keep title
-          ]);
+      // const business = await this.businessModel.findById(businessId);
+      // if (!business) {
+      //   return {
+      //     success: false,
+      //     message: 'Business not found with given ID',
+      //   };
+      // }
+      // const tagsByCategory = await Promise.all(
+      //   business.businessCategories.map(async (catId) => {
+      //     const tags = await this.tagModel.aggregate([
+      //       { $match: { relatedId: catId } },
+      //       { $sample: { size: 3 } }, // pick 3 random docs
+      //       { $project: { _id: 0, title: 1 } }, // only keep title
+      //     ]);
 
-          return {
-            categoryId: catId,
-            tags,
-          };
-        }),
-      );
-      const allTitles = tagsByCategory.flatMap((cat) =>
-        cat.tags.map((t) => t.title),
-      );
+      //     return {
+      //       categoryId: catId,
+      //       tags,
+      //     };
+      //   }),
+      // );
+      // const allTitles = tagsByCategory.flatMap((cat) =>
+      //   cat.tags.map((t) => t.title),
+      // );
 
-      console.log('Tag Recommendations:', allTitles);
+      const result =
+        await this.pinnAiService.generateBusinessTagsSuggestions(businessId);
+
+      // console.log('Tag Recommendations:', allTitles);
 
       return {
         success: true,
         message: 'Tag recommendations fetched successfully',
-        data: allTitles,
+        data: result.data.tags,
       };
     } catch (error) {
       return {
@@ -5456,6 +6839,258 @@ export class BusinessService {
         success: true,
         message:
           'Your account deletion request is being processed. Our team will get back to you shortly.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getScratches(user: DecodedUser, status: string) {
+    try {
+      let query = {
+        business: new mongoose.Types.ObjectId(user.businessProfile),
+      };
+      if (
+        status &&
+        (status === ScratchStatus.CONFIRMED ||
+          status === ScratchStatus.REJECTED)
+      ) {
+        query['status'] = status;
+      }
+      console.log('Query', query);
+      const scratches = await this.scratchModel.aggregate([
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'userDetails',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$userDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  title: 1,
+                },
+              },
+            ],
+            as: 'rewardDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$rewardDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ]);
+      return {
+        success: true,
+        message: 'Scratches list fetched successfully.',
+        data: scratches,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async getRewardVisits(user: DecodedUser) {
+    try {
+      const visitors = await this.rewardVisitModel.aggregate([
+        {
+          $match: {
+            business: new mongoose.Types.ObjectId(user.businessProfile),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'userDetails',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  phone: 1,
+                  countryCode: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$userDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'userrewards',
+            let: {
+              rewardId: '$reward',
+              userId: '$user',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$rewardId', '$$rewardId'] },
+                      { $eq: ['$userId', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: {
+                  claimStatus: 1,
+                  target: 1,
+                  progress: 1,
+                },
+              },
+            ],
+            as: 'userReward',
+          },
+        },
+        {
+          $unwind: {
+            path: '$userReward',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'rewards',
+            localField: 'reward',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  title: 1,
+                },
+              },
+            ],
+            as: 'rewardDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$rewardDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'checkins',
+            localField: 'checkInId',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  createdAt: 1,
+                  updatedAt: 1,
+                },
+              },
+            ],
+            as: 'CheckInDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$CheckInDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ]);
+      return {
+        success: true,
+        message: 'Visitors list fetched successfully.',
+        data: visitors,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async markRewardVisitSuspicious(visitId: string, user: DecodedUser) {
+    try {
+      await this.rewardVisitModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(visitId),
+        },
+        {
+          $set: {
+            status: RewardVisitStatus.MARKED_WRONG,
+            markedWrongBy: new mongoose.Types.ObjectId(user.id),
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Reward Visit marked Suspicious',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async voteScratch(scratchId: string, user: DecodedUser, status: boolean) {
+    try {
+      await this.scratchModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(scratchId),
+        },
+        {
+          $set: {
+            businessVoteStatus: status
+              ? BusinessVoteStatus.CONFIRMED
+              : BusinessVoteStatus.REJECTED,
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Scratch up-voted successfully',
       };
     } catch (error) {
       return {

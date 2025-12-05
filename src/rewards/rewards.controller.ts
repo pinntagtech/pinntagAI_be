@@ -305,7 +305,7 @@ export class RewardsController {
   async claimReward(
     @TokenDecoder() user: DecodedUser,
     @Param('rewardId') rewardId: string,
-  ) {
+  ): Promise<{ message: string; data?: any }>  {
     if (!isValidObjectId(rewardId)) {
       throw new BadRequestException('Invalid Object ID');
     }
@@ -316,6 +316,7 @@ export class RewardsController {
     if (result.success) {
       return {
         message: result.message,
+        data: result.data
       };
     } else {
       throw new BadRequestException(result.message);

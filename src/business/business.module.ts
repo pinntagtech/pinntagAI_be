@@ -11,6 +11,7 @@ import { MailService } from 'src/mail/mail.service';
 import { JwtService } from '@nestjs/jwt';
 import { Otp, OtpSchema } from 'src/auth/models/otp.model';
 import { User, UserSchema } from 'src/user/models/user.model';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 import {
   OutletCategory,
   OutletCategorySchema,
@@ -169,6 +170,11 @@ import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { BusinessActivation, BusinessActivationSchema } from './model/businessActivation.model';
 import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { Scratch, ScratchSchema } from './model/scratch.model';
+import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -259,6 +265,11 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
+      { name: CheckIn.name, schema: CheckInSchema}, 
+      { name: Scratch.name, schema: ScratchSchema},
+      { name: RewardVisit.name, schema: RewardVisitSchema},
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
     ]),
   ],
   controllers: [BusinessController],
@@ -279,6 +290,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
     RedisBullService,
     AppsOnAirLinkService,
     PinntagAiService,
+    SubscriptionService,
   ],
 })
 export class BusinessModule {}

@@ -1,6 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
-import { SubscriptionProduct } from './subscription-product.model';
+import {
+  PricingModel,
+  SubscriptionProduct,
+} from './subscription-product.model';
 import { CurrencyTypes } from 'src/enums/user.enum';
 
 export enum BillingInterval {
@@ -36,6 +39,15 @@ export class SubscriptionPrice extends Document {
 
   @Prop({})
   googleProductId?: string; // Google Play subscription product ID (SKU)
+
+  @Prop({ enum: Object.values(PricingModel) })
+  pricingModel: string;
+
+  @Prop()
+  minLocations?: number;
+
+  @Prop()
+  maxLocations?: number;
 }
 
 export const SubscriptionPriceSchema =

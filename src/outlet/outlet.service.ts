@@ -47,6 +47,9 @@ import {
   EventScheduleDocument,
   ScheduleTypes,
 } from 'src/event/models/event-schedule.model';
+import { Subscription } from 'src/subscription/models/subscription.model';
+import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
+import { PricingModel } from 'src/subscription/models/subscription-product.model';
 
 @Injectable()
 export class OutletService {
@@ -69,6 +72,10 @@ export class OutletService {
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
     @InjectModel(EventSchedule.name)
     private readonly scheduleModel: Model<EventScheduleDocument>,
+    @InjectModel(Subscription.name)
+    private readonly subscriptionModel: Model<Subscription>,
+    @InjectModel(SubscriptionPrice.name)
+    private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -316,8 +323,25 @@ export class OutletService {
           minute: closingMinute,
         };
       }
+      if (data.isActive !== undefined) {
+        createObj['isActive'] = data.isActive;
+        if (data.isActive == true) {
+          await this.outletSummationCompetence(user.businessProfile);
+        }
+      }
       console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
+
+       if (data.isActive !== undefined && data.isActive == true) {
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $addToSet: {
+              activatedOutlets: outlet._id,
+            },
+          },
+        );
+      }
 
       // const spot = await this.mobileSpotsModel.create({
       //   name: outlet.name,
@@ -381,6 +405,78 @@ export class OutletService {
       };
     }
   }
+  async outletSummationCompetence(businessId: string) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found!',
+        };
+      }
+      const totalLocations =
+        business.physicalUnitsCreated + business.mobileUnitsCreated;
+      const subscription = await this.subscriptionModel.findById(
+        business.activeSubscription,
+      );
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'Subscription not found!',
+        };
+      }
+      const subscriptionPrice = await this.subscriptionPriceModel.findById(
+        subscription.price,
+      );
+      if (!subscriptionPrice) {
+        return {
+          success: false,
+          message: 'Subscription Price not found!',
+        };
+      }
+
+      if (subscriptionPrice.pricingModel === PricingModel.FLAT) {
+        if (totalLocations < subscriptionPrice.maxLocations) {
+          return {
+            success: true,
+            message: 'Within subscription limits',
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Please upgrade your subscription to add more outlets',
+            data: {
+              statusCode: 204, //to send new flat product and price
+            },
+          };
+        }
+      } else if (subscriptionPrice.pricingModel === PricingModel.PER_LOCATION) {
+        if (totalLocations < subscriptionPrice.maxLocations) {
+          return {
+            success: true,
+            message: 'Pay per location model - Within subscription limits',
+            data: {
+              statusCode: 205, //to send new quantity only
+            },
+          };
+        } else {
+          return {
+            success: true,
+            message:
+              'Pay per location model - Please upgrade your subscription to add more outlets',
+            data: {
+              statusCode: 206, //to send new per_location product, price, and quantity
+            },
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
   async createMobileOutlet(
     data: CreateOutletDtoV2,
     user: any,
@@ -409,6 +505,8 @@ export class OutletService {
           message: 'Business not found!',
         };
       }
+
+      // await this.outletSummationCompetence(business.id);
       let {
         name,
         address1,
@@ -482,6 +580,12 @@ export class OutletService {
 
       createObj['cover'] = coverUpload.metaData.url;
       createObj['category'] = OutletCategoryList.MOBILE;
+      if (data.isActive !== undefined) {
+        createObj['isActive'] = data.isActive;
+        if (data.isActive == 'true') {
+          await this.outletSummationCompetence(user.businessProfile);
+        }
+      }
 
       console.log('CREATEOBJ:', createObj);
 
@@ -535,8 +639,18 @@ export class OutletService {
       );
       await this.businessUserModel.updateOne(
         { _id: businessUser.id },
-        { $addToSet: { assignedOutlets: outlet.id } },
+        { $addToSet: { assignedOutlets: outlet._id } },
       );
+      if (data.isActive !== undefined && data.isActive == 'true') {
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $addToSet: {
+              activatedOutlets: outlet._id,
+            },
+          },
+        );
+      }
 
       return {
         success: true,
@@ -1037,14 +1151,14 @@ export class OutletService {
       ]);
 
       const total = await this.outletModel.countDocuments({
-        creator: new mongoose.Types.ObjectId(userDetails._id),
+        // creator: new mongoose.Types.ObjectId(userDetails._id),
         business: new mongoose.Types.ObjectId(user.businessProfile),
       });
 
       const numerics = await this.outletModel.aggregate([
         {
           $match: {
-            creator: new mongoose.Types.ObjectId(userDetails._id),
+            // creator: new mongoose.Types.ObjectId(userDetails._id),
             business: new mongoose.Types.ObjectId(user.businessProfile),
           },
         },
@@ -1491,6 +1605,47 @@ export class OutletService {
         success: true,
         message: 'Spot updated successfully.',
         data: spot,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async activateOutlet(id: string, user: DecodedUser) {
+    try {
+      await this.outletSummationCompetence(user.businessProfile);
+      await this.outletModel.findByIdAndUpdate(
+        id,
+        { isActive: true },
+        { new: true },
+      );
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(user.businessProfile) },
+        {
+          $addToSet: {
+            activatedOutlets: new mongoose.Types.ObjectId(id),
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Outlet activated successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+  async deactivateOutlet(id: string, user: DecodedUser) {
+    try {
+      return {
+        sucess: true,
+        message: 'Outlet deactivated successfully.',
       };
     } catch (error) {
       return {

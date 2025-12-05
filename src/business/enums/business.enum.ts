@@ -1,19 +1,30 @@
+import { CONFIGURABLE_MODULE_ID } from "@nestjs/common/module-utils/constants";
+import Content from "twilio/lib/rest/Content";
+
 export const ProfileStatus = {
   INITIATED: 0, //->Business User Created
   EMAIL_VERIFIED: 1,
 };
 export const BusinessStatus = {
+  // CREATED: 0, //-> Business Created
+  // VERIFIED: 1,
+  // ADDRESS_ADDED: 2, //-> Business Address Added
+  // TYPE_ADDED: 3, //-> Business Type Added
+  // TAGS: 4, //-> Business Tags Added
+  // DESCRIPTION_ADDED: 5, //-> Business Description Added
+  // COVER_ADDED: 6, //-> Business Cover Added
+  // CONFETTI_SCREEN: 6.1,
+  // CONTENT_CREATION_START: 6.2,
+  // VERIFICATION_DOCS_UPLOADED: 7,
+  // VERIFICATION_DOCS_SUCCESSFULL: 8,
+
   CREATED: 0, //-> Business Created
   VERIFIED: 1,
   ADDRESS_ADDED: 2, //-> Business Address Added
-  TYPE_ADDED: 3, //-> Business Type Added
-  TAGS: 4, //-> Business Tags Added
-  DESCRIPTION_ADDED: 5, //-> Business Description Added
-  COVER_ADDED: 6, //-> Business Cover Added
-  CONFETTI_SCREEN: 6.1,
-  CONTENT_CREATION_START: 6.2,
-  VERIFICATION_DOCS_UPLOADED: 7,
-  VERIFICATION_DOCS_SUCCESSFULL: 8,
+  TAGS_DESCRIPTION_ADDED: 3, //-> Business Tags and Description Added
+  COVER_ADDED: 4, //-> Business Cover Added
+  CONFETTI_SCREEN: 4.1,
+  CONTENT_CREATION_START: 4.2,
 };
 
 export const OfferStatus = {
@@ -777,9 +788,11 @@ export const BusinessDocumentTypesList = {
 };
 
 export const VerificationStatus = {
-  PENDING: 'Pending',
-  VERIFIED: 'Verified',
-  REJECTED: 'Rejected',
+  NOT_VERIFIED: 'not verified',
+  PENDING: 'pending',
+  // REQUEST_FOR_REVERIFICATION: 'Request for Reverification',
+  VERIFIED: 'verified',
+  REJECTED: 'rejected',
 };
 
 export const DEFAULT_IMAGES = {

@@ -832,6 +832,7 @@ export class AdminController {
     @TokenDecoder() user: DecodedUser,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('verificationStatus') verificationStatus: string,
     @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
@@ -840,6 +841,7 @@ export class AdminController {
       pageNumber,
       limitNumber,
       search,
+      verificationStatus,
     );
     if (result.success) {
       return {
@@ -1413,9 +1415,10 @@ export class AdminController {
   async updateDocVerificationLeadStatus(
     @Param('id') id: string,
     @Body('status') status: boolean,
+    @Body('remarks') remarks: string,
     @TokenDecoder() user: DecodedUser,
   ) {
-    const result = await this.adminService.verifyDocument(id, user.id, status);
+    const result = await this.adminService.verifyDocument(id, user.id, status, remarks);
     if (result.success) {
       return {
         message: result.message,

@@ -172,11 +172,35 @@ import {
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { AppsOnAirLinkService } from 'src/notification/appsonair.service';
 import { HttpModule } from '@nestjs/axios';
-import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
+import {
+  RewardLocation,
+  RewardLocationSchema,
+} from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
-import { BusinessActivation, BusinessActivationSchema } from 'src/business/model/businessActivation.model';
-import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import {
+  BusinessActivation,
+  BusinessActivationSchema,
+} from 'src/business/model/businessActivation.model';
+import {
+  FeaturedAsset,
+  FeaturedAssetSchema,
+} from 'src/admin/models/featuredAssets.model';
 import { PinntagAiService } from 'src/ai/pinntag-ai.service';
+import {
+  UserSearchActivity,
+  UserSearchActivitySchema,
+} from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
+import {
+  RewardVisit,
+  RewardVisitSchema,
+} from 'src/rewards/model/rewardVisit.model';
+import {
+  FeatureLimit,
+  FeatureLimitSchema,
+} from 'src/subscription/models/feature-limit.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -271,6 +295,11 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
       { name: Feed.name, schema: FeedSchema },
       { name: BusinessActivation.name, schema: BusinessActivationSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
+      { name: CheckIn.name, schema: CheckInSchema },
+      { name: Scratch.name, schema: ScratchSchema },
+      { name: RewardVisit.name, schema: RewardVisitSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema },
     ]),
   ],
   providers: [
@@ -291,6 +320,7 @@ import { PinntagAiService } from 'src/ai/pinntag-ai.service';
     RedisBullService,
     AppsOnAirLinkService,
     PinntagAiService,
+    SubscriptionService,
   ],
   exports: [SocketGateway],
 })

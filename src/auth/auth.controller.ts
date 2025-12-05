@@ -709,7 +709,7 @@ export class AuthController {
       body.industries ? body.industries : [],
       body.startDate ? new Date(body.startDate) : null,
       body.endDate ? new Date(body.endDate) : null,
-      body.isFollowedByMe?body.isFollowedByMe:null,
+      body.isFollowedByMe ? body.isFollowedByMe : null,
     );
     if (!result.success) {
       throw new BadRequestException(result.message);
@@ -932,7 +932,92 @@ export class AuthController {
       data: result.data,
     };
   }
+  @Get('getRecentSearches')
+  @UseGuards(JwtGuard2)
+  async getRecentSearches(@TokenDecoder() user: DecodedUser) {
+    const result = await this.authService.getRecentSearches(user.id);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
 
+  @Get('checkInList')
+  @UseGuards(JwtGuard2)
+  async getCheckInList(
+    @TokenDecoder() user: DecodedUser,
+    @Query('latitude') latitude: any,
+    @Query('longitude') longitude: any,
+    @Query('page') page: any,
+    @Query('limit') limit: any,
+  ) {
+    latitude = latitude ? Number(latitude) : 0;
+    longitude = longitude ? Number(longitude) : 0;
+    page = page ? Number(page) : 1;
+    limit = limit ? Number(limit) : 10;
+    const result = await this.authService.getCheckInList(
+      user,
+      latitude,
+      longitude,
+      page,
+      limit,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
 
+  @Post('check-in/:businessId')
+  @UseGuards(JwtGuard2)
+  async userCheckIn(
+    @Param('businessId') businessId: string,
+    @TokenDecoder() user: DecodedUser,
+    @Body('latitude') latitude: number,
+    @Body('longitude') longitude: number,
+    @Body('locationId') locationId: string,
+  ) {
+    const result = await this.authService.userCheckIn(
+      businessId,
+      locationId,
+      user,
+      latitude,
+      longitude,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data
+      };
+    }
+  }
 
+  @Get('checkedin/cardview/:checkInId')
+  @UseGuards(JwtGuard2)
+  async businessCheckedInCard(
+    @TokenDecoder() user: DecodedUser,
+    @Param('checkInId') checkInId: string,
+  ) {
+    const result = await this.authService.businessCheckedInCard(
+      user.id,
+      checkInId,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }

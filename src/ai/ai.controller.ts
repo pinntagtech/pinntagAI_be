@@ -98,11 +98,14 @@ export class AiController {
     const result = await this.aiService.getBusinessDescription(
       user.businessProfile,
     );
+    // const result = await this.pinntagAiService.generateBusinessDescription(
+    //   user.businessProfile,
+    // );
     console.log('RESULT:', result);
     if (result.success) {
       return {
         message: result.message,
-        data: result.data,
+        data: result.data.description,
       };
     } else {
       return new BadRequestException({
@@ -132,7 +135,8 @@ export class AiController {
       suggestion,
       tagsArray,
     );
-    console.log('RESULT:', result);
+    // const result = await this.pinntagAiService.generateTitleSuggestions(user.businessProfile);
+    // console.log('RESULT:', result);
     if (result.success) {
       return {
         message: result.message,
@@ -149,6 +153,23 @@ export class AiController {
   async createAgent(@Body() body) {
     return this.pinntagAiService.createAgent(body);
   }
+
+
+  @Post('pinntagAi/businessDescription/:businessId')
+  async generateBusinessDescription(@Param('businessId') businessId: string) {
+    return this.pinntagAiService.generateBusinessDescription(businessId);
+  }
+
+
+  @Post('pinntagAi/tags/:businessId')
+  async generateTitleSuggestions(@Param('businessId') businessId: string) {
+    return this.pinntagAiService.generateBusinessTagsSuggestions(businessId);
+  }
+  @Post('pinntagAi/businessDescAndUpdateTags')
+  async generateBusinessDescriptionWithTagsUpdate(@Body() body) {
+    return this.pinntagAiService.generateBusinessDescriptionWithTagsUpdate(body);
+  }
+
   @Put('update/pinntagAgent/:id')
   async updateAgent(@Body() body, @Param('id') id: string) {
     return this.pinntagAiService.updateAgent(body, id);

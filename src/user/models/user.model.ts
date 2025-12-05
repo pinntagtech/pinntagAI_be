@@ -122,6 +122,9 @@ export class User {
 
   @Prop()
   consentTimestamp: Date;
+
+  @Prop()
+  accountDeletionSchedulerId: string;
 }
 export const UserSchema = SchemaFactory.createForClass(User);
 

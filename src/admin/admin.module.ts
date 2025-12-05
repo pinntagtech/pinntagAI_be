@@ -10,6 +10,7 @@ import {
 import { EventSchema } from 'src/event/models/event.model';
 import { Category, CategorySchema } from 'src/models/contentCategory.model';
 import { Image, ImageSchema } from 'src/event/models/image.model';
+import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 // import {
 //   BusinessLocation,
 //   BusinessLocationSchema,
@@ -173,6 +174,10 @@ import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
 import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.model';
+import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
+import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 
 @Module({
   imports: [
@@ -248,7 +253,11 @@ import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.mode
       { name: Broadcast.name, schema: BroadcastSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: RewardLocation.name, schema: RewardLocationSchema },
-      { name: Feed.name, schema: FeedSchema }
+      { name: Feed.name, schema: FeedSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema},
+      { name: CheckIn.name, schema: CheckInSchema}, 
+      { name: UserReward.name, schema: UserRewardSchema},
+      { name: FeatureLimit.name, schema: FeatureLimitSchema},
     ]),
   ],
   controllers: [AdminController],
@@ -269,6 +278,8 @@ import { FeaturedAsset, FeaturedAssetSchema } from './models/featuredAssets.mode
     GoogleService,
     FirebaseService,
     RedisBullService,
+    StripeService,
+    SubscriptionService,
   ],
 })
 export class AdminModule {}

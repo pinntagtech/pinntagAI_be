@@ -51,7 +51,7 @@ export class DriveController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     const result = await this.driveService.uploadFile(
-      user.id,
+      user.businessProfile,
       locationId,
       fileCategoryId,
       file,

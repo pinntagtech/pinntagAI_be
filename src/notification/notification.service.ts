@@ -24,6 +24,7 @@ import { Queue, Worker } from 'bullmq';
 import { RedisBullService } from './redisBull.service';
 import { DriveService } from 'src/drive/drive.service';
 import { Feed, FeedVisibility } from 'src/feed/models/feed.model';
+import { DynamicLinkService } from './dynamicLink.service';
 const redisConfig = { host: 'localhost', port: 6379 }; // your Redis settings
 const broadcastQueue = new Queue('broadcastQueue', { connection: redisConfig });
 
@@ -37,6 +38,7 @@ export class NotificationService {
     @InjectModel(Token.name) private readonly tokenModel: Model<TokenDocument>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly firebaseService: FirebaseService,
+    private readonly dynamicLinkService: DynamicLinkService,
     private readonly redisBullService: RedisBullService,
     private readonly driveService: DriveService,
   ) {}
@@ -270,14 +272,37 @@ export class NotificationService {
     }
 
     const broadcast = await this.broadcastModel.create(broadcastObj);
+    let deepLink = `${process.env.FEED_LINK_URL}${broadcast.id}`;
 
-    await this.feedModel.create({
+    const feed = await this.feedModel.create({
       feedType: FeedTypes.BROADCAST,
       creatorType: Business.name,
       creator: new mongoose.Types.ObjectId(broadcast.business),
       content: new mongoose.Types.ObjectId(broadcast.id),
       visibility: broadcast.visibility,
     });
+
+      void (async () => {
+      try {
+        const { shortLink } = await this.dynamicLinkService.generateShortLink(
+          deepLink,
+          {
+            title: broadcast.title,
+            description: broadcast.message,
+            imageUrl: broadcast.image || '',
+            businessName: user.businessProfile,
+          },
+        );
+        console.log('Generated short link:', shortLink);
+        const updatedFeed = await this.feedModel.updateOne(
+          { _id: feed._id },
+          { $set: { shareableLink: shortLink } },
+        );
+        console.log('Updated feed with shareable link:', updatedFeed);
+      } catch (err) {
+        console.error('Error generating dynamic link:', err);
+      }
+    })();
 
     if (!isScheduled) {
       this.redisBullService.triggerBroadcast(broadcast.id);
@@ -304,18 +329,18 @@ export class NotificationService {
     image: Express.Multer.File,
   ) {
     const feed = await this.feedModel.findById(id);
-    if(!feed){
+    if (!feed) {
       return {
         success: false,
-        message: "feed not found"
-      }
+        message: 'feed not found',
+      };
     }
     const foundBroadcast = await this.broadcastModel.findById(feed.content);
-    if(!foundBroadcast){
+    if (!foundBroadcast) {
       return {
         success: false,
-        message: "Broadcast not found"
-      }
+        message: 'Broadcast not found',
+      };
     }
     let isScheduled = false;
     if (data.isScheduled && data.isScheduled == 'true') {
@@ -341,7 +366,7 @@ export class NotificationService {
     }
     if (data.visibility) {
       broadcastObj['visibility'] = data.visibility;
-      if(data.visibility === FeedVisibility.PUBLIC){
+      if (data.visibility === FeedVisibility.PUBLIC) {
         broadcastObj['users'] = [];
       }
     }
@@ -468,7 +493,7 @@ export class NotificationService {
       };
     }
     if (broadcast.schedulerId && broadcast.schedulerId !== '') {
-      await this.redisBullService.removeBroadcastJob(broadcast.schedulerId);
+      await this.redisBullService.removeRedisQueueJob(broadcast.schedulerId);
     }
 
     const result = await this.broadcastModel.updateOne(

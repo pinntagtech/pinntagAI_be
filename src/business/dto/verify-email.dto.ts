@@ -1,15 +1,16 @@
+import { PartialType } from "@nestjs/mapped-types";
 import { Transform } from "class-transformer";
 import { IsEmail, IsNotEmpty, IsNumber, IsString, MaxLength, MinLength } from "class-validator";
 
 export class VerifyEmailDto {
 
+  @IsNotEmpty()
+  @IsString()
+  userId:string;
 
   @IsNotEmpty()
-    @IsEmail()
-    @IsString()
-    @Transform(({ value }) => value.toLowerCase())
-    @Transform(({ value }) => value.trim())
-    email: string;
+  @IsString()
+  signupMethod: string;
 
 
   @IsNotEmpty()
@@ -18,3 +19,5 @@ export class VerifyEmailDto {
   @MaxLength(6)
   otp: string;
 }
+
+export class ResendUserOtpDto extends PartialType(VerifyEmailDto) {}

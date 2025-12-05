@@ -30,49 +30,49 @@ export function SubscriptionGuard(
         return false;
       }
       //   let isDropPin = false;
-      if (featureType === FeatureLimitList.CONTENT_CREATION) {
-        const eventId = request.body.eventId || request.query.eventId;
-        if (!eventId) {
-          throw new UnauthorizedException(
-            'Event ID is required to publish content.',
-          );
-        }
-        const event = await this.eventService.findById(eventId);
-        if (!event) {
-          throw new UnauthorizedException(
-            'No event found with the provided ID.',
-          );
-        }
-        if (event.type === EventTypes.DROPPED_PIN)
-          featureType = FeatureLimitList.DROP_PIN;
-      }
-      let dataCount = 0;
-      if (featureType === FeatureLimitList.LOCATIONS) {
-        console.log("Checking locations in request:", request);
-        console.log('Request body:', request.body);
-        const locationsInRequest = request.body.locations;
-        if (Array.isArray(locationsInRequest) && locationsInRequest.length) {
-          dataCount = locationsInRequest.length;
-        }
-        console.log('Locations count from request:', dataCount);
-      }
+      // if (featureType === FeatureLimitList.CONTENT_CREATION) {
+      //   const eventId = request.body.eventId || request.query.eventId;
+      //   if (!eventId) {
+      //     throw new UnauthorizedException(
+      //       'Event ID is required to publish content.',
+      //     );
+      //   }
+      //   const event = await this.eventService.findById(eventId);
+      //   if (!event) {
+      //     throw new UnauthorizedException(
+      //       'No event found with the provided ID.',
+      //     );
+      //   }
+      //   if (event.type === EventTypes.DROPPED_PIN)
+      //     featureType = FeatureLimitList.DROP_PIN;
+      // }
+      // let dataCount = 0;
+      // if (featureType === FeatureLimitList.LOCATIONS) {
+      //   console.log("Checking locations in request:", request);
+      //   console.log('Request body:', request.body);
+      //   const locationsInRequest = request.body.locations;
+      //   if (Array.isArray(locationsInRequest) && locationsInRequest.length) {
+      //     dataCount = locationsInRequest.length;
+      //   }
+      //   console.log('Locations count from request:', dataCount);
+      // }
 
-      const fetchFeatureLimits =
-        await this.subscriptionService.fetchFeatureLimits(
-          businessProfile.toString(),
-          featureType,
-          dataCount,
-        );
+      // const fetchFeatureLimits =
+      //   await this.subscriptionService.fetchFeatureLimits(
+      //     businessProfile.toString(),
+      //     featureType,
+      //     dataCount,
+      //   );
 
-      if (!fetchFeatureLimits.success || !fetchFeatureLimits.data) {
-        return false;
-      }
+      // if (!fetchFeatureLimits.success || !fetchFeatureLimits.data) {
+      //   return false;
+      // }
 
-      if (fetchFeatureLimits.data.isLimitExceeded) {
-        throw new UnauthorizedException(
-          'Feature limit exceeded. Please upgrade your subscription to access this feature.',
-        );
-      }
+      // if (fetchFeatureLimits.data.isLimitExceeded) {
+      //   throw new UnauthorizedException(
+      //     'Feature limit exceeded. Please upgrade your subscription to access this feature.',
+      //   );
+      // }
 
       return true;
     }

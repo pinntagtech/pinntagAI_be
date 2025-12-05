@@ -5,6 +5,7 @@ import {
   IsString,
   Validate,
 } from 'class-validator';
+import { PricingModel } from '../models/subscription-product.model';
 
 // export class FeatureLimitData {
 //   @IsNotEmpty()
@@ -24,7 +25,7 @@ export class CreateSubscriptionProductDto {
   @IsNotEmpty()
   // @IsArray()
   // @Validate(FeatureLimitData, { each: true })
-  features: Object; // Array of feature limits
+  features: Array<Object>; // Array of feature limits
 
   @IsOptional()
   description?: string;
@@ -37,4 +38,13 @@ export class CreateSubscriptionProductDto {
 
   @IsOptional()
   isFree: boolean;
+
+  @IsOptional()
+  minLocations?: number;
+
+  @IsOptional()
+  maxLocations?: number;
+
+  @IsOptional()//flat, per_location
+  pricingModel: string;
 }

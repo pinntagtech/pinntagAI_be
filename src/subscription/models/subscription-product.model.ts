@@ -2,6 +2,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { FeatureLimit } from './feature-limit.model';
 
+
+export const PricingModel = {
+  FLAT: 'flat',
+  PER_LOCATION: 'per_location',
+}
 @Schema({ timestamps: true })
 export class SubscriptionProduct extends Document {
   @Prop({ default: true })
@@ -47,6 +52,18 @@ export class SubscriptionProduct extends Document {
 
   @Prop({ default: false })
   isFree: boolean;
+
+  @Prop({ default: false })
+  isTrial: boolean;
+
+  @Prop()
+  minLocations?: number;
+  
+  @Prop()
+  maxLocations?: number;
+
+  @Prop({ enum: Object.values(PricingModel)})
+  pricingModel: string;
 }
 
 export const SubscriptionProductSchema =

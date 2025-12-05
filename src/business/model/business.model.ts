@@ -71,12 +71,12 @@ export class Business {
   // })
   // status: number;
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+    default: null,
   })
   logo: string;
 
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_LOGO,
+    default: null,
   })
   logoThumbnail: string;
 
@@ -93,11 +93,11 @@ export class Business {
   businessIndustry: mongoose.Types.ObjectId;
 
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_COVER,
+    default: null,
   })
   cover: string;
   @Prop({
-    default: DEFAULT_IMAGES.BUSINESS_COVER,
+    default: null,
   })
   coverThumbnail: string;
 
@@ -135,6 +135,10 @@ export class Business {
   bio: string;
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
+
+  @Prop({ref: Outlet.name})
+  activatedOutlets: Array<mongoose.Types.ObjectId>;
+
   @Prop()
   countryCode: string;
   @Prop()
@@ -316,13 +320,16 @@ export class Business {
   tags: string[];
 
   @Prop()
-  addressVerificationDoc: string;
+  addressVerificationDocs: string[];
 
   @Prop({
     enum: Object.values(VerificationStatus),
-    default: VerificationStatus.PENDING,
+    default: VerificationStatus.NOT_VERIFIED,
   })
-  addressVerificationStatus: string;
+  verificationStatus: string;
+
+  @Prop()
+  verificationRemarks: string;
 
   @Prop({ ref: Admin.name })
   addressVerifiedBy: mongoose.Types.ObjectId;

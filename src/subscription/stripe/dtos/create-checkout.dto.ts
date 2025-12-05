@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsString, IsOptional, IsMongoId } from 'class-validator';
 
 export class CreateCheckoutDto {

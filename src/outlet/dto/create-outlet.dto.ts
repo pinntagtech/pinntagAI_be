@@ -114,6 +114,10 @@ export class CreateOutletDto {
   @IsOptional()
   closingTime: string;
 
+  @IsOptional()
+  isActive: boolean;
+
+
   // @IsOptional()
   // @IsString()
   // vehicleRegistrationNumber?: string;
@@ -220,6 +224,9 @@ export class CreateOutletDtoV2 {
 
   @IsOptional()
   closingTime: string;
+
+  @IsOptional()
+  isActive: string;
 
   // @IsOptional()
   // @IsString()

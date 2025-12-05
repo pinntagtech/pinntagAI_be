@@ -18,6 +18,7 @@ import {
   UploadedFile,
   UseInterceptors,
   UploadedFiles,
+  HttpCode,
 } from '@nestjs/common';
 import { BusinessService } from './business.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -34,7 +35,7 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { Privilege } from 'src/roles/privilege.decorator';
 import { Actions, ResourceTypes } from 'src/roles/enums/roles.enum';
 import { PrivilegeGuard } from 'src/roles/guards/privilege.guards';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendUserOtpDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { RateLimit } from 'nestjs-rate-limiter';
 import { CreateDownlineBusinessUserDto } from './dto/create-downline-businessUser.dto';
 import { ResetPasswordGuard } from 'src/auth/guards2/resetPassword.guard';
@@ -56,6 +57,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ResendOtpDto } from 'src/auth/dto/resendOtp.dto';
 import { Prop } from '@nestjs/mongoose';
 import { BusinessActivationRequestDto } from './dto/business-activitation-request.dto';
+import { OAuth2Dto } from 'src/auth/dto/oAuth2.dto';
 
 @Controller('business')
 export class BusinessController {
@@ -201,6 +203,49 @@ export class BusinessController {
     }
   }
 
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  async loginWithGoogle(@Req() req: Request, @Body() body: OAuth2Dto) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.businessService.loginWithGoogle(
+      body,
+      userAgent,
+      ip,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      user: result.user,
+      status: result.status,
+      token: result.token,
+      fcmExists: result.fcmExists,
+    };
+  }
+  @Post('apple')
+  @HttpCode(HttpStatus.OK)
+  async loginWithApple(@Req() req: Request, @Body() body: OAuth2Dto) {
+    const userAgent = req.headers['user-agent'];
+    const ip = req.ip;
+    const result = await this.businessService.loginWithApple(
+      body,
+      userAgent,
+      ip,
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      user: result.user,
+      status: result.status,
+      token: result.token,
+      fcmExists: result.fcmExists,
+    };
+  }
+
   @Post('user/verify')
   async verifyUser(@Body() data: VerifyEmailDto) {
     const result = await this.businessService.verifyUser(data);
@@ -216,8 +261,8 @@ export class BusinessController {
   }
 
   @Post('user/resendOtp')
-  async resendOtp(@Body('email') email: string) {
-    const result = await this.businessService.resendOtp(email);
+  async resendOtp(@Body() data: ResendUserOtpDto) {
+    const result = await this.businessService.resendOtp(data);
     if (result.success) {
       return {
         message: result.message,
@@ -1268,10 +1313,7 @@ export class BusinessController {
       throw new BadRequestException('File is required');
     }
 
-    const result = await this.businessService.uploadEventsInBulk(
-      file,
-      user,
-    );
+    const result = await this.businessService.uploadEventsInBulk(file, user);
     if (result.success) {
       return {
         message: result.message,
@@ -1281,7 +1323,7 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-  
+
   @Post('invitation')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -1316,6 +1358,23 @@ export class BusinessController {
     }
   }
 
+  @Get('scratches')
+  @UseGuards(JwtGuard2)
+  async getScratches(
+    @TokenDecoder() user: DecodedUser,
+    @Query('status') status: string,
+  ) {
+    const result = await this.businessService.getScratches(user, status);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   @Get(':id')
   @UseGuards(JwtGuard2)
   async fetchBusiness(
@@ -1331,12 +1390,38 @@ export class BusinessController {
       parseFloat(longitude),
     );
 
-    // const result = await this.businessService.businessNotification('686e66762f22faaa5d9ea730','report','');
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Get('card/feed/:businessId')
+  @UseGuards(JwtGuard2)
+  async getBusinessCardFeed(
+    @Param('businessId') businessId: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.getBusinessCardFeed(
+      user,
+      businessId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+    );
 
     if (result.success) {
       return {
         message: result.message,
         data: result.data,
+        total: result.total,
+        totalPages: result.totalPages,
+        page: result.page,
+        limit: result.limit,
       };
     } else {
       throw new BadRequestException(result.message);
@@ -1395,28 +1480,21 @@ export class BusinessController {
     }
   }
 
-  @Post('upload-address-verification-doc')
+  @Post('verification-docs')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 10000000 },
+    FilesInterceptor('images', 5, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
-  async uploadAddressVerificationDoc(
+  async verificationDocs(
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles() images: Express.Multer.File[],
     @Query('businessId') businessId: string,
   ) {
-    const result = await this.businessService.uploadAddressVerificationDoc(
+    const result = await this.businessService.uploadVerificationDocs(
       user,
-      image,
+      images,
       businessId,
     );
     if (result.success) {
@@ -1515,9 +1593,7 @@ export class BusinessController {
 
   @Post('user/delete')
   @UseGuards(JwtGuard2)
-  async deleteBusinessUser(
-    @TokenDecoder() user: DecodedUser,
-  ) {
+  async deleteBusinessUser(@TokenDecoder() user: DecodedUser) {
     const result = await this.businessService.deleteBusinessUser(user.id);
     if (result.success) {
       return {
@@ -1527,4 +1603,57 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Get('reward/visits')
+  @UseGuards(JwtGuard2)
+  async getRewardVisits(@TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.getRewardVisits(user);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('reward/visit/suspicious/:visitId')
+  @UseGuards(JwtGuard2)
+  async markRewardVisitSuspicious(
+    @TokenDecoder() user: DecodedUser,
+    @Param('visitId') visitId: string,
+  ) {
+    const result = await this.businessService.markRewardVisitSuspicious(
+      visitId,
+      user,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  @Put('scratch/vote/:scratchId')
+  @UseGuards(JwtGuard2)
+  async voteScratch(
+    @TokenDecoder() user: DecodedUser,
+    @Param('scratchId') scratchId: string,
+    @Body('status') status:boolean,
+  ) {
+    const result = await this.businessService.voteScratch(
+      scratchId,
+      user,
+      status
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
 }

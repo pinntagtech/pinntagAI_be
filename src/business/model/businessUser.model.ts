@@ -41,16 +41,23 @@ export class BusinessUser {
       'https://pinntag-assets.s3.us-east-1.amazonaws.com/Defaults/Default+business+user.png',
   })
   profilePhoto: string;
-  @Prop({ required: true })
+  @Prop()
   name: string;
   @Prop()
   countryCode: string;
   @Prop()
   phone: string;
-  @Prop({ required: true, unique: true })
+
+  @Prop({ unique: true, sparse: true })
+  fullPhoneNumber: string;
+
+  @Prop({ unique: true, sparse: true })
   email: string;
   @Prop({ default: false })
   isEmailVerified: boolean;
+  @Prop({ default: false })
+  isMobileVerified: boolean;
+
   @Prop()
   password: string;
   @Prop({ ref: Business.name })

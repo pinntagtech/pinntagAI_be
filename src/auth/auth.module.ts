@@ -149,9 +149,29 @@ import {
   SubscriptionPriceSchema,
 } from 'src/subscription/models/subscription-price.model';
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
-import { RewardLocation, RewardLocationSchema } from 'src/rewards/model/rewardLocation.model';
+import {
+  RewardLocation,
+  RewardLocationSchema,
+} from 'src/rewards/model/rewardLocation.model';
 import { Feed, FeedSchema } from 'src/feed/models/feed.model';
-import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAssets.model';
+import {
+  FeaturedAsset,
+  FeaturedAssetSchema,
+} from 'src/admin/models/featuredAssets.model';
+import {
+  UserSearchActivity,
+  UserSearchActivitySchema,
+} from 'src/user/models/userSearchActivity.model';
+import { CheckIn, CheckInSchema } from './models/check-ins.model';
+import {
+  UserReward,
+  UserRewardSchema,
+} from 'src/rewards/model/userReward.model';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import {
+  FeatureLimit,
+  FeatureLimitSchema,
+} from 'src/subscription/models/feature-limit.model';
 
 @Module({
   imports: [
@@ -219,6 +239,10 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
       { name: RewardLocation.name, schema: RewardLocationSchema },
       { name: Feed.name, schema: FeedSchema },
       { name: FeaturedAsset.name, schema: FeaturedAssetSchema },
+      { name: UserSearchActivity.name, schema: UserSearchActivitySchema },
+      { name: CheckIn.name, schema: CheckInSchema },
+      { name: UserReward.name, schema: UserRewardSchema },
+      { name: FeatureLimit.name, schema: FeatureLimitSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
@@ -241,6 +265,7 @@ import { FeaturedAsset, FeaturedAssetSchema } from 'src/admin/models/featuredAss
     DriveService,
     FirebaseService,
     RedisBullService,
+    SubscriptionService,
     // GoogleStrategy
   ],
 })
