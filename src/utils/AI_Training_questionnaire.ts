@@ -201,15 +201,6 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
       phase: TrainingPhase.BASIC,
     },
     {
-      id: "operating_hours",
-      question: "What are your typical operating hours?",
-      type: "text",
-      required: true,
-      category: "operations",
-      phase: TrainingPhase.BASIC,
-      helpText: "e.g., Mon-Fri 9AM-6PM, Sat 10AM-4PM",
-    },
-    {
       id: "busiest_days",
       question: "Which days are typically your busiest?",
       type: "multi_select",

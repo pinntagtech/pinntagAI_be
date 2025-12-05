@@ -79,4 +79,12 @@ aiTrainingRouter.get("/responses/:businessId", aiTrainingController.getTrainingR
  */
 aiTrainingRouter.post("/reset", aiTrainingController.resetTraining);
 
+/**
+ * POST /ai/training/google-places/:businessId
+ * Params: businessId
+ * Body: Google Places API response data
+ * Updates Google Places data for a business (operating hours, photos, rating, etc.)
+ */
+aiTrainingRouter.post("/google-places/:businessId", aiTrainingController.updateGooglePlacesData);
+
 export { aiTrainingRouter as aiTrainingRoutes };

@@ -198,6 +198,217 @@ Remember: Your goal is to increase customer engagement and improve profitability
 }
 
 /**
+ * Generates enhanced AI instructions with Google Places data
+ */
+function generateEnhancedInstructionsWithGooglePlaces(
+  businessName: string,
+  industry: string,
+  responses: ITrainingResponse[],
+  baseInstructions: string,
+  googlePlacesData: any
+): string {
+  const responseMap = new Map(responses.map((r) => [r.questionId, r.answer]));
+
+  // Extract key training data
+  const targetAudience = responseMap.get("target_audience") || [];
+  const marketingGoals = responseMap.get("marketing_goals") || [];
+  const brandVoice = responseMap.get("brand_voice") || [];
+  const busiestDays = responseMap.get("busiest_days") || [];
+  const busiestHours = responseMap.get("busiest_hours") || [];
+  const slowPeriods = responseMap.get("slow_periods") || [];
+  const discountRange = responseMap.get("typical_discount_range") || "";
+  const seasonalRelevance = responseMap.get("seasonal_relevance") || false;
+  const importantSeasons = responseMap.get("important_seasons") || [];
+  const previousSuccessfulPromotions =
+    responseMap.get("previous_successful_promotions") || "";
+  const businessDescription = responseMap.get("business_description") || "";
+
+  // Format operating hours from Google Places
+  const operatingHours = googlePlacesData?.regularOpeningHours?.weekdayDescriptions
+    ? googlePlacesData.regularOpeningHours.weekdayDescriptions.join("\n  ")
+    : "Not available";
+
+  // Format business location
+  const location = googlePlacesData?.formattedAddress || "Not available";
+  const googleMapsLink = googlePlacesData?.googleMapsUri || "";
+
+  // Format rating information
+  const rating = googlePlacesData?.rating
+    ? `${googlePlacesData.rating}/5 (${googlePlacesData.userRatingCount || 0} reviews)`
+    : "No rating available";
+
+  // Format business types
+  const businessTypes = googlePlacesData?.types
+    ? googlePlacesData.types.slice(0, 5).join(", ")
+    : "";
+
+  const enhancedInstructions = `
+${baseInstructions}
+
+# Business Training Data
+
+## Business Overview
+- Business Name: ${businessName}
+- Industry: ${industry}
+- Description: ${businessDescription}
+- Location: ${location}
+${googleMapsLink ? `- Google Maps: ${googleMapsLink}` : ""}
+- Customer Rating: ${rating}
+${businessTypes ? `- Business Categories: ${businessTypes}` : ""}
+${googlePlacesData?.websiteUri ? `- Website: ${googlePlacesData.websiteUri}` : ""}
+${
+  googlePlacesData?.nationalPhoneNumber
+    ? `- Phone: ${googlePlacesData.nationalPhoneNumber}`
+    : ""
+}
+
+## Operating Hours
+${operatingHours}
+${
+  googlePlacesData?.regularOpeningHours?.openNow !== undefined
+    ? `Currently: ${googlePlacesData.regularOpeningHours.openNow ? "OPEN" : "CLOSED"}`
+    : ""
+}
+
+## Target Audience & Customer Profile
+${
+  Array.isArray(targetAudience) && targetAudience.length > 0
+    ? `- Primary Target Audience: ${(targetAudience as string[]).join(", ")}`
+    : ""
+}
+- Customer Income Level: ${
+    responseMap.get("customer_income_level") || "Not specified"
+  }
+
+## Brand Voice & Communication
+${
+  Array.isArray(brandVoice) && brandVoice.length > 0
+    ? `Use a ${(brandVoice as string[]).join(
+        ", "
+      )} tone in all communications and recommendations.`
+    : ""
+}
+
+## Business Operations Insights
+${
+  Array.isArray(busiestDays) && busiestDays.length > 0
+    ? `- Busiest Days: ${(busiestDays as string[]).join(", ")}`
+    : ""
+}
+${
+  Array.isArray(busiestHours) && busiestHours.length > 0
+    ? `- Peak Hours: ${(busiestHours as string[]).join(", ")}`
+    : ""
+}
+${
+  Array.isArray(slowPeriods) && slowPeriods.length > 0
+    ? `- Slow Periods: ${(slowPeriods as string[]).join(", ")}`
+    : ""
+}
+
+## Marketing Strategy
+${
+  Array.isArray(marketingGoals) && marketingGoals.length > 0
+    ? `- Primary Marketing Goals: ${(marketingGoals as string[]).join(", ")}`
+    : ""
+}
+- Typical Discount Range: ${discountRange}
+${
+  previousSuccessfulPromotions
+    ? `- Past Successful Promotions: ${previousSuccessfulPromotions}`
+    : ""
+}
+
+## Seasonal Information
+- Seasonal Business: ${seasonalRelevance ? "Yes" : "No"}
+${
+  Array.isArray(importantSeasons) && importantSeasons.length > 0
+    ? `- Key Seasons/Holidays: ${(importantSeasons as string[]).join(", ")}`
+    : ""
+}
+
+# Your Role as AI Marketing Assistant
+
+You are the AI marketing assistant for ${businessName}. Your primary responsibilities are:
+
+1. **Deal & Offer Recommendations**
+   - Suggest optimal timing for deals based on operating hours, slow periods, and seasonal trends
+   - Recommend discount amounts within the comfortable range: ${discountRange}
+   - Create compelling deal descriptions that match the brand voice
+   - Consider customer demographics and income level when suggesting offers
+   - Reference the business's operating hours when suggesting time-sensitive deals
+
+2. **Content & Post Suggestions**
+   ${
+     Array.isArray(importantSeasons) && importantSeasons.length > 0
+       ? `- Proactively suggest posts for upcoming holidays/seasons: ${(
+           importantSeasons as string[]
+         ).join(", ")}`
+       : ""
+   }
+   - Recommend posting times based on peak engagement hours and operating hours
+   - Create templates for deals/offers that resonate with target audience
+   - Reference pop culture and trending topics relevant to the business
+   - Leverage the business's location and customer reviews in content
+
+3. **Customer Engagement Strategy**
+   ${
+     Array.isArray(marketingGoals) && marketingGoals.length > 0
+       ? `- Focus on goals: ${(marketingGoals as string[]).join(", ")}`
+       : ""
+   }
+   ${
+     Array.isArray(slowPeriods) && slowPeriods.length > 0
+       ? `- Prioritize strategies to boost traffic during: ${(
+           slowPeriods as string[]
+         ).join(", ")}`
+       : ""
+   }
+   - Suggest loyalty programs and retention strategies
+   - Recommend social media engagement tactics
+   - Use the business's rating and reviews as social proof in marketing
+
+4. **Business Growth Insights**
+   - Analyze trends and provide actionable insights
+   - Suggest ways to maximize profitability
+   - Help optimize pricing and promotional strategies
+   ${
+     previousSuccessfulPromotions
+       ? `- Build on what worked before: ${previousSuccessfulPromotions}`
+       : ""
+   }
+   - Consider the business's location and accessibility when making recommendations
+
+# Guidelines for Responses
+
+- Always tailor recommendations to the specific business context
+- Be proactive: suggest deals/offers even when not explicitly asked
+- Provide specific, actionable advice rather than generic suggestions
+- Consider both immediate wins and long-term strategy
+- Use data-driven reasoning based on the training information provided
+- Stay positive and encouraging while being realistic about market conditions
+- Reference the business's unique value proposition in recommendations
+- Leverage operating hours, location, and customer rating data in your suggestions
+
+# Deal/Offer Template Creation
+
+When creating deal templates, consider:
+- Target audience preferences and demographics
+- Seasonal relevance and current trends
+- Appropriate discount levels (${discountRange})
+- Brand voice consistency
+- Call-to-action that drives engagement
+- Timing optimization for maximum impact based on operating hours
+- Location-based marketing opportunities
+- Customer reviews and rating as trust indicators
+
+Remember: Your goal is to increase customer engagement and improve profitability for ${businessName}. Use the verified Google Places data to provide accurate, location-aware recommendations.
+`;
+
+  return enhancedInstructions;
+}
+
+/**
  * Generates industry-specific recommendations for the AI assistant
  */
 function generateIndustryInsights(
@@ -1392,6 +1603,125 @@ export class AITrainingService {
       };
     } catch (error: any) {
       logger.error({ error, businessId }, "Error getting training state");
+      throw error;
+    }
+  }
+
+  /**
+   * Update Google Places data for a business
+   * Called by Pinntag backend with data from Google Places API
+   */
+  static async updateGooglePlacesData(
+    businessId: string,
+    googlePlacesData: any
+  ): Promise<any> {
+    try {
+      logger.info({ businessId }, "Updating Google Places data");
+
+      // Validate businessId
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        throw new Error("Invalid businessId format");
+      }
+
+      // Find existing training record
+      const training = await AI_TrainingModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      if (!training) {
+        throw new Error("Training record not found for this business");
+      }
+
+      // Extract and structure the relevant data from Google Places API
+      const structuredData = {
+        regularOpeningHours: googlePlacesData.regularOpeningHours
+          ? {
+              openNow: googlePlacesData.regularOpeningHours.openNow,
+              periods: googlePlacesData.regularOpeningHours.periods,
+              weekdayDescriptions: googlePlacesData.regularOpeningHours.weekdayDescriptions,
+            }
+          : undefined,
+        photos: googlePlacesData.photos?.map((photo: any) => ({
+          name: photo.name,
+          widthPx: photo.widthPx,
+          heightPx: photo.heightPx,
+          authorAttributions: photo.authorAttributions,
+        })),
+        rating: googlePlacesData.rating,
+        userRatingCount: googlePlacesData.userRatingCount,
+        googleMapsUri: googlePlacesData.googleMapsUri,
+        websiteUri: googlePlacesData.websiteUri,
+        nationalPhoneNumber: googlePlacesData.nationalPhoneNumber,
+        internationalPhoneNumber: googlePlacesData.internationalPhoneNumber,
+        formattedAddress: googlePlacesData.formattedAddress,
+        location: googlePlacesData.location
+          ? {
+              latitude: googlePlacesData.location.latitude,
+              longitude: googlePlacesData.location.longitude,
+            }
+          : undefined,
+        types: googlePlacesData.types,
+        displayName: googlePlacesData.displayName,
+        primaryTypeDisplayName: googlePlacesData.primaryTypeDisplayName,
+        lastUpdated: new Date(),
+      };
+
+      // Update the training record with Google Places data
+      training.googlePlacesData = structuredData;
+      training.lastUpdated = new Date();
+      await training.save();
+
+      logger.info(
+        { businessId, hasOpeningHours: !!structuredData.regularOpeningHours },
+        "Google Places data updated successfully"
+      );
+
+      // If training is completed, update the AI assistant with new information
+      if (training.trainingStatus === "completed") {
+        try {
+          const businessAgent = await BusinessAIAssistantModel.findOne({
+            businessId: new mongoose.Types.ObjectId(businessId),
+          });
+
+          if (businessAgent && businessAgent.assistantId) {
+            // Generate enhanced instructions with Google Places data
+            const enhancedInstructions = generateEnhancedInstructionsWithGooglePlaces(
+              businessAgent.businessName,
+              training.industry,
+              training.responses,
+              businessAgent.instructions || "",
+              structuredData
+            );
+
+            // Update assistant
+            await openai.beta.assistants.update(businessAgent.assistantId, {
+              instructions: enhancedInstructions,
+            });
+
+            logger.info(
+              { businessId, assistantId: businessAgent.assistantId },
+              "Assistant updated with Google Places data"
+            );
+          }
+        } catch (assistantError: any) {
+          logger.error(
+            { error: assistantError, businessId },
+            "Failed to update assistant with Google Places data, but data was saved"
+          );
+          // Don't throw - data is saved even if assistant update fails
+        }
+      }
+
+      return {
+        message: "Google Places data updated successfully",
+        training: {
+          businessId: training.businessId,
+          googlePlacesData: training.googlePlacesData,
+          lastUpdated: training.lastUpdated,
+        },
+      };
+    } catch (error: any) {
+      logger.error({ error, businessId }, "Error updating Google Places data");
       throw error;
     }
   }

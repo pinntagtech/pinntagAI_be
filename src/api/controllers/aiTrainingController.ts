@@ -584,6 +584,68 @@ export class AITrainingController {
       });
     }
   }
+
+  /**
+   * POST /ai/training/google-places/:businessId
+   * Updates Google Places data for a business
+   * Params: businessId
+   * Body: Google Places API response data
+   */
+  async updateGooglePlacesData(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+      const googlePlacesData = req.body;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format",
+        });
+      }
+
+      // Validate request body
+      if (!googlePlacesData || Object.keys(googlePlacesData).length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Google Places data is required in request body",
+        });
+      }
+
+      const result = await AITrainingService.updateGooglePlacesData(
+        businessId,
+        googlePlacesData
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error(
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+          },
+          businessId: req.params.businessId,
+        },
+        "Error updating Google Places data"
+      );
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to update Google Places data",
+      });
+    }
+  }
 }
 
 const controller = new AITrainingController();
@@ -599,4 +661,5 @@ export const aiTrainingController = {
   getTrainingResponses: controller.getTrainingResponses.bind(controller),
   resetTraining: controller.resetTraining.bind(controller),
   getTrainingState: controller.getTrainingState.bind(controller),
+  updateGooglePlacesData: controller.updateGooglePlacesData.bind(controller),
 };

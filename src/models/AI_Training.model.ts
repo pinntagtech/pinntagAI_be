@@ -6,6 +6,48 @@ export interface ITrainingResponse {
   answeredAt: Date;
 }
 
+export interface IGooglePlacesData {
+  regularOpeningHours?: {
+    openNow?: boolean;
+    periods?: Array<{
+      open: { day: number; hour: number; minute: number };
+      close: { day: number; hour: number; minute: number };
+    }>;
+    weekdayDescriptions?: string[];
+  };
+  photos?: Array<{
+    name: string;
+    widthPx: number;
+    heightPx: number;
+    authorAttributions?: Array<{
+      displayName: string;
+      uri: string;
+      photoUri: string;
+    }>;
+  }>;
+  rating?: number;
+  userRatingCount?: number;
+  googleMapsUri?: string;
+  websiteUri?: string;
+  nationalPhoneNumber?: string;
+  internationalPhoneNumber?: string;
+  formattedAddress?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  types?: string[];
+  displayName?: {
+    text: string;
+    languageCode: string;
+  };
+  primaryTypeDisplayName?: {
+    text: string;
+    languageCode: string;
+  };
+  lastUpdated?: Date;
+}
+
 export interface IAI_Training {
   businessId: mongoose.Types.ObjectId;
   assistantId: string;
@@ -17,6 +59,7 @@ export interface IAI_Training {
   completedPhases: ("basic" | "standard" | "advanced")[];
   completedAt?: Date;
   lastUpdated: Date;
+  googlePlacesData?: IGooglePlacesData;
   metadata?: {
     totalQuestions: number;
     answeredQuestions: number;
@@ -106,6 +149,10 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
     lastUpdated: {
       type: Date,
       default: Date.now,
+    },
+    googlePlacesData: {
+      type: Schema.Types.Mixed,
+      required: false,
     },
     metadata: {
       type: {

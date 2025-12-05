@@ -95,9 +95,13 @@ export class AIController {
         businessId: new mongoose.Types.ObjectId(business.businessId),
       });
       if (checkDuplicateBusiness) {
-        return res.status(400).json({
-          success: false,
-          error: "An AI agent for this Business ID already exists.",
+        return res.status(200).json({
+          success: true,
+          data: {
+            assistantId: checkDuplicateBusiness.assistantId,
+            description: checkDuplicateBusiness.description,
+          },
+          message: "AI agent already exists for this business",
         });
       }
       // Validate business ID format
