@@ -5358,7 +5358,7 @@ export class AuthService {
               zip: '$zip',
               website: '$website',
               _id: '$_id',
-              businessLocationId:'$businessLocationId',
+              businessLocationId: '$businessLocationId',
               email: '$email',
               phone: '$phone',
               distance: { $divide: ['$distance', 1609.34] },
@@ -6473,7 +6473,7 @@ export class AuthService {
                                 name: 1,
                                 price: 1,
                                 description: 1,
-                                pricingModel:1,
+                                pricingModel: 1,
                                 minLocations: 1,
                                 maxLocations: 1,
                               },
@@ -6481,7 +6481,12 @@ export class AuthService {
                           ],
                         },
                       },
-                      { $unwind: '$product' },
+                      {
+                        $unwind: {
+                          path: '$product',
+                          preserveNullAndEmptyArrays: true,
+                        },
+                      },
                       {
                         $lookup: {
                           from: 'subscriptionprices',
@@ -6492,23 +6497,28 @@ export class AuthService {
                             {
                               $project: {
                                 _id: 1,
-                                billingInterval:1
+                                billingInterval: 1,
                               },
                             },
                           ],
                         },
                       },
-                      { $unwind: '$price' },
+                      {
+                        $unwind: {
+                          path: '$price',
+                          preserveNullAndEmptyArrays: true,
+                        },
+                      },
                       {
                         $project: {
                           _id: 1,
                           source: 1,
                           product: 1,
-                          price:1,
+                          price: 1,
                           startDate: 1,
                           endDate: 1,
-                          invoiceStartDate:1,
-                          invoiceEndDate:1,
+                          invoiceStartDate: 1,
+                          invoiceEndDate: 1,
                           status: 1,
                           remainingDays: {
                             $dateDiff: {
@@ -6518,7 +6528,7 @@ export class AuthService {
                             },
                           },
                           locationsAllowed: 1,
-                          isFreePlan:1,
+                          isFreePlan: 1,
                         },
                       },
                     ],

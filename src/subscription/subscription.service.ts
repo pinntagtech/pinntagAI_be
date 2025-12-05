@@ -451,7 +451,7 @@ export class SubscriptionService {
           new Date().setMonth(new Date().getMonth() + 1),
         ),
         isCancelled: false,
-        isTrialActive: false,
+        isTrialActive: true,
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
         product: trialSubscriptionProduct._id,
