@@ -384,6 +384,14 @@ export class SubscriptionService {
 
   async createFreeCheckoutSession(user: DecodedUser) {
     try {
+      const freeSubscriptionProduct =
+        await this.subscriptionProductModel.findOne({ isFree: true });
+      if (!freeSubscriptionProduct) {
+        return {
+          success: false,
+          message: 'Free subscription product not found',
+        };
+      }
       const createSubscription = {
         business: new mongoose.Types.ObjectId(user.businessProfile),
         source: SubscriptionSource.FREE,
@@ -398,15 +406,8 @@ export class SubscriptionService {
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
         isFreePlan: true,
+        locationsAllowed: freeSubscriptionProduct.maxLocations,
       };
-      const freeSubscriptionProduct =
-        await this.subscriptionProductModel.findOne({ isFree: true });
-      if (!freeSubscriptionProduct) {
-        return {
-          success: false,
-          message: 'Free subscription product not found',
-        };
-      }
 
       const freeSubscription = await this.subscriptionModel.create({
         ...createSubscription,
@@ -422,6 +423,7 @@ export class SubscriptionService {
     try {
       const trialSubscriptionProduct =
         await this.subscriptionProductModel.findOne({ isTrial: true });
+      console.log("SubscriptionProductModel:",trialSubscriptionProduct)
       if (!trialSubscriptionProduct) {
         return {
           success: false,
@@ -455,8 +457,9 @@ export class SubscriptionService {
         product: trialSubscriptionProduct._id,
         locationsAllowed: trialSubscriptionProduct.maxLocations,
       });
-
-      await this.businessModel.updateOne(
+      console.log("TrialSubscription:",trialSubscription)
+      console.log("BUSINESSSS PROFILEEEE:",user.businessProfile)
+      const isUpdateddd = await this.businessModel.updateOne(
         {
           _id: new mongoose.Types.ObjectId(user.businessProfile),
         },
@@ -466,6 +469,7 @@ export class SubscriptionService {
           },
         },
       );
+      console.log("IS UPDATINGGG:",isUpdateddd);
 
       return { success: true, data: trialSubscription };
     } catch (error) {
