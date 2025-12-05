@@ -20,6 +20,7 @@ export const BusinessStatus = {
 
   CREATED: 0, //-> Business Created
   VERIFIED: 1,
+  SUBSCRIPTION:1.5,
   ADDRESS_ADDED: 2, //-> Business Address Added
   TAGS_DESCRIPTION_ADDED: 3, //-> Business Tags and Description Added
   COVER_ADDED: 4, //-> Business Cover Added

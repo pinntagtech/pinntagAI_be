@@ -28,6 +28,7 @@ import { EventStatus, EventTypes } from 'src/enums/event.enums';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { Outlet, OutletDocument } from 'src/outlet/model/outlet.model';
 import { Drive, DriveDocument } from 'src/drive/models/drive.model';
+import { BusinessStatus } from 'src/business/enums/business.enum';
 
 export interface UsageLimitResponse {
   maxLimit: number | string;
@@ -466,6 +467,7 @@ export class SubscriptionService {
         {
           $set: {
             activeSubscription: trialSubscription._id,
+            status: BusinessStatus.SUBSCRIPTION,
           },
         },
       );
