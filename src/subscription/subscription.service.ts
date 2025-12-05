@@ -384,6 +384,14 @@ export class SubscriptionService {
 
   async createFreeCheckoutSession(user: DecodedUser) {
     try {
+      const freeSubscriptionProduct =
+        await this.subscriptionProductModel.findOne({ isFree: true });
+      if (!freeSubscriptionProduct) {
+        return {
+          success: false,
+          message: 'Free subscription product not found',
+        };
+      }
       const createSubscription = {
         business: new mongoose.Types.ObjectId(user.businessProfile),
         source: SubscriptionSource.FREE,
@@ -398,15 +406,8 @@ export class SubscriptionService {
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
         isFreePlan: true,
+        locationsAllowed: freeSubscriptionProduct.maxLocations,
       };
-      const freeSubscriptionProduct =
-        await this.subscriptionProductModel.findOne({ isFree: true });
-      if (!freeSubscriptionProduct) {
-        return {
-          success: false,
-          message: 'Free subscription product not found',
-        };
-      }
 
       const freeSubscription = await this.subscriptionModel.create({
         ...createSubscription,
@@ -422,6 +423,7 @@ export class SubscriptionService {
     try {
       const trialSubscriptionProduct =
         await this.subscriptionProductModel.findOne({ isTrial: true });
+      console.log("SubscriptionProductModel:",trialSubscriptionProduct)
       if (!trialSubscriptionProduct) {
         return {
           success: false,
@@ -439,7 +441,7 @@ export class SubscriptionService {
         };
       }
 
-      const createSubscription = {
+      const trialSubscription = await this.subscriptionModel.create({
         business: new mongoose.Types.ObjectId(user.businessProfile),
         source: SubscriptionSource.FREE,
         startDate: new Date(),
@@ -449,14 +451,27 @@ export class SubscriptionService {
           new Date().setMonth(new Date().getMonth() + 1),
         ),
         isCancelled: false,
-        isTrialActive: false,
+        isTrialActive: true,
         status: SubscriptionStatus.ACTIVE,
         iapPlatform: 'none',
         product: trialSubscriptionProduct._id,
         locationsAllowed: trialSubscriptionProduct.maxLocations,
-      };
+      });
+      console.log("TrialSubscription:",trialSubscription)
+      console.log("BUSINESSSS PROFILEEEE:",user.businessProfile)
+      const isUpdateddd = await this.businessModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(user.businessProfile),
+        },
+        {
+          $set: {
+            activeSubscription: trialSubscription._id,
+          },
+        },
+      );
+      console.log("IS UPDATINGGG:",isUpdateddd);
 
-      return { success: true, data: createSubscription };
+      return { success: true, data: trialSubscription };
     } catch (error) {
       console.error('Error creating free checkout session:', error);
       return { success: false, message: 'Something went wrong' };

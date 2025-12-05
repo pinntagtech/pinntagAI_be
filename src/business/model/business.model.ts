@@ -346,6 +346,9 @@ export class Business {
   @Prop()
   appRedirectLink: string;
 
+  @Prop({default: false})
+  isAgentCreated:boolean;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }
