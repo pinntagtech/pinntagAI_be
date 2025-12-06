@@ -7464,7 +7464,7 @@ export class AuthService {
         {},
         page,
         limit,
-        1, // Default distance if not provided
+        1000, // Default distance if not provided
       );
       return {
         success: true,
@@ -7518,7 +7518,7 @@ export class AuthService {
               coordinates: [longitude, latitude], // IMPORTANT: [lng, lat]
             },
             distanceField: 'distance', // distance in METERS
-            maxDistance: 500, // 500 meters
+            maxDistance: 500000, // 500 meters
             spherical: true,
             query: {
               _id: new mongoose.Types.ObjectId(locationId), // only this document

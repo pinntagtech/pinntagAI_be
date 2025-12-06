@@ -36,6 +36,7 @@ import { Coupon } from '../models/coupon.model';
 import { PricingModel, SubscriptionProduct } from '../models/subscription-product.model';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
+import { BusinessStatus } from 'src/business/enums/business.enum';
 
 @Injectable()
 export class StripeService {
@@ -530,6 +531,7 @@ export class StripeService {
       {
         $set: {
           activeSubscription: new mongoose.Types.ObjectId(internalSub.id),
+           status: BusinessStatus.SUBSCRIPTION,
         },
       },
     );
