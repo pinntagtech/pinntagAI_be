@@ -13,6 +13,7 @@ import axios from 'axios';
 export class FacebookController {
   constructor(private readonly facebookService: FacebookService) {}
 
+
   @Get('callback')
   async facebookCallback(
     @Query('token') token: string,
@@ -53,6 +54,7 @@ export class FacebookController {
           },
         },
       );
+      console.log("token res;::",tokenRes);
 
       shortLivedToken = tokenRes.data.access_token;
       shortTokenExpiresIn = tokenRes.data.expires_in;
