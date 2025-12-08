@@ -588,7 +588,7 @@ export class EventController {
   }
 
   @Post('social/post')
-  @UseGuards(BusinessProfileGuard)
+  @UseGuards(JwtGuard2)
   async socialPost(
     // @Res() res: Response,
     @Body() body: PostToSocialMediaDto,

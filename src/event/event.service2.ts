@@ -2450,7 +2450,7 @@ export class EventService2 {
         };
       } else {
         const business =
-          await this.businessProfileModel.findById(businessProfile);
+          await this.businessModel.findById(businessProfile);
         if (data.facebook) {
           if (!business.isFacebookConnected) {
             return {
