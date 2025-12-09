@@ -18,6 +18,9 @@ export class Menu extends Document {
 
   @Prop({ ref: 'File' })
   images: Array<mongoose.Types.ObjectId>; // Array of image references
+
+  @Prop()
+  type:string
 }
 
 

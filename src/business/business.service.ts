@@ -127,6 +127,7 @@ import {
 } from './model/locationGroup.model';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import {
+  DiscountType,
   EventStatus,
   EventTypes,
   NotificationTypes,
@@ -204,6 +205,7 @@ import {
 import { program } from '@babel/template';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
+import { DiscountTypes } from 'src/models/bonusCode.model';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -1770,21 +1772,13 @@ export class BusinessService {
       );
 
       // Parallel updates
-      await Promise.all([
+      const [galleryFolder, businessUserUpdate] = await Promise.all([
         this.driveService.createFolder(createdBusiness.id, {
           parentDirectory: driveDetails.id,
           parentType: 'Drive',
           folderName: 'Gallery',
         }),
-        this.businessModel.updateOne(
-          { _id: createdBusiness._id },
-          {
-            $set: {
-              drive: driveDetails._id,
-              activeSubscription: subscription._id,
-            },
-          },
-        ),
+
         this.businessUserModel.updateOne(
           { _id: createdBusiness.authorisedUser },
           {
@@ -1793,6 +1787,16 @@ export class BusinessService {
           },
         ),
       ]);
+      const businessUpdate = this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        {
+          $set: {
+            drive: driveDetails._id,
+            activeSubscription: subscription._id,
+            galleryPath: galleryFolder.data._id,
+          },
+        },
+      );
 
       logger.info(`Business created successfully: ${createdBusiness.id}`);
 
@@ -6004,6 +6008,7 @@ export class BusinessService {
       discountValue,
       categories,
       images,
+      qrCode,
       date,
       startTime,
       endTime,
@@ -6041,6 +6046,14 @@ export class BusinessService {
     }
     console.log('foundCategoryIds:', categoryIds);
 
+    const eventFound = await this.eventModel.findOne({
+      title: title,
+      businessProfile: business._id,
+    });
+    if (eventFound) {
+      throw new BadRequestException('Event with this title already exists');
+    }
+
     const eventFolder = await this.driveService.createFolder(
       user.businessProfile,
       {
@@ -6053,8 +6066,6 @@ export class BusinessService {
     let eventObj = {
       isFromCrawler: false,
       type: type,
-      discountType: discountType,
-      discountValue: discountValue,
       CreatorType: BusinessUser.name,
       user: new mongoose.Types.ObjectId(user.id),
       businessProfile: business._id,
@@ -6065,8 +6076,14 @@ export class BusinessService {
       maxTargetAge: maxTargetAge,
       targetGenders: targetGenders,
       tags: tags,
+      bookingUrl: weblinks,
       drivePath: eventFolder.data._id,
     };
+    if (discountType && discountType.length > 0) {
+      if (Object.values(DiscountType).includes(discountType)) {
+        eventObj['discountType'] = discountType;
+      }
+    }
     console.log('eventOBJ:', eventObj);
     const createdEvent = await this.eventModel.create(eventObj);
     console.log('createdEvent:', createdEvent);
@@ -6084,6 +6101,18 @@ export class BusinessService {
           },
         );
       }
+    }
+    if (qrCode && type === EventTypes.OFFER && isValidObjectId(qrCode)) {
+      await this.fileModel.updateOne(
+        {
+          _id: new mongoose.Types.ObjectId(qrCode),
+        },
+        {
+          $set: {
+            QR_CODE: new mongoose.Types.ObjectId(qrCode),
+          },
+        },
+      );
     }
 
     //1. create event, create its folder,upload image in folder, create schedule, eventLocation
@@ -6117,6 +6146,7 @@ export class BusinessService {
         $addToSet: { locations: eventLocation._id },
       },
     );
+    console.log('TIMMMEEEE:', date, startTime, endTime);
     const startLocal = new Date(`${date}T${startTime}:00Z`);
     const endLocal = new Date(`${date}T${endTime}:00Z`);
 
@@ -6350,6 +6380,7 @@ export class BusinessService {
     user: DecodedUser,
     name: string,
     description: string,
+    type: string,
   ) {
     try {
       if (!files || files.length === 0) {
@@ -6370,6 +6401,7 @@ export class BusinessService {
         name: name,
         description: description,
         createdBy: new mongoose.Types.ObjectId(user.id),
+        type: type,
       });
 
       const uploadedFiles = await this.driveService.multiImageUpload(

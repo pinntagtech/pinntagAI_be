@@ -101,7 +101,6 @@ export class Business {
   })
   coverThumbnail: string;
 
-
   @Prop({ ref: BusinessConstitution.name })
   constitution: mongoose.Types.ObjectId;
 
@@ -136,7 +135,7 @@ export class Business {
   @Prop({ ref: Outlet.name })
   outlets: Array<mongoose.Types.ObjectId>;
 
-  @Prop({ref: Outlet.name})
+  @Prop({ ref: Outlet.name })
   activatedOutlets: Array<mongoose.Types.ObjectId>;
 
   @Prop()
@@ -256,6 +255,9 @@ export class Business {
   @Prop({ ref: 'Drive' })
   drive: mongoose.Types.ObjectId;
 
+  @Prop({ ref: 'Folder' })
+  galleryPath: mongoose.Types.ObjectId;
+
   @Prop({ default: false })
   isPhysicalType: boolean;
   @Prop({ default: 0 })
@@ -346,8 +348,8 @@ export class Business {
   @Prop()
   appRedirectLink: string;
 
-  @Prop({default: false})
-  isAgentCreated:boolean;
+  @Prop({ default: false })
+  isAgentCreated: boolean;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

@@ -791,7 +791,6 @@ export const BusinessDocumentTypesList = {
 export const VerificationStatus = {
   NOT_VERIFIED: 'not verified',
   PENDING: 'pending',
-  // REQUEST_FOR_REVERIFICATION: 'Request for Reverification',
   VERIFIED: 'verified',
   REJECTED: 'rejected',
 };

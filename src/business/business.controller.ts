@@ -1440,12 +1440,14 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
     @Body('name') name: string,
     @Body('description') description: string,
+    @Body('type') type:string
   ) {
     const result = await this.businessService.uploadMenu(
       images,
       user,
       name,
       description,
+      type
     );
     if (result.success) {
       return {
