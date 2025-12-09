@@ -6070,10 +6070,21 @@ export class BusinessService {
     console.log('eventOBJ:', eventObj);
     const createdEvent = await this.eventModel.create(eventObj);
     console.log('createdEvent:', createdEvent);
-    // const imageUrlsArray = images.split(',');
-    // for(let image of imageUrlsArray){
-
-    // }
+    const imageUrlsArray = images.split(',');
+    for (let image of imageUrlsArray) {
+      if (isValidObjectId(image)) {
+        await this.fileModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(image),
+          },
+          {
+            $set: {
+              parentDirectory: eventFolder.data._id,
+            },
+          },
+        );
+      }
+    }
 
     //1. create event, create its folder,upload image in folder, create schedule, eventLocation
 
@@ -6236,7 +6247,7 @@ export class BusinessService {
             stream: Readable.from(csvBuffer) as any, // <-- import { Readable } from 'stream'
           };
           const uploadResult = await this.driveService.uploadFile(
-            businessUser.id,
+            business.id,
             String(business.drive),
             fileCategory.id,
             fakeFile,

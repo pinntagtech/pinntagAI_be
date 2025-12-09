@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -13,6 +14,35 @@ import axios from 'axios';
 export class FacebookController {
   constructor(private readonly facebookService: FacebookService) {}
 
+  @Post('business/:id')
+  async facebookLogin(@Param('id') id: string) {
+    try {
+      const clientId = process.env.FACEBOOK_CLIENT_ID;
+      const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
+      const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+
+      if (!clientId || !clientSecret || !redirectUri) {
+        throw new InternalServerErrorException(
+          'Facebook OAuth env vars not configured',
+        );
+      }
+
+      const params = new URLSearchParams({
+        client_id: process.env.FACEBOOK_CLIENT_ID,
+        redirect_uri: process.env.FACEBOOK_REDIRECT_URI,
+        state: id,
+        scope:
+          'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts',
+        response_type: 'code',
+      });
+
+      const url = `https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`;
+
+      return { url };
+    } catch (error) {
+      console.error('something went wrong!');
+    }
+  }
 
   @Get('callback')
   async facebookCallback(
@@ -54,7 +84,7 @@ export class FacebookController {
           },
         },
       );
-      console.log("token res;::",tokenRes);
+      console.log('token res;::', tokenRes);
 
       shortLivedToken = tokenRes.data.access_token;
       shortTokenExpiresIn = tokenRes.data.expires_in;

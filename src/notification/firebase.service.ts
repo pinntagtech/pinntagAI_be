@@ -11,7 +11,7 @@ admin.initializeApp({
     // privateKey: process.env.FIREBASE_PRIVATE_KEY,
     projectId: serviceAccount.project_id,
     clientEmail: serviceAccount.client_email,
-    privateKey: serviceAccount.private_key, 
+    privateKey: serviceAccount.private_key,
        
   }),
   // databaseURL: process.env.FIREBASE_DATABASE_URL,
