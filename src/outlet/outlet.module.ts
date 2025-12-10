@@ -27,6 +27,7 @@ import { MobileSpots, MobileSpotsSchema } from 'src/business/model/mobileSpots.m
 import { EventSchedule, EventScheduleSchema } from 'src/event/models/event-schedule.model';
 import { Subscription, SubscriptionSchema } from 'src/subscription/models/subscription.model';
 import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/models/subscription-price.model';
+import { EventLocation, EventLocationSchema } from 'src/event/models/eventLocation.model';
 
 @Module({
   imports: [
@@ -51,8 +52,8 @@ import { SubscriptionPrice, SubscriptionPriceSchema } from 'src/subscription/mod
       { name: MobileSpots.name, schema: MobileSpotsSchema },
       { name: EventSchedule.name, schema: EventScheduleSchema},
       { name: Subscription.name, schema: SubscriptionSchema},
-      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema}
-        
+      { name: SubscriptionPrice.name, schema: SubscriptionPriceSchema},
+      { name: EventLocation.name,schema: EventLocationSchema},
     ])
   ],
   controllers: [OutletController],

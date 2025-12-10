@@ -270,9 +270,12 @@ export class OutletController {
   @UseGuards(JwtGuard2)
   async deleteOutlet(
     @Param('id') id: string,
-    @TokenDecoder() user: JwtPayload,
+    @TokenDecoder() user: DecodedUser,
+    @Body('fosterOutletId') fosterOutletId: string,
+    @Body('keepPublished') keepPublished: boolean,
+
   ) {
-    const result = await this.outletService.deleteOutlet(id, user);
+    const result = await this.outletService.deleteOutletV2(id,fosterOutletId,keepPublished, user);
     if (result.success) {
       return {
         message: result.message,

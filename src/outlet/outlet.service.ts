@@ -50,6 +50,10 @@ import {
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionPrice } from 'src/subscription/models/subscription-price.model';
 import { PricingModel } from 'src/subscription/models/subscription-product.model';
+import {
+  EventLocation,
+  EventLocationDocument,
+} from 'src/event/models/eventLocation.model';
 
 @Injectable()
 export class OutletService {
@@ -76,6 +80,8 @@ export class OutletService {
     private readonly subscriptionModel: Model<Subscription>,
     @InjectModel(SubscriptionPrice.name)
     private readonly subscriptionPriceModel: Model<SubscriptionPrice>,
+    @InjectModel(EventLocation.name)
+    private readonly eventLocationModel: Model<EventLocationDocument>,
     private readonly googleService: GoogleService,
     private readonly driveService: DriveService,
   ) {}
@@ -332,7 +338,7 @@ export class OutletService {
       console.log('CREATEOBJ:', createObj);
       const outlet = await this.outletModel.create(createObj);
 
-       if (data.isActive !== undefined && data.isActive == true) {
+      if (data.isActive !== undefined && data.isActive == true) {
         await this.businessModel.updateOne(
           { _id: business._id },
           {
@@ -1469,7 +1475,12 @@ export class OutletService {
     }
   }
 
-  async deleteOutlet(id: string, user: any) {
+  async deleteOutlet(
+    id: string,
+    fosterOutlet: string,
+    keepPublished: boolean,
+    user: DecodedUser,
+  ) {
     try {
       const businessUser = await this.businessUserModel.findById(user.id);
       if (!businessUser) {
@@ -1478,6 +1489,7 @@ export class OutletService {
           message: 'Business User not found!',
         };
       }
+
       const outlet = await this.outletModel.findById(id);
       if (!outlet) {
         return {
@@ -1485,18 +1497,97 @@ export class OutletService {
           message: 'Outlet not found!',
         };
       }
-      await this.outletModel.findByIdAndUpdate(
-        id,
-        { isDeleted: true },
-        { new: true },
-      );
+
+      //find events and rewards of this outletId;
+      const eventLocations = await this.eventLocationModel.find({
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        businessLocationId: new mongoose.Types.ObjectId(id),
+      });
+      const fosterOutletDetails = await this.outletModel.findById(fosterOutlet);
+
+      for (let evl of eventLocations) {
+        const event = await this.eventModel.findById(evl.event);
+        if (event.locations.length === 1) {
+          // await this.eventLocationModel.deleteMany({
+          //   event: event._id,
+          // });
+          // await this.eventModel.updateOne(
+          //   {
+          //     _id: event._id,
+          //   },
+          //   {
+          //     $set: { locations: [] },
+          //   },
+          // );
+          const updatedlocation =
+            await this.eventLocationModel.findOneAndUpdate(
+              {
+                _id: evl._id,
+              },
+              {
+                $set: {
+                  businessLocationId: fosterOutlet,
+                  location: {
+                    type: 'Point',
+                    coordinates: [
+                      fosterOutletDetails.longitude,
+                      fosterOutletDetails.latitude,
+                    ],
+                  },
+                  accuracy: fosterOutletDetails.accuracy,
+                  address1: fosterOutletDetails.address1,
+                  address2: fosterOutletDetails.address2
+                    ? fosterOutletDetails.address2
+                    : '',
+                  city: fosterOutletDetails.city,
+                  state: fosterOutletDetails.state,
+                  zip: fosterOutletDetails.postalCode,
+                  website: fosterOutletDetails.website,
+                  email: fosterOutletDetails.email,
+                  phone: fosterOutletDetails.phone,
+                },
+              },
+            );
+          // console.log('created-location---->', createdlocation);
+          // await this.eventModel.updateOne(
+          //   {
+          //     _id: event._id,
+          //   },
+          //   {
+          //     $addToSet: { locations: createdlocation._id },
+          //   },
+          // );
+        } else if (event.locations.length > 1) {
+          await this.eventLocationModel.deleteOne({ _id: evl._id });
+          await this.eventModel.updateOne(
+            { _id: evl.event },
+            {
+              $pull: {
+                locations: evl._id,
+              },
+            },
+          );
+        }
+        if (keepPublished && event.status === EventStatus.DRAFTED) {
+          await this.eventModel.updateOne(
+            { _id: event._id },
+            {
+              $set: {
+                status: EventStatus.DRAFTED,
+              },
+            },
+          );
+        }
+      }
+
       await this.businessUserModel.updateMany(
         { assignedOutlets: outlet._id },
         { $pull: { assignedOutlets: outlet._id } },
       );
+
       await this.businessModel.updateOne(
         { _id: outlet.business },
-        { $pull: { outlets: outlet._id } },
+        { $pull: { outlets: outlet._id, activatedOutlets: outlet._id } },
       );
       return {
         success: true,
@@ -1510,6 +1601,165 @@ export class OutletService {
     }
   }
 
+  async deleteOutletV2(
+    id: string,
+    fosterOutlet: string,
+    keepPublished: boolean,
+    user: DecodedUser,
+  ) {
+    try {
+      const outletId = new mongoose.Types.ObjectId(id);
+      const businessProfileId = new mongoose.Types.ObjectId(
+        user.businessProfile,
+      );
+
+      // 1. Parallel initial validation queries
+      const [businessUser, outlet] = await Promise.all([
+        this.businessUserModel.findById(user.id).lean(),
+        this.outletModel.findById(outletId).lean(),
+      ]);
+
+      if (!businessUser) {
+        return { success: false, message: 'Business User not found!' };
+      }
+      if (!outlet) {
+        return { success: false, message: 'Outlet not found!' };
+      }
+
+      // 2. Fetch event locations with their events in one aggregation
+      const eventLocations = await this.eventLocationModel.aggregate([
+        {
+          $match: {
+            businessProfile: businessProfileId,
+            businessLocationId: outletId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'event',
+            foreignField: '_id',
+            as: 'eventData',
+          },
+        },
+        { $unwind: '$eventData' },
+        {
+          $project: {
+            _id: 1,
+            event: 1,
+            locationsCount: { $size: '$eventData.locations' },
+            eventStatus: '$eventData.status',
+          },
+        },
+      ]);
+
+      // 3. Only fetch foster outlet if needed
+      let fosterOutletDetails: any = null;
+      const singleLocationEvents = eventLocations.filter(
+        (el) => el.locationsCount === 1,
+      );
+
+      if (singleLocationEvents.length > 0) {
+        fosterOutletDetails = await this.outletModel
+          .findById(fosterOutlet)
+          .lean();
+        if (!fosterOutletDetails) {
+          return { success: false, message: 'Foster outlet not found!' };
+        }
+      }
+
+      // 4. Prepare bulk operations
+      const eventLocationBulkOps: any[] = [];
+      const eventBulkOps: any[] = [];
+
+      for (const evl of eventLocations) {
+        if (evl.locationsCount === 1) {
+          // Transfer to foster outlet
+          eventLocationBulkOps.push({
+            updateOne: {
+              filter: { _id: evl._id },
+              update: {
+                $set: {
+                  businessLocationId: new mongoose.Types.ObjectId(fosterOutlet),
+                  location: {
+                    type: 'Point',
+                    coordinates: [
+                      fosterOutletDetails.longitude,
+                      fosterOutletDetails.latitude,
+                    ],
+                  },
+                  accuracy: fosterOutletDetails.accuracy,
+                  address1: fosterOutletDetails.address1,
+                  address2: fosterOutletDetails.address2 || '',
+                  city: fosterOutletDetails.city,
+                  state: fosterOutletDetails.state,
+                  zip: fosterOutletDetails.postalCode,
+                  website: fosterOutletDetails.website,
+                  email: fosterOutletDetails.email,
+                  phone: fosterOutletDetails.phone,
+                },
+              },
+            },
+          });
+        } else {
+          // Remove from multi-location event
+          eventLocationBulkOps.push({
+            deleteOne: { filter: { _id: evl._id } },
+          });
+          eventBulkOps.push({
+            updateOne: {
+              filter: { _id: evl.event },
+              update: { $pull: { locations: evl._id } },
+            },
+          });
+        }
+      }
+
+      // Handle keepPublished logic for drafted events (if needed)
+      if (!keepPublished) {
+        const draftedEventIds = eventLocations
+          .filter((el) => el.eventStatus === EventStatus.DRAFTED)
+          .map((el) => el.event);
+
+        if (draftedEventIds.length > 0) {
+          eventBulkOps.push({
+            updateMany: {
+              filter: { _id: { $in: draftedEventIds } },
+              update: { $set: { status: EventStatus.DRAFTED } }, // Adjust this logic as needed
+            },
+          });
+        }
+      }
+
+      // 5. Execute all operations in parallel
+      const operations: Promise<any>[] = [
+        this.businessUserModel.updateMany(
+          { assignedOutlets: outletId },
+          { $pull: { assignedOutlets: outletId } },
+        ),
+        this.businessModel.updateOne(
+          { _id: outlet.business },
+          { $pull: { outlets: outletId, activatedOutlets: outletId } },
+        ),
+        this.outletModel.deleteOne({ _id: outletId }), // Actually delete the outlet!
+      ];
+
+      if (eventLocationBulkOps.length > 0) {
+        operations.push(
+          this.eventLocationModel.bulkWrite(eventLocationBulkOps),
+        );
+      }
+      if (eventBulkOps.length > 0) {
+        operations.push(this.eventModel.bulkWrite(eventBulkOps));
+      }
+
+      await Promise.all(operations);
+
+      return { success: true, message: 'Outlet deleted successfully.' };
+    } catch (error) {
+      return { success: false, message: error.message || error };
+    }
+  }
   async createSpot(id: string, user: DecodedUser, data: CreateSpotDto) {
     try {
       const outlet = await this.outletModel.findById(id);
@@ -1642,16 +1892,66 @@ export class OutletService {
     }
   }
   async deactivateOutlet(id: string, user: DecodedUser) {
-    try {
-      return {
-        sucess: true,
-        message: 'Outlet deactivated successfully.',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error,
-      };
+  try {
+    const outletId = new mongoose.Types.ObjectId(id);
+    const businessProfileId = new mongoose.Types.ObjectId(user.businessProfile);
+
+    // 1. Update outlet and fetch event locations with event data in parallel
+    const [updateResult, eventLocations] = await Promise.all([
+      this.outletModel.updateOne(
+        { _id: outletId },
+        { $set: { isActive: false } },
+      ),
+      this.eventLocationModel.aggregate([
+        {
+          $match: {
+            businessProfile: businessProfileId,
+            businessLocationId: outletId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'event',
+            foreignField: '_id',
+            as: 'eventData',
+          },
+        },
+        { $unwind: '$eventData' },
+        {
+          $match: {
+            'eventData.locations': { $size: 1 }, // Only single-location events
+          },
+        },
+        {
+          $project: { event: 1 },
+        },
+      ]),
+    ]);
+
+    if (updateResult.matchedCount === 0) {
+      return { success: false, message: 'Outlet not found!' };
     }
+
+    // 2. Bulk update all single-location events to DRAFTED
+    if (eventLocations.length > 0) {
+      const eventIds = eventLocations.map(el => el.event);
+      
+      await this.eventModel.updateMany(
+        { _id: { $in: eventIds } },
+        { $set: { status: EventStatus.DRAFTED } },
+      );
+    }
+
+    return {
+      success: true,
+      message: 'Outlet deactivated successfully.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || error,
+    };
   }
+}
 }
