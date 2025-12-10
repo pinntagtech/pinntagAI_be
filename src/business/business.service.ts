@@ -1787,7 +1787,8 @@ export class BusinessService {
           },
         ),
       ]);
-      const businessUpdate = this.businessModel.updateOne(
+      console.log("Gallery Folder:::",galleryFolder);
+      const businessUpdate = await this.businessModel.updateOne(
         { _id: createdBusiness._id },
         {
           $set: {
