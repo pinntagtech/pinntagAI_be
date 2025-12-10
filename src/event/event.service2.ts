@@ -8012,6 +8012,7 @@ export class EventService2 {
           drivePath: outlet.drivePath,
           title: outlet.name,
           description: outlet.description,
+          status: EventStatus.PUBLISHED,
         }),
         this.mobileSpotsModel.findById(data.spotId),
       ]);
