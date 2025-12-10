@@ -6103,9 +6103,9 @@ export class BusinessService {
       }
     }
     if (qrCode && type === EventTypes.OFFER && isValidObjectId(qrCode)) {
-      await this.fileModel.updateOne(
+      await this.eventModel.updateOne(
         {
-          _id: new mongoose.Types.ObjectId(qrCode),
+          _id: createdEvent._id,
         },
         {
           $set: {
@@ -6449,6 +6449,33 @@ export class BusinessService {
       };
     }
   }
+
+  async fetchMenuList(user:DecodedUser){
+    try{
+      const menu = await this.menuModel.find({
+        business: new mongoose.Types.ObjectId(user.businessProfile)
+      });
+      if(menu.length== 0){
+        return {
+          success: false,
+          message: "No menu found."
+        }
+      }
+      return {
+        success: true,
+        message: "Menu found.",
+        data: menu
+      }
+    }catch(error){
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
   async businessNotification(
     consumerId: string,
     contentId: string,

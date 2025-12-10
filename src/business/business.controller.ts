@@ -1440,15 +1440,29 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
     @Body('name') name: string,
     @Body('description') description: string,
-    @Body('type') type:string
+    @Body('type') type: string,
   ) {
     const result = await this.businessService.uploadMenu(
       images,
       user,
       name,
       description,
-      type
+      type,
     );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Get('menu/list')
+  @UseGuards(JwtGuard2)
+  async fetchMenuList(@TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.fetchMenuList(user);
     if (result.success) {
       return {
         message: result.message,
@@ -1642,12 +1656,12 @@ export class BusinessController {
   async voteScratch(
     @TokenDecoder() user: DecodedUser,
     @Param('scratchId') scratchId: string,
-    @Body('status') status:boolean,
+    @Body('status') status: boolean,
   ) {
     const result = await this.businessService.voteScratch(
       scratchId,
       user,
-      status
+      status,
     );
     if (result.success) {
       return {
@@ -1657,5 +1671,4 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
-
 }

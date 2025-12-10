@@ -207,10 +207,9 @@ export class GoogleService {
         fields: [
           'displayName',
           'formattedAddress',
-          'location',
+          // 'location',
           'regularOpeningHours',
-          'currentOpeningHours',
-          'photos',
+          // 'currentOpeningHours',
           'rating',
           'userRatingCount',
           'priceLevel',
