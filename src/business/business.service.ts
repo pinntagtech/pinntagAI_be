@@ -6454,7 +6454,7 @@ export class BusinessService {
     try{
       const menu = await this.menuModel.find({
         business: new mongoose.Types.ObjectId(user.businessProfile)
-      });
+      }).populate('images','metaData');
       if(menu.length== 0){
         return {
           success: false,
