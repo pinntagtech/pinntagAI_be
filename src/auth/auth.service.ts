@@ -7729,9 +7729,12 @@ export class AuthService {
     }
   }
 
-  async businessCheckedInCard(userId: string, checkInId: string) {
+  async businessCheckedInCard(userId: string, businessId: string) {
     try {
-      const checkIN = await this.checkInModel.findById(checkInId);
+      const checkIN = await this.checkInModel.findOne({
+        user: new mongoose.Types.ObjectId(userId),
+        business:new mongoose.Types.ObjectId(businessId)
+      });
 
       console.log('BusinessID:', checkIN.business);
       const businessObjectId = new mongoose.Types.ObjectId(checkIN.business);

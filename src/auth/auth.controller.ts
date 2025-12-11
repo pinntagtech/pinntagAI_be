@@ -1001,15 +1001,15 @@ export class AuthController {
     }
   }
 
-  @Get('checkedin/cardview/:checkInId')
+  @Get('checkedin/cardview/:businessId')
   @UseGuards(JwtGuard2)
   async businessCheckedInCard(
     @TokenDecoder() user: DecodedUser,
-    @Param('checkInId') checkInId: string,
+    @Param('businessId') businessId: string,
   ) {
     const result = await this.authService.businessCheckedInCard(
       user.id,
-      checkInId,
+      businessId,
     );
     if (result.success) {
       return {

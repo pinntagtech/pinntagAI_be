@@ -1431,7 +1431,7 @@ export class BusinessController {
   @Post('uploadMenu')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FilesInterceptor('images', 5, {
+    FilesInterceptor('images', 15, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
