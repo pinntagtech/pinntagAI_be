@@ -3535,6 +3535,176 @@ export class AuthService {
 
     return eventsResult;
   }
+  async fetchCheckInListing(
+    userId: mongoose.Types.ObjectId,
+    longitude: number,
+    latitude: number,
+    match: any,
+    page: number,
+    limit: number,
+    distance: number,
+    startDate?: any,
+    endDate?: any,
+  ) {
+    const now = new Date();
+    startDate = startDate ? new Date(startDate) : now;
+    endDate = endDate
+      ? new Date(endDate)
+      : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+    const basePipeline: any[] = [
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: distance * 1609.34,
+          spherical: true,
+        },
+      },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'business',
+          foreignField: '_id',
+          as: 'businessDetails',
+        },
+      },
+      { $unwind: '$businessDetails' },
+      {
+        $lookup: {
+          from: 'businessindustries',
+          localField: 'businessDetails.businessIndustry',
+          foreignField: '_id',
+          as: 'industryDetails',
+        },
+      },
+      {
+        $unwind: { path: '$industryDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: 'follows',
+          let: {
+            userId: new mongoose.Types.ObjectId(userId),
+            targetId: '$businessDetails._id',
+            targetType: Business.name,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$follower', '$$userId'] },
+                    { $eq: ['$followerType', 'User'] },
+                    { $eq: ['$following', '$$targetId'] },
+                    { $eq: ['$followingType', '$$targetType'] },
+                    { $eq: ['$isBlocked', false] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'userFollow',
+        },
+      },
+      {
+        $addFields: {
+          isFollowedByMe: { $gt: [{ $size: '$userFollow' }, 0] },
+        },
+      },
+      {
+        $group: {
+          _id: '$businessDetails._id',
+          name: { $first: '$businessDetails.name' },
+          cover: { $first: '$businessDetails.cover' },
+          logo: { $first: '$businessDetails.logo' },
+          coverThumbnail: { $first: '$businessDetails.coverThumbnail' },
+          logoThumbnail: { $first: '$businessDetails.logoThumbnail' },
+          industry: { $first: '$industryDetails' },
+          description: { $first: '$businessDetails.description' },
+          isFollowedByMe: { $first: '$isFollowedByMe' },
+          isActive: { $first: '$businessDetails.isActive' },
+          locations: {
+            $push: {
+              location: '$location',
+              accuracy: '$accuracy',
+              address1: '$address1',
+              address2: '$address2',
+              city: '$city',
+              state: '$state',
+              zip: '$postalCode',
+              website: '$website',
+              _id: '$_id',
+              email: '$email',
+              phone: '$phone',
+              countryCode: '$countryCode',
+              distance: { $divide: ['$distance', 1609.34] },
+            },
+          },
+          distance: { $min: { $divide: ['$distance', 1609.34] } },
+        },
+      },
+      {
+        $lookup: {
+          from: 'checkins',
+          let: {
+            businessId: '$_id',
+            // locationId: locationObjectId,
+            userId: userId,
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$business', '$$businessId'] },
+                    // { $eq: ['$locationId', '$$locationId'] },
+                    { $eq: ['$user', '$$userId'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'checkIns',
+        },
+      },
+      {
+        $addFields: {
+          isCheckedIn: {
+            $gt: [{ $size: '$checkIns' }, 0],
+          },
+          checkedInLocationId: {
+            $arrayElemAt: ['$checkIns.locationId', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          checkIns: 0,
+        },
+      },
+      { $match: { ...match,  isCheckedIn: false } },
+      { $sort: { distance: 1, _id: 1 } },
+      // Use $facet for both paginated results and total count
+      {
+        $facet: {
+          data: [{ $skip: !page ? 0 : (page - 1) * limit }, { $limit: limit }],
+          totalCount: [{ $count: 'count' }],
+        },
+      },
+      // Flatten totalCount so it returns a number instead of array
+      {
+        $addFields: {
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
+    ];
+
+    let eventsResult = await this.outletModel.aggregate(basePipeline);
+
+    return eventsResult;
+  }
 
   async dashboardListingMap(
     user: DecodedUser,
@@ -7457,7 +7627,7 @@ export class AuthService {
     limit: number,
   ) {
     try {
-      const list = await this.fetchBusinessListing(
+      const list = await this.fetchCheckInListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,
         latitude,
@@ -7466,6 +7636,9 @@ export class AuthService {
         limit,
         1000, // Default distance if not provided
       );
+
+
+
       return {
         success: true,
         message: 'Data fetched successfully',
