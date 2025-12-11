@@ -235,7 +235,9 @@ export class GoogleService {
       const response = await axios.get(url, { params });
 
       const { regularOpeningHours, rating, userRatingCount } = response.data;
-      let updateObj = {};
+      let updateObj = {
+        dataFetchedFromGoogle:true
+      };
 
       if (rating) {
         updateObj['rating'] = rating;

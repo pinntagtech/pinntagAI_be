@@ -213,7 +213,7 @@ export class Business {
   @Prop()
   regularTiming: Schedule;
 
-  @Prop()
+  @Prop({default:false})
   dataFetchedFromGoogle:boolean;
 
   @Prop()
