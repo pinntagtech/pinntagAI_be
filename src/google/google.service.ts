@@ -1,11 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import axios from 'axios';
 import { length } from 'class-validator';
+import mongoose, { Model } from 'mongoose';
+import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { CommandSucceededEvent } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class GoogleService {
+
+  constructor(
+     @InjectModel(Business.name)
+        private readonly businessModel: Model<BusinessDocument>,
+  ){}
+
   private readonly GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
   private readonly AUTOCOMPLETE_URL =
     'https://places.googleapis.com/v1/places:autocomplete';
@@ -202,7 +211,7 @@ export class GoogleService {
       throw error;
     }
   }
-  async getPlaceDetailsWithMetaData(placeId: string) {
+  async getPlaceDetailsWithMetaData(placeId: string,businessId:string) {
     try {
       const params = {
         key: this.GOOGLE_API_KEY,
@@ -225,10 +234,111 @@ export class GoogleService {
       const url = `https://places.googleapis.com/v1/places/${placeId}`;
       const response = await axios.get(url, { params });
 
+      const { regularOpeningHours, rating, userRatingCount } = response.data;
+      let updateObj = {};
+
+      if (rating) {
+        updateObj['rating'] = rating;
+      }
+      if (userRatingCount) {
+        updateObj['userRatingCount'] = userRatingCount;
+      }
+
+      if (regularOpeningHours) {
+        const dayMap = [
+          'sunday',
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+        ];
+
+        const weekDays = {
+          sunday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          monday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          tuesday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          wednesday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          thursday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          friday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+          saturday: {
+            duration: {
+              startHour: 0,
+              startMinute: 0,
+              endHour: 0,
+              endMinute: 0,
+            },
+          },
+        };
+
+        if (regularOpeningHours?.periods) {
+          regularOpeningHours.periods.forEach((period: any) => {
+            const dayName = dayMap[period.open.day];
+
+            weekDays[dayName] = {
+              duration: {
+                startHour: period.open.hour,
+                startMinute: period.open.minute,
+                endHour: period.close.hour,
+                endMinute: period.close.minute,
+              },
+            };
+          });
+        }
+
+        updateObj['regularTiming'] = weekDays;
+      }
+      await this.businessModel.updateOne({_id:new mongoose.Types.ObjectId(businessId)},{
+        ...updateObj,
+      })
+
       return {
         success: true,
         message: 'Place details fetched successfully',
-        data: response.data,
+        data: updateObj,
       };
     } catch (error) {
       console.error('Error fetching place details:', error);

@@ -12,9 +12,63 @@ import {
   IsPhoneNumber,
   ValidateNested,
   ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import mongoose from 'mongoose';
+
+export class DurationDto {
+  @IsNotEmpty()
+  startHour: number;
+  @IsNotEmpty()
+  startMinute: number;
+  @IsNotEmpty()
+  endHour: number;
+  @IsNotEmpty()
+  endMinute: number;
+}
+
+export class DayScheduleDto {
+  @ValidateNested()
+  @Type(() => DurationDto)
+  duration: DurationDto;
+}
+export class WeekDaysDto {
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  sunday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  monday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  tuesday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  wednesday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  thursday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  friday: DayScheduleDto;
+
+  @ValidateNested()
+  @Type(() => DayScheduleDto)
+  saturday: DayScheduleDto;
+}
+
+export class RecurringScheduleDataDto {
+  @IsObject()
+  @ValidateNested()
+  @Type(() => WeekDaysDto)
+  weekDays: WeekDaysDto;
+}
 
 class TeamSizeDto {
   @IsNumber()
@@ -326,4 +380,9 @@ export class UpdateBusinessDto {
 
   @IsOptional()
   contentCreationStart: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RecurringScheduleDataDto)
+  regularTiming: RecurringScheduleDataDto;
 }

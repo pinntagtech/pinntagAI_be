@@ -15,6 +15,8 @@ import { AddressAutofillDto } from './dto/address-autofill.dto';
 import { GoogleService } from './google.service';
 import { RateLimitGuard } from 'src/auth/guards/rateLimiter.guard';
 import { ApiHeader, ApiResponse } from '@nestjs/swagger';
+import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
+import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 
 @Controller('google')
 export class GoogleController {
@@ -66,9 +68,11 @@ export class GoogleController {
   // @UseGuards(RateLimitGuard)
   async getPlaceDetailsWithMetaData(
     @Param('placeId') placeId: string,
+    @TokenDecoder()user:DecodedUser,
   ) {
     const result = await this.googleService.getPlaceDetailsWithMetaData(
-      placeId
+      placeId,
+      user.businessProfile,
     );
 
     if (result.success) {
