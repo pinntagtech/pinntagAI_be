@@ -33,6 +33,27 @@ export class SocialMediaTokenDetails {
   age: Date;
 }
 
+class Duration {
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
+}
+export class DaySchedule {
+  @Prop()
+  durations: Duration;
+}
+
+const weekDaysType = {
+  sunday: { type: DaySchedule },
+  monday: { type: DaySchedule },
+  tuesday: { type: DaySchedule },
+  wednesday: { type: DaySchedule },
+  thursday: { type: DaySchedule },
+  friday: { type: DaySchedule },
+  saturday: { type: DaySchedule },
+};
+
 class Hours {
   hour: number;
   minute: number;
@@ -167,6 +188,22 @@ export class Business {
   state: string;
   @Prop({ ref: BusinessCountry.name })
   country: mongoose.Types.ObjectId;
+
+  @Prop()
+  placeId: string;
+
+  @Prop({
+    type: weekDaysType,
+  })
+  weekDays: {
+    sunday: DaySchedule;
+    monday: DaySchedule;
+    tuesday: DaySchedule;
+    wednesday: DaySchedule;
+    thursday: DaySchedule;
+    friday: DaySchedule;
+    saturday: DaySchedule;
+  };
 
   @Prop()
   latitude: number;
@@ -315,7 +352,7 @@ export class Business {
   @Prop({ default: 0 })
   rating: number;
 
-  @Prop({default: 0})
+  @Prop({ default: 0 })
   userRatingCount: number;
 
   @Prop()
@@ -353,8 +390,6 @@ export class Business {
 
   @Prop({ default: false })
   isAgentCreated: boolean;
-
-
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

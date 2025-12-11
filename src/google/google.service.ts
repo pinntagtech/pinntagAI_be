@@ -190,6 +190,8 @@ export class GoogleService {
       }
       address['fullAddressString'] = response.data.formattedAddress;
 
+      address['placeId'] = placeId;
+
       return {
         success: true,
         message: 'Place details fetched successfully',
