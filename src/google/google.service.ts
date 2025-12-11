@@ -9,11 +9,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class GoogleService {
-
   constructor(
-     @InjectModel(Business.name)
-        private readonly businessModel: Model<BusinessDocument>,
-  ){}
+    @InjectModel(Business.name)
+    private readonly businessModel: Model<BusinessDocument>,
+  ) {}
 
   private readonly GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
   private readonly AUTOCOMPLETE_URL =
@@ -211,8 +210,21 @@ export class GoogleService {
       throw error;
     }
   }
-  async getPlaceDetailsWithMetaData(placeId: string,businessId:string) {
+  async getPlaceDetailsWithMetaData(businessId: string) {
     try {
+      const business = await this.businessModel.findById(businessId);
+      if (!business.placeId) {
+        await this.businessModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(businessId) },
+          {
+            dataFetchedFromGoogle: true,
+          },
+        );
+        return {
+          success: false,
+          message: 'No Dataa found',
+        };
+      }
       const params = {
         key: this.GOOGLE_API_KEY,
         fields: [
@@ -231,12 +243,12 @@ export class GoogleService {
           'types',
         ].join(','),
       };
-      const url = `https://places.googleapis.com/v1/places/${placeId}`;
+      const url = `https://places.googleapis.com/v1/places/${business.placeId}`;
       const response = await axios.get(url, { params });
 
       const { regularOpeningHours, rating, userRatingCount } = response.data;
       let updateObj = {
-        dataFetchedFromGoogle:true
+        dataFetchedFromGoogle: true,
       };
 
       if (rating) {
@@ -333,9 +345,12 @@ export class GoogleService {
 
         updateObj['regularTiming'] = weekDays;
       }
-      await this.businessModel.updateOne({_id:new mongoose.Types.ObjectId(businessId)},{
-        ...updateObj,
-      })
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(businessId) },
+        {
+          ...updateObj,
+        },
+      );
 
       return {
         success: true,

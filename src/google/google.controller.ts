@@ -63,7 +63,7 @@ export class GoogleController {
     }
   }
   
-  @Post('placeDetailsMetaData/:placeId')
+  @Get('placeDetailsMetaData')
   @UseGuards(JwtGuard2)
   // @UseGuards(RateLimitGuard)
   async getPlaceDetailsWithMetaData(
@@ -71,7 +71,6 @@ export class GoogleController {
     @TokenDecoder()user:DecodedUser,
   ) {
     const result = await this.googleService.getPlaceDetailsWithMetaData(
-      placeId,
       user.businessProfile,
     );
 
