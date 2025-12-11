@@ -1583,150 +1583,154 @@ export class BusinessService {
   //   }
   // }
 
-  async createBusiness(
-    userId: string,
-    token: string,
-    data: CreateBusinessDto,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    data?: any;
-  }> {
-    try {
-      // Validate userId early
-      if (!isValidObjectId(userId)) {
-        return {
-          success: false,
-          message: 'Please provide valid Business User Id',
-        };
-      }
-
-      // Parallel fetch operations for better performance
-      const [findBusiness, userDetails, freeSubscriptionProduct] =
-        await Promise.all([
-          this.businessModel.findOne({ email: data.email }).lean(),
-          this.businessUserModel.findById(userId).select('-password').lean(),
-          this.subscriptionProductModel.findOne({ isFree: true }).lean(),
-        ]);
-
-      // Early validation checks
-      if (findBusiness) {
-        return {
-          success: false,
-          message: `Business already exist with given email: ${data.email}`,
-        };
-      }
-
-      if (!userDetails) {
-        return {
-          success: false,
-          message: 'Business User not found with given ID',
-        };
-      }
-
-      if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
-        return {
-          success: false,
-          message: 'Business User email not verified',
-          data: userDetails,
-        };
-      }
-
-      // Validate phone number
-      const phoneNumber = parsePhoneNumberFromString(
-        `${data.countryCode}${data.phone}`,
-      );
-      if (!phoneNumber?.isValid()) {
-        return { success: false, message: 'Invalid phone number' };
-      }
-
-      // Validate scalability factor
-      if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
-        return {
-          success: false,
-          message: 'Please provide valid Scalability Factor',
-        };
-      }
-
-      // Build base creation object
-      const createObj: any = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        countryCode: data.countryCode,
-        scalabilityFactor: data.scalabilityFactor,
-        creatorType: BusinessCreatorType.BUSINESS_USER,
-        creator: new mongoose.Types.ObjectId(userId),
-        authorisedUser: new mongoose.Types.ObjectId(userId),
-        roleOfCreator: data.roleOfCreator,
+async createBusiness(
+  userId: string,
+  token: string,
+  data: CreateBusinessDto,
+): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+}> {
+  try {
+    // Early validation
+    if (!isValidObjectId(userId)) {
+      return {
+        success: false,
+        message: 'Please provide valid Business User Id',
       };
+    }
 
-      if (data.website) {
-        createObj.website = data.website;
+    if (data.businessCategories?.length && !data.businessCategories.every(isValidObjectId)) {
+      const invalidId = data.businessCategories.find((id) => !isValidObjectId(id));
+      return {
+        success: false,
+        message: `Please provide valid Business Category Id: ${invalidId}`,
+      };
+    }
+
+    if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
+      return {
+        success: false,
+        message: 'Please provide valid Scalability Factor',
+      };
+    }
+
+    // Validate phone number early
+    const phoneNumber = parsePhoneNumberFromString(`${data.countryCode}${data.phone}`);
+    if (!phoneNumber?.isValid()) {
+      return { success: false, message: 'Invalid phone number' };
+    }
+
+    // Build queries array dynamically
+    const queries: Promise<any>[] = [
+      this.businessModel.findOne({ email: data.email }).lean(),
+      this.businessUserModel.findById(userId).select('-password').lean(),
+      this.subscriptionProductModel.findOne({ isFree: true }).lean(),
+    ];
+
+    if (data.businessIndustry) {
+      queries.push(this.businessIndModel.findById(data.businessIndustry).lean());
+    }
+
+    if (data.businessCategories?.length) {
+      queries.push(
+        this.businessCategoryModel
+          .find({ _id: { $in: data.businessCategories } })
+          .lean()
+      );
+    }
+
+    // Single parallel fetch for all data
+    const results = await Promise.all(queries);
+    const [findBusiness, userDetails, freeSubscriptionProduct, ...optionalResults] = results;
+
+    // Validation checks
+    if (findBusiness) {
+      return {
+        success: false,
+        message: `Business already exist with given email: ${data.email}`,
+      };
+    }
+
+    if (!userDetails) {
+      return {
+        success: false,
+        message: 'Business User not found with given ID',
+      };
+    }
+
+    if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
+      return {
+        success: false,
+        message: 'Business User email not verified',
+        data: userDetails,
+      };
+    }
+
+    // Validate industry and categories if provided
+    let businessCategoryTitles: string[] = [];
+    let industryTitle: string | null = null;
+
+    if (data.businessIndustry) {
+      const industry = optionalResults[0];
+      if (!industry) {
+        return {
+          success: false,
+          message: 'Please provide valid Business Industry',
+        };
       }
+      industryTitle = industry.title;
+    }
 
-      // Handle business industry and categories
-      let businessCategoryTitles: string[] = [];
-      let findBusinessIndustry = null;
-
-      if (data.businessIndustry && data.businessCategories?.length) {
-        // Validate all category IDs upfront
-        if (!data.businessCategories.every(isValidObjectId)) {
-          const invalidId = data.businessCategories.find(
-            (id) => !isValidObjectId(id),
-          );
-          return {
-            success: false,
-            message: `Please provide valid Business Category Id: ${invalidId}`,
-          };
-        }
-
-        // Parallel fetch for industry and categories
-        const [industry, categories] = await Promise.all([
-          this.businessIndModel.findById(data.businessIndustry).lean(),
-          this.businessCategoryModel
-            .find({
-              _id: { $in: data.businessCategories },
-            })
-            .lean(),
-        ]);
-
-        if (!industry) {
-          return {
-            success: false,
-            message: 'Please provide valid Business Industry',
-          };
-        }
-
-        if (categories.length !== data.businessCategories.length) {
-          return {
-            success: false,
-            message: 'One or more Business Category IDs are invalid',
-          };
-        }
-
-        findBusinessIndustry = industry;
-        businessCategoryTitles = categories.map((cat) => cat.title);
-        createObj.businessIndustry = new mongoose.Types.ObjectId(
-          data.businessIndustry,
-        );
-        createObj.businessCategories = data.businessCategories.map(
-          (id) => new mongoose.Types.ObjectId(id),
-        );
+    if (data.businessCategories?.length) {
+      const categories = optionalResults[data.businessIndustry ? 1 : 0];
+      if (categories.length !== data.businessCategories.length) {
+        return {
+          success: false,
+          message: 'One or more Business Category IDs are invalid',
+        };
       }
+      businessCategoryTitles = categories.map((cat) => cat.title);
+    }
 
-      // Create business and subscription
-      const createdBusiness = await this.businessModel.create(createObj);
+    // Build creation object
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const createObj: any = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      countryCode: data.countryCode,
+      scalabilityFactor: data.scalabilityFactor,
+      creatorType: BusinessCreatorType.BUSINESS_USER,
+      creator: userObjectId,
+      authorisedUser: userObjectId,
+      roleOfCreator: data.roleOfCreator,
+    };
 
-      const subscription = await this.subscriptionModel.create({
-        business: createdBusiness._id,
+    if (data.website) createObj.website = data.website;
+    if (data.businessIndustry) {
+      createObj.businessIndustry = new mongoose.Types.ObjectId(data.businessIndustry);
+    }
+    if (data.businessCategories?.length) {
+      createObj.businessCategories = data.businessCategories.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+    }
+
+    // Create business and subscription in parallel
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    const [createdBusiness, subscription] = await Promise.all([
+      this.businessModel.create(createObj),
+      this.subscriptionModel.create({
+        business: null, // Will be updated after business creation
         source: SubscriptionSource.FREE,
         startDate: new Date(),
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+        endDate,
         invoiceStartDate: new Date(),
-        invoiceEndDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1),
-        ),
+        invoiceEndDate: endDate,
         isCancelled: false,
         isTrialActive: false,
         status: SubscriptionStatus.ACTIVE,
@@ -1734,86 +1738,83 @@ export class BusinessService {
         product: freeSubscriptionProduct._id,
         isFreePlan: true,
         locationsAllowed: freeSubscriptionProduct.maxLocations,
-      });
+      }),
+    ]);
 
-      // Fire-and-forget async operations (non-blocking)
-      const fullPhoneNumber = phoneNumber.format('E.164');
+    // Update subscription with business ID
+    subscription.business = createdBusiness._id;
+    await subscription.save();
 
-      Promise.all([
-        // AI agent creation
-        this.createBusinessAiAgent(
-          createdBusiness.name,
-          createdBusiness.id,
-          businessCategoryTitles,
-          findBusinessIndustry.title,
-          createdBusiness.website,
-        ),
+    // Critical sequential operations
+    const driveDetails = await this.seederService.createDrive(
+      createdBusiness._id,
+      Business.name,
+    );
 
-        // SMS
-        this.smsService
-          .sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP)
-          .catch((err) => logger.error('Error sending SMS:', err)),
-
-        // QR generation
-        this.generateBusinessQR(createdBusiness.id).catch((err) =>
-          logger.error('Error generating QR:', err),
-        ),
-
-        // Seed roles
-        this.seedBusinessDepartmentRoles(userId, createdBusiness._id).catch(
-          (err) => logger.error('Error seeding business roles:', err),
-        ),
-      ]);
-
-      // Create drive and folder sequentially (drive needed first)
-      const driveDetails = await this.seederService.createDrive(
-        createdBusiness._id,
-        Business.name,
-      );
-
-      // Parallel updates
-      const [galleryFolder, businessUserUpdate] = await Promise.all([
-        this.driveService.createFolder(createdBusiness.id, {
-          parentDirectory: driveDetails.id,
-          parentType: 'Drive',
-          folderName: 'Gallery',
-        }),
-
-        this.businessUserModel.updateOne(
-          { _id: createdBusiness.authorisedUser },
-          {
-            $addToSet: { business: createdBusiness._id },
-            $set: { selectedBusiness: createdBusiness._id },
-          },
-        ),
-      ]);
-      console.log('Gallery Folder:::', galleryFolder);
-      const businessUpdate = await this.businessModel.updateOne(
+    // Parallel critical updates
+    const [galleryFolder] = await Promise.all([
+      this.driveService.createFolder(createdBusiness.id, {
+        parentDirectory: driveDetails.id,
+        parentType: 'Drive',
+        folderName: 'Gallery',
+      }),
+      this.businessUserModel.updateOne(
+        { _id: userObjectId },
+        {
+          $addToSet: { business: createdBusiness._id },
+          $set: { selectedBusiness: createdBusiness._id },
+        }
+      ),
+      this.businessModel.updateOne(
         { _id: createdBusiness._id },
         {
           $set: {
             drive: driveDetails._id,
             activeSubscription: subscription._id,
-            galleryPath: galleryFolder.data._id,
           },
-        },
-      );
+        }
+      ),
+    ]);
 
-      logger.info(`Business created successfully: ${createdBusiness.id}`);
+    // Final business update with gallery path
+    await this.businessModel.updateOne(
+      { _id: createdBusiness._id },
+      { $set: { galleryPath: galleryFolder.data._id } }
+    );
 
-      return {
-        success: true,
-        message: 'Business Created Successfully!',
-        data: createdBusiness,
-      };
-    } catch (error) {
-      logger.error('Error creating business:', error);
-      return {
-        success: false,
-        message: 'Something went wrong.',
-      };
-    }
+    // Fire-and-forget non-critical operations
+    const fullPhoneNumber = phoneNumber.format('E.164');
+    
+    setImmediate(() => {
+      Promise.allSettled([
+        this.createBusinessAiAgent(
+          createdBusiness.name,
+          createdBusiness.id,
+          businessCategoryTitles,
+          industryTitle,
+          createdBusiness.website,
+        ),
+        this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP),
+        this.generateBusinessQR(createdBusiness.id),
+        this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
+      ]).catch((err) => logger.error('Error in background tasks:', err));
+    });
+
+    logger.info(`Business created successfully: ${createdBusiness.id}`);
+
+    return {
+      success: true,
+      message: 'Business Created Successfully!',
+      data: createdBusiness,
+    };
+  } catch (error) {
+    logger.error('Error creating business:', error);
+    return {
+      success: false,
+      message: 'Something went wrong.',
+    };
   }
+}
 
   private async createBusinessAiAgent(
     businessName: string,
