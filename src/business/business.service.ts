@@ -1787,7 +1787,7 @@ export class BusinessService {
           },
         ),
       ]);
-      console.log("Gallery Folder:::",galleryFolder);
+      console.log('Gallery Folder:::', galleryFolder);
       const businessUpdate = await this.businessModel.updateOne(
         { _id: createdBusiness._id },
         {
@@ -3797,7 +3797,7 @@ export class BusinessService {
           $geoNear: {
             near: { type: 'Point', coordinates: [longitude, latitude] },
             distanceField: 'distance',
-            maxDistance: 100000000 * 1609.34,
+            maxDistance: 1000000 * 1609.34,
             spherical: true,
             query: { business: businessObjectId }, // Move match into geoNear for better performance
           },
@@ -4066,6 +4066,43 @@ export class BusinessService {
             galleryFolder: 0,
           },
         },
+        // {
+        //   $lookup: {
+        //     from: 'checkins',
+        //     let: {
+        //       businessId: '$businessProfileDetails._id',
+        //       userId: userId,
+        //     },
+        //     pipeline: [
+        //       {
+        //         $match: {
+        //           $expr: {
+        //             $and: [
+        //               { $eq: ['$business', '$$businessId'] },
+        //               { $eq: ['$user', '$$userId'] },
+        //             ],
+        //           },
+        //         },
+        //       },
+        //     ],
+        //     as: 'checkIns',
+        //   },
+        // },
+        // {
+        //   $addFields: {
+        //     isCheckedIn: {
+        //       $gt: [{ $size: '$checkIns' }, 0],
+        //     },
+        //     checkedInLocationId: {
+        //       $arrayElemAt: ['$checkIns.locationId', 0],
+        //     },
+        //   },
+        // },
+        // {
+        //   $project: {
+        //     checkIns: 0,
+        //   },
+        // },
       ];
 
       // Execute the optimized pipeline
@@ -6451,31 +6488,31 @@ export class BusinessService {
     }
   }
 
-  async fetchMenuList(user:DecodedUser){
-    try{
-      const menu = await this.menuModel.find({
-        business: new mongoose.Types.ObjectId(user.businessProfile)
-      }).populate('images','metaData');
-      if(menu.length== 0){
+  async fetchMenuList(user: DecodedUser) {
+    try {
+      const menu = await this.menuModel
+        .find({
+          business: new mongoose.Types.ObjectId(user.businessProfile),
+        })
+        .populate('images', 'metaData');
+      if (menu.length == 0) {
         return {
           success: false,
-          message: "No menu found."
-        }
+          message: 'No menu found.',
+        };
       }
       return {
         success: true,
-        message: "Menu found.",
-        data: menu
-      }
-    }catch(error){
+        message: 'Menu found.',
+        data: menu,
+      };
+    } catch (error) {
       return {
         success: false,
         message: error.message,
       };
     }
   }
-
-
 
   async businessNotification(
     consumerId: string,

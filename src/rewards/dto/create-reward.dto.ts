@@ -26,7 +26,7 @@ export class CreateRewardDto {
   @IsIn(Object.values(RewardType))
   rewardType: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Transform(({ value }) => value.trim())
   @IsIn(Object.values(RedemptionMode))

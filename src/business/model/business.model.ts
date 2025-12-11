@@ -315,6 +315,9 @@ export class Business {
   @Prop({ default: 0 })
   rating: number;
 
+  @Prop({default: 0})
+  userRatingCount: number;
+
   @Prop()
   stripeCustomerId: string;
 
@@ -350,6 +353,8 @@ export class Business {
 
   @Prop({ default: false })
   isAgentCreated: boolean;
+
+
 
   // @Prop({default:false})
   // skipToDashboard: boolean;
