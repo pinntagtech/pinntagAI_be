@@ -160,7 +160,7 @@ import { BusinessDocVerificationLeads } from './models/BusinessDocVerificationLe
 import { CreateCouponDto, UpdateCouponDto } from './dto/create-coupon.dto';
 import { Coupon } from 'src/subscription/models/coupon.model';
 import { EtlDataDto } from './dto/etl-data.dto';
-import { Folder } from 'src/drive/models/folder.model';
+import { Folder, FolderDocument } from 'src/drive/models/folder.model';
 import { File, FileDocument } from 'src/drive/models/file.model';
 import { FeaturedAsset } from './models/featuredAssets.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
@@ -223,6 +223,7 @@ export class AdminService {
     @InjectModel(FeaturedAsset.name)
     private readonly featuredAssetModel: Model<FeaturedAsset>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
+    @InjectModel(Folder.name) private readonly folderModel: Model<FolderDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3687,12 +3688,33 @@ export class AdminService {
 
     // query to create cover thumbnails:
     try {
-      // const businesses = await this.businessModel.find({
-      //   _id: new mongoose.Types.ObjectId('68a0d9072e19fc726daa1345'),
-      // });
-      // for(let business of businesses){
-
-      // }
+      const businesses = await this.businessModel.find({
+        // _id: new mongoose.Types.ObjectId('68a0d9072e19fc726daa1345'),
+      });
+      for(let business of businesses){
+        const isGalleryExist = await this.folderModel.findOne({
+          parentDirectory: new mongoose.Types.ObjectId(business.drive),
+          folderName: 'Gallery',
+        })
+        console.log("BusinessID Exists:",business.id);
+        if(isGalleryExist){
+          continue;
+        }
+        const galleryFolder = await this.driveService.createFolder(business.id, {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: 'Gallery',
+        });
+        await this.businessModel.updateOne(
+        { _id: business._id },
+        {
+          $set: {
+            drive: business.drive,
+            galleryPath: galleryFolder.data._id,
+          },
+        },
+      );
+      }
 
     } catch (error) {
       console.error('💥 runDbQueries Error:', error);
