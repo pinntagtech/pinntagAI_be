@@ -3682,7 +3682,7 @@ export class AuthService {
           checkIns: 0,
         },
       },
-      { $match: { ...match,  isCheckedIn: false } },
+      { $match: { ...match, isCheckedIn: false } },
       { $sort: { distance: 1, _id: 1 } },
       // Use $facet for both paginated results and total count
       {
@@ -7637,8 +7637,6 @@ export class AuthService {
         1000, // Default distance if not provided
       );
 
-
-
       return {
         success: true,
         message: 'Data fetched successfully',
@@ -8098,6 +8096,44 @@ export class AuthService {
         success: true,
         message: 'Business fetched Successfully!',
         data: business,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
+  async similarBusinesses(
+    user: DecodedUser,
+    industryId: string,
+    latitude: number,
+    longitude: number,
+  ) {
+    try {
+      let query = {
+        'industry._id': new mongoose.Types.ObjectId(industryId)
+      };
+      console.log("industryId query:",query);
+      let [eventsResult, totalCount] = await this.fetchBusinessListing(
+        new mongoose.Types.ObjectId(user.id),
+        longitude,
+        latitude,
+        query,
+        1,
+        10,
+        1000000,
+      );
+      eventsResult = eventsResult['data'];
+
+      return {
+        success: true,
+        message: 'Dashboard fetched successfully',
+        data: {
+          eventsResult,
+          totalCount,
+        },
       };
     } catch (error) {
       return {

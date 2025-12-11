@@ -1020,4 +1020,29 @@ export class AuthController {
       throw new BadRequestException(result.message);
     }
   }
+  @Get('similarBusinesses/:industryId')
+  @UseGuards(JwtGuard2)
+  async similarBusinesses(
+    @Param('industryId') industryId:string,
+    @TokenDecoder() user: DecodedUser,
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+
+  ){
+    console.log("INDUSTRYYY ID CONTO:",industryId);
+     const result = await this.authService.similarBusinesses(
+      user,
+      industryId,
+      Number(latitude),
+      Number(longitude)
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 }
