@@ -3777,7 +3777,7 @@ export class BusinessService {
 
   async fetchBusiness(
     businessId: string,
-    userId: string,
+    userId: any,
     latitude: number,
     longitude: number,
   ) {
@@ -3790,7 +3790,7 @@ export class BusinessService {
       const businessObjectId = new mongoose.Types.ObjectId(businessId);
       const userObjectId = new mongoose.Types.ObjectId(userId);
       const currentDate = new Date();
-
+      userId = new mongoose.Types.ObjectId(userId);
       const optimizedPipeline: any[] = [
         // 1. Geo-spatial search (ensure 2dsphere index on location field)
         {
@@ -4066,43 +4066,43 @@ export class BusinessService {
             galleryFolder: 0,
           },
         },
-        // {
-        //   $lookup: {
-        //     from: 'checkins',
-        //     let: {
-        //       businessId: '$businessProfileDetails._id',
-        //       userId: userId,
-        //     },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: {
-        //             $and: [
-        //               { $eq: ['$business', '$$businessId'] },
-        //               { $eq: ['$user', '$$userId'] },
-        //             ],
-        //           },
-        //         },
-        //       },
-        //     ],
-        //     as: 'checkIns',
-        //   },
-        // },
-        // {
-        //   $addFields: {
-        //     isCheckedIn: {
-        //       $gt: [{ $size: '$checkIns' }, 0],
-        //     },
-        //     checkedInLocationId: {
-        //       $arrayElemAt: ['$checkIns.locationId', 0],
-        //     },
-        //   },
-        // },
-        // {
-        //   $project: {
-        //     checkIns: 0,
-        //   },
-        // },
+        {
+          $lookup: {
+            from: 'checkins',
+            let: {
+              businessId: '$_id',
+              userId: userId,
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$business', '$$businessId'] },
+                      { $eq: ['$user', '$$userId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'checkIns',
+          },
+        },
+        {
+          $addFields: {
+            isCheckedIn: {
+              $gt: [{ $size: '$checkIns' }, 0],
+            },
+            checkedInLocationId: {
+              $arrayElemAt: ['$checkIns.locationId', 0],
+            },
+          },
+        },
+        {
+          $project: {
+            checkIns: 0,
+          },
+        },
       ];
 
       // Execute the optimized pipeline
