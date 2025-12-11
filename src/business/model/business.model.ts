@@ -39,20 +39,20 @@ class Duration {
   endHour: number;
   endMinute: number;
 }
-export class DaySchedule {
-  @Prop()
-  durations: Duration;
-}
+// export class DaySchedule {
+//   @Prop()
+//   durations: Duration;
+// }
 
-const weekDaysType = {
-  sunday: { type: DaySchedule },
-  monday: { type: DaySchedule },
-  tuesday: { type: DaySchedule },
-  wednesday: { type: DaySchedule },
-  thursday: { type: DaySchedule },
-  friday: { type: DaySchedule },
-  saturday: { type: DaySchedule },
-};
+// const weekDaysType = {
+//   sunday: { type: DaySchedule },
+//   monday: { type: DaySchedule },
+//   tuesday: { type: DaySchedule },
+//   wednesday: { type: DaySchedule },
+//   thursday: { type: DaySchedule },
+//   friday: { type: DaySchedule },
+//   saturday: { type: DaySchedule },
+// };
 
 class Hours {
   hour: number;
@@ -192,18 +192,18 @@ export class Business {
   @Prop()
   placeId: string;
 
-  @Prop({
-    type: weekDaysType,
-  })
-  weekDays: {
-    sunday: DaySchedule;
-    monday: DaySchedule;
-    tuesday: DaySchedule;
-    wednesday: DaySchedule;
-    thursday: DaySchedule;
-    friday: DaySchedule;
-    saturday: DaySchedule;
-  };
+  // @Prop({
+  //   type: weekDaysType,
+  // })
+  // weekDays: {
+  //   sunday: DaySchedule;
+  //   monday: DaySchedule;
+  //   tuesday: DaySchedule;
+  //   wednesday: DaySchedule;
+  //   thursday: DaySchedule;
+  //   friday: DaySchedule;
+  //   saturday: DaySchedule;
+  // };
 
   @Prop()
   latitude: number;
