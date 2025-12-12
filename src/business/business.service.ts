@@ -821,7 +821,7 @@ export class BusinessService {
     // const tokenData = jwt.decode(data.oAuthToken) as any;
     // console.log('Apple Login Data:', tokenData);
     const userFound = await this.businessUserModel.findOne({
-      email: data.oAuthToken,
+      email: data.socialId,
     });
     if (userFound) {
       // login logic
@@ -1037,7 +1037,7 @@ export class BusinessService {
       console.log('Owner role created:', ownerRole.id);
 
       let createObj = {
-        email: data.oAuthToken,
+        email: data.socialId,
         name: data.name,
         role: [new mongoose.Types.ObjectId(ownerRole.id)],
         creatorType: BusinessUserCreatorType.SELF,
