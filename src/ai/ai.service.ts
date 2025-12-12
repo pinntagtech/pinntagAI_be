@@ -318,18 +318,65 @@ export class AiService {
     try {
       const messages = [
         {
+          role: 'system',
+          content: `
+You are the AI title generator for Pinntag, a local discovery platform where businesses post offers, events, flash deals, spotlights, and dropped pins.
+
+Your job:
+- Create SHORT, HIGHLY RELEVANT titles for business content shown to nearby users.
+- Always stay on-topic and grounded in the provided inputs.
+
+General rules:
+- Max 60 characters per title.
+- No emojis, no hashtags, no quotes.
+- No generic clickbait like “You Won’t Believe This”.
+- No unrelated concepts, brands, locations, or categories not given in the input.
+- Write in natural, clear marketing language that a local customer would understand at a glance.
+- Prefer concrete benefits (“Flat 20% Off Lunch Buffet”) over vague phrases (“Exciting Offer Inside”).
+
+Content types:
+- "offer": promotions, discounts, deals.
+- "event": time-bound events, workshops, celebrations, launches.
+- "flashdeal": limited-time, urgent deals; emphasize urgency and time sensitivity.
+- "spotlight": highlight the business, a signature product, or a unique selling point.
+- "dropped_pin": location-based pin, usually highlighting a place or area; focus on what’s special about that location.
+
+Output format:
+- Return EXACTLY 4 suggestions.
+- One suggestion per line.
+- Start each line with a number and a dot, e.g. "1. Title here".
+- Do not add any explanations or additional text.
+      `.trim(),
+        },
+        {
           role: 'user',
           content: `
-          Suggest 4 catchy and creative titles for a ${contentType} in the ${category} category, focused on the ${dealType} deal type and provided ${tags} tags. Make them engaging, attention-grabbing, and tailored to appeal to the target audience. Use ${suggestion} as inspiration or a guiding theme if relevant.
-        `.trim(),
+Generate 4 catchy, highly relevant titles for a Pinntag ${contentType}.
+
+Details:
+- Category: ${category}
+- Deal type: ${dealType}
+- Tags (keywords, themes, or key details): ${tags}
+- Extra suggestion / hint (may be empty): ${suggestion}
+
+Requirements for each title:
+- Must clearly reflect the category and deal type when applicable.
+- Must use at least one important idea from the tags (product, service, benefit, or audience).
+- Must fit well as a title for a business on Pinntag (local, real-world, customer-facing).
+- If the content implies time sensitivity (e.g. flashdeal), add urgency words like "Today", "Limited Time", "This Weekend", etc., but keep it realistic.
+
+Remember:
+- Only output the 4 numbered titles.
+      `.trim(),
         },
       ];
+
       const response = await firstValueFrom(
         this.httpService.post(
           'https://api.openai.com/v1/chat/completions',
           {
             model: 'gpt-4o',
-            messages: messages,
+            messages,
             max_tokens: 512,
             temperature: 0.7,
           },
@@ -341,16 +388,20 @@ export class AiService {
           },
         ),
       );
+
       let suggestions = response.data.choices[0].message.content
         .split('\n')
-        .map((line) =>
-          line
-            .trim()
-            .replace(/^\d+[\).\s-]+/, '')
-            .replace(/^"(.*)"$/, '$1'),
+        .map(
+          (line) =>
+            line
+              .trim()
+              .replace(/^\d+[\).\s-]+/, '') // remove leading "1. ", "2) ", etc.
+              .replace(/^"(.*)"$/, '$1'), // remove surrounding quotes if any
         )
         .filter(Boolean);
+
       console.log('SUGGESTIONS:', suggestions);
+
       return {
         success: true,
         message: 'Title suggestions generated successfully',
