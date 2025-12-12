@@ -927,10 +927,10 @@ export class OutletService {
         match['vehicleType'] = vehicleType;
       }
 
-      if(status !== undefined){
-        status = status === 'true'? true:false;
-        match['isActive'] = status;
-      }
+      // if(status !== undefined){
+      //   status = status === 'true'? true:false;
+      //   match['isActive'] = status;
+      // }
 
 
       console.log('Match:::', match);
