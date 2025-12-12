@@ -1892,66 +1892,72 @@ export class OutletService {
     }
   }
   async deactivateOutlet(id: string, user: DecodedUser) {
-  try {
-    const outletId = new mongoose.Types.ObjectId(id);
-    const businessProfileId = new mongoose.Types.ObjectId(user.businessProfile);
-
-    // 1. Update outlet and fetch event locations with event data in parallel
-    const [updateResult, eventLocations] = await Promise.all([
-      this.outletModel.updateOne(
-        { _id: outletId },
-        { $set: { isActive: false } },
-      ),
-      this.eventLocationModel.aggregate([
-        {
-          $match: {
-            businessProfile: businessProfileId,
-            businessLocationId: outletId,
-          },
-        },
-        {
-          $lookup: {
-            from: 'events',
-            localField: 'event',
-            foreignField: '_id',
-            as: 'eventData',
-          },
-        },
-        { $unwind: '$eventData' },
-        {
-          $match: {
-            'eventData.locations': { $size: 1 }, // Only single-location events
-          },
-        },
-        {
-          $project: { event: 1 },
-        },
-      ]),
-    ]);
-
-    if (updateResult.matchedCount === 0) {
-      return { success: false, message: 'Outlet not found!' };
-    }
-
-    // 2. Bulk update all single-location events to DRAFTED
-    if (eventLocations.length > 0) {
-      const eventIds = eventLocations.map(el => el.event);
-      
-      await this.eventModel.updateMany(
-        { _id: { $in: eventIds } },
-        { $set: { status: EventStatus.DRAFTED } },
+    try {
+      const outletId = new mongoose.Types.ObjectId(id);
+      const businessProfileId = new mongoose.Types.ObjectId(
+        user.businessProfile,
       );
-    }
 
-    return {
-      success: true,
-      message: 'Outlet deactivated successfully.',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: error.message || error,
-    };
+      // 1. Update outlet and fetch event locations with event data in parallel
+      const [updateResult, eventLocations, updateBusiness] = await Promise.all([
+        this.outletModel.updateOne(
+          { _id: outletId },
+          { $set: { isActive: false } },
+        ),
+        this.eventLocationModel.aggregate([
+          {
+            $match: {
+              businessProfile: businessProfileId,
+              businessLocationId: outletId,
+            },
+          },
+          {
+            $lookup: {
+              from: 'events',
+              localField: 'event',
+              foreignField: '_id',
+              as: 'eventData',
+            },
+          },
+          { $unwind: '$eventData' },
+          {
+            $match: {
+              'eventData.locations': { $size: 1 }, // Only single-location events
+            },
+          },
+          {
+            $project: { event: 1 },
+          },
+        ]),
+        this.businessModel.updateOne(
+          { _id: businessProfileId },
+          { $pull: { activatedOutlets: outletId } },
+        ),
+      ]);
+
+      if (updateResult.matchedCount === 0) {
+        return { success: false, message: 'Outlet not found!' };
+      }
+
+      // 2. Bulk update all single-location events to DRAFTED
+      if (eventLocations.length > 0) {
+        const eventIds = eventLocations.map((el) => el.event);
+
+        await this.eventModel.updateMany(
+          { _id: { $in: eventIds } },
+          { $set: { status: EventStatus.DRAFTED } },
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Outlet deactivated successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || error,
+      };
+    }
   }
-}
 }
