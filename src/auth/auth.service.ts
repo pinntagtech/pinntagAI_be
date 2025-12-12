@@ -2615,6 +2615,7 @@ export class AuthService {
           let: {
             businessId: '$businessProfileDetails._id',
             userId: userId,
+            now: new Date(),
           },
           pipeline: [
             {
@@ -2623,6 +2624,8 @@ export class AuthService {
                   $and: [
                     { $eq: ['$business', '$$businessId'] },
                     { $eq: ['$user', '$$userId'] },
+                    { $gt: ['$expiry', '$$now'] }, // not expired
+                    { $eq: ['$checkedOutAt', null] },
                   ],
                 },
               },
@@ -3480,6 +3483,7 @@ export class AuthService {
             businessId: '$_id',
             // locationId: locationObjectId,
             userId: userId,
+            now: new Date(),
           },
           pipeline: [
             {
@@ -3489,6 +3493,8 @@ export class AuthService {
                     { $eq: ['$business', '$$businessId'] },
                     // { $eq: ['$locationId', '$$locationId'] },
                     { $eq: ['$user', '$$userId'] },
+                    { $gt: ['$expiry', '$$now'] }, // not expired
+                    { $eq: ['$checkedOutAt', null] },
                   ],
                 },
               },
@@ -3650,6 +3656,7 @@ export class AuthService {
             businessId: '$_id',
             // locationId: locationObjectId,
             userId: userId,
+            now: new Date(),
           },
           pipeline: [
             {
@@ -3659,6 +3666,8 @@ export class AuthService {
                     { $eq: ['$business', '$$businessId'] },
                     // { $eq: ['$locationId', '$$locationId'] },
                     { $eq: ['$user', '$$userId'] },
+                    { $gt: ['$expiry', '$$now'] }, // not expired
+                    { $eq: ['$checkedOutAt', null] },
                   ],
                 },
               },
@@ -5769,6 +5778,7 @@ export class AuthService {
           let: {
             businessId: '$businessProfileDetails._id',
             userId: userId,
+            now: new Date(),
           },
           pipeline: [
             {
@@ -5777,6 +5787,8 @@ export class AuthService {
                   $and: [
                     { $eq: ['$business', '$$businessId'] },
                     { $eq: ['$user', '$$userId'] },
+                    { $gt: ['$expiry', '$$now'] }, // not expired
+                    { $eq: ['$checkedOutAt', null] },
                   ],
                 },
               },
@@ -7714,7 +7726,7 @@ export class AuthService {
           type: 'Point',
           coordinates: [longitude, latitude],
         },
-        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        expiry: new Date(Date.now() + 4 * 60 * 60 * 1000),
       });
       return {
         success: true,
@@ -7733,7 +7745,7 @@ export class AuthService {
     try {
       const checkIN = await this.checkInModel.findOne({
         user: new mongoose.Types.ObjectId(userId),
-        business:new mongoose.Types.ObjectId(businessId)
+        business: new mongoose.Types.ObjectId(businessId),
       });
 
       console.log('BusinessID:', checkIN.business);
@@ -8043,6 +8055,7 @@ export class AuthService {
               businessId: businessObjectId,
               locationId: locationObjectId,
               userId: userObjectId,
+              now: new Date(),
             },
             pipeline: [
               {
@@ -8052,6 +8065,8 @@ export class AuthService {
                       { $eq: ['$business', '$$businessId'] },
                       { $eq: ['$locationId', '$$locationId'] },
                       { $eq: ['$user', '$$userId'] },
+                      { $gt: ['$expiry', '$$now'] }, // not expired
+                      { $eq: ['$checkedOutAt', null] },
                     ],
                   },
                 },
@@ -8108,6 +8123,49 @@ export class AuthService {
     }
   }
 
+  async userCheckOut(
+    userId: string,
+    businessId: string,
+    locationId: string,
+  ) {
+    try {
+      const activeCheckIn = await this.checkInModel.findOneAndUpdate(
+        {
+          user: new mongoose.Types.ObjectId(userId),
+          business: new mongoose.Types.ObjectId(businessId),
+          locationId: new mongoose.Types.ObjectId(locationId),
+          expiry: { $gt: new Date() },
+          checkedOutAt: null,
+        },
+        {
+          $set: {
+            checkedOutAt: new Date(),
+            expiry: new Date(),
+          },
+        },
+        { new: true },
+      );
+
+      if (!activeCheckIn) {
+        return {
+          success: false,
+          message: 'User is not currently checked-in at this location',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Checked-out successfully.',
+        data: activeCheckIn,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Something went wrong while checking out',
+      };
+    }
+  }
+
   async similarBusinesses(
     user: DecodedUser,
     industryId: string,
@@ -8116,9 +8174,9 @@ export class AuthService {
   ) {
     try {
       let query = {
-        'industry._id': new mongoose.Types.ObjectId(industryId)
+        'industry._id': new mongoose.Types.ObjectId(industryId),
       };
-      console.log("industryId query:",query);
+      console.log('industryId query:', query);
       let [eventsResult, totalCount] = await this.fetchBusinessListing(
         new mongoose.Types.ObjectId(user.id),
         longitude,

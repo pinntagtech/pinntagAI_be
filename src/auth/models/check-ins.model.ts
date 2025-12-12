@@ -23,6 +23,9 @@ export class CheckIn extends Document{
   expiry: Date;
 
   @Prop()
+  checkedOutAt: Date;
+
+  @Prop()
   latitude: number;
   @Prop()
   longitude: number;

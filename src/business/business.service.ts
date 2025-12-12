@@ -4073,6 +4073,7 @@ async createBusiness(
             let: {
               businessId: '$_id',
               userId: userId,
+              now: new Date(),
             },
             pipeline: [
               {
@@ -4081,6 +4082,8 @@ async createBusiness(
                     $and: [
                       { $eq: ['$business', '$$businessId'] },
                       { $eq: ['$user', '$$userId'] },
+                        { $gt: ['$expiry', '$$now'] },       // not expired
+              { $eq: ['$checkedOutAt', null] },  
                     ],
                   },
                 },

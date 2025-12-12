@@ -1020,6 +1020,32 @@ export class AuthController {
       throw new BadRequestException(result.message);
     }
   }
+
+  @Get('userCheckout')
+  @UseGuards(JwtGuard2)
+  async userCheckOut(
+    @TokenDecoder() user: DecodedUser,
+    @Query('businessId') businessId: string,
+    @Query('locationId') locationId: string,
+  ) {
+    const result = await this.authService.userCheckOut(
+      user.id,
+      businessId,
+      locationId,
+    );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+
+
+
   @Get('similarBusinesses/:industryId')
   @UseGuards(JwtGuard2)
   async similarBusinesses(

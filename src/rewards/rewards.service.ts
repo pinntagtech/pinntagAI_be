@@ -2319,6 +2319,7 @@ export class RewardsService {
             let: {
               businessId: '$businessProfileDetails._id',
               userId: userId,
+              now: new Date(),
             },
             pipeline: [
               {
@@ -2327,6 +2328,8 @@ export class RewardsService {
                     $and: [
                       { $eq: ['$business', '$$businessId'] },
                       { $eq: ['$user', '$$userId'] },
+                      { $gt: ['$expiry', '$$now'] }, // not expired
+                      { $eq: ['$checkedOutAt', null] },
                     ],
                   },
                 },
