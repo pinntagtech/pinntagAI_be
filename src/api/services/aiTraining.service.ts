@@ -724,11 +724,12 @@ export class AITrainingService {
         currentPhase: TrainingPhase.BASIC,
         completedPhases: [],
         metadata: {
-          totalQuestions: filteredQuestions.length,
+          totalQuestions: basicQuestions.length, // Use total questions including prefilled
           answeredQuestions: prefilledResponses.length,
-          requiredQuestions: filteredQuestions.filter((q) => q.required).length,
-          completionPercentage: Math.round(
-            (prefilledResponses.length / filteredQuestions.length) * 100
+          requiredQuestions: basicQuestions.filter((q) => q.required).length,
+          completionPercentage: Math.min(
+            Math.round((prefilledResponses.length / basicQuestions.length) * 100),
+            100
           ),
           phaseProgress: {
             basic: {
@@ -986,9 +987,10 @@ export class AITrainingService {
       // Update metadata
       if (training.metadata) {
         training.metadata.answeredQuestions = training.responses.length;
-        training.metadata.completionPercentage = Math.round(
-          (training.responses.length / (training.metadata.totalQuestions || 1)) * 100
-        );
+
+        // Calculate completion percentage and cap at 100% to handle edge cases
+        const rawPercentage = (training.responses.length / (training.metadata.totalQuestions || 1)) * 100;
+        training.metadata.completionPercentage = Math.min(Math.round(rawPercentage), 100);
 
         // Update phase progress
         if (training.metadata.phaseProgress) {
@@ -1494,11 +1496,12 @@ export class AITrainingService {
           currentPhase: TrainingPhase.BASIC,
           completedPhases: [],
           metadata: {
-            totalQuestions: filteredQuestions.length,
+            totalQuestions: basicQuestions.length, // Use total questions including prefilled
             answeredQuestions: prefilledResponses.length,
-            requiredQuestions: filteredQuestions.filter((q) => q.required).length,
-            completionPercentage: Math.round(
-              (prefilledResponses.length / filteredQuestions.length) * 100
+            requiredQuestions: basicQuestions.filter((q) => q.required).length,
+            completionPercentage: Math.min(
+              Math.round((prefilledResponses.length / basicQuestions.length) * 100),
+              100
             ),
             phaseProgress: {
               basic: {
