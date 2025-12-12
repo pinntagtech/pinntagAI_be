@@ -8,6 +8,8 @@ import {
   findActiveTemplates,
   findTemplatesByType,
   findTemplatesByIndustry,
+  findTemplatesByCategory,
+  findTemplatesByIndustryAndCategories,
   findTemplateById,
   findGenericTemplates,
   findBusinessSpecificTemplates,
@@ -143,13 +145,20 @@ export const generateMultipleTemplates = async (req: Request, res: Response) => 
  *   - type: filter by template type
  *   - scope: "generic" or "business_specific"
  *   - businessId: get templates for specific business (includes generic + business-specific)
- *   - industryId: filter generic templates by industry
+ *   - industryId: filter templates by industry (category from industryList API)
+ *   - categoryId: filter templates by subcategory (from businessCategoryList API)
+ *   - categoryIds: filter templates by multiple subcategories (comma-separated)
  */
 export const getTemplates = async (req: Request, res: Response) => {
   try {
-    const { type, scope, businessId, industryId } = req.query;
+    const { type, scope, businessId, industryId, categoryId, categoryIds } = req.query;
 
     let templates;
+
+    // Parse categoryIds if provided as comma-separated string
+    const parsedCategoryIds = categoryIds
+      ? (categoryIds as string).split(',').map(id => id.trim())
+      : undefined;
 
     // If businessId provided, get all templates available for that business
     if (businessId) {
@@ -157,6 +166,20 @@ export const getTemplates = async (req: Request, res: Response) => {
         businessId as string,
         industryId as string | undefined
       );
+    }
+    // If industry and categories provided, filter by both
+    else if (industryId && (categoryId || parsedCategoryIds)) {
+      const categoryIdsArray = categoryId
+        ? [categoryId as string]
+        : parsedCategoryIds;
+      templates = await findTemplatesByIndustryAndCategories(
+        industryId as string,
+        categoryIdsArray
+      );
+    }
+    // If only categoryId provided, filter by category
+    else if (categoryId) {
+      templates = await findTemplatesByCategory(categoryId as string);
     }
     // If scope is generic, get only generic templates
     else if (scope === "generic") {

@@ -1412,10 +1412,19 @@ export class AITrainingService {
    */
   static async getTrainingState(businessId: string, queryPhase?: TrainingPhase) {
     try {
+      logger.info({ businessId, queryPhase }, "Starting getTrainingState");
+
       // Check if business exists
       const businessAgent = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
+
+      logger.info({
+        businessId,
+        foundAgent: !!businessAgent,
+        agentCategory: businessAgent?.category,
+        agentSubCategories: businessAgent?.subCategories
+      }, "Business agent lookup result");
 
       if (!businessAgent) {
         throw new Error(`No AI agent found for business ID: ${businessId}`);
@@ -1428,8 +1437,11 @@ export class AITrainingService {
 
       // If no training exists, initialize it
       if (!training) {
+        logger.info({ businessId }, "No training found, initializing");
         const industry = businessAgent.category as BusinessIndustries;
         const subCategory = businessAgent.subCategories?.[0] as BusinessSubCategory | undefined;
+
+        logger.info({ industry, subCategory }, "Getting basic phase questions");
 
         // Get questions for basic phase
         const basicQuestions = getQuestionsByPhaseUtil(
@@ -1438,7 +1450,10 @@ export class AITrainingService {
           subCategory
         );
 
+        logger.info({ basicQuestionsCount: basicQuestions.length }, "Basic questions retrieved");
+
         const phaseSummary = getPhaseSummary(industry, subCategory);
+        logger.info({ phaseSummaryLength: phaseSummary.length }, "Phase summary retrieved");
 
         // Pre-fill business_name and business_description
         const prefilledResponses: ITrainingResponse[] = [];

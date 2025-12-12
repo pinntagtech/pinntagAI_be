@@ -569,7 +569,14 @@ export class AITrainingController {
         data: result,
       });
     } catch (error: any) {
-      logger.error({ error, businessId: req.params?.businessId }, "Error getting training state");
+      logger.error({
+        error: {
+          message: error?.message,
+          stack: error?.stack,
+          name: error?.name,
+        },
+        businessId: req.params?.businessId
+      }, "Error getting training state");
 
       if (error.message?.includes("not found")) {
         return res.status(404).json({

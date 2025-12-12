@@ -309,13 +309,21 @@ export class DealTemplateGeneratorService {
     const scope = options.scope || TemplateScope.BUSINESS_SPECIFIC;
     const isGeneric = scope === TemplateScope.GENERIC;
 
+    // Helper function to ensure we have a valid ObjectId
+    const toObjectId = (value: any): mongoose.Types.ObjectId => {
+      if (value instanceof mongoose.Types.ObjectId) {
+        return value;
+      }
+      return new mongoose.Types.ObjectId(value);
+    };
+
     return {
       creatorType: TemplateCreatorType.SYSTEM,
       type: template.dealType as TemplateType || TemplateType.OFFER,
       scope,
-      businessId: isGeneric ? undefined : (new mongoose.Types.ObjectId(businessAgent.businessId) as any),
+      businessId: isGeneric ? undefined : (toObjectId(businessAgent.businessId) as any),
       discountValue,
-      categories: options.categories?.map(c => new mongoose.Types.ObjectId(c) as any) || [],
+      categories: options.categories?.map(c => toObjectId(c) as any) || [],
       title: isGeneric
         ? this.makeGenericTitle(template.title, training?.industry)
         : template.title,
@@ -332,12 +340,12 @@ export class DealTemplateGeneratorService {
       termsApplied: true,
       termsAndConditions: template.termsAndConditions,
       businessIndustry: options.businessIndustryId
-        ? (new mongoose.Types.ObjectId(options.businessIndustryId) as any)
+        ? (toObjectId(options.businessIndustryId) as any)
         : training?.industry
-        ? (new mongoose.Types.ObjectId(training.industry) as any)
+        ? (toObjectId(training.industry) as any)
         : undefined,
       businessCategories:
-        options.businessCategoryIds?.map(c => new mongoose.Types.ObjectId(c) as any) || [],
+        options.businessCategoryIds?.map(c => toObjectId(c) as any) || [],
       thumbnail: options.thumbnailUrl || template.image,
       tags: template.tags,
       generatedByAI: true,

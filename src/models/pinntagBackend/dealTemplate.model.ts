@@ -183,6 +183,37 @@ export const findTemplatesByIndustry = async (industryId: string) => {
 };
 
 /**
+ * Helper: Find templates by category (subcategory)
+ */
+export const findTemplatesByCategory = async (categoryId: string) => {
+  const TemplateModel = await getDealTemplateModel();
+  return TemplateModel.find({
+    businessCategories: categoryId,
+    isActive: true
+  }).lean();
+};
+
+/**
+ * Helper: Find templates by industry and categories
+ */
+export const findTemplatesByIndustryAndCategories = async (
+  industryId: string,
+  categoryIds?: string[]
+) => {
+  const TemplateModel = await getDealTemplateModel();
+  const query: any = {
+    businessIndustry: industryId,
+    isActive: true
+  };
+
+  if (categoryIds && categoryIds.length > 0) {
+    query.businessCategories = { $in: categoryIds };
+  }
+
+  return TemplateModel.find(query).lean();
+};
+
+/**
  * Helper: Find templates that need overnight update
  */
 export const findTemplatesForUpdate = async () => {

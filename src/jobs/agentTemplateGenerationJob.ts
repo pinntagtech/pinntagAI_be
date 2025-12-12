@@ -395,17 +395,27 @@ export class AgentTemplateGenerationJob {
     const nextUpdate = new Date();
     nextUpdate.setHours(nextUpdate.getHours() + 24);
 
+    // Helper function to ensure we have a valid ObjectId
+    const toObjectId = (value: any): mongoose.Types.ObjectId => {
+      if (value instanceof mongoose.Types.ObjectId) {
+        return value;
+      }
+      return new mongoose.Types.ObjectId(value);
+    };
+
+    const businessObjectId = toObjectId(businessId);
+
     await upsertTemplate(
       {
         title,
         type: TemplateType.OFFER,
-        businessId: new mongoose.Types.ObjectId(businessId) as any,
+        businessId: businessObjectId as any,
       },
       {
         creatorType: TemplateCreatorType.SYSTEM,
         type: TemplateType.OFFER,
         scope: TemplateScope.BUSINESS_SPECIFIC,
-        businessId: new mongoose.Types.ObjectId(businessId) as any,
+        businessId: businessObjectId as any,
         title,
         description,
         thumbnail: imageUrl,

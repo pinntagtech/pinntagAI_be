@@ -35,13 +35,17 @@ router.post("/generate-multiple", generateMultipleTemplates);
  * @route   GET /api/templates
  * @desc    Get all active templates (with optional filters)
  * @access  Public
- * @query   type?, scope?, businessId?, industryId?
+ * @query   type?, scope?, businessId?, industryId?, categoryId?, categoryIds?
  * @examples
  *   GET /api/templates - Get all templates
  *   GET /api/templates?scope=generic - Get only generic templates
  *   GET /api/templates?scope=generic&industryId=123 - Generic templates for industry
  *   GET /api/templates?businessId=456 - All templates for business (generic + business-specific)
  *   GET /api/templates?scope=business_specific&businessId=456 - Only business-specific
+ *   GET /api/templates?industryId=123 - Templates for specific industry (from industryList API)
+ *   GET /api/templates?categoryId=456 - Templates for specific subcategory (from businessCategoryList API)
+ *   GET /api/templates?industryId=123&categoryId=456 - Templates for industry and subcategory
+ *   GET /api/templates?industryId=123&categoryIds=456,789 - Templates for industry and multiple subcategories
  */
 router.get("/", getTemplates);
 
