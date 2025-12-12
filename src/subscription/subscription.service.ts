@@ -265,7 +265,8 @@ export class SubscriptionService {
 
       // Step 5: Sort
       pipeline.push({
-        $sort: { isCurrentPlan: -1, 'prices.price': 1 },
+        // $sort: { isCurrentPlan: -1, 'prices.price': 1 },
+        $sort: { isCurrentPlan: -1, sortOrder: 1 },
       });
 
       // Execute aggregation
@@ -424,7 +425,7 @@ export class SubscriptionService {
     try {
       const trialSubscriptionProduct =
         await this.subscriptionProductModel.findOne({ isTrial: true });
-      console.log("SubscriptionProductModel:",trialSubscriptionProduct)
+      console.log('SubscriptionProductModel:', trialSubscriptionProduct);
       if (!trialSubscriptionProduct) {
         return {
           success: false,
@@ -458,8 +459,8 @@ export class SubscriptionService {
         product: trialSubscriptionProduct._id,
         locationsAllowed: trialSubscriptionProduct.maxLocations,
       });
-      console.log("TrialSubscription:",trialSubscription)
-      console.log("BUSINESSSS PROFILEEEE:",user.businessProfile)
+      console.log('TrialSubscription:', trialSubscription);
+      console.log('BUSINESSSS PROFILEEEE:', user.businessProfile);
       const isUpdateddd = await this.businessModel.updateOne(
         {
           _id: new mongoose.Types.ObjectId(user.businessProfile),
@@ -471,7 +472,7 @@ export class SubscriptionService {
           },
         },
       );
-      console.log("IS UPDATINGGG:",isUpdateddd);
+      console.log('IS UPDATINGGG:', isUpdateddd);
 
       return { success: true, data: trialSubscription };
     } catch (error) {
