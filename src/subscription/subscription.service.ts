@@ -322,9 +322,14 @@ export class SubscriptionService {
 
       // NEW CONDITION:
       // If active plan is NOT "Free", exclude product where name = "Trial"
+      const userSubscriptionProduct = userSubscription
+        ? await this.subscriptionProductModel.findById(
+            userSubscription.product.toString(),
+          )
+        : null;
       if (
         userSubscription &&
-        !['Free', 'Trial'].includes(userSubscription['name'])
+        !['Free', 'Trial'].includes(userSubscriptionProduct?.name)
       ) {
         pipeline.push({
           $match: { name: { $ne: 'Trial' } },
