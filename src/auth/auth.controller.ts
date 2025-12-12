@@ -1021,7 +1021,7 @@ export class AuthController {
     }
   }
 
-  @Get('userCheckout')
+  @Post('userCheckout')
   @UseGuards(JwtGuard2)
   async userCheckOut(
     @TokenDecoder() user: DecodedUser,
