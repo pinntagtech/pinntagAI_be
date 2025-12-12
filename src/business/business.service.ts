@@ -1044,6 +1044,7 @@ export class BusinessService {
         forcePasswordReset: false,
         isEmailVerified: true,
         status: ProfileStatus.EMAIL_VERIFIED,
+        appleLoggedIn:true,
       };
 
       //append creator to roles

@@ -58,6 +58,9 @@ export class BusinessUser {
   @Prop({ default: false })
   isMobileVerified: boolean;
 
+  @Prop({default:false})
+  appleLoggedIn: boolean;
+
   @Prop()
   password: string;
   @Prop({ ref: Business.name })
