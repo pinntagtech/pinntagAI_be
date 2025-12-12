@@ -1044,6 +1044,7 @@ export class BusinessService {
         forcePasswordReset: false,
         isEmailVerified: true,
         status: ProfileStatus.EMAIL_VERIFIED,
+        appleLoggedIn:true,
       };
 
       //append creator to roles
@@ -2357,14 +2358,10 @@ async createBusiness(
           name: FileCategoryTypes.PROFILE_PICTURE,
         });
         console.log('Image:', profilePhoto);
-        let imageDetails = await this.driveService.uploadAndCreateFile(
-          profilePhoto,
-          String(businessUser.drive),
-          Drive.name,
-          businessUser._id,
-          fileCategory._id,
+        let imageDetails = await this.driveService.noDriveUpload(
+          profilePhoto
         );
-        updateObj['profilePhoto'] = imageDetails.metaData.url;
+        updateObj['profilePhoto'] = imageDetails;
       }
       console.log('updateObj:', updateObj);
 

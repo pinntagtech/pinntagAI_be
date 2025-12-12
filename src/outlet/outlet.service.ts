@@ -864,6 +864,7 @@ export class OutletService {
     type: string,
     creationDate: string,
     vehicleType: string,
+    status: any,
     page: number,
     limit: number,
   ) {
@@ -925,6 +926,13 @@ export class OutletService {
       if (vehicleType) {
         match['vehicleType'] = vehicleType;
       }
+
+      if(status !== undefined){
+        status = status === 'true'? true:false;
+        match['isActive'] = status;
+      }
+
+
       console.log('Match:::', match);
       console.log('business:::', user.businessProfile);
       // let outletsO = await this.outletModel

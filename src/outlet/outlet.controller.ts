@@ -242,6 +242,7 @@ export class OutletController {
     @Query('type') type: string,
     @Query('vehicleType') vehicleType: string,
     @Query('creationDate') creationDate: string,
+    @Query('status') status: string,
   ) {
     const pageNumber = page ? parseInt(page) : 1;
     const limitNumber = limit ? parseInt(limit) : 10;
@@ -251,6 +252,7 @@ export class OutletController {
       type,
       creationDate,
       vehicleType,
+      status,
       pageNumber,
       limitNumber,
     );
