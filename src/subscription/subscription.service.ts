@@ -138,6 +138,163 @@ export class SubscriptionService {
       v === 'enabled' ? 'Departments Enabled' : 'Departments Disabled',
   };
 
+  // async getProducts(user: DecodedUser, billingInterval?: string) {
+  //   try {
+  //     const business = await this.businessModel.findById(user.businessProfile);
+  //     if (!business) {
+  //       throw new Error('Business not found');
+  //     }
+
+  //     const userSubscription = business.activeSubscription
+  //       ? await this.subscriptionModel.findById(business.activeSubscription)
+  //       : null;
+  //     console.log('User Subscription:', userSubscription);
+
+  //     if (!userSubscription) {
+  //       console.warn(
+  //         'No active subscription found for business:',
+  //         business._id,
+  //       );
+  //     }
+
+  //     // Base pipeline
+  //     const pipeline: any[] = [
+  //       // Step 1: Match only active products
+  //       { $match: { isActive: true } },
+  //       {
+  //         $lookup: {
+  //           from: 'featurelimits',
+  //           localField: 'features',
+  //           foreignField: '_id',
+  //           as: 'features',
+  //           pipeline: [{ $project: { key: 1, value: 1, label: 1 } }],
+  //         },
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: 'subscriptionprices',
+  //           localField: 'prices',
+  //           foreignField: '_id',
+  //           as: 'prices',
+  //           pipeline: [
+  //             {
+  //               $match: {
+  //                 billingInterval: billingInterval ?? 'monthly',
+  //               },
+  //             },
+  //             {
+  //               $project: {
+  //                 product: 0,
+  //                 createdAt: 0,
+  //                 updatedAt: 0,
+  //                 __v: 0,
+  //               },
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     ];
+
+  //     // Step 3: Add isCurrentPlan safely
+  //     if (userSubscription) {
+  //       pipeline.push({
+  //         $addFields: {
+  //           isCurrentPlan: {
+  //             $cond: {
+  //               if: { $eq: [{ $size: '$prices' }, 0] }, // if it's a free plan (no prices)
+  //               then: {
+  //                 $eq: ['$_id', userSubscription.product], // only check product match
+  //               },
+  //               else: {
+  //                 $and: [
+  //                   { $eq: ['$_id', userSubscription.product] },
+  //                   {
+  //                     $eq: [
+  //                       userSubscription.price,
+  //                       { $arrayElemAt: ['$prices._id', 0] },
+  //                     ],
+  //                   },
+  //                 ],
+  //               },
+  //             },
+  //           },
+  //           currentPlanDetails: {
+  //             $cond: {
+  //               if: {
+  //                 $cond: {
+  //                   if: { $eq: [{ $size: '$prices' }, 0] },
+  //                   then: { $eq: ['$_id', userSubscription.product] },
+  //                   else: {
+  //                     $and: [
+  //                       { $eq: ['$_id', userSubscription.product] },
+  //                       {
+  //                         $eq: [
+  //                           userSubscription.price,
+  //                           { $arrayElemAt: ['$prices._id', 0] },
+  //                         ],
+  //                       },
+  //                     ],
+  //                   },
+  //                 },
+  //               },
+  //               then: {
+  //                 $literal: {
+  //                   locationsAllowed: userSubscription.locationsAllowed,
+  //                   invoiceStartDate: userSubscription.invoiceStartDate,
+  //                   invoiceEndDate: userSubscription.invoiceEndDate,
+  //                 },
+  //               },
+  //               else: null,
+  //             },
+  //           },
+  //         },
+  //       });
+  //     } else {
+  //       pipeline.push({
+  //         $addFields: { isCurrentPlan: false },
+  //       });
+  //     }
+
+  //     // Step 4: Exclude fields
+  //     pipeline.push({
+  //       $project: {
+  //         updatedAt: 0,
+  //         __v: 0,
+  //       },
+  //     });
+
+  //     // Step 5: Sort
+  //     pipeline.push({
+  //       // $sort: { isCurrentPlan: -1, 'prices.price': 1 },
+  //       $sort: { isCurrentPlan: -1, sortOrder: 1 },
+  //     });
+
+  //     // Execute aggregation
+  //     const products = await this.subscriptionProductModel.aggregate(pipeline);
+
+  //     // Enrich features
+  //     // const enrichedProducts = products.map((product) => {
+  //     //   const enrichedFeatures = product.features.map((feature) => {
+  //     //     const label = this.featureLabels[feature.key];
+  //     //     return {
+  //     //       ...feature,
+  //     //       label: label ? label(feature.value) : feature.value,
+  //     //     };
+  //     //   });
+  //     //   return {
+  //     //     ...product,
+  //     //     features: enrichedFeatures,
+  //     //   };
+  //     // });
+
+  //     // return enrichedProducts;
+  //     return products;
+  //   } catch (error) {
+  //     console.error('Error fetching products:', error);
+  //     return [];
+  //   }
+  // }
+
   async getProducts(user: DecodedUser, billingInterval?: string) {
     try {
       const business = await this.businessModel.findById(user.businessProfile);
@@ -161,6 +318,25 @@ export class SubscriptionService {
       const pipeline: any[] = [
         // Step 1: Match only active products
         { $match: { isActive: true } },
+      ];
+
+      // NEW CONDITION:
+      // If active plan is NOT "Free", exclude product where name = "Trial"
+      const userSubscriptionProduct = userSubscription
+        ? await this.subscriptionProductModel.findById(
+            userSubscription.product.toString(),
+          )
+        : null;
+      if (
+        userSubscription &&
+        !['Free', 'Trial'].includes(userSubscriptionProduct?.name)
+      ) {
+        pipeline.push({
+          $match: { name: { $ne: 'Trial' } },
+        });
+      }
+
+      pipeline.push(
         {
           $lookup: {
             from: 'featurelimits',
@@ -193,7 +369,7 @@ export class SubscriptionService {
             ],
           },
         },
-      ];
+      );
 
       // Step 3: Add isCurrentPlan safely
       if (userSubscription) {
@@ -265,29 +441,12 @@ export class SubscriptionService {
 
       // Step 5: Sort
       pipeline.push({
-        // $sort: { isCurrentPlan: -1, 'prices.price': 1 },
-        $sort: { isCurrentPlan: -1, sortOrder: 1 },
+        $sort: { isCurrentPlan: -1, sortOrder: 1, 'prices.price': 1 },
       });
 
       // Execute aggregation
       const products = await this.subscriptionProductModel.aggregate(pipeline);
 
-      // Enrich features
-      // const enrichedProducts = products.map((product) => {
-      //   const enrichedFeatures = product.features.map((feature) => {
-      //     const label = this.featureLabels[feature.key];
-      //     return {
-      //       ...feature,
-      //       label: label ? label(feature.value) : feature.value,
-      //     };
-      //   });
-      //   return {
-      //     ...product,
-      //     features: enrichedFeatures,
-      //   };
-      // });
-
-      // return enrichedProducts;
       return products;
     } catch (error) {
       console.error('Error fetching products:', error);
