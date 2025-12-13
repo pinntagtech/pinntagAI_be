@@ -1018,7 +1018,7 @@ export class EventController {
     // }),
     FileFieldsInterceptor([
       { name: 'image', maxCount: 1 },
-      { name: 'offerImages', maxCount: 5 },
+      { name: 'images', maxCount: 5 },
     ]),
   )
   async createOffer(
@@ -1028,7 +1028,7 @@ export class EventController {
     @UploadedFiles()
     files: {
       image?: Express.Multer.File[];
-      offerImages?: Express.Multer.File[];
+      images?: Express.Multer.File[];
     },
   ) {
     console.log('Creating offer with data:', data);
@@ -1036,7 +1036,7 @@ export class EventController {
       data,
       user,
       files.image?.[0],
-      files.offerImages,
+      files.images,
     );
     if (result.success) {
       return {
@@ -1156,7 +1156,7 @@ export class EventController {
     // }),
     FileFieldsInterceptor([
       { name: 'image', maxCount: 1 },
-      { name: 'offerImages', maxCount: 5 },
+      { name: 'images', maxCount: 5 },
     ]),
   )
   async updateOffer(
@@ -1167,7 +1167,7 @@ export class EventController {
     @UploadedFiles()
     files: {
       image?: Express.Multer.File[];
-      offerImages?: Express.Multer.File[];
+      images?: Express.Multer.File[];
     },
   ) {
     console.log('Updating offer with ID:', id);
@@ -1177,7 +1177,7 @@ export class EventController {
       body,
       user,
       files.image?.[0],
-      files.offerImages,
+      files.images,
     );
     if (result.success) {
       return {
