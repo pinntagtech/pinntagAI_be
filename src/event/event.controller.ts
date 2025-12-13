@@ -17,7 +17,11 @@ import {
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { UserGuard } from 'src/auth/guards/user.guard';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { BusinessProfileGuard } from 'src/auth/guards/business.guard';
@@ -1002,24 +1006,38 @@ export class EventController {
   @Post('offer')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 10 MB
-      limits: { fileSize: 10000000 },
-    }),
+    // FileInterceptor('image', {
+    //   //   dest: './uploads',
+    //   //   fileFilter: imageFileFilter,
+    //   //   storage: diskStorage({
+    //   //     destination: './uploads',
+    //   //     filename: editFileName,
+    //   //   }),
+    //   //   //Setting file size limit to 10 MB
+    //   limits: { fileSize: 10000000 },
+    // }),
+    FileFieldsInterceptor([
+      { name: 'image', maxCount: 1 },
+      { name: 'offerImages', maxCount: 5 },
+    ]),
   )
   async createOffer(
     @Body() data: CreateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    // @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      image?: Express.Multer.File[];
+      offerImages?: Express.Multer.File[];
+    },
   ) {
     console.log('Creating offer with data:', data);
-    const result = await this.eventService.createOffer(data, user, image);
+    const result = await this.eventService.createOffer(
+      data,
+      user,
+      files.image?.[0],
+      files.offerImages,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1126,26 +1144,41 @@ export class EventController {
   // @UseGuards(SubscriptionGuard(FeatureLimitList.LOCATIONS))
   @UseGuards(JwtGuard2)
   @UseInterceptors(
-    FileInterceptor('image', {
-      //   dest: './uploads',
-      //   fileFilter: imageFileFilter,
-      //   storage: diskStorage({
-      //     destination: './uploads',
-      //     filename: editFileName,
-      //   }),
-      //   //Setting file size limit to 1 MB
-      limits: { fileSize: 10485760 },
-    }),
+    // FileInterceptor('image', {
+    //   //   dest: './uploads',
+    //   //   fileFilter: imageFileFilter,
+    //   //   storage: diskStorage({
+    //   //     destination: './uploads',
+    //   //     filename: editFileName,
+    //   //   }),
+    //   //   //Setting file size limit to 1 MB
+    //   limits: { fileSize: 10485760 },
+    // }),
+    FileFieldsInterceptor([
+      { name: 'image', maxCount: 1 },
+      { name: 'offerImages', maxCount: 5 },
+    ]),
   )
   async updateOffer(
     @Param('id') id: string,
     @Body() body: UpdateOfferDto,
     @TokenDecoder() user: DecodedUser,
-    @UploadedFile() image: Express.Multer.File,
+    // @UploadedFile() image: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      image?: Express.Multer.File[];
+      offerImages?: Express.Multer.File[];
+    },
   ) {
     console.log('Updating offer with ID:', id);
     console.log('Body::', body);
-    const result = await this.eventService.updateOffer(id, body, user, image);
+    const result = await this.eventService.updateOffer(
+      id,
+      body,
+      user,
+      files.image?.[0],
+      files.offerImages,
+    );
     if (result.success) {
       return {
         message: result.message,

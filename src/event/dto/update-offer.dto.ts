@@ -1,5 +1,11 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsIn, IsOptional, IsString, ValidateIf } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 import mongoose from 'mongoose';
 import { EventTypes } from 'src/enums/event.enums';
 
@@ -73,4 +79,7 @@ export class UpdateOfferDto {
 
   @IsOptional()
   tags?: any;
+
+  @IsOptional()
+  existingFileIds?: any;
 }

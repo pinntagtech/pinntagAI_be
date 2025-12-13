@@ -2449,8 +2449,7 @@ export class EventService2 {
           message: 'You are not authorized to post this event',
         };
       } else {
-        const business =
-          await this.businessModel.findById(businessProfile);
+        const business = await this.businessModel.findById(businessProfile);
         if (data.facebook) {
           if (!business.isFacebookConnected) {
             return {
@@ -6337,7 +6336,9 @@ export class EventService2 {
   async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
-    image: Express.Multer.File,
+    qrImage: Express.Multer.File,
+    offerImages?: Express.Multer.File[],
+    // image: Express.Multer.File,
   ) {
     try {
       const userId = user.id;
@@ -6467,7 +6468,7 @@ export class EventService2 {
         ),
       ];
 
-      if (image) {
+      if (qrImage) {
         const uploadPromise = (async () => {
           const fileCategory = await this.fileCategoryModel
             .findOne({ name: FileCategoryTypes.CONTENT_QR })
@@ -6475,7 +6476,7 @@ export class EventService2 {
 
           if (fileCategory) {
             const qrDetails = await this.driveService.uploadAndCreateFile(
-              image,
+              qrImage,
               String(event.drivePath),
               Folder.name,
               event._id,
@@ -6493,6 +6494,14 @@ export class EventService2 {
       }
 
       await Promise.all(updatePromises);
+
+      if (offerImages && offerImages.length) {
+        await this.driveService.multiImageUpload(
+          user.businessProfile.toString(),
+          businessFolder.data._id.toString(),
+          offerImages,
+        );
+      }
 
       return {
         success: true,
@@ -6512,7 +6521,9 @@ export class EventService2 {
     offerId: string,
     data: UpdateOfferDto,
     user: DecodedUser,
-    image: Express.Multer.File,
+    // image: Express.Multer.File,
+    qrImage: Express.Multer.File,
+    offerImages?: Express.Multer.File[],
   ) {
     try {
       console.log('Data:::::', data);
@@ -6591,10 +6602,10 @@ export class EventService2 {
       const fileCategory = await this.fileCategoryModel.findOne({
         name: FileCategoryTypes.CONTENT_QR,
       });
-      if (image) {
-        console.log('Image:', image);
+      if (qrImage) {
+        console.log('qrImage:', qrImage);
         let qrDetails = await this.driveService.uploadAndCreateFile(
-          image,
+          qrImage,
           String(event.drivePath),
           Folder.name,
           event._id,
@@ -6728,6 +6739,15 @@ export class EventService2 {
             },
           );
         }
+      }
+
+      if (data.existingFileIds && data.existingFileIds.length) {
+        await this.driveService.deleteBufferAndMultiImageUpload(
+          user,
+          event.drivePath.toString(),
+          data.existingFileIds,
+          offerImages,
+        );
       }
 
       return {
@@ -8437,8 +8457,10 @@ export class EventService2 {
 
   async redeemOffer(id: string, user: DecodedUser) {
     try {
-       const offer = await this.eventModel.findById(id).populate('QR_CODE','_id metaData');
-      if(!offer){
+      const offer = await this.eventModel
+        .findById(id)
+        .populate('QR_CODE', '_id metaData');
+      if (!offer) {
         return {
           success: false,
           message: 'Offer not found',
@@ -8456,32 +8478,30 @@ export class EventService2 {
           message: 'Please Check In first',
         };
       }
-     
-      if(offer.type !== EventTypes.OFFER || !offer.QR_CODE ){
+
+      if (offer.type !== EventTypes.OFFER || !offer.QR_CODE) {
         return {
           success: false,
           message: 'Only Offers are redeemable',
         };
       }
       const scratchDoc = await this.scratchModel.create({
-              user: new mongoose.Types.ObjectId(user.id),
-              business: offer.businessProfile,
-              locationId: userCheckIn.locationId,
-              checkInId: userCheckIn._id,
-              offer: offer._id,
-              validUntil: new Date(Date.now() + 10 * 60 * 1000),
-              status:ScratchStatus.CONFIRMED
-            });
-            const scratch = scratchDoc.toObject();
-
-
+        user: new mongoose.Types.ObjectId(user.id),
+        business: offer.businessProfile,
+        locationId: userCheckIn.locationId,
+        checkInId: userCheckIn._id,
+        offer: offer._id,
+        validUntil: new Date(Date.now() + 10 * 60 * 1000),
+        status: ScratchStatus.CONFIRMED,
+      });
+      const scratch = scratchDoc.toObject();
 
       return {
         success: true,
         message: 'Template updated successfully.',
         data: {
           ...scratch,
-          QR_CODE: offer.QR_CODE
+          QR_CODE: offer.QR_CODE,
         },
       };
     } catch (error) {

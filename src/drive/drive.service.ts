@@ -406,7 +406,7 @@ export class DriveService {
       let driveDetails = await this.driveModel.findOne({
         owner: new mongoose.Types.ObjectId(businessId),
       });
-      console.log("Drive Details:", driveDetails);
+      console.log('Drive Details:', driveDetails);
       if (
         folderData.parentDirectory &&
         !isValidObjectId(folderData.parentDirectory)
@@ -424,7 +424,7 @@ export class DriveService {
         return {
           success: false,
           message: 'Folder name "Gallery" is reserved and cannot be used.',
-        }
+        };
       }
       if (!folderData.parentDirectory) {
         folderData.parentDirectory = driveDetails.id;
@@ -910,16 +910,15 @@ export class DriveService {
         'image/png',
       );
       thumbnailUrl = thumbnailS3.Location;
-    }
-    else if(allowedImageMimeTypes.includes(file.mimetype)){
+    } else if (allowedImageMimeTypes.includes(file.mimetype)) {
       const thumbnail = await FileUploadUtils.compressThumbnail(file);
-    const thumbnailS3 = await this.s3Service.s3_upload(
-      thumbnail.buffer,
-      process.env.AWS_S3_BUCKET_NAME,
-      `thumbnails/${manipulateImageName(file.originalname)}`,
-      thumbnail.mimetype,
-    );
-    thumbnailUrl = thumbnailS3.Location;
+      const thumbnailS3 = await this.s3Service.s3_upload(
+        thumbnail.buffer,
+        process.env.AWS_S3_BUCKET_NAME,
+        `thumbnails/${manipulateImageName(file.originalname)}`,
+        thumbnail.mimetype,
+      );
+      thumbnailUrl = thumbnailS3.Location;
     }
 
     // 2. Persist File doc
@@ -1391,7 +1390,7 @@ export class DriveService {
         name: FileCategoryTypes.CONTENT_QR,
       });
       console.log('Old files:', oldFiles);
-      if(oldFiles.length>0){
+      if (oldFiles.length > 0) {
         await Promise.all(
           oldFiles.map(async (file) => {
             if (file.category.toString() !== QR_FileCategory._id.toString()) {
@@ -1400,7 +1399,7 @@ export class DriveService {
               const fileName = pathname.startsWith('/')
                 ? pathname.slice(1)
                 : pathname;
-  
+
               await this.s3Service.s3_delete(
                 process.env.AWS_S3_BUCKET_NAME,
                 fileName,
@@ -1411,7 +1410,6 @@ export class DriveService {
             }
           }),
         );
-
       }
 
       let parentId = user.businessProfile;
