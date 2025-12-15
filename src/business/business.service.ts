@@ -1044,7 +1044,7 @@ export class BusinessService {
         forcePasswordReset: false,
         isEmailVerified: true,
         status: ProfileStatus.EMAIL_VERIFIED,
-        appleLoggedIn:true,
+        appleLoggedIn: true,
       };
 
       //append creator to roles
@@ -1584,238 +1584,258 @@ export class BusinessService {
   //   }
   // }
 
-async createBusiness(
-  userId: string,
-  token: string,
-  data: CreateBusinessDto,
-): Promise<{
-  success: boolean;
-  message: string;
-  data?: any;
-}> {
-  try {
-    // Early validation
-    if (!isValidObjectId(userId)) {
-      return {
-        success: false,
-        message: 'Please provide valid Business User Id',
-      };
-    }
-
-    if (data.businessCategories?.length && !data.businessCategories.every(isValidObjectId)) {
-      const invalidId = data.businessCategories.find((id) => !isValidObjectId(id));
-      return {
-        success: false,
-        message: `Please provide valid Business Category Id: ${invalidId}`,
-      };
-    }
-
-    if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
-      return {
-        success: false,
-        message: 'Please provide valid Scalability Factor',
-      };
-    }
-
-    // Validate phone number early
-    const phoneNumber = parsePhoneNumberFromString(`${data.countryCode}${data.phone}`);
-    if (!phoneNumber?.isValid()) {
-      return { success: false, message: 'Invalid phone number' };
-    }
-
-    // Build queries array dynamically
-    const queries: Promise<any>[] = [
-      this.businessModel.findOne({ email: data.email }).lean(),
-      this.businessUserModel.findById(userId).select('-password').lean(),
-      this.subscriptionProductModel.findOne({ isFree: true }).lean(),
-    ];
-
-    if (data.businessIndustry) {
-      queries.push(this.businessIndModel.findById(data.businessIndustry).lean());
-    }
-
-    if (data.businessCategories?.length) {
-      queries.push(
-        this.businessCategoryModel
-          .find({ _id: { $in: data.businessCategories } })
-          .lean()
-      );
-    }
-
-    // Single parallel fetch for all data
-    const results = await Promise.all(queries);
-    const [findBusiness, userDetails, freeSubscriptionProduct, ...optionalResults] = results;
-
-    // Validation checks
-    if (findBusiness) {
-      return {
-        success: false,
-        message: `Business already exist with given email: ${data.email}`,
-      };
-    }
-
-    if (!userDetails) {
-      return {
-        success: false,
-        message: 'Business User not found with given ID',
-      };
-    }
-
-    if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
-      return {
-        success: false,
-        message: 'Business User email not verified',
-        data: userDetails,
-      };
-    }
-
-    // Validate industry and categories if provided
-    let businessCategoryTitles: string[] = [];
-    let industryTitle: string | null = null;
-
-    if (data.businessIndustry) {
-      const industry = optionalResults[0];
-      if (!industry) {
+  async createBusiness(
+    userId: string,
+    token: string,
+    data: CreateBusinessDto,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      // Early validation
+      if (!isValidObjectId(userId)) {
         return {
           success: false,
-          message: 'Please provide valid Business Industry',
+          message: 'Please provide valid Business User Id',
         };
       }
-      industryTitle = industry.title;
-    }
 
-    if (data.businessCategories?.length) {
-      const categories = optionalResults[data.businessIndustry ? 1 : 0];
-      if (categories.length !== data.businessCategories.length) {
+      if (
+        data.businessCategories?.length &&
+        !data.businessCategories.every(isValidObjectId)
+      ) {
+        const invalidId = data.businessCategories.find(
+          (id) => !isValidObjectId(id),
+        );
         return {
           success: false,
-          message: 'One or more Business Category IDs are invalid',
+          message: `Please provide valid Business Category Id: ${invalidId}`,
         };
       }
-      businessCategoryTitles = categories.map((cat) => cat.title);
-    }
 
-    // Build creation object
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-    const createObj: any = {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      countryCode: data.countryCode,
-      scalabilityFactor: data.scalabilityFactor,
-      creatorType: BusinessCreatorType.BUSINESS_USER,
-      creator: userObjectId,
-      authorisedUser: userObjectId,
-      roleOfCreator: data.roleOfCreator,
-    };
+      if (!Object.values(ScalabilityFactor).includes(data.scalabilityFactor)) {
+        return {
+          success: false,
+          message: 'Please provide valid Scalability Factor',
+        };
+      }
 
-    if (data.website) createObj.website = data.website;
-    if (data.businessIndustry) {
-      createObj.businessIndustry = new mongoose.Types.ObjectId(data.businessIndustry);
-    }
-    if (data.businessCategories?.length) {
-      createObj.businessCategories = data.businessCategories.map(
-        (id) => new mongoose.Types.ObjectId(id)
+      // Validate phone number early
+      const phoneNumber = parsePhoneNumberFromString(
+        `${data.countryCode}${data.phone}`,
       );
-    }
+      if (!phoneNumber?.isValid()) {
+        return { success: false, message: 'Invalid phone number' };
+      }
 
-    // Create business and subscription in parallel
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
+      // Build queries array dynamically
+      const queries: Promise<any>[] = [
+        this.businessModel.findOne({ email: data.email }).lean(),
+        this.businessUserModel.findById(userId).select('-password').lean(),
+        this.subscriptionProductModel.findOne({ isFree: true }).lean(),
+      ];
 
-    const [createdBusiness, subscription] = await Promise.all([
-      this.businessModel.create(createObj),
-      this.subscriptionModel.create({
-        business: null, // Will be updated after business creation
-        source: SubscriptionSource.FREE,
-        startDate: new Date(),
-        endDate,
-        invoiceStartDate: new Date(),
-        invoiceEndDate: endDate,
-        isCancelled: false,
-        isTrialActive: false,
-        status: SubscriptionStatus.ACTIVE,
-        iapPlatform: 'none',
-        product: freeSubscriptionProduct._id,
-        isFreePlan: true,
-        locationsAllowed: freeSubscriptionProduct.maxLocations,
-      }),
-    ]);
+      if (data.businessIndustry) {
+        queries.push(
+          this.businessIndModel.findById(data.businessIndustry).lean(),
+        );
+      }
 
-    // Update subscription with business ID
-    subscription.business = createdBusiness._id;
-    await subscription.save();
+      if (data.businessCategories?.length) {
+        queries.push(
+          this.businessCategoryModel
+            .find({ _id: { $in: data.businessCategories } })
+            .lean(),
+        );
+      }
 
-    // Critical sequential operations
-    const driveDetails = await this.seederService.createDrive(
-      createdBusiness._id,
-      Business.name,
-    );
+      // Single parallel fetch for all data
+      const results = await Promise.all(queries);
+      const [
+        findBusiness,
+        userDetails,
+        freeSubscriptionProduct,
+        ...optionalResults
+      ] = results;
 
-    // Parallel critical updates
-    const [galleryFolder] = await Promise.all([
-      this.driveService.createFolder(createdBusiness.id, {
-        parentDirectory: driveDetails.id,
-        parentType: 'Drive',
-        folderName: 'Gallery',
-      }),
-      this.businessUserModel.updateOne(
-        { _id: userObjectId },
-        {
-          $addToSet: { business: createdBusiness._id },
-          $set: { selectedBusiness: createdBusiness._id },
+      // Validation checks
+      if (findBusiness) {
+        return {
+          success: false,
+          message: `Business already exist with given email: ${data.email}`,
+        };
+      }
+
+      if (!userDetails) {
+        return {
+          success: false,
+          message: 'Business User not found with given ID',
+        };
+      }
+
+      if (userDetails.status < ProfileStatus.EMAIL_VERIFIED) {
+        return {
+          success: false,
+          message: 'Business User email not verified',
+          data: userDetails,
+        };
+      }
+
+      // Validate industry and categories if provided
+      let businessCategoryTitles: string[] = [];
+      let industryTitle: string | null = null;
+
+      if (data.businessIndustry) {
+        const industry = optionalResults[0];
+        if (!industry) {
+          return {
+            success: false,
+            message: 'Please provide valid Business Industry',
+          };
         }
-      ),
-      this.businessModel.updateOne(
-        { _id: createdBusiness._id },
-        {
-          $set: {
-            drive: driveDetails._id,
-            activeSubscription: subscription._id,
+        industryTitle = industry.title;
+      }
+
+      if (data.businessCategories?.length) {
+        const categories = optionalResults[data.businessIndustry ? 1 : 0];
+        if (categories.length !== data.businessCategories.length) {
+          return {
+            success: false,
+            message: 'One or more Business Category IDs are invalid',
+          };
+        }
+        businessCategoryTitles = categories.map((cat) => cat.title);
+      }
+
+      // Build creation object
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const createObj: any = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        countryCode: data.countryCode,
+        scalabilityFactor: data.scalabilityFactor,
+        creatorType: BusinessCreatorType.BUSINESS_USER,
+        creator: userObjectId,
+        authorisedUser: userObjectId,
+        roleOfCreator: data.roleOfCreator,
+      };
+
+      if (data.website) createObj.website = data.website;
+      if (data.businessIndustry) {
+        createObj.businessIndustry = new mongoose.Types.ObjectId(
+          data.businessIndustry,
+        );
+      }
+      if (data.businessCategories?.length) {
+        createObj.businessCategories = data.businessCategories.map(
+          (id) => new mongoose.Types.ObjectId(id),
+        );
+      }
+
+      // Create business and subscription in parallel
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      const [createdBusiness, subscription] = await Promise.all([
+        this.businessModel.create(createObj),
+        this.subscriptionModel.create({
+          business: null, // Will be updated after business creation
+          source: SubscriptionSource.FREE,
+          startDate: new Date(),
+          endDate,
+          invoiceStartDate: new Date(),
+          invoiceEndDate: endDate,
+          isCancelled: false,
+          isTrialActive: false,
+          status: SubscriptionStatus.ACTIVE,
+          iapPlatform: 'none',
+          product: freeSubscriptionProduct._id,
+          isFreePlan: true,
+          locationsAllowed: freeSubscriptionProduct.maxLocations,
+        }),
+      ]);
+
+      // Update subscription with business ID
+      subscription.business = createdBusiness._id;
+      await subscription.save();
+
+      // Critical sequential operations
+      const driveDetails = await this.seederService.createDrive(
+        createdBusiness._id,
+        Business.name,
+      );
+
+      // Parallel critical updates
+      const [galleryFolder] = await Promise.all([
+        this.driveService.createFolder(createdBusiness.id, {
+          parentDirectory: driveDetails.id,
+          parentType: 'Drive',
+          folderName: 'Gallery',
+        }),
+        this.businessUserModel.updateOne(
+          { _id: userObjectId },
+          {
+            $addToSet: { business: createdBusiness._id },
+            $set: { selectedBusiness: createdBusiness._id },
           },
-        }
-      ),
-    ]);
-
-    // Final business update with gallery path
-    await this.businessModel.updateOne(
-      { _id: createdBusiness._id },
-      { $set: { galleryPath: galleryFolder.data._id } }
-    );
-
-    // Fire-and-forget non-critical operations
-    const fullPhoneNumber = phoneNumber.format('E.164');
-    
-    setImmediate(() => {
-      Promise.allSettled([
-        this.createBusinessAiAgent(
-          createdBusiness.name,
-          createdBusiness.id,
-          businessCategoryTitles,
-          industryTitle,
-          createdBusiness.website,
         ),
-        this.smsService.sendSMS(createdBusiness.id, fullPhoneNumber, SMSType.OTP),
-        this.generateBusinessQR(createdBusiness.id),
-        this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
-      ]).catch((err) => logger.error('Error in background tasks:', err));
-    });
+        this.businessModel.updateOne(
+          { _id: createdBusiness._id },
+          {
+            $set: {
+              drive: driveDetails._id,
+              activeSubscription: subscription._id,
+            },
+          },
+        ),
+      ]);
 
-    logger.info(`Business created successfully: ${createdBusiness.id}`);
+      // Final business update with gallery path
+      await this.businessModel.updateOne(
+        { _id: createdBusiness._id },
+        { $set: { galleryPath: galleryFolder.data._id } },
+      );
 
-    return {
-      success: true,
-      message: 'Business Created Successfully!',
-      data: createdBusiness,
-    };
-  } catch (error) {
-    logger.error('Error creating business:', error);
-    return {
-      success: false,
-      message: 'Something went wrong.',
-    };
+      // Fire-and-forget non-critical operations
+      const fullPhoneNumber = phoneNumber.format('E.164');
+
+      setImmediate(() => {
+        Promise.allSettled([
+          this.createBusinessAiAgent(
+            createdBusiness.name,
+            createdBusiness.id,
+            businessCategoryTitles,
+            industryTitle,
+            createdBusiness.website,
+          ),
+          this.smsService.sendSMS(
+            createdBusiness.id,
+            fullPhoneNumber,
+            SMSType.OTP,
+          ),
+          this.generateBusinessQR(createdBusiness.id),
+          this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
+        ]).catch((err) => logger.error('Error in background tasks:', err));
+      });
+
+      logger.info(`Business created successfully: ${createdBusiness.id}`);
+
+      return {
+        success: true,
+        message: 'Business Created Successfully!',
+        data: createdBusiness,
+      };
+    } catch (error) {
+      logger.error('Error creating business:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
   }
-}
 
   private async createBusinessAiAgent(
     businessName: string,
@@ -2358,9 +2378,7 @@ async createBusiness(
           name: FileCategoryTypes.PROFILE_PICTURE,
         });
         console.log('Image:', profilePhoto);
-        let imageDetails = await this.driveService.noDriveUpload(
-          profilePhoto
-        );
+        let imageDetails = await this.driveService.noDriveUpload(profilePhoto);
         updateObj['profilePhoto'] = imageDetails;
       }
       console.log('updateObj:', updateObj);
@@ -4079,8 +4097,8 @@ async createBusiness(
                     $and: [
                       { $eq: ['$business', '$$businessId'] },
                       { $eq: ['$user', '$$userId'] },
-                        { $gt: ['$expiry', '$$now'] },       // not expired
-              { $eq: ['$checkedOutAt', null] },  
+                      { $gt: ['$expiry', '$$now'] }, // not expired
+                      { $eq: ['$checkedOutAt', null] },
                     ],
                   },
                 },
@@ -6488,6 +6506,90 @@ async createBusiness(
       };
     }
   }
+  async editMenu(
+    files: Express.Multer.File[],
+    menuId: string,
+    user: DecodedUser,
+    name: string,
+    description: string,
+    removeImages: string,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      let updateObj = {};
+      if (files && files.length > 0) {
+        const uploadedFiles = await this.driveService.multiImageUpload(
+          user.businessProfile,
+          String(business.drive),
+          files,
+        );
+
+        console.log('Uploaded Files:', uploadedFiles);
+
+        if (
+          uploadedFiles &&
+          uploadedFiles.success &&
+          Array.isArray(uploadedFiles.data)
+        ) {
+          updateObj['$push'] = {
+            images: {
+              $each: uploadedFiles.data.map(
+                (file) => new mongoose.Types.ObjectId(file.id),
+              ),
+            },
+          };
+        }
+      }
+
+      if (removeImages && removeImages.length > 0) {
+        const removeImageIds = removeImages.split(',');
+
+        const removeImageObjectIds = removeImageIds.map(
+          (id) => new mongoose.Types.ObjectId(id.trim()),
+        );
+
+        updateObj['$pull'] = {
+          images: { $in: removeImageObjectIds },
+        };
+
+        await this.driveService.removeImagesFromFolder(
+          business.galleryPath.toString(),
+          removeImageIds,
+        );
+      }
+
+      if (name && name.length > 0) {
+        updateObj['name'] = name;
+      }
+      if (description && description.length > 0) {
+        updateObj['description'] = description;
+      }
+
+      await this.menuModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(menuId) },
+        {
+          ...updateObj,
+        },
+      );
+
+      return {
+        success: true,
+        message: 'Menu files uploaded successfully',
+        // data: uploadedFiles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 
   async fetchMenuList(user: DecodedUser) {
     try {
@@ -7303,6 +7405,174 @@ async createBusiness(
       return {
         success: true,
         message: 'Scratch up-voted successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async createGallery(
+    user: DecodedUser,
+    folderName: string,
+    images: Express.Multer.File[],
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+      const galleryFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.galleryPath.toString(),
+          parentType: 'Folder',
+          folderName: folderName,
+        },
+      );
+
+      if (!galleryFolder?.data?.id) {
+        return {
+          success: false,
+          message: 'Failed to create gallery folder',
+        };
+      }
+
+      const uploadResult = this.driveService.multiImageUpload(
+        user.businessProfile,
+        galleryFolder.data.id,
+        images,
+      );
+      // if (!uploadResult.success || !uploadResult.data?.length) {
+      //   return {
+      //     success: false,
+      //     message: 'Failed to upload images',
+      //   };
+      // }
+
+      return {
+        success: true,
+        message: 'Gallery images uploaded successfully',
+        // data: uploadResult.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async fetchGalleryList(user: DecodedUser, businessId: string) {
+    try {
+      if (user.userType === UserTypes.USER && !businessId) {
+        return {
+          success: false,
+          message: 'Business ID is required for consumer users',
+        };
+      }
+      let businessProfileId = user.businessProfile;
+      if (user.userType === UserTypes.USER && businessId) {
+        businessProfileId = businessId;
+      }
+      const business = await this.businessModel.findById(businessProfileId);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      const galleries = await this.folderModel.aggregate([
+        {
+          $match: {
+            parentDirectory: new mongoose.Types.ObjectId(business.galleryPath),
+          },
+        },
+        {
+          $lookup: {
+            from: 'files',
+            localField: '_id',
+            foreignField: 'parentDirectory',
+            as: 'images',
+            pipeline: [
+              {
+                $project: {
+                  metaData: 1,
+                  parentDirectory: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            folderName: 1,
+            images: 1,
+          },
+        },
+      ]);
+      return {
+        success: true,
+        message: 'Gallery list fetched successfully.',
+        data: galleries,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async updateGalleryFolder(
+    user: DecodedUser,
+    folderName: string,
+    images: Express.Multer.File[],
+    folderId: string,
+    removeImages: string,
+  ) {
+    try {
+      const business = await this.businessModel.findById(user.businessProfile);
+      if (!business) {
+        return {
+          success: false,
+          message: 'Business not found with given ID',
+        };
+      }
+
+      if (images && images.length > 0) {
+        const uploadResult = this.driveService.multiImageUpload(
+          user.businessProfile,
+          folderId,
+          images,
+        );
+      }
+      if (folderName && folderName.trim() != '') {
+        await this.driveService.updateFolderName(folderId, folderName);
+      }
+      if (removeImages && removeImages.trim() != '') {
+        const imageIds = removeImages.split(',').map((id) => id.trim());
+        await this.driveService.removeImagesFromFolder(folderId, imageIds);
+      }
+
+      // if (!uploadResult.success || !uploadResult.data?.length) {
+      //   return {
+      //     success: false,
+      //     message: 'Failed to upload images',
+      //   };
+      // }
+
+      return {
+        success: true,
+        message: 'Gallery folder updated successfully',
+        // data: uploadResult.data,
       };
     } catch (error) {
       return {

@@ -1021,25 +1021,8 @@ export class DriveService {
       const parentDirectoryType = driveLoc ? Drive.name : folderLoc.parentType;
       const parentDirectoryId = driveLoc ? driveLoc._id : folderLoc.drive;
 
-      // Filter valid images and prepare upload/create tasks
       let totalSize = 0;
       const tasks = images
-        // .filter((img) => {
-        //   if (!img.mimetype.startsWith('image/')) {
-        //     console.warn(
-        //       `Converting mimetype of ${img.originalname} to image/jpeg`,
-        //     );
-        //     img.mimetype = 'image/jpeg'; // Force set mimetype
-        //   }
-
-        //   if (img.size > driveDetails.AvailableSpace) {
-        //     throw new BadRequestException(
-        //       `Insufficient space for ${img.originalname}`,
-        //     );
-        //   }
-
-        //   return true; // All images go through now
-        // })
         .map((img) => {
           totalSize += img.size;
           return this.uploadAndCreateFile(
@@ -1691,4 +1674,49 @@ export class DriveService {
       return { success: false, message: 'Failed to retrieve sample documents' };
     }
   }
+
+  async removeImagesFromFolder(folderId:string,images:string[]){
+    try {
+      if (!isValidObjectId(folderId)) {
+        return { success: false, message: 'Invalid folderId' };
+      }
+      let folder = await this.folderModel.findById(folderId);
+      if(!folder){
+        folder = await this.driveModel.findById(folderId);
+        if(!folder){
+          return { success: false, message: 'Folder or Drive not found' };
+        }
+      }
+      await Promise.all(
+        images.map(async (imageId) => {
+          if (isValidObjectId(imageId)) {
+            const file = await this.fileModel.findById(imageId);
+            if(file && file.parentDirectory.toString() === folderId){
+              const fileUrl = file.metaData.url;
+              const pathname = new URL(fileUrl).pathname;
+              const fileName = pathname.startsWith('/')
+                ? pathname.slice(1)
+                : pathname;
+    
+              await this.s3Service.s3_delete(
+                process.env.AWS_S3_BUCKET_NAME,
+                fileName,
+              );
+              await this.fileModel.deleteOne({
+                _id: new mongoose.Types.ObjectId(imageId),
+              });
+            }
+          }
+        }),
+      );
+      return {
+        success: true,
+        message: 'Images removed from folder successfully',
+      };
+    } catch (error) {
+      console.error('Error removing images from folder:', error);
+      return { success: false, message: 'Failed to remove images from folder' };
+    }
+  }
+
 }
