@@ -6496,7 +6496,7 @@ export class EventService2 {
       await Promise.all(updatePromises);
 
       if (offerImages && offerImages.length) {
-        await this.driveService.multiImageUpload(
+        this.driveService.multiImageUpload(
           user.businessProfile.toString(),
           businessFolder.data._id.toString(),
           offerImages,
@@ -6741,14 +6741,14 @@ export class EventService2 {
         }
       }
 
-      if (data.existingFileIds && data.existingFileIds.length) {
+      // if (data.existingFileIds && data.existingFileIds.length) {
         await this.driveService.deleteBufferAndMultiImageUpload(
           user,
           event.drivePath.toString(),
-          data.existingFileIds,
+          data.existingFields,
           offerImages,
         );
-      }
+      // }
 
       return {
         success: true,

@@ -1691,6 +1691,7 @@ export class DriveService {
         images.map(async (imageId) => {
           if (isValidObjectId(imageId)) {
             const file = await this.fileModel.findById(imageId);
+            console.log('file to be deleted:', file);
             if(file && file.parentDirectory.toString() === folderId){
               const fileUrl = file.metaData.url;
               const pathname = new URL(fileUrl).pathname;

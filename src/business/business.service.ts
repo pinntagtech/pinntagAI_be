@@ -6547,23 +6547,6 @@ export class BusinessService {
         }
       }
 
-      if (removeImages && removeImages.length > 0) {
-        const removeImageIds = removeImages.split(',');
-
-        const removeImageObjectIds = removeImageIds.map(
-          (id) => new mongoose.Types.ObjectId(id.trim()),
-        );
-
-        updateObj['$pull'] = {
-          images: { $in: removeImageObjectIds },
-        };
-
-        await this.driveService.removeImagesFromFolder(
-          business.galleryPath.toString(),
-          removeImageIds,
-        );
-      }
-
       if (name && name.length > 0) {
         updateObj['name'] = name;
       }
@@ -6577,6 +6560,28 @@ export class BusinessService {
           ...updateObj,
         },
       );
+
+      if (removeImages && removeImages.length > 0) {
+        const removeImageIds = removeImages.split(',');
+
+        const removeImageObjectIds = removeImageIds.map(
+          (id) => new mongoose.Types.ObjectId(id.trim()),
+        );
+
+        await this.menuModel.updateOne(
+          { _id: new mongoose.Types.ObjectId(menuId) },
+          {
+            $pull: {
+              images: { $in: removeImageObjectIds },
+            },
+          },
+        );
+
+        await this.driveService.removeImagesFromFolder(
+          business.drive.toString(),
+          removeImageIds,
+        );
+      }
 
       return {
         success: true,
