@@ -6745,7 +6745,7 @@ export class EventService2 {
         await this.driveService.deleteBufferAndMultiImageUpload(
           user,
           event.drivePath.toString(),
-          data.existingFields,
+          data.existingFiles,
           offerImages,
         );
       // }

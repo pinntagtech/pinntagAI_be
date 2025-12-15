@@ -81,5 +81,5 @@ export class UpdateOfferDto {
   tags?: any;
 
   @IsOptional()
-  existingFields?: any;
+  existingFiles?: any;
 }

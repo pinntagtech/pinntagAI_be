@@ -1348,7 +1348,7 @@ export class DriveService {
   async deleteBufferAndMultiImageUpload(
     user: DecodedUser,
     locationId: string,
-    existingFileIds: string,
+    existingFiles: string,
     images: Express.Multer.File[],
   ) {
     try {
@@ -1359,15 +1359,17 @@ export class DriveService {
       let oldFileQuery = {
         parentDirectory: new mongoose.Types.ObjectId(locationId),
       };
-      if (existingFileIds && existingFileIds.length > 0) {
-        let existingFileIdsArray = existingFileIds.split(',');
+      if (existingFiles && existingFiles.length > 0) {
+        let existingFileIdsArray = existingFiles
+          .split(',');
+       ;
         oldFileQuery['_id'] = {
           $nin: existingFileIdsArray.map(
             (id) => new mongoose.Types.ObjectId(id),
           ),
         };
       }
-      console.log('Existing valid Object IDs:', existingFileIds);
+      console.log('Existing valid Object IDs:', existingFiles);
       const oldFiles = await this.fileModel.find({ ...oldFileQuery });
       const QR_FileCategory = await this.fileCategoryModel.findOne({
         name: FileCategoryTypes.CONTENT_QR,
