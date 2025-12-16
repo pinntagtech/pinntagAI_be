@@ -5509,6 +5509,11 @@ export class BusinessService {
           this.userService.getFollowers(user.businessProfile),
         ]);
 
+      const aiTraining = await this.pinnAiService.getAITrainingQuestions(
+        user.businessProfile,
+      );
+      console.log('AI Training Questions:', aiTraining);
+
       const businessDetails = {
         _id: business._id,
         name: business.name,
@@ -5519,6 +5524,9 @@ export class BusinessService {
         activeLocationCount: business.activatedOutlets.length,
         activeSubscription: business.activeSubscription || null,
         profileCompletionPercentage: business.profileCompletionPercentage,
+        aiTrainingPercentage: aiTraining.success
+          ? aiTraining.data.metadata.completionPercentage
+          : 0,
       };
 
       const followersTrend = await this.getFollowersTrend(
@@ -5526,16 +5534,31 @@ export class BusinessService {
         progress as 'daily' | 'weekly' | 'monthly',
       );
 
-      console.log('Active Participants:', activeParticipants);
+      const totalRedemptions = await this.userRewardModel.countDocuments({
+        businessProfile: businessProfileId,
+        claimStatus: ClaimStatus.CLAIMED,
+      });
+      const activeContent = await this.eventModel.countDocuments({
+        businessProfile: businessProfileId,
+        status: EventStatus.PUBLISHED,
+      });
+      const inActiveContent = await this.eventModel.countDocuments({
+        businessProfile: businessProfileId,
+        status: EventStatus.DRAFTED,
+      });
+
       return {
         success: true,
         message: 'Dashboard data fetched successfully',
         data: {
           businessDetails,
-          // eventLogistics,
-          // activeParticipants,
-          // events: topEvents,
+          eventLogistics,
+          activeParticipants,
+          events: topEvents,
           followersTrend,
+          totalRedemptions,
+          activeContent,
+          inActiveContent,
         },
       };
     } catch (error) {

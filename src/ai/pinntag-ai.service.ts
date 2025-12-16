@@ -65,6 +65,29 @@ export class PinntagAiService {
       throw error;
     }
   }
+
+  async getAITrainingQuestions(businessId: string) {
+    try {
+      console.log('businessId:', businessId);
+      console.log("WHY IT IS COMING HEREEEE:");
+      const response = await axios.get(
+        `${this.baseUrl}/ai/training/questions-by-phase/${businessId}/?phase=basic`,
+        {
+          headers: {
+            'x-internal-api-key': this.internalKey,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error generating business description:', error);
+      throw error;
+    }
+  }
+
+
+
   async generateBusinessDescriptionWithTagsUpdate(
     payload: any,
   ) {
