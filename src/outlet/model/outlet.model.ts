@@ -134,6 +134,9 @@ export class Outlet {
   spots: mongoose.Types.ObjectId[];
   @Prop({default: false})
   isActive: boolean;
+
+  @Prop({ default: 0})
+  viewsCount: number;
 }
 
 export const OutletSchema = SchemaFactory.createForClass(Outlet);

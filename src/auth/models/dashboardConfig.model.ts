@@ -26,10 +26,10 @@ export class DashboardConfig {
   @Prop({ required: true, default: 15 })
   limit: number;
 
-  @Prop({  ref: Category.name, default: [] })
+  @Prop({ ref: Category.name, default: [] })
   categories: Array<mongoose.Types.ObjectId>;
 
-  @Prop({enum: ['xl', 'xxl','zoom','full']})
+  @Prop({ enum: ['xl', 'xxl', 'zoom', 'full', 'vertical'] })
   cardType: string;
 
   @Prop()
@@ -38,7 +38,10 @@ export class DashboardConfig {
   @Prop({ ref: BusinessIndustry.name, default: [] })
   businessIndustries: Array<mongoose.Types.ObjectId>;
 
-  @Prop({ enum: [CarouselType.Event, CarouselType.Business, CarouselType.OnWheels], required: true })
+  @Prop({
+    enum: [CarouselType.Event, CarouselType.Business, CarouselType.OnWheels],
+    required: true,
+  })
   carouselType: string;
 }
 

@@ -3840,6 +3840,9 @@ export class BusinessService {
                   website: 1,
                   businessIndustry: 1,
                   drive: 1,
+                  rating: 1,
+                  regularTiming: 1,
+                  userRatingCount: 1,
                 },
               },
             ],
@@ -3956,6 +3959,9 @@ export class BusinessService {
             isFollowedByMe: { $first: '$isFollowedByMe' },
             isMuted: { $first: '$isMuted' },
             drive: { $first: '$businessDetails.drive' },
+            rating: { $first: '$businessDetails.rating' },
+            regularTiming: { $first: '$businessDetails.regularTiming' },
+            userRatingCount: { $first: '$businessDetails.userRatingCount' },
             locations: {
               $push: {
                 _id: '$_id',
@@ -4133,6 +4139,17 @@ export class BusinessService {
           message: 'Business not found with given ID',
         };
       }
+
+      await Promise.all([
+        this.businessModel.updateOne(
+          { _id: businessId },
+          { $inc: { viewsCount: 1 } },
+        ),
+        this.outletModel.updateOne(
+          { _id: business.locations[0]._id },
+          { $inc: { viewsCount: 1 } },
+        ),
+      ]);
 
       // const businessDistance = haversineDistance(latitude,longitude, business.latitude, business.longitude);
 
@@ -4710,8 +4727,9 @@ export class BusinessService {
         .skip((page - 1) * limit)
         .limit(limit);
 
-      const total = await this.businessUserModel.countDocuments({
-        business: user.businessProfile,
+      const total = await this.followModel.countDocuments({
+        following: new mongoose.Types.ObjectId(user.businessProfile),
+        followerType: User.name,
       });
 
       return {
@@ -5496,10 +5514,17 @@ export class BusinessService {
         name: business.name,
         logo: business.logo,
         coverImage: business.cover,
+        profileViews: business.viewsCount,
         followersCount: followersCount.count,
+        activeLocationCount: business.activatedOutlets.length,
         activeSubscription: business.activeSubscription || null,
         profileCompletionPercentage: business.profileCompletionPercentage,
       };
+
+      const followersTrend = await this.getFollowersTrend(
+        user.businessProfile,
+        progress as 'daily' | 'weekly' | 'monthly',
+      );
 
       console.log('Active Participants:', activeParticipants);
       return {
@@ -5507,9 +5532,10 @@ export class BusinessService {
         message: 'Dashboard data fetched successfully',
         data: {
           businessDetails,
-          eventLogistics,
-          activeParticipants,
-          events: topEvents,
+          // eventLogistics,
+          // activeParticipants,
+          // events: topEvents,
+          followersTrend,
         },
       };
     } catch (error) {
@@ -5518,6 +5544,85 @@ export class BusinessService {
         message: error.message,
       };
     }
+  }
+  async getFollowersTrend(
+    businessId: string,
+    period: 'daily' | 'weekly' | 'monthly' = 'monthly',
+  ) {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // Group format based on period
+    const groupId = {
+      daily: {
+        year: { $year: '$createdAt' },
+        month: { $month: '$createdAt' },
+        day: { $dayOfMonth: '$createdAt' },
+      },
+      weekly: {
+        year: { $year: '$createdAt' },
+        week: { $week: '$createdAt' },
+      },
+      monthly: {
+        year: { $year: '$createdAt' },
+        month: { $month: '$createdAt' },
+      },
+    };
+
+    const result = await this.followModel.aggregate([
+      {
+        $match: {
+          following: new mongoose.Types.ObjectId(businessId),
+          followerType: User.name,
+          createdAt: { $gte: sixMonthsAgo },
+        },
+      },
+      {
+        $group: {
+          _id: groupId[period],
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          '_id.year': 1,
+          '_id.month': 1,
+          '_id.week': 1,
+          '_id.day': 1,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          year: '$_id.year',
+          month: '$_id.month',
+          week: '$_id.week',
+          day: '$_id.day',
+          newFollowers: '$count',
+        },
+      },
+    ]);
+
+    // Calculate cumulative and format date on server
+    let cumulative = 0;
+    return result.map((item) => {
+      cumulative += item.newFollowers;
+
+      let dateLabel: string;
+      if (period === 'daily') {
+        dateLabel = `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`;
+      } else if (period === 'weekly') {
+        dateLabel = `${item.year}-W${String(item.week).padStart(2, '0')}`;
+      } else {
+        dateLabel = `${item.year}-${String(item.month).padStart(2, '0')}`;
+      }
+
+      return {
+        date: dateLabel,
+        newFollowers: item.newFollowers,
+        totalFollowers: cumulative,
+      };
+    });
   }
 
   private async fetchEventLogistics(

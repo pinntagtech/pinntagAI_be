@@ -402,6 +402,9 @@ export class Business {
   @Prop({ default: false })
   isAgentCreated: boolean;
 
+  @Prop({ default: 0})
+  viewsCount: number;
+
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }
