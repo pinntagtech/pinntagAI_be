@@ -213,30 +213,27 @@ export const getStringDateTz = (date: Date, tz?: string) => {
   return `${year}-${month}-${day}`;
 };
 
-export const getStringDateTzWithTime = (date: Date, tz?: string) => {
-  const timeZone = tz || 'America/Chicago'; // Lubbock, US timezone
-  const hours =
-    date.getUTCHours().toString().length === 1
-      ? `0${date.getUTCHours()}`
-      : date.getUTCHours();
-  const minutes =
-    date.getUTCMinutes().toString().length === 1
-      ? `0${date.getUTCMinutes()}`
-      : date.getUTCMinutes();
+export const getStringDateTzWithTime = (date: Date, tz = 'America/Chicago') => {
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
+    timeZone: tz,
     year: 'numeric',
-    month: '2-digit',
+    month: 'short',
     day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
   });
+
   const parts = formatter.formatToParts(date);
-  const year = parts.find((part) => part.type === 'year')?.value;
-  const month = parts.find((part) => part.type === 'month')?.value;
-  const monthInWords = date.toLocaleString('default', { month: 'short' });
-  const day = parts.find((part) => part.type === 'day')?.value;
-  // return `${year}-${month}-${day}`;
-  //eg: 03 Jul 2024 09:00 AM
-  return `${day} ${monthInWords} ${year} ${hours}:${minutes} ${date.getUTCHours() >= 12 ? 'PM' : 'AM'}`;
+
+  const day = parts.find(p => p.type === 'day')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const year = parts.find(p => p.type === 'year')?.value;
+  const hour = parts.find(p => p.type === 'hour')?.value;
+  const minute = parts.find(p => p.type === 'minute')?.value;
+  const dayPeriod = parts.find(p => p.type === 'dayPeriod')?.value?.toUpperCase();
+
+  return `${day} ${month} ${year} ${hour}:${minute} ${dayPeriod}`;
 };
 
 export const haversineDistance = (

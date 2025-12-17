@@ -423,6 +423,121 @@ export class EventService2 {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     ).toISOString();
 
+    type NextOccurrence = { start: Date; end: Date };
+    let requiredOccurrence: NextOccurrence | null = null;
+    function getNextFromFixed(schedule: any, now: Date): NextOccurrence | null {
+      if (
+        !schedule?.fixedSchedule?.date ||
+        !schedule?.fixedSchedule?.durations?.length
+      )
+        return null;
+
+      // If fixedSchedule.date is in past, still allow if duration is ongoing/upcoming
+      let best: NextOccurrence | null = null;
+
+      for (const d of schedule.fixedSchedule.durations) {
+        const start = new Date(d.startTime);
+        const end = new Date(d.endTime);
+
+        // show if ongoing or upcoming (end >= now)
+        if (end >= now) {
+          if (!best || start < best.start) best = { start, end };
+        }
+      }
+
+      return best;
+    }
+    const WEEKDAY_KEYS = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ] as const;
+
+    function getNextFromRecurring(
+      schedule: any,
+      now: Date,
+      lookAheadDays = 45,
+    ): NextOccurrence | null {
+      if (
+        !schedule?.recurringSchedule?.startDate ||
+        !schedule?.recurringSchedule?.endDate
+      )
+        return null;
+
+      const startDate = new Date(schedule.recurringSchedule.startDate);
+      const endDate = new Date(schedule.recurringSchedule.endDate);
+
+      // If recurring ended completely
+      if (endDate < now) return null;
+
+      // Start scanning from today (or schedule startDate if future)
+      const scanStart = new Date(
+        Math.max(startDate.getTime(), startOfDay(now).getTime()),
+      );
+
+      let best: NextOccurrence | null = null;
+
+      for (let offset = 0; offset <= lookAheadDays; offset++) {
+        const day = addDays(scanStart, offset);
+
+        // stop if day is after endDate (by day)
+        if (day.getTime() > endOfDay(endDate).getTime()) break;
+
+        const weekdayKey = WEEKDAY_KEYS[day.getDay()];
+        const daySchedule = schedule.recurringSchedule.weekDays?.[weekdayKey];
+
+        if (!daySchedule?.included || !Array.isArray(daySchedule.durations))
+          continue;
+
+        for (const dur of daySchedule.durations) {
+          const start = setTimeOnDate(day, dur.startHour, dur.startMinute);
+          let end = setTimeOnDate(day, dur.endHour, dur.endMinute);
+
+          // Overnight rule: if end <= start => ends next day
+          if (end.getTime() <= start.getTime()) {
+            end = addDays(end, 1);
+          }
+
+          // Occurrence should fall within recurring window:
+          if (start < startDate) continue;
+          if (start > endDate) continue; // if you want strict endDate cutoff by start
+
+          // must be ongoing/upcoming
+          if (end >= now) {
+            if (!best || start < best.start) best = { start, end };
+          }
+        }
+      }
+
+      return best;
+    }
+
+    // ---- date helpers ----
+    function startOfDay(d: Date) {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    }
+    function endOfDay(d: Date) {
+      const x = new Date(d);
+      x.setHours(23, 59, 59, 999);
+      return x;
+    }
+    function addDays(d: Date, days: number) {
+      const x = new Date(d);
+      x.setDate(x.getDate() + days);
+      return x;
+    }
+    function setTimeOnDate(base: Date, hour: number, minute: number) {
+      const x = new Date(base);
+      x.setHours(hour ?? 0, minute ?? 0, 0, 0);
+      return x;
+    }
+
     for (let i = 0; i < eventInfo.eventSchedule.length; i++) {
       if (requiredSchedule) {
         break;
@@ -431,49 +546,43 @@ export class EventService2 {
           _id: eventInfo.eventSchedule[i],
         });
         if (schedule) {
+          let next: NextOccurrence | null = null;
           if (schedule.type == ScheduleTypes.FIXED) {
-            if (schedule.fixedSchedule.date >= new Date(todaysDate)) {
-              // requiredSchedule = eventInfo.schedule[i];
-              let durations = schedule.fixedSchedule.durations;
-              for (let j = 0; j < durations.length; j++) {
-                console.log('Durations:', durations[j]);
-                if (new Date(durations[j].endTime) >= new Date()) {
-                  console.log('End time:', durations[j].endTime);
-                  requiredSchedule = durations[j].endTime;
-                  break;
-                }
-                // else {
-                //   // return {
-                //   //   success: false,
-                //   //   message: 'No upcoming schedule found for this event',
-                //   // };
-                // }
-              }
+            next = getNextFromFixed(schedule, new Date());
+          } else if (schedule.type == ScheduleTypes.RECURRING) {
+            next = getNextFromRecurring(schedule, new Date());
+          }
+          if (next) {
+            if (!requiredOccurrence || next.start < requiredOccurrence.start) {
+              requiredOccurrence = next;
             }
-            // else {
-            //   return {
-            //     success: false,
-            //     message: 'No upcoming schedule found for this event',
-            //   };
-            // }
           }
         }
       }
     }
-    if (!requiredSchedule) {
-      console.log('No upcoming schedule found');
+    // if (!requiredSchedule) {
+    //   console.log('No upcoming schedule found');
+    //   return {
+    //     success: false,
+    //     message: 'No upcoming schedule found for this event',
+    //   };
+    // } else {
+    //   console.log('Required schedule:', requiredSchedule);
+    // }
+
+    if (!requiredOccurrence) {
       return {
         success: false,
         message: 'No upcoming schedule found for this event',
       };
-    } else {
-      console.log('Required schedule:', requiredSchedule);
     }
+    console.log('Required occurrence:', requiredOccurrence);
+
     if (eventInfo.eventSchedule.length == 1) {
-      eventDescription = getStringDateTzWithTime(new Date(requiredSchedule));
+      eventDescription = getStringDateTzWithTime(new Date(requiredOccurrence.start));
     } else {
       eventDescription =
-        getStringDateTzWithTime(new Date(requiredSchedule)) + '(plus more)';
+        getStringDateTzWithTime(new Date(requiredOccurrence.start)) + '(plus more)';
     }
     const result = await this.dynamicLinkService.generateShortLink(eventUrl, {
       title,
@@ -6742,12 +6851,12 @@ export class EventService2 {
       }
 
       // if (data.existingFileIds && data.existingFileIds.length) {
-        await this.driveService.deleteBufferAndMultiImageUpload(
-          user,
-          event.drivePath.toString(),
-          data.existingFiles,
-          offerImages,
-        );
+      await this.driveService.deleteBufferAndMultiImageUpload(
+        user,
+        event.drivePath.toString(),
+        data.existingFiles,
+        offerImages,
+      );
       // }
 
       return {
