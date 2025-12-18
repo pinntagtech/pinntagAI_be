@@ -165,6 +165,10 @@ export class AiController {
   async generateTitleSuggestions(@Param('businessId') businessId: string) {
     return this.pinntagAiService.generateBusinessTagsSuggestions(businessId);
   }
+
+  @Get()
+
+
   @Post('pinntagAi/businessDescAndUpdateTags')
   async generateBusinessDescriptionWithTagsUpdate(@Body() body) {
     return this.pinntagAiService.generateBusinessDescriptionWithTagsUpdate(body);

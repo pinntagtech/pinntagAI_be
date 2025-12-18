@@ -152,6 +152,7 @@ import { MobileSpots } from 'src/business/model/mobileSpots.model';
 import { EventCategory } from 'src/seeder/data';
 import { CheckIn } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchStatus } from 'src/business/model/scratch.model';
+import { Tag } from 'src/models/tags.model';
 
 @Injectable()
 export class EventService2 {
@@ -210,6 +211,7 @@ export class EventService2 {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
     @InjectModel(Scratch.name) private readonly scratchModel: Model<Scratch>,
+    @InjectModel(Tag.name) private readonly tagModel: Model<Tag>,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
     private readonly facebookService: FacebookService,
@@ -8621,4 +8623,45 @@ export class EventService2 {
       };
     }
   }
+
+  async tagSuggestions(categories: string) {
+    try {
+      const categoryIds = categories.split(',');
+      console.log('Category IDs:', categoryIds);
+      const tagsByCategory = await Promise.all(
+        categoryIds.map(async (catId) => {
+          const tags = await this.tagModel.aggregate([
+            { $match: { relatedId: catId } },
+            { $sample: { size: 5 } }, // pick 3 random docs
+            { $project: { _id: 0, title: 1 } }, // only keep title
+          ]);
+
+          return {
+            categoryId: catId,
+            tags,
+          };
+        }),
+      );
+      const allTitles = tagsByCategory.flatMap((cat) =>
+        cat.tags.map((t) => t.title),
+      );
+
+
+      // console.log('Tag Recommendations:', allTitles);
+
+      return {
+        success: true,
+        message: 'Tag recommendations fetched successfully',
+        data: allTitles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+
+
 }

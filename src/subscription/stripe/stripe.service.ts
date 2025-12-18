@@ -33,7 +33,10 @@ import { Business, BusinessDocument } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
-import { PricingModel, SubscriptionProduct } from '../models/subscription-product.model';
+import {
+  PricingModel,
+  SubscriptionProduct,
+} from '../models/subscription-product.model';
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 import { BusinessStatus } from 'src/business/enums/business.enum';
@@ -347,7 +350,7 @@ export class StripeService {
           'Quantity must be between min and max locations allowed for this product',
         );
       }
-    }else if (productDoc.pricingModel === 'flat'){
+    } else if (productDoc.pricingModel === 'flat') {
       params.quantity = 1;
     }
 
@@ -396,6 +399,8 @@ export class StripeService {
       },
       subscription_data: {
         metadata: { businessId: String(business._id), priceId: price.id },
+        billing_cycle_anchor: Math.floor(Date.now() / 1000),
+        proration_behavior: 'none',
       },
       // ui_mode: 'hosted',
       // Optional extras:
@@ -502,7 +507,7 @@ export class StripeService {
     });
     if (!internalSubPrice) return;
 
-     const invoice = await this.stripe.invoices.retrieve(
+    const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
     );
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
@@ -521,7 +526,10 @@ export class StripeService {
         invoiceEndDate: new Date((stripeSub.current_period_end || 0) * 1000),
         stripeSubscriptionId: subscriptionId,
         isTrialActive: false,
-        locationsAllowed: internalSubPrice.pricingModel === PricingModel.FLAT? internalSubPrice.maxLocations:invoice.lines?.data?.[0]?.quantity,
+        locationsAllowed:
+          internalSubPrice.pricingModel === PricingModel.FLAT
+            ? internalSubPrice.maxLocations
+            : invoice.lines?.data?.[0]?.quantity,
         // Optionally also store stripe customer on Business (already done in ensure)
       },
       { upsert: true, new: true },
@@ -531,11 +539,11 @@ export class StripeService {
       {
         $set: {
           activeSubscription: new mongoose.Types.ObjectId(internalSub.id),
-           status: BusinessStatus.SUBSCRIPTION,
+          status: BusinessStatus.SUBSCRIPTION,
         },
       },
     );
-   
+
     // Upsert by stripeInvoiceId to make it idempotent
     await this.transactionModel.updateOne(
       { stripeInvoiceId: invoice.id }, // unique key
@@ -587,7 +595,8 @@ export class StripeService {
       amountMinor: invoice.total, // or amount: invoice.total/100
       currency: invoice.currency?.toUpperCase(),
       // quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
-       quantity: invoice.lines?.data?.[invoice.lines.data.length - 1]?.quantity ?? 1,
+      quantity:
+        invoice.lines?.data?.[invoice.lines.data.length - 1]?.quantity ?? 1,
       status: TransactionStatus.SUCCESS, // mark success now
       success: true,
       transactionDate: invoice.status_transitions?.paid_at
@@ -1286,11 +1295,14 @@ export class StripeService {
     if (!business) {
       throw new NotFoundException('Business not found');
     }
-    console.log("business active subscription:", business.activeSubscription); 
+    console.log('business active subscription:', business.activeSubscription);
     const subscription = await this.subscriptionModel.findOne({
       _id: new mongoose.Types.ObjectId(business.activeSubscription),
     });
-    console.log("subscription stripe found:", subscription.stripeSubscriptionId);
+    console.log(
+      'subscription stripe found:',
+      subscription.stripeSubscriptionId,
+    );
     if (!subscription || !subscription.stripeSubscriptionId) {
       throw new NotFoundException('Active subscription not found');
     }
@@ -1301,7 +1313,7 @@ export class StripeService {
       },
     );
     const subscriptionItemId = subscriptionItem.items.data[0].id;
-    console.log("subscription item id:", subscriptionItemId);
+    console.log('subscription item id:', subscriptionItemId);
 
     if (data.statusCode === 204) {
       return await this.stripe.subscriptionItems.update(subscriptionItemId, {
