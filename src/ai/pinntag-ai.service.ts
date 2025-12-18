@@ -71,7 +71,7 @@ export class PinntagAiService {
       console.log('businessId:', businessId);
       console.log("WHY IT IS COMING HEREEEE:");
       const response = await axios.get(
-        `${this.baseUrl}/ai/training/questions-by-phase/${businessId}/?phase=basic`,
+        `https://ai.pinntag.com/ai/training/state/${businessId}`,
         {
           headers: {
             'x-internal-api-key': this.internalKey,
