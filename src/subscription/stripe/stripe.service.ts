@@ -66,11 +66,12 @@ export class StripeService {
     signature: string,
     endpointSecret: string,
   ): Stripe.Event {
+    console.log('Payload for webhook verification...............');
     try {
       return Stripe.webhooks.constructEvent(payload, signature, endpointSecret);
     } catch (err: any) {
       throw new Error(
-        `⚠️  Webhook signature verification failed: ${err.message}`,
+        `⚠️  Webhook signature verification failed11111111111: ${err.message}`,
       );
     }
   }
@@ -447,6 +448,7 @@ export class StripeService {
   /** Webhook: verify signature, store snapshot, fan-out handling */
   async handleStripeWebhook(event: Stripe.Event) {
     // Save raw snapshot (optional but recommended for audit)
+    console.log('Saving webhook snapshot for event:', event.type);
     await this.webhookSnapshotModel.create({
       source: 'stripe',
       data: event,
@@ -520,7 +522,7 @@ export class StripeService {
     //         : paymentMethod?.id || undefined,
     //   },
     // });
-    console.log("SESSIONNN ID:",session.id);
+    console.log('SESSIONNN ID:', session.id);
     const fullSession = await this.stripe.checkout.sessions.retrieve(
       session.id,
       {
@@ -533,7 +535,7 @@ export class StripeService {
 
     const pm = pi.payment_method as string;
 
-    console.log("PAYMENT METHOD ID:::",pm);
+    console.log('PAYMENT METHOD ID:::', pm);
 
     await this.stripe.customers.update(fullSession.customer as string, {
       invoice_settings: { default_payment_method: pm },
@@ -543,7 +545,7 @@ export class StripeService {
       default_payment_method: pm,
     });
 
-    console.log("IS IT COMING HEREE?? CHECK 1",businessId,);
+    console.log('IS IT COMING HEREE?? CHECK 1', businessId);
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(

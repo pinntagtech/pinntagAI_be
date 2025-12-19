@@ -105,6 +105,7 @@ export class StripeController {
     console.log('SIGNATURE:::', signature);
     try {
       // Verify webhook signature using Stripe SDK
+      console.log('Constructing event from payload...');
       event = this.stripeService.constructEventFromPayload(
         payload,
         signature,
@@ -112,12 +113,13 @@ export class StripeController {
       );
     } catch (err) {
       console.error(
-        `⚠️  Webhook signature verification failed: ${err.message}`,
+        `⚠️  Webhook signature verification failed222222222: ${err.message}`,
       );
       throw new BadRequestException('Invalid webhook signature');
     }
     try {
       // req.body is Buffer because of raw body middleware in main.ts
+      console.log('Handling Stripe webhook event:', event.type);
       await this.stripeService.handleStripeWebhook(event);
       return { received: true };
     } catch (e: any) {
