@@ -401,7 +401,8 @@ export class StripeService {
         metadata: { businessId: String(business._id), priceId: price.id },
         billing_cycle_anchor: Math.floor(Date.now() / 1000),
         proration_behavior: 'none',
-      },
+      }
+      
       // ui_mode: 'hosted',
       // Optional extras:
       // allow_promotion_codes: true, // if you want user-entered codes instead
@@ -510,6 +511,15 @@ export class StripeService {
     const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
     );
+    const paymentMethod = stripeSub.default_payment_method;
+    await this.stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method:
+          typeof paymentMethod === 'string'
+            ? paymentMethod
+            : paymentMethod?.id || undefined,
+      },
+    });
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
