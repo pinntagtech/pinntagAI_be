@@ -508,9 +508,9 @@ export class StripeService {
     });
     if (!internalSubPrice) return;
 
-    // const invoice = await this.stripe.invoices.retrieve(
-    //   stripeSub.latest_invoice as string,
-    // );
+    const invoice = await this.stripe.invoices.retrieve(
+      stripeSub.latest_invoice as string,
+    );
     // const paymentMethod = stripeSub.default_payment_method;
     // await this.stripe.customers.update(customerId, {
     //   invoice_settings: {
@@ -527,11 +527,13 @@ export class StripeService {
         expand: ['invoice', 'invoice.payment_intent', 'subscription'],
       },
     );
-    console.log("FULL SESSIONNNN:",JSON.stringify(fullSession));
-    const invoice = fullSession.invoice as Stripe.Invoice;
-    const pi = invoice.payment_intent as Stripe.PaymentIntent;
+    // console.log("FULL SESSIONNNN:",JSON.stringify(fullSession));
+    const invoice2 = fullSession.invoice as Stripe.Invoice;
+    const pi = invoice2.payment_intent as Stripe.PaymentIntent;
 
     const pm = pi.payment_method as string;
+
+    console.log("PAYMENT METHOD ID:::",pm);
 
     await this.stripe.customers.update(fullSession.customer as string, {
       invoice_settings: { default_payment_method: pm },
@@ -540,6 +542,8 @@ export class StripeService {
     await this.stripe.subscriptions.update(fullSession.subscription as string, {
       default_payment_method: pm,
     });
+
+    console.log("IS IT COMING HEREE?? CHECK 1",businessId,);
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
