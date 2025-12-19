@@ -487,7 +487,7 @@ export class StripeService {
 
   /** When hosted checkout completes */
   private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
-    console.log('Checkout completed for session:::', JSON.stringify(session));
+    // console.log('Checkout completed for session:::', JSON.stringify(session));
     const customerId = session.customer as string | null;
     const subscriptionId = session.subscription as string | null;
     const businessId = session.metadata?.businessId;
@@ -520,14 +520,14 @@ export class StripeService {
     //         : paymentMethod?.id || undefined,
     //   },
     // });
-
+    console.log("SESSIONNN ID:",session.id);
     const fullSession = await this.stripe.checkout.sessions.retrieve(
       session.id,
       {
         expand: ['invoice', 'invoice.payment_intent', 'subscription'],
       },
     );
-
+    console.log("FULL SESSIONNNN:",JSON.stringify(fullSession));
     const invoice = fullSession.invoice as Stripe.Invoice;
     const pi = invoice.payment_intent as Stripe.PaymentIntent;
 
