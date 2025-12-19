@@ -449,10 +449,13 @@ export class StripeService {
   async handleStripeWebhook(event: Stripe.Event) {
     // Save raw snapshot (optional but recommended for audit)
     console.log('Saving webhook snapshot for event:', event.type);
-    await this.webhookSnapshotModel.create({
+    const createdSnapshot = await this.webhookSnapshotModel.create({
       source: 'stripe',
       data: event,
     });
+    console.log(
+      `Webhook snapshot saved with ID: ${createdSnapshot._id} for event: ${event.type}`,
+    );
 
     // Route by event type
     switch (event.type) {
@@ -489,6 +492,7 @@ export class StripeService {
 
   /** When hosted checkout completes */
   private async onCheckoutCompleted(session: Stripe.Checkout.Session) {
+    console.log('Checkout completed for session:::', session);
     // console.log('Checkout completed for session:::', JSON.stringify(session));
     const customerId = session.customer as string | null;
     const subscriptionId = session.subscription as string | null;
