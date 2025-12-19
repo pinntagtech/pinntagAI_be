@@ -401,8 +401,8 @@ export class StripeService {
         metadata: { businessId: String(business._id), priceId: price.id },
         billing_cycle_anchor: Math.floor(Date.now() / 1000),
         proration_behavior: 'none',
-      }
-      
+      },
+
       // ui_mode: 'hosted',
       // Optional extras:
       // allow_promotion_codes: true, // if you want user-entered codes instead
@@ -508,18 +508,39 @@ export class StripeService {
     });
     if (!internalSubPrice) return;
 
-    const invoice = await this.stripe.invoices.retrieve(
-      stripeSub.latest_invoice as string,
-    );
-    const paymentMethod = stripeSub.default_payment_method;
-    await this.stripe.customers.update(customerId, {
-      invoice_settings: {
-        default_payment_method:
-          typeof paymentMethod === 'string'
-            ? paymentMethod
-            : paymentMethod?.id || undefined,
+    // const invoice = await this.stripe.invoices.retrieve(
+    //   stripeSub.latest_invoice as string,
+    // );
+    // const paymentMethod = stripeSub.default_payment_method;
+    // await this.stripe.customers.update(customerId, {
+    //   invoice_settings: {
+    //     default_payment_method:
+    //       typeof paymentMethod === 'string'
+    //         ? paymentMethod
+    //         : paymentMethod?.id || undefined,
+    //   },
+    // });
+
+    const fullSession = await this.stripe.checkout.sessions.retrieve(
+      session.id,
+      {
+        expand: ['invoice', 'invoice.payment_intent', 'subscription'],
       },
+    );
+
+    const invoice = fullSession.invoice as Stripe.Invoice;
+    const pi = invoice.payment_intent as Stripe.PaymentIntent;
+
+    const pm = pi.payment_method as string;
+
+    await this.stripe.customers.update(fullSession.customer as string, {
+      invoice_settings: { default_payment_method: pm },
     });
+
+    await this.stripe.subscriptions.update(fullSession.subscription as string, {
+      default_payment_method: pm,
+    });
+
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: subscriptionId },
