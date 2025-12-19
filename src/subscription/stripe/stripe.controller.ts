@@ -16,9 +16,7 @@ import {
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import {
-  CreateCheckoutDto,
-} from './dtos/create-checkout.dto';
+import { CreateCheckoutDto } from './dtos/create-checkout.dto';
 import Stripe from 'stripe';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
@@ -102,6 +100,9 @@ export class StripeController {
     const payload = req.rawBody ?? (req.body as any);
     let event: Stripe.Event;
     const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    console.log('ENDPOINT SECRET:::', endpointSecret);
+    console.log('PAYLOAD:::', payload);
+    console.log('SIGNATURE:::', signature);
     try {
       // Verify webhook signature using Stripe SDK
       event = this.stripeService.constructEventFromPayload(
