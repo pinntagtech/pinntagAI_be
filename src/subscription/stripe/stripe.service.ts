@@ -474,6 +474,11 @@ export class StripeService {
         await this.onInvoiceFailed(invoice);
         break;
       }
+      case 'customer.subscription.created': {
+        const sub = event.data.object as Stripe.Subscription;
+        await this.onSubscriptionCreated(sub);
+        break;
+      }
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
         await this.onSubscriptionUpdated(sub);
@@ -695,6 +700,29 @@ export class StripeService {
     await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: sub.id },
       { status: SubscriptionStatus.EXPIRED, endDate: new Date() },
+    );
+  }
+
+  private async onSubscriptionCreated(sub: Stripe.Subscription) {
+    await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: sub.id },
+      {
+        status:
+          sub.status === 'active'
+            ? SubscriptionStatus.ACTIVE
+            : sub.status === 'past_due'
+              ? SubscriptionStatus.PAST_DUE
+              : sub.status === 'canceled'
+                ? SubscriptionStatus.CANCELLED
+                : SubscriptionStatus.EXPIRED,
+        startDate: sub.current_period_start
+          ? new Date(sub.current_period_start * 1000)
+          : undefined,
+        endDate: sub.current_period_end
+          ? new Date(sub.current_period_end * 1000)
+          : undefined,
+        locationsAllowed: sub.items.data[0]?.quantity,
+      },
     );
   }
 
