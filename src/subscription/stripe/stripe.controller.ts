@@ -38,12 +38,19 @@ export class StripeController {
     @TokenDecoder() user: DecodedUser,
   ) {
     // TODO: replace with your real URLs
-    const successUrl =
+    let successUrl =
       this.config.get<string>('CHECKOUT_SUCCESS_URL') ||
       'https://dev.business.pinntag.com/dashboard/subscription/success';
-    const cancelUrl =
+    let cancelUrl =
       this.config.get<string>('CHECKOUT_CANCEL_URL') ||
       'https://dev.business.pinntag.com/dashboard/subscription/cancel';
+
+     if (dto.successUrl) {
+      successUrl = dto.successUrl;
+    }
+    if (dto.cancelUrl) {
+      cancelUrl = dto.cancelUrl;
+    }
 
     const { url } = await this.stripeService.createCheckoutSession({
       businessId: user.businessProfile,

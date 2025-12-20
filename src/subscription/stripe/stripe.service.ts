@@ -469,6 +469,12 @@ export class StripeService {
         await this.onInvoicePaid(invoice);
         break;
       }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await this.onPaymentSucceeded(invoice);
+        break;
+      }
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         await this.onInvoiceFailed(invoice);
@@ -743,6 +749,101 @@ export class StripeService {
           : undefined,
       },
     );
+  }
+
+  private async onPaymentSucceeded(invoice: Stripe.Invoice) {
+    const user = await this.userModel.findOne({
+      stripeCustomerId: invoice.customer,
+    });
+    const {
+      businessProfile,
+      dbSubscriptionId,
+      existingLocationCount,
+      newLocationCount,
+    } = invoice.subscription_details.metadata;
+
+    const subscription = await this.stripe.subscriptions.retrieve(
+      invoice.subscription.toString(),
+    );
+
+    if (subscription.status === 'trialing') {
+      console.log('webhook: Subscription Trial Active');
+      return;
+    }
+    await this.transactionModel.create({
+      platform: SubscriptionSource.STRIPE,
+      description: 'Subscription payment',
+      amount: (invoice.amount_paid / 100).toFixed(2),
+      currency: invoice.currency,
+      quantity:
+        existingLocationCount !== undefined && newLocationCount !== undefined
+          ? Math.abs(
+              Number(existingLocationCount) - Number(newLocationCount),
+            ) || existingLocationCount
+          : 1,
+      user: user._id,
+      business: new mongoose.Types.ObjectId(businessProfile),
+      status: TransactionStatus.SUCCESS,
+      stripeInvoiceId: invoice.id,
+      subscription: new mongoose.Types.ObjectId(dbSubscriptionId),
+      stripeSubscription: invoice.subscription as any,
+      invoiceFileUrl: invoice.invoice_pdf,
+      isForProrate: this.isInvoiceProrate(invoice),
+      stripeLogs: event,
+      startDate: new Date(subscription.current_period_start * 1000),
+      endDate: new Date(subscription.current_period_end * 1000),
+    });
+
+    if (businessProfile && newLocationCount !== undefined) {
+      await this.businessModel.updateOne(
+        { _id: new mongoose.Types.ObjectId(businessProfile) },
+        {
+          // $addToSet: { subscriptions: createdSubscription._id },
+          $set: { locationCount: Number(newLocationCount) },
+        },
+      );
+    }
+
+    const subscriptionItem = subscription.items.data[0];
+    const price = subscriptionItem.price;
+    const recurring = price.recurring;
+    // Fetch and display the current billing period
+    const currentPeriodStart = subscription.current_period_start;
+    const currentPeriodEnd = subscription.current_period_end;
+
+    if (recurring) {
+      const interval = recurring.interval; // month, year
+
+      const startDate = new Date(currentPeriodStart * 1000);
+      const endDate = new Date(currentPeriodEnd * 1000);
+      const invoiceStartDate = endDate;
+      const invoiceEndDate = dayjs(currentPeriodEnd * 1000)
+        .add(1, interval)
+        .toDate();
+
+      // update date in subscription model
+      await this.subscriptionModel.findOneAndUpdate(
+        {
+          stripeSubscriptionId: subscription.id,
+        },
+        {
+          $set: {
+            startDate,
+            endDate,
+            invoiceEndDate,
+            invoiceStartDate,
+            status:
+              subscription.status === 'past_due' ||
+              subscription.status === 'incomplete'
+                ? SubscriptionStatus.PAUSED
+                : SubscriptionStatus.ACTIVE,
+          },
+        },
+      );
+      await this.fetchAndUpdateSubscriptionMetadata(subscription.id, {
+        existingLocationCount: Number(newLocationCount),
+      });
+    }
   }
 
   async createSubscription(

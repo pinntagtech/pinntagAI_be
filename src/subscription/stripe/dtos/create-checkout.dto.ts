@@ -24,4 +24,11 @@ export class CreateCheckoutDto {
   // @IsOptional()
   // @IsString()
   // promotionCode?: string; // Optional promotion code at checkout
+
+  @IsOptional()
+  successUrl?: string;
+
+  @IsOptional()
+  cancelUrl?: string;
+
 }
