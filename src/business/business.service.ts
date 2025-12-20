@@ -7635,14 +7635,22 @@ export class BusinessService {
             as: 'images',
             pipeline: [
               {
+                $sort: { createdAt: -1 }, // newest first
+              },
+              {
+                $limit: 20,
+              },
+              {
                 $project: {
                   metaData: 1,
                   parentDirectory: 1,
+                  createdAt: 1,
                 },
               },
             ],
           },
         },
+        { $limit: 20 },
         {
           $project: {
             _id: 1,
@@ -7706,6 +7714,54 @@ export class BusinessService {
         success: true,
         message: 'Gallery folder updated successfully',
         // data: uploadResult.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async deleteMenu(menuId: string, user: DecodedUser) {
+    try {
+      const menu = await this.menuModel.findById(menuId);
+      if (!menu) {
+        return {
+          success: false,
+          message: 'Menu not found.',
+        };
+      }
+
+      await this.menuModel.deleteOne({ _id: menuId });
+
+      await this.businessModel.updateOne(
+        { _id: user.businessProfile },
+        {
+          $pull: {
+            menus: new mongoose.Types.ObjectId(menuId),
+          },
+        },
+      );
+
+      return {
+        success: true,
+        message: 'Menu deleted successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async deleteGallery(galleryId: string, user: DecodedUser) {
+    try {
+      await this.driveService.deleteFolder(galleryId, user);
+      return {
+        success: true,
+        message: 'Gallery deleted successfully.',
       };
     } catch (error) {
       return {

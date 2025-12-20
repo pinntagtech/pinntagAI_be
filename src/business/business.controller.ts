@@ -1459,7 +1459,6 @@ export class BusinessController {
     }
   }
 
-
   @Post('editMenu/:menuId')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -1501,6 +1500,19 @@ export class BusinessController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Delete('menu/:id')
+  @UseGuards(JwtGuard2)
+  async deleteMenu(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.deleteMenu(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
       };
     } else {
       throw new BadRequestException(result.message);
@@ -1708,8 +1720,14 @@ export class BusinessController {
 
   @Get('gallery/list')
   @UseGuards(JwtGuard2)
-  async fetchGallery(@TokenDecoder() user: DecodedUser,@Query('businessId') businessId:string) {
-    const result = await this.businessService.fetchGalleryList(user,businessId);
+  async fetchGallery(
+    @TokenDecoder() user: DecodedUser,
+    @Query('businessId') businessId: string,
+  ) {
+    const result = await this.businessService.fetchGalleryList(
+      user,
+      businessId,
+    );
     if (result.success) {
       return {
         message: result.message,
@@ -1722,15 +1740,15 @@ export class BusinessController {
 
   @Post('gallery')
   @UseGuards(JwtGuard2)
-    @UseInterceptors(
+  @UseInterceptors(
     FilesInterceptor('images', 15, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async createGallery(
     @TokenDecoder() user: DecodedUser,
-      @UploadedFiles() images: Express.Multer.File[],
-      @Body('folderName') folderName: string,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body('folderName') folderName: string,
   ) {
     const result = await this.businessService.createGallery(
       user,
@@ -1747,17 +1765,17 @@ export class BusinessController {
   }
   @Post('gallery/update/:folderId')
   @UseGuards(JwtGuard2)
-    @UseInterceptors(
+  @UseInterceptors(
     FilesInterceptor('images', 15, {
       limits: { fileSize: 50 * 1024 * 1024 }, // ✅ Set file size limit to 50MB
     }),
   )
   async updateGalleryFolder(
     @TokenDecoder() user: DecodedUser,
-      @UploadedFiles() images: Express.Multer.File[],
-      @Body('folderName') folderName: string,
-      @Param('folderId') folderId: string,
-      @Body('removeImages') removeImages: string,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body('folderName') folderName: string,
+    @Param('folderId') folderId: string,
+    @Body('removeImages') removeImages: string,
   ) {
     const result = await this.businessService.updateGalleryFolder(
       user,
@@ -1766,6 +1784,19 @@ export class BusinessController {
       folderId,
       removeImages,
     );
+    if (result.success) {
+      return {
+        message: result.message,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+   @Delete('gallery/:id')
+  @UseGuards(JwtGuard2)
+  async deleteGallery(@Param('id') id: string, @TokenDecoder() user: DecodedUser) {
+    const result = await this.businessService.deleteGallery(id, user);
     if (result.success) {
       return {
         message: result.message,

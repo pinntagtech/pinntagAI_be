@@ -1535,9 +1535,9 @@ export class DriveService {
         return { success: false, message: 'Invalid file ID' };
       }
       let userDetails = null;
-      if (user.userType == UserTypes.BUSINESS) {
-        userDetails = await this.businessUserModel.findById(user.id);
-      } else if (user.userType == UserTypes.ADMIN) {
+      if (user.userType === UserTypes.BUSINESS) {
+        userDetails = await this.businessModel.findById(user.businessProfile);
+      } else if (user.userType === UserTypes.ADMIN) {
         userDetails = await this.adminModel.findById(user.id);
       }
       const file = await this.fileModel.findById(id);
@@ -1600,24 +1600,29 @@ export class DriveService {
 
   async deleteFolder(id: string, user: DecodedUser) {
     try {
+      console.log("Delete folder called with id:", id);
       if (!isValidObjectId(id)) {
         return { success: false, message: 'Invalid folder ID' };
       }
-      let userDetails = null;
-      if (user.userType == UserTypes.BUSINESS) {
-        userDetails = await this.businessUserModel.findById(user.id);
-      } else if (user.userType == UserTypes.ADMIN) {
-        userDetails = await this.adminModel.findById(user.id);
-      }
+      // let userDetails = null;
+      // if (user.userType == UserTypes.BUSINESS) {
+      //   userDetails = await this.businessUserModel.findById(user.id);
+      // } else if (user.userType == UserTypes.ADMIN) {
+      //   userDetails = await this.adminModel.findById(user.id);
+      // }
+
+
       const folder = await this.folderModel.findById(id);
       if (!folder) {
         return { success: false, message: 'Folder not found' };
       }
+      console.log('Deleting files in folder:', id);
       let files = await this.fileModel.find({
         parentDirectory: new mongoose.Types.ObjectId(id),
       });
       let fileIds = files.map((file) => file._id);
       fileIds.map((fileId) => this.deleteFile(fileId.toString(), user));
+      await this.folderModel.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
 
       return {
         success: true,
