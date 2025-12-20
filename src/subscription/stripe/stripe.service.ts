@@ -556,6 +556,8 @@ export class StripeService {
     const pm = pi.payment_method as string;
 
     console.log('PAYMENT METHOD ID:::', pm);
+    console.log('fullSession.subscription:', fullSession.subscription);
+    console.log('fullSession.customer:', fullSession.customer);
 
     // await this.stripe.customers.update(fullSession.customer as string, {
     //   invoice_settings: { default_payment_method: pm },
