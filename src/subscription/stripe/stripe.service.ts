@@ -512,18 +512,23 @@ export class StripeService {
     console.log('Customer ID from session metadata: ', customerId);
     console.log('Subscription ID from session metadata: ', subscriptionId);
     console.log(`Coupon ID from session metadata: ${couponId}`);
+    console.log(`Business ID from session metadata: ${businessId}`);
     if (!customerId || !subscriptionId || !businessId) return;
+
+    console.log("Checkout completed - processing subscription... 1 ");
 
     // Find or create our internal Subscription record
     // Map Stripe price -> internal product/price if needed (you have that mapping).
     const stripeSub = await this.stripe.subscriptions.retrieve(subscriptionId);
 
     const priceId = stripeSub.items.data[0]?.price?.id as string | undefined;
+    console.log('Price ID from subscription items: ', priceId);
     if (!priceId) return;
     const internalSubPrice = await this.subscriptionPriceModel.findOne({
       stripePriceId: priceId,
     });
     if (!internalSubPrice) return;
+     console.log("Checkout completed - processing subscription... 1 ");
 
     const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
@@ -552,13 +557,13 @@ export class StripeService {
 
     console.log('PAYMENT METHOD ID:::', pm);
 
-    await this.stripe.customers.update(fullSession.customer as string, {
-      invoice_settings: { default_payment_method: pm },
-    });
+    // await this.stripe.customers.update(fullSession.customer as string, {
+    //   invoice_settings: { default_payment_method: pm },
+    // });
 
-    await this.stripe.subscriptions.update(fullSession.subscription as string, {
-      default_payment_method: pm,
-    });
+    // await this.stripe.subscriptions.update(fullSession.subscription as string, {
+    //   default_payment_method: pm,
+    // });
 
     console.log('IS IT COMING HEREE?? CHECK 1', businessId);
 
