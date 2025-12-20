@@ -559,13 +559,13 @@ export class StripeService {
     console.log('fullSession.subscription:', fullSession.subscription);
     console.log('fullSession.customer:', fullSession.customer);
 
-    // await this.stripe.customers.update(fullSession.customer as string, {
-    //   invoice_settings: { default_payment_method: pm },
-    // });
+    await this.stripe.customers.update(fullSession.customer as string, {
+      invoice_settings: { default_payment_method: pm },
+    });
 
-    // await this.stripe.subscriptions.update(fullSession.subscription as string, {
-    //   default_payment_method: pm,
-    // });
+    await this.stripe.subscriptions.update(subscriptionId as string, {
+      default_payment_method: pm,
+    });
 
     console.log('IS IT COMING HEREE?? CHECK 1', businessId);
 
