@@ -4473,7 +4473,7 @@ export class BusinessService {
           this.businessIndModel.findById(business.businessIndustry).lean(),
         ]);
         let businessCategoryTitles = categories.map((cat) => cat.title);
-        this.createBusinessAiAgent(
+        await this.createBusinessAiAgent(
           business.name,
           business.id,
           businessCategoryTitles,
