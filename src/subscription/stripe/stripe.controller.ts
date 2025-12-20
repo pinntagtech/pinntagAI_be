@@ -150,4 +150,16 @@ export class StripeController {
       );
     return result;
   }
+
+
+  @Get('products/list')
+  @UseGuards(JwtGuard2)
+  async productsList(
+    @TokenDecoder() user: DecodedUser,
+    // @Body() dto: UpgradePlanDto,
+  ) {
+    const result =
+      await this.stripeService.getProducts();
+    return result;
+  }
 }

@@ -400,8 +400,8 @@ export class StripeService {
       },
       subscription_data: {
         metadata: { businessId: String(business._id), priceId: price.id },
-        billing_cycle_anchor: Math.floor(Date.now() / 1000),
-        proration_behavior: 'none',
+        // billing_cycle_anchor: Math.floor(Date.now() / 1000),
+        // proration_behavior: 'none',
       },
 
       // ui_mode: 'hosted',
@@ -752,9 +752,6 @@ export class StripeService {
   }
 
   private async onPaymentSucceeded(invoice: Stripe.Invoice) {
-    const user = await this.userModel.findOne({
-      stripeCustomerId: invoice.customer,
-    });
     const {
       businessProfile,
       dbSubscriptionId,
@@ -781,7 +778,7 @@ export class StripeService {
               Number(existingLocationCount) - Number(newLocationCount),
             ) || existingLocationCount
           : 1,
-      user: user._id,
+      // user: user._id,
       business: new mongoose.Types.ObjectId(businessProfile),
       status: TransactionStatus.SUCCESS,
       stripeInvoiceId: invoice.id,

@@ -8,7 +8,7 @@ import { CurrencyTypes } from 'src/enums/user.enum';
 
 export enum BillingInterval {
   ANNUAL = 'annual',
-  MONTHLY = 'monthly',
+  MONTHLY = 'monthly'
 }
 
 @Schema({ timestamps: true })
