@@ -556,7 +556,7 @@ export class StripeService {
     const pm = pi.payment_method as string;
 
     console.log('PAYMENT METHOD ID:::', pm);
-    console.log('fullSession.subscription:', fullSession.subscription);
+    console.log('fullSession.subscription:', fullSession.subscription['id']);
     console.log('fullSession.customer:', fullSession.customer);
 
     await this.stripe.customers.update(fullSession.customer as string, {
