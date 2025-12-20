@@ -515,7 +515,7 @@ export class StripeService {
     console.log(`Business ID from session metadata: ${businessId}`);
     if (!customerId || !subscriptionId || !businessId) return;
 
-    console.log("Checkout completed - processing subscription... 1 ");
+    console.log('Checkout completed - processing subscription... 1 ');
 
     // Find or create our internal Subscription record
     // Map Stripe price -> internal product/price if needed (you have that mapping).
@@ -528,7 +528,7 @@ export class StripeService {
       stripePriceId: priceId,
     });
     if (!internalSubPrice) return;
-     console.log("Checkout completed - processing subscription... 1 ");
+    console.log('Checkout completed - processing subscription... 1 ');
 
     const invoice = await this.stripe.invoices.retrieve(
       stripeSub.latest_invoice as string,
@@ -555,10 +555,6 @@ export class StripeService {
 
     const pm = pi.payment_method as string;
 
-    console.log('PAYMENT METHOD ID:::', pm);
-    console.log('fullSession.subscription:', fullSession.subscription['id']);
-    console.log('fullSession.customer:', fullSession.customer);
-
     await this.stripe.customers.update(fullSession.customer as string, {
       invoice_settings: { default_payment_method: pm },
     });
@@ -566,8 +562,6 @@ export class StripeService {
     await this.stripe.subscriptions.update(subscriptionId as string, {
       default_payment_method: pm,
     });
-
-    console.log('IS IT COMING HEREE?? CHECK 1', businessId);
 
     // Here, you likely have SubscriptionPrice documents with stripePriceId; fetch them:
     const internalSub = await this.subscriptionModel.findOneAndUpdate(
@@ -759,95 +753,67 @@ export class StripeService {
   }
 
   private async onPaymentSucceeded(invoice: Stripe.Invoice) {
-    const {
-      businessProfile,
-      dbSubscriptionId,
-      existingLocationCount,
-      newLocationCount,
-    } = invoice.subscription_details.metadata;
+    // invoice.subscription, invoice.customer, invoice.total, invoice.currency, invoice.id
+    const subscriptionId = invoice.subscription as string | null;
+    if (!subscriptionId) return;
 
-    const subscription = await this.stripe.subscriptions.retrieve(
-      invoice.subscription.toString(),
+    const internalSub = await this.subscriptionModel.findOneAndUpdate(
+      { stripeSubscriptionId: subscriptionId },
+      {
+        status: SubscriptionStatus.ACTIVE,
+        endDate: invoice.lines?.data?.[0]?.period?.end
+          ? new Date(invoice.lines.data[0].period.end * 1000)
+          : undefined,
+      },
     );
 
-    if (subscription.status === 'trialing') {
-      console.log('webhook: Subscription Trial Active');
-      return;
-    }
-    await this.transactionModel.create({
-      platform: SubscriptionSource.STRIPE,
-      description: 'Subscription payment',
-      amount: (invoice.amount_paid / 100).toFixed(2),
-      currency: invoice.currency,
+    let updateObj = {
+      description: `Invoice paid for subscription ${subscriptionId}`,
+      amountMinor: invoice.total, // or amount: invoice.total/100
+      currency: invoice.currency?.toUpperCase(),
+      // quantity: invoice.lines?.data?.[0]?.quantity ?? 1,
       quantity:
-        existingLocationCount !== undefined && newLocationCount !== undefined
-          ? Math.abs(
-              Number(existingLocationCount) - Number(newLocationCount),
-            ) || existingLocationCount
-          : 1,
-      // user: user._id,
-      business: new mongoose.Types.ObjectId(businessProfile),
-      status: TransactionStatus.SUCCESS,
-      stripeInvoiceId: invoice.id,
-      subscription: new mongoose.Types.ObjectId(dbSubscriptionId),
-      stripeSubscription: invoice.subscription as any,
-      invoiceFileUrl: invoice.invoice_pdf,
-      isForProrate: this.isInvoiceProrate(invoice),
-      stripeLogs: event,
-      startDate: new Date(subscription.current_period_start * 1000),
-      endDate: new Date(subscription.current_period_end * 1000),
-    });
+        invoice.lines?.data?.[invoice.lines.data.length - 1]?.quantity ?? 1,
+      status: TransactionStatus.SUCCESS, // mark success now
+      success: true,
+      transactionDate: invoice.status_transitions?.paid_at
+        ? new Date(invoice.status_transitions.paid_at * 1000)
+        : new Date(),
+      startDate: invoice.lines?.data?.[0]?.period?.start
+        ? new Date(invoice.lines.data[0].period.start * 1000)
+        : undefined,
+      endDate: invoice.lines?.data?.[0]?.period?.end
+        ? new Date(invoice.lines.data[0].period.end * 1000)
+        : undefined,
+    };
 
-    if (businessProfile && newLocationCount !== undefined) {
-      await this.businessModel.updateOne(
-        { _id: new mongoose.Types.ObjectId(businessProfile) },
-        {
-          // $addToSet: { subscriptions: createdSubscription._id },
-          $set: { locationCount: Number(newLocationCount) },
-        },
-      );
-    }
-
-    const subscriptionItem = subscription.items.data[0];
-    const price = subscriptionItem.price;
-    const recurring = price.recurring;
-    // Fetch and display the current billing period
-    const currentPeriodStart = subscription.current_period_start;
-    const currentPeriodEnd = subscription.current_period_end;
-
-    if (recurring) {
-      const interval = recurring.interval; // month, year
-
-      const startDate = new Date(currentPeriodStart * 1000);
-      const endDate = new Date(currentPeriodEnd * 1000);
-      const invoiceStartDate = endDate;
-      const invoiceEndDate = dayjs(currentPeriodEnd * 1000)
-        .add(1, interval)
-        .toDate();
-
-      // update date in subscription model
-      await this.subscriptionModel.findOneAndUpdate(
-        {
-          stripeSubscriptionId: subscription.id,
-        },
-        {
-          $set: {
-            startDate,
-            endDate,
-            invoiceEndDate,
-            invoiceStartDate,
-            status:
-              subscription.status === 'past_due' ||
-              subscription.status === 'incomplete'
-                ? SubscriptionStatus.PAUSED
-                : SubscriptionStatus.ACTIVE,
+    if (invoice.discount && invoice.discount.coupon) {
+      const couponCode = invoice.discount.coupon.id;
+      const coupon = await this.couponModel.findOne({ code: couponCode });
+      if (coupon) {
+        await this.couponModel.updateOne(
+          { _id: coupon._id },
+          {
+            $addToSet: { usedBy: internalSub.business },
+            $inc: { usedCount: 1 },
           },
-        },
-      );
-      await this.fetchAndUpdateSubscriptionMetadata(subscription.id, {
-        existingLocationCount: Number(newLocationCount),
-      });
+        );
+        updateObj['coupon'] = coupon._id;
+      }
     }
+    await this.transactionModel.updateOne(
+      { stripeInvoiceId: invoice.id },
+      {
+        $set: {
+          ...updateObj,
+        },
+        $setOnInsert: {
+          platform: SubscriptionSource.STRIPE,
+          stripeSubscriptionId: subscriptionId,
+        },
+      },
+      { upsert: true },
+    );
   }
 
   async createSubscription(
