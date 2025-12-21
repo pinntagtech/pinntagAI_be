@@ -381,7 +381,7 @@ export class BusinessService {
 
         let foundUser = await this.businessUserModel
           .findOne({
-            email: data.phone,
+            phone: data.phone,
             countryCode: data.countryCode,
           })
           .select('-password');
@@ -396,7 +396,7 @@ export class BusinessService {
             return {
               success: true,
               message:
-                'Business User already found with this mobile, OTP resent',
+                'User already exists with this mobile, OTP resent',
               data: foundUser,
             };
           }
