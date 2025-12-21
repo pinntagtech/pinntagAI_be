@@ -5286,15 +5286,23 @@ export class EventService2 {
           data.scheduleType == ScheduleTypes.RECURRING &&
           data.recurringSchedule
         ) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
           let startDate = new Date(data.recurringSchedule.startDate);
+          startDate.setHours(0, 0, 0, 0);
+
           let endDate = new Date(data.recurringSchedule.endDate);
-          if (startDate < new Date(Date.now())) {
+          endDate.setHours(0, 0, 0, 0);
+
+          if (startDate < today) {
             return {
               success: false,
               message: `Start date cannot be in past`,
             };
           }
-          if (endDate < new Date(Date.now())) {
+
+          if (endDate < today) {
             return {
               success: false,
               message: `End date cannot be in past`,
