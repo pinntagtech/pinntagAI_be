@@ -581,10 +581,13 @@ export class EventService2 {
     console.log('Required occurrence:', requiredOccurrence);
 
     if (eventInfo.eventSchedule.length == 1) {
-      eventDescription = getStringDateTzWithTime(new Date(requiredOccurrence.start));
+      eventDescription = getStringDateTzWithTime(
+        new Date(requiredOccurrence.start),
+      );
     } else {
       eventDescription =
-        getStringDateTzWithTime(new Date(requiredOccurrence.start)) + '(plus more)';
+        getStringDateTzWithTime(new Date(requiredOccurrence.start)) +
+        '(plus more)';
     }
     const result = await this.dynamicLinkService.generateShortLink(eventUrl, {
       title,
@@ -3538,7 +3541,7 @@ export class EventService2 {
             schedules: 1,
           },
         },
-        { $sort: { distance:1,createdAt: -1, _id: 1 } },
+        { $sort: { distance: 1, createdAt: -1, _id: 1 } },
         {
           $facet: {
             data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -6277,19 +6280,23 @@ export class EventService2 {
                           $and: [
                             { $eq: ['$$schedule.type', 'recurring'] },
                             {
-                              $and: [
-                                {
-                                  $gte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    startDate,
-                                  ],
-                                },
-                                {
-                                  $lte: [
-                                    '$$schedule.recurringSchedule.endDate',
-                                    endDate,
-                                  ],
-                                },
+                              // $and: [
+                              //   {
+                              //     $gte: [
+                              //       '$$schedule.recurringSchedule.endDate',
+                              //       startDate,
+                              //     ],
+                              //   },
+                              //   {
+                              //     $lte: [
+                              //       '$$schedule.recurringSchedule.endDate',
+                              //       endDate,
+                              //     ],
+                              //   },
+                              // ],
+                              $lt: [
+                                '$$schedule.recurringSchedule.endDate',
+                                new Date(), // endDate is in the past
                               ],
                             },
                           ],
@@ -8646,7 +8653,6 @@ export class EventService2 {
         cat.tags.map((t) => t.title),
       );
 
-
       // console.log('Tag Recommendations:', allTitles);
 
       return {
@@ -8661,7 +8667,4 @@ export class EventService2 {
       };
     }
   }
-
-
-
 }
