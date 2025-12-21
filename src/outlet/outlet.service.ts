@@ -927,7 +927,7 @@ export class OutletService {
         match['vehicleType'] = vehicleType;
       }
 
-      if(status !== undefined){
+      if(status !== undefined && status !== ''){
         status = status === 'true'? true:false;
         match['isActive'] = status;
       }
