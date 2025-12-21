@@ -734,6 +734,13 @@ export class StripeService {
   }
 
   private async onSubscriptionUpdated(sub: Stripe.Subscription) {
+    const newProduct = await this.subscriptionProductModel.findOne({
+      stripeProductId: sub.items.data[0]?.price.product as string,
+    })
+    const newPrice = await this.subscriptionPriceModel.findOne({
+      stripePriceId: sub.items.data[0]?.price.id as string,
+    });
+    if (newProduct && newPrice) {
     await this.subscriptionModel.findOneAndUpdate(
       { stripeSubscriptionId: sub.id },
       {
@@ -748,8 +755,12 @@ export class StripeService {
         endDate: sub.current_period_end
           ? new Date(sub.current_period_end * 1000)
           : undefined,
+        locationsAllowed: sub.items.data[0]?.quantity,
+        product: newProduct._id,
+        price: newPrice._id,
       },
     );
+  }
   }
 
   private async onPaymentSucceeded(invoice: Stripe.Invoice) {
