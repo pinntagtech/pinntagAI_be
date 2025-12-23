@@ -749,34 +749,34 @@ export class AuthService {
     const updateObj: Record<string, any> = Object.fromEntries(
       Object.entries(personalDetailDTO).filter(([_, value]) => value !== ''),
     );
-    if (updateObj.email) {
-      const userFound = await this.userModel.findOne({
-        email: updateObj.email,
-      });
-      if (userFound) {
-        return {
-          success: false,
-          message: 'User with this mail already exists!',
-        };
-      }
-    }
-    if (updateObj.phone && updateObj.countryCode) {
-      const userFound = await this.userModel.findOne({
-        phone: updateObj.phone,
-        countryCode: updateObj.countryCode,
-      });
-      if (userFound) {
-        return {
-          success: false,
-          message: 'User with this mail already exists!',
-        };
-      }
-    }
+    // if (updateObj.email && updateObj.email !== '') {
+    //   const userFound = await this.userModel.findOne({
+    //     email: updateObj.email,
+    //   });
+    //   if (userFound) {
+    //     return {
+    //       success: false,
+    //       message: 'User with this mail already exists!',
+    //     };
+    //   }
+    // }
+    // if (updateObj.phone && updateObj.countryCode && updateObj.phone !== '') {
+    //   const userFound = await this.userModel.findOne({
+    //     phone: updateObj.phone,
+    //     countryCode: updateObj.countryCode,
+    //   });
+    //   if (userFound) {
+    //     return {
+    //       success: false,
+    //       message: 'User with this mail already exists!',
+    //     };
+    //   }
+    // }
 
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
 
-    await this.userModel.updateOne({ _id: id }, { $set: updateObj });
+    await this.userModel.updateOne({ _id: new mongoose.Types.ObjectId(id) }, { $set: updateObj });
 
     return {
       success: true,

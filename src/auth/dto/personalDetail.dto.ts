@@ -28,17 +28,17 @@ export class PersonDetailDto {
   @IsIn([Genders.FEMALE, Genders.MALE, Genders.OTHER, Genders.RATHER_NOT_SAY])
   gender: string;
 
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value.toLowerCase())
-  @Transform(({ value }) => value.trim())
-  email: string;
+  // @IsOptional()
+  // @IsString()
+  // @Transform(({ value }) => value.toLowerCase())
+  // @Transform(({ value }) => value.trim())
+  // email: string;
 
-  @IsOptional()
-  @IsString()
-  phone: string;
+  // @IsOptional()
+  // @IsString()
+  // phone: string;
 
-  @IsOptional()
-  @IsString()
-  countryCode: string;
+  // @IsOptional()
+  // @IsString()
+  // countryCode: string;
 }
