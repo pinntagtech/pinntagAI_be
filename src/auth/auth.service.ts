@@ -776,7 +776,10 @@ export class AuthService {
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
 
-    await this.userModel.updateOne({ _id: new mongoose.Types.ObjectId(id) }, { $set: updateObj });
+    await this.userModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { $set: updateObj },
+    );
 
     return {
       success: true,
@@ -6728,6 +6731,16 @@ export class AuthService {
                     activeSubscription: {
                       $arrayElemAt: ['$activeSubscription', 0],
                     },
+                    businessIndustryId: {
+                      $arrayElemAt: ['$businessIndustry._id', 0],
+                    },
+                    businessCategoryIds: {
+                      $map: {
+                        input: '$businessCategories',
+                        as: 'bc',
+                        in: '$$bc._id',
+                      },
+                    },
                   },
                 },
               ],
@@ -8126,11 +8139,7 @@ export class AuthService {
     }
   }
 
-  async userCheckOut(
-    userId: string,
-    businessId: string,
-    locationId: string,
-  ) {
+  async userCheckOut(userId: string, businessId: string, locationId: string) {
     try {
       const activeCheckIn = await this.checkInModel.findOneAndUpdate(
         {
