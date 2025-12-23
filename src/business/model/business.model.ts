@@ -411,36 +411,34 @@ export class Business {
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);
 
-export const generateRandomCode = (): string => {
-  const getRandomDigit = () => Math.floor(Math.random() * 10).toString();
-  const getRandomLetter = () =>
-    String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+const generateRandomDigits = (length: number): string =>
+  Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
 
-  const digits1 = Array.from({ length: 4 }, getRandomDigit).join('');
-  const letters = Array.from({ length: 4 }, getRandomLetter).join('');
-  const digits2 = Array.from({ length: 4 }, getRandomDigit).join('');
+const generateRandomLetters = (length: number): string =>
+  Array.from({ length }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+  ).join('');
 
-  return `${digits1}-${letters}-${digits2}`;
-};
 const generateNamePrefix = (name: string): string => {
-  const upperName = (name || '').toUpperCase();
-  const needed = 4 - upperName.length;
-  if (needed > 0) {
-    // pad with random letters
-    const randomLetters = Array.from({ length: needed }, () =>
-      String.fromCharCode(65 + Math.floor(Math.random() * 26)),
-    ).join('');
-    return upperName + randomLetters;
+  const upperName = (name || '').replace(/[^A-Z]/gi, '').toUpperCase();
+
+  if (upperName.length >= 4) {
+    return upperName.substring(0, 4);
   }
-  return upperName.substring(0, 4);
+
+  // pad with random letters if name is short
+  const padding = generateRandomLetters(4 - upperName.length);
+  return upperName + padding;
 };
 
 // pre-save hook
 BusinessSchema.pre<BusinessDocument>('save', function (next) {
   if (!this.uniqueId) {
-    const prefix = generateNamePrefix(this.name);
-    const code = generateRandomCode();
-    this.uniqueId = `${prefix}-${code}`;
+    const prefix = generateNamePrefix(this.name); // 4 letters
+    const digits = generateRandomDigits(3);       // 3 digits
+    const letters = generateRandomLetters(3);     // 3 letters
+
+    this.uniqueId = `${prefix}${digits}${letters}`;
   }
   next();
 });

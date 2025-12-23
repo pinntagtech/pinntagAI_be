@@ -1811,13 +1811,13 @@ export class BusinessService {
             industryTitle,
             createdBusiness.website,
           ),
+          this.generateBusinessQR(createdBusiness.id),
+          this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
           this.smsService.sendSMS(
             createdBusiness.id,
             fullPhoneNumber,
             SMSType.OTP,
           ),
-          this.generateBusinessQR(createdBusiness.id),
-          this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
         ]).catch((err) => logger.error('Error in background tasks:', err));
       });
 
@@ -7170,7 +7170,7 @@ export class BusinessService {
       const business = await this.businessModel.findById(businessId);
 
       const url = process.env.BUSINESS_LINK_URL + businessId;
-
+      console.log('Generating short link for URL FORRRR BUSINESSSSS:', url);
       const { shortLink } = await this.appsOnAirLinkService.generateShortLink(
         url,
         {
@@ -7187,11 +7187,12 @@ export class BusinessService {
       const businessQR = await this.driveService.generateQrCode(
         shortLink,
         business.name,
-        business.creator.toString(),
+        businessId,
         qrFileCategory.id,
         business.drive.toString(),
       );
-
+      console.log('Business QR Code:', businessQR);
+      console.log('SHORTLINK:', shortLink);
       await this.businessModel.updateOne(
         { _id: business._id },
         {
@@ -7770,4 +7771,5 @@ export class BusinessService {
       };
     }
   }
+  
 }

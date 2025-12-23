@@ -16,7 +16,10 @@ import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { TokenDecoder } from 'src/decorators/tokenDecoder.decorator';
 import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { NotificationTypes } from 'src/enums/event.enums';
-import { CreateBroadcastDto, UpdateBroadcastDto } from './dto/create-broadcast.dto';
+import {
+  CreateBroadcastDto,
+  UpdateBroadcastDto,
+} from './dto/create-broadcast.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { isValidObjectId } from 'mongoose';
 
@@ -163,7 +166,6 @@ export class NotificationController {
     return { message: result.message, data: result.data };
   }
 
-
   @Post('broadcast/:id')
   @UseGuards(JwtGuard2)
   @UseInterceptors(
@@ -197,8 +199,18 @@ export class NotificationController {
     return { message: result.message, data: result.data };
   }
 
-
-
+  @Delete('broadcast/:id')
+  @UseGuards(JwtGuard2)
+  async deleteBroadcast(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.notificationService.deleteBroadcast(id, user);
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return { message: result.message };
+  }
 
   @Get('broadcast/:id')
   @UseGuards(JwtGuard2)

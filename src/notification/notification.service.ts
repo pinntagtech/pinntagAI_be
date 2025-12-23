@@ -407,6 +407,34 @@ export class NotificationService {
     };
   }
 
+  async deleteBroadcast( id: string, user: DecodedUser) {
+    const broadcast = await this.broadcastModel.findById(id);
+    if (!broadcast) {
+      return {
+        success: false,
+        message: 'Broadcast not found',
+      };
+    }
+    if (broadcast.schedulerId && broadcast.schedulerId !== '') {
+      await this.redisBullService.removeRedisQueueJob(broadcast.schedulerId);
+    }
+    const feed = await this.feedModel.findOne({ content: broadcast.id });
+    if (feed) {
+      await this.feedModel.deleteOne({ _id: feed._id });
+    }
+
+    const result = await this.broadcastModel.deleteOne({
+      _id: new mongoose.Types.ObjectId(id),
+    });
+
+    return {
+      success: true,
+      message: 'Broadcast deleted successfully',
+      // data: result,
+    };
+  }
+
+
   async getBroadcast(id: string) {
     const broadcast = await this.broadcastModel.findById(id);
     if (!broadcast) {

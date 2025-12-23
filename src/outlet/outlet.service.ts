@@ -1871,6 +1871,40 @@ export class OutletService {
       };
     }
   }
+  async deleteSpot(id: string, user: DecodedUser) {
+    try {
+      const foundSpot = await this.mobileSpotsModel.findById(id);
+      if (!foundSpot) {
+        return {
+          success: false,
+          message: 'Spot not found.',
+        };
+      }
+      if (user.businessProfile.toString() !== foundSpot.business.toString()) {
+        return {
+          success: false,
+          message: 'Only authorised to delete your own spot.',
+        };
+      }
+
+      await this.mobileSpotsModel.deleteOne({ _id: foundSpot._id });
+      await this.outletModel.updateOne(
+        { _id: foundSpot.outlet },
+        { $pull: { spots: foundSpot._id } },
+      );
+
+      return {
+        success: true,
+        message: 'Spot deleted successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error,
+      };
+    }
+  }
+
 
   async activateOutlet(id: string, user: DecodedUser) {
     try {

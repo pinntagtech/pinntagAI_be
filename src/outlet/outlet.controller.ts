@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Put,
+  Delete,
 } from '@nestjs/common';
 import { OutletService } from './outlet.service';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
@@ -370,6 +371,23 @@ export class OutletController {
       return {
         message: result.message,
         data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+  
+  @Delete('deleteSpot/:id')
+  @UseGuards(JwtGuard2)
+  async deleteSpot(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.outletService.deleteSpot(id, user);
+    if (result.success) {
+      return {
+        message: result.message,
+        // data: result.data,
       };
     } else {
       throw new BadRequestException(result.message);
