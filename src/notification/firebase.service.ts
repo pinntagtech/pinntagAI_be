@@ -20,25 +20,27 @@ admin.initializeApp({
 
 @Injectable()
 export class FirebaseService {
-  sendNotification(token: string, title: string, body: string, data: any) {
-    console.log('sending notification......');
-    admin
-      .messaging()
-      .send({
-        notification: {
-          title,
-          body,
-        },
-        data,
-        token,
-      })
-      .then((response) => {
-        console.log('Successfully sent message:', response);
-      })
-      .catch((error) => {
-        console.log('Error sending message:', error);
-      });
+  async sendNotification(token: string, title: string, body: string, data: any) {
+    const flatData: Record<string, string> = {};
+    if (data) {
+      for (const [k, v] of Object.entries(data)) {
+        flatData[k] = typeof v === 'string' ? v : JSON.stringify(v);
+      }
+    }
+  console.log('sending notification......', token, title, body, data);
+  try {
+    const response = await admin.messaging().send({
+      notification: { title, body },
+      data: flatData,
+      token,
+    });
+    console.log('Successfully sent message:', response);
+    return response;
+  } catch (error) {
+    console.log('Error sending message:', error);
+    throw error; // or return null if you want to swallow the error
   }
+}
 
   async sendMultipleNotifications(
     tokens: string[],

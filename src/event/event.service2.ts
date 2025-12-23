@@ -2209,7 +2209,7 @@ export class EventService2 {
                       fcmTokens[j].token,
                       event.title,
                       message,
-                      { data: NotificationTypes.EVENT, id: event.id },
+                      { data: {notificationType:NotificationTypes.EVENT, id: event.id } },
                     );
                   }
                 }

@@ -163,7 +163,7 @@ export class RedisBullService {
                 token.token,
                 broadcast.title,
                 broadcast.message,
-                { data: NotificationTypes.BROADCAST, id: broadcast.id },
+                { data:{notificationType: NotificationTypes.BROADCAST, id: broadcast.id} },
               );
             }
           }

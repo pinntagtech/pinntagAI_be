@@ -323,7 +323,7 @@ export class RewardsService {
                   token.token,
                   reward.title,
                   message,
-                  { data: NotificationTypes.EVENT, id: reward.id },
+                  { data: {notificationType: NotificationTypes.REWARD, id: reward.id} },
                 );
               }
             }
