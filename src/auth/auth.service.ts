@@ -5560,59 +5560,92 @@ export class AuthService {
           as: 'schedules',
         },
       },
-      // {
-      //   $addFields: {
-      //     schedules: {
-      //       $filter: {
-      //         input: '$schedules',
-      //         as: 'schedule',
-      //         cond: {
-      //           $or: [
-      //             {
-      //               $and: [
-      //                 { $eq: ['$$schedule.type', 'fixed'] },
-      //                 {
-      //                   $and: [
-      //                     {
-      //                       $gte: ['$$schedule.fixedSchedule.date', startDate],
-      //                     },
-      //                     { $lte: ['$$schedule.fixedSchedule.date', endDate] },
-      //                   ],
-      //                 },
-      //               ],
-      //             },
-      //             {
-      //               $and: [
-      //                 { $eq: ['$$schedule.type', 'recurring'] },
-      //                 {
-      //                   $and: [
-      //                     {
-      //                       $gte: [
-      //                         '$$schedule.recurringSchedule.endDate',
-      //                         startDate,
-      //                       ],
-      //                     },
-      //                     {
-      //                       $lte: [
-      //                         '$$schedule.recurringSchedule.endDate',
-      //                         endDate,
-      //                       ],
-      //                     },
-      //                   ],
-      //                 },
-      //               ],
-      //             },
-      //           ],
-      //         },
-      //       },
-      //     },
-      //   },
-      // },
-      // {
-      //   $match: {
-      //     $expr: { $gt: [{ $size: '$schedules' }, 0] },
-      //   },
-      // },
+     {
+        $addFields: {
+          schedules: {
+            $filter: {
+              input: '$schedules',
+              as: 'schedule',
+              cond: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'fixed'] },
+                      {
+                        $and: [
+                          {
+                            $gte: ['$$schedule.fixedSchedule.date', startDate],
+                          },
+                          { $lte: ['$$schedule.fixedSchedule.date', endDate] },
+                          {
+                            $gte: [
+                              {
+                                $let: {
+                                  vars: {
+                                    durations:
+                                      '$$schedule.fixedSchedule.durations',
+                                    lastIndex: {
+                                      $subtract: [
+                                        {
+                                          $size:
+                                            '$$schedule.fixedSchedule.durations',
+                                        },
+                                        1,
+                                      ],
+                                    },
+                                  },
+                                  in: {
+                                    $getField: {
+                                      field: 'endTime',
+                                      input: {
+                                        $arrayElemAt: [
+                                          '$$durations',
+                                          '$$lastIndex',
+                                        ],
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                              new Date(), // or ISO string like new Date().toISOString()
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ['$$schedule.type', 'recurring'] },
+                      {
+                        $and: [
+                          {
+                            $gte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              startDate,
+                            ],
+                          },
+                          {
+                            $lte: [
+                              '$$schedule.recurringSchedule.endDate',
+                              endDate,
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: '$schedules' }, 0] },
+        },
+      },
       {
         $lookup: {
           from: 'users',
