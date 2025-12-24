@@ -201,6 +201,7 @@ import {
   FeatureLimitSchema,
 } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -300,6 +301,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
       { name: Scratch.name, schema: ScratchSchema },
       { name: RewardVisit.name, schema: RewardVisitSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
   ],
   providers: [

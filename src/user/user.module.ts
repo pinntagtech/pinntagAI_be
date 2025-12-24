@@ -155,6 +155,7 @@ import {
 import { Coupon, CouponSchema } from 'src/subscription/models/coupon.model';
 import { FacebookController } from './facebook.controller';
 import { FacebookService } from './facebook.service';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -194,6 +195,7 @@ import { FacebookService } from './facebook.service';
         schema: SubscriptionPriceSchema,
       },
       { name: Coupon.name, schema: CouponSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
   ],
   controllers: [UserController,FacebookController],

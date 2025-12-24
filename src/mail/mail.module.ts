@@ -159,6 +159,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Global()
 @Module({
@@ -228,6 +229,7 @@ import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/featur
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: UserReward.name, schema: UserRewardSchema},
       { name: FeatureLimit.name, schema: FeatureLimitSchema},
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
     MailerModule.forRoot({
       transport: {

@@ -172,6 +172,7 @@ import {
   FeatureLimit,
   FeatureLimitSchema,
 } from 'src/subscription/models/feature-limit.model';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -243,6 +244,7 @@ import {
       { name: CheckIn.name, schema: CheckInSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({

@@ -81,6 +81,7 @@ import { HttpModule } from '@nestjs/axios';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { FeatureLimit, FeatureLimitSchema } from 'src/subscription/models/feature-limit.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -131,6 +132,7 @@ import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
       { name: Feed.name, schema: FeedSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema},
       { name: Outlet.name, schema: OutletSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
   ],
   controllers: [NotificationController],

@@ -40,6 +40,7 @@ import {
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 import { BusinessStatus } from 'src/business/enums/business.enum';
+import { ConsumerPurchase } from '../models/consumer-purchase.model';
 
 @Injectable()
 export class StripeService {
@@ -59,6 +60,8 @@ export class StripeService {
     @InjectModel(SubscriptionProduct.name)
     private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
+    @InjectModel(ConsumerPurchase.name)
+    private readonly consumerPurchaseModel: Model<ConsumerPurchase>,
   ) {}
 
   public constructEventFromPayload(
@@ -495,6 +498,28 @@ export class StripeService {
         await this.onSubscriptionDeleted(sub);
         break;
       }
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await this.onFlashDealPaymentSucceeded(pi);
+        break;
+      }
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await this.onFlashDealPaymentFailed(pi);
+        break;
+      }
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.onFlashDealRefunded(charge);
+        break;
+      }
+
+      // Optional but useful for Connect onboarding completion
+      // case 'account.updated': {
+      //   const account = event.data.object as Stripe.Account;
+      //   await this.onConnectAccountUpdated(account);
+      //   break;
+      // }
       default:
         // noop
         break;
@@ -736,31 +761,31 @@ export class StripeService {
   private async onSubscriptionUpdated(sub: Stripe.Subscription) {
     const newProduct = await this.subscriptionProductModel.findOne({
       stripeProductId: sub.items.data[0]?.price.product as string,
-    })
+    });
     const newPrice = await this.subscriptionPriceModel.findOne({
       stripePriceId: sub.items.data[0]?.price.id as string,
     });
     if (newProduct && newPrice) {
-    await this.subscriptionModel.findOneAndUpdate(
-      { stripeSubscriptionId: sub.id },
-      {
-        status:
-          sub.status === 'active'
-            ? SubscriptionStatus.ACTIVE
-            : sub.status === 'past_due'
-              ? SubscriptionStatus.PAST_DUE
-              : sub.status === 'canceled'
-                ? SubscriptionStatus.CANCELLED
-                : SubscriptionStatus.EXPIRED,
-        endDate: sub.current_period_end
-          ? new Date(sub.current_period_end * 1000)
-          : undefined,
-        locationsAllowed: sub.items.data[0]?.quantity,
-        product: newProduct._id,
-        price: newPrice._id,
-      },
-    );
-  }
+      await this.subscriptionModel.findOneAndUpdate(
+        { stripeSubscriptionId: sub.id },
+        {
+          status:
+            sub.status === 'active'
+              ? SubscriptionStatus.ACTIVE
+              : sub.status === 'past_due'
+                ? SubscriptionStatus.PAST_DUE
+                : sub.status === 'canceled'
+                  ? SubscriptionStatus.CANCELLED
+                  : SubscriptionStatus.EXPIRED,
+          endDate: sub.current_period_end
+            ? new Date(sub.current_period_end * 1000)
+            : undefined,
+          locationsAllowed: sub.items.data[0]?.quantity,
+          product: newProduct._id,
+          price: newPrice._id,
+        },
+      );
+    }
   }
 
   private async onPaymentSucceeded(invoice: Stripe.Invoice) {
@@ -824,6 +849,65 @@ export class StripeService {
         },
       },
       { upsert: true },
+    );
+  }
+
+  private async onFlashDealPaymentSucceeded(pi: Stripe.PaymentIntent) {
+    // Only process FlashDeal payments
+    if (pi.metadata?.type !== 'FLASHDEAL') return;
+
+    const paymentIntentId = pi.id;
+
+    // Mark paid in DB
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId },
+      {
+        $set: {
+          status: 'paid',
+          paidAt: new Date(),
+          latestStripeSnapshot: pi,
+        },
+      },
+    );
+
+    // Generate redemption token/QR etc (your logic)
+    // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
+  }
+
+  private async onFlashDealPaymentFailed(pi: Stripe.PaymentIntent) {
+    if (pi.metadata?.type !== 'FLASHDEAL') return;
+
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId: pi.id },
+      {
+        $set: {
+          status: 'failed',
+          failedAt: new Date(),
+          latestStripeSnapshot: pi,
+        },
+      },
+    );
+  }
+
+  private async onFlashDealRefunded(charge: Stripe.Charge) {
+    // charge.payment_intent can be string | PaymentIntent
+    const piId =
+      typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+
+    if (!piId) return;
+
+    // Optional: verify this belongs to a FlashDeal purchase
+    const purchase = await this.consumerPurchaseModel.findOne({
+      paymentIntentId: piId,
+    });
+    if (!purchase) return;
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId: piId },
+      {
+        $set: { status: 'refunded', refundedAt: new Date() },
+      },
     );
   }
 
@@ -1484,4 +1568,54 @@ export class StripeService {
       });
     }
   }
+
+
+  async createConnectOnboardingLink(businessId: string) {
+  const business = await this.businessModel.findById(businessId);
+  if (!business?.stripeAccountId)
+    throw new BadRequestException('Business has no stripeAccountId');
+
+  const base = process.env.APP_BASE_URL!;
+  const link = await this.stripe.accountLinks.create({
+    account: business.stripeAccountId,
+    refresh_url: `${base}/connect/refresh?businessId=${businessId}`,
+    return_url: `${base}/connect/return?businessId=${businessId}`,
+    type: 'account_onboarding',
+  });
+
+  return { url: link.url };
+}
+async createConnectExpressAccount(params: {
+  businessId: string;
+  country: string; // US/GB/IN...
+  email?: string;
+  businessType: 'individual' | 'company';
+}) {
+  const business = await this.businessModel.findById(params.businessId);
+  if (!business) throw new BadRequestException('Business not found');
+
+  if (business.stripeAccountId) {
+    return { stripeAccountId: business.stripeAccountId };
+  }
+
+  const account = await this.stripe.accounts.create({
+    type: 'express',
+    country: params.country,
+    email: params.email,
+    business_type: params.businessType,
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+    metadata: { businessId: params.businessId },
+  });
+
+  business.stripeAccountId = account.id;
+  business.stripeOnboardingComplete = false;
+  await business.save();
+
+  return { stripeAccountId: account.id };
+}
+
+
 }

@@ -197,6 +197,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { RewardVisit, RewardVisitSchema } from './model/rewardVisit.model';
 import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -286,6 +287,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
       { name: RewardVisit.name, schema: RewardVisitSchema },
       { name: Scratch.name, schema: ScratchSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
   ],
   controllers: [RewardsController],

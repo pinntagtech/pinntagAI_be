@@ -162,4 +162,18 @@ export class StripeController {
       await this.stripeService.getProducts();
     return result;
   }
+
+  @Post('connect/create-account')
+@UseGuards(JwtGuard2)
+async createAccount(@Body() body: any) {
+  return this.stripeService.createConnectExpressAccount(body);
+}
+
+@Post('connect/onboard-link')
+@UseGuards(JwtGuard2)
+async onboardLink(@Body('businessId') businessId: string) {
+  return this.stripeService.createConnectOnboardingLink(businessId);
+}
+
+
 }

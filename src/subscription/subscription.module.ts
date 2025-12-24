@@ -66,6 +66,7 @@ import {
 import { Event, EventSchema } from 'src/event/models/event.model';
 import { Outlet, OutletSchema } from 'src/outlet/model/outlet.model';
 import { Drive, DriveSchema } from 'src/drive/models/drive.model';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from './models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { Drive, DriveSchema } from 'src/drive/models/drive.model';
       { name: Event.name, schema: EventSchema },
       { name: Outlet.name, schema: OutletSchema },
       { name: Drive.name, schema: DriveSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
   ],
   controllers: [

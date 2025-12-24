@@ -196,6 +196,7 @@ import { UserSearchActivity, UserSearchActivitySchema } from 'src/user/models/us
 import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchSchema } from 'src/business/model/scratch.model';
 import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.model';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -288,6 +289,7 @@ import { RewardVisit, RewardVisitSchema } from 'src/rewards/model/rewardVisit.mo
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: Scratch.name, schema: ScratchSchema}, 
       { name: RewardVisit.name, schema: RewardVisitSchema},
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
 
       // { name: BusinessCategory.name, schema: BusinessCategorySchema },
       // { name: BusinessCountry.name, schema: BusinessCountrySchema },

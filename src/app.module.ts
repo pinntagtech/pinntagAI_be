@@ -196,6 +196,7 @@ import {
 import { CheckIn, CheckInSchema } from './auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
 import { SubscriptionService } from './subscription/subscription.service';
+import { ConsumerPurchase, ConsumerPurchaseSchema } from './subscription/models/consumer-purchase.model';
 
 @Module({
   imports: [
@@ -296,6 +297,7 @@ import { SubscriptionService } from './subscription/subscription.service';
       { name: CheckIn.name, schema: CheckInSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
     ]),
     StripeeModule,
     AuthModule,

@@ -86,6 +86,13 @@ export enum CreatorType {
   BusinessUser = 'BusinessUser',
 }
 
+export const ConnectStatus = {
+  ONBOARDED: 'onboarded',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+}
+
+
 export type BusinessDocument = Business & Document;
 
 @Schema({ timestamps: true })
@@ -404,6 +411,16 @@ export class Business {
 
   @Prop({ default: 0})
   viewsCount: number;
+
+  @Prop()
+  stripeAccountId: string;
+
+  @Prop({ default: ConnectStatus.PENDING })
+  connectStatus: string;
+
+  @Prop({ default: false })
+  stripeOnboardingComplete: boolean;
+
 
   // @Prop({default:false})
   // skipToDashboard: boolean;
