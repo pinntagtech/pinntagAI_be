@@ -418,7 +418,7 @@ export class NotificationService {
     if (broadcast.schedulerId && broadcast.schedulerId !== '') {
       await this.redisBullService.removeRedisQueueJob(broadcast.schedulerId);
     }
-    const feed = await this.feedModel.findOne({ content: broadcast.id });
+    const feed = await this.feedModel.findOne({ content: broadcast._id });
     if (feed) {
       await this.feedModel.deleteOne({ _id: feed._id });
     }
