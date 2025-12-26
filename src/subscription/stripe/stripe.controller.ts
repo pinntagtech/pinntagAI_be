@@ -144,7 +144,7 @@ export class StripeController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
-    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    const secret = this.config.get<string>('STRIPE_CONNECT_WEBHOOK_SECRET');
     if (!secret)
       throw new HttpException(
         'Webhook secret not configured',
@@ -154,7 +154,7 @@ export class StripeController {
     // const payload = req.body;
     const payload = req.rawBody ?? (req.body as any);
     let event: Stripe.Event;
-    const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    const endpointSecret = this.config.get<string>('STRIPE_CONNECT_WEBHOOK_SECRET');
     console.log('ENDPOINT SECRET:::', endpointSecret);
     console.log('PAYLOAD:::', payload);
     console.log('SIGNATURE:::', signature);
@@ -221,6 +221,12 @@ async createAccount(@Body() body: any) {
 @UseGuards(JwtGuard2)
 async onboardLink(@Body('businessId') businessId: string) {
   return this.stripeService.createConnectOnboardingLink(businessId);
+}
+
+@Get('connect/syncAccountStatus')
+@UseGuards(JwtGuard2)
+async syncAccountStatus(@Body('businessId') businessId: string) {
+  return this.stripeService.syncAccountStatus(businessId);
 }
 
 

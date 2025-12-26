@@ -1698,4 +1698,21 @@ export class StripeService {
 
     return { stripeAccountId: account.id };
   }
+    async syncAccountStatus(businessId: string) {
+      const business = await this.businessModel.findById(businessId);
+    if (!business?.stripeAccountId)
+      throw new BadRequestException('Business has no stripeAccountId');
+
+    const stripeAccountId = business.stripeAccountId;
+    const account = await this.stripe.accounts.retrieve(
+      stripeAccountId,
+    );
+
+    // A common “ready” condition: charges_enabled and payouts_enabled true
+    const onboardingComplete =
+      !!(account as any).charges_enabled && !!(account as any).payouts_enabled;
+
+    return { account, onboardingComplete };
+  }
+
 }
