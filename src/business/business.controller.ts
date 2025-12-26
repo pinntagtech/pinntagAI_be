@@ -1553,10 +1553,12 @@ export class BusinessController {
     @TokenDecoder() user: DecodedUser,
     @UploadedFiles() images: Express.Multer.File[],
     @Query('businessId') businessId: string,
+    @Query('businessStructure') businessStructure: 'individual' | 'company',
   ) {
     const result = await this.businessService.uploadVerificationDocs(
       user,
       images,
+      businessStructure,
       businessId,
     );
     if (result.success) {

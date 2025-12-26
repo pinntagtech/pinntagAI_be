@@ -45,7 +45,7 @@ export class StripeController {
       this.config.get<string>('CHECKOUT_CANCEL_URL') ||
       'https://dev.business.pinntag.com/dashboard/subscription/cancel';
 
-     if (dto.successUrl) {
+    if (dto.successUrl) {
       successUrl = dto.successUrl;
     }
     if (dto.cancelUrl) {
@@ -137,7 +137,6 @@ export class StripeController {
     }
   }
 
-
   @Post('connect/webhooks')
   @HttpCode(200)
   async handleStripeConnectWebhook(
@@ -154,7 +153,9 @@ export class StripeController {
     // const payload = req.body;
     const payload = req.rawBody ?? (req.body as any);
     let event: Stripe.Event;
-    const endpointSecret = this.config.get<string>('STRIPE_CONNECT_WEBHOOK_SECRET');
+    const endpointSecret = this.config.get<string>(
+      'STRIPE_CONNECT_WEBHOOK_SECRET',
+    );
     console.log('ENDPOINT SECRET:::', endpointSecret);
     console.log('PAYLOAD:::', payload);
     console.log('SIGNATURE:::', signature);
@@ -199,35 +200,38 @@ export class StripeController {
     return result;
   }
 
-
   @Get('products/list')
   @UseGuards(JwtGuard2)
   async productsList(
     @TokenDecoder() user: DecodedUser,
     // @Body() dto: UpgradePlanDto,
   ) {
-    const result =
-      await this.stripeService.getProducts();
+    const result = await this.stripeService.getProducts();
     return result;
   }
 
   @Post('connect/create-account')
-@UseGuards(JwtGuard2)
-async createAccount(@Body() body: any) {
-  return this.stripeService.createConnectExpressAccount(body);
-}
+  @UseGuards(JwtGuard2)
+  async createAccount(@Body() body: any) {
+    return this.stripeService.createConnectExpressAccount(body);
+  }
 
-@Post('connect/onboard-link')
-@UseGuards(JwtGuard2)
-async onboardLink(@Body('businessId') businessId: string) {
-  return this.stripeService.createConnectOnboardingLink(businessId);
-}
-
-@Get('connect/syncAccountStatus')
-@UseGuards(JwtGuard2)
-async syncAccountStatus(@Body('businessId') businessId: string) {
-  return this.stripeService.syncAccountStatus(businessId);
-}
+  @Post('connect/onboard-link')
+  @UseGuards(JwtGuard2)
+  async onboardLink(@Body('businessId') businessId: string) {
+    return this.stripeService.createConnectOnboardingLink(businessId);
+  }
 
 
+  @Post('connect/updateAccount')
+  @UseGuards(JwtGuard2)
+  async updateAccount(@Body('businessId') businessId: string) {
+    return this.stripeService.createStripeExpressLoginLink(businessId);
+  }
+
+  @Post('connect/syncAccountStatus')
+  @UseGuards(JwtGuard2)
+  async syncAccountStatus(@Body('businessId') businessId: string) {
+    return this.stripeService.syncAccountStatus(businessId);
+  }
 }

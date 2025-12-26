@@ -89,6 +89,11 @@ export const ConnectStatus = {
   REJECTED: 'rejected',
 };
 
+export const BusinessStructure = {
+  INDIVIDUAL: 'individual',
+  COMPANY: 'company',
+};
+
 @Schema({ _id: false }) // important: embedded, no separate _id
 export class StripeAccountStatus {
   @Prop({ default: false })
@@ -443,6 +448,9 @@ export class Business {
 
   @Prop({ type: StripeAccountStatusSchema })
   stripeAccountStatus?: StripeAccountStatus;
+
+  @Prop({ enum: Object.values(BusinessStructure) })
+  businessStructure: string;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

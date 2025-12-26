@@ -6964,6 +6964,7 @@ export class BusinessService {
   async uploadVerificationDocs(
     user: DecodedUser,
     images: Express.Multer.File[],
+    businessStructure: string,
     businessId?: string,
   ) {
     try {
@@ -7042,6 +7043,7 @@ export class BusinessService {
             $set: {
               addressVerificationDocs: uploadedUrls,
               verificationStatus: VerificationStatus.PENDING,
+              businessStructure: businessStructure,
               // profileCompletionPercentage,
             },
           },

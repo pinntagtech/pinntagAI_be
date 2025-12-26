@@ -223,7 +223,8 @@ export class AdminService {
     @InjectModel(FeaturedAsset.name)
     private readonly featuredAssetModel: Model<FeaturedAsset>,
     @InjectModel(Drive.name) private readonly driveModel: Model<DriveDocument>,
-    @InjectModel(Folder.name) private readonly folderModel: Model<FolderDocument>,
+    @InjectModel(Folder.name)
+    private readonly folderModel: Model<FolderDocument>,
     private readonly httpService: HttpService,
     private readonly s3Service: S3Service,
     private readonly userService: UserService,
@@ -3357,6 +3358,15 @@ export class AdminService {
         },
       );
 
+      if (verificationStatus === VerificationStatus.VERIFIED) {
+        this.stripeService.createConnectExpressAccount({
+          businessId: id,
+          country: 'US',
+          email: business.email,
+          businessType: business.businessStructure as 'individual' | 'company',
+        });
+      }
+
       return {
         success: true,
         message: 'Document verified successfully',
@@ -3691,31 +3701,33 @@ export class AdminService {
       const businesses = await this.businessModel.find({
         // _id: new mongoose.Types.ObjectId('68a0d9072e19fc726daa1345'),
       });
-      for(let business of businesses){
+      for (let business of businesses) {
         const isGalleryExist = await this.folderModel.findOne({
           parentDirectory: new mongoose.Types.ObjectId(business.drive),
           folderName: 'Gallery',
-        })
-        console.log("BusinessID Exists:",business.id);
-        if(isGalleryExist){
+        });
+        console.log('BusinessID Exists:', business.id);
+        if (isGalleryExist) {
           continue;
         }
-        const galleryFolder = await this.driveService.createFolder(business.id, {
-          parentDirectory: business.drive,
-          parentType: 'Drive',
-          folderName: 'Gallery',
-        });
-        await this.businessModel.updateOne(
-        { _id: business._id },
-        {
-          $set: {
-            drive: business.drive,
-            galleryPath: galleryFolder.data._id,
+        const galleryFolder = await this.driveService.createFolder(
+          business.id,
+          {
+            parentDirectory: business.drive,
+            parentType: 'Drive',
+            folderName: 'Gallery',
           },
-        },
-      );
+        );
+        await this.businessModel.updateOne(
+          { _id: business._id },
+          {
+            $set: {
+              drive: business.drive,
+              galleryPath: galleryFolder.data._id,
+            },
+          },
+        );
       }
-
     } catch (error) {
       console.error('💥 runDbQueries Error:', error);
     }

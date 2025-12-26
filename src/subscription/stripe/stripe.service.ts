@@ -543,7 +543,6 @@ export class StripeService {
 
     // Route by event type
     switch (event.type) {
-     
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
         await this.onFlashDealPaymentSucceeded(pi);
@@ -1667,10 +1666,23 @@ export class StripeService {
     return { url: link.url };
   }
 
+  async createStripeExpressLoginLink(businessId: string) {
+    const business = await this.businessModel.findById(businessId);
+    if (!business?.stripeAccountId) {
+      throw new BadRequestException('Business has no stripeAccountId');
+    }
+
+    const loginLink = await this.stripe.accounts.createLoginLink(
+      business.stripeAccountId,
+    );
+
+    return { url: loginLink.url };
+  }
+
   async createConnectExpressAccount(params: {
     businessId: string;
     country: string; // US/GB/IN...
-    email?: string;
+    email: string;
     businessType: 'individual' | 'company';
   }) {
     const business = await this.businessModel.findById(params.businessId);
@@ -1698,21 +1710,34 @@ export class StripeService {
 
     return { stripeAccountId: account.id };
   }
-    async syncAccountStatus(businessId: string) {
-      const business = await this.businessModel.findById(businessId);
+  async syncAccountStatus(businessId: string) {
+    const business = await this.businessModel.findById(businessId);
     if (!business?.stripeAccountId)
       throw new BadRequestException('Business has no stripeAccountId');
 
     const stripeAccountId = business.stripeAccountId;
-    const account = await this.stripe.accounts.retrieve(
-      stripeAccountId,
-    );
+    const account = await this.stripe.accounts.retrieve(stripeAccountId);
 
     // A common “ready” condition: charges_enabled and payouts_enabled true
     const onboardingComplete =
       !!(account as any).charges_enabled && !!(account as any).payouts_enabled;
 
+    await this.businessModel.updateOne(
+      { _id: businessId },
+      {
+        $set: {
+          stripeOnboardingComplete: onboardingComplete,
+          stripeAccountStatus: {
+            charges_enabled: account.charges_enabled,
+            payouts_enabled: account.payouts_enabled,
+            details_submitted: account.details_submitted,
+            currently_due: account.requirements?.currently_due ?? [],
+            disabled_reason: account.requirements?.disabled_reason ?? null,
+          },
+        },
+      },
+    );
+
     return { account, onboardingComplete };
   }
-
 }
