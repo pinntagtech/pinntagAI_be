@@ -137,6 +137,54 @@ export class StripeController {
     }
   }
 
+
+  @Post('connect/webhooks')
+  @HttpCode(200)
+  async handleStripeConnectWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ) {
+    const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    if (!secret)
+      throw new HttpException(
+        'Webhook secret not configured',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    // console.log('request:-', req);
+    // const payload = req.body;
+    const payload = req.rawBody ?? (req.body as any);
+    let event: Stripe.Event;
+    const endpointSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+    console.log('ENDPOINT SECRET:::', endpointSecret);
+    console.log('PAYLOAD:::', payload);
+    console.log('SIGNATURE:::', signature);
+    try {
+      // Verify webhook signature using Stripe SDK
+      console.log('Constructing event from payload...');
+      event = this.stripeService.constructEventFromPayload(
+        payload,
+        signature,
+        endpointSecret,
+      );
+    } catch (err) {
+      console.error(
+        `⚠️  Webhook signature verification failed222222222: ${err.message}`,
+      );
+      throw new BadRequestException('Invalid webhook signature');
+    }
+    try {
+      // req.body is Buffer because of raw body middleware in main.ts
+      console.log('Handling Stripe webhook event:', event.type);
+      await this.stripeService.handleStripeWebhook(event);
+      return { received: true };
+    } catch (e: any) {
+      throw new HttpException(
+        `Webhook Error: ${e.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('checkout/upgradation-plan')
   @UseGuards(JwtGuard2)
   async checkoutUpgradationPlan(

@@ -513,6 +513,11 @@ export class StripeService {
         await this.onFlashDealRefunded(charge);
         break;
       }
+      case 'account.updated': {
+        const acct = event.data.object as Stripe.Account;
+        await this.onConnectAccountUpdated(acct);
+        break;
+      }
 
       // Optional but useful for Connect onboarding completion
       // case 'account.updated': {
@@ -524,6 +529,81 @@ export class StripeService {
         // noop
         break;
     }
+  }
+  async handleStripeConnectWebhook(event: Stripe.Event) {
+    // Save raw snapshot (optional but recommended for audit)
+    console.log('Saving webhook snapshot for event:', event.type);
+    const createdSnapshot = await this.webhookSnapshotModel.create({
+      source: 'stripe',
+      data: event,
+    });
+    console.log(
+      `Webhook snapshot saved with ID: ${createdSnapshot._id} for event: ${event.type}`,
+    );
+
+    // Route by event type
+    switch (event.type) {
+     
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await this.onFlashDealPaymentSucceeded(pi);
+        break;
+      }
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await this.onFlashDealPaymentFailed(pi);
+        break;
+      }
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.onFlashDealRefunded(charge);
+        break;
+      }
+      case 'account.updated': {
+        const acct = event.data.object as Stripe.Account;
+        await this.onConnectAccountUpdated(acct);
+        break;
+      }
+
+      // Optional but useful for Connect onboarding completion
+      // case 'account.updated': {
+      //   const account = event.data.object as Stripe.Account;
+      //   await this.onConnectAccountUpdated(account);
+      //   break;
+      // }
+      default:
+        // noop
+        break;
+    }
+  }
+
+  private async onConnectAccountUpdated(account: Stripe.Account) {
+    const businessId = account.metadata?.businessId;
+    if (!businessId) return;
+
+    const requirementsDue = account.requirements?.currently_due?.length ?? 0;
+
+    const onboardingComplete =
+      !!account.details_submitted &&
+      !!account.charges_enabled &&
+      !!account.payouts_enabled &&
+      requirementsDue === 0;
+
+    await this.businessModel.updateOne(
+      { _id: businessId },
+      {
+        $set: {
+          stripeOnboardingComplete: onboardingComplete,
+          stripeAccountStatus: {
+            charges_enabled: account.charges_enabled,
+            payouts_enabled: account.payouts_enabled,
+            details_submitted: account.details_submitted,
+            currently_due: account.requirements?.currently_due ?? [],
+            disabled_reason: account.requirements?.disabled_reason ?? null,
+          },
+        },
+      },
+    );
   }
 
   /** When hosted checkout completes */
@@ -1569,53 +1649,53 @@ export class StripeService {
     }
   }
 
-
   async createConnectOnboardingLink(businessId: string) {
-  const business = await this.businessModel.findById(businessId);
-  if (!business?.stripeAccountId)
-    throw new BadRequestException('Business has no stripeAccountId');
+    const business = await this.businessModel.findById(businessId);
+    if (!business?.stripeAccountId)
+      throw new BadRequestException('Business has no stripeAccountId');
 
-  const base = process.env.APP_BASE_URL!;
-  const link = await this.stripe.accountLinks.create({
-    account: business.stripeAccountId,
-    refresh_url: `${base}/connect/refresh?businessId=${businessId}`,
-    return_url: `${base}/connect/return?businessId=${businessId}`,
-    type: 'account_onboarding',
-  });
+    const base = process.env.APP_BASE_URL!;
+    const link = await this.stripe.accountLinks.create({
+      account: business.stripeAccountId,
+      // refresh_url: `${base}/connect/refresh?businessId=${businessId}`,
+      // return_url: `${base}/connect/return?businessId=${businessId}`,
+      refresh_url: `https://dev.business.pinntag.com/dashboard/subscription/refresh`,
+      return_url: `https://dev.business.pinntag.com/dashboard/subscription/return`,
+      type: 'account_onboarding',
+    });
 
-  return { url: link.url };
-}
-async createConnectExpressAccount(params: {
-  businessId: string;
-  country: string; // US/GB/IN...
-  email?: string;
-  businessType: 'individual' | 'company';
-}) {
-  const business = await this.businessModel.findById(params.businessId);
-  if (!business) throw new BadRequestException('Business not found');
-
-  if (business.stripeAccountId) {
-    return { stripeAccountId: business.stripeAccountId };
+    return { url: link.url };
   }
 
-  const account = await this.stripe.accounts.create({
-    type: 'express',
-    country: params.country,
-    email: params.email,
-    business_type: params.businessType,
-    capabilities: {
-      card_payments: { requested: true },
-      transfers: { requested: true },
-    },
-    metadata: { businessId: params.businessId },
-  });
+  async createConnectExpressAccount(params: {
+    businessId: string;
+    country: string; // US/GB/IN...
+    email?: string;
+    businessType: 'individual' | 'company';
+  }) {
+    const business = await this.businessModel.findById(params.businessId);
+    if (!business) throw new BadRequestException('Business not found');
 
-  business.stripeAccountId = account.id;
-  business.stripeOnboardingComplete = false;
-  await business.save();
+    if (business.stripeAccountId) {
+      return { stripeAccountId: business.stripeAccountId };
+    }
 
-  return { stripeAccountId: account.id };
-}
+    const account = await this.stripe.accounts.create({
+      type: 'express',
+      country: params.country,
+      email: params.email,
+      business_type: params.businessType,
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      metadata: { businessId: params.businessId },
+    });
 
+    business.stripeAccountId = account.id;
+    business.stripeOnboardingComplete = false;
+    await business.save();
 
+    return { stripeAccountId: account.id };
+  }
 }

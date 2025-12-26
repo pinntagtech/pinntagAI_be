@@ -34,7 +34,6 @@ export class SocialMediaTokenDetails {
 }
 
 class Duration {
-
   startHour: number;
   startMinute: number;
   endHour: number;
@@ -42,7 +41,6 @@ class Duration {
 }
 
 export class DaySchedule {
-
   @Prop()
   duration: Duration;
 }
@@ -57,7 +55,6 @@ const weekDaysType = {
 };
 
 export class Schedule {
-
   @Prop({
     type: weekDaysType,
   })
@@ -90,8 +87,31 @@ export const ConnectStatus = {
   ONBOARDED: 'onboarded',
   PENDING: 'pending',
   REJECTED: 'rejected',
+};
+
+@Schema({ _id: false }) // important: embedded, no separate _id
+export class StripeAccountStatus {
+  @Prop({ default: false })
+  charges_enabled: boolean;
+
+  @Prop({ default: false })
+  payouts_enabled: boolean;
+
+  @Prop({ default: false })
+  details_submitted: boolean;
+
+  @Prop({ type: [String], default: [] })
+  currently_due: string[];
+
+  @Prop({ type: String, default: null })
+  disabled_reason?: string | null;
+
+  @Prop()
+  lastUpdatedAt?: Date;
 }
 
+export const StripeAccountStatusSchema =
+  SchemaFactory.createForClass(StripeAccountStatus);
 
 export type BusinessDocument = Business & Document;
 
@@ -220,8 +240,8 @@ export class Business {
   @Prop()
   regularTiming: Schedule;
 
-  @Prop({default:false})
-  dataFetchedFromGoogle:boolean;
+  @Prop({ default: false })
+  dataFetchedFromGoogle: boolean;
 
   @Prop()
   latitude: number;
@@ -409,7 +429,7 @@ export class Business {
   @Prop({ default: false })
   isAgentCreated: boolean;
 
-  @Prop({ default: 0})
+  @Prop({ default: 0 })
   viewsCount: number;
 
   @Prop()
@@ -421,6 +441,8 @@ export class Business {
   @Prop({ default: false })
   stripeOnboardingComplete: boolean;
 
+  @Prop({ type: StripeAccountStatusSchema })
+  stripeAccountStatus?: StripeAccountStatus;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;
@@ -452,8 +474,8 @@ const generateNamePrefix = (name: string): string => {
 BusinessSchema.pre<BusinessDocument>('save', function (next) {
   if (!this.uniqueId) {
     const prefix = generateNamePrefix(this.name); // 4 letters
-    const digits = generateRandomDigits(3);       // 3 digits
-    const letters = generateRandomLetters(3);     // 3 letters
+    const digits = generateRandomDigits(3); // 3 digits
+    const letters = generateRandomLetters(3); // 3 letters
 
     this.uniqueId = `${prefix}${digits}${letters}`;
   }
