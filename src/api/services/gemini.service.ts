@@ -34,6 +34,9 @@ const S3_IMAGE_PREFIX = "ai-generated-images";
 // Using Gemini 2.5 Flash Image (aka "Nano Banana") for fast image generation
 const IMAGE_MODEL = "gemini-2.5-flash-image";
 
+// Feature flag to enable/disable image generation
+const ENABLE_IMAGE_GENERATION = process.env.ENABLE_IMAGE_GENERATION === "true";
+
 // ===========================
 // Helper Functions
 // ===========================
@@ -230,6 +233,22 @@ function getAspectRatioInstructions(
   return instructions[aspectRatio] || "";
 }
 
+/**
+ * Get default placeholder image based on content type when image generation is disabled
+ */
+function getPlaceholderImage(contentType?: ContentType): string {
+  const baseUrl = "https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/";
+
+  const placeholders: Record<string, string> = {
+    offer: `${baseUrl}Special_Offer.jpg`,
+    broadcast: `${baseUrl}Announcement.jpg`,
+    reward: `${baseUrl}Reward_Special.jpg`,
+    event: `${baseUrl}Event_Promotion.jpg`,
+  };
+
+  return placeholders[contentType || "offer"] || placeholders.offer;
+}
+
 // ===========================
 // Gemini Service Class
 // ===========================
@@ -242,6 +261,24 @@ export class GeminiService {
     params: ImageGenerationParams
   ): Promise<GeneratedImage> {
     const { businessId, prompt, contentType, style, aspectRatio, includeText, colorScheme, brandElements } = params;
+
+    // Check if image generation is disabled via feature flag
+    if (!ENABLE_IMAGE_GENERATION) {
+      logger.info(
+        { businessId, contentType },
+        "Image generation disabled via feature flag, returning placeholder"
+      );
+
+      const placeholderUrl = getPlaceholderImage(contentType);
+
+      return {
+        imageUrl: placeholderUrl,
+        s3Key: "placeholder",
+        mimeType: "image/jpeg",
+        prompt,
+        style,
+      };
+    }
 
     // Check subscription access
     const access = await checkImageGenerationAccess(businessId);
@@ -366,6 +403,21 @@ export class GeminiService {
    */
   static async editImage(params: ImageEditParams): Promise<GeneratedImage> {
     const { businessId, imageUrl, editPrompt, preserveElements } = params;
+
+    // Check if image generation is disabled via feature flag
+    if (!ENABLE_IMAGE_GENERATION) {
+      logger.info(
+        { businessId },
+        "Image editing disabled via feature flag, returning original image"
+      );
+
+      return {
+        imageUrl: imageUrl,
+        s3Key: "placeholder",
+        mimeType: "image/jpeg",
+        prompt: editPrompt,
+      };
+    }
 
     // Check subscription access
     const access = await checkImageGenerationAccess(businessId);
@@ -613,6 +665,24 @@ export class GeminiService {
     params: ImageGenerationParams,
     count: number = 3
   ): Promise<GeneratedImage[]> {
+    // Check if image generation is disabled via feature flag
+    if (!ENABLE_IMAGE_GENERATION) {
+      logger.info(
+        { businessId: params.businessId },
+        "Image variations disabled via feature flag, returning single placeholder"
+      );
+
+      const placeholderUrl = getPlaceholderImage(params.contentType);
+
+      return [{
+        imageUrl: placeholderUrl,
+        s3Key: "placeholder",
+        mimeType: "image/jpeg",
+        prompt: params.prompt,
+        style: params.style,
+      }];
+    }
+
     const variations: GeneratedImage[] = [];
     const styles: ImageStyle[] = [
       "professional",

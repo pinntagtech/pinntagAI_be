@@ -6,6 +6,91 @@ import { GeminiService } from "../api/services/gemini.service.js";
 import mongoose from "mongoose";
 
 /**
+ * Holiday and occasion detection configuration
+ */
+interface Holiday {
+  name: string;
+  month: number; // 0-11 (January is 0)
+  day: number;
+  startDaysBefore: number; // Days before to start showing
+  endDaysAfter: number; // Days after to stop showing
+}
+
+const HOLIDAYS: Holiday[] = [
+  // ========== JANUARY ==========
+  { name: "New Year", month: 0, day: 1, startDaysBefore: 7, endDaysAfter: 3 },
+  { name: "January Sales", month: 0, day: 10, startDaysBefore: 5, endDaysAfter: 21 }, // Winter sales period
+  { name: "Martin Luther King Jr. Day", month: 0, day: 15, startDaysBefore: 7, endDaysAfter: 1 }, // US - 3rd Monday
+  { name: "Burns Night", month: 0, day: 25, startDaysBefore: 7, endDaysAfter: 1 }, // Scotland
+
+  // ========== FEBRUARY ==========
+  { name: "Super Bowl", month: 1, day: 12, startDaysBefore: 7, endDaysAfter: 1 }, // US - 2nd Sunday (approx)
+  { name: "Valentine's Day", month: 1, day: 14, startDaysBefore: 14, endDaysAfter: 1 },
+  { name: "Presidents' Day", month: 1, day: 19, startDaysBefore: 7, endDaysAfter: 1 }, // US - 3rd Monday
+
+  // ========== MARCH ==========
+  { name: "Pancake Day", month: 2, day: 5, startDaysBefore: 7, endDaysAfter: 1 }, // Shrove Tuesday (varies)
+  { name: "International Women's Day", month: 2, day: 8, startDaysBefore: 5, endDaysAfter: 1 },
+  { name: "UK Mother's Day", month: 2, day: 19, startDaysBefore: 14, endDaysAfter: 1 }, // Mothering Sunday - 4th Sunday of Lent (approx)
+  { name: "St. Patrick's Day", month: 2, day: 17, startDaysBefore: 7, endDaysAfter: 1 },
+
+  // ========== APRIL ==========
+  { name: "Easter Weekend", month: 3, day: 9, startDaysBefore: 14, endDaysAfter: 3 }, // Good Friday - Easter Monday (varies)
+  { name: "Earth Day", month: 3, day: 22, startDaysBefore: 7, endDaysAfter: 1 },
+  { name: "St. George's Day", month: 3, day: 23, startDaysBefore: 5, endDaysAfter: 1 }, // England
+
+  // ========== MAY ==========
+  { name: "Early May Bank Holiday", month: 4, day: 1, startDaysBefore: 7, endDaysAfter: 1 }, // UK - 1st Monday
+  { name: "Cinco de Mayo", month: 4, day: 5, startDaysBefore: 5, endDaysAfter: 1 }, // US/Mexico
+  { name: "Mother's Day", month: 4, day: 14, startDaysBefore: 14, endDaysAfter: 1 }, // US - 2nd Sunday
+  { name: "Chelsea Flower Show", month: 4, day: 23, startDaysBefore: 7, endDaysAfter: 5 }, // UK - late May
+  { name: "Spring Bank Holiday", month: 4, day: 29, startDaysBefore: 7, endDaysAfter: 1 }, // UK - last Monday
+  { name: "Memorial Day", month: 4, day: 29, startDaysBefore: 7, endDaysAfter: 1 }, // US - last Monday
+
+  // ========== JUNE ==========
+  { name: "Graduation Season", month: 5, day: 10, startDaysBefore: 14, endDaysAfter: 20 }, // Peak graduation period
+  { name: "Father's Day", month: 5, day: 18, startDaysBefore: 14, endDaysAfter: 1 }, // 3rd Sunday
+  { name: "Juneteenth", month: 5, day: 19, startDaysBefore: 7, endDaysAfter: 1 }, // US
+  { name: "Wimbledon", month: 5, day: 28, startDaysBefore: 7, endDaysAfter: 14 }, // UK - late June-early July
+
+  // ========== JULY ==========
+  { name: "Independence Day", month: 6, day: 4, startDaysBefore: 14, endDaysAfter: 2 }, // US
+  { name: "Summer BBQ Season", month: 6, day: 15, startDaysBefore: 10, endDaysAfter: 30 }, // Peak summer
+
+  // ========== AUGUST ==========
+  { name: "Summer Bank Holiday", month: 7, day: 28, startDaysBefore: 7, endDaysAfter: 1 }, // UK - last Monday
+  { name: "Notting Hill Carnival", month: 7, day: 27, startDaysBefore: 7, endDaysAfter: 2 }, // UK - late August
+  { name: "Back to School", month: 7, day: 20, startDaysBefore: 21, endDaysAfter: 14 },
+
+  // ========== SEPTEMBER ==========
+  { name: "Labor Day", month: 8, day: 4, startDaysBefore: 7, endDaysAfter: 1 }, // US - 1st Monday
+  { name: "NFL Season Kickoff", month: 8, day: 8, startDaysBefore: 7, endDaysAfter: 1 }, // US - early September
+  { name: "Premier League Start", month: 8, day: 12, startDaysBefore: 7, endDaysAfter: 7 }, // UK - mid-August/early September
+
+  // ========== OCTOBER ==========
+  { name: "International Coffee Day", month: 9, day: 1, startDaysBefore: 3, endDaysAfter: 1 },
+  { name: "Columbus Day", month: 9, day: 9, startDaysBefore: 5, endDaysAfter: 1 }, // US - 2nd Monday
+  { name: "Halloween", month: 9, day: 31, startDaysBefore: 21, endDaysAfter: 1 },
+
+  // ========== NOVEMBER ==========
+  { name: "Guy Fawkes Night", month: 10, day: 5, startDaysBefore: 7, endDaysAfter: 1 }, // UK - Bonfire Night
+  { name: "Veterans Day", month: 10, day: 11, startDaysBefore: 7, endDaysAfter: 1 }, // US
+  { name: "Remembrance Day", month: 10, day: 11, startDaysBefore: 7, endDaysAfter: 1 }, // UK
+  { name: "Thanksgiving", month: 10, day: 23, startDaysBefore: 14, endDaysAfter: 3 }, // US - 4th Thursday
+  { name: "Black Friday", month: 10, day: 24, startDaysBefore: 10, endDaysAfter: 3 },
+  { name: "Small Business Saturday", month: 10, day: 25, startDaysBefore: 7, endDaysAfter: 1 }, // US
+  { name: "Cyber Monday", month: 10, day: 27, startDaysBefore: 7, endDaysAfter: 3 },
+
+  // ========== DECEMBER ==========
+  { name: "Christmas Season", month: 11, day: 1, startDaysBefore: 0, endDaysAfter: 31 }, // All of December
+  { name: "Hanukkah", month: 11, day: 10, startDaysBefore: 14, endDaysAfter: 8 }, // Varies yearly
+  { name: "Christmas", month: 11, day: 25, startDaysBefore: 30, endDaysAfter: 7 },
+  { name: "Boxing Day", month: 11, day: 26, startDaysBefore: 5, endDaysAfter: 5 }, // UK
+  { name: "Kwanzaa", month: 11, day: 26, startDaysBefore: 7, endDaysAfter: 7 },
+  { name: "New Year's Eve", month: 11, day: 31, startDaysBefore: 7, endDaysAfter: 1 },
+];
+
+/**
  * Agent Template Generation Job
  * Runs overnight to generate templates for all AI agents based on their training status
  *
@@ -13,6 +98,62 @@ import mongoose from "mongoose";
  * For untrained agents: Uses agent metadata (category, subcategories, tags, description) to generate templates
  */
 export class AgentTemplateGenerationJob {
+  /**
+   * Detect active holidays and occasions based on current date
+   */
+  private static detectCurrentOccasions(currentDate: Date = new Date()): string[] {
+    const occasions: string[] = [];
+    const now = currentDate.getTime();
+
+    for (const holiday of HOLIDAYS) {
+      // Create date for this year's holiday
+      const holidayDate = new Date(currentDate.getFullYear(), holiday.month, holiday.day);
+
+      // Calculate start and end dates for the promotion period
+      const startDate = new Date(holidayDate);
+      startDate.setDate(startDate.getDate() - holiday.startDaysBefore);
+
+      const endDate = new Date(holidayDate);
+      endDate.setDate(endDate.getDate() + holiday.endDaysAfter);
+
+      // Check if current date is within the promotion period
+      if (now >= startDate.getTime() && now <= endDate.getTime()) {
+        occasions.push(holiday.name);
+      }
+    }
+
+    return occasions;
+  }
+
+  /**
+   * Get the current season based on date
+   */
+  private static getCurrentSeason(date: Date = new Date()): string {
+    const month = date.getMonth();
+    if (month >= 2 && month <= 4) return "Spring";
+    if (month >= 5 && month <= 7) return "Summer";
+    if (month >= 8 && month <= 10) return "Fall";
+    return "Winter";
+  }
+
+  /**
+   * Determine which day-specific template to generate based on current day
+   */
+  private static getCurrentDayOccasion(date: Date = new Date()): string | null {
+    const dayOfWeek = date.getDay();
+    const dayMap: Record<number, string> = {
+      1: "monday_motivation",
+      2: "tuesday_twofer",
+      3: "wednesday_midweek",
+      4: "thursday_throwback",
+      5: "friday_deals",
+      6: "saturday_special",
+      0: "sunday_selfcare",
+    };
+
+    return dayMap[dayOfWeek] || null;
+  }
+
   /**
    * Execute the overnight agent template generation job
    * Generates templates for ALL AI agents regardless of training status
@@ -104,13 +245,46 @@ export class AgentTemplateGenerationJob {
     agent: any,
     businessId: string
   ): Promise<void> {
-    // Generate business-specific templates for common occasions with AI-generated images
+    // Detect current occasions
+    const currentDate = new Date();
+    const activeHolidays = this.detectCurrentOccasions(currentDate);
+    const currentSeason = this.getCurrentSeason(currentDate);
+    const dayOccasion = this.getCurrentDayOccasion(currentDate);
+
+    logger.info(
+      {
+        businessId,
+        activeHolidays,
+        currentSeason,
+        dayOccasion,
+      },
+      "Detected current occasions for template generation"
+    );
+
+    // Build occasions list dynamically based on current date
     const occasions: TemplateGenerationOptions[] = [
       { occasion: "general", scope: "business_specific" },
       { occasion: "seasonal", scope: "business_specific" },
       { occasion: "slow_period", scope: "business_specific" },
       { occasion: "trending", scope: "business_specific" },
     ];
+
+    // Add day-specific template
+    if (dayOccasion) {
+      occasions.push({
+        occasion: dayOccasion as any,
+        scope: "business_specific",
+      });
+    }
+
+    // Add holiday-specific templates for active holidays
+    for (const holiday of activeHolidays) {
+      occasions.push({
+        occasion: "holiday",
+        specificHoliday: holiday,
+        scope: "business_specific",
+      });
+    }
 
     // Generate templates with images
     for (const occasion of occasions) {
@@ -163,8 +337,13 @@ export class AgentTemplateGenerationJob {
   ): Promise<void> {
     const { category, subCategories, tags, description } = agent;
 
+    // Detect current occasions
+    const currentDate = new Date();
+    const activeHolidays = this.detectCurrentOccasions(currentDate);
+    const dayOccasion = this.getCurrentDayOccasion(currentDate);
+
     logger.info(
-      { businessId, category, subCategories, tags },
+      { businessId, category, subCategories, tags, activeHolidays, dayOccasion },
       "Generating metadata-based templates for untrained agent"
     );
 
@@ -173,6 +352,7 @@ export class AgentTemplateGenerationJob {
       occasion: TemplateGenerationOptions["occasion"];
       title: string;
       descriptionText: string;
+      specificHoliday?: string;
     }> = [
       {
         occasion: "general",
@@ -209,7 +389,49 @@ export class AgentTemplateGenerationJob {
       },
     ];
 
-    for (const { occasion, title, descriptionText } of occasions) {
+    // Add day-specific template
+    if (dayOccasion) {
+      const dayTitles: Record<string, string> = {
+        monday_motivation: "Motivation Monday - Start Your Week Right!",
+        tuesday_twofer: "Two-for-Tuesday - Double the Value!",
+        wednesday_midweek: "Midweek Madness - Hump Day Special!",
+        thursday_throwback: "Throwback Thursday - Classic Favorites!",
+        friday_deals: "Friday Deals - Weekend Kickoff!",
+        saturday_special: "Saturday Special - Family & Friends!",
+        sunday_selfcare: "Self-Care Sunday - Treat Yourself!",
+      };
+
+      occasions.push({
+        occasion: dayOccasion as any,
+        title: dayTitles[dayOccasion] || "Special Day Offer",
+        descriptionText: this.buildMetadataDescription(
+          dayOccasion,
+          category,
+          subCategories,
+          tags,
+          description
+        ),
+      });
+    }
+
+    // Add holiday-specific templates for active holidays
+    for (const holiday of activeHolidays) {
+      occasions.push({
+        occasion: "holiday",
+        specificHoliday: holiday,
+        title: `${holiday} Special - Celebrate with Us!`,
+        descriptionText: this.buildMetadataDescription(
+          "holiday",
+          category,
+          subCategories,
+          tags,
+          description,
+          holiday
+        ),
+      });
+    }
+
+    for (const { occasion, title, descriptionText, specificHoliday } of occasions) {
       try {
         // Generate AI image with GENERIC content
         const imageUrl = await this.generateGenericTemplateImage(
@@ -224,6 +446,7 @@ export class AgentTemplateGenerationJob {
         // Create a simple template structure for untrained agents
         const templateOptions: TemplateGenerationOptions = {
           occasion,
+          specificHoliday,
           scope: "business_specific",
           thumbnailUrl: imageUrl,
           categories: subCategories || [],
@@ -262,7 +485,8 @@ export class AgentTemplateGenerationJob {
     category?: string,
     subCategories?: string[],
     tags?: string[],
-    description?: string
+    description?: string,
+    holiday?: string
   ): string {
     const parts: string[] = [];
 
@@ -272,6 +496,22 @@ export class AgentTemplateGenerationJob {
       parts.push("Celebrate the season with our special limited-time offer!");
     } else if (occasion === "trending") {
       parts.push("Join the trend! Everyone's talking about this amazing deal!");
+    } else if (occasion === "holiday" && holiday) {
+      parts.push(`Celebrate ${holiday} with our special offer!`);
+    } else if (occasion.includes("monday")) {
+      parts.push("Start your week strong with our Monday Motivation special!");
+    } else if (occasion.includes("tuesday")) {
+      parts.push("Double the value this Tuesday with our special offer!");
+    } else if (occasion.includes("wednesday")) {
+      parts.push("Beat the midweek slump with our Wednesday special!");
+    } else if (occasion.includes("thursday")) {
+      parts.push("Throwback to great deals this Thursday!");
+    } else if (occasion.includes("friday")) {
+      parts.push("Kick off your weekend with our Friday special!");
+    } else if (occasion.includes("saturday")) {
+      parts.push("Make your Saturday special with our exclusive offer!");
+    } else if (occasion.includes("sunday")) {
+      parts.push("Treat yourself this Sunday with our self-care special!");
     }
 
     if (category) {

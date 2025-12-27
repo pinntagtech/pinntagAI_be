@@ -6,6 +6,35 @@ const facebookService = new FacebookService();
 
 export class FacebookController {
   /**
+   * Generate a long-lived token from a short-lived token
+   * POST /facebook/token/long-lived
+   * Body: { shortLivedToken: string }
+   */
+  async generateLongLivedToken(req: Request, res: Response) {
+    try {
+      const { shortLivedToken } = req.body;
+
+      console.log(shortLivedToken, "In-controller");
+
+      if (!shortLivedToken) {
+        return res
+          .status(400)
+          .json({ success: false, error: "shortLivedToken is required" });
+      }
+
+      const result = await facebookService.fetchLongLivedToken(shortLivedToken);
+
+      if (result.success) {
+        return res.status(200).json({ success: true, data: result.data });
+      } else {
+        return res.status(400).json({ success: false, error: result.data });
+      }
+    } catch (error: any) {
+      logger.error({ error }, "Error generating long-lived token");
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+  /**
    * GET /facebook/posts
    * Query params: { token: string, useAI?: boolean, minScore?: number }
    * Fetches all Facebook posts and filters those suitable for Pinntag
@@ -97,7 +126,8 @@ export class FacebookController {
       }
 
       // Parse optional parameters
-      const useAIFiltering = useAI === true || useAI === "true" || useAI === "1";
+      const useAIFiltering =
+        useAI === true || useAI === "true" || useAI === "1";
       const minAIScore = minScore ? parseInt(String(minScore), 10) : 60;
 
       // Validate minScore
@@ -146,6 +176,61 @@ export class FacebookController {
         success: false,
         error: error.message || "Internal server error",
       });
+    }
+  }
+
+  async getAllPosts(req: Request, res: Response) {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Facebook access token is required",
+        });
+      }
+
+      const result = await facebookService.getAllPosts(token);
+      if (result.success) {
+        return res.status(200).json({ success: true, data: result.data });
+      } else {
+        return res.status(400).json({ success: false, error: result.data });
+      }
+    } catch (error: any) {
+      logger.error({ error }, "Error fetching all Facebook posts");
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Generate Long-Lived Page Access Token from a short-lived page token
+   * POST /facebook/token/page-access
+   * Body: { pageAccessToken: string }
+   */
+  async generatePageAccessToken(req: Request, res: Response) {
+    try {
+      const { pageAccessToken } = req.body;
+
+      if (!pageAccessToken) {
+        return res.status(400).json({
+          success: false,
+          error: "pageAccessToken is required",
+        });
+      }
+
+      logger.info("Generating long-lived page access token");
+
+      const result = await facebookService.generateLongLivedPageToken(
+        pageAccessToken
+      );
+
+      if (result.success) {
+        return res.status(200).json({ success: true, data: result.data });
+      } else {
+        return res.status(400).json({ success: false, error: result.data });
+      }
+    } catch (error: any) {
+      logger.error({ error }, "Error generating long-lived page access token");
+      return res.status(500).json({ success: false, error: error.message });
     }
   }
 }

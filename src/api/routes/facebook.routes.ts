@@ -1,65 +1,52 @@
 import { Router } from "express";
-import { internalApiKeyGuard } from "../../middleware/auth.js";
+import {
+  generateShortLivedToken,
+  getFacebookLoginUrl,
+} from "../controllers/facebook.controller.js";
 import { facebookController } from "../controllers/facebookController.js";
 
-export const facebookRouter = Router();
-
-// Expose Facebook features to Pinntag backend only
-facebookRouter.use(internalApiKeyGuard);
+const router = Router();
 
 /**
- * GET /facebook/posts
- * Query params: {
- *   token: string (required),
- *   useAI?: boolean (optional, default: false) - Use AI-based filtering,
- *   minScore?: number (optional, default: 60, range: 0-100) - Minimum AI confidence score
- * }
- * Fetches all Facebook posts and filters those suitable for Pinntag
- *
- * Filtering Methods:
- * - Rule-based (useAI=false): Fast filtering using predefined rules (media, engagement, content)
- * - AI-based (useAI=true): Intelligent filtering using Gemini AI to analyze post suitability
- *
- * Returns: {
- *   success: boolean,
- *   data: {
- *     total: number,
- *     filtered: number,
- *     filterMethod: "rules" | "ai",
- *     posts: Array<FacebookPost & { aiAnalysis?: { suitable, reason, score, category } }>
- *   }
- * }
- *
- * Examples:
- * - GET /facebook/posts?token=xxx (rule-based filtering)
- * - GET /facebook/posts?token=xxx&useAI=true (AI filtering with default 60 score)
- * - GET /facebook/posts?token=xxx&useAI=true&minScore=80 (AI filtering with 80 minimum score)
+ * @route GET /api/facebook/login-url
+ * @desc Get the Facebook Login URL to start OAuth flow
  */
-facebookRouter.get("/posts", facebookController.getFacebookPosts);
+router.get("/login-url", getFacebookLoginUrl);
 
 /**
- * POST /facebook/posts
- * Body: {
- *   token: string (required),
- *   useAI?: boolean (optional, default: false) - Use AI-based filtering,
- *   minScore?: number (optional, default: 60, range: 0-100) - Minimum AI confidence score
- * }
- * Alternative POST endpoint for fetching Facebook posts (for sensitive tokens)
- *
- * Filtering Methods:
- * - Rule-based (useAI=false): Fast filtering using predefined rules
- * - AI-based (useAI=true): Intelligent filtering using Gemini AI
- *
- * Returns: {
- *   success: boolean,
- *   data: {
- *     total: number,
- *     filtered: number,
- *     filterMethod: "rules" | "ai",
- *     posts: Array<FacebookPost & { aiAnalysis?: { suitable, reason, score, category } }>
- *   }
- * }
+ * @route POST /api/facebook/token
+ * @desc Exchange authorization code for short-lived user access token
  */
-facebookRouter.post("/posts", facebookController.getFacebookPostsPost);
+router.post("/token", generateShortLivedToken);
 
-export { facebookRouter as facebookRoutes };
+/**
+ * @route POST /api/facebook/token/long-lived
+ * @desc Generate a long-lived token from a short-lived token
+ */
+router.post("/token/long-lived", facebookController.generateLongLivedToken);
+
+/**
+ * @route POST /api/facebook/token/page-access
+ * @desc Generate Long-Lived Page Access Token from short-lived page token
+ */
+router.post("/token/page-access", facebookController.generatePageAccessToken);
+
+/**
+ * @route GET /api/facebook/posts
+ * @desc Get Facebook posts (with optional AI filtering)
+ */
+router.get("/posts", facebookController.getFacebookPosts);
+
+/**
+ * @route POST /api/facebook/posts
+ * @desc Get Facebook posts (POST alternative for security)
+ */
+router.post("/posts", facebookController.getFacebookPostsPost);
+
+/**
+ * @route GET /api/facebook/all-posts
+ * @desc Get all Facebook posts
+ */
+router.get("/all-posts", facebookController.getAllPosts);
+
+export { router as facebookRoutes };
