@@ -29,7 +29,7 @@ export class AiController {
     private readonly pinntagAiService: PinntagAiService,
   ) {}
 
-  @Post('/event-description')
+  @Post('event-description')
   @UseGuards(JwtGuard2)
   async getAiEventDescription(
     @TokenDecoder() user: DecodedUser,
@@ -59,7 +59,7 @@ export class AiController {
       });
     }
   }
-  @Post('/reward-description')
+  @Post('reward-description')
   @UseGuards(JwtGuard2)
   async getAiRewardDescription(
     @TokenDecoder() user: DecodedUser,
@@ -92,15 +92,15 @@ export class AiController {
     }
   }
 
-  @Post('/business-description')
+  @Post('business-description')
   @UseGuards(JwtGuard2)
   async getAiBusinessDescription(@TokenDecoder() user: DecodedUser) {
-    const result = await this.aiService.getBusinessDescription(
-      user.businessProfile,
-    );
-    // const result = await this.pinntagAiService.generateBusinessDescription(
+    // const result = await this.aiService.getBusinessDescription(
     //   user.businessProfile,
     // );
+    const result = await this.pinntagAiService.generateBusinessDescription(
+      user.businessProfile,
+    );
     console.log('RESULT:', result);
     if (result.success) {
       return {

@@ -168,6 +168,29 @@ export class Event {
   @Prop()
   tags: string[];
 
+  @Prop()
+  itemName: string;
+
+  @Prop()
+  itemQuantity: number;
+
+  @Prop()
+  minOrderQuantity: number;
+
+  @Prop()
+  maxOrderQuantity: number;
+
+
+  @Prop()
+  itemPrice: number;
+
+  @Prop()
+  currency: string;
+
+  @Prop({ default: false })
+  preBookingRequired: boolean
+
+
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
 }
