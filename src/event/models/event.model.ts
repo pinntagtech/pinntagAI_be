@@ -180,7 +180,6 @@ export class Event {
   @Prop()
   maxOrderQuantity: number;
 
-
   @Prop()
   itemPrice: number;
 

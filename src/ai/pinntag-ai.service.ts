@@ -49,7 +49,6 @@ export class PinntagAiService {
   async generateBusinessDescription(businessId: string) {
     try {
       console.log('businessId:', businessId);
-      console.log("WHY IT IS COMING HEREEEE:");
       const response = await axios.get(
         `${this.baseUrl}/ai/generate-description/${businessId}`,
         {
