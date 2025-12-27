@@ -1405,4 +1405,25 @@ export class UserService {
       };
     }
   }
+
+  async toggleCheckInDetection(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+    user.checkInDetection = !user.checkInDetection;
+    await user.save();
+    return {
+      success: true,
+      message: `Check-in detection ${
+        user.checkInDetection ? 'enabled' : 'disabled'
+      } successfully`,
+      data: {
+        checkInDetection: user.checkInDetection,
+      },
+    };
+  }
 }

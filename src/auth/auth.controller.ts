@@ -904,7 +904,10 @@ export class AuthController {
     let result = null;
     if (data.type === 'all') {
       result = await this.authService.dashboardAllSearch(user, data);
-    } else {
+    } else if(data.type === 'people'){
+      result = await this.authService.dashboardPeopleSearch(user, data);
+    }
+    else {
       result = await this.authService.dashboardSearch(user, data);
     }
 

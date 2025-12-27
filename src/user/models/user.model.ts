@@ -125,8 +125,51 @@ export class User {
 
   @Prop()
   accountDeletionSchedulerId: string;
+
+  @Prop()
+  bio: string;
+
+  @Prop()
+  userName: string;
+
+  @Prop({ default: true })
+  checkInDetection: boolean;
+
 }
 export const UserSchema = SchemaFactory.createForClass(User);
+
+
+const generateRandomDigits = (length: number): string =>
+  Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+
+const generateRandomLetters = (length: number): string =>
+  Array.from({ length }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+  ).join('');
+
+const generateNamePrefix = (name: string): string => {
+  const upperName = (name || '').replace(/[^A-Z]/gi, '').toUpperCase();
+
+  if (upperName.length >= 4) {
+    return upperName.substring(0, 4);
+  }
+
+  // pad with random letters if name is short
+  const padding = generateRandomLetters(4 - upperName.length);
+  return upperName + padding;
+};
+
+// pre-save hook
+UserSchema.pre<UserDocument>('save', function (next) {
+  if (!this.userName) {
+    const prefix = generateNamePrefix(this.name); // 4 letters
+    const digits = generateRandomDigits(3); // 3 digits
+    const letters = generateRandomLetters(3); // 3 letters
+
+    this.userName = `${prefix}${digits}${letters}`;
+  }
+  next();
+});
 
 // Function to crypt password (if it is present) before save
 // UserSchema.pre<User>('save', function (next) {

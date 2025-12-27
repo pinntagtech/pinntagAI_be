@@ -5560,7 +5560,7 @@ export class AuthService {
           as: 'schedules',
         },
       },
-     {
+      {
         $addFields: {
           schedules: {
             $filter: {
@@ -7290,6 +7290,100 @@ export class AuthService {
       page: page,
       limit: limit,
     };
+  }
+
+  async dashboardPeopleSearch(user: DecodedUser, data: DashboardSearchDto) {
+    try {
+      let { search, page, limit } = data;
+      const users = await this.userModel.aggregate([
+        {
+          $match: {
+            $or: [
+              { name: { $regex: search, $options: 'i' } },
+              { email: { $regex: search, $options: 'i' } },
+            ],
+          },
+        },
+
+        {
+          $lookup: {
+            from: 'follows', // make sure it's the actual collection name
+            let: {
+              currentUserId: user.id, // logged-in user
+              targetUserId: { $toObjectId: '$_id' },
+              // followingType: '$followingType',
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      {
+                        $eq: ['$follower', { $toObjectId: '$$currentUserId' }],
+                      }, // current user is the follower
+                      {
+                        $eq: ['$following', { $toObjectId: '$$targetUserId' }],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'userFollow',
+          },
+        },
+        {
+          $addFields: {
+            isFollowedByMe: {
+              $gt: [{ $size: '$userFollow' }, 0],
+            },
+          },
+        },
+        {
+          $skip: (page - 1) * limit,
+        },
+        {
+          $limit: limit,
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            email: 1,
+            profilePicture: 1,
+            thumbnail: 1,
+            isEmailVerified: 1,
+            gender: 1,
+            dob: 1,
+            // userFollow: 1,
+            isFollowedByMe: 1,
+          },
+        },
+        // {
+
+        // }
+      ]);
+      let total = await this.userModel.countDocuments({
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+        ],
+      });
+      return {
+        success: true,
+        message: 'People Search results fetched successfully',
+        data: users,
+        total: total,
+        page: page,
+        limit: limit,
+      };
+    } catch (error) {
+      console.error('Error in dashboardPeopleSearch:', error);
+      return {
+        success: false,
+        message: 'Something went wrong.',
+      };
+    }
   }
 
   async getDashboardRewards(

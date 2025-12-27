@@ -12,6 +12,7 @@ import {
   Delete,
   Query,
   BadRequestException,
+  Put,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Request } from 'express';
@@ -366,7 +367,6 @@ export class UserController {
       throw new BadRequestException(result.message);
     }
   }
-  
 
   @Post('toggle/mute/notifications/:id')
   @UseGuards(JwtGuard2)
@@ -380,6 +380,20 @@ export class UserController {
       businessId,
       duration,
     );
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
+  @Put('toggle/checkin-detection')
+  @UseGuards(JwtGuard2)
+  async toggleCheckInDetection(@TokenDecoder() user: DecodedUser) {
+    const result = await this.userService.toggleCheckInDetection(user.id);
     if (result.success) {
       return {
         message: result.message,
