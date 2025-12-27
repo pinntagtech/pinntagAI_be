@@ -41,6 +41,7 @@ import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 import { BusinessStatus } from 'src/business/enums/business.enum';
 import { ConsumerPurchase } from '../models/consumer-purchase.model';
+import { CreateFlashDealPaymentIntentDto } from './dtos/stripe-connect-charge.dto';
 
 @Injectable()
 export class StripeService {
@@ -1740,4 +1741,80 @@ export class StripeService {
 
     return { account, onboardingComplete };
   }
+
+   private calcPlatformFee(amount: number) {
+    const bps = Number(process.env.STRIPE_PLATFORM_FEE_BPS || 0);
+    // fee in smallest currency unit
+    return Math.floor((amount * bps) / 10000);
+  }
+
+  async createFlashDealPaymentIntent(dto: CreateFlashDealPaymentIntentDto) {
+    // 1) Validate business + connected account
+    const business = await this.businessModel.findById(dto.businessId);
+    if (!business) throw new BadRequestException('Business not found');
+    if (!business.stripeAccountId) {
+      throw new BadRequestException('Business is not onboarded to Stripe Connect');
+    }
+
+    // Optional guard: ensure onboarding complete if you want
+    // if (!business.stripeOnboardingComplete) throw new BadRequestException('Business Stripe onboarding incomplete');
+
+    // 2) Create a local purchase record FIRST (recommended)
+    const consumerId = dto.consumerId || 'UNKNOWN_CONSUMER'; // ideally from JWT
+    const purchase = await this.consumerPurchaseModel.create({
+      dealId: dto.flashDealId,
+      businessId: dto.businessId,
+      consumerId,
+      amount: dto.amount,
+      currency: dto.currency.toLowerCase(),
+      status: 'requires_payment',
+    });
+
+    // 3) Create destination charge PaymentIntent
+    const applicationFee = this.calcPlatformFee(dto.amount);
+
+    const pi = await this.stripe.paymentIntents.create({
+      amount: dto.amount,
+      currency: dto.currency.toLowerCase(),
+      automatic_payment_methods: { enabled: true },
+
+      // Connect split:
+      application_fee_amount: applicationFee,
+      transfer_data: {
+        destination: business.stripeAccountId,
+      },
+
+      metadata: {
+        purchaseId: purchase.id,
+        flashDealId: dto.flashDealId,
+        businessId: dto.businessId,
+        consumerId,
+        type: 'FLASHDEAL',
+      },
+
+    },
+          {
+        // ✅ idempotency prevents double-charges if your API retries
+        idempotencyKey: `flashdeal_${dto.flashDealId}_${consumerId}`,
+      },
+
+  );
+
+    // Store PI id for webhook reconciliation
+    // (Implement update method if you want; or store in create)
+    // For brevity: assume purchaseRepo can update by PI
+    // If you don't have that, store it in your purchase record schema.
+    // Here’s a common quick way:
+    // await this.purchaseRepo.updateStatusByPaymentIntentId(pi.id, 'requires_payment').catch(() => {});
+    // Better: have purchaseRepo.attachPaymentIntent(purchase.id, pi.id)
+
+    return {
+      clientSecret: pi.client_secret,
+      paymentIntentId: pi.id,
+      purchaseId: purchase.id,
+    };
+  }
+
+
+
 }

@@ -23,6 +23,7 @@ import { DecodedUser } from 'src/auth/interfaces/decodedUser.interface';
 import { BusinessProfileGuard } from 'src/auth/guards/business.guard';
 import { JwtGuard2 } from 'src/auth/guards2/jwt2.guard';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
+import { CreateFlashDealPaymentIntentDto } from './dtos/stripe-connect-charge.dto';
 
 @Controller('stripe')
 export class StripeController {
@@ -222,7 +223,6 @@ export class StripeController {
     return this.stripeService.createConnectOnboardingLink(businessId);
   }
 
-
   @Post('connect/updateAccount')
   @UseGuards(JwtGuard2)
   async updateAccount(@Body('businessId') businessId: string) {
@@ -233,5 +233,11 @@ export class StripeController {
   @UseGuards(JwtGuard2)
   async syncAccountStatus(@Body('businessId') businessId: string) {
     return this.stripeService.syncAccountStatus(businessId);
+  }
+
+  @Post('flashdeal/payment-intent')
+  @UseGuards(JwtGuard2)
+  async create(@Body() dto: CreateFlashDealPaymentIntentDto) {
+    return this.stripeService.createFlashDealPaymentIntent(dto);
   }
 }
