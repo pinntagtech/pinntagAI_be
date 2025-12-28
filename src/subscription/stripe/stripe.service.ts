@@ -1793,10 +1793,10 @@ export class StripeService {
       },
 
     },
-          {
-        // ✅ idempotency prevents double-charges if your API retries
-        idempotencyKey: `flashdeal_${dto.flashDealId}_${consumerId}`,
-      },
+      //     {
+      //   // ✅ idempotency prevents double-charges if your API retries
+      //   idempotencyKey: `flashdeal_${dto.flashDealId}_${consumerId}`,
+      // },
 
   );
 
