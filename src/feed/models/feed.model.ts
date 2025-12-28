@@ -6,6 +6,7 @@ import { Business } from 'src/business/model/business.model';
 import { FeedTypes } from 'src/enums/auth.enums';
 import { Broadcast } from 'src/notification/models/broadcast.model';
 import { Follow } from 'src/user/models/follow.model';
+import { User } from 'src/user/models/user.model';
 
 export const FeedVisibility = {
   PUBLIC: 'public',
@@ -21,11 +22,12 @@ export class Feed extends Document {
       FeedTypes.BROADCAST,
       FeedTypes.MEDIA,
       FeedTypes.NEWS,
+      FeedTypes.CHECKIN,
     ],
   })
   feedType: string;
 
-  @Prop({ enum: [Business.name, Admin.name] })
+  @Prop({ enum: [Business.name, Admin.name, User.name] })
   creatorType: string;
 
   @Prop({ refPath: 'creatorType' })

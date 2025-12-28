@@ -299,8 +299,8 @@ export class UserController {
 
   @Get('get/following')
   @UseGuards(JwtGuard2)
-  async getFollowing(@Req() req: Request) {
-    const result = await this.userService.getFollowing(req.user['_id']);
+  async getFollowing(@Req() req: Request,@Query('type') type: string) {
+    const result = await this.userService.getFollowing(req.user['_id'], type);
     if (result.success) {
       return {
         message: result.message,

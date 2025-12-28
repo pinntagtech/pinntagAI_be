@@ -17,6 +17,8 @@ export type EventDocument = Event & Document;
 @Schema({ timestamps: true })
 export class Event {
   @Prop({ default: false })
+
+  
   isFromCrawler: boolean;
   @Prop({
     required: true,

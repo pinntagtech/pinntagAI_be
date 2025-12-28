@@ -152,4 +152,5 @@ export const FeedTypes = {
   POLL: 'Poll',
   NEWS: 'News',
   AGENDA: 'Agenda',
+  CHECKIN: 'CheckIn',
 }

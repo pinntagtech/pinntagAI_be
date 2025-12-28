@@ -908,11 +908,22 @@ export class UserService {
     };
   }
 
-  async getFollowing(userId: string) {
+  async getFollowing(userId: string,type:string) {
+    console.log("TYPEEE:",type)
+
+    let match = {
+       follower: new mongoose.Types.ObjectId(userId),
+        isBlocked: false,
+    }
+    if(type === 'Business'){
+      match['followingType'] = 'Business'
+    }else if (type === 'User'){
+      match['followingType'] = 'User'
+    }
+
     const following = await this.followModel
       .find({
-        follower: new mongoose.Types.ObjectId(userId),
-        isBlocked: false,
+        ...match
       })
       .populate(
         'following',
