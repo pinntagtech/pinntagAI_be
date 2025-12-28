@@ -78,6 +78,25 @@ export class CreateOfferDto {
   bookingSite: string;
 
   @IsOptional()
-  quantityLimit: any;
+  itemQuantity: any;
+
+  @IsOptional()
+  itemName: any;
+
+  @IsOptional()
+  itemPrice: any;
+
+  @IsOptional()
+  currency: string;
+
+  @IsOptional()
+  preBookingRequired: any;
+
+  @IsOptional()
+  minOrderPerBooking: any;
+
+  @IsOptional()
+  maxOrderPerBooking: any;
+
 
 }

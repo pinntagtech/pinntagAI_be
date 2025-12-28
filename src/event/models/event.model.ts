@@ -174,11 +174,11 @@ export class Event {
   @Prop()
   itemQuantity: number;
 
-  @Prop()
-  minOrderQuantity: number;
+  @Prop({default:1})
+  minOrderPerBooking: number;
 
-  @Prop()
-  maxOrderQuantity: number;
+  @Prop({default:1})
+  maxOrderPerBooking: number;
 
   @Prop()
   itemPrice: number;

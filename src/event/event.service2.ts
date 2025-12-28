@@ -2209,7 +2209,12 @@ export class EventService2 {
                       fcmTokens[j].token,
                       event.title,
                       message,
-                      { data: {notificationType:NotificationTypes.EVENT, id: event.id } },
+                      {
+                        data: {
+                          notificationType: NotificationTypes.EVENT,
+                          id: event.id,
+                        },
+                      },
                     );
                   }
                 }
@@ -6547,8 +6552,46 @@ export class EventService2 {
       }
 
       // Process quantity limit
-      if (data.eventType === EventTypes.FLASHDEAL && data.quantityLimit) {
-        data.quantityLimit = Number(data.quantityLimit);
+      if (data.eventType === EventTypes.FLASHDEAL) {
+        const {
+          itemQuantity,
+          itemName,
+          minOrderPerBooking,
+          maxOrderPerBooking,
+          itemPrice,
+          currency,
+          preBookingRequired,
+        } = data;
+        if (
+          itemQuantity === undefined ||
+          itemQuantity === '' ||
+          itemName === undefined ||
+          itemName === '' ||
+          itemPrice === undefined ||
+          itemPrice === '' ||
+          currency === undefined ||
+          currency === ''
+        ) {
+          return {
+            success: false,
+            message: 'Please provide item details for flash deal',
+          };
+        }
+        data.itemQuantity = Number(data.itemQuantity);
+        if (
+          data.minOrderPerBooking !== undefined &&
+          data.minOrderPerBooking !== ''
+        ) {
+          data.minOrderPerBooking = Number(data.minOrderPerBooking);
+        }
+        if (
+          data.maxOrderPerBooking !== undefined &&
+          data.maxOrderPerBooking !== ''
+        ) {
+          data.maxOrderPerBooking = Number(data.maxOrderPerBooking);
+        }
+        data.itemPrice = Number(data.itemPrice);
+        data.preBookingRequired = preBookingRequired === 'true';
       }
 
       // Process booking URLs
