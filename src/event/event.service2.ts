@@ -2579,7 +2579,7 @@ export class EventService2 {
           } else {
             //If age is greater than 60 days, ask for re-authentication
             const age =
-              new Date().getTime() - business.facebookToken.age.getTime();
+              new Date().getTime() - business.facebookMetaData.tokenExpiresAt.getTime();
             if (age > 5184000000) {
               return {
                 success: false,
@@ -2594,7 +2594,7 @@ export class EventService2 {
               for (let i = 0; i < eventMedia.length; i++) {
                 const media = eventMedia[i];
                 const fbId = await this.facebookService.uploadImage(
-                  business.facebookToken.value,
+                  business.facebookMetaData.pageAccessToken,
                   media.url,
                 );
                 if (fbId.success) {
@@ -2603,7 +2603,7 @@ export class EventService2 {
               }
             }
             const post = await this.facebookService.createSocialPost(
-              business.facebookToken.value,
+              business.facebookMetaData.pageAccessToken,
               content,
               tempIds,
             );

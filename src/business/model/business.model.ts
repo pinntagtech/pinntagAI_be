@@ -118,6 +118,51 @@ export class StripeAccountStatus {
 export const StripeAccountStatusSchema =
   SchemaFactory.createForClass(StripeAccountStatus);
 
+export class FacebookPageInfo {
+  @Prop()
+  name: string;
+
+  @Prop()
+  about: string;
+
+  @Prop()
+  category: string;
+
+  @Prop()
+  followers: number;
+
+  @Prop()
+  website: string;
+  @Prop()
+  phone: string;
+  @Prop()
+  email: string;
+  @Prop()
+  profilePicture: string;
+  @Prop()
+  coverPhoto: string;
+}
+export const FacebookPageInfoSchema =
+  SchemaFactory.createForClass(FacebookPageInfo);
+
+@Schema({ _id: false })
+export class FacebookMetaData {
+  @Prop()
+  pageId: string;
+
+  @Prop()
+  pageAccessToken: string;
+
+  @Prop()
+  tokenExpiresAt: Date;
+
+  @Prop({ type: FacebookPageInfoSchema })
+  pageInfo: FacebookPageInfo;
+}
+
+export const FacebookMetaDataSchema =
+  SchemaFactory.createForClass(FacebookMetaData);
+
 export type BusinessDocument = Business & Document;
 
 @Schema({ timestamps: true })
@@ -308,24 +353,6 @@ export class Business {
   taxInformation: TaxDetails; // Details about tax compliance
   @Prop()
   healthAndSafetyPolicies: string[]; // Array of health and safety policies
-  @Prop({ default: false })
-  isFacebookConnected: boolean;
-  @Prop({ default: {} })
-  facebookToken: SocialMediaTokenDetails;
-  @Prop()
-  facebookPageUrl: string;
-  @Prop({ default: false })
-  isInstagramConnected: boolean;
-  @Prop({ default: {} })
-  instagramToken: SocialMediaTokenDetails;
-  @Prop()
-  instagramPageUrl: string;
-  @Prop({ default: false })
-  isXConnected: boolean;
-  @Prop({ default: {} })
-  XToken: SocialMediaTokenDetails;
-  @Prop()
-  XPageUrl: string;
   @Prop()
   managerName: string;
   @Prop()
@@ -451,6 +478,25 @@ export class Business {
 
   @Prop({ enum: Object.values(BusinessStructure) })
   businessStructure: string;
+
+  @Prop({ default: false })
+  isFacebookConnected: boolean;
+
+  @Prop({ type: FacebookMetaDataSchema })
+  facebookMetaData: FacebookMetaData;
+
+  @Prop({ default: false })
+  isInstagramConnected: boolean;
+  @Prop({ default: {} })
+  instagramToken: SocialMediaTokenDetails;
+  @Prop()
+  instagramPageUrl: string;
+  @Prop({ default: false })
+  isXConnected: boolean;
+  @Prop({ default: {} })
+  XToken: SocialMediaTokenDetails;
+  @Prop()
+  XPageUrl: string;
 
   // @Prop({default:false})
   // skipToDashboard: boolean;

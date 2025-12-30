@@ -1027,7 +1027,7 @@ export class UserService {
           isBlocked: 1,
           muted: 1,
           mutedUntil: 1,
-          createdAt: 1,
+          createdAt: 1, 
           isMutual: 1,
           followerDoc: {
             _id: 1,
