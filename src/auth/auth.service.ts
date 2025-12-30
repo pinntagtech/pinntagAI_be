@@ -5555,6 +5555,13 @@ export class AuthService {
             },
           },
           distance: { $first: { $divide: ['$distance', 1609.34] } },
+          itemName: { $first: '$event.itemName' },
+          itemQuantity: { $first: '$event.itemQuantity' },
+          minOrderPerBooking: { $first: '$event.minOrderPerBooking' },
+          maxOrderPerBooking: { $first: '$event.maxOrderPerBooking' },
+          itemPrice: { $first: '$event.itemPrice' },
+          currency: { $first: '$event.currency' },
+          preBookingRequired: { $first: '$event.preBookingRequired' }
         },
       },
       {
@@ -5813,6 +5820,13 @@ export class AuthService {
           isReported: 1,
           locations: 1,
           schedules: 1,
+          itemName: 1,
+          itemQuantity: 1,
+          minOrderPerBooking: 1,
+          maxOrderPerBooking: 1,
+          itemPrice: 1,
+          currency: 1,
+          preBookingRequired: 1
         },
       },
 
