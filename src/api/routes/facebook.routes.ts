@@ -14,6 +14,13 @@ const router = Router();
 router.get("/login-url", getFacebookLoginUrl);
 
 /**
+ * @route GET /api/facebook/oauth/callback
+ * @desc Handle Facebook OAuth callback - exchange code for access token
+ * @query { code: string, state: string }
+ */
+router.get("/oauth/callback", facebookController.handleOAuthCallback.bind(facebookController));
+
+/**
  * @route POST /api/facebook/token
  * @desc Exchange authorization code for short-lived user access token
  */
@@ -27,7 +34,8 @@ router.post("/token/long-lived", facebookController.generateLongLivedToken);
 
 /**
  * @route POST /api/facebook/token/page-access
- * @desc Generate Long-Lived Page Access Token from short-lived page token
+ * @desc Generate Long-Lived Page Access Token and save to business_ai_assistant database
+ * @body { pageAccessToken: string, businessId?: string, pageId?: string }
  */
 router.post("/token/page-access", facebookController.generatePageAccessToken);
 
@@ -48,5 +56,13 @@ router.post("/posts", facebookController.getFacebookPostsPost);
  * @desc Get all Facebook posts
  */
 router.get("/all-posts", facebookController.getAllPosts);
+
+/**
+ * @route GET /api/facebook/page-data
+ * @desc Fetch all Facebook posts/events, save to database, and return AI-filtered results
+ * @desc Uses saved Facebook token from business_ai_assistant database
+ * @query { businessId: string, useAI?: boolean, minScore?: number }
+ */
+router.get("/page-data", facebookController.fetchAndSavePageData);
 
 export { router as facebookRoutes };

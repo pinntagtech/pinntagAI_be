@@ -1,0 +1,278 @@
+import OpenAI from "openai";
+import { logger } from "../../utils/logger.js";
+import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
+import { UsageTrackingService } from "./usageTracking.service.js";
+import { UsageType } from "../../models/aiUsage.model.js";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// ===========================
+// Types
+// ===========================
+
+export interface CheckInContext {
+  businessId: string;
+}
+
+export interface CheckInTitleResponse {
+  success: boolean;
+  suggestions: string[];
+  metadata?: {
+    businessName: string;
+    generatedAt: string;
+  };
+}
+
+// ===========================
+// Service Class
+// ===========================
+
+export class CheckInService {
+  /**
+   * Generate AI-suggested titles for check-ins based on business metadata
+   */
+  static async generateCheckInTitles(
+    context: CheckInContext,
+    count: number = 10
+  ): Promise<CheckInTitleResponse> {
+    try {
+      const { businessId } = context;
+
+      // Get business AI assistant info
+      const businessAI = await BusinessAIAssistantModel.findOne({
+        businessId,
+      });
+
+      if (!businessAI) {
+        throw new Error("Business AI assistant not found. Please create an agent first.");
+      }
+
+      // Build the prompt for title generation using business metadata
+      const prompt = this.buildTitlePrompt(
+        businessAI.businessName,
+        businessAI.description || "",
+        businessAI.category,
+        businessAI.subCategories || [],
+        businessAI.tags || [],
+        count
+      );
+
+      logger.info({ businessId, count }, "Generating check-in titles from business metadata");
+
+      // Create a thread for this conversation
+      const thread = await openai.beta.threads.create();
+
+      // Add the message
+      await openai.beta.threads.messages.create(thread.id, {
+        role: "user",
+        content: prompt,
+      });
+
+      // Run with the business assistant
+      const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: businessAI.assistantId,
+      });
+
+      // Poll until completion
+      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
+
+      // Get the response
+      const messages = await openai.beta.threads.messages.list(thread.id, {
+        limit: 10,
+      });
+
+      const lastMessage = messages.data.find((m) => m.role === "assistant");
+      const responseText =
+        lastMessage?.content
+          ?.map((c) => (c.type === "text" ? c.text.value : ""))
+          .join("\n") ?? "";
+
+      // Parse the response
+      const suggestions = this.parseTitleSuggestions(responseText, count);
+
+      // Track usage
+      await UsageTrackingService.trackUsage({
+        businessId,
+        type: UsageType.CONTENT_GENERATION,
+        subType: "check_in_titles",
+        promptTokens: finalRun.usage?.prompt_tokens || 0,
+        completionTokens: finalRun.usage?.completion_tokens || 0,
+        totalTokens: finalRun.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: true,
+        metadata: {
+          threadId: thread.id,
+          runId: finalRun.id,
+          suggestionsCount: suggestions.length,
+        },
+      });
+
+      logger.info(
+        { businessId, suggestionsCount: suggestions.length },
+        "Check-in titles generated successfully"
+      );
+
+      return {
+        success: true,
+        suggestions,
+        metadata: {
+          businessName: businessAI.businessName,
+          generatedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error generating check-in titles");
+      throw error;
+    }
+  }
+
+  /**
+   * Build the prompt for title generation based on business metadata
+   */
+  private static buildTitlePrompt(
+    businessName: string,
+    description: string,
+    category: string,
+    subCategories: string[],
+    tags: string[],
+    count: number = 10
+  ): string {
+    const prompt = `Generate exactly ${count} creative and engaging check-in titles for customers checking in at this business.
+
+BUSINESS INFORMATION:
+- Name: ${businessName}
+- Description: ${description}
+- Category: ${category}
+- Sub-categories: ${subCategories.join(", ") || "N/A"}
+- Tags: ${tags.join(", ") || "N/A"}
+
+TITLE REQUIREMENTS (VERY IMPORTANT):
+1. Each title MUST be exactly 7-8 alphabetic characters long (not including the emoji)
+   Examples of CORRECT length: "Awesome" (7), "Vibing" (6), "Chillin" (7), "Lovin It" (8)
+   Examples of WRONG length: "Great" (5 - too short), "Wonderful" (9 - too long)
+2. Each title MUST include ONE relevant emoji
+3. Titles should be positive, fun, and relatable
+4. Titles should reflect the business category, vibe, and atmosphere
+5. Use casual, social media-friendly language
+6. Avoid generic titles - make them specific to the business type
+
+EXAMPLES FOR REFERENCE:
+- For a pizza restaurant: "Yummy 🍕", "Cheesy 🧀", "Crusty 🍕"
+- For a gym: "Pumped 💪", "Strong 💪", "Gains 🏋️"
+- For a cafe: "Cozy ☕", "Chillin ☕", "Buzzin ☕"
+
+Please provide exactly ${count} title suggestions in the following JSON format:
+{
+  "titles": [
+    {"title": "Awesome", "emoji": "✨"},
+    {"title": "Vibing", "emoji": "🎵"},
+    {"title": "Loving", "emoji": "❤️"}
+  ]
+}
+
+CRITICAL:
+- Title text must be 7-8 characters ONLY (not counting the emoji)
+- Each title MUST have an emoji
+- Return ONLY the JSON object, no additional text
+- Generate exactly ${count} unique titles`;
+
+    return prompt;
+  }
+
+  /**
+   * Parse title suggestions from AI response
+   */
+  private static parseTitleSuggestions(
+    responseText: string,
+    expectedCount: number
+  ): string[] {
+    try {
+      // Try to parse as JSON first
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.titles && Array.isArray(parsed.titles)) {
+          const validTitles = parsed.titles
+            .filter((item: any) => {
+              // Validate that title is 7-8 characters and has emoji
+              const titleLength = item.title?.replace(/\s/g, "").length || 0;
+              return item.title && item.emoji && titleLength >= 6 && titleLength <= 8;
+            })
+            .map((item: any) => `${item.title.trim()} ${item.emoji}`);
+
+          if (validTitles.length >= expectedCount) {
+            return validTitles.slice(0, expectedCount);
+          }
+
+          // If we don't have enough valid titles, supplement with defaults
+          const needed = expectedCount - validTitles.length;
+          const defaults = this.getDefaultTitles(needed);
+          return [...validTitles, ...defaults].slice(0, expectedCount);
+        }
+      }
+
+      // If JSON parsing failed, return defaults
+      logger.warn("Failed to parse JSON response, using default titles");
+      return this.getDefaultTitles(expectedCount);
+    } catch (error) {
+      logger.error({ error }, "Error parsing title suggestions, using defaults");
+      return this.getDefaultTitles(expectedCount);
+    }
+  }
+
+  /**
+   * Get default title suggestions
+   */
+  private static getDefaultTitles(count: number): string[] {
+    const defaults: string[] = [
+      "Awesome ✨",
+      "Vibing 🎵",
+      "Loving ❤️",
+      "Chillin 😎",
+      "Perfect 👌",
+      "Amazing 🌟",
+      "Great 👍",
+      "Stellar ⭐",
+      "Epic 🔥",
+      "Blessed 🙏",
+    ];
+
+    return defaults.slice(0, count);
+  }
+
+  /**
+   * Poll until the run is complete
+   */
+  private static async pollRunUntilComplete(
+    threadId: string,
+    runId: string,
+    maxAttempts: number = 30
+  ): Promise<OpenAI.Beta.Threads.Runs.Run> {
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+      const run = await openai.beta.threads.runs.retrieve(runId, {
+        thread_id: threadId,
+      });
+
+      if (run.status === "completed") {
+        return run;
+      }
+
+      if (
+        run.status === "failed" ||
+        run.status === "cancelled" ||
+        run.status === "expired"
+      ) {
+        throw new Error(`Run ${run.status}: ${run.last_error?.message || "Unknown error"}`);
+      }
+
+      // Wait before polling again
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
+    throw new Error("Run timed out");
+  }
+}

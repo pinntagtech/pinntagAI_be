@@ -1,9 +1,11 @@
 import axios from "axios";
 import qs from "qs";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { logger } from "../../utils/logger.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 interface FacebookPost {
   id: string;
@@ -42,6 +44,17 @@ interface AIAnalysisResult {
   suitable: boolean;
   reason: string;
   score: number;
+  type?: "event" | "offer" | "spotlight" | "flashlight";
+  title?: string;
+  schedule?: {
+    startDate: string | null;
+    endDate: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    isRecurring: boolean;
+  };
+  ticketUrl?: string | null;
+  // Legacy field for backward compatibility
   category?:
     | "promotion"
     | "event"
@@ -51,7 +64,7 @@ interface AIAnalysisResult {
     | "other";
 }
 
-const AI_MODEL_NAME = "gemini-1.5-flash";
+const AI_MODEL_NAME = "gpt-4o"; // OpenAI GPT-4o supports vision/multimodal
 
 export class FacebookService {
   constructor() {}
@@ -135,7 +148,10 @@ export class FacebookService {
 
   /**
    * Converts a short-lived Page Access Token to a Long-Lived Page Access Token
+   * and optionally saves it to the business_ai_assistant database
    * @param pageAccessToken - Short-lived page access token from frontend
+   * @param businessId - Optional business ID to save the token in database
+   * @param pageId - Optional Facebook page ID (will be fetched automatically if not provided)
    *
    * IMPORTANT: Page tokens obtained from /me/accounts with a long-lived user token
    * are already long-lived (60 days). This method is mainly for extending tokens
@@ -146,10 +162,52 @@ export class FacebookService {
    * - Can be refreshed before expiration
    * - Never expire if the page's permissions aren't revoked
    */
-  async generateLongLivedPageToken(pageAccessToken: string) {
+  async generateLongLivedPageToken(
+    pageAccessToken: string,
+    businessId?: string,
+    pageId?: string
+  ) {
     try {
       const client_id = process.env.FACEBOOK_CLIENT_ID;
       const client_secret = process.env.FACEBOOK_CLIENT_SECRET;
+
+      // Fetch comprehensive page information using the page access token
+      let resolvedPageId = pageId;
+      let pageMetadata: any = null;
+
+      try {
+        const pageInfoConfig = {
+          method: "get",
+          url: `https://graph.facebook.com/v24.0/me?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+        };
+
+        const pageInfoResponse = await axios.request(pageInfoConfig);
+        const pageData = pageInfoResponse.data;
+
+        resolvedPageId = pageData.id;
+        pageMetadata = {
+          name: pageData.name || null,
+          category: pageData.category || null,
+          about: pageData.about || pageData.description || null,
+          followers: pageData.followers_count || 0,
+          website: pageData.website || null,
+          phone: pageData.phone || null,
+          email: pageData.emails?.[0] || null,
+          profilePicture: pageData.picture?.data?.url || null,
+          coverPhoto: pageData.cover?.source || null,
+          rawData: pageData,
+        };
+
+        logger.info(
+          { pageId: resolvedPageId, pageName: pageData.name, category: pageData.category },
+          "Fetched comprehensive page metadata from page access token"
+        );
+      } catch (pageInfoError: any) {
+        logger.warn(
+          { error: pageInfoError.message },
+          "Could not fetch page metadata from token, continuing without it"
+        );
+      }
 
       // Exchange page token for long-lived version
       const config = {
@@ -159,28 +217,123 @@ export class FacebookService {
       };
 
       const response = await axios.request(config);
+      const longLivedToken = response.data.access_token;
+      const expiresIn = response.data.expires_in; // Usually 5183944 seconds (~60 days)
 
       logger.info(
         {
-          hasAccessToken: !!response.data.access_token,
-          expiresIn: response.data.expires_in
+          hasAccessToken: !!longLivedToken,
+          expiresIn,
+          businessId,
+          pageId: resolvedPageId,
         },
         "Generated long-lived page access token"
       );
 
+      // If businessId is provided, save the token to database
+      if (businessId) {
+        const { BusinessAIAssistantModel } = await import(
+          "../../models/businessAIAssistant.model.js"
+        );
+
+        // Calculate expiration date
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
+
+        const updateData: any = {
+          facebookPageAccessToken: longLivedToken,
+          facebookPageTokenExpiresAt: expiresAt,
+        };
+
+        if (resolvedPageId) {
+          updateData.facebookPageId = resolvedPageId;
+        }
+
+        // Add page metadata if available
+        if (pageMetadata) {
+          updateData.facebookPageName = pageMetadata.name;
+          updateData.facebookPageCategory = pageMetadata.category;
+          updateData.facebookPageAbout = pageMetadata.about;
+          updateData.facebookPageFollowers = pageMetadata.followers;
+          updateData.facebookPageWebsite = pageMetadata.website;
+          updateData.facebookPagePhone = pageMetadata.phone;
+          updateData.facebookPageEmail = pageMetadata.email;
+          updateData.facebookPageProfilePicture = pageMetadata.profilePicture;
+          updateData.facebookPageCoverPhoto = pageMetadata.coverPhoto;
+          updateData.facebookPageMetadata = pageMetadata.rawData;
+        }
+
+        const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
+          { businessId },
+          { $set: updateData },
+          { new: true }
+        );
+
+        if (!updatedBusiness) {
+          logger.warn({ businessId }, "Business not found for token save");
+          return {
+            success: false,
+            data: `Business with ID ${businessId} not found`,
+          };
+        }
+
+        logger.info(
+          { businessId, pageId: resolvedPageId, expiresAt, pageName: pageMetadata?.name },
+          "Saved long-lived page access token and metadata to database"
+        );
+
+        return {
+          success: true,
+          data: {
+            accessToken: longLivedToken,
+            tokenType: response.data.token_type,
+            expiresIn,
+            expiresAt,
+            savedToDatabase: true,
+            businessId,
+            pageId: resolvedPageId || null,
+            pageMetadata: pageMetadata ? {
+              name: pageMetadata.name,
+              category: pageMetadata.category,
+              about: pageMetadata.about,
+              followers: pageMetadata.followers,
+              website: pageMetadata.website,
+              phone: pageMetadata.phone,
+              email: pageMetadata.email,
+              profilePicture: pageMetadata.profilePicture,
+              coverPhoto: pageMetadata.coverPhoto,
+            } : null,
+          },
+        };
+      }
+
+      // Return without saving to database
       return {
         success: true,
         data: {
-          accessToken: response.data.access_token,
+          accessToken: longLivedToken,
           tokenType: response.data.token_type,
-          expiresIn: response.data.expires_in, // Usually 5183944 seconds (~60 days)
+          expiresIn,
+          savedToDatabase: false,
+          pageId: resolvedPageId || null,
+          pageMetadata: pageMetadata ? {
+            name: pageMetadata.name,
+            category: pageMetadata.category,
+            about: pageMetadata.about,
+            followers: pageMetadata.followers,
+            website: pageMetadata.website,
+            phone: pageMetadata.phone,
+            email: pageMetadata.email,
+            profilePicture: pageMetadata.profilePicture,
+            coverPhoto: pageMetadata.coverPhoto,
+          } : null,
         },
       };
     } catch (error: any) {
       logger.error(
         {
           error: error.message,
-          response: error.response?.data
+          response: error.response?.data,
         },
         "Error generating long-lived page access token"
       );
@@ -272,6 +425,229 @@ export class FacebookService {
   }
 
   /**
+   * Fetches all Facebook posts and events, saves them to database, and returns AI-filtered results
+   * Retrieves the page access token from business_ai_assistant database
+   * @param businessId - Business ID to fetch token and associate posts with
+   * @param useAI - Whether to use AI filtering (default: true)
+   * @param minScore - Minimum AI score for filtering (default: 60)
+   */
+  async fetchAndSavePageData(
+    businessId: string,
+    useAI: boolean = true,
+    minScore: number = 60
+  ) {
+    try {
+      const { FacebookPostModel } = await import(
+        "../../models/facebookPost.model.js"
+      );
+      const { BusinessAIAssistantModel } = await import(
+        "../../models/businessAIAssistant.model.js"
+      );
+
+      // Fetch business and get saved Facebook token
+      const business = await BusinessAIAssistantModel.findOne({ businessId });
+
+      if (!business) {
+        logger.error({ businessId }, "Business not found");
+        return {
+          success: false,
+          error: `Business with ID ${businessId} not found`,
+        };
+      }
+
+      if (!business.facebookPageAccessToken) {
+        logger.error({ businessId }, "No Facebook page access token found");
+        return {
+          success: false,
+          error: "No Facebook page access token found for this business. Please connect your Facebook page first.",
+        };
+      }
+
+      const token = business.facebookPageAccessToken;
+      const pageId = business.facebookPageId;
+
+      // Check if token is expired
+      if (business.facebookPageTokenExpiresAt) {
+        const now = new Date();
+        if (business.facebookPageTokenExpiresAt < now) {
+          logger.warn(
+            { businessId, expiresAt: business.facebookPageTokenExpiresAt },
+            "Facebook page access token has expired"
+          );
+          return {
+            success: false,
+            error: "Facebook page access token has expired. Please reconnect your Facebook page.",
+          };
+        }
+      }
+
+      logger.info(
+        { businessId, pageId },
+        "Using saved Facebook token to fetch page data"
+      );
+
+      // Fetch all posts and events
+      const allData = await this.getAllPosts(token);
+
+      if (!allData.success || !allData.data) {
+        return {
+          success: false,
+          error: allData.error || "Failed to fetch Facebook data",
+        };
+      }
+
+      const events = allData.data.events || [];
+      const savedPosts: any[] = [];
+      const skippedPosts: any[] = [];
+
+      // Save each event/post to database (skip if already exists)
+      for (const item of events) {
+        try {
+          // Check if post already exists for this business
+          const existingPost = await FacebookPostModel.findOne({
+            postId: item.id,
+            businessId: businessId,
+          });
+
+          if (existingPost) {
+            logger.info(
+              { postId: item.id, businessId },
+              "Post already exists in database, skipping"
+            );
+            skippedPosts.push({
+              postId: item.id,
+              reason: "Already exists in database",
+            });
+            continue; // Skip this post
+          }
+
+          const postData: any = {
+            businessId,
+            facebookPageId: pageId,
+            postId: item.id,
+            type: item.source === "facebook_events_api" ? "event" : "post",
+            source: item.source,
+            title: item.title,
+            message: item.metadata?.aiReason || item.description,
+            description: item.description,
+            fullPicture: item.images?.[0] || null,
+            images: item.images || [],
+            reactions: 0,
+            comments: 0,
+            shares: 0,
+            lastSyncedAt: new Date(),
+            rawData: item,
+          };
+
+          // Add event-specific data
+          if (item.schedule) {
+            postData.eventData = {
+              startDate: item.schedule.startDate,
+              endDate: item.schedule.endDate,
+              startTime: item.schedule.startTime,
+              endTime: item.schedule.endTime,
+              location: item.location,
+              isOnline: item.isOnline || false,
+            };
+          }
+
+          // Add AI analysis if available
+          if (item.metadata?.aiConfidenceScore !== undefined) {
+            postData.aiAnalysis = {
+              suitable: true,
+              reason: item.metadata.aiReason || "",
+              score: item.metadata.aiConfidenceScore,
+              type: item.type || item.metadata.aiType,
+              title: item.title,
+              schedule: item.schedule ? {
+                startDate: item.schedule.startDate,
+                endDate: item.schedule.endDate,
+                startTime: item.schedule.startTime,
+                endTime: item.schedule.endTime,
+                isRecurring: item.schedule.isRecurring || false,
+              } : undefined,
+              ticketUrl: item.ticketUrl || null,
+              category: item.metadata.aiCategory || "event",
+            };
+          }
+
+          // Insert new post
+          const savedPost = await FacebookPostModel.create(postData);
+
+          savedPosts.push(savedPost);
+          logger.info(
+            { postId: item.id, businessId },
+            "Successfully saved new post to database"
+          );
+        } catch (saveError: any) {
+          logger.error(
+            { error: saveError.message, postId: item.id },
+            "Error saving post to database"
+          );
+          skippedPosts.push({ postId: item.id, error: saveError.message });
+        }
+      }
+
+      logger.info(
+        {
+          businessId,
+          pageId,
+          totalFetched: events.length,
+          saved: savedPosts.length,
+          skipped: skippedPosts.length,
+        },
+        "Completed saving Facebook data to database"
+      );
+
+      // Apply AI filtering if requested
+      let filteredPosts = savedPosts;
+      if (useAI && minScore > 0) {
+        filteredPosts = savedPosts.filter((post) => {
+          const score = post.aiAnalysis?.score || 0;
+          return score >= minScore;
+        });
+
+        logger.info(
+          {
+            total: savedPosts.length,
+            filtered: filteredPosts.length,
+            minScore,
+          },
+          "Applied AI filtering to saved posts"
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          posts: filteredPosts,
+          summary: {
+            totalFetched: events.length,
+            totalSaved: savedPosts.length,
+            totalFiltered: filteredPosts.length,
+            skipped: skippedPosts.length,
+            businessId,
+            pageId,
+          },
+          skippedPosts: skippedPosts.length > 0 ? skippedPosts : undefined,
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        {
+          error: error.message,
+          businessId,
+        },
+        "Error in fetchAndSavePageData"
+      );
+      return {
+        success: false,
+        error: error.message || "Failed to fetch and save Facebook data",
+      };
+    }
+  }
+
+  /**
    * Fetches all events from both Facebook Events API and Posts (with AI analysis)
    * Returns structured event data with title, description, image, schedule, and location
    * Filters to only return future events (after current date)
@@ -287,7 +663,7 @@ export class FacebookService {
       try {
         const eventsConfig = {
           method: "get",
-          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft",
+          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_uri",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -310,13 +686,16 @@ export class FacebookService {
             source: "facebook_events_api",
             title: event.name || "Untitled Event",
             description: event.description || "",
-            image: event.cover?.source || null,
+            type: "event",
+            images: event.cover?.source ? [event.cover.source] : [],
             schedule: {
               startDate: eventStartTime.toISOString().split('T')[0],
               endDate: event.end_time ? new Date(event.end_time).toISOString().split('T')[0] : eventStartTime.toISOString().split('T')[0],
               startTime: eventStartTime.toTimeString().split(' ')[0],
               endTime: event.end_time ? new Date(event.end_time).toTimeString().split(' ')[0] : null,
+              isRecurring: false,
             },
+            ticketUrl: event.ticket_uri || null,
             location: {
               name: event.place?.name || null,
               address1: event.place?.location?.street || null,
@@ -358,47 +737,73 @@ export class FacebookService {
               continue;
             }
 
-            // Only process posts categorized as events by AI
-            if (post.aiAnalysis?.category !== 'event') continue;
+            // Process all suitable posts (events, offers, spotlight, flashlight)
+            // Use AI-generated data (title, type, schedule, ticketUrl)
+            const aiAnalysis = post.aiAnalysis;
+            const aiReason = aiAnalysis.reason || "";
+            const eventType = aiAnalysis?.type || 'spotlight';
 
-            // Extract event data from AI analysis
-            // AI reason typically contains extracted event details
-            const aiReason = post.aiAnalysis.reason || "";
+            // Use AI-generated schedule if available, otherwise fallback to manual extraction
+            let schedule = aiAnalysis?.schedule;
+            if (!schedule || !schedule.startDate) {
+              // Fallback: Try to extract date/time from AI reason or post message
+              const dateMatch = aiReason.match(/(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i);
+              const timeMatch = aiReason.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i);
 
-            // Try to extract date/time from AI reason or post message
-            const dateMatch = aiReason.match(/(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i);
-            const timeMatch = aiReason.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i);
-
-            // Parse date if found
-            let eventDate = null;
-            if (dateMatch) {
-              try {
-                eventDate = new Date(dateMatch[1]);
-                if (isNaN(eventDate.getTime())) eventDate = null;
-              } catch (e) {
-                eventDate = null;
+              let eventDate = null;
+              if (dateMatch) {
+                try {
+                  eventDate = new Date(dateMatch[1]);
+                  if (isNaN(eventDate.getTime())) eventDate = null;
+                } catch (e) {
+                  eventDate = null;
+                }
               }
+
+              schedule = {
+                startDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
+                endDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
+                startTime: timeMatch ? timeMatch[1] : null,
+                endTime: null,
+                isRecurring: false,
+              };
             }
 
-            // Skip if event is in the past
-            if (eventDate && eventDate <= now) continue;
+            // Skip if it's an event in the past (but keep offers/spotlight/flashlight regardless of date)
+            if (eventType === 'event' && schedule?.startDate) {
+              const eventDate = new Date(schedule.startDate);
+              if (eventDate <= now) continue;
+            }
 
-            // Extract title from AI reason or post message
-            const titleMatch = aiReason.match(/(?:event|flyer|poster)\s+(?:with\s+)?(?:clear\s+)?(?:details:?\s+)?([^.!?,]+)/i);
-            const title = titleMatch ? titleMatch[1].trim() : (post.message?.substring(0, 50) || "Event from Post");
+            // Use AI-generated title or fallback
+            const title = aiAnalysis?.title || post.message?.substring(0, 50) || `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} from Post`;
+
+            // Extract images
+            const images: string[] = [];
+            if (post.full_picture) images.push(post.full_picture);
+            if (post.attachments?.data) {
+              post.attachments.data.forEach((att: any) => {
+                if (att.media?.image?.src && !images.includes(att.media.image.src)) {
+                  images.push(att.media.image.src);
+                }
+              });
+            }
 
             events.push({
               id: post.id,
               source: "facebook_post_ai_extracted",
               title: title,
               description: post.message || aiReason,
-              image: post.full_picture || null,
+              type: eventType,
+              images: images,
               schedule: {
-                startDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
-                endDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
-                startTime: timeMatch ? timeMatch[1] : null,
-                endTime: null,
+                startDate: schedule.startDate,
+                endDate: schedule.endDate,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                isRecurring: schedule.isRecurring || false,
               },
+              ticketUrl: aiAnalysis?.ticketUrl || null,
               location: {
                 name: null,
                 address1: null,
@@ -414,8 +819,9 @@ export class FacebookService {
               metadata: {
                 facebookPostId: post.id,
                 extractedFromImage: !post.message,
-                aiConfidenceScore: post.aiAnalysis.score,
+                aiConfidenceScore: aiAnalysis.score,
                 aiReason: aiReason,
+                aiType: eventType,
                 extractedFromPost: true,
               }
             });
@@ -558,19 +964,12 @@ export class FacebookService {
   }
 
   /**
-   * Uses AI to analyze if a post is suitable for Pinntag
+   * Uses OpenAI to analyze if a post is suitable for Pinntag
    * Now supports multimodal analysis - analyzes both text AND images!
    * Returns: { suitable: boolean, reason: string, score: number, category?: string }
    */
   async analyzePostWithAI(post: FacebookPost): Promise<AIAnalysisResult> {
     try {
-      const model = genAI.getGenerativeModel({
-        model: AI_MODEL_NAME,
-        generationConfig: {
-          responseMimeType: "application/json",
-        },
-      });
-
       // Prepare post data for AI analysis
       const attachmentsData = post.attachments?.data || [];
       const postData = {
@@ -602,9 +1001,9 @@ export class FacebookService {
       });
 
       const prompt = `
-        Analyze if this Facebook post is suitable for Pinntag, a local business discovery and deals platform.
+        Analyze this Facebook post and extract structured event/promotion data for Pinntag, a local business discovery platform.
 
-        PRIMARY USE CASE: This is used to extract EVENTS and DEALS from business Facebook posts.
+        PRIMARY USE CASE: Extract EVENTS and DEALS from business Facebook posts and transform them into a unified event format.
         Posts with event flyers, promotional images, or deal announcements (even without text messages) are highly valuable.
 
         ${imageUrls.length > 0 ? `
@@ -613,30 +1012,37 @@ export class FacebookService {
 
         STEP 1 - READ AND ANALYZE THE IMAGE(S):
         - READ all text visible in the image (event flyers, promotional posters, menu boards, deal announcements)
-        - Identify what the image shows: event flyer, promotional poster, food photo, product photo, award certificate, personal photo, missing person poster
-        - Check for event details: date, time, location, event name, special offers
-        - Check for deal/promotion details: discounts, special offers, limited-time deals
+        - Extract event details from image: date, time, location, event name, special offers, ticket URL
+        - Extract promotion details: discounts, special offers, limited-time deals, promo codes
+        - Identify image type: event flyer, promotional poster, food photo, product photo, award certificate, personal photo, missing person poster
         - Is it professional/promotional quality?
-        - Is it a missing person/child alert poster? (NEVER suitable, even if text says otherwise)
+        - Is it a missing person/child alert poster? (NEVER suitable)
 
-        STEP 2 - IMAGE CONTENT OVERRIDES POST MESSAGE:
-        - If image shows a missing person poster → Mark as NOT suitable (score 0-10), REGARDLESS of what the post message says
-        - If image shows personal/family content → Mark as NOT suitable (score 0-20), REGARDLESS of post message
-        - If image shows political content → Mark as NOT suitable (score 0-15), REGARDLESS of post message
-        - If image shows EVENT FLYER with details (even if post message is empty) → Mark as suitable (score 80-95)
-        - If image shows PROMOTIONAL POSTER/DEAL (even if post message is empty) → Mark as suitable (score 85-95)
-        - If image shows food/products/awards → Mark as suitable ONLY if it makes sense for a business to post
+        STEP 2 - GENERATE A TITLE:
+        - For EVENT FLYERS: Extract the event name from the image or post message
+        - For PROMOTIONAL POSTS: Create a catchy title from the deal/offer (e.g., "50% Off All Appetizers", "Happy Hour Special")
+        - For PRODUCT/SERVICE POSTS: Use the product/service name or create a descriptive title
+        - Keep titles concise (5-10 words max)
+        - If no clear title can be extracted, generate one based on the post content
 
-        STEP 3 - POST MESSAGE IS SECONDARY:
-        - Post message is only used to ADD CONTEXT to what you see in the image
-        - If post message contradicts image, the IMAGE WINS
-        - Empty post message is OK if image contains event/deal/promotional content
-        - Text like "James Beard Award" with a missing child poster image = NOT SUITABLE (score 0)
+        STEP 3 - EXTRACT SCHEDULE INFORMATION (if available):
+        - Look for dates in format: MM/DD/YYYY, Month DD, YYYY, or relative dates
+        - Look for times: specific times (e.g., "7:00 PM") or time ranges (e.g., "5-9 PM")
+        - Check for recurring events: "Every Friday", "Weekly", "Monthly"
+        - If schedule info exists in image but not in post message, extract it from the image
+        - It's OK if schedule information is not available
 
-        SPECIAL CASE - POSTS WITHOUT MESSAGES:
-        - If post has NO message but image contains event flyer/promotional content → ACCEPT (score 80-95)
-        - If post has NO message and image is just a profile/cover photo → REJECT (score 0-20)
-        ` : ""}
+        STEP 4 - EXTRACT TICKET/BOOKING URL:
+        - Look for URLs in post message or image
+        - Common patterns: eventbrite.com, ticketmaster.com, "register at", "book at", "RSVP"
+        - Extract any URL that appears to be for tickets, bookings, or registration
+        ` : `
+        GENERATE A TITLE:
+        - Create a descriptive title from the post message/caption (5-10 words max)
+        - For offers/deals: Include the key value proposition
+        - For announcements: Summarize the main point
+        - Make it attention-grabbing but accurate
+        `}
 
         Post Data:
         - Message: "${postData.message}"
@@ -651,53 +1057,49 @@ export class FacebookService {
           " | "
         )}
 
-        Pinntag Suitability Criteria:
-        1. Business-related content ONLY (promotions, EVENTS, offers, deals, products, services, menu items, awards, business announcements)
-        2. Professional or promotional in nature
-        3. Could attract customers or drive foot traffic to the business
-        4. ${imageUrls.length > 0 ? "Image content must match or support the business message (mismatched images = NOT suitable)" : ""}
-
-        HIGHLY SUITABLE (PRIORITIZE THESE):
-        - EVENT FLYERS in images (even without post message) - look for date, time, location, event name
-        - PROMOTIONAL POSTERS with deals/discounts (even without post message)
-        - Special offers, limited-time deals, happy hour announcements
-        - New menu items with photos
-        - Grand opening/reopening announcements
-        - Live music, entertainment, special guest announcements
+        TYPE CLASSIFICATION (choose ONE):
+        - "event": Time-bound happenings (concerts, workshops, grand openings, live performances, festivals, classes)
+        - "offer": Discounts, deals, promotions, limited-time offers, happy hours, combo deals, seasonal sales
+        - "spotlight": Business highlights, awards, achievements, new menu items, product launches, success stories
+        - "flashlight": Urgent/time-sensitive announcements, flash sales, last-minute deals, breaking news about the business
 
         EXCLUDE (mark as NOT suitable):
-        - Missing person/child alerts, Amber alerts, emergency notifications (EVEN if posted by a business)
-        - Posts where the IMAGE shows missing person content, REGARDLESS of post message
+        - Missing person/child alerts, Amber alerts, emergency notifications
         - Political content, controversial topics, or activism
         - Personal family updates, condolences, tragedy announcements
-        - Posts where image and post message don't match (e.g., award text + missing person image)
+        - Posts where image and post message don't match
         - Generic "thoughts and prayers" posts
         - Pure entertainment or memes not related to business
-        - Community service announcements (unless directly promoting the business)
-        - News sharing (unless it's about the business itself, like awards or recognition)
-        - Profile/cover photo updates WITHOUT event/promotional content in the image
+        - Profile/cover photo updates WITHOUT event/promotional content
 
         Score Guidelines:
-        - 90-100: EVENT FLYERS with clear details, PROMOTIONAL DEALS with discounts, new menu items with attractive photos
-        - 80-89: Events or promotions mentioned in text with supporting images, special announcements
-        - 70-79: Business-related announcements (awards, achievements) where image matches text
+        - 90-100: EVENT FLYERS with clear details, PROMOTIONAL DEALS with discounts
+        - 80-89: Events or promotions with supporting images, special announcements
+        - 70-79: Business-related announcements (awards, achievements)
         - 50-69: Borderline business content (general updates with some promotional value)
-        - 0-49: Not suitable for Pinntag (non-business content, alerts, personal posts, missing person posters, image/text mismatch, or profile updates without promotional content)
+        - 0-49: Not suitable for Pinntag
 
         You must respond with only a JSON object matching this schema:
         {
-          "type": "object",
-          "properties": {
-            "suitable": { "type": "boolean" },
-            "reason": { "type": "string" },
-            "score": { "type": "number" },
-            "category": { "type": "string", "enum": ["promotion", "event", "product", "service", "announcement", "other"] }
+          "suitable": boolean,
+          "reason": string,
+          "score": number,
+          "type": "event" | "offer" | "spotlight" | "flashlight",
+          "title": string,
+          "schedule": {
+            "startDate": string | null,
+            "endDate": string | null,
+            "startTime": string | null,
+            "endTime": string | null,
+            "isRecurring": boolean
           },
-          "required": ["suitable", "reason", "score"]
+          "ticketUrl": string | null
         }`;
 
-      // Build multimodal content with images if available
-      const contentParts: any[] = [{ text: prompt }];
+      // Build OpenAI message content with images if available
+      const messageContent: OpenAI.Chat.ChatCompletionContentPart[] = [
+        { type: "text", text: prompt }
+      ];
 
       // Fetch and add images for multimodal analysis
       if (imageUrls.length > 0) {
@@ -720,11 +1122,12 @@ export class FacebookService {
             const mimeType =
               imageResponse.headers["content-type"] || "image/jpeg";
 
-            contentParts.push({
-              inlineData: {
-                data: base64Image,
-                mimeType: mimeType,
-              },
+            messageContent.push({
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`,
+                detail: "high"
+              }
             });
 
             logger.info(
@@ -740,27 +1143,52 @@ export class FacebookService {
         }
       }
 
-      // Generate content with multimodal input (text + images)
-      const result = await model.generateContent(contentParts);
-      const response = result.response.text();
+      // Call OpenAI with multimodal input (text + images)
+      const completion = await openai.chat.completions.create({
+        model: AI_MODEL_NAME,
+        messages: [
+          {
+            role: "user",
+            content: messageContent
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+        max_tokens: 500,
+      });
+
+      const responseText = completion.choices[0]?.message?.content || "{}";
 
       logger.info(
         {
           postId: post.id,
-          aiResponse: response,
+          aiResponse: responseText,
           hadImages: imageUrls.length > 0,
-          imagesAnalyzed: contentParts.length - 1,
+          imagesAnalyzed: messageContent.length - 1,
         },
         "AI analysis for post (with image analysis)"
       );
 
-      const analysis: AIAnalysisResult = JSON.parse(response);
+      const analysis: AIAnalysisResult = JSON.parse(responseText);
+
+      // Map new type to legacy category for backward compatibility
+      const categoryMap: Record<string, "promotion" | "event" | "product" | "service" | "announcement" | "other"> = {
+        event: "event",
+        offer: "promotion",
+        spotlight: "announcement",
+        flashlight: "announcement",
+      };
+      const legacyCategory = analysis.type ? categoryMap[analysis.type] || "other" : undefined;
 
       return {
         suitable: analysis.suitable === true,
         reason: analysis.reason || "No reason provided",
         score: analysis.score || 0,
-        category: analysis.category,
+        type: analysis.type,
+        title: analysis.title,
+        schedule: analysis.schedule,
+        ticketUrl: analysis.ticketUrl,
+        category: legacyCategory,
       };
     } catch (error: any) {
       logger.error(

@@ -6,6 +6,83 @@ const facebookService = new FacebookService();
 
 export class FacebookController {
   /**
+   * Handle Facebook OAuth callback and exchange code for access token
+   * GET /facebook/oauth/callback
+   * Query params: { code: string, state: string }
+   */
+  async handleOAuthCallback(req: Request, res: Response) {
+    try {
+      const { code, state } = req.query;
+
+      // Validate required parameters
+      if (!code || typeof code !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Authorization code is required",
+        });
+      }
+
+      if (!state || typeof state !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "State parameter is required for CSRF protection",
+        });
+      }
+
+      // TODO: Verify state parameter against stored session value
+      // For now, we'll log it for the developer to implement
+      logger.info(
+        { state },
+        "IMPORTANT: Verify this state matches your stored session value"
+      );
+
+      // Get redirect URI from environment variable
+      const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+      if (!redirectUri) {
+        return res.status(500).json({
+          success: false,
+          error: "FACEBOOK_REDIRECT_URI not configured in environment",
+        });
+      }
+
+      logger.info(
+        { codeLength: code.length, state },
+        "Processing Facebook OAuth callback"
+      );
+
+      // Exchange code for access token
+      const result = await facebookService.exchangeCodeForToken(code, redirectUri);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.data || "Failed to exchange code for access token",
+        });
+      }
+
+      logger.info(
+        { tokenType: result.data.token_type, expiresIn: result.data.expires_in },
+        "Successfully exchanged code for access token"
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          accessToken: result.data.access_token,
+          tokenType: result.data.token_type,
+          expiresIn: result.data.expires_in,
+        },
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error handling OAuth callback");
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
    * Generate a long-lived token from a short-lived token
    * POST /facebook/token/long-lived
    * Body: { shortLivedToken: string }
@@ -202,13 +279,83 @@ export class FacebookController {
   }
 
   /**
+   * Fetch all Facebook posts and events, save to database, and return AI-filtered results
+   * Uses the saved Facebook token from business_ai_assistant database
+   * GET /facebook/page-data
+   * Query: { businessId: string, useAI?: boolean, minScore?: number }
+   */
+  async fetchAndSavePageData(req: Request, res: Response) {
+    try {
+      const { businessId, useAI, minScore } = req.query;
+
+      // Validate required parameters
+      if (!businessId || typeof businessId !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      // Parse optional parameters
+      const useAIFiltering = useAI === "true" || useAI === "1";
+      const minAIScore = minScore ? parseInt(minScore as string, 10) : 60;
+
+      // Validate minScore
+      if (isNaN(minAIScore) || minAIScore < 0 || minAIScore > 100) {
+        return res.status(400).json({
+          success: false,
+          error: "minScore must be a number between 0 and 100",
+        });
+      }
+
+      logger.info(
+        { businessId, useAI: useAIFiltering, minScore: minAIScore },
+        "Fetching and saving Facebook page data using saved token"
+      );
+
+      // Fetch, save, and filter data (token retrieved from database)
+      const result = await facebookService.fetchAndSavePageData(
+        businessId,
+        useAIFiltering,
+        minAIScore
+      );
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || "Failed to fetch and save Facebook data",
+        });
+      }
+
+      logger.info(
+        {
+          businessId,
+          summary: result.data?.summary,
+        },
+        "Successfully fetched, saved, and filtered Facebook page data"
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+      });
+    } catch (error: any) {
+      logger.error({ error }, "Error in fetchAndSavePageData controller");
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
    * Generate Long-Lived Page Access Token from a short-lived page token
    * POST /facebook/token/page-access
-   * Body: { pageAccessToken: string }
+   * Body: { pageAccessToken: string, businessId?: string, pageId?: string }
    */
   async generatePageAccessToken(req: Request, res: Response) {
     try {
-      const { pageAccessToken } = req.body;
+      const { pageAccessToken, businessId, pageId } = req.body;
 
       if (!pageAccessToken) {
         return res.status(400).json({
@@ -217,10 +364,15 @@ export class FacebookController {
         });
       }
 
-      logger.info("Generating long-lived page access token");
+      logger.info(
+        { hasBusinessId: !!businessId, hasPageId: !!pageId },
+        "Generating long-lived page access token"
+      );
 
       const result = await facebookService.generateLongLivedPageToken(
-        pageAccessToken
+        pageAccessToken,
+        businessId,
+        pageId
       );
 
       if (result.success) {

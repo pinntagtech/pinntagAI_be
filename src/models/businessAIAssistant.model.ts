@@ -1,6 +1,40 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { Tone } from "../utils/types/types.js";
 
+export interface IBusiness_AI_Assistant extends Document {
+  tone?: Tone;
+  businessId: string | Schema.Types.ObjectId;
+  businessName: string;
+  category: string;
+  subCategories: string[];
+  tags?: string[];
+  name: string;
+  vectorStoreId?: string;
+  assistantId: string;
+  description?: string;
+  website?: string;
+  websiteData?: string; // Cached website content
+  contactEmail?: string;
+  metadata?: Record<string, any>;
+  threadId?: string;
+  instructions?: string;
+  facebookPageAccessToken?: string; // Long-lived Facebook page access token
+  facebookPageId?: string; // Facebook page ID
+  facebookPageTokenExpiresAt?: Date; // Token expiration date
+  facebookPageName?: string; // Facebook page name
+  facebookPageCategory?: string; // Facebook page category
+  facebookPageProfilePicture?: string; // Facebook page profile picture URL
+  facebookPageCoverPhoto?: string; // Facebook page cover photo URL
+  facebookPageAbout?: string; // Facebook page about/description
+  facebookPageFollowers?: number; // Number of followers
+  facebookPageWebsite?: string; // Website from Facebook page
+  facebookPagePhone?: string; // Phone number from Facebook page
+  facebookPageEmail?: string; // Email from Facebook page
+  facebookPageMetadata?: Record<string, any>; // Additional Facebook page metadata
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
   {
     tone: { type: String, enum: Object.values(Tone) },
@@ -24,30 +58,22 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     assistantId: { type: String, required: true },
     threadId: { type: String },
     instructions: { type: String },
+    facebookPageAccessToken: { type: String }, // Long-lived Facebook page access token
+    facebookPageId: { type: String }, // Facebook page ID
+    facebookPageTokenExpiresAt: { type: Date }, // Token expiration date
+    facebookPageName: { type: String }, // Facebook page name
+    facebookPageCategory: { type: String }, // Facebook page category
+    facebookPageProfilePicture: { type: String }, // Facebook page profile picture URL
+    facebookPageCoverPhoto: { type: String }, // Facebook page cover photo URL
+    facebookPageAbout: { type: String }, // Facebook page about/description
+    facebookPageFollowers: { type: Number }, // Number of followers
+    facebookPageWebsite: { type: String }, // Website from Facebook page
+    facebookPagePhone: { type: String }, // Phone number from Facebook page
+    facebookPageEmail: { type: String }, // Email from Facebook page
+    facebookPageMetadata: { type: Schema.Types.Mixed }, // Additional Facebook page metadata
   },
   { timestamps: true, versionKey: false }
 );
-
-export interface IBusiness_AI_Assistant extends Document {
-  tone?: Tone;
-  businessId: string | Schema.Types.ObjectId;
-  businessName: string;
-  category: string;
-  subCategories: string[];
-  tags?: string[];
-  name: string;
-  vectorStoreId?: string;
-  assistantId: string;
-  description?: string;
-  website?: string;
-  websiteData?: string; // Cached website content
-  contactEmail?: string;
-  metadata?: Record<string, any>;
-  threadId?: string;
-  instructions?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 BusinessAIAssistantSchema.index({ industry: 1 });
 BusinessAIAssistantSchema.index({ createdAt: -1 });
