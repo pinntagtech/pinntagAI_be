@@ -50,6 +50,7 @@ export class FacebookController {
 
       // Get redirect URI from environment variable
       const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
+      console.log(redirectUri, "Redirect URI");
       if (!redirectUri) {
         return res.status(500).json({
           success: false,
@@ -63,12 +64,16 @@ export class FacebookController {
       );
 
       // Step 1: Exchange code for short-lived access token
-      const shortTokenResult = await facebookService.exchangeCodeForToken(code, redirectUri);
+      const shortTokenResult = await facebookService.exchangeCodeForToken(
+        code,
+        redirectUri
+      );
 
       if (!shortTokenResult.success) {
         return res.status(400).json({
           success: false,
-          error: shortTokenResult.data || "Failed to exchange code for access token",
+          error:
+            shortTokenResult.data || "Failed to exchange code for access token",
         });
       }
 
@@ -76,7 +81,9 @@ export class FacebookController {
       logger.info("Step 1: Obtained short-lived token");
 
       // Step 2: Exchange short-lived token for long-lived token
-      const longTokenResult = await facebookService.fetchLongLivedToken(shortLivedToken);
+      const longTokenResult = await facebookService.fetchLongLivedToken(
+        shortLivedToken
+      );
 
       if (!longTokenResult.success) {
         return res.status(400).json({
@@ -105,7 +112,7 @@ export class FacebookController {
         {
           businessId,
           pageId: oauthResult.data.pageId,
-          pageName: oauthResult.data.pageMetadata?.name
+          pageName: oauthResult.data.pageMetadata?.name,
         },
         "Step 3-4: Successfully completed OAuth flow and saved to database"
       );

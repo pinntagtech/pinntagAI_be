@@ -90,8 +90,12 @@ export class FacebookService {
 
     const config = {
       method: "get",
-      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${encodeURIComponent(code)}`,
+      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&client_secret=${clientSecret}&code=${encodeURIComponent(code)}`,
     };
+
+    console.log(config.url, "Exchange Code for Token URL");
 
     try {
       logger.info(
@@ -99,7 +103,9 @@ export class FacebookService {
           clientId,
           redirectUri,
           codeLength: code.length,
-          url: config.url.replace(clientSecret!, '***SECRET***').replace(code, '***CODE***')
+          url: config.url
+            .replace(clientSecret!, "***SECRET***")
+            .replace(code, "***CODE***"),
         },
         "Attempting to exchange code for token"
       );
@@ -114,13 +120,16 @@ export class FacebookService {
         data: response.data,
       };
     } catch (error: any) {
-      logger.error({
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        clientId,
-        redirectUri
-      }, "Error exchanging code for token");
+      logger.error(
+        {
+          error: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          clientId,
+          redirectUri,
+        },
+        "Error exchanging code for token"
+      );
       return {
         success: false,
         data: error.response?.data?.error?.message || error.message,
@@ -215,7 +224,11 @@ export class FacebookService {
         };
 
         logger.info(
-          { pageId: resolvedPageId, pageName: pageData.name, category: pageData.category },
+          {
+            pageId: resolvedPageId,
+            pageName: pageData.name,
+            category: pageData.category,
+          },
           "Fetched comprehensive page metadata from page access token"
         );
       } catch (pageInfoError: any) {
@@ -294,7 +307,12 @@ export class FacebookService {
         }
 
         logger.info(
-          { businessId, pageId: resolvedPageId, expiresAt, pageName: pageMetadata?.name },
+          {
+            businessId,
+            pageId: resolvedPageId,
+            expiresAt,
+            pageName: pageMetadata?.name,
+          },
           "Saved long-lived page access token and metadata to database"
         );
 
@@ -308,17 +326,19 @@ export class FacebookService {
             savedToDatabase: true,
             businessId,
             pageId: resolvedPageId || null,
-            pageMetadata: pageMetadata ? {
-              name: pageMetadata.name,
-              category: pageMetadata.category,
-              about: pageMetadata.about,
-              followers: pageMetadata.followers,
-              website: pageMetadata.website,
-              phone: pageMetadata.phone,
-              email: pageMetadata.email,
-              profilePicture: pageMetadata.profilePicture,
-              coverPhoto: pageMetadata.coverPhoto,
-            } : null,
+            pageMetadata: pageMetadata
+              ? {
+                  name: pageMetadata.name,
+                  category: pageMetadata.category,
+                  about: pageMetadata.about,
+                  followers: pageMetadata.followers,
+                  website: pageMetadata.website,
+                  phone: pageMetadata.phone,
+                  email: pageMetadata.email,
+                  profilePicture: pageMetadata.profilePicture,
+                  coverPhoto: pageMetadata.coverPhoto,
+                }
+              : null,
           },
         };
       }
@@ -332,17 +352,19 @@ export class FacebookService {
           expiresIn,
           savedToDatabase: false,
           pageId: resolvedPageId || null,
-          pageMetadata: pageMetadata ? {
-            name: pageMetadata.name,
-            category: pageMetadata.category,
-            about: pageMetadata.about,
-            followers: pageMetadata.followers,
-            website: pageMetadata.website,
-            phone: pageMetadata.phone,
-            email: pageMetadata.email,
-            profilePicture: pageMetadata.profilePicture,
-            coverPhoto: pageMetadata.coverPhoto,
-          } : null,
+          pageMetadata: pageMetadata
+            ? {
+                name: pageMetadata.name,
+                category: pageMetadata.category,
+                about: pageMetadata.about,
+                followers: pageMetadata.followers,
+                website: pageMetadata.website,
+                phone: pageMetadata.phone,
+                email: pageMetadata.email,
+                profilePicture: pageMetadata.profilePicture,
+                coverPhoto: pageMetadata.coverPhoto,
+              }
+            : null,
         },
       };
     } catch (error: any) {
@@ -539,13 +561,13 @@ export class FacebookService {
       const { getBackendBusinessModel } = await import(
         "../../models/pinntagBackend/business.model.js"
       );
-      const { getBackendConnection } = await import(
-        "../../db/connection.js"
-      );
+      const { getBackendConnection } = await import("../../db/connection.js");
 
       const backendConn = await getBackendConnection();
       if (!backendConn) {
-        logger.warn("Pinntag backend database connection not available, skipping update");
+        logger.warn(
+          "Pinntag backend database connection not available, skipping update"
+        );
         return;
       }
 
@@ -730,7 +752,8 @@ export class FacebookService {
         logger.error({ businessId }, "No Facebook page access token found");
         return {
           success: false,
-          error: "No Facebook page access token found for this business. Please connect your Facebook page first.",
+          error:
+            "No Facebook page access token found for this business. Please connect your Facebook page first.",
         };
       }
 
@@ -747,7 +770,8 @@ export class FacebookService {
           );
           return {
             success: false,
-            error: "Facebook page access token has expired. Please reconnect your Facebook page.",
+            error:
+              "Facebook page access token has expired. Please reconnect your Facebook page.",
           };
         }
       }
@@ -830,13 +854,15 @@ export class FacebookService {
               score: item.metadata.aiConfidenceScore,
               type: item.type || item.metadata.aiType,
               title: item.title,
-              schedule: item.schedule ? {
-                startDate: item.schedule.startDate,
-                endDate: item.schedule.endDate,
-                startTime: item.schedule.startTime,
-                endTime: item.schedule.endTime,
-                isRecurring: item.schedule.isRecurring || false,
-              } : undefined,
+              schedule: item.schedule
+                ? {
+                    startDate: item.schedule.startDate,
+                    endDate: item.schedule.endDate,
+                    startTime: item.schedule.startTime,
+                    endTime: item.schedule.endTime,
+                    isRecurring: item.schedule.isRecurring || false,
+                  }
+                : undefined,
               ticketUrl: item.ticketUrl || null,
               category: item.metadata.aiCategory || "event",
             };
@@ -949,7 +975,9 @@ export class FacebookService {
           // Skip canceled, draft, or past events
           if (event.is_canceled || event.is_draft) return;
 
-          const eventStartTime = event.start_time ? new Date(event.start_time) : null;
+          const eventStartTime = event.start_time
+            ? new Date(event.start_time)
+            : null;
           if (!eventStartTime || eventStartTime <= now) return;
 
           events.push({
@@ -960,10 +988,14 @@ export class FacebookService {
             type: "event",
             images: event.cover?.source ? [event.cover.source] : [],
             schedule: {
-              startDate: eventStartTime.toISOString().split('T')[0],
-              endDate: event.end_time ? new Date(event.end_time).toISOString().split('T')[0] : eventStartTime.toISOString().split('T')[0],
-              startTime: eventStartTime.toTimeString().split(' ')[0],
-              endTime: event.end_time ? new Date(event.end_time).toTimeString().split(' ')[0] : null,
+              startDate: eventStartTime.toISOString().split("T")[0],
+              endDate: event.end_time
+                ? new Date(event.end_time).toISOString().split("T")[0]
+                : eventStartTime.toISOString().split("T")[0],
+              startTime: eventStartTime.toTimeString().split(" ")[0],
+              endTime: event.end_time
+                ? new Date(event.end_time).toTimeString().split(" ")[0]
+                : null,
               isRecurring: false,
             },
             ticketUrl: event.ticket_uri || null,
@@ -982,7 +1014,7 @@ export class FacebookService {
             metadata: {
               facebookEventId: event.id,
               extractedFromEventsApi: true,
-            }
+            },
           });
         });
 
@@ -999,7 +1031,7 @@ export class FacebookService {
         if (postsResponse.success && postsResponse.data?.posts) {
           for (const post of postsResponse.data.posts) {
             // Skip auto-generated event posts (we already have them from Events API)
-            const postEventId = post.id.split('_')[1];
+            const postEventId = post.id.split("_")[1];
             if (eventIds.has(postEventId)) {
               logger.info(
                 { postId: post.id, eventId: postEventId },
@@ -1012,14 +1044,18 @@ export class FacebookService {
             // Use AI-generated data (title, type, schedule, ticketUrl)
             const aiAnalysis = post.aiAnalysis;
             const aiReason = aiAnalysis.reason || "";
-            const eventType = aiAnalysis?.type || 'spotlight';
+            const eventType = aiAnalysis?.type || "spotlight";
 
             // Use AI-generated schedule if available, otherwise fallback to manual extraction
             let schedule = aiAnalysis?.schedule;
             if (!schedule || !schedule.startDate) {
               // Fallback: Try to extract date/time from AI reason or post message
-              const dateMatch = aiReason.match(/(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i);
-              const timeMatch = aiReason.match(/(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i);
+              const dateMatch = aiReason.match(
+                /(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i
+              );
+              const timeMatch = aiReason.match(
+                /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i
+              );
 
               let eventDate = null;
               if (dateMatch) {
@@ -1032,8 +1068,12 @@ export class FacebookService {
               }
 
               schedule = {
-                startDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
-                endDate: eventDate ? eventDate.toISOString().split('T')[0] : null,
+                startDate: eventDate
+                  ? eventDate.toISOString().split("T")[0]
+                  : null,
+                endDate: eventDate
+                  ? eventDate.toISOString().split("T")[0]
+                  : null,
                 startTime: timeMatch ? timeMatch[1] : null,
                 endTime: null,
                 isRecurring: false,
@@ -1041,20 +1081,28 @@ export class FacebookService {
             }
 
             // Skip if it's an event in the past (but keep offers/spotlight/flashlight regardless of date)
-            if (eventType === 'event' && schedule?.startDate) {
+            if (eventType === "event" && schedule?.startDate) {
               const eventDate = new Date(schedule.startDate);
               if (eventDate <= now) continue;
             }
 
             // Use AI-generated title or fallback
-            const title = aiAnalysis?.title || post.message?.substring(0, 50) || `${eventType.charAt(0).toUpperCase() + eventType.slice(1)} from Post`;
+            const title =
+              aiAnalysis?.title ||
+              post.message?.substring(0, 50) ||
+              `${
+                eventType.charAt(0).toUpperCase() + eventType.slice(1)
+              } from Post`;
 
             // Extract images
             const images: string[] = [];
             if (post.full_picture) images.push(post.full_picture);
             if (post.attachments?.data) {
               post.attachments.data.forEach((att: any) => {
-                if (att.media?.image?.src && !images.includes(att.media.image.src)) {
+                if (
+                  att.media?.image?.src &&
+                  !images.includes(att.media.image.src)
+                ) {
                   images.push(att.media.image.src);
                 }
               });
@@ -1094,11 +1142,10 @@ export class FacebookService {
                 aiReason: aiReason,
                 aiType: eventType,
                 extractedFromPost: true,
-              }
+              },
             });
           }
         }
-
       } catch (error: any) {
         logger.error(
           { error: error.message },
@@ -1117,15 +1164,23 @@ export class FacebookService {
         data: {
           events: events.sort((a, b) => {
             // Sort by start date (earliest first)
-            const dateA = a.schedule.startDate ? new Date(a.schedule.startDate).getTime() : Infinity;
-            const dateB = b.schedule.startDate ? new Date(b.schedule.startDate).getTime() : Infinity;
+            const dateA = a.schedule.startDate
+              ? new Date(a.schedule.startDate).getTime()
+              : Infinity;
+            const dateB = b.schedule.startDate
+              ? new Date(b.schedule.startDate).getTime()
+              : Infinity;
             return dateA - dateB;
           }),
           summary: {
             totalEvents: events.length,
-            fromEventsApi: events.filter(e => e.source === 'facebook_events_api').length,
-            fromPosts: events.filter(e => e.source === 'facebook_post_ai_extracted').length,
-          }
+            fromEventsApi: events.filter(
+              (e) => e.source === "facebook_events_api"
+            ).length,
+            fromPosts: events.filter(
+              (e) => e.source === "facebook_post_ai_extracted"
+            ).length,
+          },
         },
       };
     } catch (error: any) {
@@ -1277,7 +1332,9 @@ export class FacebookService {
         PRIMARY USE CASE: Extract EVENTS and DEALS from business Facebook posts and transform them into a unified event format.
         Posts with event flyers, promotional images, or deal announcements (even without text messages) are highly valuable.
 
-        ${imageUrls.length > 0 ? `
+        ${
+          imageUrls.length > 0
+            ? `
         ⚠️ CRITICAL: IMAGE ANALYSIS WITH OCR ⚠️
         This post has ${imageUrls.length} image(s) attached. You MUST analyze the images FIRST and READ ANY TEXT IN THE IMAGES.
 
@@ -1307,13 +1364,15 @@ export class FacebookService {
         - Look for URLs in post message or image
         - Common patterns: eventbrite.com, ticketmaster.com, "register at", "book at", "RSVP"
         - Extract any URL that appears to be for tickets, bookings, or registration
-        ` : `
+        `
+            : `
         GENERATE A TITLE:
         - Create a descriptive title from the post message/caption (5-10 words max)
         - For offers/deals: Include the key value proposition
         - For announcements: Summarize the main point
         - Make it attention-grabbing but accurate
-        `}
+        `
+        }
 
         Post Data:
         - Message: "${postData.message}"
@@ -1369,7 +1428,7 @@ export class FacebookService {
 
       // Build OpenAI message content with images if available
       const messageContent: OpenAI.Chat.ChatCompletionContentPart[] = [
-        { type: "text", text: prompt }
+        { type: "text", text: prompt },
       ];
 
       // Fetch and add images for multimodal analysis
@@ -1397,8 +1456,8 @@ export class FacebookService {
               type: "image_url",
               image_url: {
                 url: `data:${mimeType};base64,${base64Image}`,
-                detail: "high"
-              }
+                detail: "high",
+              },
             });
 
             logger.info(
@@ -1420,8 +1479,8 @@ export class FacebookService {
         messages: [
           {
             role: "user",
-            content: messageContent
-          }
+            content: messageContent,
+          },
         ],
         response_format: { type: "json_object" },
         temperature: 0.3,
@@ -1443,13 +1502,18 @@ export class FacebookService {
       const analysis: AIAnalysisResult = JSON.parse(responseText);
 
       // Map new type to legacy category for backward compatibility
-      const categoryMap: Record<string, "promotion" | "event" | "product" | "service" | "announcement" | "other"> = {
+      const categoryMap: Record<
+        string,
+        "promotion" | "event" | "product" | "service" | "announcement" | "other"
+      > = {
         event: "event",
         offer: "promotion",
         spotlight: "announcement",
         flashlight: "announcement",
       };
-      const legacyCategory = analysis.type ? categoryMap[analysis.type] || "other" : undefined;
+      const legacyCategory = analysis.type
+        ? categoryMap[analysis.type] || "other"
+        : undefined;
 
       return {
         suitable: analysis.suitable === true,
