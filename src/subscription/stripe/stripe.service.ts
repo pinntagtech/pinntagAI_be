@@ -40,8 +40,9 @@ import {
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 import { BusinessStatus } from 'src/business/enums/business.enum';
-import { ConsumerPurchase } from '../models/consumer-purchase.model';
+import { ConsumerPurchase, ConsumerPurchaseStatus } from '../models/consumer-purchase.model';
 import { CreateFlashDealPaymentIntentDto } from './dtos/stripe-connect-charge.dto';
+import { Event, EventDocument } from 'src/event/models/event.model';
 
 @Injectable()
 export class StripeService {
@@ -61,8 +62,8 @@ export class StripeService {
     @InjectModel(SubscriptionProduct.name)
     private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
-    @InjectModel(ConsumerPurchase.name)
-    private readonly consumerPurchaseModel: Model<ConsumerPurchase>,
+    @InjectModel(ConsumerPurchase.name) private readonly consumerPurchaseModel: Model<ConsumerPurchase>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
   ) {}
 
   public constructEventFromPayload(
@@ -499,6 +500,11 @@ export class StripeService {
         await this.onSubscriptionDeleted(sub);
         break;
       }
+      case 'payment_intent.created': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await this.onFlashDealPaymentCreated(pi);
+        break;
+      }
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
         await this.onFlashDealPaymentSucceeded(pi);
@@ -932,6 +938,24 @@ export class StripeService {
     );
   }
 
+  private async onFlashDealPaymentCreated(pi: Stripe.PaymentIntent) {
+    // Only process FlashDeal payments
+    if (pi.metadata?.type !== 'FLASHDEAL') return;
+
+    const paymentIntentId = pi.id;
+
+    // Create a new purchase record in DB
+    await this.consumerPurchaseModel.create({
+      consumer: new mongoose.Types.ObjectId(pi.metadata.consumerId),
+      flashDeal: new mongoose.Types.ObjectId(pi.metadata.flashDealId),
+      paymentIntentId,
+      amountMinor: pi.amount,
+      currency: pi.currency.toUpperCase(),
+      status: ConsumerPurchaseStatus.RESERVED,
+      latestStripeSnapshot: pi,
+    });
+  }
+
   private async onFlashDealPaymentSucceeded(pi: Stripe.PaymentIntent) {
     // Only process FlashDeal payments
     if (pi.metadata?.type !== 'FLASHDEAL') return;
@@ -943,11 +967,15 @@ export class StripeService {
       { paymentIntentId },
       {
         $set: {
-          status: 'paid',
+          status: ConsumerPurchaseStatus.PAID,
           paidAt: new Date(),
           latestStripeSnapshot: pi,
         },
       },
+    );
+    await this.eventModel.updateOne(
+      { _id: pi.metadata.flashDealId },
+      { $inc: { itemQuantity: -1 } },
     );
 
     // Generate redemption token/QR etc (your logic)
@@ -1761,21 +1789,33 @@ export class StripeService {
 
     // 2) Create a local purchase record FIRST (recommended)
     const consumerId = dto.consumerId || 'UNKNOWN_CONSUMER'; // ideally from JWT
+
+    const flashDeal = await this.eventModel.findById(dto.flashDealId);
+    if (!flashDeal) throw new BadRequestException('Flash Deal not found');
+    if(flashDeal.itemQuantity <=0) {
+      throw new BadRequestException('Flash Deal is sold out');
+    }
+    if(flashDeal.type !== 'FLASH_DEAL') {
+      throw new BadRequestException('Event is not a Flash Deal');
+    }
+
+    let amount = flashDeal.itemPrice * dto.quantity;
+
     const purchase = await this.consumerPurchaseModel.create({
       dealId: dto.flashDealId,
       businessId: dto.businessId,
       consumerId,
-      amount: dto.amount,
-      currency: dto.currency.toLowerCase(),
+      amount: amount,
+      currency: flashDeal.currency.toLowerCase(),
       status: 'requires_payment',
     });
 
     // 3) Create destination charge PaymentIntent
-    const applicationFee = this.calcPlatformFee(dto.amount);
+    const applicationFee = this.calcPlatformFee(amount);
 
     const pi = await this.stripe.paymentIntents.create({
-      amount: dto.amount,
-      currency: dto.currency.toLowerCase(),
+      amount: amount,
+      currency: flashDeal.currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
 
       // Connect split:

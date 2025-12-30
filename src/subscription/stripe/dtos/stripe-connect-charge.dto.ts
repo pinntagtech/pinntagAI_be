@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateFlashDealPaymentIntentDto {
   @IsString()
@@ -9,14 +9,9 @@ export class CreateFlashDealPaymentIntentDto {
   @IsNotEmpty()
   businessId: string;
 
-  // amount in smallest currency unit (e.g. cents/paise)
-  @IsInt()
+  @IsNumber()
   @Min(1)
-  amount: number;
-
-  @IsString()
-  @IsNotEmpty()
-  currency: string; // "usd", "gbp", "inr" etc
+  quantity: number;
 
   @IsOptional()
   @IsString()

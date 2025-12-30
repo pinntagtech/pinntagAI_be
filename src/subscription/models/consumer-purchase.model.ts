@@ -20,13 +20,13 @@ export class ConsumerPurchase extends Document {
      ======================= */
 
   @Prop({ type: Types.ObjectId, ref: 'Event', required: true, index: true })
-  dealId: Types.ObjectId;
+  deal: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Business', required: true, index: true })
-  businessId: Types.ObjectId;
+  business: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  consumerId: Types.ObjectId;
+  consumer: Types.ObjectId;
 
   /* =======================
      STRIPE REFERENCES
