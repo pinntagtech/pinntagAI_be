@@ -305,6 +305,7 @@ export class RewardsService {
       if (reward.notifyFollowers) {
         const followersRes = await this.userService.getFollowers(
           user.businessProfile,
+          'User'
         );
         const followers = followersRes?.followers || [];
 

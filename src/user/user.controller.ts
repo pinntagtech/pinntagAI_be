@@ -280,12 +280,15 @@ export class UserController {
 
   @Get('get/followers')
   @UseGuards(JwtGuard2)
-  async getFollowers(@Req() req: Request, @TokenDecoder() user: DecodedUser) {
+  async getFollowers(@Req() req: Request, @TokenDecoder() user: DecodedUser,@Query('type') type: string) {
     let userId = user.id;
     if (user.userType === UserTypes.BUSINESS) {
       userId = user.businessProfile;
     }
-    const result = await this.userService.getFollowers(userId);
+    if(!type){
+      type = "User"
+    }
+    const result = await this.userService.getFollowers(userId,type);
     if (result.success) {
       return {
         message: result.message,

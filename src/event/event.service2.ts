@@ -2171,6 +2171,7 @@ export class EventService2 {
             );
             const followersRes = await this.userService.getFollowers(
               user.businessProfile,
+              'User'
             );
             console.log('Followers Res:', followersRes);
             let eventType = '';

@@ -5506,7 +5506,7 @@ export class BusinessService {
           this.fetchEventLogistics(businessProfileId, progress),
           this.fetchRewardRedemptions(businessProfileId, progress),
           this.fetchTopEvents(businessProfileId, limit),
-          this.userService.getFollowers(user.businessProfile),
+          this.userService.getFollowers(user.businessProfile,'User'),
         ]);
 
       const aiTraining = await this.pinnAiService.getAITrainingQuestions(
