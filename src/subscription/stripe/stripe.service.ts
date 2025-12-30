@@ -1685,10 +1685,10 @@ export class StripeService {
     const base = process.env.APP_BASE_URL!;
     const link = await this.stripe.accountLinks.create({
       account: business.stripeAccountId,
-      // refresh_url: `${base}/connect/refresh?businessId=${businessId}`,
-      // return_url: `${base}/connect/return?businessId=${businessId}`,
-      refresh_url: `https://dev.business.pinntag.com/dashboard/subscription/refresh`,
-      return_url: `https://dev.business.pinntag.com/dashboard/subscription/return`,
+      refresh_url: `${base}/stripe_connect/success`,
+      return_url: `${base}/stripe_connect/refresh`,
+      // refresh_url: `https://dev.business.pinntag.com/dashboard/subscription/refresh`,
+      // return_url: `https://dev.business.pinntag.com/dashboard/subscription/return`,
       type: 'account_onboarding',
     });
 

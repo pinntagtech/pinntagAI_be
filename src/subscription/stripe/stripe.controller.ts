@@ -219,7 +219,10 @@ export class StripeController {
 
   @Post('connect/onboard-link')
   @UseGuards(JwtGuard2)
-  async onboardLink(@Body('businessId') businessId: string) {
+  async onboardLink(
+    @TokenDecoder() user: DecodedUser,
+    @Body('businessId') businessId: string,
+  ) {
     return this.stripeService.createConnectOnboardingLink(businessId);
   }
 
