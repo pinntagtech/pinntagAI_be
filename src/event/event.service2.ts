@@ -6562,6 +6562,7 @@ export class EventService2 {
           itemPrice,
           currency,
           preBookingRequired,
+          flashDealEndTime,
         } = data;
         if (
           itemQuantity === undefined ||
@@ -6571,7 +6572,9 @@ export class EventService2 {
           itemPrice === undefined ||
           itemPrice === '' ||
           currency === undefined ||
-          currency === ''
+          currency === '' ||
+          flashDealEndTime === undefined ||
+          flashDealEndTime === ''
         ) {
           return {
             success: false,
@@ -6593,6 +6596,8 @@ export class EventService2 {
         }
         data.itemPrice = Number(data.itemPrice);
         data.preBookingRequired = preBookingRequired === 'true';
+
+        // if(flashDealEndTime)
       }
 
       // Process booking URLs
