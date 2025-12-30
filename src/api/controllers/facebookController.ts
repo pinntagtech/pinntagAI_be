@@ -1,24 +1,27 @@
 import { Request, Response } from "express";
 import { FacebookService } from "../services/faceboook.service.js";
 import { logger } from "../../utils/logger.js";
+import { jwtService } from "../services/jwt.service.js";
 
 const facebookService = new FacebookService();
 
 export class FacebookController {
   /**
    * Handle Facebook OAuth callback - Complete flow:
-   * 1. Exchange code for short-lived token
-   * 2. Exchange for long-lived token
-   * 3. Fetch page metadata (profile, cover, name, etc.)
-   * 4. Save to database
-   * 5. Return page information
+   * 1. Decode JWT token from Authorization header to get businessId
+   * 2. Exchange code for short-lived token
+   * 3. Exchange for long-lived token
+   * 4. Fetch page metadata (profile, cover, name, etc.)
+   * 5. Save to database
+   * 6. Return page information
    *
    * GET /facebook/oauth/callback
-   * Query params: { code: string, state: string, businessId: string }
+   * Headers: { Authorization: Bearer <JWT> }
+   * Query params: { code: string, state: string }
    */
   async handleOAuthCallback(req: Request, res: Response) {
     try {
-      const { code, state, businessId } = req.query;
+      const { code, state } = req.query;
 
       // Validate required parameters
       if (!code || typeof code !== "string") {
@@ -35,12 +38,46 @@ export class FacebookController {
         });
       }
 
-      if (!businessId || typeof businessId !== "string") {
-        return res.status(400).json({
+      // Extract and decode JWT token to get businessId
+      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
           success: false,
-          error: "businessId is required to save page data",
+          error: "Authorization header with JWT token is required",
         });
       }
+
+      // Decode JWT token (we only need to decode, not verify, to extract businessProfile)
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      // Extract businessId from businessProfile field
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      logger.info(
+        {
+          userId: decodedToken.id,
+          userType: decodedToken.userType,
+          businessId,
+          state
+        },
+        "Decoded JWT token for Facebook OAuth callback"
+      );
 
       // TODO: Verify state parameter against stored session value
       logger.info(

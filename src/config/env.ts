@@ -45,6 +45,8 @@ const EnvSchema = z.object({
             .filter(Boolean)
         : []
     ),
+  // Pinntag Backend JWT secret for token verification
+  PINNTAG_BACKEND_JWT_SECRET: z.string().min(1),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
