@@ -177,7 +177,7 @@ export class StripeController {
     try {
       // req.body is Buffer because of raw body middleware in main.ts
       console.log('Handling Stripe webhook event:', event.type);
-      await this.stripeService.handleStripeWebhook(event);
+      await this.stripeService.handleStripeConnectWebhook(event);
       return { received: true };
     } catch (e: any) {
       throw new HttpException(

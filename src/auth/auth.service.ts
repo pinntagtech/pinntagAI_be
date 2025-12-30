@@ -2379,6 +2379,9 @@ export class AuthService {
             },
           },
           distance: { $first: { $divide: ['$distance', 1609.34] } },
+          itemQuantity: { $first: '$event.itemQuantity' },
+          itemName: { $first: '$event.itemName' },
+
         },
       },
       {
@@ -2615,6 +2618,8 @@ export class AuthService {
               sortBy: { 'fixedSchedule.date': 1 }, // ascending order
             },
           },
+          itemQuantity: 1,
+          itemName: 1,
         },
       },
       {
