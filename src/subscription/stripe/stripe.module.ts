@@ -42,6 +42,7 @@ import { Refferal, RefferalSchema } from '../models/referral.model';
 import { Coupon, CouponSchema } from '../models/coupon.model';
 import { SubscriptionProduct, SubscriptionProductSchema } from '../models/subscription-product.model';
 import { ConsumerPurchase, ConsumerPurchaseSchema } from '../models/consumer-purchase.model';
+import { Event, EventSchema } from 'src/event/models/event.model';
 
 @Module({
   imports: [
@@ -97,7 +98,8 @@ import { ConsumerPurchase, ConsumerPurchaseSchema } from '../models/consumer-pur
       { name: Refferal.name, schema: RefferalSchema },
       { name: Coupon.name, schema: CouponSchema },
       { name: SubscriptionProduct.name, schema: SubscriptionProductSchema},
-      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema },
+      { name: Event.name , schema: EventSchema },
     ]),
     StripeModule.forRoot({
       apiKey: process.env.STRIPE_SECRET_KEY,
