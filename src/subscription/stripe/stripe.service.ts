@@ -1776,9 +1776,12 @@ export class StripeService {
     return Math.floor((amount * bps) / 10000);
   }
 
-  async createFlashDealPaymentIntent(dto: CreateFlashDealPaymentIntentDto) {
+  async createFlashDealPaymentIntent(userId:string,dto: CreateFlashDealPaymentIntentDto) {
     // 1) Validate business + connected account
-    const business = await this.businessModel.findById(dto.businessId);
+    const flashDeal = await this.eventModel.findById(dto.flashDealId);
+    if (!flashDeal) throw new BadRequestException('Flash Deal not found');
+
+    const business = await this.businessModel.findById(flashDeal.businessProfile);
     if (!business) throw new BadRequestException('Business not found');
     if (!business.stripeAccountId) {
       throw new BadRequestException('Business is not onboarded to Stripe Connect');
@@ -1788,10 +1791,9 @@ export class StripeService {
     // if (!business.stripeOnboardingComplete) throw new BadRequestException('Business Stripe onboarding incomplete');
 
     // 2) Create a local purchase record FIRST (recommended)
-    const consumerId = dto.consumerId || 'UNKNOWN_CONSUMER'; // ideally from JWT
+    const consumerId = userId || 'UNKNOWN_CONSUMER'; // ideally from JWT
 
-    const flashDeal = await this.eventModel.findById(dto.flashDealId);
-    if (!flashDeal) throw new BadRequestException('Flash Deal not found');
+    
     if(flashDeal.itemQuantity <=0) {
       throw new BadRequestException('Flash Deal is sold out');
     }
@@ -1802,9 +1804,9 @@ export class StripeService {
     let amount = flashDeal.itemPrice * dto.quantity;
 
     const purchase = await this.consumerPurchaseModel.create({
-      dealId: dto.flashDealId,
-      businessId: dto.businessId,
-      consumerId,
+      deal: new mongoose.Types.ObjectId(dto.flashDealId),
+      business: new mongoose.Types.ObjectId(flashDeal.businessProfile),
+      consumer: new mongoose.Types.ObjectId(consumerId),
       amount: amount,
       currency: flashDeal.currency.toLowerCase(),
       status: 'requires_payment',
@@ -1827,7 +1829,7 @@ export class StripeService {
       metadata: {
         purchaseId: purchase.id,
         flashDealId: dto.flashDealId,
-        businessId: dto.businessId,
+        businessId: flashDeal.businessProfile.toString(),
         consumerId,
         type: 'FLASHDEAL',
       },

@@ -5,15 +5,11 @@ export class CreateFlashDealPaymentIntentDto {
   @IsNotEmpty()
   flashDealId: string;
 
-  @IsString()
-  @IsNotEmpty()
-  businessId: string;
-
   @IsNumber()
   @Min(1)
   quantity: number;
 
-  @IsOptional()
-  @IsString()
-  consumerId?: string; // optional if you decode from JWT
+  // @IsOptional()
+  // @IsString()
+  // consumerId?: string; // optional if you decode from JWT
 }

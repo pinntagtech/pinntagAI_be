@@ -240,7 +240,7 @@ export class StripeController {
 
   @Post('flashdeal/payment-intent')
   @UseGuards(JwtGuard2)
-  async create(@Body() dto: CreateFlashDealPaymentIntentDto) {
-    return this.stripeService.createFlashDealPaymentIntent(dto);
+  async create(@TokenDecoder() user: DecodedUser, @Body() dto: CreateFlashDealPaymentIntentDto) {
+    return this.stripeService.createFlashDealPaymentIntent(user.id,dto);
   }
 }
