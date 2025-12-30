@@ -21,6 +21,9 @@ export class CheckInFeed extends Document {
   @Prop({ ref: 'User' })
   users: Array<mongoose.Types.ObjectId>;
 
+  @Prop({ ref: Business.name })
+  business: mongoose.Types.ObjectId;
+
   @Prop({ ref: User.name })
   creator: mongoose.Types.ObjectId;
 

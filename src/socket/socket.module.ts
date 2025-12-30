@@ -202,7 +202,7 @@ import {
 } from 'src/subscription/models/feature-limit.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
-
+import { CheckInFeed, CheckInFeedSchema } from 'src/feed/models/checkin.feed.model';
 @Module({
   imports: [
     HttpModule,
@@ -301,7 +301,8 @@ import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/model
       { name: Scratch.name, schema: ScratchSchema },
       { name: RewardVisit.name, schema: RewardVisitSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
-      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema },
+      { name: CheckInFeed.name, schema: CheckInFeedSchema },
     ]),
   ],
   providers: [

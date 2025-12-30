@@ -23,6 +23,7 @@ import { VerifyOtpDto } from './dto/verifyOtp.dto';
 import { UserService } from 'src/user/user.service';
 import {
   CarouselType,
+  FeedTypes,
   OtpTypes,
   REDIS_TTL,
   SMSType,
@@ -144,6 +145,9 @@ import {
   UserReward,
   UserRewardDocument,
 } from 'src/rewards/model/userReward.model';
+import { CheckInDto } from './dto/checkin.dto';
+import { CheckInFeed } from 'src/feed/models/checkin.feed.model';
+import { Feed } from 'src/feed/models/feed.model';
 
 @Injectable()
 export class AuthService {
@@ -195,8 +199,9 @@ export class AuthService {
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
-    @InjectModel(UserReward.name)
-    private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(CheckInFeed.name) private readonly checkInFeedModel: Model<CheckInFeed>,
+    @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly s3Service: S3Service,
@@ -7356,12 +7361,12 @@ export class AuthService {
             gender: 1,
             dob: 1,
             // userFollow: 1,
-            isFollowedByMe: 1,
-          },
+            isFollowedByMe: 1,  
+          },  
         },
-        // {
-
-        // }
+        {
+          $sort: { isFollowedByMe: -1, name: 1 },
+        },
       ]);
       let total = await this.userModel.countDocuments({
         $or: [
@@ -7808,13 +7813,12 @@ export class AuthService {
     }
   }
   async userCheckIn(
-    businessId: string,
-    locationId: string,
     user: DecodedUser,
-    latitude: number,
-    longitude: number,
+    businessId: string,
+    data: CheckInDto,
   ) {
     try {
+      const {  locationId, latitude, longitude,title,users,visibility } = data;
       const location = await this.outletModel.findById(locationId);
       console.log('location:', location);
       if (!location) {
@@ -7871,6 +7875,35 @@ export class AuthService {
         },
         expiry: new Date(Date.now() + 4 * 60 * 60 * 1000),
       });
+
+        let checkInFeedObj = {
+            title: data.title,
+            message: data.message,
+            creator: new mongoose.Types.ObjectId(user.id),
+            business: new mongoose.Types.ObjectId(businessId),
+            visibility: data.visibility,
+          };
+      
+          if (users && users.length > 0) {
+            checkInFeedObj['users'] = users.map(
+              (userId) => new mongoose.Types.ObjectId(userId),
+            );
+          }
+    
+      
+          const checkInPost = await this.checkInFeedModel.create(checkInFeedObj);
+          // let deepLink = `${process.env.FEED_LINK_URL}${broadcast.id}`;
+      
+          const feed = await this.feedModel.create({
+            feedType: FeedTypes.CHECKIN,
+            creatorType: User.name,
+            creator: new mongoose.Types.ObjectId(user.id),
+            content: new mongoose.Types.ObjectId(checkInPost.id),
+            visibility: checkInPost.visibility,
+          });
+
+
+
       return {
         success: true,
         message: 'Checked-In Successfully.',

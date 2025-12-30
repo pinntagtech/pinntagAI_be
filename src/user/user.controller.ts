@@ -312,6 +312,21 @@ export class UserController {
     }
   }
 
+  @Get('get/friends')
+  @UseGuards(JwtGuard2)
+  async getFriends(@Req() req: Request) {
+    const result = await this.userService.getFriends(req.user['_id']);
+    if (result.success) {
+      return {
+        message: result.message,
+        count: result.count,
+        friends: result.followers,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   // @Patch('block/:id')
   // @UseGuards(UserGuard)
   // async blockUser(@Req() req: Request, @Param('id') id: string) {

@@ -951,6 +951,108 @@ export class UserService {
     };
   }
 
+async getFriends(userId: string) {
+  const me = new mongoose.Types.ObjectId(userId);
+
+    const pipeline: any[] = [
+    // 1) My following list
+    {
+      $match: {
+        following: new mongoose.Types.ObjectId(userId),
+        isBlocked: false,
+        followerType: 'User',
+        followingType: 'User',
+      },
+    },
+
+    // 2) Check if I follow them back (mutual)
+    {
+      $lookup: {
+        from: 'follows', // 👈 your Follow collection name
+        let: { followerId: '$follower' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$follower', me] },
+                  // { $eq: ['$following', '$$followerId'] },
+                  { $eq: ['$isBlocked', false] },
+                  { $eq: ['$followerType', 'User'] },
+                  { $eq: ['$followingType', 'User'] },
+                ],
+              },
+            },
+          },
+          { $limit: 1 },
+          { $project: { _id: 1 } },
+        ],
+        as: 'iFollowBack',
+      },
+    },
+    {
+      $addFields: {
+        isMutual: { $gt: [{ $size: '$iFollowBack' }, 0] },
+      },
+    },
+
+    // 3) Populate follower from USERS only
+    {
+      $lookup: {
+        from: 'users', // 👈 your User collection name
+        localField: 'follower',
+        foreignField: '_id',
+        as: 'followerDoc',
+      },
+    },
+    { $unwind: '$followerDoc' },
+
+    // 4) Keep only needed fields
+    {
+      $project: {
+        _id: 1,
+        follower: 1,
+        following: 1,
+        followerType: 1,
+        followingType: 1,
+        isBlocked: 1,
+        muted: 1,
+        mutedUntil: 1,
+        createdAt: 1,
+        isMutual: 1,
+        followerDoc: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          profilePhoto: 1,
+          name: 1,
+          profileType: 1,
+          image: 1,
+        },
+      },
+    },
+
+    // 5) Mutuals on top, then newest first
+    {
+      $sort: {
+        isMutual: -1,
+        createdAt: -1,
+      },
+    },
+  ];
+  console.log('PIPELINE:', JSON.stringify(pipeline, null, 2));
+
+  const followers = await this.followModel.aggregate(pipeline);
+
+  return {
+    success: true,
+    message: 'Followers fetched successfully',
+    count: followers.length,
+    followers,
+  };
+}
+
+
   // async blockUser(targetId: string, userId: string) {
   //   const follow = await this.followModel.findOne({
   //     follower: new mongoose.Types.ObjectId(userId),
@@ -1437,4 +1539,5 @@ export class UserService {
       },
     };
   }
+
 }

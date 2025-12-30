@@ -197,7 +197,7 @@ import { CheckIn, CheckInSchema } from './auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from './rewards/model/userReward.model';
 import { SubscriptionService } from './subscription/subscription.service';
 import { ConsumerPurchase, ConsumerPurchaseSchema } from './subscription/models/consumer-purchase.model';
-
+import { CheckInFeed, CheckInFeedSchema } from 'src/feed/models/checkin.feed.model';
 @Module({
   imports: [
     // ServeStaticModule.forRoot({
@@ -297,7 +297,8 @@ import { ConsumerPurchase, ConsumerPurchaseSchema } from './subscription/models/
       { name: CheckIn.name, schema: CheckInSchema },
       { name: UserReward.name, schema: UserRewardSchema },
       { name: FeatureLimit.name, schema: FeatureLimitSchema },
-      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema },
+      { name: CheckInFeed.name, schema: CheckInFeedSchema },
     ]),
     StripeeModule,
     AuthModule,

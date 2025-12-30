@@ -45,6 +45,7 @@ import { VerifyMailGuard } from './guards2/mailVerify.guard';
 import { RateLimitGuard } from './guards/rateLimiter.guard';
 import { DashboardSearchDto } from './dto/dashboardSearch.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CheckInDto } from './dto/checkin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -982,16 +983,12 @@ export class AuthController {
   async userCheckIn(
     @Param('businessId') businessId: string,
     @TokenDecoder() user: DecodedUser,
-    @Body('latitude') latitude: number,
-    @Body('longitude') longitude: number,
-    @Body('locationId') locationId: string,
+    @Body() data: CheckInDto,
   ) {
     const result = await this.authService.userCheckIn(
-      businessId,
-      locationId,
       user,
-      latitude,
-      longitude,
+      businessId,
+      data
     );
     if (!result.success) {
       throw new BadRequestException(result.message);

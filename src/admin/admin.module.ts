@@ -179,7 +179,7 @@ import { CheckIn, CheckInSchema } from 'src/auth/models/check-ins.model';
 import { UserReward, UserRewardSchema } from 'src/rewards/model/userReward.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/models/consumer-purchase.model';
-
+import { CheckInFeed, CheckInFeedSchema } from 'src/feed/models/checkin.feed.model';
 @Module({
   imports: [
     HttpModule,
@@ -259,7 +259,9 @@ import { ConsumerPurchase, ConsumerPurchaseSchema } from 'src/subscription/model
       { name: CheckIn.name, schema: CheckInSchema}, 
       { name: UserReward.name, schema: UserRewardSchema},
       { name: FeatureLimit.name, schema: FeatureLimitSchema},
-      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema }
+      { name: ConsumerPurchase.name, schema: ConsumerPurchaseSchema },
+      { name: CheckInFeed.name, schema: CheckInFeedSchema },
+      
     ]),
   ],
   controllers: [AdminController],
