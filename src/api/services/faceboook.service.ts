@@ -90,10 +90,20 @@ export class FacebookService {
 
     const config = {
       method: "get",
-      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`,
+      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${encodeURIComponent(code)}`,
     };
 
     try {
+      logger.info(
+        {
+          clientId,
+          redirectUri,
+          codeLength: code.length,
+          url: config.url.replace(clientSecret!, '***SECRET***').replace(code, '***CODE***')
+        },
+        "Attempting to exchange code for token"
+      );
+
       const response = await axios.request(config);
       logger.info(
         { data: response.data },
@@ -104,10 +114,16 @@ export class FacebookService {
         data: response.data,
       };
     } catch (error: any) {
-      logger.error({ error: error.message }, "Error exchanging code for token");
+      logger.error({
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        clientId,
+        redirectUri
+      }, "Error exchanging code for token");
       return {
         success: false,
-        data: error.message,
+        data: error.response?.data?.error?.message || error.message,
       };
     }
   }
@@ -341,6 +357,261 @@ export class FacebookService {
         success: false,
         data: error.response?.data?.error?.message || error.message,
       };
+    }
+  }
+
+  /**
+   * Complete OAuth flow: Get page access token from user token and save metadata
+   * Used specifically for OAuth callback after getting user access token
+   * @param userAccessToken - Long-lived user access token
+   * @param businessId - Business ID to save the page data
+   */
+  async completeOAuthFlow(userAccessToken: string, businessId: string) {
+    try {
+      logger.info({ businessId }, "Starting complete OAuth flow");
+
+      // Step 1: Get list of pages user manages
+      const pagesConfig = {
+        method: "get",
+        url: `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`,
+      };
+
+      const pagesResponse = await axios.request(pagesConfig);
+      const pages = pagesResponse.data.data;
+
+      if (!pages || pages.length === 0) {
+        return {
+          success: false,
+          data: "No Facebook pages found for this account. Please create a page first.",
+        };
+      }
+
+      // Use the first page (or you could let user select)
+      const firstPage = pages[0];
+      const pageAccessToken = firstPage.access_token; // This is already long-lived
+      const pageId = firstPage.id;
+      const pageName = firstPage.name;
+
+      logger.info(
+        { pageId, pageName, totalPages: pages.length },
+        "Found pages, using first page"
+      );
+
+      // Step 2: Fetch comprehensive page metadata
+      const pageInfoConfig = {
+        method: "get",
+        url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+      };
+
+      const pageInfoResponse = await axios.request(pageInfoConfig);
+      const pageData = pageInfoResponse.data;
+
+      const pageMetadata = {
+        name: pageData.name || null,
+        category: pageData.category || null,
+        about: pageData.about || pageData.description || null,
+        followers: pageData.followers_count || 0,
+        website: pageData.website || null,
+        phone: pageData.phone || null,
+        email: pageData.emails?.[0] || null,
+        profilePicture: pageData.picture?.data?.url || null,
+        coverPhoto: pageData.cover?.source || null,
+        rawData: pageData,
+      };
+
+      logger.info(
+        { pageId, pageName: pageData.name, category: pageData.category },
+        "Fetched comprehensive page metadata"
+      );
+
+      // Step 3: Save to database
+      const { BusinessAIAssistantModel } = await import(
+        "../../models/businessAIAssistant.model.js"
+      );
+
+      // Calculate expiration date (page tokens from /me/accounts are already long-lived, ~60 days)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 60); // 60 days
+
+      const updateData: any = {
+        facebookPageAccessToken: pageAccessToken,
+        facebookPageId: pageId,
+        facebookPageTokenExpiresAt: expiresAt,
+        facebookPageName: pageMetadata.name,
+        facebookPageCategory: pageMetadata.category,
+        facebookPageAbout: pageMetadata.about,
+        facebookPageFollowers: pageMetadata.followers,
+        facebookPageWebsite: pageMetadata.website,
+        facebookPagePhone: pageMetadata.phone,
+        facebookPageEmail: pageMetadata.email,
+        facebookPageProfilePicture: pageMetadata.profilePicture,
+        facebookPageCoverPhoto: pageMetadata.coverPhoto,
+        facebookPageMetadata: pageMetadata.rawData,
+      };
+
+      const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
+        { businessId },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedBusiness) {
+        logger.warn({ businessId }, "Business not found for token save");
+        return {
+          success: false,
+          data: `Business with ID ${businessId} not found`,
+        };
+      }
+
+      logger.info(
+        { businessId, pageId, pageName: pageMetadata.name },
+        "Successfully saved page access token and metadata to AI assistant database"
+      );
+
+      // Step 4: Update Pinntag backend business schema
+      try {
+        await this.updatePinntagBackendBusiness(businessId, {
+          pageId,
+          pageAccessToken,
+          expiresAt,
+          pageMetadata,
+        });
+        logger.info(
+          { businessId, pageId },
+          "Successfully updated Pinntag backend business with Facebook data"
+        );
+      } catch (backendError: any) {
+        logger.error(
+          { error: backendError.message, businessId },
+          "Failed to update Pinntag backend, but AI assistant data was saved successfully"
+        );
+        // Don't fail the whole flow if backend update fails
+      }
+
+      return {
+        success: true,
+        data: {
+          accessToken: pageAccessToken,
+          expiresAt,
+          pageId,
+          pageMetadata: {
+            name: pageMetadata.name,
+            category: pageMetadata.category,
+            about: pageMetadata.about,
+            followers: pageMetadata.followers,
+            website: pageMetadata.website,
+            phone: pageMetadata.phone,
+            email: pageMetadata.email,
+            profilePicture: pageMetadata.profilePicture,
+            coverPhoto: pageMetadata.coverPhoto,
+          },
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        {
+          error: error.message,
+          response: error.response?.data,
+        },
+        "Error completing OAuth flow"
+      );
+      return {
+        success: false,
+        data: error.response?.data?.error?.message || error.message,
+      };
+    }
+  }
+
+  /**
+   * Update Pinntag backend business with Facebook metadata
+   * Updates business.facebookMetaData directly in the database
+   */
+  async updatePinntagBackendBusiness(
+    businessId: string,
+    facebookData: {
+      pageId: string;
+      pageAccessToken: string;
+      expiresAt: Date;
+      pageMetadata: any;
+    }
+  ) {
+    try {
+      const { getBackendBusinessModel } = await import(
+        "../../models/pinntagBackend/business.model.js"
+      );
+      const { getBackendConnection } = await import(
+        "../../db/connection.js"
+      );
+
+      const backendConn = await getBackendConnection();
+      if (!backendConn) {
+        logger.warn("Pinntag backend database connection not available, skipping update");
+        return;
+      }
+
+      const BusinessBackendModel = getBackendBusinessModel(backendConn);
+
+      // Prepare Facebook metadata matching Pinntag backend schema
+      const facebookMetaData = {
+        pageId: facebookData.pageId,
+        pageAccessToken: facebookData.pageAccessToken,
+        tokenExpiresAt: facebookData.expiresAt,
+        pageInfo: {
+          name: facebookData.pageMetadata.name,
+          about: facebookData.pageMetadata.about,
+          category: facebookData.pageMetadata.category,
+          followers: facebookData.pageMetadata.followers,
+          website: facebookData.pageMetadata.website,
+          phone: facebookData.pageMetadata.phone,
+          email: facebookData.pageMetadata.email,
+          profilePicture: facebookData.pageMetadata.profilePicture,
+          coverPhoto: facebookData.pageMetadata.coverPhoto,
+        },
+      };
+
+      logger.info(
+        { businessId, pageId: facebookData.pageId },
+        "Updating Pinntag backend business database with Facebook data"
+      );
+
+      // Update the business document
+      const result = await BusinessBackendModel.findByIdAndUpdate(
+        businessId,
+        {
+          $set: {
+            isFacebookConnected: true,
+            facebookMetaData: facebookMetaData,
+          },
+        },
+        { new: true }
+      );
+
+      if (!result) {
+        logger.warn(
+          { businessId },
+          "Business not found in Pinntag backend database"
+        );
+        return;
+      }
+
+      logger.info(
+        { businessId, pageId: facebookData.pageId },
+        "Successfully updated Pinntag backend business database"
+      );
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error: any) {
+      logger.error(
+        {
+          error: error.message,
+          businessId,
+        },
+        "Error updating Pinntag backend business database"
+      );
+      throw error;
     }
   }
 

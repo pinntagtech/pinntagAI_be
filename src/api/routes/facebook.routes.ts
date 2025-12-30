@@ -15,8 +15,13 @@ router.get("/login-url", getFacebookLoginUrl);
 
 /**
  * @route GET /api/facebook/oauth/callback
- * @desc Handle Facebook OAuth callback - exchange code for access token
- * @query { code: string, state: string }
+ * @desc Handle Facebook OAuth callback - Complete flow:
+ *       1. Exchange code for short-lived token
+ *       2. Exchange for long-lived token
+ *       3. Get page access token and metadata
+ *       4. Save to database
+ *       5. Return page info
+ * @query { code: string, state: string, businessId: string }
  */
 router.get("/oauth/callback", facebookController.handleOAuthCallback.bind(facebookController));
 

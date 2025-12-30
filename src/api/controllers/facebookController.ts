@@ -6,13 +6,19 @@ const facebookService = new FacebookService();
 
 export class FacebookController {
   /**
-   * Handle Facebook OAuth callback and exchange code for access token
+   * Handle Facebook OAuth callback - Complete flow:
+   * 1. Exchange code for short-lived token
+   * 2. Exchange for long-lived token
+   * 3. Fetch page metadata (profile, cover, name, etc.)
+   * 4. Save to database
+   * 5. Return page information
+   *
    * GET /facebook/oauth/callback
-   * Query params: { code: string, state: string }
+   * Query params: { code: string, state: string, businessId: string }
    */
   async handleOAuthCallback(req: Request, res: Response) {
     try {
-      const { code, state } = req.query;
+      const { code, state, businessId } = req.query;
 
       // Validate required parameters
       if (!code || typeof code !== "string") {
@@ -29,10 +35,16 @@ export class FacebookController {
         });
       }
 
+      if (!businessId || typeof businessId !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "businessId is required to save page data",
+        });
+      }
+
       // TODO: Verify state parameter against stored session value
-      // For now, we'll log it for the developer to implement
       logger.info(
-        { state },
+        { state, businessId },
         "IMPORTANT: Verify this state matches your stored session value"
       );
 
@@ -46,31 +58,68 @@ export class FacebookController {
       }
 
       logger.info(
-        { codeLength: code.length, state },
-        "Processing Facebook OAuth callback"
+        { codeLength: code.length, state, businessId },
+        "Processing Facebook OAuth callback - Complete flow"
       );
 
-      // Exchange code for access token
-      const result = await facebookService.exchangeCodeForToken(code, redirectUri);
+      // Step 1: Exchange code for short-lived access token
+      const shortTokenResult = await facebookService.exchangeCodeForToken(code, redirectUri);
 
-      if (!result.success) {
+      if (!shortTokenResult.success) {
         return res.status(400).json({
           success: false,
-          error: result.data || "Failed to exchange code for access token",
+          error: shortTokenResult.data || "Failed to exchange code for access token",
+        });
+      }
+
+      const shortLivedToken = shortTokenResult.data.access_token;
+      logger.info("Step 1: Obtained short-lived token");
+
+      // Step 2: Exchange short-lived token for long-lived token
+      const longTokenResult = await facebookService.fetchLongLivedToken(shortLivedToken);
+
+      if (!longTokenResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: longTokenResult.data || "Failed to generate long-lived token",
+        });
+      }
+
+      const longLivedToken = longTokenResult.data.access_token;
+      logger.info("Step 2: Obtained long-lived user token");
+
+      // Step 3-4: Complete OAuth flow - Get page token, fetch metadata, save to database
+      const oauthResult = await facebookService.completeOAuthFlow(
+        longLivedToken,
+        businessId
+      );
+
+      if (!oauthResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: oauthResult.data || "Failed to complete OAuth flow",
         });
       }
 
       logger.info(
-        { tokenType: result.data.token_type, expiresIn: result.data.expires_in },
-        "Successfully exchanged code for access token"
+        {
+          businessId,
+          pageId: oauthResult.data.pageId,
+          pageName: oauthResult.data.pageMetadata?.name
+        },
+        "Step 3-4: Successfully completed OAuth flow and saved to database"
       );
 
+      // Step 5: Return complete page information
       return res.status(200).json({
         success: true,
+        message: "Facebook page connected successfully",
         data: {
-          accessToken: result.data.access_token,
-          tokenType: result.data.token_type,
-          expiresIn: result.data.expires_in,
+          businessId,
+          pageId: oauthResult.data.pageId,
+          pageAccessToken: oauthResult.data.accessToken,
+          tokenExpiresAt: oauthResult.data.expiresAt,
+          pageInfo: oauthResult.data.pageMetadata,
         },
       });
     } catch (error: any) {
