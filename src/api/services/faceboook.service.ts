@@ -90,9 +90,7 @@ export class FacebookService {
 
     const config = {
       method: "get",
-      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-        redirectUri
-      )}&client_secret=${clientSecret}&code=${encodeURIComponent(code)}`,
+      url: `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${clientId}&redirect_uri=${redirectUri}&client_secret=${clientSecret}&code=${code}`,
     };
 
     console.log(config.url, "Exchange Code for Token URL");
