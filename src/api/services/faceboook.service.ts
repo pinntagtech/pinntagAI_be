@@ -205,6 +205,10 @@ export class FacebookService {
         };
 
         const pageInfoResponse = await axios.request(pageInfoConfig);
+        console.log(
+          pageInfoResponse.data,
+          "############ fetched page info ############"
+        );
         const pageData = pageInfoResponse.data;
 
         resolvedPageId = pageData.id;
@@ -245,7 +249,7 @@ export class FacebookService {
 
       const response = await axios.request(config);
       const longLivedToken = response.data.access_token;
-      const expiresIn = response.data.expires_in; // Usually 5183944 seconds (~60 days)
+      const expiresIn = response.data.expires_in; // Usually 5183944 seconds (~60 days), may be undefined for never-expiring tokens
 
       logger.info(
         {
@@ -264,8 +268,10 @@ export class FacebookService {
         );
 
         // Calculate expiration date
+        // If expires_in is not provided, default to 60 days (5184000 seconds)
+        const expirationSeconds = expiresIn || 5184000;
         const expiresAt = new Date();
-        expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
+        expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
 
         const updateData: any = {
           facebookPageAccessToken: longLivedToken,
