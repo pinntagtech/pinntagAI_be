@@ -430,14 +430,22 @@ export class UserService {
       this.getFollowers(personId,'User'),
       this.getFollowing(personId,'User'),
     ])
+    const followingIds = following.following.map((f)=>f.following._id.toString());
+    let isMyFollower = followingIds.includes(userId);
+
+    const followerIds = followers.followers.map((f) => f.follower._id.toString());
+    let isFollowedByMe = followerIds.includes(userId);
+
 
     return {
       success: true,
       message:" Profile fetched successfully",
       data:{
-        user:user,
+        user,
         followersCount:followers.count,
         followingCount:following.count,
+        isMyFollower,
+        isFollowedByMe
       }
     }
 
