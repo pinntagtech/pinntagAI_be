@@ -1,6 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { DiscountType, EventStatus, EventTypes, RedemptionLimit } from 'src/enums/event.enums';
+import {
+  DiscountType,
+  EventStatus,
+  EventTypes,
+  RedemptionLimit,
+} from 'src/enums/event.enums';
 import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
 import { Image } from './image.model';
@@ -17,8 +22,6 @@ export type EventDocument = Event & Document;
 @Schema({ timestamps: true })
 export class Event {
   @Prop({ default: false })
-
-  
   isFromCrawler: boolean;
   @Prop({
     required: true,
@@ -41,7 +44,11 @@ export class Event {
   @Prop()
   discountValue: string;
 
-  @Prop({ required: true, enum: ['User', BusinessUser.name],default: BusinessUser.name })
+  @Prop({
+    required: true,
+    enum: ['User', BusinessUser.name],
+    default: BusinessUser.name,
+  })
   creatorType: string;
 
   @Prop({ refPath: 'creatorType' })
@@ -161,10 +168,10 @@ export class Event {
   @Prop({ default: false })
   each_date: boolean;
 
-  @Prop({default: false })
+  @Prop({ default: false })
   isDisabled: boolean;
 
-  @Prop({default: false})
+  @Prop({ default: false })
   isSavedAsTemplate: boolean;
 
   @Prop()
@@ -178,10 +185,10 @@ export class Event {
   @Prop()
   itemQuantity: number;
 
-  @Prop({default:1})
+  @Prop({ default: 1 })
   minOrderPerBooking: number;
 
-  @Prop({default:1})
+  @Prop({ default: 1 })
   maxOrderPerBooking: number;
 
   @Prop()
@@ -191,7 +198,10 @@ export class Event {
   currency: string;
 
   @Prop({ default: false })
-  preBookingRequired: boolean
+  preBookingRequired: boolean;
+
+  @Prop()
+  flashDealEndTime: Date;
 
   //offer specific props
 
@@ -206,8 +216,6 @@ export class Event {
 
   @Prop()
   shouldBeAtLocation: boolean;
-
-
 
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;
@@ -226,7 +234,6 @@ export const EventSchema = SchemaFactory.createForClass(Event);
 
 EventSchema.index({ schedule: 1 });
 EventSchema.index({ title: 'text', description: 'text' });
-
 
 EventSchema.set('toObject', { virtuals: true }).set('toJSON', {
   virtuals: true,

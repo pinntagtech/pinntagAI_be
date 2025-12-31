@@ -6583,16 +6583,16 @@ export class EventService2 {
         }
         data.itemQuantity = Number(data.itemQuantity);
         if (
-          data.minOrderPerBooking !== undefined &&
-          data.minOrderPerBooking !== ''
+          minOrderPerBooking !== undefined &&
+          minOrderPerBooking !== ''
         ) {
-          data.minOrderPerBooking = Number(data.minOrderPerBooking);
+          data.minOrderPerBooking = Number(minOrderPerBooking);
         }
         if (
-          data.maxOrderPerBooking !== undefined &&
-          data.maxOrderPerBooking !== ''
+          maxOrderPerBooking !== undefined &&
+          maxOrderPerBooking !== ''
         ) {
-          data.maxOrderPerBooking = Number(data.maxOrderPerBooking);
+          data.maxOrderPerBooking = Number(maxOrderPerBooking);
         }
         data.itemPrice = Number(data.itemPrice);
         data.preBookingRequired = preBookingRequired === 'true';
@@ -6605,9 +6605,14 @@ export class EventService2 {
               message: 'Please provide a valid flash deal end time',
             };
           }
+          data.flashDealEndTime = flashDealEndTime;
 
         }
       }
+
+
+      
+
 
       // Process booking URLs
       const bookingUrls = data.bookingSite?.split(',');
