@@ -423,6 +423,27 @@ export class UserService {
     }
   }
 
+  async getPersonProfile(personId: string,userId:string) {
+
+    const [user,followers,following] = await Promise.all([
+      this.userModel.findById(personId).select({ password: 0, __v: 0 }),
+      this.getFollowers(personId,'User'),
+      this.getFollowing(personId,'User'),
+    ])
+
+    return {
+      success: true,
+      message:" Profile fetched successfully",
+      data:{
+        user:user,
+        followersCount:followers.count,
+        followingCount:following.count,
+      }
+    }
+
+  }
+
+
   // async changePassword(data: ChangePasswordDto, userId: string) {
   //   const user = await this.userModel.findById(userId);
   //   if (!user) {
@@ -1062,48 +1083,50 @@ export class UserService {
   }
 
 
-  // async blockUser(targetId: string, userId: string) {
-  //   const follow = await this.followModel.findOne({
-  //     follower: new mongoose.Types.ObjectId(userId),
-  //     following: new mongoose.Types.ObjectId(targetId),
-  //   });
-  //   let result = {};
-  //   if (!follow) {
-  //     return {
-  //       success: false,
-  //       message: 'User not found in your following list',
-  //     };
-  //   } else {
-  //     if (follow.followingType == User.name) {
-  //       const user = await this.userModel.findById(targetId);
-  //       if (!user) {
-  //         return {
-  //           success: false,
-  //           message: 'User not found',
-  //         };
-  //       } else {
-  //         result = user;
-  //       }
-  //     } else {
-  //       const businessProfile = await this.businessModel.findById(targetId);
-  //       if (!businessProfile) {
-  //         return {
-  //           success: false,
-  //           message: 'User not found',
-  //         };
-  //       } else {
-  //         result = businessProfile;
-  //       }
-  //     }
-  //   }
-  //   follow.isBlocked = true;
-  //   await follow.save();
-  //   return {
-  //     success: true,
-  //     message: 'User blocked successfully',
-  //     user: result,
-  //   };
-  // }
+  async blockUser(followId: string, userId: string) {
+    const follow = await this.followModel.findById(followId);
+    let result = {};
+    if (!follow) {
+      return {
+        success: false,
+        message: 'No connection found to block',
+      };
+    }   
+      // if (follow.followingType == User.name) {
+      //   const user = await this.userModel.findById(targetId);
+      //   if (!user) {
+      //     return {
+      //       success: false,
+      //       message: 'User not found',
+      //     };
+      //   } else {
+      //     result = user;
+      //   }
+      // } else {
+      //   const businessProfile = await this.businessModel.findById(targetId);
+      //   if (!businessProfile) {
+      //     return {
+      //       success: false,
+      //       message: 'User not found',
+      //     };
+      //   } else {
+      //     result = businessProfile;
+      //   }
+      // }
+      let message = '';
+      if (follow.isBlocked) {
+        message = 'User unblocked successfully';
+      } else {
+        message = 'User blocked successfully';
+      }
+    follow.isBlocked = !follow.isBlocked;
+    await follow.save();
+    return {
+      success: true,
+      message: message,
+      // user: result,
+    };
+  }
 
   // async getTransactions(userId: string) {
   //   const transactions = await this.transactionModel

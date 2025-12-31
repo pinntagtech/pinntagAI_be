@@ -6597,7 +6597,16 @@ export class EventService2 {
         data.itemPrice = Number(data.itemPrice);
         data.preBookingRequired = preBookingRequired === 'true';
 
-        // if(flashDealEndTime)
+        if(flashDealEndTime){
+          let flashDealEndTimeDate = new Date(flashDealEndTime);
+          if (isNaN(flashDealEndTimeDate.getTime())) {
+            return {
+              success: false,
+              message: 'Please provide a valid flash deal end time',
+            };
+          }
+
+        }
       }
 
       // Process booking URLs

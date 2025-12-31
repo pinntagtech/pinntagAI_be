@@ -141,6 +141,24 @@ export class UserController {
     }
   }
 
+  @Get('person/profile/:id')
+  @UseGuards(JwtGuard2)
+  async getPersonProfile(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.userService.getPersonProfile(id, user.id);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
+
   // @Patch('change/password')
   // @UseGuards(UserGuard)
   // async changePassword(
@@ -330,19 +348,19 @@ export class UserController {
     }
   }
 
-  // @Patch('block/:id')
-  // @UseGuards(UserGuard)
-  // async blockUser(@Req() req: Request, @Param('id') id: string) {
-  //   const result = await this.userService.blockUser(id, req.user['_id']);
-  //   if (result.success) {
-  //     return {
-  //       message: result.message,
-  //       user: result.user,
-  //     };
-  //   } else {
-  //     throw new BadRequestException(result.message);
-  //   }
-  // }
+  @Patch('block/:id')
+  @UseGuards(JwtGuard2)
+  async blockUser(@Req() req: Request, @Param('id') id: string) {
+    const result = await this.userService.blockUser(id, req.user['_id']);
+    if (result.success) {
+      return {
+        message: result.message,
+        // user: result.user,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   // @Get('transactions')
   // @UseGuards(UserGuard)

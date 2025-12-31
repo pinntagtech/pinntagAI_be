@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import { DiscountType, EventStatus, EventTypes } from 'src/enums/event.enums';
+import { DiscountType, EventStatus, EventTypes, RedemptionLimit } from 'src/enums/event.enums';
 import { AgeGroup } from 'src/models/ageGroup.model';
 import { Category } from 'src/models/contentCategory.model';
 import { Image } from './image.model';
@@ -170,6 +170,8 @@ export class Event {
   @Prop()
   tags: string[];
 
+  //flash deal specific props
+
   @Prop()
   itemName: string;
 
@@ -190,6 +192,21 @@ export class Event {
 
   @Prop({ default: false })
   preBookingRequired: boolean
+
+  //offer specific props
+
+  @Prop()
+  isRedeemable: boolean;
+
+  @Prop({ enum: Object.values(RedemptionLimit) })
+  redemptionFrequency: string;
+
+  @Prop()
+  checkInRequired: boolean;
+
+  @Prop()
+  shouldBeAtLocation: boolean;
+
 
 
   // @Prop({ ref: Business.name })

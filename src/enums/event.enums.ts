@@ -9,6 +9,14 @@ export enum EventTypes {
   DROPPED_PIN = 'dropped_pin',
 }
 
+export const RedemptionLimit = {
+  UNLIMITED: 'unlimited',
+  ONCE_A_MONTH: 'ONCE A MONTH',
+  ONLY_ONCE: 'ONLY ONCE',
+  ONCE_A_WEEK: 'ONCE A WEEK',
+  ONCE_A_DAY: 'ONCE A DAY',
+}
+
 export enum EventStatus {
   DRAFTED = 'drafted',
   PUBLISHED = 'published',

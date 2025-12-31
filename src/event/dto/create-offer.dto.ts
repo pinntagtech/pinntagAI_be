@@ -99,7 +99,7 @@ export class CreateOfferDto {
   maxOrderPerBooking: any;
 
   @IsOptional()
-  flashDealEndTime: string;
+  flashDealEndTime: any;
 
 
 }
