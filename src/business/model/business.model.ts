@@ -498,6 +498,11 @@ export class Business {
   @Prop()
   XPageUrl: string;
 
+  @Prop({default:false})
+  isFacebookDatafetched:boolean;
+
+  @Prop()
+  lastFacebookDatafetched:Date;
   // @Prop({default:false})
   // skipToDashboard: boolean;
 }

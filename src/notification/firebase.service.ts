@@ -38,7 +38,8 @@ export class FirebaseService {
     return response;
   } catch (error) {
     console.log('Error sending message:', error);
-    throw error; // or return null if you want to swallow the error
+    // throw error; // or return null if you want to swallow the error
+    return null;
   }
 }
 

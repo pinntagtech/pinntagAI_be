@@ -215,7 +215,7 @@ export class Event {
   checkInRequired: boolean;
 
   @Prop()
-  shouldBeAtLocation: boolean;
+  expectedAtLocation: boolean;
 
   // @Prop({ ref: Business.name })
   // business: mongoose.Types.ObjectId;

@@ -101,5 +101,19 @@ export class CreateOfferDto {
   @IsOptional()
   flashDealEndTime: any;
 
+  @IsOptional()
+  isRedeemable:any;
+
+  @IsOptional()
+  redemptionFrequency: string;
+
+  @IsOptional()
+  checkInRequired:any;
+
+  @IsOptional()
+  expectedAtLocation: any;
+
+
+
 
 }

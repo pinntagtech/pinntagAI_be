@@ -2171,7 +2171,7 @@ export class EventService2 {
             );
             const followersRes = await this.userService.getFollowers(
               user.businessProfile,
-              'User'
+              'User',
             );
             console.log('Followers Res:', followersRes);
             let eventType = '';
@@ -2579,7 +2579,8 @@ export class EventService2 {
           } else {
             //If age is greater than 60 days, ask for re-authentication
             const age =
-              new Date().getTime() - business.facebookMetaData.tokenExpiresAt.getTime();
+              new Date().getTime() -
+              business.facebookMetaData.tokenExpiresAt.getTime();
             if (age > 5184000000) {
               return {
                 success: false,
@@ -6582,22 +6583,16 @@ export class EventService2 {
           };
         }
         data.itemQuantity = Number(data.itemQuantity);
-        if (
-          minOrderPerBooking !== undefined &&
-          minOrderPerBooking !== ''
-        ) {
+        if (minOrderPerBooking !== undefined && minOrderPerBooking !== '') {
           data.minOrderPerBooking = Number(minOrderPerBooking);
         }
-        if (
-          maxOrderPerBooking !== undefined &&
-          maxOrderPerBooking !== ''
-        ) {
+        if (maxOrderPerBooking !== undefined && maxOrderPerBooking !== '') {
           data.maxOrderPerBooking = Number(maxOrderPerBooking);
         }
         data.itemPrice = Number(data.itemPrice);
         data.preBookingRequired = preBookingRequired === 'true';
 
-        if(flashDealEndTime){
+        if (flashDealEndTime) {
           let flashDealEndTimeDate = new Date(flashDealEndTime);
           if (isNaN(flashDealEndTimeDate.getTime())) {
             return {
@@ -6606,13 +6601,25 @@ export class EventService2 {
             };
           }
           data.flashDealEndTime = flashDealEndTime;
-
         }
+      } else if (data.eventType === EventTypes.OFFER) {
+        const {
+          isRedeemable,
+          redemptionFrequency,
+          checkInRequired,
+          expectedAtLocation,
+        } = data;
+        // if(isRedeemable === undefined || isRedeemable === '' || redemptionFrequency === undefined ||redemptionFrequency === '' ||checkInRequired === undefined || checkInRequired=== '' || expectedAtLocation === undefined || expectedAtLocation === ''){
+        //   return {
+        //      success: false,
+        //     message: 'Please provide item details for Offer Content',
+        //   }
+        // }
+
+        data.isRedeemable = isRedeemable === 'true' ? true : false;
+        data.checkInRequired = checkInRequired === 'true' ? true : false;
+        data.expectedAtLocation = expectedAtLocation === 'true' ? true : false;
       }
-
-
-      
-
 
       // Process booking URLs
       const bookingUrls = data.bookingSite?.split(',');
@@ -6772,6 +6779,64 @@ export class EventService2 {
 
       if (data.isFree !== undefined) {
         data.isFree = data.isFree === 'true';
+      }
+
+      if (data.eventType === EventTypes.FLASHDEAL) {
+        const {
+          itemQuantity,
+          itemName,
+          minOrderPerBooking,
+          maxOrderPerBooking,
+          itemPrice,
+          currency,
+          preBookingRequired,
+          flashDealEndTime,
+        } = data;
+        if(itemQuantity){
+          data.itemQuantity = Number(data.itemQuantity);
+        }
+        if (minOrderPerBooking !== undefined && minOrderPerBooking !== '') {
+          data.minOrderPerBooking = Number(minOrderPerBooking);
+        }
+        if (maxOrderPerBooking !== undefined && maxOrderPerBooking !== '') {
+          data.maxOrderPerBooking = Number(maxOrderPerBooking);
+        }
+        if(itemPrice){
+          data.itemPrice = Number(data.itemPrice);
+        }
+        if(preBookingRequired){
+          data.preBookingRequired = preBookingRequired === 'true';
+        }
+
+        if (flashDealEndTime) {
+          let flashDealEndTimeDate = new Date(flashDealEndTime);
+          if (isNaN(flashDealEndTimeDate.getTime())) {
+            return {
+              success: false,
+              message: 'Please provide a valid flash deal end time',
+            };
+          }
+          data.flashDealEndTime = flashDealEndTime;
+        }
+      } else if (data.eventType === EventTypes.OFFER) {
+        const {
+          isRedeemable,
+          redemptionFrequency,
+          checkInRequired,
+          expectedAtLocation,
+        } = data;
+        if(isRedeemable !== undefined && isRedeemable !==''){
+          data.isRedeemable = isRedeemable === 'true' ? true : false;
+        }
+        if(checkInRequired !==undefined && checkInRequired !==  ''){
+          data.checkInRequired = checkInRequired === 'true' ? true : false;
+        }
+        if(expectedAtLocation !== undefined && expectedAtLocation !== ''){
+          data.expectedAtLocation = expectedAtLocation === 'true' ? true : false;
+        }
+        // if(redemptionFrequency !== undefined && redemptionFrequency !== ''){
+
+        // }
       }
 
       console.log('Data:', data);

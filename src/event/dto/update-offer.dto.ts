@@ -82,4 +82,42 @@ export class UpdateOfferDto {
 
   @IsOptional()
   existingFiles?: any;
+
+  @IsOptional()
+  itemQuantity: any;
+
+  @IsOptional()
+  itemName: any;
+
+  @IsOptional()
+  itemPrice: any;
+
+  @IsOptional()
+  currency: string;
+
+  @IsOptional()
+  preBookingRequired: any;
+
+  @IsOptional()
+  minOrderPerBooking: any;
+
+  @IsOptional()
+  maxOrderPerBooking: any;
+
+  @IsOptional()
+  flashDealEndTime: any;
+
+  @IsOptional()
+  isRedeemable:any;
+
+  @IsOptional()
+  redemptionFrequency: string;
+
+  @IsOptional()
+  checkInRequired:any;
+
+  @IsOptional()
+  expectedAtLocation: any;
+
+
 }
