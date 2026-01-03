@@ -6694,6 +6694,44 @@ export class EventService2 {
 
       await Promise.all(updatePromises);
 
+      if (data.locations !== undefined && data.locations !== '') {
+        const location = new mongoose.Types.ObjectId(data.locations);
+        const outletDoc = await this.outletModel.findById(location);
+        if (!outletDoc) {
+          return {
+            success: false,
+            message: `Outlet with id ${location} not found`,
+          };
+        }
+        const createdlocation = await this.eventLocationModel.create({
+          event: new mongoose.Types.ObjectId(event.id),
+          businessLocationId: outletDoc._id,
+          businessProfile: event.businessProfile,
+          location: {
+            type: 'Point',
+            coordinates: [outletDoc.longitude, outletDoc.latitude],
+          },
+          accuracy: outletDoc.accuracy,
+          address1: outletDoc.address1,
+          address2: outletDoc.address2 ? outletDoc.address2 : '',
+          city: outletDoc.city,
+          state: outletDoc.state,
+          zip: outletDoc.postalCode,
+          website: outletDoc.website,
+          email: outletDoc.email,
+          phone: outletDoc.phone,
+        });
+        console.log('created-location---->', createdlocation);
+        await this.eventModel.updateOne(
+          {
+            _id: new mongoose.Types.ObjectId(event.id),
+          },
+          {
+            $addToSet: { locations: createdlocation._id },
+          },
+        );
+      }
+
       if (offerImages && offerImages.length) {
         this.driveService.multiImageUpload(
           user.businessProfile.toString(),

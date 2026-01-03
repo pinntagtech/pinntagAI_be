@@ -113,6 +113,8 @@ export class CreateOfferDto {
   @IsOptional()
   expectedAtLocation: any;
 
+  @IsOptional()
+  locations: string;
 
 
 
