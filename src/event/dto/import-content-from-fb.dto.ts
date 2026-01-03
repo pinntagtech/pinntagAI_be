@@ -25,15 +25,15 @@ export class FacebookImportedPost {
   @IsNotEmpty()
   location:string;
 
-  @IsNotEmpty()
-  date:Date;
+//   @IsNotEmpty()
+//   date:Date;
 
-  @IsNotEmpty()
-  startTime:Date;
+//   @IsNotEmpty()
+//   startTime:Date;
 
-  @IsNotEmpty()
-  endTime: Date;
-  
+//   @IsNotEmpty()
+//   endTime: Date;
+
 
 
 

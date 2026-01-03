@@ -8819,9 +8819,9 @@ export class EventService2 {
         images,
         type,
         location,
-        date,
-        startTime,
-        endTime
+        // date,
+        // startTime,
+        // endTime
       } = data;
       const business = await this.businessModel.findById(user.businessProfile);
 
