@@ -3195,7 +3195,7 @@ export class EventService2 {
           $geoNear: {
             near: { type: 'Point', coordinates: [longitude, latitude] },
             distanceField: 'distance',
-            maxDistance: 100000000,
+            maxDistance: 100000,
             spherical: true,
           },
         },
@@ -3899,7 +3899,7 @@ export class EventService2 {
           $geoNear: {
             near: { type: 'Point', coordinates: [longitude, latitude] },
             distanceField: 'distance',
-            maxDistance: 100000000,
+            maxDistance: 10000000,
             spherical: true,
           },
         },
@@ -4738,7 +4738,7 @@ export class EventService2 {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
           distanceField: 'distance',
-          maxDistance: 10000000000,
+          maxDistance: 1000000,
           spherical: true,
         },
       },

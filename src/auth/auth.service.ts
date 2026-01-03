@@ -1675,7 +1675,7 @@ export class AuthService {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
           distanceField: 'distance',
-          maxDistance: 10000000000,
+          maxDistance: 1000000,
           spherical: true,
         },
       },
@@ -5326,7 +5326,7 @@ export class AuthService {
             ],
           },
           distanceField: 'distance',
-          maxDistance: 100000000 * 1000,
+          maxDistance: 1000 * 1000,
           spherical: true,
         },
       },
@@ -7274,7 +7274,7 @@ export class AuthService {
         page,
         limit,
         carouselType,
-        distance ? distance : 1000000000000, // Default distance if not provided
+        distance ? distance : 1000000, // Default distance if not provided
       );
       result = eventsResult;
       total = totalCount;
@@ -7718,7 +7718,7 @@ export class AuthService {
           },
           data.search,
           [],
-          1000000000000,
+          1000000,
           1,
           5,
         ),
@@ -7958,7 +7958,7 @@ export class AuthService {
               coordinates: [checkIN.longitude, checkIN.latitude],
             },
             distanceField: 'distance',
-            maxDistance: 100000000 * 1609.34,
+            maxDistance: 100000 * 1609.34,
             spherical: true,
             query: {
               business: businessObjectId,
