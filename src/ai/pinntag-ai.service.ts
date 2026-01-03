@@ -23,7 +23,7 @@ export class PinntagAiService {
       );
       return response.data;
     } catch (Error: AxiosError | any) {
-      console.error('Error creating agent:', error)
+      console.error('Error creating agent:', error);
     }
   }
   async updateAgent(payload: any, businessId: string) {
@@ -68,7 +68,7 @@ export class PinntagAiService {
   async getAITrainingQuestions(businessId: string) {
     try {
       console.log('businessId:', businessId);
-      console.log("WHY IT IS COMING HEREEEE:");
+      console.log('WHY IT IS COMING HEREEEE:');
       const response = await axios.get(
         `https://ai.pinntag.com/ai/training/state/${businessId}`,
         {
@@ -85,14 +85,10 @@ export class PinntagAiService {
     }
   }
 
-
-
-  async generateBusinessDescriptionWithTagsUpdate(
-    payload: any,
-  ) {
+  async generateBusinessDescriptionWithTagsUpdate(payload: any) {
     try {
       const body = JSON.stringify(payload);
-      console.log("BODY:::",body);
+      console.log('BODY:::', body);
       const response = await axios.post(
         `${this.baseUrl}/ai-assist/update-tags-and-description`,
         body,
@@ -118,6 +114,26 @@ export class PinntagAiService {
           headers: {
             'x-internal-api-key': this.internalKey,
             'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error generating title suggestions:', error);
+      throw error;
+    }
+  }
+  async facebookPostBulkImport(payload: any, token: string) {
+    try {
+      const body = JSON.stringify(payload);
+      const response = await axios.post(
+        `${this.baseUrl}/facebook/posts/bulk-import`,
+        body,
+        {
+          headers: {
+            'x-internal-api-key': this.internalKey,
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
         },
       );

@@ -154,6 +154,7 @@ import { CheckIn } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchStatus } from 'src/business/model/scratch.model';
 import { Tag } from 'src/models/tags.model';
 import { FacebookImportedPost } from './dto/import-content-from-fb.dto';
+import { PinntagAiService } from 'src/ai/pinntag-ai.service';
 
 @Injectable()
 export class EventService2 {
@@ -223,6 +224,7 @@ export class EventService2 {
     private readonly googleService: GoogleService,
     private readonly businessService: BusinessService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly pinnAiService: PinntagAiService,
   ) {}
 
   async findById(id: string) {
@@ -8816,6 +8818,10 @@ export class EventService2 {
         description,
         images,
         type,
+        location,
+        date,
+        startTime,
+        endTime
       } = data;
       const business = await this.businessModel.findById(user.businessProfile);
 
@@ -8841,6 +8847,7 @@ export class EventService2 {
         user: new mongoose.Types.ObjectId(user.id),
       });
 
+      // await this.
       return {
         success: true,
         message: 'Event populated successfully!',

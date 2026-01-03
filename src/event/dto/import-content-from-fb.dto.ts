@@ -19,7 +19,24 @@ export class FacebookImportedPost {
   @IsOptional()
   images: string[];
 
-  @IsOptional()
+  @IsNotEmpty()
   type:string;
 
+  @IsNotEmpty()
+  location:string;
+
+  @IsNotEmpty()
+  date:Date;
+
+  @IsNotEmpty()
+  startTime:Date;
+
+  @IsNotEmpty()
+  endTime: Date;
+  
+
+
+
+
+  
 }
