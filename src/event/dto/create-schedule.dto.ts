@@ -12,7 +12,7 @@ import {
 
 export class Schedule {
   date: Date;
-  durations: Array<DurationDto>;
+  durations: Array<FixedDurationDto>;
 }
 
 export class DurationDto {
@@ -32,6 +32,24 @@ export class DurationDto {
   endHour: number;
   @IsNotEmpty()
   endMinute: number;
+}
+export class FixedDurationDto {
+  @IsString()
+  @IsNotEmpty()
+  startTime: Date;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: Date;
+
+  // @IsNotEmpty()
+  // startHour: number;
+  // @IsNotEmpty()
+  // startMinute: number;
+  // @IsNotEmpty()
+  // endHour: number;
+  // @IsNotEmpty()
+  // endMinute: number;
 }
 
 export class DayScheduleDto {
