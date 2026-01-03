@@ -31,6 +31,25 @@ export interface IBusiness_AI_Assistant extends Document {
   facebookPagePhone?: string; // Phone number from Facebook page
   facebookPageEmail?: string; // Email from Facebook page
   facebookPageMetadata?: Record<string, any>; // Additional Facebook page metadata
+  isFacebookConnected?: boolean; // Whether Facebook page is connected
+  facebookMetaData?: {
+    pageId?: string;
+    pageAccessToken?: string;
+    tokenExpiresAt?: Date;
+    pageInfo?: {
+      name?: string;
+      about?: string;
+      category?: string;
+      followers?: number;
+      website?: string;
+      phone?: string;
+      email?: string;
+      profilePicture?: string;
+      coverPhoto?: string;
+    };
+  };
+  isFacebookDataFetched?: boolean; // Whether Facebook data has been fetched
+  lastFacebookDataFetched?: Date; // Last time Facebook data was fetched
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +90,31 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     facebookPagePhone: { type: String }, // Phone number from Facebook page
     facebookPageEmail: { type: String }, // Email from Facebook page
     facebookPageMetadata: { type: Schema.Types.Mixed }, // Additional Facebook page metadata
+    isFacebookConnected: { type: Boolean, default: false }, // Whether Facebook page is connected
+    facebookMetaData: {
+      type: {
+        pageId: { type: String },
+        pageAccessToken: { type: String },
+        tokenExpiresAt: { type: Date },
+        pageInfo: {
+          type: {
+            name: { type: String },
+            about: { type: String },
+            category: { type: String },
+            followers: { type: Number },
+            website: { type: String },
+            phone: { type: String },
+            email: { type: String },
+            profilePicture: { type: String },
+            coverPhoto: { type: String },
+          },
+          _id: false,
+        },
+      },
+      _id: false,
+    },
+    isFacebookDataFetched: { type: Boolean, default: false },
+    lastFacebookDataFetched: { type: Date },
   },
   { timestamps: true, versionKey: false }
 );

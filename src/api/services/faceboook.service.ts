@@ -2,6 +2,7 @@ import axios from "axios";
 import qs from "qs";
 import OpenAI from "openai";
 import { logger } from "../../utils/logger.js";
+import { FacebookPostModel } from "../../models/facebookPost.model.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -273,13 +274,35 @@ export class FacebookService {
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
 
+        const facebookMetaData = resolvedPageId && pageMetadata ? {
+          pageId: resolvedPageId,
+          pageAccessToken: longLivedToken,
+          tokenExpiresAt: expiresAt,
+          pageInfo: {
+            name: pageMetadata.name,
+            about: pageMetadata.about,
+            category: pageMetadata.category,
+            followers: pageMetadata.followers,
+            website: pageMetadata.website,
+            phone: pageMetadata.phone,
+            email: pageMetadata.email,
+            profilePicture: pageMetadata.profilePicture,
+            coverPhoto: pageMetadata.coverPhoto,
+          },
+        } : undefined;
+
         const updateData: any = {
           facebookPageAccessToken: longLivedToken,
           facebookPageTokenExpiresAt: expiresAt,
+          isFacebookConnected: true,
         };
 
         if (resolvedPageId) {
           updateData.facebookPageId = resolvedPageId;
+        }
+
+        if (facebookMetaData) {
+          updateData.facebookMetaData = facebookMetaData;
         }
 
         // Add page metadata if available
@@ -459,6 +482,23 @@ export class FacebookService {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 60); // 60 days
 
+      const facebookMetaData = {
+        pageId: pageId,
+        pageAccessToken: pageAccessToken,
+        tokenExpiresAt: expiresAt,
+        pageInfo: {
+          name: pageMetadata.name,
+          about: pageMetadata.about,
+          category: pageMetadata.category,
+          followers: pageMetadata.followers,
+          website: pageMetadata.website,
+          phone: pageMetadata.phone,
+          email: pageMetadata.email,
+          profilePicture: pageMetadata.profilePicture,
+          coverPhoto: pageMetadata.coverPhoto,
+        },
+      };
+
       const updateData: any = {
         facebookPageAccessToken: pageAccessToken,
         facebookPageId: pageId,
@@ -473,6 +513,8 @@ export class FacebookService {
         facebookPageProfilePicture: pageMetadata.profilePicture,
         facebookPageCoverPhoto: pageMetadata.coverPhoto,
         facebookPageMetadata: pageMetadata.rawData,
+        isFacebookConnected: true,
+        facebookMetaData: facebookMetaData,
       };
 
       const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
@@ -607,6 +649,8 @@ export class FacebookService {
           $set: {
             isFacebookConnected: true,
             facebookMetaData: facebookMetaData,
+            isFacebookDatafetched: false,
+            lastFacebookDatafetched: null,
           },
         },
         { new: true }
@@ -899,6 +943,41 @@ export class FacebookService {
         },
         "Completed saving Facebook data to database"
       );
+
+      // Update business_ai_assistant with data fetch timestamp
+      await BusinessAIAssistantModel.findOneAndUpdate(
+        { businessId },
+        {
+          $set: {
+            isFacebookDataFetched: true,
+            lastFacebookDataFetched: new Date(),
+          },
+        }
+      );
+
+      // Update pinntagBackend business with data fetch timestamp
+      try {
+        const { getBackendBusinessModel } = await import(
+          "../../models/pinntagBackend/business.model.js"
+        );
+        const { getBackendConnection } = await import("../../db/connection.js");
+
+        const backendConn = await getBackendConnection();
+        if (backendConn) {
+          const BusinessBackendModel = getBackendBusinessModel(backendConn);
+          await BusinessBackendModel.findByIdAndUpdate(businessId, {
+            $set: {
+              isFacebookDatafetched: true,
+              lastFacebookDatafetched: new Date(),
+            },
+          });
+        }
+      } catch (backendError: any) {
+        logger.warn(
+          { error: backendError.message },
+          "Failed to update backend business data fetch timestamp"
+        );
+      }
 
       // Apply AI filtering if requested
       let filteredPosts = savedPosts;
@@ -1668,6 +1747,282 @@ export class FacebookService {
       return {
         success: false,
         error: error.message || "Failed to fetch Facebook posts",
+      };
+    }
+  }
+
+  /**
+   * Get Facebook posts with pagination
+   * @param businessId - Business ID to fetch posts for
+   * @param page - Page number (default: 1)
+   * @param limit - Number of posts per page (default: 10, max: 100)
+   * @param type - Optional filter by type (event, offer, spotlight, flashlight)
+   * @param minScore - Optional minimum AI score filter
+   * @param status - Optional filter by status (pending, ignored, saved, imported)
+   */
+  async getFacebookPostsPaginated(
+    businessId: string,
+    page: number = 1,
+    limit: number = 10,
+    type?: "event" | "offer" | "spotlight" | "flashlight",
+    minScore?: number,
+    status?: "pending" | "ignored" | "saved" | "imported"
+  ) {
+    try {
+      const { FacebookPostModel } = await import(
+        "../../models/facebookPost.model.js"
+      );
+
+      // Validate and sanitize inputs
+      const pageNum = Math.max(1, page);
+      const limitNum = Math.min(100, Math.max(1, limit));
+      const skip = (pageNum - 1) * limitNum;
+
+      // Build query filter
+      const filter: any = { businessId };
+
+      if (type) {
+        filter["aiAnalysis.type"] = type;
+      }
+
+      if (minScore !== undefined && minScore > 0) {
+        filter["aiAnalysis.score"] = { $gte: minScore };
+      }
+
+      if (status) {
+        filter.status = status;
+      }
+
+      // Execute query with pagination
+      const [posts, totalCount] = await Promise.all([
+        FacebookPostModel.find(filter)
+          .sort({ lastSyncedAt: -1, createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+        FacebookPostModel.countDocuments(filter),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limitNum);
+
+      logger.info(
+        {
+          businessId,
+          page: pageNum,
+          limit: limitNum,
+          totalCount,
+          type,
+          minScore,
+          status,
+        },
+        "Fetched Facebook posts with pagination"
+      );
+
+      return {
+        success: true,
+        data: {
+          posts,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalCount,
+            limit: limitNum,
+            hasNextPage: pageNum < totalPages,
+            hasPreviousPage: pageNum > 1,
+          },
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId },
+        "Error fetching Facebook posts with pagination"
+      );
+      return {
+        success: false,
+        error: error.message || "Failed to fetch Facebook posts",
+      };
+    }
+  }
+
+  /**
+   * Update the type and/or status of a Facebook post
+   * @param postId - MongoDB _id of the post
+   * @param businessId - Business ID for authorization
+   * @param newType - New type to set (optional)
+   * @param status - New status to set (optional)
+   * @param ignoreReason - Reason for ignoring (required if status is "ignored")
+   * @param ignoreNote - Additional note for ignoring
+   */
+  async updateFacebookPostType(
+    postId: string,
+    businessId: string,
+    newType?: "event" | "offer" | "spotlight" | "flashlight",
+    status?: "pending" | "ignored" | "saved" | "imported",
+    ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other",
+    ignoreNote?: string
+  ) {
+    try {
+      const { FacebookPostModel } = await import(
+        "../../models/facebookPost.model.js"
+      );
+
+      // Validate type if provided
+      if (newType) {
+        const validTypes = ["event", "offer", "spotlight", "flashlight"];
+        if (!validTypes.includes(newType)) {
+          return {
+            success: false,
+            error: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+          };
+        }
+      }
+
+      // Validate status if provided
+      if (status) {
+        const validStatuses = ["pending", "ignored", "saved", "imported"];
+        if (!validStatuses.includes(status)) {
+          return {
+            success: false,
+            error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+          };
+        }
+
+        // If status is "ignored", ignoreReason is required
+        if (status === "ignored" && !ignoreReason) {
+          return {
+            success: false,
+            error: "ignoreReason is required when status is 'ignored'",
+          };
+        }
+      }
+
+      // Build update object
+      const updateData: any = {};
+
+      if (newType) {
+        updateData["aiAnalysis.type"] = newType;
+        updateData.type = newType;
+      }
+
+      if (status) {
+        updateData.status = status;
+
+        // Clear ignore fields if status is not "ignored"
+        if (status !== "ignored") {
+          updateData.ignoreReason = null;
+          updateData.ignoreNote = null;
+        }
+      }
+
+      if (ignoreReason && status === "ignored") {
+        updateData.ignoreReason = ignoreReason;
+      }
+
+      if (ignoreNote && status === "ignored") {
+        updateData.ignoreNote = ignoreNote;
+      }
+
+      // Find and update the post
+      const updatedPost = await FacebookPostModel.findOneAndUpdate(
+        { _id: postId, businessId }, // Ensure post belongs to business
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedPost) {
+        return {
+          success: false,
+          error: "Post not found or you don't have permission to edit it",
+        };
+      }
+
+      logger.info(
+        { postId, businessId, newType, status, ignoreReason },
+        "Updated Facebook post"
+      );
+
+      return {
+        success: true,
+        data: updatedPost,
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, postId, businessId },
+        "Error updating Facebook post"
+      );
+      return {
+        success: false,
+        error: error.message || "Failed to update post",
+      };
+    }
+  }
+
+  /**
+   * Bulk mark posts as imported
+   * @param postIds Array of post _ids to mark as imported
+   * @param businessId Business ID to verify ownership
+   * @returns Updated posts count and details
+   */
+  async bulkMarkPostsAsImported(
+    postIds: string[],
+    businessId: string
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    updatedCount?: number;
+    postIds?: string[];
+    error?: string;
+  }> {
+    try {
+      // Validate input
+      if (!postIds || !Array.isArray(postIds) || postIds.length === 0) {
+        return {
+          success: false,
+          error: "postIds must be a non-empty array",
+        };
+      }
+
+      if (!businessId) {
+        return {
+          success: false,
+          error: "businessId is required",
+        };
+      }
+
+      // Update all posts that match the postIds and businessId
+      const result = await FacebookPostModel.updateMany(
+        {
+          _id: { $in: postIds },
+          businessId: businessId,
+        },
+        {
+          $set: {
+            status: "imported",
+            ignoreReason: null,
+            ignoreNote: null,
+          },
+        }
+      );
+
+      logger.info(
+        { businessId, requestedCount: postIds.length, updatedCount: result.modifiedCount },
+        "Bulk marked posts as imported"
+      );
+
+      return {
+        success: true,
+        message: `Successfully marked ${result.modifiedCount} post(s) as imported`,
+        updatedCount: result.modifiedCount,
+        postIds: postIds,
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId, postIdsCount: postIds?.length },
+        "Error bulk updating posts as imported"
+      );
+      return {
+        success: false,
+        error: error.message || "Failed to bulk update posts",
       };
     }
   }

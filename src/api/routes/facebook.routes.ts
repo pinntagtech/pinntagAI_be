@@ -72,4 +72,41 @@ router.get("/all-posts", facebookController.getAllPosts);
  */
 router.get("/page-data", facebookController.fetchAndSavePageData);
 
+/**
+ * @route GET /api/facebook/posts/paginated
+ * @desc Get Facebook posts with pagination and filtering
+ * @headers { Authorization: Bearer <JWT> }
+ * @query {
+ *   page?: number,
+ *   limit?: number,
+ *   type?: "event" | "offer" | "spotlight" | "flashlight",
+ *   minScore?: number,
+ *   status?: "pending" | "ignored" | "saved" | "imported"
+ * }
+ */
+router.get("/posts/paginated", facebookController.getFacebookPostsPaginated.bind(facebookController));
+
+/**
+ * @route PUT /api/facebook/posts/:postId/type
+ * @desc Update the type and/or status of a Facebook post
+ * @headers { Authorization: Bearer <JWT> }
+ * @body {
+ *   type?: "event" | "offer" | "spotlight" | "flashlight",
+ *   status?: "pending" | "ignored" | "saved" | "imported",
+ *   ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other",
+ *   ignoreNote?: string
+ * }
+ */
+router.put("/posts/:postId/type", facebookController.updateFacebookPostType.bind(facebookController));
+
+/**
+ * @route POST /api/facebook/posts/bulk-import
+ * @desc Bulk mark posts as imported when they are converted to Pinntag events
+ * @headers { Authorization: Bearer <JWT> }
+ * @body {
+ *   postIds: string[]
+ * }
+ */
+router.post("/posts/bulk-import", facebookController.markPostsAsImported.bind(facebookController));
+
 export { router as facebookRoutes };

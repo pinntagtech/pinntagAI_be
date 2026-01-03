@@ -61,6 +61,11 @@ export interface IFacebookPost extends Document {
     category?: "promotion" | "event" | "product" | "service" | "announcement" | "other";
   };
 
+  // Status tracking
+  status?: "pending" | "ignored" | "saved" | "imported";
+  ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other";
+  ignoreNote?: string;
+
   // Metadata
   facebookCreatedTime?: Date;
   scrapedAt: Date;
@@ -160,6 +165,19 @@ const FacebookPostSchema = new Schema<IFacebookPost>(
       },
     },
 
+    // Status tracking
+    status: {
+      type: String,
+      enum: ["pending", "ignored", "saved", "imported"],
+      default: "pending",
+      index: true,
+    },
+    ignoreReason: {
+      type: String,
+      enum: ["not_relevant", "personal_casual", "duplicate", "other"],
+    },
+    ignoreNote: { type: String },
+
     // Metadata
     facebookCreatedTime: { type: Date },
     scrapedAt: { type: Date, default: Date.now },
@@ -178,6 +196,8 @@ FacebookPostSchema.index({ "aiAnalysis.category": 1 });
 FacebookPostSchema.index({ "aiAnalysis.score": -1 });
 FacebookPostSchema.index({ "eventData.startDate": 1 });
 FacebookPostSchema.index({ scrapedAt: -1 });
+FacebookPostSchema.index({ businessId: 1, status: 1 });
+FacebookPostSchema.index({ businessId: 1, "aiAnalysis.type": 1, status: 1 });
 
 // Compound index for business + page
 FacebookPostSchema.index({ businessId: 1, facebookPageId: 1, postId: 1 });

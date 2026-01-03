@@ -478,6 +478,314 @@ export class FacebookController {
       return res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  /**
+   * Get Facebook posts with pagination
+   * GET /facebook/posts/paginated
+   * Headers: { Authorization: Bearer <JWT> }
+   * Query: { page?: number, limit?: number, type?: string, minScore?: number, status?: string }
+   */
+  async getFacebookPostsPaginated(req: Request, res: Response) {
+    try {
+      const { page, limit, type, minScore, status } = req.query;
+
+      // Extract and decode JWT token to get businessId
+      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      // Parse optional parameters
+      const pageNum = page ? parseInt(page as string, 10) : 1;
+      const limitNum = limit ? parseInt(limit as string, 10) : 10;
+      const minScoreNum = minScore ? parseInt(minScore as string, 10) : undefined;
+
+      // Validate type if provided
+      const validTypes = ["event", "offer", "spotlight", "flashlight"];
+      if (type && !validTypes.includes(type as string)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+        });
+      }
+
+      // Validate status if provided
+      const validStatuses = ["pending", "ignored", "saved", "imported"];
+      if (status && !validStatuses.includes(status as string)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        });
+      }
+
+      logger.info(
+        { businessId, page: pageNum, limit: limitNum, type, minScore: minScoreNum, status },
+        "Fetching Facebook posts with pagination"
+      );
+
+      const result = await facebookService.getFacebookPostsPaginated(
+        businessId,
+        pageNum,
+        limitNum,
+        type as "event" | "offer" | "spotlight" | "flashlight" | undefined,
+        minScoreNum,
+        status as "pending" | "ignored" | "saved" | "imported" | undefined
+      );
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || "Failed to fetch Facebook posts",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+      });
+    } catch (error: any) {
+      logger.error({ error }, "Error in getFacebookPostsPaginated controller");
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * Update Facebook post type and/or status
+   * PUT /facebook/posts/:postId/type
+   * Headers: { Authorization: Bearer <JWT> }
+   * Body: { type?: string, status?: string, ignoreReason?: string, ignoreNote?: string }
+   */
+  async updateFacebookPostType(req: Request, res: Response) {
+    try {
+      const { postId } = req.params;
+      const { type, status, ignoreReason, ignoreNote } = req.body;
+
+      // Validate required parameters
+      if (!postId) {
+        return res.status(400).json({
+          success: false,
+          error: "Post ID is required",
+        });
+      }
+
+      // Extract and decode JWT token to get businessId
+      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      // At least one of type or status must be provided
+      if (!type && !status) {
+        return res.status(400).json({
+          success: false,
+          error: "At least one of 'type' or 'status' is required",
+        });
+      }
+
+      // Validate type if provided
+      if (type) {
+        const validTypes = ["event", "offer", "spotlight", "flashlight"];
+        if (!validTypes.includes(type)) {
+          return res.status(400).json({
+            success: false,
+            error: `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+          });
+        }
+      }
+
+      // Validate status if provided
+      if (status) {
+        const validStatuses = ["pending", "ignored", "saved", "imported"];
+        if (!validStatuses.includes(status)) {
+          return res.status(400).json({
+            success: false,
+            error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+          });
+        }
+
+        // If status is "ignored", ignoreReason is required
+        if (status === "ignored" && !ignoreReason) {
+          return res.status(400).json({
+            success: false,
+            error: "ignoreReason is required when status is 'ignored'",
+          });
+        }
+      }
+
+      // Validate ignoreReason if provided
+      if (ignoreReason && status === "ignored") {
+        const validReasons = ["not_relevant", "personal_casual", "duplicate", "other"];
+        if (!validReasons.includes(ignoreReason)) {
+          return res.status(400).json({
+            success: false,
+            error: `Invalid ignoreReason. Must be one of: ${validReasons.join(", ")}`,
+          });
+        }
+      }
+
+      logger.info(
+        { postId, businessId, type, status, ignoreReason },
+        "Updating Facebook post"
+      );
+
+      const result = await facebookService.updateFacebookPostType(
+        postId,
+        businessId,
+        type as "event" | "offer" | "spotlight" | "flashlight" | undefined,
+        status as "pending" | "ignored" | "saved" | "imported" | undefined,
+        ignoreReason as "not_relevant" | "personal_casual" | "duplicate" | "other" | undefined,
+        ignoreNote
+      );
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || "Failed to update post",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+      });
+    } catch (error: any) {
+      logger.error({ error }, "Error in updateFacebookPostType controller");
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * Bulk mark posts as imported
+   * POST /api/facebook/posts/bulk-import
+   * Headers: { Authorization: Bearer <JWT> }
+   * @body { postIds: string[] }
+   */
+  async markPostsAsImported(req: Request, res: Response) {
+    try {
+      const { postIds } = req.body;
+
+      // Validate required fields
+      if (!postIds) {
+        return res.status(400).json({
+          success: false,
+          error: "postIds is required",
+        });
+      }
+
+      if (!Array.isArray(postIds)) {
+        return res.status(400).json({
+          success: false,
+          error: "postIds must be an array",
+        });
+      }
+
+      if (postIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "postIds array cannot be empty",
+        });
+      }
+
+      // Extract and decode JWT token to get businessId
+      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      // Call service method
+      const result = await facebookService.bulkMarkPostsAsImported(
+        postIds,
+        businessId
+      );
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      console.error("Error in markPostsAsImported controller:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
 }
 
 export const facebookController = new FacebookController();
