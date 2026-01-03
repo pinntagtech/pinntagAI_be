@@ -26,7 +26,7 @@ export class Event {
 
   @Prop({default:false})
   isFromFacebook:boolean;
-  
+
   @Prop({
     required: true,
     enum: [
@@ -204,8 +204,6 @@ export class Event {
   @Prop({ default: false })
   preBookingRequired: boolean;
 
-  @Prop()
-  flashDealEndTime: Date;
 
   //offer specific props
 

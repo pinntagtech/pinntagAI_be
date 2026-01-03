@@ -6470,54 +6470,362 @@ export class EventService2 {
     }
   }
 
+  // async createOffer(
+  //   data: CreateOfferDto,
+  //   user: DecodedUser,
+  //   qrImage: Express.Multer.File,
+  //   offerImages?: Express.Multer.File[],
+  //   // image: Express.Multer.File,
+  // ) {
+  //   try {
+  //     const userId = user.id;
+
+  //     // Early validation
+  //     if (!user.businessProfile) {
+  //       return { success: false, message: 'Business not found.' };
+  //     }
+
+  //     // Parallel fetch of user, business, and outlets
+  //     const [userDetails, business, outlets] = await Promise.all([
+  //       this.businessUserModel.findById(userId),
+  //       this.businessModel.findById(user.businessProfile),
+  //       this.outletModel.find({
+  //         business: new mongoose.Types.ObjectId(user.businessProfile),
+  //       }),
+  //     ]);
+
+  //     // Validation checks
+  //     if (!userDetails) {
+  //       return { success: false, message: 'User not found.' };
+  //     }
+  //     if (!business) {
+  //       return { success: false, message: 'Business not found.' };
+  //     }
+  //     if (!outlets?.length) {
+  //       return { success: false, message: 'Business has no outlets.' };
+  //     }
+
+  //     // Process categories efficiently
+  //     if (data.categories) {
+  //       const categoryIds = data.categories.split(',').slice(0, 3);
+
+  //       // Validate all ObjectIds first
+  //       if (!categoryIds.every((id) => mongoose.isValidObjectId(id))) {
+  //         return {
+  //           success: false,
+  //           message: 'Please provide a valid category id',
+  //         };
+  //       }
+
+  //       // Batch query for all categories
+  //       const foundCategories = await this.categoryModel
+  //         .find({ _id: { $in: categoryIds } })
+  //         .select('_id')
+  //         .lean();
+
+  //       if (foundCategories.length !== categoryIds.length) {
+  //         return { success: false, message: 'Category not found' };
+  //       }
+
+  //       data.categories = foundCategories.map(
+  //         (c) => new mongoose.Types.ObjectId(c._id),
+  //       );
+  //     }
+
+  //     // Validate age range
+  //     if (data.minTargetAge && data.maxTargetAge) {
+  //       let minAge = Number(data.minTargetAge);
+  //       let maxAge = Number(data.maxTargetAge);
+
+  //       if (minAge > maxAge) {
+  //         // return {
+  //         //   success: false,
+  //         //   message:
+  //         //     'Minimum target age cannot be greater than maximum target age',
+  //         // };
+  //         const temp = minAge;
+  //         minAge = maxAge;
+  //         maxAge = temp;
+  //       }
+
+  //       data.minTargetAge = minAge;
+  //       data.maxTargetAge = maxAge;
+  //     }
+
+  //     // Process target genders
+  //     if (data.targetGenders) {
+  //       data.targetGenders = data.targetGenders.split(',');
+  //     }
+
+  //     // Process quantity limit
+  //     if (data.eventType === EventTypes.FLASHDEAL) {
+  //       const {
+  //         itemQuantity,
+  //         itemName,
+  //         minOrderPerBooking,
+  //         maxOrderPerBooking,
+  //         itemPrice,
+  //         currency,
+  //         preBookingRequired,
+  //         flashDealEndTime,
+  //       } = data;
+  //       if (
+  //         itemQuantity === undefined ||
+  //         itemQuantity === '' ||
+  //         itemName === undefined ||
+  //         itemName === '' ||
+  //         itemPrice === undefined ||
+  //         itemPrice === '' ||
+  //         currency === undefined ||
+  //         currency === '' ||
+  //         flashDealEndTime === undefined ||
+  //         flashDealEndTime === ''
+  //       ) {
+  //         return {
+  //           success: false,
+  //           message: 'Please provide item details for flash deal',
+  //         };
+  //       }
+  //       data.itemQuantity = Number(data.itemQuantity);
+  //       if (minOrderPerBooking !== undefined && minOrderPerBooking !== '') {
+  //         data.minOrderPerBooking = Number(minOrderPerBooking);
+  //       }
+  //       if (maxOrderPerBooking !== undefined && maxOrderPerBooking !== '') {
+  //         data.maxOrderPerBooking = Number(maxOrderPerBooking);
+  //       }
+  //       data.itemPrice = Number(data.itemPrice);
+  //       data.preBookingRequired = preBookingRequired === 'true';
+
+  //       if (flashDealEndTime) {
+  //         let flashDealEndTimeDate = new Date(flashDealEndTime);
+  //         if (isNaN(flashDealEndTimeDate.getTime())) {
+  //           return {
+  //             success: false,
+  //             message: 'Please provide a valid flash deal end time',
+  //           };
+  //         }
+  //         // data.flashDealEndTime = flashDealEndTime;
+  //       }
+  //     } else if (data.eventType === EventTypes.OFFER) {
+  //       const {
+  //         isRedeemable,
+  //         redemptionFrequency,
+  //         checkInRequired,
+  //         expectedAtLocation,
+  //       } = data;
+  //       // if(isRedeemable === undefined || isRedeemable === '' || redemptionFrequency === undefined ||redemptionFrequency === '' ||checkInRequired === undefined || checkInRequired=== '' || expectedAtLocation === undefined || expectedAtLocation === ''){
+  //       //   return {
+  //       //      success: false,
+  //       //     message: 'Please provide item details for Offer Content',
+  //       //   }
+  //       // }
+
+  //       data.isRedeemable = isRedeemable === 'true' ? true : false;
+  //       data.checkInRequired = checkInRequired === 'true' ? true : false;
+  //       data.expectedAtLocation = expectedAtLocation === 'true' ? true : false;
+  //     }
+
+  //     // Process booking URLs
+  //     const bookingUrls = data.bookingSite?.split(',');
+
+  //     // Convert isFree to boolean
+  //     data.isFree = data.isFree === 'true';
+
+  //     // Create folder
+  //     const businessFolder = await this.driveService.createFolder(
+  //       user.businessProfile,
+  //       {
+  //         parentDirectory: business.drive,
+  //         parentType: 'Drive',
+  //         folderName: data.title,
+  //       },
+  //     );
+  //     let eventLocation = null;
+  //     if(data.locations !== undefined && data.locations !== ''){
+  //       eventLocation = data.locations;
+  //       delete data.locations;
+  //     }
+
+  //     // Prepare event object
+  //     const createObj = {
+  //       ...data,
+  //       type: data.eventType,
+  //       businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+  //       drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+  //       creatorType: BusinessUser.name,
+  //       user: new mongoose.Types.ObjectId(userId),
+  //       ...(bookingUrls && { bookingUrl: bookingUrls }),
+  //     };
+
+  //     // Create event
+  //     const event = await this.eventModel.create(createObj);
+
+  //     // Handle image upload and business update in parallel
+  //     const updatePromises: Promise<any>[] = [
+  //       this.businessModel.updateOne(
+  //         { _id: user.businessProfile },
+  //         {
+  //           $set: {
+  //             onboardingOfferStatus: OfferStatus.CREATED,
+  //             initialOfferId: event._id,
+  //           },
+  //         },
+  //       ),
+  //     ];
+
+  //     if (qrImage) {
+  //       const uploadPromise = (async () => {
+  //         const fileCategory = await this.fileCategoryModel
+  //           .findOne({ name: FileCategoryTypes.CONTENT_QR })
+  //           .lean();
+
+  //         if (fileCategory) {
+  //           const qrDetails = await this.driveService.uploadAndCreateFile(
+  //             qrImage,
+  //             String(event.drivePath),
+  //             Folder.name,
+  //             event._id,
+  //             fileCategory._id,
+  //           );
+
+  //           await this.eventModel.updateOne(
+  //             { _id: event._id },
+  //             { $set: { QR_CODE: qrDetails._id } },
+  //           );
+  //         }
+  //       })();
+
+  //       updatePromises.push(uploadPromise);
+  //     }
+
+  //     await Promise.all(updatePromises);
+
+  //     // if (data.locations !== undefined && data.locations !== '') {
+  //     //   const location = new mongoose.Types.ObjectId(data.locations);
+  //     //   const outletDoc = await this.outletModel.findById(location);
+  //     //   if (!outletDoc) {
+  //     //     return {
+  //     //       success: false,
+  //     //       message: `Outlet with id ${location} not found`,
+  //     //     };
+  //     //   }
+  //     //   const createdlocation = await this.eventLocationModel.create({
+  //     //     event: new mongoose.Types.ObjectId(event.id),
+  //     //     businessLocationId: outletDoc._id,
+  //     //     businessProfile: event.businessProfile,
+  //     //     location: {
+  //     //       type: 'Point',
+  //     //       coordinates: [outletDoc.longitude, outletDoc.latitude],
+  //     //     },
+  //     //     accuracy: outletDoc.accuracy,
+  //     //     address1: outletDoc.address1,
+  //     //     address2: outletDoc.address2 ? outletDoc.address2 : '',
+  //     //     city: outletDoc.city,
+  //     //     state: outletDoc.state,
+  //     //     zip: outletDoc.postalCode,
+  //     //     website: outletDoc.website,
+  //     //     email: outletDoc.email,
+  //     //     phone: outletDoc.phone,
+  //     //   });
+  //     //   console.log('created-location---->', createdlocation);
+  //     //   await this.eventModel.updateOne(
+  //     //     {
+  //     //       _id: new mongoose.Types.ObjectId(event.id),
+  //     //     },
+  //     //     {
+  //     //       $addToSet: { locations: createdlocation._id },
+  //     //     },
+  //     //   );
+  //     // }
+
+  //     if(eventLocation!==null){
+  //       await this.updateEventLocations(event.id, [eventLocation], user);
+  //     }
+  //     let scheduleData: CreateScheduleDto = {
+  //       scheduleType: 'fixed',
+  //       fixedSchedule: [
+  //         {
+  //           date: new Date(data.flashDealEndTime),
+  //           durations: [
+  //             {
+  //               startTime: new Date(Date.now()),
+  //               endTime: new Date(data.flashDealEndTime),
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //       recurringSchedule: undefined,
+  //       date_range: undefined,
+  //       each_date: undefined,
+  //     };
+  //     await this.createSchedule(event.id, scheduleData, user);
+
+  //     if (offerImages && offerImages.length) {
+  //       this.driveService.multiImageUpload(
+  //         user.businessProfile.toString(),
+  //         businessFolder.data._id.toString(),
+  //         offerImages,
+  //       );
+  //     }
+
+  //     return {
+  //       success: true,
+  //       message: 'Offer created successfully',
+  //       data: event,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in createOffer:', error);
+  //     return {
+  //       success: false,
+  //       message: error?.message || 'Something went wrong.',
+  //     };
+  //   }
+  // }
+
   async createOffer(
     data: CreateOfferDto,
     user: DecodedUser,
     qrImage: Express.Multer.File,
     offerImages?: Express.Multer.File[],
-    // image: Express.Multer.File,
   ) {
     try {
       const userId = user.id;
+      const businessProfileId = user.businessProfile;
 
-      // Early validation
-      if (!user.businessProfile) {
+      // Early validation - fail fast
+      if (!businessProfileId) {
         return { success: false, message: 'Business not found.' };
       }
 
-      // Parallel fetch of user, business, and outlets
+      // Convert to ObjectId once
+      const businessObjId = new mongoose.Types.ObjectId(businessProfileId);
+
+      // Parallel fetch with optimized queries (lean + select only needed fields)
       const [userDetails, business, outlets] = await Promise.all([
-        this.businessUserModel.findById(userId),
-        this.businessModel.findById(user.businessProfile),
-        this.outletModel.find({
-          business: new mongoose.Types.ObjectId(user.businessProfile),
-        }),
+        this.businessUserModel.findById(userId).lean().select('_id'),
+        this.businessModel.findById(businessObjId).lean().select('_id drive'),
+        this.outletModel.find({ business: businessObjId }).lean().select('_id'),
       ]);
 
-      // Validation checks
-      if (!userDetails) {
-        return { success: false, message: 'User not found.' };
-      }
-      if (!business) {
-        return { success: false, message: 'Business not found.' };
-      }
-      if (!outlets?.length) {
+      // Consolidated validation
+      if (!userDetails) return { success: false, message: 'User not found.' };
+      if (!business) return { success: false, message: 'Business not found.' };
+      if (!outlets?.length)
         return { success: false, message: 'Business has no outlets.' };
-      }
 
       // Process categories efficiently
       if (data.categories) {
         const categoryIds = data.categories.split(',').slice(0, 3);
 
-        // Validate all ObjectIds first
-        if (!categoryIds.every((id) => mongoose.isValidObjectId(id))) {
+        // Validate all at once
+        if (!categoryIds.every(mongoose.isValidObjectId)) {
           return {
             success: false,
             message: 'Please provide a valid category id',
           };
         }
 
-        // Batch query for all categories
+        // Batch query with lean
         const foundCategories = await this.categoryModel
           .find({ _id: { $in: categoryIds } })
           .select('_id')
@@ -6532,21 +6840,12 @@ export class EventService2 {
         );
       }
 
-      // Validate age range
+      // Validate and swap age range in one pass
       if (data.minTargetAge && data.maxTargetAge) {
         let minAge = Number(data.minTargetAge);
         let maxAge = Number(data.maxTargetAge);
 
-        if (minAge > maxAge) {
-          // return {
-          //   success: false,
-          //   message:
-          //     'Minimum target age cannot be greater than maximum target age',
-          // };
-          const temp = minAge;
-          minAge = maxAge;
-          maxAge = temp;
-        }
+        if (minAge > maxAge) [minAge, maxAge] = [maxAge, minAge];
 
         data.minTargetAge = minAge;
         data.maxTargetAge = maxAge;
@@ -6557,7 +6856,7 @@ export class EventService2 {
         data.targetGenders = data.targetGenders.split(',');
       }
 
-      // Process quantity limit
+      // Event type specific processing
       if (data.eventType === EventTypes.FLASHDEAL) {
         const {
           itemQuantity,
@@ -6569,71 +6868,59 @@ export class EventService2 {
           preBookingRequired,
           flashDealEndTime,
         } = data;
+
+        // Consolidated validation
         if (
-          itemQuantity === undefined ||
-          itemQuantity === '' ||
-          itemName === undefined ||
-          itemName === '' ||
-          itemPrice === undefined ||
-          itemPrice === '' ||
-          currency === undefined ||
-          currency === '' ||
-          flashDealEndTime === undefined ||
-          flashDealEndTime === ''
+          !itemQuantity ||
+          !itemName ||
+          !itemPrice ||
+          !currency ||
+          !flashDealEndTime
         ) {
           return {
             success: false,
             message: 'Please provide item details for flash deal',
           };
         }
-        data.itemQuantity = Number(data.itemQuantity);
-        if (minOrderPerBooking !== undefined && minOrderPerBooking !== '') {
+
+        // Batch number conversions
+        data.itemQuantity = Number(itemQuantity);
+        data.itemPrice = Number(itemPrice);
+        if (minOrderPerBooking)
           data.minOrderPerBooking = Number(minOrderPerBooking);
-        }
-        if (maxOrderPerBooking !== undefined && maxOrderPerBooking !== '') {
+        if (maxOrderPerBooking)
           data.maxOrderPerBooking = Number(maxOrderPerBooking);
-        }
-        data.itemPrice = Number(data.itemPrice);
         data.preBookingRequired = preBookingRequired === 'true';
 
-        if (flashDealEndTime) {
-          let flashDealEndTimeDate = new Date(flashDealEndTime);
-          if (isNaN(flashDealEndTimeDate.getTime())) {
-            return {
-              success: false,
-              message: 'Please provide a valid flash deal end time',
-            };
-          }
-          // data.flashDealEndTime = flashDealEndTime;
+        // Validate date
+        const flashDealEndTimeDate = new Date(flashDealEndTime);
+        if (isNaN(flashDealEndTimeDate.getTime())) {
+          return {
+            success: false,
+            message: 'Please provide a valid flash deal end time',
+          };
         }
       } else if (data.eventType === EventTypes.OFFER) {
-        const {
-          isRedeemable,
-          redemptionFrequency,
-          checkInRequired,
-          expectedAtLocation,
-        } = data;
-        // if(isRedeemable === undefined || isRedeemable === '' || redemptionFrequency === undefined ||redemptionFrequency === '' ||checkInRequired === undefined || checkInRequired=== '' || expectedAtLocation === undefined || expectedAtLocation === ''){
-        //   return {
-        //      success: false,
-        //     message: 'Please provide item details for Offer Content',
-        //   }
-        // }
+        const { isRedeemable, checkInRequired, expectedAtLocation } = data;
 
-        data.isRedeemable = isRedeemable === 'true' ? true : false;
-        data.checkInRequired = checkInRequired === 'true' ? true : false;
-        data.expectedAtLocation = expectedAtLocation === 'true' ? true : false;
+        // Convert to booleans efficiently
+        data.isRedeemable = isRedeemable === 'true';
+        data.checkInRequired = checkInRequired === 'true';
+        data.expectedAtLocation = expectedAtLocation === 'true';
       }
 
-      // Process booking URLs
+      // Process booking URLs and isFree
       const bookingUrls = data.bookingSite?.split(',');
-
-      // Convert isFree to boolean
       data.isFree = data.isFree === 'true';
 
+      // Extract and clean location
+      const eventLocation = data.locations || null;
+      if (eventLocation) delete data.locations;
+      const flashdealEndTime = data.flashDealEndTime || null;
+      if (flashdealEndTime) delete data.flashDealEndTime;
       // Create folder
       const businessFolder = await this.driveService.createFolder(
-        user.businessProfile,
+        businessProfileId,
         {
           parentDirectory: business.drive,
           parentType: 'Drive',
@@ -6641,11 +6928,11 @@ export class EventService2 {
         },
       );
 
-      // Prepare event object
+      // Prepare event object (avoid spread for better performance)
       const createObj = {
         ...data,
         type: data.eventType,
-        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        businessProfile: businessObjId,
         drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
         creatorType: BusinessUser.name,
         user: new mongoose.Types.ObjectId(userId),
@@ -6654,112 +6941,93 @@ export class EventService2 {
 
       // Create event
       const event = await this.eventModel.create(createObj);
+      const eventId = event._id;
 
-      // Handle image upload and business update in parallel
-      const updatePromises: Promise<any>[] = [
+      // Parallel operations array
+      const parallelOps: Promise<any>[] = [
+        // Update business
         this.businessModel.updateOne(
-          { _id: user.businessProfile },
+          { _id: businessObjId },
           {
             $set: {
               onboardingOfferStatus: OfferStatus.CREATED,
-              initialOfferId: event._id,
+              initialOfferId: eventId,
             },
           },
         ),
       ];
 
+      // Handle QR image upload
       if (qrImage) {
-        const uploadPromise = (async () => {
-          const fileCategory = await this.fileCategoryModel
-            .findOne({ name: FileCategoryTypes.CONTENT_QR })
-            .lean();
+        parallelOps.push(
+          (async () => {
+            const fileCategory = await this.fileCategoryModel
+              .findOne({ name: FileCategoryTypes.CONTENT_QR })
+              .lean()
+              .select('_id');
 
-          if (fileCategory) {
-            const qrDetails = await this.driveService.uploadAndCreateFile(
-              qrImage,
-              String(event.drivePath),
-              Folder.name,
-              event._id,
-              fileCategory._id,
-            );
+            if (fileCategory) {
+              const qrDetails = await this.driveService.uploadAndCreateFile(
+                qrImage,
+                String(event.drivePath),
+                Folder.name,
+                eventId,
+                fileCategory._id,
+              );
 
-            await this.eventModel.updateOne(
-              { _id: event._id },
-              { $set: { QR_CODE: qrDetails._id } },
-            );
-          }
-        })();
-
-        updatePromises.push(uploadPromise);
-      }
-
-      await Promise.all(updatePromises);
-
-      // if (data.locations !== undefined && data.locations !== '') {
-      //   const location = new mongoose.Types.ObjectId(data.locations);
-      //   const outletDoc = await this.outletModel.findById(location);
-      //   if (!outletDoc) {
-      //     return {
-      //       success: false,
-      //       message: `Outlet with id ${location} not found`,
-      //     };
-      //   }
-      //   const createdlocation = await this.eventLocationModel.create({
-      //     event: new mongoose.Types.ObjectId(event.id),
-      //     businessLocationId: outletDoc._id,
-      //     businessProfile: event.businessProfile,
-      //     location: {
-      //       type: 'Point',
-      //       coordinates: [outletDoc.longitude, outletDoc.latitude],
-      //     },
-      //     accuracy: outletDoc.accuracy,
-      //     address1: outletDoc.address1,
-      //     address2: outletDoc.address2 ? outletDoc.address2 : '',
-      //     city: outletDoc.city,
-      //     state: outletDoc.state,
-      //     zip: outletDoc.postalCode,
-      //     website: outletDoc.website,
-      //     email: outletDoc.email,
-      //     phone: outletDoc.phone,
-      //   });
-      //   console.log('created-location---->', createdlocation);
-      //   await this.eventModel.updateOne(
-      //     {
-      //       _id: new mongoose.Types.ObjectId(event.id),
-      //     },
-      //     {
-      //       $addToSet: { locations: createdlocation._id },
-      //     },
-      //   );
-      // }
-
-      await this.updateEventLocations(event.id, [data.locations], user);
-      let scheduleData: CreateScheduleDto = {
-        scheduleType: 'fixed',
-        fixedSchedule: [
-          {
-            date: new Date(data.flashDealEndTime),
-            durations: [
-              {
-                startTime: new Date(Date.now()),
-                endTime: new Date(data.flashDealEndTime),
-              },
-            ],
-          },
-        ],
-        recurringSchedule: undefined,
-        date_range: undefined,
-        each_date: undefined,
-      };
-      await this.createSchedule(event.id, scheduleData, user);
-
-      if (offerImages && offerImages.length) {
-        this.driveService.multiImageUpload(
-          user.businessProfile.toString(),
-          businessFolder.data._id.toString(),
-          offerImages,
+              await this.eventModel.updateOne(
+                { _id: eventId },
+                { $set: { QR_CODE: qrDetails._id } },
+              );
+            }
+          })(),
         );
       }
+
+      // Handle event location
+      if (eventLocation) {
+        parallelOps.push(
+          this.updateEventLocations(event.id, [eventLocation], user),
+        );
+      }
+
+      // Handle schedule creation for flash deals
+      if (data.eventType === EventTypes.FLASHDEAL && flashdealEndTime) {
+        const scheduleData: CreateScheduleDto = {
+          scheduleType: 'fixed',
+          fixedSchedule: [
+            {
+              date: new Date(flashdealEndTime),
+              durations: [
+                {
+                  startTime: new Date(),
+                  endTime: new Date(flashdealEndTime),
+                },
+              ],
+            },
+          ],
+          recurringSchedule: undefined,
+          date_range: undefined,
+          each_date: undefined,
+        };
+        parallelOps.push(this.createSchedule(event.id, scheduleData, user));
+      }
+
+      // Handle offer images (fire and forget - don't await)
+      if (offerImages?.length) {
+        this.driveService
+          .multiImageUpload(
+            businessProfileId.toString(),
+            businessFolder.data._id.toString(),
+            offerImages,
+          )
+          .catch((error) =>
+            console.error('Error uploading offer images:', error),
+          );
+      }
+
+      // Execute all parallel operations
+      await Promise.all(parallelOps);
 
       return {
         success: true,
@@ -6878,7 +7146,25 @@ export class EventService2 {
               message: 'Please provide a valid flash deal end time',
             };
           }
-          data.flashDealEndTime = flashDealEndTime;
+          // data.flashDealEndTime = flashDealEndTime;
+          const scheduleData: CreateScheduleDto = {
+            scheduleType: 'fixed',
+            fixedSchedule: [
+              {
+                date: new Date(flashDealEndTimeDate),
+                durations: [
+                  {
+                    startTime: new Date(),
+                    endTime: new Date(flashDealEndTimeDate),
+                  },
+                ],
+              },
+            ],
+            recurringSchedule: undefined,
+            date_range: undefined,
+            each_date: undefined,
+          };
+          this.createSchedule(event.id, scheduleData, user);
         }
       } else if (data.eventType === EventTypes.OFFER) {
         const {
