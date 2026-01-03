@@ -579,7 +579,7 @@ export class FacebookController {
    * Update Facebook post type and/or status
    * PUT /facebook/posts/:postId/type
    * Headers: { Authorization: Bearer <JWT> }
-   * Body: { type?: string, status?: string, ignoreReason?: string, ignoreNote?: string }
+   * Body: { status: string (required), type?: string, ignoreReason?: string, ignoreNote?: string }
    */
   async updateFacebookPostType(req: Request, res: Response) {
     try {
@@ -623,11 +623,11 @@ export class FacebookController {
         });
       }
 
-      // At least one of type or status must be provided
-      if (!type && !status) {
+      // Status is required
+      if (!status) {
         return res.status(400).json({
           success: false,
-          error: "At least one of 'type' or 'status' is required",
+          error: "status is required",
         });
       }
 
@@ -642,32 +642,38 @@ export class FacebookController {
         }
       }
 
-      // Validate status if provided
-      if (status) {
-        const validStatuses = ["pending", "ignored", "saved", "imported"];
-        if (!validStatuses.includes(status)) {
-          return res.status(400).json({
-            success: false,
-            error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
-          });
-        }
+      // Validate status (required)
+      const validStatuses = ["pending", "ignored", "saved", "imported"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        });
+      }
 
-        // If status is "ignored", ignoreReason is required
-        if (status === "ignored" && !ignoreReason) {
+      // If status is "ignored", ignoreReason is required
+      if (status === "ignored") {
+        if (!ignoreReason) {
           return res.status(400).json({
             success: false,
             error: "ignoreReason is required when status is 'ignored'",
           });
         }
-      }
 
-      // Validate ignoreReason if provided
-      if (ignoreReason && status === "ignored") {
+        // Validate ignoreReason
         const validReasons = ["not_relevant", "personal_casual", "duplicate", "other"];
         if (!validReasons.includes(ignoreReason)) {
           return res.status(400).json({
             success: false,
             error: `Invalid ignoreReason. Must be one of: ${validReasons.join(", ")}`,
+          });
+        }
+
+        // If ignoreReason is "other", ignoreNote is required
+        if (ignoreReason === "other" && !ignoreNote) {
+          return res.status(400).json({
+            success: false,
+            error: "ignoreNote is required when ignoreReason is 'other'",
           });
         }
       }

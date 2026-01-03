@@ -91,10 +91,10 @@ router.get("/posts/paginated", facebookController.getFacebookPostsPaginated.bind
  * @desc Update the type and/or status of a Facebook post
  * @headers { Authorization: Bearer <JWT> }
  * @body {
- *   type?: "event" | "offer" | "spotlight" | "flashlight",
- *   status?: "pending" | "ignored" | "saved" | "imported",
- *   ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other",
- *   ignoreNote?: string
+ *   status: "pending" | "ignored" | "saved" | "imported" (required),
+ *   type?: "event" | "offer" | "spotlight" | "flashlight" (optional),
+ *   ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other" (required if status is "ignored"),
+ *   ignoreNote?: string (required if ignoreReason is "other")
  * }
  */
 router.put("/posts/:postId/type", facebookController.updateFacebookPostType.bind(facebookController));
