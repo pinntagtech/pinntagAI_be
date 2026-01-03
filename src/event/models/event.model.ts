@@ -23,6 +23,10 @@ export type EventDocument = Event & Document;
 export class Event {
   @Prop({ default: false })
   isFromCrawler: boolean;
+
+  @Prop({default:false})
+  isFromFacebook:boolean;
+  
   @Prop({
     required: true,
     enum: [

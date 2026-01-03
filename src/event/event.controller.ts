@@ -55,6 +55,7 @@ import { CreateTemplateDto } from './dto/create-template.dto';
 import { SubscriptionGuard } from 'src/subscription/guards/subscription.guard';
 import { FeatureLimitList } from 'src/subscription/models/feature-limit.model';
 import { Category } from 'src/models/contentCategory.model';
+import { FacebookImportedPost } from './dto/import-content-from-fb.dto';
 
 @Controller('event')
 export class EventController {
@@ -1432,9 +1433,25 @@ export class EventController {
   // @UseGuards(JwtGuard2)
   async tagSuggestions(
     // @TokenDecoder() user: DecodedUser,
-    @Query('categories')categories: string,
+    @Query('categories') categories: string,
   ) {
     const result = await this.eventService.tagSuggestions(categories);
+    if (result.success) {
+      return {
+        message: result.message,
+        data: result.data,
+      };
+    } else {
+      throw new BadRequestException({
+        message: result.message,
+      });
+    }
+  }
+
+  @Post('importFromFacebook')
+  @UseGuards(JwtGuard2)
+  async importFromFacebook(@TokenDecoder() user:DecodedUser,@Body() data: FacebookImportedPost) {
+     const result = await this.eventService.importFromFacebook(user,data);
     if (result.success) {
       return {
         message: result.message,

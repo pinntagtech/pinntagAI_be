@@ -153,6 +153,7 @@ import { EventCategory } from 'src/seeder/data';
 import { CheckIn } from 'src/auth/models/check-ins.model';
 import { Scratch, ScratchStatus } from 'src/business/model/scratch.model';
 import { Tag } from 'src/models/tags.model';
+import { FacebookImportedPost } from './dto/import-content-from-fb.dto';
 
 @Injectable()
 export class EventService2 {
@@ -6792,7 +6793,7 @@ export class EventService2 {
           preBookingRequired,
           flashDealEndTime,
         } = data;
-        if(itemQuantity){
+        if (itemQuantity) {
           data.itemQuantity = Number(data.itemQuantity);
         }
         if (minOrderPerBooking !== undefined && minOrderPerBooking !== '') {
@@ -6801,10 +6802,10 @@ export class EventService2 {
         if (maxOrderPerBooking !== undefined && maxOrderPerBooking !== '') {
           data.maxOrderPerBooking = Number(maxOrderPerBooking);
         }
-        if(itemPrice){
+        if (itemPrice) {
           data.itemPrice = Number(data.itemPrice);
         }
-        if(preBookingRequired){
+        if (preBookingRequired) {
           data.preBookingRequired = preBookingRequired === 'true';
         }
 
@@ -6825,14 +6826,15 @@ export class EventService2 {
           checkInRequired,
           expectedAtLocation,
         } = data;
-        if(isRedeemable !== undefined && isRedeemable !==''){
+        if (isRedeemable !== undefined && isRedeemable !== '') {
           data.isRedeemable = isRedeemable === 'true' ? true : false;
         }
-        if(checkInRequired !==undefined && checkInRequired !==  ''){
+        if (checkInRequired !== undefined && checkInRequired !== '') {
           data.checkInRequired = checkInRequired === 'true' ? true : false;
         }
-        if(expectedAtLocation !== undefined && expectedAtLocation !== ''){
-          data.expectedAtLocation = expectedAtLocation === 'true' ? true : false;
+        if (expectedAtLocation !== undefined && expectedAtLocation !== '') {
+          data.expectedAtLocation =
+            expectedAtLocation === 'true' ? true : false;
         }
         // if(redemptionFrequency !== undefined && redemptionFrequency !== ''){
 
@@ -8795,6 +8797,54 @@ export class EventService2 {
         success: true,
         message: 'Tag recommendations fetched successfully',
         data: allTitles,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async importFromFacebook(user: DecodedUser, data: FacebookImportedPost) {
+    try {
+      const {
+        facebookPageId,
+        postId,
+        mongoId,
+        title,
+        description,
+        images,
+        type,
+      } = data;
+      const business = await this.businessModel.findById(user.businessProfile);
+
+      const category = await this.categoryModel.findOne({ title: 'Events' });
+      const businessFolder = await this.driveService.createFolder(
+        user.businessProfile,
+        {
+          parentDirectory: business.drive,
+          parentType: 'Drive',
+          folderName: title,
+        },
+      );
+
+      const event = await this.eventModel.create({
+        isFromFacebook: true,
+        title,
+        description,
+        type,
+        categories: [category._id],
+        businessProfile: new mongoose.Types.ObjectId(user.businessProfile),
+        drivePath: new mongoose.Types.ObjectId(businessFolder.data._id),
+        creatorType: BusinessUser.name,
+        user: new mongoose.Types.ObjectId(user.id),
+      });
+
+      return {
+        success: true,
+        message: 'Event populated successfully!',
+        data: event,
       };
     } catch (error) {
       return {
