@@ -596,6 +596,9 @@ export class StripeService {
       !!account.payouts_enabled &&
       requirementsDue === 0;
 
+     const firstExternalAccount = account.external_accounts?.data[0];
+      const isBankAccount = firstExternalAccount?.object === 'bank_account';
+
     await this.businessModel.updateOne(
       { _id: businessId },
       {
@@ -607,6 +610,8 @@ export class StripeService {
             details_submitted: account.details_submitted,
             currently_due: account.requirements?.currently_due ?? [],
             disabled_reason: account.requirements?.disabled_reason ?? null,
+            bank_name: isBankAccount ? (firstExternalAccount as Stripe.BankAccount).bank_name ?? '' : '',
+            last4: firstExternalAccount?.last4 ?? '',
           },
         },
       },

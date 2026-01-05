@@ -112,6 +112,12 @@ export class StripeAccountStatus {
   disabled_reason?: string | null;
 
   @Prop()
+  bank_name:string;
+
+  @Prop()
+  last4:string;
+
+  @Prop()
   lastUpdatedAt?: Date;
 }
 

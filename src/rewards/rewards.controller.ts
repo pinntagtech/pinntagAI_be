@@ -259,7 +259,7 @@ export class RewardsController {
       data,
       search,
       activityTypeArray,
-      distance ? parseInt(distance) : 1000000000000,
+      distance ? parseInt(distance) : 10000000000,
       pageNumber,
       limitNumber,
     );
