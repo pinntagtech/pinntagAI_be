@@ -148,6 +148,7 @@ import {
 import { CheckInDto } from './dto/checkin.dto';
 import { CheckInFeed } from 'src/feed/models/checkin.feed.model';
 import { Feed } from 'src/feed/models/feed.model';
+import { ConversationContextImpl } from 'twilio/lib/rest/conversations/v1/conversation';
 
 @Injectable()
 export class AuthService {
@@ -199,8 +200,10 @@ export class AuthService {
     @InjectModel(UserSearchActivity.name)
     private readonly userSearchActivityModel: Model<UserSearchActivity>,
     @InjectModel(CheckIn.name) private readonly checkInModel: Model<CheckIn>,
-    @InjectModel(UserReward.name) private readonly userRewardModel: Model<UserRewardDocument>,
-    @InjectModel(CheckInFeed.name) private readonly checkInFeedModel: Model<CheckInFeed>,
+    @InjectModel(UserReward.name)
+    private readonly userRewardModel: Model<UserRewardDocument>,
+    @InjectModel(CheckInFeed.name)
+    private readonly checkInFeedModel: Model<CheckInFeed>,
     @InjectModel(Feed.name) private readonly feedModel: Model<Feed>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -2119,22 +2122,24 @@ export class AuthService {
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
-    if (carouselType === CarouselType.Event) {
-      if (dealType) {
-        match['event.type'] = { $in: [dealType] };
-      } else {
-        match['event.type'] = {
-          $in: [
-            EventTypes.OFFER,
-            EventTypes.FORMAL,
-            EventTypes.FLASHDEAL,
-            EventTypes.SPOTLIGHT,
-          ],
-        };
-      }
-    } else if (carouselType === CarouselType.OnWheels) {
-      match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
-    }
+    console.log("match:::",match);
+
+    // if (carouselType === CarouselType.Event) {
+    //   if (dealType) {
+    //     match['event.type'] = { $in: [dealType] };
+    //   } else {
+    //     match['event.type'] = {
+    //       $in: [
+    //         EventTypes.OFFER,
+    //         EventTypes.FORMAL,
+    //         EventTypes.FLASHDEAL,
+    //         EventTypes.SPOTLIGHT,
+    //       ],
+    //     };
+    //   }
+    // } else if (carouselType === CarouselType.OnWheels) {
+    //   match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
+    // }
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
@@ -2381,7 +2386,6 @@ export class AuthService {
           distance: { $first: { $divide: ['$distance', 1609.34] } },
           itemQuantity: { $first: '$event.itemQuantity' },
           itemName: { $first: '$event.itemName' },
-
         },
       },
       {
@@ -5566,7 +5570,7 @@ export class AuthService {
           maxOrderPerBooking: { $first: '$event.maxOrderPerBooking' },
           itemPrice: { $first: '$event.itemPrice' },
           currency: { $first: '$event.currency' },
-          preBookingRequired: { $first: '$event.preBookingRequired' }
+          preBookingRequired: { $first: '$event.preBookingRequired' },
         },
       },
       {
@@ -5831,7 +5835,7 @@ export class AuthService {
           maxOrderPerBooking: 1,
           itemPrice: 1,
           currency: 1,
-          preBookingRequired: 1
+          preBookingRequired: 1,
         },
       },
 
@@ -6915,51 +6919,6 @@ export class AuthService {
       }
     }
 
-    // if (!startDate && !endDate) {
-    //   // If no date is provided then the events should be fetched for the current date and future dates also the end time should be greater than the current time
-    //   match['event.schedule.date'] = { $gte: start };
-    //   match['event.schedule.durations.endTime'] = { $gte: currentDate };
-    // } else if (startDate && endDate) {
-    //   start = getZeroBodyDateTz(startDate);
-    //   const end = getZeroBodyDateTz(endDate);
-    //   if (getStringBodyDateTz(start) === getStringBodyDateTz(end)) {
-    //     if (
-    //       getStringBodyDateTz(start) === getStringDateCurrentTz(currentDate) //2024-05-13T00:00:00.000Z == 2024-05-13T00:00:00.000Z
-    //     ) {
-    //       console.log('start is equals to current');
-    //       // If the requested query is for today only then the end time should be greater than the current time
-    //       match['event.schedule.date'] = getZeroDateTz(new Date());
-    //       match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-    //     } else {
-    //       console.log('start is not equals to current');
-    //       // If the start and end date are the same e.g. 2024-06-01
-    //       match['event.schedule.date'] = start;
-    //     }
-    //   } else if (end > start) {
-    //     if (getStringBodyDateTz(start) === getStringDateTz(currentDate)) {
-    //       // If the start date is today and the end date is greater than today e.g. [2024-05-13 to 2024-06-30]
-    //       match['event.schedule.durations'] = {
-    //         $elemMatch: {
-    //           startTime: { $lte: end },
-    //           endTime: { $gte: currentDateTz() }, // 2024-05-13T00:00:00.000Z
-    //         },
-    //       };
-    //     } else {
-    //       // If the end date is greater than the start date e.g. [2024-06-01 to 2024-06-30]
-    //       match['event.schedule.durations'] = {
-    //         $elemMatch: {
-    //           startTime: { $lte: end },
-    //           endTime: { $gte: start },
-    //         },
-    //       };
-    //     }
-    //   } else {
-    //     // If the request date is in past
-    //     match['event.schedule.date'] = { $gte: currentDate };
-    //     match['event.schedule.durations.endTime'] = { $gte: currentDateTz() };
-    //   }
-    // }
-
     if (search) {
       // Search matching business profile name
       // const matchingBusinesses = await this.businessModel.find({
@@ -7027,24 +6986,60 @@ export class AuthService {
         'event.isFree': false,
       };
     }
-    if (config.eventsIncluded && !config.offersIncluded) {
-      query = {
-        ...query,
-        'event.type': { $in: [EventTypes.FORMAL] },
-      };
-    } else if (config.offersIncluded && !config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': EventTypes.OFFER,
-      };
-    } else if (config.offersIncluded && config.eventsIncluded) {
-      query = {
-        ...query,
-        'event.type': {
-          $in: [EventTypes.OFFER, EventTypes.FORMAL],
-        },
-      };
+    // if (config.eventsIncluded && !config.offersIncluded) {
+    //   query = {
+    //     ...query,
+    //     'event.type': { $in: [EventTypes.FORMAL] },
+    //   };
+    // } else if (config.offersIncluded && !config.eventsIncluded) {
+    //   query = {
+    //     ...query,
+    //     'event.type': EventTypes.OFFER,
+    //   };
+    // } else if (config.offersIncluded && config.eventsIncluded) {
+    //   query = {
+    //     ...query,
+    //     'event.type': {
+    //       $in: [EventTypes.OFFER, EventTypes.FORMAL],
+    //     },
+    //   };
+    // } else if (config.flashOffersIncluded) {
+    //   query = {
+    //     ...query,
+    //     'event.type': {
+    //       $in: [EventTypes.FLASHDEAL],
+    //     },
+    //     'event.categories': {},
+    //   };
+    // }
+
+    if (config.carouselType === CarouselType.Event) {
+      if (dealType) {
+        match['event.type'] = { $in: [dealType] };
+      } else {
+        if (config.flashOffersIncluded) {
+          query = {
+            ...query,
+            'event.type': {
+              $in: [EventTypes.FLASHDEAL],
+            },
+          };
+          delete query['event.categories'];
+        } else {
+          match['event.type'] = {
+            $in: [
+              EventTypes.OFFER,
+              EventTypes.FORMAL,
+              EventTypes.FLASHDEAL,
+              EventTypes.SPOTLIGHT,
+            ],
+          };
+        }
+      }
+    } else if (config.carouselType === CarouselType.OnWheels) {
+      match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
+
     let totalCount = 0;
 
     if (carousel.carouselType === CarouselType.Business) {
@@ -7380,8 +7375,8 @@ export class AuthService {
             gender: 1,
             dob: 1,
             // userFollow: 1,
-            isFollowedByMe: 1,  
-          },  
+            isFollowedByMe: 1,
+          },
         },
         {
           $sort: { isFollowedByMe: -1, name: 1 },
@@ -7831,13 +7826,10 @@ export class AuthService {
       };
     }
   }
-  async userCheckIn(
-    user: DecodedUser,
-    businessId: string,
-    data: CheckInDto,
-  ) {
+  async userCheckIn(user: DecodedUser, businessId: string, data: CheckInDto) {
     try {
-      const {  locationId, latitude, longitude,title,users,visibility } = data;
+      const { locationId, latitude, longitude, title, users, visibility } =
+        data;
       const location = await this.outletModel.findById(locationId);
       console.log('location:', location);
       if (!location) {
@@ -7895,33 +7887,30 @@ export class AuthService {
         expiry: new Date(Date.now() + 4 * 60 * 60 * 1000),
       });
 
-        let checkInFeedObj = {
-            title: data.title,
-            message: data.message,
-            creator: new mongoose.Types.ObjectId(user.id),
-            business: new mongoose.Types.ObjectId(businessId),
-            visibility: data.visibility,
-          };
-      
-          if (users && users.length > 0) {
-            checkInFeedObj['users'] = users.map(
-              (userId) => new mongoose.Types.ObjectId(userId),
-            );
-          }
-    
-      
-          const checkInPost = await this.checkInFeedModel.create(checkInFeedObj);
-          // let deepLink = `${process.env.FEED_LINK_URL}${broadcast.id}`;
-      
-          const feed = await this.feedModel.create({
-            feedType: FeedTypes.CHECKIN,
-            creatorType: User.name,
-            creator: new mongoose.Types.ObjectId(user.id),
-            content: new mongoose.Types.ObjectId(checkInPost.id),
-            visibility: checkInPost.visibility,
-          });
+      let checkInFeedObj = {
+        title: data.title,
+        message: data.message,
+        creator: new mongoose.Types.ObjectId(user.id),
+        business: new mongoose.Types.ObjectId(businessId),
+        visibility: data.visibility,
+      };
 
+      if (users && users.length > 0) {
+        checkInFeedObj['users'] = users.map(
+          (userId) => new mongoose.Types.ObjectId(userId),
+        );
+      }
 
+      const checkInPost = await this.checkInFeedModel.create(checkInFeedObj);
+      // let deepLink = `${process.env.FEED_LINK_URL}${broadcast.id}`;
+
+      const feed = await this.feedModel.create({
+        feedType: FeedTypes.CHECKIN,
+        creatorType: User.name,
+        creator: new mongoose.Types.ObjectId(user.id),
+        content: new mongoose.Types.ObjectId(checkInPost.id),
+        visibility: checkInPost.visibility,
+      });
 
       return {
         success: true,
