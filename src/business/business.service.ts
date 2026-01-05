@@ -395,8 +395,7 @@ export class BusinessService {
             this.smsService.sendSMS(foundUser.id, fullPhoneNumber, SMSType.OTP);
             return {
               success: true,
-              message:
-                'User already exists with this mobile, OTP resent',
+              message: 'User already exists with this mobile, OTP resent',
               data: foundUser,
             };
           }
@@ -1812,6 +1811,13 @@ export class BusinessService {
             createdBusiness.website,
           ),
           this.generateBusinessQR(createdBusiness.id),
+
+          // this.stripeService.createConnectExpressAccount({
+          //   businessId: createdBusiness.id,
+          //   country: 'US',
+          //   email: createdBusiness.email,
+          //   businessType: 'individual',
+          // }),
           this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
           this.smsService.sendSMS(
             createdBusiness.id,
@@ -3982,7 +3988,7 @@ export class BusinessService {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
-            appRedirectLink: { $first: '$businessDetails.appRedirectLink'}
+            appRedirectLink: { $first: '$businessDetails.appRedirectLink' },
           },
         },
 
@@ -5508,7 +5514,7 @@ export class BusinessService {
           this.fetchEventLogistics(businessProfileId, progress),
           this.fetchRewardRedemptions(businessProfileId, progress),
           this.fetchTopEvents(businessProfileId, limit),
-          this.userService.getFollowers(user.businessProfile,'User'),
+          this.userService.getFollowers(user.businessProfile, 'User'),
         ]);
 
       const aiTraining = await this.pinnAiService.getAITrainingQuestions(
@@ -7775,5 +7781,4 @@ export class BusinessService {
       };
     }
   }
-  
 }

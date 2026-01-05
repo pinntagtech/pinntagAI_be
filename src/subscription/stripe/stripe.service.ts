@@ -40,7 +40,10 @@ import {
 import { CreateCouponDto } from './dtos/create-coupon.dto';
 import { UpgradePlanDto } from './dtos/upgrage-plan.dto';
 import { BusinessStatus } from 'src/business/enums/business.enum';
-import { ConsumerPurchase, ConsumerPurchaseStatus } from '../models/consumer-purchase.model';
+import {
+  ConsumerPurchase,
+  ConsumerPurchaseStatus,
+} from '../models/consumer-purchase.model';
 import { CreateFlashDealPaymentIntentDto } from './dtos/stripe-connect-charge.dto';
 import { Event, EventDocument } from 'src/event/models/event.model';
 import { EventTypes } from 'src/enums/event.enums';
@@ -63,7 +66,8 @@ export class StripeService {
     @InjectModel(SubscriptionProduct.name)
     private readonly subscriptionProductModel: Model<SubscriptionProduct>,
     @InjectModel(Coupon.name) private readonly couponModel: Model<Coupon>,
-    @InjectModel(ConsumerPurchase.name) private readonly consumerPurchaseModel: Model<ConsumerPurchase>,
+    @InjectModel(ConsumerPurchase.name)
+    private readonly consumerPurchaseModel: Model<ConsumerPurchase>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
   ) {}
 
@@ -571,6 +575,10 @@ export class StripeService {
         await this.onConnectAccountUpdated(acct);
         break;
       }
+      case 'account.external_account.updated': {
+        const acct = event.data.object as Stripe.ExternalAccount;
+        await this.externalAccountUpdate(acct);
+      }
 
       // Optional but useful for Connect onboarding completion
       // case 'account.updated': {
@@ -582,6 +590,26 @@ export class StripeService {
         // noop
         break;
     }
+  }
+  private async externalAccountUpdate(account: Stripe.ExternalAccount) {
+    const accountId = account.account;
+    const business = await this.businessModel.findOne({
+      stripeAccountId: accountId,
+    });
+    const isBankAccount = account?.object === 'bank_account';
+    await this.businessModel.updateOne(
+      { _id: business._id },
+      {
+        $set: {
+          stripeAccountStatus: {
+            bank_name: isBankAccount
+              ? ((account as Stripe.BankAccount).bank_name ?? '')
+              : '',
+            last4: account?.last4 ?? '',
+          },
+        },
+      },
+    );
   }
 
   private async onConnectAccountUpdated(account: Stripe.Account) {
@@ -596,8 +624,8 @@ export class StripeService {
       !!account.payouts_enabled &&
       requirementsDue === 0;
 
-     const firstExternalAccount = account.external_accounts?.data[0];
-      const isBankAccount = firstExternalAccount?.object === 'bank_account';
+    const firstExternalAccount = account.external_accounts?.data[0];
+    const isBankAccount = firstExternalAccount?.object === 'bank_account';
 
     await this.businessModel.updateOne(
       { _id: businessId },
@@ -610,7 +638,9 @@ export class StripeService {
             details_submitted: account.details_submitted,
             currently_due: account.requirements?.currently_due ?? [],
             disabled_reason: account.requirements?.disabled_reason ?? null,
-            bank_name: isBankAccount ? (firstExternalAccount as Stripe.BankAccount).bank_name ?? '' : '',
+            bank_name: isBankAccount
+              ? ((firstExternalAccount as Stripe.BankAccount).bank_name ?? '')
+              : '',
             last4: firstExternalAccount?.last4 ?? '',
           },
         },
@@ -1757,6 +1787,9 @@ export class StripeService {
     const onboardingComplete =
       !!(account as any).charges_enabled && !!(account as any).payouts_enabled;
 
+    const firstExternalAccount = account.external_accounts?.data[0];
+    const isBankAccount = firstExternalAccount?.object === 'bank_account';
+
     await this.businessModel.updateOne(
       { _id: businessId },
       {
@@ -1768,6 +1801,10 @@ export class StripeService {
             details_submitted: account.details_submitted,
             currently_due: account.requirements?.currently_due ?? [],
             disabled_reason: account.requirements?.disabled_reason ?? null,
+            bank_name: isBankAccount
+              ? ((firstExternalAccount as Stripe.BankAccount).bank_name ?? '')
+              : '',
+            last4: firstExternalAccount?.last4 ?? '',
           },
         },
       },
@@ -1776,22 +1813,29 @@ export class StripeService {
     return { account, onboardingComplete };
   }
 
-   private calcPlatformFee(amount: number) {
+  private calcPlatformFee(amount: number) {
     const bps = Number(process.env.STRIPE_PLATFORM_FEE_BPS || 0);
     // fee in smallest currency unit
     return Math.floor((amount * bps) / 10000);
   }
 
-  async createFlashDealPaymentIntent(userId:string,dto: CreateFlashDealPaymentIntentDto) {
-    console.log("DTO:",dto);
+  async createFlashDealPaymentIntent(
+    userId: string,
+    dto: CreateFlashDealPaymentIntentDto,
+  ) {
+    console.log('DTO:', dto);
     // 1) Validate business + connected account
     const flashDeal = await this.eventModel.findById(dto.flashDealId);
     if (!flashDeal) throw new BadRequestException('Flash Deal not found');
 
-    const business = await this.businessModel.findById(flashDeal.businessProfile);
+    const business = await this.businessModel.findById(
+      flashDeal.businessProfile,
+    );
     if (!business) throw new BadRequestException('Business not found');
     if (!business.stripeAccountId) {
-      throw new BadRequestException('Business is not onboarded to Stripe Connect');
+      throw new BadRequestException(
+        'Business is not onboarded to Stripe Connect',
+      );
     }
 
     // Optional guard: ensure onboarding complete if you want
@@ -1800,11 +1844,10 @@ export class StripeService {
     // 2) Create a local purchase record FIRST (recommended)
     const consumerId = userId || 'UNKNOWN_CONSUMER'; // ideally from JWT
 
-    
-    if(flashDeal.itemQuantity <=0) {
+    if (flashDeal.itemQuantity <= 0) {
       throw new BadRequestException('Flash Deal is sold out');
     }
-    if(flashDeal.type !==  EventTypes.FLASHDEAL) {
+    if (flashDeal.type !== EventTypes.FLASHDEAL) {
       throw new BadRequestException('Event is not a Flash Deal');
     }
 
@@ -1822,32 +1865,31 @@ export class StripeService {
     // 3) Create destination charge PaymentIntent
     const applicationFee = this.calcPlatformFee(amount);
 
-    const pi = await this.stripe.paymentIntents.create({
-      amount: amount,
-      currency: flashDeal.currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
+    const pi = await this.stripe.paymentIntents.create(
+      {
+        amount: amount,
+        currency: flashDeal.currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
 
-      // Connect split:
-      application_fee_amount: applicationFee,
-      transfer_data: {
-        destination: business.stripeAccountId,
+        // Connect split:
+        application_fee_amount: applicationFee,
+        transfer_data: {
+          destination: business.stripeAccountId,
+        },
+
+        metadata: {
+          purchaseId: purchase.id,
+          flashDealId: dto.flashDealId,
+          businessId: flashDeal.businessProfile.toString(),
+          consumerId,
+          type: 'FLASHDEAL',
+        },
       },
-
-      metadata: {
-        purchaseId: purchase.id,
-        flashDealId: dto.flashDealId,
-        businessId: flashDeal.businessProfile.toString(),
-        consumerId,
-        type: 'FLASHDEAL',
-      },
-
-    },
       //     {
       //   // ✅ idempotency prevents double-charges if your API retries
       //   idempotencyKey: `flashdeal_${dto.flashDealId}_${consumerId}`,
       // },
-
-  );
+    );
 
     // Store PI id for webhook reconciliation
     // (Implement update method if you want; or store in create)
@@ -1863,7 +1905,4 @@ export class StripeService {
       purchaseId: purchase.id,
     };
   }
-
-
-
 }
