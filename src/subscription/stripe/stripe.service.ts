@@ -43,6 +43,7 @@ import { BusinessStatus } from 'src/business/enums/business.enum';
 import { ConsumerPurchase, ConsumerPurchaseStatus } from '../models/consumer-purchase.model';
 import { CreateFlashDealPaymentIntentDto } from './dtos/stripe-connect-charge.dto';
 import { Event, EventDocument } from 'src/event/models/event.model';
+import { EventTypes } from 'src/enums/event.enums';
 
 @Injectable()
 export class StripeService {
@@ -1798,7 +1799,7 @@ export class StripeService {
     if(flashDeal.itemQuantity <=0) {
       throw new BadRequestException('Flash Deal is sold out');
     }
-    if(flashDeal.type !== 'FLASH_DEAL') {
+    if(flashDeal.type !==  EventTypes.FLASHDEAL) {
       throw new BadRequestException('Event is not a Flash Deal');
     }
 
