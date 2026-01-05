@@ -7017,15 +7017,6 @@ export class AuthService {
       if (dealType) {
         match['event.type'] = { $in: [dealType] };
       } else {
-        if (config.flashOffersIncluded) {
-          query = {
-            ...query,
-            'event.type': {
-              $in: [EventTypes.FLASHDEAL],
-            },
-          };
-          delete query['event.categories'];
-        } else {
           match['event.type'] = {
             $in: [
               EventTypes.OFFER,
@@ -7034,7 +7025,15 @@ export class AuthService {
               EventTypes.SPOTLIGHT,
             ],
           };
-        }
+        if (config.flashOffersIncluded) {
+          query = {
+            ...query,
+            'event.type': {
+              $in: [EventTypes.FLASHDEAL],
+            },
+          };
+          delete query['event.categories'];
+        } 
       }
     } else if (config.carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
