@@ -5574,6 +5574,7 @@ export class AuthService {
           itemPrice: { $first: '$event.itemPrice' },
           currency: { $first: '$event.currency' },
           preBookingRequired: { $first: '$event.preBookingRequired' },
+          eventUrl: {$first: '$event.eventUrl'},
         },
       },
       {
@@ -7017,10 +7018,12 @@ export class AuthService {
     // }
 
     if (config.carouselType === CarouselType.Event) {
+     
       if (dealType) {
-        match['event.type'] = { $in: [dealType] };
+        query['event.type'] = { $in: [dealType] };
       } else {
-          match['event.type'] = {
+         console.log("EVENT CAROUSEL TYE:");
+          query['event.type'] = {
             $in: [
               EventTypes.OFFER,
               EventTypes.FORMAL,
@@ -7043,6 +7046,7 @@ export class AuthService {
     }
 
     let totalCount = 0;
+    console.log("Match in getDashboardCarouselEvent2",query);
 
     if (carousel.carouselType === CarouselType.Business) {
       let newQuery = {};

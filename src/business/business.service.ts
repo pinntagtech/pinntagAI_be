@@ -3843,6 +3843,7 @@ export class BusinessService {
                   rating: 1,
                   regularTiming: 1,
                   userRatingCount: 1,
+                  appRedirectLink: 1,
                 },
               },
             ],
@@ -3981,6 +3982,7 @@ export class BusinessService {
                 distance: { $divide: ['$distance', 1609.34] },
               },
             },
+            appRedirectLink: { $first: '$businessDetails.appRedirectLink'}
           },
         },
 
