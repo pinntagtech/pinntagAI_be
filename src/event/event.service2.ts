@@ -5258,7 +5258,17 @@ export class EventService2 {
                 type: data.scheduleType,
                 event: new mongoose.Types.ObjectId(eventId),
                 fixedSchedule: {
-                  date: new Date(new Date(date).setHours(0, 0, 0, 0)),
+                  date: new Date(
+                    Date.UTC(
+                      date.getUTCFullYear(),
+                      date.getUTCMonth(),
+                      date.getUTCDate(),
+                      0,
+                      0,
+                      0,
+                      0,
+                    ),
+                  ),
                   durations: data.fixedSchedule[i].durations,
                 },
                 businessId: new mongoose.Types.ObjectId(user.businessProfile),
