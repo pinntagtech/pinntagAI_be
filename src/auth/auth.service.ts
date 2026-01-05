@@ -5333,7 +5333,7 @@ export class AuthService {
             ],
           },
           distanceField: 'distance',
-          maxDistance: 10000 * 1000,
+          maxDistance: 100000 * 1609.34,
           spherical: true,
         },
       },
