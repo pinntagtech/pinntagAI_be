@@ -1777,6 +1777,7 @@ export class StripeService {
   }
 
   async createFlashDealPaymentIntent(userId:string,dto: CreateFlashDealPaymentIntentDto) {
+    console.log("DTO:",dto);
     // 1) Validate business + connected account
     const flashDeal = await this.eventModel.findById(dto.flashDealId);
     if (!flashDeal) throw new BadRequestException('Flash Deal not found');
