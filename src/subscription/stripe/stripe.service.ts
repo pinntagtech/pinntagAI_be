@@ -1803,7 +1803,7 @@ export class StripeService {
       throw new BadRequestException('Event is not a Flash Deal');
     }
 
-    let amount = flashDeal.itemPrice * dto.quantity;
+    let amount = flashDeal.itemPrice * 100 * dto.quantity;
 
     const purchase = await this.consumerPurchaseModel.create({
       deal: new mongoose.Types.ObjectId(dto.flashDealId),
