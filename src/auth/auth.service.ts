@@ -5314,6 +5314,9 @@ export class AuthService {
     const endDate = data.endDate
       ? new Date(data.endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
+     startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
       name: 'Content QR',
     });
@@ -5330,7 +5333,7 @@ export class AuthService {
             ],
           },
           distanceField: 'distance',
-          maxDistance: 1000 * 1000,
+          maxDistance: 10000 * 1000,
           spherical: true,
         },
       },
@@ -7021,7 +7024,7 @@ export class AuthService {
             $in: [
               EventTypes.OFFER,
               EventTypes.FORMAL,
-              EventTypes.FLASHDEAL,
+              // EventTypes.FLASHDEAL,
               EventTypes.SPOTLIGHT,
             ],
           };
