@@ -512,7 +512,7 @@ export class StripeService {
       }
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await this.onFlashDealPaymentSucceeded(pi);
+        await this.paymentIntentSucceeded(pi);
         break;
       }
       case 'payment_intent.payment_failed': {
@@ -522,7 +522,7 @@ export class StripeService {
       }
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
-        await this.onFlashDealRefunded(charge);
+        await this.chargeRefunded(charge);
         break;
       }
       case 'account.updated': {
@@ -542,6 +542,7 @@ export class StripeService {
         break;
     }
   }
+
   async handleStripeConnectWebhook(event: Stripe.Event) {
     // Save raw snapshot (optional but recommended for audit)
     console.log('Saving webhook snapshot for event:', event.type);
@@ -555,9 +556,16 @@ export class StripeService {
 
     // Route by event type
     switch (event.type) {
+
+      case 'payment_intent.created': {
+          const pi = event.data.object as Stripe.PaymentIntent;
+        await this.paymentIntentCreated(pi);
+        break;
+      }
+
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await this.onFlashDealPaymentSucceeded(pi);
+        await this.paymentIntentSucceeded(pi);
         break;
       }
       case 'payment_intent.payment_failed': {
@@ -565,11 +573,19 @@ export class StripeService {
         await this.onFlashDealPaymentFailed(pi);
         break;
       }
-      case 'charge.refunded': {
+
+      case 'charge.succeeded': {
         const charge = event.data.object as Stripe.Charge;
-        await this.onFlashDealRefunded(charge);
+        await this.chargeSucceeded(charge);
         break;
       }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.chargeRefunded(charge);
+        break;
+      }
+
       case 'account.updated': {
         const acct = event.data.object as Stripe.Account;
         await this.onConnectAccountUpdated(acct);
@@ -992,7 +1008,35 @@ export class StripeService {
     });
   }
 
-  private async onFlashDealPaymentSucceeded(pi: Stripe.PaymentIntent) {
+  private async paymentIntentCreated(pi: Stripe.PaymentIntent) {
+    // Only process FlashDeal payments
+    if (pi.metadata?.type !== 'FLASHDEAL') return;
+    const business = await this.businessModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.businessId)});
+
+    const paymentIntentId = pi.id;
+
+    // Mark paid in DB
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId },
+      {
+        $set: {
+          paymentIntentId: pi.id,
+          stripeAccountId:business.stripeAccountId,
+          status: ConsumerPurchaseStatus.REQUIRES_PAYMENT,
+          paidAt: new Date(),
+          latestStripeSnapshot: pi,
+        },
+      },
+    );
+    await this.eventModel.updateOne(
+      { _id: pi.metadata.flashDealId },
+      { $inc: { itemQuantity: -1 } },
+    );
+
+    // Generate redemption token/QR etc (your logic)
+    // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
+  }
+  private async paymentIntentSucceeded(pi: Stripe.PaymentIntent) {
     // Only process FlashDeal payments
     if (pi.metadata?.type !== 'FLASHDEAL') return;
 
@@ -1033,7 +1077,28 @@ export class StripeService {
     );
   }
 
-  private async onFlashDealRefunded(charge: Stripe.Charge) {
+  private async chargeRefunded(charge: Stripe.Charge) {
+    // charge.payment_intent can be string | PaymentIntent
+    const piId =
+      typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+
+    if (!piId) return;
+
+    // Optional: verify this belongs to a FlashDeal purchase
+    const purchase = await this.consumerPurchaseModel.findOne({
+      paymentIntentId: piId,
+    });
+    if (!purchase) return;
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId: piId },
+      {
+        $set: { status: 'refunded', refundedAt: new Date() },
+      },
+    );
+  }
+  private async chargeSucceeded(charge: Stripe.Charge) {
     // charge.payment_intent can be string | PaymentIntent
     const piId =
       typeof charge.payment_intent === 'string'
