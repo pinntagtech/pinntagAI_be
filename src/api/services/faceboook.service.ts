@@ -1793,17 +1793,47 @@ export class FacebookService {
         filter.status = status;
       }
 
-      // Execute query with pagination
-      const [posts, totalCount] = await Promise.all([
+      // Execute query with pagination and get status counts
+      const [posts, totalCount, statusCounts] = await Promise.all([
         FacebookPostModel.find(filter)
           .sort({ lastSyncedAt: -1, createdAt: -1 })
           .skip(skip)
           .limit(limitNum)
           .lean(),
         FacebookPostModel.countDocuments(filter),
+        // Get counts for each status type
+        FacebookPostModel.aggregate([
+          { $match: { businessId } }, // Match businessId only, ignore other filters for stats
+          {
+            $group: {
+              _id: "$status",
+              count: { $sum: 1 },
+            },
+          },
+        ]),
       ]);
 
       const totalPages = Math.ceil(totalCount / limitNum);
+
+      // Transform status counts into a more usable format
+      const stats = {
+        total: 0,
+        pending: 0,
+        ignored: 0,
+        saved: 0,
+        imported: 0,
+      };
+
+      statusCounts.forEach((item: any) => {
+        const status = item._id || "pending"; // Default to pending if no status set
+        const count = item.count || 0;
+        stats.total += count;
+
+        if (status === "pending") stats.pending = count;
+        else if (status === "ignored") stats.ignored = count;
+        else if (status === "saved") stats.saved = count;
+        else if (status === "imported") stats.imported = count;
+      });
 
       logger.info(
         {
@@ -1814,6 +1844,7 @@ export class FacebookService {
           type,
           minScore,
           status,
+          stats,
         },
         "Fetched Facebook posts with pagination"
       );
@@ -1830,6 +1861,7 @@ export class FacebookService {
             hasNextPage: pageNum < totalPages,
             hasPreviousPage: pageNum > 1,
           },
+          stats,
         },
       };
     } catch (error: any) {
