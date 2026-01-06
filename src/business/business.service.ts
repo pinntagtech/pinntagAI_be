@@ -206,6 +206,7 @@ import { program } from '@babel/template';
 import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import { DiscountTypes } from 'src/models/bonusCode.model';
+import { StripeService } from 'src/subscription/stripe/stripe.service';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -297,6 +298,7 @@ export class BusinessService {
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
+    private readonly stripeService: StripeService
     // private readonly feedService: FeedService,
   ) {}
   private oAuthClient = new OAuth2Client();
@@ -1812,12 +1814,12 @@ export class BusinessService {
           ),
           this.generateBusinessQR(createdBusiness.id),
 
-          // this.stripeService.createConnectExpressAccount({
-          //   businessId: createdBusiness.id,
-          //   country: 'US',
-          //   email: createdBusiness.email,
-          //   businessType: 'individual',
-          // }),
+          this.stripeService.createConnectExpressAccount({
+            businessId: createdBusiness.id,
+            country: 'US',
+            email: createdBusiness.email,
+            businessType: 'individual',
+          }),
           this.seedBusinessDepartmentRoles(userId, createdBusiness._id),
           this.smsService.sendSMS(
             createdBusiness.id,
@@ -1865,6 +1867,7 @@ export class BusinessService {
     if (agentResp !== undefined && agentResp.success === true) {
       let updateObj = {
         isAgentCreated: true,
+        aiAgentId: agentResp.business_assistant_id
       };
       let desc = agentResp.data.description;
       if (

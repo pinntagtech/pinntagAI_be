@@ -467,6 +467,9 @@ export class Business {
   @Prop({ default: false })
   isAgentCreated: boolean;
 
+  @Prop()
+  aiAgentId: string;
+
   @Prop({ default: 0 })
   viewsCount: number;
 
