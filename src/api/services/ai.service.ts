@@ -296,6 +296,7 @@ async function createBusinessAgent(biz: Business) {
     }
 
     return {
+      business_assistant_id: businessAgent.id,
       assistantId: assistant.id,
       description,
       // vectorStoreId: vectorStore.id
@@ -879,7 +880,13 @@ export class AIService {
     maxTags?: number;
   }): Promise<string[]> {
     try {
-      const { category, subcategory, website, businessId, maxTags = 10 } = params;
+      const {
+        category,
+        subcategory,
+        website,
+        businessId,
+        maxTags = 10,
+      } = params;
 
       // Build context for tag generation
       const contextParts = [
