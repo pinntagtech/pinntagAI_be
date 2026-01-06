@@ -1037,6 +1037,8 @@ export class StripeService {
     if (pi.metadata?.type !== 'FLASHDEAL') return;
 
     const paymentIntentId = pi.id;
+    const consumerPurchase = await this.consumerPurchaseModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.purchaseId)});
+
 
     // Mark paid in DB
     await this.consumerPurchaseModel.updateOne(
@@ -1053,7 +1055,7 @@ export class StripeService {
     );
     await this.eventModel.updateOne(
       { _id: pi.metadata.flashDealId },
-      { $inc: { itemQuantity: -1 } },
+      { $inc: { itemQuantity: -consumerPurchase.quantity } },
     );
 
     // Generate redemption token/QR etc (your logic)
