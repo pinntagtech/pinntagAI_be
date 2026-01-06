@@ -784,6 +784,16 @@ export class AuthService {
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
 
+    if(updateObj.userName){
+      const isAlreadyExist = await this.userModel.findOne({userName:updateObj.userName});
+      if(isAlreadyExist!==undefined){
+        return {
+          success:true,
+          message:"user name already Taken!"
+        }
+      }
+    }
+
     await this.userModel.updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
       { $set: updateObj },
@@ -7895,7 +7905,7 @@ export class AuthService {
 
       let checkInFeedObj = {
         title: data.title,
-        message: data.message,
+        // message: data.message,
         creator: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(businessId),
         visibility: data.visibility,

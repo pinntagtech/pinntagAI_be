@@ -14,8 +14,8 @@ export class CheckInDto {
     @IsNotEmpty()
     title: string;
 
-    @IsNotEmpty()
-    message: string;
+    // @IsNotEmpty()
+    // message: string;
 
     @IsOptional()
     users: string[];
