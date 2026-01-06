@@ -507,7 +507,7 @@ export class StripeService {
       }
       case 'payment_intent.created': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await this.onFlashDealPaymentCreated(pi);
+        await this.paymentIntentCreated(pi);
         break;
       }
       case 'payment_intent.succeeded': {
@@ -520,6 +520,13 @@ export class StripeService {
         await this.onFlashDealPaymentFailed(pi);
         break;
       }
+
+      case 'charge.succeeded': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.chargeSucceeded(charge);
+        break;
+      }
+      
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
         await this.chargeRefunded(charge);
