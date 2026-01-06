@@ -48,11 +48,17 @@ export class ConsumerPurchase extends Document {
   @Prop({ required: true })
   amount: number; // smallest unit (cents/paise)
 
+  @Prop()
+  quantity:number;
+
   @Prop({ required: true, lowercase: true })
   currency: string;
 
   @Prop()
   platformFeeAmount?: number;
+
+  @Prop()
+  receipt: string;
 
   /* =======================
      STATUS

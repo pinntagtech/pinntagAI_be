@@ -1023,14 +1023,10 @@ export class StripeService {
           paymentIntentId: pi.id,
           stripeAccountId:business.stripeAccountId,
           status: ConsumerPurchaseStatus.REQUIRES_PAYMENT,
-          paidAt: new Date(),
           latestStripeSnapshot: pi,
+          chargeId:pi.latest_charge,
         },
       },
-    );
-    await this.eventModel.updateOne(
-      { _id: pi.metadata.flashDealId },
-      { $inc: { itemQuantity: -1 } },
     );
 
     // Generate redemption token/QR etc (your logic)
@@ -1044,7 +1040,9 @@ export class StripeService {
 
     // Mark paid in DB
     await this.consumerPurchaseModel.updateOne(
-      { paymentIntentId },
+      { paymentIntentId,
+         status: { $ne: ConsumerPurchaseStatus.PAID },
+       },
       {
         $set: {
           status: ConsumerPurchaseStatus.PAID,
@@ -1115,7 +1113,7 @@ export class StripeService {
     await this.consumerPurchaseModel.updateOne(
       { paymentIntentId: piId },
       {
-        $set: { status: 'refunded', refundedAt: new Date() },
+        $set: { receipt:charge.receipt_url,latestStripeSnapshot: charge },
       },
     );
   }
@@ -1925,6 +1923,7 @@ export class StripeService {
       amount: amount,
       currency: flashDeal.currency.toLowerCase(),
       status: 'requires_payment',
+      quantity: dto.quantity
     });
 
     // 3) Create destination charge PaymentIntent
