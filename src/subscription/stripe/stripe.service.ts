@@ -1781,7 +1781,7 @@ export class StripeService {
   async createConnectOnboardingLink(businessId: string) {
     const business = await this.businessModel.findById(businessId);
     if (!business?.stripeAccountId)
-      throw new BadRequestException('Business has no stripeAccountId');
+      throw new BadRequestException('Please Verify your Business First');
 
     const base = process.env.APP_BASE_URL!;
     const link = await this.stripe.accountLinks.create({
