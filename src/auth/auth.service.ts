@@ -7127,6 +7127,11 @@ export class AuthService {
                               $project: {
                                 _id: 1,
                                 billingInterval: 1,
+                                price: 1,
+                                currency:1,
+                                pricingModel:1,
+                                minLocations:1,
+                                maxLocations:1,
                               },
                             },
                           ],

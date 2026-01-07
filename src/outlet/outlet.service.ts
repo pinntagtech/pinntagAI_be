@@ -345,6 +345,9 @@ export class OutletService {
             $addToSet: {
               activatedOutlets: outlet._id,
             },
+            $inc: {
+              activatedOutletsLength: 1,
+            },
           },
         );
       }
@@ -654,6 +657,9 @@ export class OutletService {
             $addToSet: {
               activatedOutlets: outlet._id,
             },
+            $inc: {
+              activatedOutletsLength: 1,
+            },
           },
         );
       }
@@ -927,11 +933,10 @@ export class OutletService {
         match['vehicleType'] = vehicleType;
       }
 
-      if(status !== undefined && status !== ''){
-        status = status === 'true'? true:false;
+      if (status !== undefined && status !== '') {
+        status = status === 'true' ? true : false;
         match['isActive'] = status;
       }
-
 
       console.log('Match:::', match);
       console.log('business:::', user.businessProfile);
@@ -1595,7 +1600,10 @@ export class OutletService {
 
       await this.businessModel.updateOne(
         { _id: outlet.business },
-        { $pull: { outlets: outlet._id, activatedOutlets: outlet._id } },
+        {
+          $pull: { outlets: outlet._id, activatedOutlets: outlet._id },
+          $inc: { activatedOutletsLength: -1 },
+        },
       );
       return {
         success: true,
@@ -1747,7 +1755,12 @@ export class OutletService {
         ),
         this.businessModel.updateOne(
           { _id: outlet.business },
-          { $pull: { outlets: outletId, activatedOutlets: outletId } },
+          {
+            $pull: { outlets: outletId, activatedOutlets: outletId },
+            $inc: {
+              activatedOutletsLength: -1,
+            },
+          },
         ),
         this.outletModel.deleteOne({ _id: outletId }), // Actually delete the outlet!
       ];
@@ -1905,7 +1918,6 @@ export class OutletService {
     }
   }
 
-
   async activateOutlet(id: string, user: DecodedUser) {
     try {
       await this.outletSummationCompetence(user.businessProfile);
@@ -1919,6 +1931,9 @@ export class OutletService {
         {
           $addToSet: {
             activatedOutlets: new mongoose.Types.ObjectId(id),
+          },
+          $inc: {
+            activatedOutletsLength: 1,
           },
         },
       );
@@ -1973,7 +1988,12 @@ export class OutletService {
         ]),
         this.businessModel.updateOne(
           { _id: businessProfileId },
-          { $pull: { activatedOutlets: outletId } },
+          {
+            $pull: { activatedOutlets: outletId },
+            $inc: {
+              activatedOutletsLength: -1,
+            },
+          },
         ),
       ]);
 

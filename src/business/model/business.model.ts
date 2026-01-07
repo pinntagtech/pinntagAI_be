@@ -262,6 +262,9 @@ export class Business {
   activatedOutlets: Array<mongoose.Types.ObjectId>;
 
   @Prop()
+  activatedOutletsLength:number;
+
+  @Prop()
   countryCode: string;
   @Prop()
   phone: string;

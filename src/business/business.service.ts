@@ -82,6 +82,7 @@ import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 import { CreateBrandDto } from './dto/create-brand.dto';
+import * as puppeteer from 'puppeteer';
 import {
   Actions,
   BusinessResourceTypes,
@@ -207,6 +208,9 @@ import { Subscription } from 'src/subscription/models/subscription.model';
 import { SubscriptionProduct } from 'src/subscription/models/subscription-product.model';
 import { DiscountTypes } from 'src/models/bonusCode.model';
 import { StripeService } from 'src/subscription/stripe/stripe.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as handlebars from 'handlebars';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -298,10 +302,43 @@ export class BusinessService {
     private readonly smsService: SmsService,
     private readonly appsOnAirLinkService: AppsOnAirLinkService,
     private readonly pinnAiService: PinntagAiService,
-    private readonly stripeService: StripeService
+    private readonly stripeService: StripeService,
     // private readonly feedService: FeedService,
   ) {}
   private oAuthClient = new OAuth2Client();
+
+  private async htmlToImageBuffer(html: string): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+
+      // Match your flyer size
+      await page.setViewport({
+        width: 1748,
+        height: 2480,
+        deviceScaleFactor: 2, // higher = sharper image
+      });
+
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+      });
+
+      // Option A: screenshot full page (since your body is exactly the flyer)
+      const buffer = (await page.screenshot({
+        type: 'png',
+        fullPage: true,
+        omitBackground: false, // keep background
+      })) as Buffer;
+
+      return buffer;
+    } finally {
+      await browser.close();
+    }
+  }
 
   async verifyBusinessToken(idToken: string) {
     const businessAndroidClientId =
@@ -1867,7 +1904,7 @@ export class BusinessService {
     if (agentResp !== undefined && agentResp.success === true) {
       let updateObj = {
         isAgentCreated: true,
-        aiAgentId: agentResp.data.business_assistant_id
+        aiAgentId: agentResp.data.business_assistant_id,
       };
       let desc = agentResp.data.description;
       if (
@@ -7178,6 +7215,17 @@ export class BusinessService {
     }
   }
 
+  private renderTemplate(templateName: string, data: any) {
+    const filePath = path.join(
+      process.cwd(),
+      'src/business/promotional_qr_templates',
+      `${templateName}.hbs`,
+    );
+    const source = fs.readFileSync(filePath, 'utf8');
+    const template = handlebars.compile(source);
+    return template(data);
+  }
+
   async generateBusinessQR(businessId: string) {
     try {
       const business = await this.businessModel.findById(businessId);
@@ -7197,6 +7245,9 @@ export class BusinessService {
       const qrFileCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
+      const imageFileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.PROMOTIONAL_IMAGE,
+      });
       const businessQR = await this.driveService.generateQrCode(
         shortLink,
         business.name,
@@ -7206,6 +7257,37 @@ export class BusinessService {
       );
       console.log('Business QR Code:', businessQR);
       console.log('SHORTLINK:', shortLink);
+
+      const html = this.renderTemplate('pinntag.promotion', {
+        businessLogo: business.logo,
+        businessName: business.name,
+        qrCode: businessQR.data.metaData.url,
+      });
+
+      const imageBuffer = await this.htmlToImageBuffer(html);
+
+      const file = {
+        fieldname: 'file', // generic field name, since we don't have an actual form field
+        originalname: 'promotionTemplate', // original file name (from URL or headers)
+        encoding: '7bit', // file encoding (typical for form uploads)
+        mimetype: 'image/webp', // MIME type of the image
+        size: imageBuffer.length, // size of the file in bytes
+        buffer: imageBuffer,
+        stream: streamifier.createReadStream(imageBuffer),
+        destination: 'promotionTemplate',
+        filename: '',
+        path: '', // Since you're not saving it to di             // the image data as a Buffer
+      };
+
+      const uploaded = await this.driveService.uploadAndCreateImage(
+        file,
+        business.drive.toString(),
+        'Drive',
+        businessId,
+        imageFileCategory.id,
+      );
+      console.log("Uploaded:::",uploaded);
+
       await this.businessModel.updateOne(
         { _id: business._id },
         {
