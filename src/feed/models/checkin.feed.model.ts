@@ -12,7 +12,7 @@ export class CheckInFeed extends Document {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ required: true })
+  @Prop()
   message: string;
 
   @Prop()

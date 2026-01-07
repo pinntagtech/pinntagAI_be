@@ -977,6 +977,28 @@ export class AuthController {
       data: result.data,
     };
   }
+  @Get('currentCheckIn')
+  @UseGuards(JwtGuard2)
+  async currentCheckIn(
+    @TokenDecoder() user: DecodedUser,
+    @Query('latitude') latitude: any,
+    @Query('longitude') longitude: any
+  ) {
+    latitude = latitude ? Number(latitude) : 0;
+    longitude = longitude ? Number(longitude) : 0;
+    const result = await this.authService.getCurrentCheckIn(
+      user,
+      latitude,
+      longitude
+    );
+    if (!result.success) {
+      throw new BadRequestException(result.message);
+    }
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  }
 
   @Post('check-in/:businessId')
   @UseGuards(JwtGuard2)

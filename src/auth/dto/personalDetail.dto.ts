@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MinLength,
 } from 'class-validator';
 import { Genders } from 'src/user/models/user.model';
 
@@ -41,4 +42,13 @@ export class PersonDetailDto {
   // @IsOptional()
   // @IsString()
   // countryCode: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6, { message: 'Username must be at least 6 characters long' })
+  userName: string;
+
+  @IsOptional()
+  @IsString()
+  bio: string;
 }

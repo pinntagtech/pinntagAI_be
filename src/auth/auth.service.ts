@@ -784,6 +784,18 @@ export class AuthService {
     // Now include the status
     updateObj.status = UserProfileStatus.DETAILS_ADDED;
 
+    if (updateObj.userName) {
+      const isAlreadyExist = await this.userModel.findOne({
+        userName: updateObj.userName,
+      });
+      if (isAlreadyExist !== undefined) {
+        return {
+          success: true,
+          message: 'user name already Taken!',
+        };
+      }
+    }
+
     await this.userModel.updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
       { $set: updateObj },
@@ -2122,7 +2134,7 @@ export class AuthService {
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
-    console.log("match:::",match);
+    console.log('match:::', match);
 
     // if (carouselType === CarouselType.Event) {
     //   if (dealType) {
@@ -3735,6 +3747,34 @@ export class AuthService {
     return eventsResult;
   }
 
+  async getCurrentCheckIn(
+    user: DecodedUser,
+    latitude: number,
+    longitude: number,
+  ) {
+    // const now = new Date();
+    const checkIn = await this.checkInModel
+      .findOne({
+        user: new mongoose.Types.ObjectId(user.id),
+        expiry: { $gt: new Date() },
+        checkedOutAt: { $exists: false },
+      })
+      .populate('business', '_id logo cover');
+
+    if (!checkIn) {
+      return {
+        success: false,
+        message: 'No current CheckIn found',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Checked In found!',
+      data: checkIn,
+    };
+  }
+
   async dashboardListingMap(
     user: DecodedUser,
     latitude: number,
@@ -5314,7 +5354,7 @@ export class AuthService {
     const endDate = data.endDate
       ? new Date(data.endDate)
       : new Date(new Date(now).setFullYear(now.getFullYear() + 2));
-     startDate.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
     const QR_ImageCategory = await this.fileCategoryModel.findOne({
@@ -5574,7 +5614,7 @@ export class AuthService {
           itemPrice: { $first: '$event.itemPrice' },
           currency: { $first: '$event.currency' },
           preBookingRequired: { $first: '$event.preBookingRequired' },
-          eventUrl: {$first: '$event.eventUrl'},
+          eventUrl: { $first: '$event.eventUrl' },
         },
       },
       {
@@ -7018,19 +7058,18 @@ export class AuthService {
     // }
 
     if (config.carouselType === CarouselType.Event) {
-     
       if (dealType) {
         query['event.type'] = { $in: [dealType] };
       } else {
-         console.log("EVENT CAROUSEL TYE:");
-          query['event.type'] = {
-            $in: [
-              EventTypes.OFFER,
-              EventTypes.FORMAL,
-              // EventTypes.FLASHDEAL,
-              EventTypes.SPOTLIGHT,
-            ],
-          };
+        console.log('EVENT CAROUSEL TYE:');
+        query['event.type'] = {
+          $in: [
+            EventTypes.OFFER,
+            EventTypes.FORMAL,
+            // EventTypes.FLASHDEAL,
+            EventTypes.SPOTLIGHT,
+          ],
+        };
         if (config.flashOffersIncluded) {
           query = {
             ...query,
@@ -7039,14 +7078,14 @@ export class AuthService {
             },
           };
           delete query['event.categories'];
-        } 
+        }
       }
     } else if (config.carouselType === CarouselType.OnWheels) {
       match['event.type'] = { $in: [EventTypes.DROPPED_PIN] };
     }
 
     let totalCount = 0;
-    console.log("Match in getDashboardCarouselEvent2",query);
+    console.log('Match in getDashboardCarouselEvent2', query);
 
     if (carousel.carouselType === CarouselType.Business) {
       let newQuery = {};
@@ -7844,19 +7883,19 @@ export class AuthService {
           message: 'outlet not found',
         };
       }
-      const foundCheckIn = await this.checkInModel.findOne({
-        user: new mongoose.Types.ObjectId(user.id),
-        business: new mongoose.Types.ObjectId(businessId),
-        // locationId: new mongoose.Types.ObjectId(locationId),
-        expiry: { $gt: new Date() },
-      });
-      if (foundCheckIn) {
-        return {
-          sucess: true,
-          message: 'User already CheckedIn',
-          data: foundCheckIn,
-        };
-      }
+      // const foundCheckIn = await this.checkInModel.findOne({
+      //   user: new mongoose.Types.ObjectId(user.id),
+      //   business: new mongoose.Types.ObjectId(businessId),
+      //   // locationId: new mongoose.Types.ObjectId(locationId),
+      //   expiry: { $gt: new Date() },
+      // });
+      // if (foundCheckIn) {
+      //   return {
+      //     sucess: true,
+      //     message: 'User already CheckedIn',
+      //     data: foundCheckIn,
+      //   };
+      // }
       const checkDistance = await this.outletModel.aggregate([
         {
           $geoNear: {
@@ -7880,6 +7919,12 @@ export class AuthService {
           message: "please be present in business's proximity.",
         };
       }
+
+      await this.checkInModel.updateMany(
+        { user: new mongoose.Types.ObjectId(user.id) },
+        { $set: { checkedOutAt: new Date(), expiry: new Date() } },
+      );
+
       const checkInDetails = await this.checkInModel.create({
         user: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(businessId),
@@ -7895,7 +7940,7 @@ export class AuthService {
 
       let checkInFeedObj = {
         title: data.title,
-        message: data.message,
+        // message: data.message,
         creator: new mongoose.Types.ObjectId(user.id),
         business: new mongoose.Types.ObjectId(businessId),
         visibility: data.visibility,

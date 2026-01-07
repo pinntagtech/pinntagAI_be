@@ -507,7 +507,7 @@ export class StripeService {
       }
       case 'payment_intent.created': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        await this.onFlashDealPaymentCreated(pi);
+        await this.paymentIntentCreated(pi);
         break;
       }
       case 'payment_intent.succeeded': {
@@ -520,6 +520,13 @@ export class StripeService {
         await this.onFlashDealPaymentFailed(pi);
         break;
       }
+
+      case 'charge.succeeded': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.chargeSucceeded(charge);
+        break;
+      }
+      
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
         await this.chargeRefunded(charge);
@@ -1023,14 +1030,10 @@ export class StripeService {
           paymentIntentId: pi.id,
           stripeAccountId:business.stripeAccountId,
           status: ConsumerPurchaseStatus.REQUIRES_PAYMENT,
-          paidAt: new Date(),
           latestStripeSnapshot: pi,
+          chargeId:pi.latest_charge,
         },
       },
-    );
-    await this.eventModel.updateOne(
-      { _id: pi.metadata.flashDealId },
-      { $inc: { itemQuantity: -1 } },
     );
 
     // Generate redemption token/QR etc (your logic)
@@ -1041,10 +1044,14 @@ export class StripeService {
     if (pi.metadata?.type !== 'FLASHDEAL') return;
 
     const paymentIntentId = pi.id;
+    const consumerPurchase = await this.consumerPurchaseModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.purchaseId)});
+
 
     // Mark paid in DB
     await this.consumerPurchaseModel.updateOne(
-      { paymentIntentId },
+      { paymentIntentId,
+         status: { $ne: ConsumerPurchaseStatus.PAID },
+       },
       {
         $set: {
           status: ConsumerPurchaseStatus.PAID,
@@ -1055,7 +1062,7 @@ export class StripeService {
     );
     await this.eventModel.updateOne(
       { _id: pi.metadata.flashDealId },
-      { $inc: { itemQuantity: -1 } },
+      { $inc: { itemQuantity: -consumerPurchase.quantity } },
     );
 
     // Generate redemption token/QR etc (your logic)
@@ -1115,7 +1122,7 @@ export class StripeService {
     await this.consumerPurchaseModel.updateOne(
       { paymentIntentId: piId },
       {
-        $set: { status: 'refunded', refundedAt: new Date() },
+        $set: { receipt:charge.receipt_url,latestStripeSnapshot: charge },
       },
     );
   }
@@ -1925,6 +1932,7 @@ export class StripeService {
       amount: amount,
       currency: flashDeal.currency.toLowerCase(),
       status: 'requires_payment',
+      quantity: dto.quantity
     });
 
     // 3) Create destination charge PaymentIntent

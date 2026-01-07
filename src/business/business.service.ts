@@ -1867,7 +1867,7 @@ export class BusinessService {
     if (agentResp !== undefined && agentResp.success === true) {
       let updateObj = {
         isAgentCreated: true,
-        aiAgentId: agentResp.business_assistant_id
+        aiAgentId: agentResp.data.business_assistant_id
       };
       let desc = agentResp.data.description;
       if (
