@@ -1135,7 +1135,7 @@ export class StripeService {
     await this.consumerPurchaseModel.updateOne(
       { chargeId: charge.id },
       {
-        $set: { receipt: charge.receipt_url, txnId:'',latestStripeSnapshot: charge },
+        $set: { receipt: charge.receipt_url,latestStripeSnapshot: charge },
       },
     );
     console.log('Charge Succeeded:::5:', charge.id);
