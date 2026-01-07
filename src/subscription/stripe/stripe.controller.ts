@@ -221,21 +221,27 @@ export class StripeController {
   @UseGuards(JwtGuard2)
   async onboardLink(
     @TokenDecoder() user: DecodedUser,
-    @Body('businessId') businessId: string,
+    // @Body('businessId') businessId: string,
   ) {
-    return this.stripeService.createConnectOnboardingLink(businessId);
+    return this.stripeService.createConnectOnboardingLink(user.businessProfile);
   }
 
   @Post('connect/updateAccount')
   @UseGuards(JwtGuard2)
-  async updateAccount(@Body('businessId') businessId: string) {
-    return this.stripeService.createStripeExpressLoginLink(businessId);
+  async updateAccount(
+      @TokenDecoder() user: DecodedUser,
+    // @Body('businessId') businessId: string
+  ) {
+    return this.stripeService.createStripeExpressLoginLink(user.businessProfile);
   }
 
   @Post('connect/syncAccountStatus')
   @UseGuards(JwtGuard2)
-  async syncAccountStatus(@Body('businessId') businessId: string) {
-    return this.stripeService.syncAccountStatus(businessId);
+  async syncAccountStatus(
+      @TokenDecoder() user: DecodedUser,
+    // @Body('businessId') businessId: string
+  ) {
+    return this.stripeService.syncAccountStatus(user.businessProfile);
   }
 
   @Post('flashdeal/payment-intent')

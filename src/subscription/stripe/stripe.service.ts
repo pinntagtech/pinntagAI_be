@@ -1016,10 +1016,12 @@ export class StripeService {
   }
 
   private async paymentIntentCreated(pi: Stripe.PaymentIntent) {
+    console.log("Payment INTENT CREATEDDDDD:::1:",pi.id);
     // Only process FlashDeal payments
     if (pi.metadata?.type !== 'FLASHDEAL') return;
+    console.log("Payment INTENT CREATEDDDDD:::2:",pi.id);
     const business = await this.businessModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.businessId)});
-
+    console.log("Payment INTENT CREATEDDDDD:::3:",pi.id);
     const paymentIntentId = pi.id;
 
     // Mark paid in DB
@@ -1035,17 +1037,19 @@ export class StripeService {
         },
       },
     );
+    console.log("Payment INTENT CREATEDDDDD:::4:",pi.id);
 
     // Generate redemption token/QR etc (your logic)
     // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
   }
   private async paymentIntentSucceeded(pi: Stripe.PaymentIntent) {
     // Only process FlashDeal payments
+    console.log("Payment INTENT Succeeded:::1:",pi.id);
     if (pi.metadata?.type !== 'FLASHDEAL') return;
-
+    console.log("Payment INTENT Succeeded:::2:",pi.id);
     const paymentIntentId = pi.id;
     const consumerPurchase = await this.consumerPurchaseModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.purchaseId)});
-
+    console.log("Payment INTENT Succeeded:::3:",pi.id);
 
     // Mark paid in DB
     await this.consumerPurchaseModel.updateOne(
@@ -1060,11 +1064,12 @@ export class StripeService {
         },
       },
     );
+    console.log("Payment INTENT Succeeded:::4:",pi.id);
     await this.eventModel.updateOne(
       { _id: pi.metadata.flashDealId },
       { $inc: { itemQuantity: -consumerPurchase.quantity } },
     );
-
+    console.log("Payment INTENT Succeeded:::5:",pi.id);
     // Generate redemption token/QR etc (your logic)
     // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
   }
@@ -1106,6 +1111,7 @@ export class StripeService {
     );
   }
   private async chargeSucceeded(charge: Stripe.Charge) {
+    console.log("Charge Succeeded:::1:",charge.id);
     // charge.payment_intent can be string | PaymentIntent
     const piId =
       typeof charge.payment_intent === 'string'
@@ -1113,18 +1119,21 @@ export class StripeService {
         : charge.payment_intent?.id;
 
     if (!piId) return;
-
+    console.log("Charge Succeeded:::2:",charge.id);
     // Optional: verify this belongs to a FlashDeal purchase
     const purchase = await this.consumerPurchaseModel.findOne({
       paymentIntentId: piId,
     });
+    console.log("Charge Succeeded:::3:",charge.id);
     if (!purchase) return;
+    console.log("Charge Succeeded:::4:",charge.id);
     await this.consumerPurchaseModel.updateOne(
       { paymentIntentId: piId },
       {
         $set: { receipt:charge.receipt_url,latestStripeSnapshot: charge },
       },
     );
+    console.log("Charge Succeeded:::5:",charge.id);
   }
 
   async createSubscription(
