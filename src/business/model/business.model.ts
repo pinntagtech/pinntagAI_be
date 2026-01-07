@@ -84,6 +84,7 @@ export enum CreatorType {
 }
 
 export const ConnectStatus = {
+  NOT_INITIALISED:'not initialised',
   ONBOARDED: 'onboarded',
   PENDING: 'pending',
   REJECTED: 'rejected',
@@ -476,7 +477,7 @@ export class Business {
   @Prop()
   stripeAccountId: string;
 
-  @Prop({ default: ConnectStatus.PENDING })
+  @Prop({ default: ConnectStatus.NOT_INITIALISED })
   connectStatus: string;
 
   @Prop({ default: false })

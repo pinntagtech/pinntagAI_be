@@ -29,7 +29,7 @@ import {
   WebhookSnapshot,
   WebhookSnapshotDocument,
 } from 'src/user/models/webhook.model';
-import { Business, BusinessDocument } from 'src/business/model/business.model';
+import { Business, BusinessDocument, ConnectStatus } from 'src/business/model/business.model';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { SubscriptionPrice } from '../models/subscription-price.model';
 import { Coupon } from '../models/coupon.model';
@@ -650,10 +650,11 @@ export class StripeService {
     const isBankAccount = firstExternalAccount?.object === 'bank_account';
 
     await this.businessModel.updateOne(
-      { _id: businessId },
+      { _id: new mongoose.Types.ObjectId(businessId) },
       {
         $set: {
           stripeOnboardingComplete: onboardingComplete,
+          connectStatus: onboardingComplete?ConnectStatus.ONBOARDED:ConnectStatus.PENDING,
           stripeAccountStatus: {
             charges_enabled: account.charges_enabled,
             payouts_enabled: account.payouts_enabled,
@@ -1134,7 +1135,7 @@ export class StripeService {
     await this.consumerPurchaseModel.updateOne(
       { chargeId: charge.id },
       {
-        $set: { receipt: charge.receipt_url, latestStripeSnapshot: charge },
+        $set: { receipt: charge.receipt_url, txnId:'',latestStripeSnapshot: charge },
       },
     );
     console.log('Charge Succeeded:::5:', charge.id);
@@ -1812,6 +1813,10 @@ export class StripeService {
       // return_url: `https://dev.business.pinntag.com/dashboard/subscription/return`,
       type: 'account_onboarding',
     });
+
+    if(!business.stripeOnboardingComplete){
+      await this.businessModel.updateOne({_id:business._id},{$set:{connectStatus:ConnectStatus.PENDING}});
+    }
 
     return { url: link.url };
   }
