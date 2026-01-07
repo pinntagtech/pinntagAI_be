@@ -526,7 +526,7 @@ export class StripeService {
         await this.chargeSucceeded(charge);
         break;
       }
-      
+
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
         await this.chargeRefunded(charge);
@@ -563,9 +563,8 @@ export class StripeService {
 
     // Route by event type
     switch (event.type) {
-
       case 'payment_intent.created': {
-          const pi = event.data.object as Stripe.PaymentIntent;
+        const pi = event.data.object as Stripe.PaymentIntent;
         await this.paymentIntentCreated(pi);
         break;
       }
@@ -1016,12 +1015,14 @@ export class StripeService {
   }
 
   private async paymentIntentCreated(pi: Stripe.PaymentIntent) {
-    console.log("Payment INTENT CREATEDDDDD:::1:",pi.id);
+    console.log('Payment INTENT CREATEDDDDD:::1:', pi.id);
     // Only process FlashDeal payments
     if (pi.metadata?.type !== 'FLASHDEAL') return;
-    console.log("Payment INTENT CREATEDDDDD:::2:",pi.id);
-    const business = await this.businessModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.businessId)});
-    console.log("Payment INTENT CREATEDDDDD:::3:",pi.id);
+    console.log('Payment INTENT CREATEDDDDD:::2:', pi.id);
+    const business = await this.businessModel.findOne({
+      _id: new mongoose.Types.ObjectId(pi.metadata.businessId),
+    });
+    console.log('Payment INTENT CREATEDDDDD:::3:', pi.id);
     const paymentIntentId = pi.id;
 
     // Mark paid in DB
@@ -1030,46 +1031,54 @@ export class StripeService {
       {
         $set: {
           paymentIntentId: pi.id,
-          stripeAccountId:business.stripeAccountId,
+          stripeAccountId: business.stripeAccountId,
           status: ConsumerPurchaseStatus.REQUIRES_PAYMENT,
-          latestStripeSnapshot: pi,
-          chargeId:pi.latest_charge,
+          // latestStripeSnapshot: pi,
+          chargeId: pi.latest_charge,
         },
       },
     );
-    console.log("Payment INTENT CREATEDDDDD:::4:",pi.id);
+    console.log('Payment INTENT CREATEDDDDD:::4:', pi.id);
 
     // Generate redemption token/QR etc (your logic)
     // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
   }
   private async paymentIntentSucceeded(pi: Stripe.PaymentIntent) {
     // Only process FlashDeal payments
-    console.log("Payment INTENT Succeeded:::1:",pi.id);
+    console.log('Payment INTENT Succeeded:::1:', pi.id);
     if (pi.metadata?.type !== 'FLASHDEAL') return;
-    console.log("Payment INTENT Succeeded:::2:",pi.id);
+    console.log('Payment INTENT Succeeded:::2:', pi.id);
     const paymentIntentId = pi.id;
-    const consumerPurchase = await this.consumerPurchaseModel.findOne({_id: new mongoose.Types.ObjectId(pi.metadata.purchaseId)});
-    console.log("Payment INTENT Succeeded:::3:",pi.id);
+    const consumerPurchase = await this.consumerPurchaseModel.findOne({
+      _id: new mongoose.Types.ObjectId(pi.metadata.purchaseId),
+    });
+    console.log('Payment INTENT Succeeded:::3:', pi.id);
 
     // Mark paid in DB
     await this.consumerPurchaseModel.updateOne(
-      { paymentIntentId,
-         status: { $ne: ConsumerPurchaseStatus.PAID },
-       },
+      // { paymentIntentId,
+      //    status: { $ne: ConsumerPurchaseStatus.PAID },
+      //  },
+      {
+        $and: [
+          { paymentIntentId },
+          { status: { $ne: ConsumerPurchaseStatus.PAID } },
+        ],
+      },
       {
         $set: {
           status: ConsumerPurchaseStatus.PAID,
-          chargeId:pi.latest_charge,
-          latestStripeSnapshot: pi,
+          chargeId: pi.latest_charge,
+          // latestStripeSnapshot: pi,
         },
       },
     );
-    console.log("Payment INTENT Succeeded:::4:",pi.id);
+    console.log('Payment INTENT Succeeded:::4:', pi.id);
     await this.eventModel.updateOne(
       { _id: pi.metadata.flashDealId },
       { $inc: { itemQuantity: -consumerPurchase.quantity } },
     );
-    console.log("Payment INTENT Succeeded:::5:",pi.id);
+    console.log('Payment INTENT Succeeded:::5:', pi.id);
     // Generate redemption token/QR etc (your logic)
     // await this.flashDealService.issueRedemption(pi.metadata.flashDealId, pi.metadata.consumerId);
   }
@@ -1111,24 +1120,24 @@ export class StripeService {
     );
   }
   private async chargeSucceeded(charge: Stripe.Charge) {
-    console.log("Charge Succeeded:::1:",charge.id);
+    console.log('Charge Succeeded:::1:', charge.id);
     // charge.payment_intent can be string | PaymentIntent
-  
-    console.log("Charge Succeeded:::2:",charge.id);
+
+    console.log('Charge Succeeded:::2:', charge.id);
     // Optional: verify this belongs to a FlashDeal purchase
     const purchase = await this.consumerPurchaseModel.findOne({
       chargeId: charge.id,
     });
-    console.log("Charge Succeeded:::3:",charge.id);
+    console.log('Charge Succeeded:::3:', charge.id);
     if (!purchase) return;
-    console.log("Charge Succeeded:::4:",charge.id);
+    console.log('Charge Succeeded:::4:', charge.id);
     await this.consumerPurchaseModel.updateOne(
       { chargeId: charge.id },
       {
-        $set: { receipt:charge.receipt_url,latestStripeSnapshot: charge },
+        $set: { receipt: charge.receipt_url, latestStripeSnapshot: charge },
       },
     );
-    console.log("Charge Succeeded:::5:",charge.id);
+    console.log('Charge Succeeded:::5:', charge.id);
   }
 
   async createSubscription(
@@ -1936,7 +1945,7 @@ export class StripeService {
       amount: amount,
       currency: flashDeal.currency.toLowerCase(),
       status: 'requires_payment',
-      quantity: dto.quantity
+      quantity: dto.quantity,
     });
 
     // 3) Create destination charge PaymentIntent
