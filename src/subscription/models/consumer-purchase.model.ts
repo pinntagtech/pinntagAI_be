@@ -38,6 +38,9 @@ export class ConsumerPurchase extends Document {
   @Prop({ type: String, index: true })
   chargeId?: string;
 
+  @Prop()
+  txnId:string;
+
   @Prop({ type: String })
   stripeAccountId?: string; // connected account (business)
 

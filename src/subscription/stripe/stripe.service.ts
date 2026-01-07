@@ -1059,7 +1059,7 @@ export class StripeService {
       {
         $set: {
           status: ConsumerPurchaseStatus.PAID,
-          paidAt: new Date(),
+          chargeId:pi.latest_charge,
           latestStripeSnapshot: pi,
         },
       },
@@ -1113,22 +1113,17 @@ export class StripeService {
   private async chargeSucceeded(charge: Stripe.Charge) {
     console.log("Charge Succeeded:::1:",charge.id);
     // charge.payment_intent can be string | PaymentIntent
-    const piId =
-      typeof charge.payment_intent === 'string'
-        ? charge.payment_intent
-        : charge.payment_intent?.id;
-
-    if (!piId) return;
+  
     console.log("Charge Succeeded:::2:",charge.id);
     // Optional: verify this belongs to a FlashDeal purchase
     const purchase = await this.consumerPurchaseModel.findOne({
-      paymentIntentId: piId,
+      chargeId: charge.id,
     });
     console.log("Charge Succeeded:::3:",charge.id);
     if (!purchase) return;
     console.log("Charge Succeeded:::4:",charge.id);
     await this.consumerPurchaseModel.updateOne(
-      { paymentIntentId: piId },
+      { chargeId: charge.id },
       {
         $set: { receipt:charge.receipt_url,latestStripeSnapshot: charge },
       },
