@@ -1971,10 +1971,16 @@ export class StripeService {
           type: 'FLASHDEAL',
         },
       },
+
       //     {
       //   // ✅ idempotency prevents double-charges if your API retries
       //   idempotencyKey: `flashdeal_${dto.flashDealId}_${consumerId}`,
       // },
+    );
+
+    await this.consumerPurchaseModel.updateOne(
+      { _id: purchase._id },
+      { $set: { paymentIntentId: pi.id } },
     );
 
     // Store PI id for webhook reconciliation

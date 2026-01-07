@@ -33,10 +33,10 @@ export class ConsumerPurchase extends Document {
      ======================= */
 
   @Prop({ type: String, index: true, unique: true, sparse: true })
-  paymentIntentId?: string;
+  paymentIntentId: string;
 
   @Prop({ type: String, index: true })
-  chargeId?: string;
+  chargeId: string;
 
   @Prop()
   txnId:string;
