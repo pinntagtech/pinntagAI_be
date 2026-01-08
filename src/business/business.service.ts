@@ -2357,6 +2357,7 @@ export class BusinessService {
           },
         );
       }
+      if (updateObj.logo) this.generateBusinessTemplateQR(businessId);
       if (
         updateObj.tags &&
         updateObj.tags.length > 0 &&
@@ -7226,6 +7227,64 @@ export class BusinessService {
     return template(data);
   }
 
+  async generateBusinessTemplateQR(businessId: string) {
+    try {
+      const business = await this.businessModel.findById(businessId);
+      const html = this.renderTemplate('pinntag.promotion', {
+        businessLogo: business.logo,
+        businessName: business.name,
+        qrCode: business.QRCode,
+      });
+
+      const imageBuffer = await this.htmlToImageBuffer(html);
+
+      const file = {
+        fieldname: 'file', // generic field name, since we don't have an actual form field
+        originalname: 'promotionTemplate', // original file name (from URL or headers)
+        encoding: '7bit', // file encoding (typical for form uploads)
+        mimetype: 'image/webp', // MIME type of the image
+        size: imageBuffer.length, // size of the file in bytes
+        buffer: imageBuffer,
+        stream: streamifier.createReadStream(imageBuffer),
+        destination: 'promotionTemplate',
+        filename: '',
+        path: '', // Since you're not saving it to di             // the image data as a Buffer
+      };
+
+      const imageFileCategory = await this.fileCategoryModel.findOne({
+        name: FileCategoryTypes.PROMOTIONAL_IMAGE,
+      });
+
+      const uploaded = await this.driveService.uploadAndCreateImage(
+        file,
+        business.drive.toString(),
+        'Drive',
+        businessId,
+        imageFileCategory.id,
+      );
+
+      console.log('Uploaded:::', uploaded);
+
+      await this.businessModel.updateOne(
+        { _id: business._id },
+        {
+          $set: {
+            QRTemplates: {
+              promotionQR: uploaded ? uploaded.metaData.url : '',
+            },
+          },
+        },
+      );
+      return {
+        success: true,
+        message: 'Business QR code generated successfully',
+      };
+    } catch (error) {
+      console.error('Error in Generating Template:', error);
+      return null;
+    }
+  }
+
   async generateBusinessQR(businessId: string) {
     try {
       const business = await this.businessModel.findById(businessId);
@@ -7245,9 +7304,7 @@ export class BusinessService {
       const qrFileCategory = await this.fileCategoryModel.findOne({
         name: 'Content QR',
       });
-      const imageFileCategory = await this.fileCategoryModel.findOne({
-        name: FileCategoryTypes.PROMOTIONAL_IMAGE,
-      });
+
       const businessQR = await this.driveService.generateQrCode(
         shortLink,
         business.name,
@@ -7258,47 +7315,12 @@ export class BusinessService {
       console.log('Business QR Code:', businessQR);
       console.log('SHORTLINK:', shortLink);
 
-      const html = this.renderTemplate('pinntag.promotion', {
-        businessLogo: business.logo,
-        businessName: business.name,
-        qrCode: businessQR.data.metaData.url,
-      });
-
-      const imageBuffer = await this.htmlToImageBuffer(html);
-
-      const file = {
-        fieldname: 'file', // generic field name, since we don't have an actual form field
-        originalname: 'promotionTemplate', // original file name (from URL or headers)
-        encoding: '7bit', // file encoding (typical for form uploads)
-        mimetype: 'image/webp', // MIME type of the image
-        size: imageBuffer.length, // size of the file in bytes
-        buffer: imageBuffer,
-        stream: streamifier.createReadStream(imageBuffer),
-        destination: 'promotionTemplate',
-        filename: '',
-        path: '', // Since you're not saving it to di             // the image data as a Buffer
-      };
-
-      const uploaded = await this.driveService.uploadAndCreateImage(
-        file,
-        business.drive.toString(),
-        'Drive',
-        businessId,
-        imageFileCategory.id,
-      );
-
-      console.log("Uploaded:::",uploaded);
-
       await this.businessModel.updateOne(
         { _id: business._id },
         {
           $set: {
             QRCode: businessQR.data.metaData.url,
             appRedirectLink: shortLink,
-            QRTemplates: {
-              promotionQR: uploaded?uploaded.metaData.url:''
-            }
-
           },
         },
       );
