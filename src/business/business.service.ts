@@ -7286,6 +7286,7 @@ export class BusinessService {
         businessId,
         imageFileCategory.id,
       );
+
       console.log("Uploaded:::",uploaded);
 
       await this.businessModel.updateOne(
@@ -7294,6 +7295,10 @@ export class BusinessService {
           $set: {
             QRCode: businessQR.data.metaData.url,
             appRedirectLink: shortLink,
+            QRTemplates: {
+              promotionQR: uploaded?uploaded.metaData.url:''
+            }
+
           },
         },
       );

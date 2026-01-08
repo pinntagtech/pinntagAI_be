@@ -122,8 +122,17 @@ export class StripeAccountStatus {
   lastUpdatedAt?: Date;
 }
 
+
 export const StripeAccountStatusSchema =
-  SchemaFactory.createForClass(StripeAccountStatus);
+SchemaFactory.createForClass(StripeAccountStatus);
+
+@Schema({ _id:false})
+export class QRTemplates {
+  @Prop()
+  promotionQR:string;
+}
+
+export const QRTemplatesSchema = SchemaFactory.createForClass(QRTemplates);
 
 export class FacebookPageInfo {
   @Prop()
@@ -465,7 +474,8 @@ export class Business {
   @Prop()
   QRCode: string;
 
-  // @Prop()
+  @Prop({type:QRTemplatesSchema})
+  QRTemplates:QRTemplates;
 
 
 
