@@ -465,6 +465,10 @@ export class Business {
   @Prop()
   QRCode: string;
 
+  // @Prop()
+
+
+
   @Prop()
   appRedirectLink: string;
 
