@@ -1,5 +1,6 @@
 import { extname } from 'path';
 import sharp from 'sharp';
+import puppeteer, { Browser, Page } from 'puppeteer';
 
 export const imageFileFilter = (req, file, callback) => {
   const allowedExtensions = /\.(jpg|jpeg|png|gif)$/;
@@ -95,4 +96,80 @@ export class FileUploadUtils {
       throw new Error('Failed to create thumbnail');
     }
   }
+
+  static async htmlToImageBuffer(html: string): Promise<Buffer> {
+  let browser: Browser | null = null;
+  let page: Page | null = null;
+
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Browser operation timed out')), 30000);
+    });
+
+    const browserPromise = (async () => {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-zygote',
+          '--single-process',
+        ],
+      });
+
+      page = await browser.newPage();
+      page.setDefaultTimeout(20000);
+      page.setDefaultNavigationTimeout(20000);
+
+      await page.setViewport({
+        width: 1748,
+        height: 2480,
+        deviceScaleFactor: 2,
+      });
+
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+        timeout: 15000,
+      });
+
+      // Remove timeout and encoding options
+      const screenshot = await page.screenshot({
+        type: 'png',
+        fullPage: true,
+        omitBackground: false,
+      });
+
+      // Convert Uint8Array to Buffer
+      return Buffer.from(screenshot);
+    })();
+
+    return await Promise.race([browserPromise, timeoutPromise]);
+
+  } catch (error: any) {
+    console.error('Error generating image from HTML:', error);
+    throw new Error(`Failed to generate image: ${error.message}`);
+  } finally {
+    try {
+      if (page) {
+        await page.close().catch(err => console.error('Error closing page:', err));
+      }
+    } catch (e) {
+      console.error('Error in page cleanup:', e);
+    }
+
+    try {
+      if (browser) {
+        await browser.close().catch(err => console.error('Error closing browser:', err));
+      }
+    } catch (e) {
+      console.error('Error in browser cleanup:', e);
+    }
+  }
+}
+
+
+
+
 }

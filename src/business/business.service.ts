@@ -82,7 +82,6 @@ import { Drive } from 'src/drive/models/drive.model';
 import { Brand, BrandDocument } from './model/brand.model';
 import { ThisMonthInstance } from 'twilio/lib/rest/api/v2010/account/usage/record/thisMonth';
 import { CreateBrandDto } from './dto/create-brand.dto';
-import * as puppeteer from 'puppeteer';
 import {
   Actions,
   BusinessResourceTypes,
@@ -211,6 +210,7 @@ import { StripeService } from 'src/subscription/stripe/stripe.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
+import { FileUploadUtils } from 'src/helpers/upload.helpers';
 // import { FeedService } from 'src/feed/feed.service';
 
 @Injectable()
@@ -306,39 +306,6 @@ export class BusinessService {
     // private readonly feedService: FeedService,
   ) {}
   private oAuthClient = new OAuth2Client();
-
-  private async htmlToImageBuffer(html: string): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    try {
-      const page = await browser.newPage();
-
-      // Match your flyer size
-      await page.setViewport({
-        width: 1748,
-        height: 2480,
-        deviceScaleFactor: 2, // higher = sharper image
-      });
-
-      await page.setContent(html, {
-        waitUntil: 'networkidle0',
-      });
-
-      // Option A: screenshot full page (since your body is exactly the flyer)
-      const buffer = (await page.screenshot({
-        type: 'png',
-        fullPage: true,
-        omitBackground: false, // keep background
-      })) as Buffer;
-
-      return buffer;
-    } finally {
-      await browser.close();
-    }
-  }
 
   async verifyBusinessToken(idToken: string) {
     const businessAndroidClientId =
@@ -7236,7 +7203,7 @@ export class BusinessService {
         qrCode: business.QRCode,
       });
 
-      const imageBuffer = await this.htmlToImageBuffer(html);
+      const imageBuffer = await FileUploadUtils.htmlToImageBuffer(html);
 
       const file = {
         fieldname: 'file', // generic field name, since we don't have an actual form field
@@ -7324,6 +7291,8 @@ export class BusinessService {
           },
         },
       );
+
+      await this.generateBusinessTemplateQR(businessId)
       return {
         success: true,
         message: 'Business QR code generated successfully',
