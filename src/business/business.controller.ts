@@ -1633,6 +1633,22 @@ export class BusinessController {
       throw new BadRequestException(result.message);
     }
   }
+  @Post('generateBusinessTemplateQR/:id')
+  @UseGuards(JwtGuard2)
+  async generateBusinessTemplateQR(
+    @Param('id') id: string,
+    @TokenDecoder() user: DecodedUser,
+  ) {
+    const result = await this.businessService.generateBusinessTemplateQR(id);
+    if (result.success) {
+      return {
+        message: result.message,
+        // data: result.data,
+      };
+    } else {
+      throw new BadRequestException(result.message);
+    }
+  }
 
   @Post('activation/request/:id')
   @UseGuards(JwtGuard2)
