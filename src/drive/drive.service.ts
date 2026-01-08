@@ -889,6 +889,15 @@ export class DriveService {
     parentId: any,
     categoryId: any,
   ) {
+    if (allowedImageMimeTypes.includes(file.mimetype)) {
+      return await this.uploadAndCreateImage(
+        file,
+        parentDirectoryId,
+        parentDirectoryType,
+        parentId,
+        categoryId,
+      );
+    }
     // 1. Upload
     console.log('File:', file);
     const s3 = await this.s3Service.s3_upload(
@@ -938,6 +947,7 @@ export class DriveService {
       parentType: Event.name, // or drive/folder parentType as needed
     });
   }
+
   async uploadAndCreateImage(
     file: Express.Multer.File,
     parentDirectoryId: string,
@@ -946,6 +956,7 @@ export class DriveService {
     categoryId: any,
   ) {
     // 1. Upload
+    file = await FileUploadUtils.convertToWebP(file);
     file = await FileUploadUtils.compressImage(file);
     const s3 = await this.s3Service.s3_upload(
       file.buffer,
@@ -1022,17 +1033,16 @@ export class DriveService {
       const parentDirectoryId = driveLoc ? driveLoc._id : folderLoc.drive;
 
       let totalSize = 0;
-      const tasks = images
-        .map((img) => {
-          totalSize += img.size;
-          return this.uploadAndCreateFile(
-            img,
-            locId,
-            parentDirectoryType,
-            parentId,
-            fileCategory._id,
-          );
-        });
+      const tasks = images.map((img) => {
+        totalSize += img.size;
+        return this.uploadAndCreateFile(
+          img,
+          locId,
+          parentDirectoryType,
+          parentId,
+          fileCategory._id,
+        );
+      });
 
       // Run uploads/creates in parallel
       const createdFiles = await Promise.all(tasks);
@@ -1309,6 +1319,111 @@ export class DriveService {
       }
     }
   }
+  async downloadAndConvertToWebP(id: string) {
+    const file = await this.fileModel.findById(id);
+    if (!file) return;
+    if (!allowedImageMimeTypes.includes(file.metaData.mimeType)) return;
+
+    try{
+      var response = await axios.get(file.metaData.url, {
+      responseType: 'arraybuffer',
+      timeout: 90000, // Increased timeout for larger images
+      maxContentLength: 50 * 1024 * 1024, // 50MB limit
+      validateStatus: (status) => status === 200, // Only accept 200 OK
+    });
+    }catch(error){
+      console.error("BROKEN FILE:",file.metaData.url);
+      return;
+    }
+
+    const imageBuffer = Buffer.from(response.data);
+    if (!imageBuffer || imageBuffer.length === 0) return;
+
+    const pseudofile = {
+      fieldname: 'file',
+      originalname: file.metaData.originalName,
+      encoding: '7bit',
+      mimetype: 'image/webp',
+      size: imageBuffer.length,
+      buffer: imageBuffer,
+      stream: streamifier.createReadStream(imageBuffer),
+      destination: '',
+      filename: file.metaData.originalName,
+      path: '', // Since you're not saving it to disk
+    };
+
+    let webpFile = await FileUploadUtils.convertToWebP(pseudofile);
+    webpFile = await FileUploadUtils.compressImage(webpFile);
+
+    const s3 = await this.s3Service.s3_upload(
+      webpFile.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      manipulateImageName(webpFile.originalname),
+      webpFile.mimetype,
+    );
+    console.log('B3 S3 fileee:', s3);
+    //2. Upload thumbnail
+    const thumbnail = await FileUploadUtils.compressThumbnail(webpFile);
+    const thumbnailS3 = await this.s3Service.s3_upload(
+      thumbnail.buffer,
+      process.env.AWS_S3_BUCKET_NAME,
+      `thumbnails/${manipulateImageName(webpFile.originalname)}`,
+      thumbnail.mimetype,
+    );
+
+    await this.fileModel.updateOne(
+      { _id: file._id },
+      {
+        $set: {
+          metaData: {
+            mimeType: webpFile.mimetype,
+            url: s3.Location,
+            thumbnailUrl: thumbnailS3.Location,
+            size: webpFile.size,
+          },
+        },
+      },
+    );
+
+    return {
+      success: true,
+      message: 'all good',
+    };
+  }
+  async processAllFilesToWebP() {
+  const cursor = this.fileModel
+  .find({
+    'metaData.mimeType': {
+      $in: allowedImageMimeTypes,
+      $nin: ['image/webp'],
+    },
+  })
+  .cursor();
+
+  const CONCURRENCY = 10; // 🔥 tune this (3–10 max)
+  let batch: Promise<any>[] = [];
+
+  for await (const file of cursor) {
+    batch.push(this.downloadAndConvertToWebP(file._id.toString()));
+
+    if (batch.length === CONCURRENCY) {
+      await Promise.allSettled(batch); // prevents crash
+      batch = [];
+    }
+  }
+  // process remaining
+  if (batch.length > 0) {
+    await Promise.allSettled(batch);
+  }
+
+  console.log('✅ All files processed');
+    return {
+      success: true,
+      message: 'all good',
+    };
+
+}
+
   async updateFile(
     id: string,
     newFile: Express.Multer.File,
@@ -1360,9 +1475,7 @@ export class DriveService {
         parentDirectory: new mongoose.Types.ObjectId(locationId),
       };
       if (existingFiles && existingFiles.length > 0) {
-        let existingFileIdsArray = existingFiles
-          .split(',');
-       ;
+        let existingFileIdsArray = existingFiles.split(',');
         oldFileQuery['_id'] = {
           $nin: existingFileIdsArray.map(
             (id) => new mongoose.Types.ObjectId(id),
@@ -1600,7 +1713,7 @@ export class DriveService {
 
   async deleteFolder(id: string, user: DecodedUser) {
     try {
-      console.log("Delete folder called with id:", id);
+      console.log('Delete folder called with id:', id);
       if (!isValidObjectId(id)) {
         return { success: false, message: 'Invalid folder ID' };
       }
@@ -1610,7 +1723,6 @@ export class DriveService {
       // } else if (user.userType == UserTypes.ADMIN) {
       //   userDetails = await this.adminModel.findById(user.id);
       // }
-
 
       const folder = await this.folderModel.findById(id);
       if (!folder) {
@@ -1622,7 +1734,9 @@ export class DriveService {
       });
       let fileIds = files.map((file) => file._id);
       fileIds.map((fileId) => this.deleteFile(fileId.toString(), user));
-      await this.folderModel.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+      await this.folderModel.deleteOne({
+        _id: new mongoose.Types.ObjectId(id),
+      });
 
       return {
         success: true,
@@ -1682,15 +1796,15 @@ export class DriveService {
     }
   }
 
-  async removeImagesFromFolder(folderId:string,images:string[]){
+  async removeImagesFromFolder(folderId: string, images: string[]) {
     try {
       if (!isValidObjectId(folderId)) {
         return { success: false, message: 'Invalid folderId' };
       }
       let folder = await this.folderModel.findById(folderId);
-      if(!folder){
+      if (!folder) {
         folder = await this.driveModel.findById(folderId);
-        if(!folder){
+        if (!folder) {
           return { success: false, message: 'Folder or Drive not found' };
         }
       }
@@ -1699,13 +1813,13 @@ export class DriveService {
           if (isValidObjectId(imageId)) {
             const file = await this.fileModel.findById(imageId);
             console.log('file to be deleted:', file);
-            if(file && file.parentDirectory.toString() === folderId){
+            if (file && file.parentDirectory.toString() === folderId) {
               const fileUrl = file.metaData.url;
               const pathname = new URL(fileUrl).pathname;
               const fileName = pathname.startsWith('/')
                 ? pathname.slice(1)
                 : pathname;
-    
+
               await this.s3Service.s3_delete(
                 process.env.AWS_S3_BUCKET_NAME,
                 fileName,
@@ -1726,5 +1840,4 @@ export class DriveService {
       return { success: false, message: 'Failed to remove images from folder' };
     }
   }
-
 }

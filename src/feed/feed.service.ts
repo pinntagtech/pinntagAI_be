@@ -38,7 +38,7 @@ export class FeedService {
             let: {
               userId: new mongoose.Types.ObjectId(user.id),
               targetId: '$creator',
-              targetType: Business.name,
+              // targetType: Business.name,
             },
             pipeline: [
               {
@@ -48,7 +48,7 @@ export class FeedService {
                       { $eq: ['$follower', '$$userId'] },
                       { $eq: ['$followerType', 'User'] },
                       { $eq: ['$following', '$$targetId'] },
-                      { $eq: ['$followingType', '$$targetType'] },
+                      // { $eq: ['$followingType', '$$targetType'] },
                       { $eq: ['$isBlocked', false] },
                     ],
                   },
@@ -74,7 +74,6 @@ export class FeedService {
             ],
           },
         },
-
         {
           $lookup: {
             from: 'media',
@@ -151,6 +150,25 @@ export class FeedService {
             as: 'agendaContent',
           },
         },
+        {
+          $lookup: {
+            from: 'checkinfeeds',
+            let: { contentId: '$content', feedType: '$feedType' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$$feedType', 'CheckIn'] },
+                      { $eq: ['$_id', '$$contentId'] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'checkInContent',
+          },
+        },
         // Merge all content into a single field
         {
           $addFields: {
@@ -172,6 +190,10 @@ export class FeedService {
                   {
                     case: { $eq: ['$feedType', 'Agenda'] },
                     then: { $arrayElemAt: ['$agendaContent', 0] },
+                  },
+                  {
+                    case: { $eq: ['$feedType', 'CheckIn'] },
+                    then: { $arrayElemAt: ['$checkInContent', 0] },
                   },
                 ],
                 default: null,

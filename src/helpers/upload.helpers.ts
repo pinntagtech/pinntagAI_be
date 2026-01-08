@@ -36,35 +36,63 @@ export class FileUploadUtils {
   //   storage: null,
   //   preservePath: false,
   // };
-  static compressImage = async function (
-    file: Express.Multer.File,
-  ): Promise<Express.Multer.File> {
-    const compressedImageBuffer = await sharp(file.buffer)
-      .jpeg({ quality: 80 })
-      .toBuffer();
-    return {
-      ...file,
-      buffer: compressedImageBuffer,
-      mimetype: 'image/jpeg',
-      size: compressedImageBuffer.length,
-    };
-  };
-  static compressThumbnail = async function (
+  static async convertToWebP(
     file: Express.Multer.File,
   ): Promise<Express.Multer.File> {
     try {
-      const compressedThumbnailBuffer = await sharp(file.buffer)
-        .resize(200, 200, { fit: 'cover' })
-        .jpeg({ quality: 50 })
+      const webpBuffer = await sharp(file.buffer)
+        .webp({ quality: 90 }) // Adjust quality as needed (1-100)
         .toBuffer();
+
+      // Update file properties
       return {
         ...file,
-        buffer: compressedThumbnailBuffer,
-        mimetype: 'image/jpeg',
-        size: compressedThumbnailBuffer.length,
+        buffer: webpBuffer,
+        mimetype: 'image/webp',
+        size: webpBuffer.length,
+        originalname: file.originalname.replace(/\.[^.]+$/, '.webp'),
       };
-    } catch (err) {
-      console.error('Error:', err);
+    } catch (error) {
+      console.error('Error converting to WebP:', error);
+      throw new Error('Failed to convert image to WebP format');
     }
-  };
+  }
+  static async compressImage(
+    file: Express.Multer.File,
+  ): Promise<Express.Multer.File> {
+    try {
+      const compressedBuffer = await sharp(file.buffer)
+        .webp({ quality: 80, effort: 6 }) // Higher effort = better compression
+        .toBuffer();
+
+      return {
+        ...file,
+        buffer: compressedBuffer,
+        size: compressedBuffer.length,
+      };
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      throw new Error('Failed to compress image');
+    }
+  }
+  static async compressThumbnail(
+    file: Express.Multer.File,
+  ): Promise<Express.Multer.File> {
+    try {
+      const thumbnailBuffer = await sharp(file.buffer)
+        .resize(200, 200, { fit: 'cover' }) // Adjust size as needed
+        .webp({ quality: 70 })
+        .toBuffer();
+
+      return {
+        ...file,
+        buffer: thumbnailBuffer,
+        mimetype: 'image/webp',
+        size: thumbnailBuffer.length,
+      };
+    } catch (error) {
+      console.error('Error creating thumbnail:', error);
+      throw new Error('Failed to create thumbnail');
+    }
+  }
 }

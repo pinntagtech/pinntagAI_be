@@ -398,4 +398,20 @@ export class DriveController {
       throw new BadRequestException(result.message);
     }
   }
+
+  // @Post('convertToWebp')
+  // async convertToWebp() {
+  //   const result = await this.driveService.processAllFilesToWebP();
+  //   if (result.success) {
+  //     return {
+  //       message: result.message,
+  //       // data: result.data,
+  //     };
+  //   } else {
+  //     throw new BadRequestException(result.message);
+  //   }
+  // }
+
+
+
 }

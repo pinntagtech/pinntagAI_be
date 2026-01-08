@@ -2357,7 +2357,7 @@ export class BusinessService {
           },
         );
       }
-      if (updateObj.logo) this.generateBusinessTemplateQR(businessId);
+      // if (updateObj.logo) this.generateBusinessTemplateQR(businessId);
       if (
         updateObj.tags &&
         updateObj.tags.length > 0 &&
