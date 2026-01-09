@@ -129,7 +129,7 @@ SchemaFactory.createForClass(StripeAccountStatus);
 @Schema({ _id:false})
 export class QRTemplates {
   @Prop()
-  promotionQR:string;
+  flierPamplateUrl:string;
 }
 
 export const QRTemplatesSchema = SchemaFactory.createForClass(QRTemplates);

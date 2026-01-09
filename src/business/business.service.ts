@@ -2324,7 +2324,7 @@ export class BusinessService {
           },
         );
       }
-      // if (updateObj.logo) this.generateBusinessTemplateQR(businessId);
+      if (updateObj.logo) this.generateBusinessTemplateQR(businessId);
       if (
         updateObj.tags &&
         updateObj.tags.length > 0 &&
@@ -7237,7 +7237,7 @@ export class BusinessService {
         {
           $set: {
             QRTemplates: {
-              promotionQR: uploaded ? uploaded.metaData.url : '',
+              flierPamplateUrl: uploaded ? uploaded.metaData.url : '',
             },
           },
         },
@@ -7292,7 +7292,7 @@ export class BusinessService {
         },
       );
 
-      await this.generateBusinessTemplateQR(businessId)
+      // await this.generateBusinessTemplateQR(businessId)
       return {
         success: true,
         message: 'Business QR code generated successfully',
