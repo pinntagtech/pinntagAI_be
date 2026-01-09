@@ -1326,6 +1326,7 @@ export class AdminService {
           placeList.data[0].placePrediction.placeId,
           placeList.sessionToken,
           addressLine1.trim(),
+          placeList.data[0].businessName,
         );
         lat = placeDetails.data['latitude']
           ? parseFloat(placeDetails.data['latitude'])
@@ -2941,6 +2942,7 @@ export class AdminService {
         placeList.data[0].placePrediction.placeId,
         placeList.sessionToken,
         address,
+        placeList.data[0].businessName,
       );
 
       // createObj['creator'] = new mongoose.Types.ObjectId(user.id);

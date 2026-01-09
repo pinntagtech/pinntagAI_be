@@ -94,8 +94,12 @@ export class GoogleService {
       return {
         success: true,
         message: 'Recommendations fetched successfully',
-        data: response.data.suggestions,
-        // postalCode: postalCode,
+        data: response.data.suggestions.map((suggestion: any) => ({
+          ...suggestion,
+          businessName: this.extractBusinessName(
+            suggestion.placePrediction.text.text,
+          ),
+        })),
         sessionToken: sessionToken,
       };
     } catch (error) {
@@ -173,11 +177,17 @@ export class GoogleService {
       postalCode,
     };
   }
+  private extractBusinessName(fullText: string): string | null {
+    // Extract text before " at " or first comma
+    const match = fullText.match(/^([^,]+?)(?:\s+at\s+|,)/);
+    return match ? match[1].trim() : null;
+  }
 
   async getPlaceDetails(
     placeId: string,
     sessionToken: string,
     selectedAddress: string,
+    businessName: string,
   ) {
     try {
       const params = {
@@ -199,6 +209,9 @@ export class GoogleService {
       address['fullAddressString'] = response.data.formattedAddress;
 
       address['placeId'] = placeId;
+      if (businessName) {
+        address['address1'] = businessName + ' ' + address['address1'];
+      }
 
       return {
         success: true,

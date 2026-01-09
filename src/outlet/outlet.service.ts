@@ -1286,6 +1286,7 @@ export class OutletService {
         placeList.data[0].placePrediction.placeId,
         placeList.sessionToken,
         address,
+        placeList.data[0].businessName,
       );
       const foundOutlet = await this.outletModel.findOne({
         refId: row.referenceId,

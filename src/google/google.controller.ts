@@ -46,11 +46,13 @@ export class GoogleController {
     @Body('placeId') placeId: string,
     @Body('sessionToken') sessionToken: string,
     @Body('selectedAddress') selectedAddress: string,
+    @Body('businessName') businessName: string,
   ) {
     const result = await this.googleService.getPlaceDetails(
       placeId,
       sessionToken,
       selectedAddress,
+      businessName,
     );
 
     if (result.success) {

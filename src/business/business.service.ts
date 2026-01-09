@@ -7191,12 +7191,14 @@ export class BusinessService {
     );
     const source = fs.readFileSync(filePath, 'utf8');
     const template = handlebars.compile(source);
+    console.log("CREATED TEMPLATE:",template);
     return template(data);
   }
 
   async generateBusinessTemplateQR(businessId: string) {
     try {
       const business = await this.businessModel.findById(businessId);
+      console.log("Business QR:",business.QRCode);
       const html = this.renderTemplate('pinntag.promotion', {
         businessLogo: business.logo,
         businessName: business.name,
