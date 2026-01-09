@@ -532,6 +532,12 @@ export class StripeService {
         await this.chargeRefunded(charge);
         break;
       }
+
+      case 'charge.failed': {
+        const charge = event.data.object as Stripe.Charge;
+        await this.chargeFailed(charge);
+        break;
+      }
       case 'account.updated': {
         const acct = event.data.object as Stripe.Account;
         await this.onConnectAccountUpdated(acct);
@@ -1117,6 +1123,27 @@ export class StripeService {
       { paymentIntentId: piId },
       {
         $set: { status: 'refunded', refundedAt: new Date() },
+      },
+    );
+  }
+  private async chargeFailed(charge: Stripe.Charge) {
+    // charge.payment_intent can be string | PaymentIntent
+    const piId =
+      typeof charge.payment_intent === 'string'
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+
+    if (!piId) return;
+
+    // Optional: verify this belongs to a FlashDeal purchase
+    const purchase = await this.consumerPurchaseModel.findOne({
+      paymentIntentId: piId,
+    });
+    if (!purchase) return;
+    await this.consumerPurchaseModel.updateOne(
+      { paymentIntentId: piId },
+      {
+        $set: { status: ConsumerPurchaseStatus.FAILED, failedAt: new Date() },
       },
     );
   }

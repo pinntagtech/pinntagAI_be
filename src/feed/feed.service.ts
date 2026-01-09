@@ -215,11 +215,59 @@ export class FeedService {
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creatorDetails',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  description: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: {
+            path: '$creatorDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'contentDetails.users',
+            foreignField: '_id',
+            as: 'taggedUsers',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  description: 1,
+                  profilePhoto: 1,
+                },
+              },
+            ],
+          },
+        },
 
         {
           $project: {
             feedType: 1,
             contentDetails: 1,
+            creator: 1,
+            creatorType: 1,
+            creatorDetails: 1,
+            taggedUsers: 1,
             createdAt: 1,
             visibility: 1,
             isFollowedByMe: 1,
@@ -256,11 +304,7 @@ export class FeedService {
       };
     }
   }
-  async getBusinessCardFeed(
-    user: DecodedUser,
-    page: number,
-    limit: number,
-  ) {
+  async getBusinessCardFeed(user: DecodedUser, page: number, limit: number) {
     try {
       let query: any = {
         creator: new mongoose.Types.ObjectId(user.businessProfile),
@@ -451,7 +495,7 @@ export class FeedService {
   ) {
     try {
       let query: any = {
-        visibility: FeedVisibility.PUBLIC
+        visibility: FeedVisibility.PUBLIC,
       };
       let userId = new mongoose.Types.ObjectId(user.id);
 
