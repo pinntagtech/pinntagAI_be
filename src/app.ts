@@ -6,12 +6,13 @@ import cors from "cors";
 import indexRouter from "./api/routes/index.routes.js";
 
 // Add CORS and allowed origins as needed
-const allowedOrigins = [
-  "http://localhost:4200",
-  "https://your-frontend-domain.com",
-  "https://pre-dev.api.pinntag.com",
-  "http://localhost:5173",
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+  : [
+      "http://localhost:4200",
+      "http://localhost:5173",
+      "https://pre-dev.api.pinntag.com",
+    ];
 
 export const buildApp = () => {
   const app = express();
