@@ -7209,7 +7209,7 @@ export class BusinessService {
 
       const file = {
         fieldname: 'file', // generic field name, since we don't have an actual form field
-        originalname: 'promotionTemplate', // original file name (from URL or headers)
+        originalname: 'promotionTemplate.png', // original file name (from URL or headers)
         encoding: '7bit', // file encoding (typical for form uploads)
         mimetype: 'image/webp', // MIME type of the image
         size: imageBuffer.length, // size of the file in bytes

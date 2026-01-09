@@ -218,6 +218,7 @@ export class DriveService {
       // let createdFile = await this.saveFileInDB(file,parentId,locationId,fileCategoryId,parentDirectoryType,fileType,parentType);
       let createdFile = null;
       if (fileType === FileType.IMAGE) {
+        console.log("It is infact IMAGEEE:");
         createdFile = await this.uploadAndCreateImage(
           file,
           locationId,
@@ -1621,7 +1622,7 @@ export class DriveService {
 
     const file = {
       fieldname: 'file',
-      originalname: originalName,
+      originalname: originalName+'.png',
       encoding: '7bit',
       mimetype: 'image/png',
       size: qrBuffer.length,
@@ -1638,6 +1639,7 @@ export class DriveService {
       fileCategoryId,
       file,
     );
+    console.log("GENERATED QR in generateQrCode:",result.data.metaData.url);
 
     return result;
   }
