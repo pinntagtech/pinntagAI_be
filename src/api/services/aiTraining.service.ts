@@ -1601,6 +1601,66 @@ export class AITrainingService {
       const answeredCount = questionsWithStatus.filter((q) => q.isAnswered).length;
       const remainingCount = questionsWithStatus.filter((q) => !q.isAnswered).length;
 
+      // Calculate correct metadata with proper percentages (capped at 100%)
+      const totalQuestionsAllPhases = phaseSummary.reduce((sum, p) => sum + p.totalQuestions, 0);
+      const totalAnsweredAllPhases = training.responses.length;
+      const totalRequiredAllPhases = phaseSummary.reduce((sum, p) => sum + p.requiredQuestions, 0);
+
+      // Calculate per-phase progress with percentages
+      const phaseProgressWithPercentage = {
+        basic: {
+          total: training.metadata?.phaseProgress?.basic?.total || 0,
+          answered: training.metadata?.phaseProgress?.basic?.answered || 0,
+          completed: training.metadata?.phaseProgress?.basic?.completed || false,
+          percentage: Math.min(
+            Math.round(
+              ((training.metadata?.phaseProgress?.basic?.answered || 0) /
+                (training.metadata?.phaseProgress?.basic?.total || 1)) *
+                100
+            ),
+            100
+          ),
+        },
+        standard: {
+          total: training.metadata?.phaseProgress?.standard?.total || 0,
+          answered: training.metadata?.phaseProgress?.standard?.answered || 0,
+          completed: training.metadata?.phaseProgress?.standard?.completed || false,
+          percentage: Math.min(
+            Math.round(
+              ((training.metadata?.phaseProgress?.standard?.answered || 0) /
+                (training.metadata?.phaseProgress?.standard?.total || 1)) *
+                100
+            ),
+            100
+          ),
+        },
+        advanced: {
+          total: training.metadata?.phaseProgress?.advanced?.total || 0,
+          answered: training.metadata?.phaseProgress?.advanced?.answered || 0,
+          completed: training.metadata?.phaseProgress?.advanced?.completed || false,
+          percentage: Math.min(
+            Math.round(
+              ((training.metadata?.phaseProgress?.advanced?.answered || 0) /
+                (training.metadata?.phaseProgress?.advanced?.total || 1)) *
+                100
+            ),
+            100
+          ),
+        },
+      };
+
+      // Build corrected metadata
+      const correctedMetadata = {
+        totalQuestions: totalQuestionsAllPhases,
+        answeredQuestions: Math.min(totalAnsweredAllPhases, totalQuestionsAllPhases),
+        requiredQuestions: totalRequiredAllPhases,
+        completionPercentage: Math.min(
+          Math.round((totalAnsweredAllPhases / totalQuestionsAllPhases) * 100),
+          100
+        ),
+        phaseProgress: phaseProgressWithPercentage,
+      };
+
       return {
         trainingStatus: training.trainingStatus,
         currentPhase: training.currentPhase,
@@ -1616,7 +1676,7 @@ export class AITrainingService {
           remainingCount,
           questions: questionsWithStatus,
         },
-        metadata: training.metadata,
+        metadata: correctedMetadata,
         completedAt: training.completedAt,
       };
     } catch (error: any) {
