@@ -1571,6 +1571,17 @@ export class AITrainingService {
             "Advanced to next phase"
           );
         }
+
+        // If advanced phase is complete, add it to completedPhases
+        if (training.currentPhase === TrainingPhase.ADVANCED && !training.completedPhases.includes(TrainingPhase.ADVANCED as any)) {
+          training.completedPhases.push(TrainingPhase.ADVANCED as any);
+          await training.save();
+
+          logger.info(
+            { businessId },
+            "Advanced phase marked as completed"
+          );
+        }
       }
 
       // Determine which phase to return questions for
