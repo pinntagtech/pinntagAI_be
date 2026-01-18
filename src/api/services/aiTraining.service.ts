@@ -1571,9 +1571,20 @@ export class AITrainingService {
             "Advanced to next phase"
           );
         }
+      }
 
-        // If advanced phase is complete, add it to completedPhases
-        if (training.currentPhase === TrainingPhase.ADVANCED && !training.completedPhases.includes(TrainingPhase.ADVANCED as any)) {
+      // Check if advanced phase is complete (separate check since it has no next phase)
+      if (training.currentPhase === TrainingPhase.ADVANCED && !training.completedPhases.includes(TrainingPhase.ADVANCED as any)) {
+        const advancedPhaseQuestions = getQuestionsByPhaseUtil(
+          training.industry as BusinessIndustries,
+          TrainingPhase.ADVANCED,
+          training.subCategory as BusinessSubCategory
+        );
+        const advancedPhaseAnswered = advancedPhaseQuestions.filter((q) =>
+          responseMap.has(q.id)
+        ).length;
+
+        if (advancedPhaseAnswered === advancedPhaseQuestions.length) {
           training.completedPhases.push(TrainingPhase.ADVANCED as any);
           await training.save();
 
@@ -1672,10 +1683,55 @@ export class AITrainingService {
         phaseProgress: phaseProgressWithPercentage,
       };
 
+      // Recalculate completedPhases based on actual answered questions
+      const correctedCompletedPhases: TrainingPhase[] = [];
+
+      // Check each phase independently
+      const basicQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.BASIC,
+        training.subCategory as BusinessSubCategory
+      );
+      const basicAnswered = basicQuestions.filter((q) => responseMap.has(q.id)).length;
+      if (basicAnswered === basicQuestions.length) {
+        correctedCompletedPhases.push(TrainingPhase.BASIC);
+      }
+
+      const standardQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.STANDARD,
+        training.subCategory as BusinessSubCategory
+      );
+      const standardAnswered = standardQuestions.filter((q) => responseMap.has(q.id)).length;
+      if (standardAnswered === standardQuestions.length) {
+        correctedCompletedPhases.push(TrainingPhase.STANDARD);
+      }
+
+      const advancedQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.ADVANCED,
+        training.subCategory as BusinessSubCategory
+      );
+      const advancedAnswered = advancedQuestions.filter((q) => responseMap.has(q.id)).length;
+      if (advancedAnswered === advancedQuestions.length) {
+        correctedCompletedPhases.push(TrainingPhase.ADVANCED);
+      }
+
+      // Determine correct training status
+      // "completed" only if all phases are done, "in_progress" if at least one response exists, "not_started" otherwise
+      let correctedTrainingStatus: string;
+      if (correctedCompletedPhases.length === 3) {
+        correctedTrainingStatus = "completed";
+      } else if (training.responses.length > 0) {
+        correctedTrainingStatus = "in_progress";
+      } else {
+        correctedTrainingStatus = "not_started";
+      }
+
       return {
-        trainingStatus: training.trainingStatus,
+        trainingStatus: correctedTrainingStatus,
         currentPhase: training.currentPhase,
-        completedPhases: training.completedPhases,
+        completedPhases: correctedCompletedPhases,
         totalPhases: 3,
         phaseSummary,
         phaseAdvanced: phaseChanged,
@@ -1688,7 +1744,7 @@ export class AITrainingService {
           questions: questionsWithStatus,
         },
         metadata: correctedMetadata,
-        completedAt: training.completedAt,
+        completedAt: correctedTrainingStatus === "completed" ? training.completedAt : undefined,
       };
     } catch (error: any) {
       logger.error({ error, businessId }, "Error getting training state");
