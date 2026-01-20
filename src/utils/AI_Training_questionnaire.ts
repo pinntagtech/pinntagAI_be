@@ -39,115 +39,238 @@ export interface CategoryQuestions {
   specificQuestions: AI_Training_Questionnaire_Type[];
 }
 
+// MergedCategories (Business Types)
 export enum BusinessIndustries {
-  FOOD_DRINK = "Food & Drink",
-  RETAIL = "Retail",
-  HEALTH_BEAUTY = "Health & Beauty",
-  FITNESS_WELLNESS = "Fitness & Wellness",
   ENTERTAINMENT = "Entertainment",
-  AUTOMOTIVE_SERVICES = "Automotive Services",
-  HOME_SERVICES = "Home Services",
-  PET_SERVICES = "Pet Services",
-  HOSPITALITY = "Hospitality",
-  PROFESSIONAL_SERVICES = "Professional Services",
+  CLASSES_WORKSHOPS = "Classes and Workshops",
+  FOOD_DRINK = "Food & Drink",
+  SPORTS_OUTDOOR = "Sports & Outdoor",
+  LOCAL_ATTRACTIONS = "Local Attractions",
+  RETAIL_SHOPPING = "Retail & Shopping",
+  HEALTH_WELLNESS = "Health & Wellness",
+  HOME_PROFESSIONAL_SERVICES = "Home & Professional Services",
+  PLACES_TO_STAY = "Places to Stay",
+}
+
+// EventCategories (Event Types)
+export enum EventCategories {
+  LIVE_MUSIC = "Live Music",
+  NIGHTLIFE_MUSIC = "Nightlife & Music",
+  COMEDY = "Comedy",
+  FILM_THEATRE = "Film & Theatre",
+  WORKSHOPS_CLASSES = "Workshops & Classes",
+  FOOD_DRINK_SPECIALS = "Food & Drink Specials",
+  TRIVIA_QUIZ_NIGHT = "Trivia & Quiz Night",
+  WATCH_PARTY = "Watch Party",
+  FITNESS_WELLNESS = "Fitness & Wellness",
+  SPORTS_ACTIVE_LIFE = "Sports & Active Life",
+  OUTDOOR_EXPERIENCE = "Outdoor Experience",
+  ARTS_CULTURE = "Arts & Culture",
+  SEASONAL_HOLIDAY_FESTIVAL = "Seasonal / Holiday Festival",
+  RETAIL_EVENT = "Retail Event",
+  MARKET_POPUP = "Market / Pop-up",
+  WELLNESS_WORKSHOP = "Wellness Workshop",
+  DIY_SKILL_WORKSHOP = "DIY & Skill Workshop",
+  LIVE_MUSIC_ENTERTAINMENT = "Live Music & Entertainment",
+  SEASONAL_HOLIDAY_EVENT = "Seasonal / Holiday Event",
+  GUEST_SOCIAL = "Guest Social",
+  FOOD_TRUCKS = "Food Trucks",
 }
 
 export enum BusinessSubCategory {
+  // Entertainment
+  LIVE_MUSIC_VENUE = "Live Music Venue",
+  NIGHTCLUB_DANCE_VENUE = "Nightclub / Dance Venue",
+  COMEDY_CLUB = "Comedy Club",
+  CINEMA = "Cinema",
+  THEATRE_PERFORMING_ARTS = "Theatre / Performing Arts",
+  ARCADE_GAMING_VENUE = "Arcade / Gaming Venue",
+  CULTURAL_CENTRE = "Cultural Centre",
+
+  // Classes and Workshops
+  COOKING_STUDIO = "Cooking Studio",
+  ART_CRAFT_STUDIO = "Art & Craft Studio",
+  DANCE_SCHOOL = "Dance School",
+  MUSIC_PERFORMING_ARTS_SCHOOL = "Music / Performing Arts School",
+  LANGUAGE_CULTURAL_SCHOOL = "Language & Cultural School",
+  SKILL_TRAINING_STUDIO = "Skill Training Studio",
+
   // Food & Drink
   RESTAURANT = "Restaurant",
-  CAFE_COFFEE_SHOP = "Cafe/Coffee Shop",
-  BAKERY = "Bakery",
-  BAR = "Bar",
-  JUICE_BAR = "Juice Bar",
-  FOOD_TRUCK = "Food Truck",
-  CATERING_SERVICES = "Catering Services",
-  CLOUD_KITCHEN = "Cloud Kitchen",
-  FROZEN_DESSERTS = "Frozen Desserts",
+  CAFE_COFFEE_SHOP = "Café / Coffee Shop",
+  BAR_PUB = "Bar / Pub",
+  BAKERY_DESSERT_SHOP = "Bakery & Dessert Shop",
+  BREWERY_WINERY = "Brewery & Winery",
+  FOOD_TRUCK_STREET_FOOD = "Food Truck / Street Food",
 
-  // Retail
-  ELECTRONICS_GADGETS = "Electronics & Gadgets",
-  CLOTHING_APPAREL = "Clothing & Apparel",
-  CONVENIENCE_STORE = "Convenience Store",
-  HOME_DECOR = "Home Decor",
-  STATIONERY = "Stationery",
-  GIFT_SHOP = "Gift Shop",
-  TOY_HOBBY_STORE = "Toy & Hobby Store",
-  JEWELRY_ACCESSORIES = "Jewelry & Accessories",
-  SMOKE_SHOP = "Smoke Shop",
-  THRIFT_STORE = "Thrift Store",
-  BEAUTY_COSMETICS = "Beauty & Cosmetics",
-  PET_SUPPLIES = "Pet Supplies",
+  // Sports & Outdoor
+  GYM_FITNESS_STUDIO = "Gym / Fitness Studio",
+  YOGA_PILATES_STUDIO = "Yoga / Pilates Studio",
+  SPORTS_FACILITY = "Sports Facility",
+  ADVENTURE_ACTIVITY_OPERATOR = "Adventure & Activity Operator",
+  PARK_RECREATION_CENTRE = "Park / Recreation Centre",
 
-  // Health & Beauty
-  SALON = "Salon",
-  SKINCARE_AESTHETICS = "Skincare/ Aesthetics",
-  SPA_MASSAGE = "Spa & Massage",
-  NAIL_BAR = "Nail Bar",
-  COSMETIC_SERVICES = "Cosmetic Services",
-  DERMATOLOGY_CLINIC = "Dermatology Clinic",
-  TANNING_STUDIO = "Tanning Studio",
+  // Local Attractions
+  MUSEUM = "Museum",
+  ART_GALLERY = "Art Gallery",
+  HISTORICAL_SITE_LANDMARK = "Historical Site / Landmark",
+  CULTURAL_ATTRACTION = "Cultural Attraction",
+  BOTANICAL_GARDEN_PARK = "Botanical Garden / Park",
+
+  // Retail & Shopping
+  FASHION_APPAREL = "Fashion & Apparel",
+  SHOES_ACCESSORIES = "Shoes & Accessories",
+  SPECIALTY_BOUTIQUE_STORE = "Specialty / Boutique Store",
+  GROCERY_MARKET = "Grocery / Market",
+  POPUP_SEASONAL_RETAIL = "Pop-up / Seasonal Retail",
+
+  // Health & Wellness
+  SPA_MASSAGE_CENTRE = "Spa & Massage Centre",
+  BEAUTY_SALON = "Beauty Salon",
+  AESTHETIC_CLINIC = "Aesthetic Clinic",
+  MENTAL_WELLNESS_CENTRE = "Mental Wellness Centre",
+  WELLNESS_STUDIO = "Wellness Studio",
+
+  // Home & Professional Services
+  HOME_REPAIR_MAINTENANCE = "Home Repair & Maintenance",
+  CLEANING_HOUSEKEEPING = "Cleaning & Housekeeping",
+  GARDENING_LANDSCAPING = "Gardening & Landscaping",
+  AUTOMOTIVE_SERVICES = "Automotive Services",
+  EDUCATION_TUTORING = "Education & Tutoring",
+  PET_CARE_GROOMING = "Pet Care & Grooming",
+
+  // Places to Stay
+  HOTEL_RESORT = "Hotel / Resort",
+  HOSTEL_GUESTHOUSE = "Hostel / Guesthouse",
+  BED_BREAKFAST = "Bed & Breakfast",
+  VACATION_RENTAL_SERVICED_APARTMENT = "Vacation Rental / Serviced Apartment",
+  CAMPING_GLAMPING_SITE = "Camping / Glamping Site",
+}
+
+// Event Subcategories
+export enum EventSubCategory {
+  // Live Music
+  BAND_GIG = "Band Gig",
+  ACOUSTIC_NIGHT = "Acoustic Night",
+  TOURING_ARTIST = "Touring Artist",
+  LOCAL_MUSIC_SHOWCASE = "Local Music Showcase",
+  ACOUSTIC_SET = "Acoustic Set",
+  LIVE_BAND = "Live Band",
+
+  // Nightlife & Music
+  DJ_NIGHT = "DJ Night",
+  KARAOKE_NIGHT = "Karaoke Night",
+  MUSIC_BINGO = "Music Bingo",
+  DANCE_PARTY = "Dance Party",
+
+  // Comedy
+  STANDUP = "Stand-up",
+  IMPROV = "Improv",
+  SKETCH_NIGHT = "Sketch Night",
+
+  // Film & Theatre
+  MOVIE_SCREENING = "Movie Screening",
+  STAGE_PLAY = "Stage Play",
+  DANCE_PERFORMANCE = "Dance Performance",
+
+  // Workshops & Classes
+  COOKING_CLASS = "Cooking Class",
+  MIXOLOGY = "Mixology",
+  DANCE_CLASS = "Dance Class",
+  ART_CRAFT = "Art & Craft",
+  DIY_SKILL_WORKSHOP = "DIY / Skill Workshop",
+
+  // Food & Drink Specials
+  HAPPY_HOUR = "Happy Hour",
+  CHEF_SPECIAL = "Chef Special",
+  TASTING_MENU = "Tasting Menu",
+  LIMITED_TIME_MENU = "Limited-time Menu",
+  CHEFS_DINNER = "Chef's Dinner",
+  WINE_TASTING = "Wine Tasting",
+  THEMED_DINING_NIGHT = "Themed Dining Night",
+
+  // Trivia & Quiz Night
+  PUB_QUIZ = "Pub Quiz",
+  THEMED_TRIVIA = "Themed Trivia",
+
+  // Watch Party
+  SPORTS_VIEWING = "Sports Viewing",
+  CHAMPIONSHIP_SCREENING = "Championship Screening",
+  LIVE_SPORTS_SCREENING = "Live Sports Screening",
 
   // Fitness & Wellness
-  FITNESS_CENTER = "Fitness Center",
-  YOGA_STUDIO = "Yoga Studio",
-  MARTIAL_ARTS = "Martial Arts",
-  PERSONAL_TRAINING = "Personal Training",
-  DANCE_STUDIO = "Dance Studio",
-  PHYSIOTHERAPY = "Physiotherapy",
-  WELLNESS_COACHING = "Wellness Coaching",
-  MEDITATION_CENTER = "Meditation Center",
+  YOGA_SESSION = "Yoga Session",
+  GROUP_FITNESS_CLASS = "Group Fitness Class",
+  BOOTCAMP = "Bootcamp",
+  MEDITATION = "Meditation",
+  YOGA = "Yoga",
+  PILATES = "Pilates",
+  WELLNESS_RETREAT = "Wellness Retreat",
+  SPA_DAY = "Spa Day",
+  WELLNESS_WEEKEND = "Wellness Weekend",
 
-  // Entertainment
-  EVENT_PLANNING = "Event Planning",
-  PARTY_RENTALS = "Party Rentals",
-  AMUSEMENT_CENTER = "Amusement Center",
-  ESCAPE_ROOM = "Escape Room",
-  LOCAL_EXPERIENCES = "Local Experiences",
-  PERFORMER_SERVICES = "Performer Services",
-  KIDS_ENTERTAINMENT = "Kids Entertainment",
-  PHOTOGRAPHY = "Photography",
+  // Sports & Active Life
+  LOCAL_MATCH = "Local Match",
+  TOURNAMENT = "Tournament",
+  RECREATIONAL_LEAGUE = "Recreational League",
 
-  // Automotive Services
-  GARAGE = "Garage",
-  DETAILING = "Detailing",
-  AUTO_ACCESSORIES = "Auto Accessories",
-  RENTAL = "Rental",
-  CUSTOMIZATION = "Customization",
+  // Outdoor Experience
+  GUIDED_HIKE = "Guided Hike",
+  CYCLING_TOUR = "Cycling Tour",
+  ADVENTURE_ACTIVITY = "Adventure Activity",
 
-  // Home Services
-  HOME_CLEANING = "Home Cleaning",
-  ELECTRICAL_SERVICES = "Electrical Services",
-  PLUMBING_SERVICES = "Plumbing Services",
-  PEST_CONTROL = "Pest Control",
-  APPLIANCE_REPAIR = "Appliance Repair",
-  HANDYMAN_SERVICES = "Handyman Services",
-  GARDENING = "Gardening",
-  INTERIOR_DESIGN = "Interior Design",
-  MOVING_STORAGE = "Moving & Storage",
+  // Arts & Culture
+  GALLERY_NIGHT = "Gallery Night",
+  CULTURAL_SHOWCASE = "Cultural Showcase",
+  EXHIBITION_FAIR = "Exhibition / Fair",
+  ART_EXHIBITION = "Art Exhibition",
+  CULTURAL_FAIR = "Cultural Fair",
+  TEMPORARY_EXHIBIT = "Temporary Exhibit",
 
-  // Pet Services
-  PET_GROOMING = "Pet Grooming",
-  PET_TRAINING = "Pet Training",
-  VETERINARY_CLINIC = "Veterinary Clinic",
-  PET_BOARDING = "Pet Boarding",
-  PET_ADOPTION_CENTER = "Pet Adoption Center",
-  PET_SUPPLIES_STORE = "Pet Supplies Store",
-  PET_WALKING_SERVICES = "Pet Walking Services",
+  // Guided Tour
+  MUSEUM_TOUR = "Museum Tour",
+  HERITAGE_WALK = "Heritage Walk",
 
-  // Hospitality
-  HOTEL = "Hotel",
-  BED_BREAKFAST = "Bed & Breakfast",
-  HOMESTAY = "Homestay",
-  HOSTEL = "Hostel",
-  VACATION_RENTALS = "Vacation Rentals",
-  CAMPGROUNDS = "Campgrounds",
+  // Seasonal / Holiday Festival
+  CITY_CELEBRATION = "City Celebration",
+  HOLIDAY_EVENT = "Holiday Event",
 
-  // Professional Services
-  ACCOUNTING_CONSULTANT = "Accounting Consultant",
-  LEGAL_SERVICES = "Legal Services",
-  BUSINESS_CONSULTANT = "Business Consultant",
-  EDUCATION = "Education",
-  TRANSLATION = "Translation",
+  // Retail Event
+  PRODUCT_LAUNCH = "Product Launch",
+  INSTORE_DEMO = "In-store Demo",
+  EXCLUSIVE_PREVIEW = "Exclusive Preview",
+
+  // Market / Pop-up
+  POPUP_MARKET = "Pop-up Market",
+  CRAFT_FAIR = "Craft Fair",
+
+  // Seasonal Sale
+  SEASONAL_SALE = "Seasonal Sale",
+  HOLIDAY_SALE = "Holiday Sale",
+  END_OF_SEASON_SALE = "End-of-Season Sale",
+
+  // Wellness Workshop
+  NUTRITION_SESSION = "Nutrition Session",
+  MINDFULNESS_WORKSHOP = "Mindfulness Workshop",
+  SELF_CARE_CLASS = "Self-care Class",
+
+  // DIY & Skill Workshop
+  HOME_REPAIR_BASICS = "Home Repair Basics",
+  GARDENING_WORKSHOP = "Gardening Workshop",
+  PET_CARE_SESSION = "Pet Care Session",
+
+  // Live Music & Entertainment (Places to Stay)
+  ACOUSTIC_EVENING = "Acoustic Evening",
+  LOUNGE_MUSIC_NIGHT = "Lounge Music Night",
+
+  // Seasonal / Holiday Event (Places to Stay)
+  HOLIDAY_DINNER = "Holiday Dinner",
+  NEW_YEAR_PARTY = "New Year Party",
+
+  // Guest Social
+  TRIVIA_NIGHT = "Trivia Night",
+  GAME_NIGHT = "Game Night",
+  GUEST_MIXER = "Guest Mixer",
 }
 
 // ============================================
@@ -355,6 +478,236 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
   ];
 
 // ============================================
+// ENTERTAINMENT SPECIFIC QUESTIONS
+// ============================================
+
+export const entertainmentQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.ENTERTAINMENT,
+  commonQuestions: [
+    {
+      id: "venue_type",
+      question: "What type of entertainment venue are you?",
+      type: "multiple_choice",
+      options: [
+        "Live Music Venue",
+        "Nightclub / Dance Venue",
+        "Comedy Club",
+        "Cinema",
+        "Theatre / Performing Arts",
+        "Arcade / Gaming Venue",
+        "Cultural Centre",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "event_frequency",
+      question: "How often do you host events?",
+      type: "multiple_choice",
+      options: [
+        "Daily",
+        "Multiple times per week",
+        "Weekly",
+        "Bi-weekly",
+        "Monthly",
+        "Seasonally",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "venue_capacity",
+      question: "What is your venue capacity?",
+      type: "number",
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "ticket_pricing",
+      question: "What is your typical ticket price range?",
+      type: "multiple_choice",
+      options: [
+        "Free entry",
+        "Under $10",
+        "$10-$25",
+        "$25-$50",
+        "$50-$100",
+        "$100+",
+        "Varies by event",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "entertainment_types",
+      question: "What types of entertainment do you offer?",
+      type: "multi_select",
+      options: [
+        "Live bands",
+        "DJ sets",
+        "Stand-up comedy",
+        "Improv shows",
+        "Movies/Film screenings",
+        "Theatre productions",
+        "Dance performances",
+        "Gaming tournaments",
+        "Trivia nights",
+        "Karaoke",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "booking_advance",
+      question: "How far in advance do customers typically book?",
+      type: "multiple_choice",
+      options: [
+        "Same day/Walk-in",
+        "1-3 days",
+        "1 week",
+        "2-4 weeks",
+        "1+ months",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "has_bar_food",
+      question: "Do you serve food and/or drinks?",
+      type: "multiple_choice",
+      options: [
+        "Full bar and food",
+        "Bar only",
+        "Food only",
+        "Snacks/Light fare",
+        "No food or drinks",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "age_restriction",
+      question: "Do you have age restrictions?",
+      type: "multiple_choice",
+      options: [
+        "All ages",
+        "18+",
+        "21+",
+        "Varies by event",
+        "Family-friendly",
+      ],
+      required: true,
+      category: "operations",
+    },
+  ],
+  specificQuestions: [],
+};
+
+// ============================================
+// CLASSES AND WORKSHOPS SPECIFIC QUESTIONS
+// ============================================
+
+export const classesWorkshopsQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.CLASSES_WORKSHOPS,
+  commonQuestions: [
+    {
+      id: "class_type",
+      question: "What type of classes or workshops do you offer?",
+      type: "multiple_choice",
+      options: [
+        "Cooking Studio",
+        "Art & Craft Studio",
+        "Dance School",
+        "Music / Performing Arts School",
+        "Language & Cultural School",
+        "Skill Training Studio",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "class_duration",
+      question: "What is the typical duration of your classes?",
+      type: "multiple_choice",
+      options: [
+        "30-60 minutes",
+        "1-2 hours",
+        "2-3 hours",
+        "Half day",
+        "Full day",
+        "Multiple sessions/weeks",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "class_size",
+      question: "What is your typical class size?",
+      type: "multiple_choice",
+      options: [
+        "Private (1-on-1)",
+        "Small group (2-5)",
+        "Medium group (6-10)",
+        "Large group (11-20)",
+        "Large class (20+)",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "skill_levels",
+      question: "What skill levels do you cater to?",
+      type: "multi_select",
+      options: [
+        "Complete beginners",
+        "Beginners",
+        "Intermediate",
+        "Advanced",
+        "All levels",
+      ],
+      required: true,
+      category: "customer_profile",
+    },
+    {
+      id: "class_pricing",
+      question: "What is your pricing model?",
+      type: "multi_select",
+      options: [
+        "Per class/session",
+        "Class packages",
+        "Monthly membership",
+        "Annual membership",
+        "Drop-in rates",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "materials_included",
+      question: "Are materials/supplies included in the class fee?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "trial_classes",
+      question: "Do you offer trial classes or introductory sessions?",
+      type: "boolean",
+      required: true,
+      category: "marketing",
+    },
+    {
+      id: "private_events",
+      question: "Do you host private events or corporate workshops?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+  ],
+  specificQuestions: [],
+};
+
+// ============================================
 // FOOD & DRINK SPECIFIC QUESTIONS
 // ============================================
 
@@ -448,6 +801,8 @@ export const foodDrinkQuestions: CategoryQuestions = {
         "Specialty coffee",
         "Specialty tea",
         "Fresh juices/smoothies",
+        "Craft cocktails",
+        "Brewery/Winery tasting",
         "No special program",
       ],
       required: true,
@@ -468,14 +823,6 @@ export const foodDrinkQuestions: CategoryQuestions = {
       category: "customer_profile",
     },
     {
-      id: "inventory_to_promote",
-      question:
-        "Are there specific items you need to move more quickly (excess inventory, seasonal items)?",
-      type: "text",
-      required: false,
-      category: "operations",
-    },
-    {
       id: "happy_hour_interest",
       question:
         "Are you interested in promoting happy hour or off-peak specials?",
@@ -485,7 +832,6 @@ export const foodDrinkQuestions: CategoryQuestions = {
     },
   ],
   specificQuestions: [
-    // Restaurant specific
     {
       id: "restaurant_seating",
       question: "What is your seating capacity?",
@@ -500,86 +846,268 @@ export const foodDrinkQuestions: CategoryQuestions = {
       required: true,
       category: "operations",
     },
-    // Cafe/Coffee Shop specific
     {
       id: "cafe_work_friendly",
-      question: "Is your cafe work/study-friendly?",
+      question: "Is your venue work/study-friendly?",
       type: "boolean",
-      required: true,
+      required: false,
       category: "business_info",
     },
     {
-      id: "cafe_wifi",
-      question: "Do you offer free WiFi?",
+      id: "brewery_tours",
+      question: "Do you offer tours or tastings?",
       type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    // Bakery specific
-    {
-      id: "bakery_specialties",
-      question: "What are your specialty baked goods?",
-      type: "multi_select",
-      options: [
-        "Bread",
-        "Pastries",
-        "Cakes",
-        "Cookies",
-        "Custom cakes",
-        "Dietary-specific items",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "bakery_custom_orders",
-      question: "Do you take custom orders for events?",
-      type: "boolean",
-      required: true,
-      category: "operations",
-    },
-    // Bar specific
-    {
-      id: "bar_type",
-      question: "What type of bar are you?",
-      type: "multiple_choice",
-      options: [
-        "Sports bar",
-        "Cocktail bar",
-        "Pub",
-        "Wine bar",
-        "Nightclub",
-        "Lounge",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "bar_entertainment",
-      question: "What entertainment do you offer?",
-      type: "multi_select",
-      options: [
-        "Live music",
-        "DJ",
-        "Trivia nights",
-        "Sports on TV",
-        "Karaoke",
-        "Games/Pool tables",
-        "None",
-      ],
-      required: true,
+      required: false,
       category: "business_info",
     },
   ],
 };
 
 // ============================================
-// RETAIL SPECIFIC QUESTIONS
+// SPORTS & OUTDOOR SPECIFIC QUESTIONS
 // ============================================
 
-export const retailQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.RETAIL,
+export const sportsOutdoorQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.SPORTS_OUTDOOR,
   commonQuestions: [
+    {
+      id: "facility_type",
+      question: "What type of sports/outdoor facility are you?",
+      type: "multiple_choice",
+      options: [
+        "Gym / Fitness Studio",
+        "Yoga / Pilates Studio",
+        "Sports Facility",
+        "Adventure & Activity Operator",
+        "Park / Recreation Centre",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "membership_structure",
+      question: "What membership or pricing structure do you use?",
+      type: "multi_select",
+      options: [
+        "Monthly membership",
+        "Annual membership",
+        "Class packages",
+        "Drop-in rates",
+        "Unlimited plans",
+        "Tiered memberships",
+        "Day passes",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "class_schedule",
+      question: "How many classes/sessions do you offer per week?",
+      type: "multiple_choice",
+      options: [
+        "1-5 classes",
+        "6-10 classes",
+        "11-20 classes",
+        "20-30 classes",
+        "30+ classes",
+        "Open gym/No classes",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "experience_levels",
+      question: "What experience levels do you cater to?",
+      type: "multi_select",
+      options: [
+        "Beginners",
+        "Intermediate",
+        "Advanced",
+        "All levels",
+        "Kids",
+        "Seniors",
+      ],
+      required: true,
+      category: "customer_profile",
+    },
+    {
+      id: "personal_training",
+      question: "Do you offer personal training or one-on-one sessions?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "trial_sessions",
+      question: "Do you offer trial classes or free sessions?",
+      type: "boolean",
+      required: true,
+      category: "marketing",
+    },
+    {
+      id: "peak_times",
+      question: "When are your classes/facilities most popular?",
+      type: "multi_select",
+      options: [
+        "Early morning (5-7 AM)",
+        "Morning (7-10 AM)",
+        "Mid-day (10 AM-2 PM)",
+        "After work (5-7 PM)",
+        "Evening (7-9 PM)",
+        "Weekends",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "amenities",
+      question: "What amenities do you offer?",
+      type: "multi_select",
+      options: [
+        "Showers",
+        "Lockers",
+        "Parking",
+        "Towel service",
+        "Equipment rental",
+        "Pro shop",
+        "Childcare",
+        "WiFi lounge",
+        "Café/Juice bar",
+      ],
+      required: true,
+      category: "business_info",
+    },
+  ],
+  specificQuestions: [],
+};
+
+// ============================================
+// LOCAL ATTRACTIONS SPECIFIC QUESTIONS
+// ============================================
+
+export const localAttractionsQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.LOCAL_ATTRACTIONS,
+  commonQuestions: [
+    {
+      id: "attraction_type",
+      question: "What type of attraction are you?",
+      type: "multiple_choice",
+      options: [
+        "Museum",
+        "Art Gallery",
+        "Historical Site / Landmark",
+        "Cultural Attraction",
+        "Botanical Garden / Park",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "admission_pricing",
+      question: "What is your admission pricing?",
+      type: "multiple_choice",
+      options: [
+        "Free admission",
+        "Under $10",
+        "$10-$20",
+        "$20-$35",
+        "$35-$50",
+        "$50+",
+        "Donation-based",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "visit_duration",
+      question: "What is the typical visit duration?",
+      type: "multiple_choice",
+      options: [
+        "Under 1 hour",
+        "1-2 hours",
+        "2-3 hours",
+        "Half day",
+        "Full day",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "guided_tours",
+      question: "Do you offer guided tours?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "special_exhibitions",
+      question: "Do you have rotating/temporary exhibitions?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "group_discounts",
+      question: "Do you offer group discounts?",
+      type: "boolean",
+      required: true,
+      category: "marketing",
+    },
+    {
+      id: "educational_programs",
+      question: "Do you offer educational programs?",
+      type: "multi_select",
+      options: [
+        "School tours",
+        "Workshops",
+        "Lectures/Talks",
+        "Kids programs",
+        "Adult education",
+        "None",
+      ],
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "accessibility",
+      question: "What accessibility features do you have?",
+      type: "multi_select",
+      options: [
+        "Wheelchair accessible",
+        "Audio guides",
+        "Sign language tours",
+        "Large print materials",
+        "Sensory-friendly hours",
+        "All accessible",
+      ],
+      required: true,
+      category: "business_info",
+    },
+  ],
+  specificQuestions: [],
+};
+
+// ============================================
+// RETAIL & SHOPPING SPECIFIC QUESTIONS
+// ============================================
+
+export const retailShoppingQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.RETAIL_SHOPPING,
+  commonQuestions: [
+    {
+      id: "store_type",
+      question: "What type of retail store are you?",
+      type: "multiple_choice",
+      options: [
+        "Fashion & Apparel",
+        "Shoes & Accessories",
+        "Specialty / Boutique Store",
+        "Grocery / Market",
+        "Pop-up / Seasonal Retail",
+      ],
+      required: true,
+      category: "business_info",
+    },
     {
       id: "product_categories",
       question: "What are your main product categories?",
@@ -634,25 +1162,11 @@ export const retailQuestions: CategoryQuestions = {
       category: "operations",
     },
     {
-      id: "clearance_frequency",
-      question: "How often do you need to clear inventory?",
-      type: "multiple_choice",
-      options: ["Weekly", "Monthly", "Seasonally", "Occasionally", "Rarely"],
+      id: "loyalty_program",
+      question: "Do you have a loyalty or rewards program?",
+      type: "boolean",
       required: true,
-      category: "operations",
-    },
-    {
-      id: "brand_partnerships",
-      question: "Do you carry specific brands or your own products?",
-      type: "multiple_choice",
-      options: [
-        "Exclusively branded products",
-        "Mix of brands",
-        "Own brand/products",
-        "Curated selection",
-      ],
-      required: true,
-      category: "business_info",
+      category: "marketing",
     },
     {
       id: "online_presence",
@@ -667,80 +1181,31 @@ export const retailQuestions: CategoryQuestions = {
       required: true,
       category: "operations",
     },
-    {
-      id: "loyalty_program",
-      question: "Do you have a loyalty or rewards program?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "gift_services",
-      question: "Do you offer gift wrapping or gift services?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
   ],
-  specificQuestions: [
-    // Electronics & Gadgets
-    {
-      id: "electronics_warranty",
-      question: "Do you offer warranties or protection plans?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "electronics_repairs",
-      question: "Do you offer repair or tech support services?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    // Clothing & Apparel
-    {
-      id: "apparel_style",
-      question: "What style of clothing do you specialize in?",
-      type: "multi_select",
-      options: [
-        "Casual",
-        "Formal",
-        "Athletic/Activewear",
-        "Streetwear",
-        "Vintage",
-        "Designer",
-        "Sustainable",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "apparel_demographics",
-      question: "Who do you primarily sell to?",
-      type: "multi_select",
-      options: [
-        "Men",
-        "Women",
-        "Children",
-        "Babies",
-        "Plus-size",
-        "Petite",
-        "All",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-  ],
+  specificQuestions: [],
 };
 
 // ============================================
-// HEALTH & BEAUTY SPECIFIC QUESTIONS
+// HEALTH & WELLNESS SPECIFIC QUESTIONS
 // ============================================
 
-export const healthBeautyQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.HEALTH_BEAUTY,
+export const healthWellnessQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.HEALTH_WELLNESS,
   commonQuestions: [
+    {
+      id: "wellness_type",
+      question: "What type of health & wellness business are you?",
+      type: "multiple_choice",
+      options: [
+        "Spa & Massage Centre",
+        "Beauty Salon",
+        "Aesthetic Clinic",
+        "Mental Wellness Centre",
+        "Wellness Studio",
+      ],
+      required: true,
+      category: "business_info",
+    },
     {
       id: "services_offered",
       question: "What services do you offer?",
@@ -780,7 +1245,7 @@ export const healthBeautyQuestions: CategoryQuestions = {
     },
     {
       id: "practitioner_count",
-      question: "How many practitioners/stylists work at your location?",
+      question: "How many practitioners/specialists work at your location?",
       type: "number",
       required: true,
       category: "operations",
@@ -800,408 +1265,38 @@ export const healthBeautyQuestions: CategoryQuestions = {
       category: "marketing",
     },
     {
-      id: "product_sales",
-      question: "Do you sell products (shampoos, skincare, etc.)?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    {
       id: "first_time_specials",
       question: "Do you offer first-time client specials?",
       type: "boolean",
       required: true,
       category: "marketing",
     },
-    {
-      id: "cancellation_rate",
-      question: "What percentage of appointments get cancelled or no-showed?",
-      type: "multiple_choice",
-      options: ["Less than 5%", "5-10%", "10-20%", "20-30%", "More than 30%"],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "appointment_fill_rate",
-      question: "How booked are you typically?",
-      type: "multiple_choice",
-      options: [
-        "Always fully booked",
-        "80-100% booked",
-        "60-80% booked",
-        "40-60% booked",
-        "Under 40% booked",
-      ],
-      required: true,
-      category: "operations",
-    },
-  ],
-  specificQuestions: [
-    // Salon
-    {
-      id: "salon_specialties",
-      question: "What are your salon specialties?",
-      type: "multi_select",
-      options: [
-        "Hair cutting",
-        "Hair coloring",
-        "Hair treatments",
-        "Styling",
-        "Extensions",
-        "Keratin treatments",
-        "Bridal services",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    // Spa & Massage
-    {
-      id: "spa_types",
-      question: "What types of massage/spa services do you offer?",
-      type: "multi_select",
-      options: [
-        "Swedish massage",
-        "Deep tissue",
-        "Hot stone",
-        "Aromatherapy",
-        "Couples massage",
-        "Facials",
-        "Body treatments",
-      ],
-      required: true,
-      category: "business_info",
-    },
-  ],
-};
-
-// ============================================
-// FITNESS & WELLNESS SPECIFIC QUESTIONS
-// ============================================
-
-export const fitnessWellnessQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.FITNESS_WELLNESS,
-  commonQuestions: [
-    {
-      id: "membership_structure",
-      question: "What membership or pricing structure do you use?",
-      type: "multi_select",
-      options: [
-        "Monthly membership",
-        "Annual membership",
-        "Class packages",
-        "Drop-in rates",
-        "Unlimited plans",
-        "Tiered memberships",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "class_schedule",
-      question: "How many classes do you offer per week?",
-      type: "multiple_choice",
-      options: [
-        "1-5 classes",
-        "6-10 classes",
-        "11-20 classes",
-        "20-30 classes",
-        "30+ classes",
-        "Open gym/No classes",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "experience_levels",
-      question: "What experience levels do you cater to?",
-      type: "multi_select",
-      options: [
-        "Beginners",
-        "Intermediate",
-        "Advanced",
-        "All levels",
-        "Kids",
-        "Seniors",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-    {
-      id: "personal_training",
-      question: "Do you offer personal training or one-on-one sessions?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "trial_classes",
-      question: "Do you offer trial classes or free sessions?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "peak_class_times",
-      question: "When are your classes most popular?",
-      type: "multi_select",
-      options: [
-        "Early morning (5-7 AM)",
-        "Morning (7-10 AM)",
-        "Mid-day (10 AM-2 PM)",
-        "After work (5-7 PM)",
-        "Evening (7-9 PM)",
-        "Weekends",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "under_utilized_slots",
-      question: "Which time slots are typically under-booked?",
-      type: "text",
-      required: true,
-      category: "operations",
-      helpText: "This helps us suggest targeted deals for these times",
-    },
-    {
-      id: "member_retention_goal",
-      question: "What is your primary challenge?",
-      type: "multiple_choice",
-      options: [
-        "Attracting new members",
-        "Retaining current members",
-        "Filling specific class times",
-        "Upselling services",
-        "Building community",
-      ],
-      required: true,
-      category: "goals",
-    },
-    {
-      id: "amenities",
-      question: "What amenities do you offer?",
-      type: "multi_select",
-      options: [
-        "Showers",
-        "Lockers",
-        "Parking",
-        "Towel service",
-        "Juice bar",
-        "Retail products",
-        "Childcare",
-        "WiFi lounge",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "referral_program",
-      question: "Do you have a member referral program?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
   ],
   specificQuestions: [],
 };
 
 // ============================================
-// ENTERTAINMENT SPECIFIC QUESTIONS
+// HOME & PROFESSIONAL SERVICES SPECIFIC QUESTIONS
 // ============================================
 
-export const entertainmentQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.ENTERTAINMENT,
+export const homeProfessionalServicesQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.HOME_PROFESSIONAL_SERVICES,
   commonQuestions: [
     {
-      id: "booking_lead_time",
-      question: "How far in advance do customers typically book?",
-      type: "multiple_choice",
-      options: ["Same day", "1-3 days", "1 week", "2-4 weeks", "1+ months"],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "group_sizes",
-      question: "What group sizes do you typically serve?",
-      type: "multi_select",
-      options: [
-        "Individuals",
-        "Couples",
-        "Small groups (3-6)",
-        "Medium groups (7-15)",
-        "Large groups (16-30)",
-        "Extra large (30+)",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-    {
-      id: "event_types",
-      question: "What types of events do you cater to?",
-      type: "multi_select",
-      options: [
-        "Birthday parties",
-        "Corporate events",
-        "Team building",
-        "Bachelor/Bachelorette",
-        "Family gatherings",
-        "Date nights",
-        "Kids parties",
-        "School groups",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-    {
-      id: "packages_available",
-      question: "Do you offer packages or bundles?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "capacity_per_slot",
-      question: "What is your maximum capacity per time slot?",
-      type: "number",
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "utilization_rate",
-      question: "What percentage of your capacity is typically filled?",
-      type: "multiple_choice",
-      options: ["90-100%", "70-90%", "50-70%", "30-50%", "Under 30%"],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "last_minute_bookings",
-      question: "Can you accommodate last-minute bookings?",
-      type: "boolean",
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "special_occasions_focus",
-      question: "Which special occasions are most important for your business?",
-      type: "multi_select",
-      options: [
-        "Birthdays",
-        "Anniversaries",
-        "Graduations",
-        "Holidays",
-        "Date nights",
-        "Family reunions",
-        "Corporate milestones",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-  ],
-  specificQuestions: [],
-};
-
-// ============================================
-// AUTOMOTIVE SERVICES SPECIFIC QUESTIONS
-// ============================================
-
-export const automotiveQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.AUTOMOTIVE_SERVICES,
-  commonQuestions: [
-    {
-      id: "service_types",
-      question: "What types of services do you offer?",
-      type: "text",
-      required: true,
-      category: "business_info",
-      helpText: "List your main service categories",
-    },
-    {
-      id: "vehicle_types",
-      question: "What types of vehicles do you service?",
-      type: "multi_select",
-      options: [
-        "Sedans",
-        "SUVs",
-        "Trucks",
-        "Luxury vehicles",
-        "Electric vehicles",
-        "Motorcycles",
-        "Classic cars",
-        "Fleet vehicles",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "appointment_system",
-      question: "How do customers schedule services?",
-      type: "multi_select",
-      options: [
-        "Walk-in",
-        "By appointment",
-        "Online booking",
-        "Phone",
-        "Mobile app",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "service_duration",
-      question: "What is the typical service duration?",
+      id: "service_category",
+      question: "What type of service do you provide?",
       type: "multiple_choice",
       options: [
-        "Under 30 minutes",
-        "30-60 minutes",
-        "1-2 hours",
-        "2-4 hours",
-        "Half day",
-        "Full day+",
+        "Home Repair & Maintenance",
+        "Cleaning & Housekeeping",
+        "Gardening & Landscaping",
+        "Automotive Services",
+        "Education & Tutoring",
+        "Pet Care & Grooming",
       ],
       required: true,
-      category: "operations",
-    },
-    {
-      id: "waiting_area",
-      question: "Do you have a customer waiting area?",
-      type: "boolean",
-      required: true,
       category: "business_info",
     },
-    {
-      id: "seasonal_services",
-      question:
-        "Do you have seasonal services (e.g., winterization, AC check)?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "package_deals",
-      question: "Do you offer service packages?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "maintenance_reminders",
-      question: "Do you send maintenance reminders to customers?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-  ],
-  specificQuestions: [],
-};
-
-// ============================================
-// HOME SERVICES SPECIFIC QUESTIONS
-// ============================================
-
-export const homeServicesQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.HOME_SERVICES,
-  commonQuestions: [
     {
       id: "service_area",
       question: "What is your service radius?",
@@ -1213,6 +1308,7 @@ export const homeServicesQuestions: CategoryQuestions = {
         "20 miles",
         "25+ miles",
         "Entire region",
+        "On-site only",
       ],
       required: true,
       category: "operations",
@@ -1239,20 +1335,6 @@ export const homeServicesQuestions: CategoryQuestions = {
       category: "operations",
     },
     {
-      id: "job_size",
-      question: "What size jobs do you typically handle?",
-      type: "multi_select",
-      options: [
-        "Small repairs/fixes",
-        "Medium projects",
-        "Large renovations",
-        "Commercial projects",
-        "All sizes",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
       id: "service_guarantees",
       question: "Do you offer warranties or service guarantees?",
       type: "boolean",
@@ -1267,14 +1349,6 @@ export const homeServicesQuestions: CategoryQuestions = {
       category: "marketing",
     },
     {
-      id: "seasonal_demand",
-      question: "Which seasons are busiest for you?",
-      type: "multi_select",
-      options: ["Spring", "Summer", "Fall", "Winter", "Consistent year-round"],
-      required: true,
-      category: "operations",
-    },
-    {
       id: "customer_type",
       question: "Who are your primary customers?",
       type: "multi_select",
@@ -1283,92 +1357,24 @@ export const homeServicesQuestions: CategoryQuestions = {
         "Renters",
         "Property managers",
         "Businesses",
-        "Real estate agents",
+        "Pet owners",
+        "Students",
+        "Parents",
       ],
       required: true,
       category: "customer_profile",
     },
-  ],
-  specificQuestions: [],
-};
-
-// ============================================
-// PET SERVICES SPECIFIC QUESTIONS
-// ============================================
-
-export const petServicesQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.PET_SERVICES,
-  commonQuestions: [
     {
-      id: "pet_types",
-      question: "What types of pets do you service?",
+      id: "pricing_model",
+      question: "What is your pricing model?",
       type: "multi_select",
       options: [
-        "Dogs",
-        "Cats",
-        "Birds",
-        "Small animals (rabbits, guinea pigs)",
-        "Reptiles",
-        "Fish",
-        "Exotic pets",
+        "Hourly rate",
+        "Flat fee per service",
+        "Package pricing",
+        "Subscription/Recurring",
+        "Quote-based",
       ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "appointment_based",
-      question: "Are your services appointment-based or walk-in?",
-      type: "multiple_choice",
-      options: [
-        "Appointment only",
-        "Walk-in only",
-        "Both options",
-        "Drop-off service",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "service_duration_pets",
-      question: "How long do services typically take?",
-      type: "multiple_choice",
-      options: [
-        "Under 30 min",
-        "30-60 min",
-        "1-2 hours",
-        "2-4 hours",
-        "Half day",
-        "Full day",
-        "Overnight",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "package_deals_pets",
-      question: "Do you offer package deals or memberships?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "multi_pet_discount",
-      question: "Do you offer discounts for multiple pets?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "seasonal_services_pets",
-      question: "Do you have seasonal services or promotions?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "pet_products",
-      question: "Do you sell pet products or supplies?",
-      type: "boolean",
       required: true,
       category: "business_info",
     },
@@ -1377,12 +1383,26 @@ export const petServicesQuestions: CategoryQuestions = {
 };
 
 // ============================================
-// HOSPITALITY SPECIFIC QUESTIONS
+// PLACES TO STAY SPECIFIC QUESTIONS
 // ============================================
 
-export const hospitalityQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.HOSPITALITY,
+export const placesToStayQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.PLACES_TO_STAY,
   commonQuestions: [
+    {
+      id: "accommodation_type",
+      question: "What type of accommodation are you?",
+      type: "multiple_choice",
+      options: [
+        "Hotel / Resort",
+        "Hostel / Guesthouse",
+        "Bed & Breakfast",
+        "Vacation Rental / Serviced Apartment",
+        "Camping / Glamping Site",
+      ],
+      required: true,
+      category: "business_info",
+    },
     {
       id: "room_count",
       question: "How many rooms/units do you have?",
@@ -1465,33 +1485,6 @@ export const hospitalityQuestions: CategoryQuestions = {
       category: "business_info",
     },
     {
-      id: "minimum_stay",
-      question: "Do you have minimum stay requirements?",
-      type: "multiple_choice",
-      options: [
-        "No minimum",
-        "2 nights",
-        "3 nights",
-        "Week minimum",
-        "Varies by season",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "cancellation_policy",
-      question: "What is your cancellation policy?",
-      type: "multiple_choice",
-      options: [
-        "Flexible (free cancellation)",
-        "Moderate (24-48 hrs)",
-        "Strict (7+ days)",
-        "Non-refundable options available",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
       id: "special_packages",
       question: "Do you offer special packages (romance, adventure, etc.)?",
       type: "boolean",
@@ -1502,124 +1495,6 @@ export const hospitalityQuestions: CategoryQuestions = {
   specificQuestions: [],
 };
 
-// ============================================
-// PROFESSIONAL SERVICES SPECIFIC QUESTIONS
-// ============================================
-
-export const professionalServicesQuestions: CategoryQuestions = {
-  industry: BusinessIndustries.PROFESSIONAL_SERVICES,
-  commonQuestions: [
-    {
-      id: "service_delivery",
-      question: "How do you deliver your services?",
-      type: "multi_select",
-      options: [
-        "In-person",
-        "Virtual/Online",
-        "Hybrid",
-        "On-site at client location",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "client_type",
-      question: "Who are your primary clients?",
-      type: "multi_select",
-      options: [
-        "Individuals",
-        "Small businesses",
-        "Medium businesses",
-        "Large corporations",
-        "Non-profits",
-        "Government",
-      ],
-      required: true,
-      category: "customer_profile",
-    },
-    {
-      id: "engagement_length",
-      question: "What is the typical length of client engagement?",
-      type: "multiple_choice",
-      options: [
-        "One-time",
-        "Short-term (weeks)",
-        "Medium-term (months)",
-        "Long-term (6+ months)",
-        "Ongoing retainer",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "consultation_process",
-      question: "Do you offer free initial consultations?",
-      type: "boolean",
-      required: true,
-      category: "marketing",
-    },
-    {
-      id: "pricing_model",
-      question: "What is your pricing model?",
-      type: "multi_select",
-      options: [
-        "Hourly rate",
-        "Project-based",
-        "Retainer",
-        "Package pricing",
-        "Value-based",
-      ],
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "capacity_constraints",
-      question: "Are you currently at capacity or looking for more clients?",
-      type: "multiple_choice",
-      options: [
-        "At capacity",
-        "Mostly booked",
-        "Moderate availability",
-        "Actively seeking clients",
-      ],
-      required: true,
-      category: "operations",
-    },
-    {
-      id: "specializations",
-      question: "What are your areas of specialization?",
-      type: "text",
-      required: true,
-      category: "business_info",
-      helpText: "List your key specialties or niches",
-    },
-    {
-      id: "certifications",
-      question:
-        "Do you have relevant certifications or credentials to promote?",
-      type: "boolean",
-      required: true,
-      category: "business_info",
-    },
-    {
-      id: "referral_sources",
-      question: "Where do most of your clients come from?",
-      type: "multi_select",
-      options: [
-        "Referrals",
-        "Online search",
-        "Social media",
-        "Networking events",
-        "Previous clients",
-        "Partnerships",
-        "Advertising",
-      ],
-      required: true,
-      category: "marketing",
-    },
-  ],
-  specificQuestions: [],
-};
 // ============================================
 // MAIN MAPPING FUNCTION
 // ============================================
@@ -1632,35 +1507,32 @@ export function getTrainingQuestions(
 
   // Select appropriate category questions based on industry
   switch (industry) {
-    case BusinessIndustries.FOOD_DRINK:
-      categoryQuestions = foodDrinkQuestions;
-      break;
-    case BusinessIndustries.RETAIL:
-      categoryQuestions = retailQuestions;
-      break;
-    case BusinessIndustries.HEALTH_BEAUTY:
-      categoryQuestions = healthBeautyQuestions;
-      break;
-    case BusinessIndustries.FITNESS_WELLNESS:
-      categoryQuestions = fitnessWellnessQuestions;
-      break;
     case BusinessIndustries.ENTERTAINMENT:
       categoryQuestions = entertainmentQuestions;
       break;
-    case BusinessIndustries.AUTOMOTIVE_SERVICES:
-      categoryQuestions = automotiveQuestions;
+    case BusinessIndustries.CLASSES_WORKSHOPS:
+      categoryQuestions = classesWorkshopsQuestions;
       break;
-    case BusinessIndustries.HOME_SERVICES:
-      categoryQuestions = homeServicesQuestions;
+    case BusinessIndustries.FOOD_DRINK:
+      categoryQuestions = foodDrinkQuestions;
       break;
-    case BusinessIndustries.PET_SERVICES:
-      categoryQuestions = petServicesQuestions;
+    case BusinessIndustries.SPORTS_OUTDOOR:
+      categoryQuestions = sportsOutdoorQuestions;
       break;
-    case BusinessIndustries.HOSPITALITY:
-      categoryQuestions = hospitalityQuestions;
+    case BusinessIndustries.LOCAL_ATTRACTIONS:
+      categoryQuestions = localAttractionsQuestions;
       break;
-    case BusinessIndustries.PROFESSIONAL_SERVICES:
-      categoryQuestions = professionalServicesQuestions;
+    case BusinessIndustries.RETAIL_SHOPPING:
+      categoryQuestions = retailShoppingQuestions;
+      break;
+    case BusinessIndustries.HEALTH_WELLNESS:
+      categoryQuestions = healthWellnessQuestions;
+      break;
+    case BusinessIndustries.HOME_PROFESSIONAL_SERVICES:
+      categoryQuestions = homeProfessionalServicesQuestions;
+      break;
+    case BusinessIndustries.PLACES_TO_STAY:
+      categoryQuestions = placesToStayQuestions;
       break;
     default:
       // Return only core questions if industry not found
@@ -1689,35 +1561,32 @@ export function getAI_Training_Questionnaire_Types(
 
   // Select appropriate category questions based on industry
   switch (industry) {
-    case BusinessIndustries.FOOD_DRINK:
-      categoryQuestions = foodDrinkQuestions;
-      break;
-    case BusinessIndustries.RETAIL:
-      categoryQuestions = retailQuestions;
-      break;
-    case BusinessIndustries.HEALTH_BEAUTY:
-      categoryQuestions = healthBeautyQuestions;
-      break;
-    case BusinessIndustries.FITNESS_WELLNESS:
-      categoryQuestions = fitnessWellnessQuestions;
-      break;
     case BusinessIndustries.ENTERTAINMENT:
       categoryQuestions = entertainmentQuestions;
       break;
-    case BusinessIndustries.AUTOMOTIVE_SERVICES:
-      categoryQuestions = automotiveQuestions;
+    case BusinessIndustries.CLASSES_WORKSHOPS:
+      categoryQuestions = classesWorkshopsQuestions;
       break;
-    case BusinessIndustries.HOME_SERVICES:
-      categoryQuestions = homeServicesQuestions;
+    case BusinessIndustries.FOOD_DRINK:
+      categoryQuestions = foodDrinkQuestions;
       break;
-    case BusinessIndustries.PET_SERVICES:
-      categoryQuestions = petServicesQuestions;
+    case BusinessIndustries.SPORTS_OUTDOOR:
+      categoryQuestions = sportsOutdoorQuestions;
       break;
-    case BusinessIndustries.HOSPITALITY:
-      categoryQuestions = hospitalityQuestions;
+    case BusinessIndustries.LOCAL_ATTRACTIONS:
+      categoryQuestions = localAttractionsQuestions;
       break;
-    case BusinessIndustries.PROFESSIONAL_SERVICES:
-      categoryQuestions = professionalServicesQuestions;
+    case BusinessIndustries.RETAIL_SHOPPING:
+      categoryQuestions = retailShoppingQuestions;
+      break;
+    case BusinessIndustries.HEALTH_WELLNESS:
+      categoryQuestions = healthWellnessQuestions;
+      break;
+    case BusinessIndustries.HOME_PROFESSIONAL_SERVICES:
+      categoryQuestions = homeProfessionalServicesQuestions;
+      break;
+    case BusinessIndustries.PLACES_TO_STAY:
+      categoryQuestions = placesToStayQuestions;
       break;
     default:
       // Return only core questions if industry not found
@@ -1839,25 +1708,11 @@ const smartDefaultsMapping: SmartDefaults[] = [
       marketing_goals: ["Increase foot traffic", "Build customer loyalty", "Increase average transaction value"],
       slow_periods: ["Weekday afternoons", "Sunday evenings"],
       cafe_work_friendly: true,
-      cafe_wifi: true,
     },
   },
-  // FOOD & DRINK - Bakery
+  // FOOD & DRINK - Bar/Pub
   {
-    subcategory: BusinessSubCategory.BAKERY,
-    defaults: {
-      busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)"],
-      busiest_days: ["Friday", "Saturday", "Sunday"],
-      meal_periods: ["Breakfast", "Brunch"],
-      target_audience: ["Families with children", "All ages"],
-      marketing_goals: ["Increase foot traffic", "Attract new customers", "Promote specific products/services"],
-      important_seasons: ["Valentine's Day", "Mother's Day", "Easter", "Thanksgiving", "Christmas/Holiday Season"],
-      bakery_custom_orders: true,
-    },
-  },
-  // FOOD & DRINK - Bar
-  {
-    subcategory: BusinessSubCategory.BAR,
+    subcategory: BusinessSubCategory.BAR_PUB,
     defaults: {
       busiest_hours: ["Evening (5-8 PM)", "Night (8-11 PM)", "Late night (11 PM+)"],
       busiest_days: ["Thursday", "Friday", "Saturday"],
@@ -1868,9 +1723,21 @@ const smartDefaultsMapping: SmartDefaults[] = [
       happy_hour_interest: true,
     },
   },
-  // FOOD & DRINK - Food Truck
+  // FOOD & DRINK - Bakery & Dessert Shop
   {
-    subcategory: BusinessSubCategory.FOOD_TRUCK,
+    subcategory: BusinessSubCategory.BAKERY_DESSERT_SHOP,
+    defaults: {
+      busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)"],
+      busiest_days: ["Friday", "Saturday", "Sunday"],
+      meal_periods: ["Breakfast", "Brunch"],
+      target_audience: ["Families with children", "All ages"],
+      marketing_goals: ["Increase foot traffic", "Attract new customers", "Promote specific products/services"],
+      important_seasons: ["Valentine's Day", "Mother's Day", "Easter", "Thanksgiving", "Christmas/Holiday Season"],
+    },
+  },
+  // FOOD & DRINK - Food Truck / Street Food
+  {
+    subcategory: BusinessSubCategory.FOOD_TRUCK_STREET_FOOD,
     defaults: {
       busiest_hours: ["Lunch time (12-2 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -1880,43 +1747,37 @@ const smartDefaultsMapping: SmartDefaults[] = [
       dining_style: "Take-out focused",
     },
   },
-  // FOOD & DRINK - Catering
+  // SPORTS & OUTDOOR - Gym / Fitness Studio
   {
-    subcategory: BusinessSubCategory.CATERING_SERVICES,
+    subcategory: BusinessSubCategory.GYM_FITNESS_STUDIO,
     defaults: {
-      busiest_days: ["Friday", "Saturday", "Sunday"],
-      target_audience: ["Families with children", "Established Professionals (35-50)"],
-      marketing_goals: ["Attract new customers", "Build brand awareness", "Promote specific products/services"],
-      important_seasons: ["Spring Break", "Summer", "Christmas/Holiday Season", "Local festivals/events"],
+      busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)", "Evening (5-8 PM)"],
+      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday"],
+      target_audience: ["Young Professionals (25-34)", "Established Professionals (35-50)"],
+      marketing_goals: ["Attract new customers", "Build customer loyalty", "Promote specific products/services"],
+      important_seasons: ["New Year", "Summer"],
+      peak_times: ["Early morning (5-7 AM)", "After work (5-7 PM)"],
+      personal_training: true,
+      trial_sessions: true,
     },
   },
-  // RETAIL - Clothing & Apparel
+  // SPORTS & OUTDOOR - Yoga / Pilates Studio
   {
-    subcategory: BusinessSubCategory.CLOTHING_APPAREL,
+    subcategory: BusinessSubCategory.YOGA_PILATES_STUDIO,
     defaults: {
-      busiest_hours: ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
-      busiest_days: ["Friday", "Saturday", "Sunday"],
-      target_audience: ["Young Professionals (25-34)", "Teenagers", "Students (18-24)"],
-      marketing_goals: ["Increase foot traffic", "Attract new customers", "Increase average transaction value"],
-      important_seasons: ["Back to School", "Black Friday/Cyber Monday", "Christmas/Holiday Season", "Summer"],
-      seasonal_products: true,
-      loyalty_program: true,
+      busiest_hours: ["Morning (9-12 PM)", "Evening (5-8 PM)"],
+      busiest_days: ["Monday", "Wednesday", "Thursday", "Saturday"],
+      target_audience: ["Young Professionals (25-34)", "Established Professionals (35-50)", "Seniors (50+)"],
+      marketing_goals: ["Build customer loyalty", "Attract new customers", "Build brand awareness"],
+      important_seasons: ["New Year", "Spring Break", "Summer"],
+      peak_times: ["Early morning (5-7 AM)", "Evening (7-9 PM)", "Weekends"],
+      experience_levels: ["Beginners", "Intermediate", "Advanced", "All levels"],
+      trial_sessions: true,
     },
   },
-  // RETAIL - Convenience Store
+  // HEALTH & WELLNESS - Beauty Salon
   {
-    subcategory: BusinessSubCategory.CONVENIENCE_STORE,
-    defaults: {
-      busiest_hours: ["Early morning (6-9 AM)", "Lunch time (12-2 PM)", "Evening (5-8 PM)"],
-      busiest_days: ["Friday", "Saturday", "Sunday"],
-      target_audience: ["All ages"],
-      marketing_goals: ["Build customer loyalty", "Increase foot traffic", "Increase average transaction value"],
-      slow_periods: ["Mid-week", "Late nights"],
-    },
-  },
-  // HEALTH & BEAUTY - Salon
-  {
-    subcategory: BusinessSubCategory.SALON,
+    subcategory: BusinessSubCategory.BEAUTY_SALON,
     defaults: {
       busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday"],
@@ -1925,12 +1786,11 @@ const smartDefaultsMapping: SmartDefaults[] = [
       important_seasons: ["Valentine's Day", "Mother's Day", "Christmas/Holiday Season"],
       booking_system: ["Online booking", "Phone only"],
       first_time_specials: true,
-      product_sales: true,
     },
   },
-  // HEALTH & BEAUTY - Spa & Massage
+  // HEALTH & WELLNESS - Spa & Massage Centre
   {
-    subcategory: BusinessSubCategory.SPA_MASSAGE,
+    subcategory: BusinessSubCategory.SPA_MASSAGE_CENTRE,
     defaults: {
       busiest_hours: ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday", "Sunday"],
@@ -1942,93 +1802,46 @@ const smartDefaultsMapping: SmartDefaults[] = [
       premium_services: true,
     },
   },
-  // FITNESS & WELLNESS - Fitness Center
+  // RETAIL & SHOPPING - Fashion & Apparel
   {
-    subcategory: BusinessSubCategory.FITNESS_CENTER,
+    subcategory: BusinessSubCategory.FASHION_APPAREL,
     defaults: {
-      busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)", "Evening (5-8 PM)"],
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday"],
-      target_audience: ["Young Professionals (25-34)", "Established Professionals (35-50)"],
-      marketing_goals: ["Attract new customers", "Build customer loyalty", "Promote specific products/services"],
-      important_seasons: ["New Year", "Summer"],
-      peak_class_times: ["Early morning (5-7 AM)", "After work (5-7 PM)"],
-      personal_training: true,
-      trial_classes: true,
-      referral_program: true,
-    },
-  },
-  // FITNESS & WELLNESS - Yoga Studio
-  {
-    subcategory: BusinessSubCategory.YOGA_STUDIO,
-    defaults: {
-      busiest_hours: ["Morning (9-12 PM)", "Evening (5-8 PM)"],
-      busiest_days: ["Monday", "Wednesday", "Thursday", "Saturday"],
-      target_audience: ["Young Professionals (25-34)", "Established Professionals (35-50)", "Seniors (50+)"],
-      marketing_goals: ["Build customer loyalty", "Attract new customers", "Build brand awareness"],
-      important_seasons: ["New Year", "Spring Break", "Summer"],
-      peak_class_times: ["Early morning (5-7 AM)", "Evening (7-9 PM)", "Weekends"],
-      experience_levels: ["Beginners", "Intermediate", "Advanced", "All levels"],
-      trial_classes: true,
-    },
-  },
-  // ENTERTAINMENT - Event Planning
-  {
-    subcategory: BusinessSubCategory.EVENT_PLANNING,
-    defaults: {
+      busiest_hours: ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday", "Sunday"],
-      target_audience: ["Families with children", "Established Professionals (35-50)", "Young Professionals (25-34)"],
-      marketing_goals: ["Attract new customers", "Build brand awareness", "Promote specific products/services"],
-      important_seasons: ["Spring Break", "Summer", "Christmas/Holiday Season", "Local festivals/events"],
-      event_types: ["Birthday parties", "Corporate events", "Team building", "Family gatherings"],
-      packages_available: true,
+      target_audience: ["Young Professionals (25-34)", "Teenagers", "Students (18-24)"],
+      marketing_goals: ["Increase foot traffic", "Attract new customers", "Increase average transaction value"],
+      important_seasons: ["Back to School", "Black Friday/Cyber Monday", "Christmas/Holiday Season", "Summer"],
+      seasonal_products: true,
+      loyalty_program: true,
     },
   },
-  // AUTOMOTIVE SERVICES - Garage
+  // HOME & PROFESSIONAL SERVICES - Home Repair & Maintenance
   {
-    subcategory: BusinessSubCategory.GARAGE,
-    defaults: {
-      busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      target_audience: ["All ages"],
-      marketing_goals: ["Build customer loyalty", "Attract new customers", "Promote specific products/services"],
-      important_seasons: ["Spring", "Fall"],
-      appointment_system: ["Walk-in", "By appointment", "Phone"],
-      seasonal_services: true,
-      package_deals: true,
-      maintenance_reminders: true,
-    },
-  },
-  // HOME SERVICES - Home Cleaning
-  {
-    subcategory: BusinessSubCategory.HOME_CLEANING,
+    subcategory: BusinessSubCategory.HOME_REPAIR_MAINTENANCE,
     defaults: {
       busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       target_audience: ["Families with children", "Established Professionals (35-50)", "Seniors (50+)"],
       marketing_goals: ["Build customer loyalty", "Attract new customers"],
-      important_seasons: ["Spring", "Christmas/Holiday Season"],
-      emergency_services: false,
+      important_seasons: ["Spring", "Fall"],
+      emergency_services: true,
       free_estimates: true,
       service_guarantees: true,
     },
   },
-  // PET SERVICES - Pet Grooming
+  // HOME & PROFESSIONAL SERVICES - Pet Care & Grooming
   {
-    subcategory: BusinessSubCategory.PET_GROOMING,
+    subcategory: BusinessSubCategory.PET_CARE_GROOMING,
     defaults: {
       busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
       busiest_days: ["Friday", "Saturday"],
       target_audience: ["Families with children", "Young Professionals (25-34)", "All ages"],
       marketing_goals: ["Build customer loyalty", "Attract new customers", "Promote specific products/services"],
       important_seasons: ["Summer", "Christmas/Holiday Season"],
-      pet_types: ["Dogs", "Cats"],
-      appointment_based: "Appointment only",
-      package_deals_pets: true,
-      multi_pet_discount: true,
     },
   },
-  // HOSPITALITY - Hotel
+  // PLACES TO STAY - Hotel / Resort
   {
-    subcategory: BusinessSubCategory.HOTEL,
+    subcategory: BusinessSubCategory.HOTEL_RESORT,
     defaults: {
       busiest_days: ["Friday", "Saturday"],
       target_audience: ["Families with children", "Couples", "Business travelers"],
@@ -2039,17 +1852,28 @@ const smartDefaultsMapping: SmartDefaults[] = [
       special_packages: true,
     },
   },
-  // PROFESSIONAL SERVICES - Accounting Consultant
+  // ENTERTAINMENT - Live Music Venue
   {
-    subcategory: BusinessSubCategory.ACCOUNTING_CONSULTANT,
+    subcategory: BusinessSubCategory.LIVE_MUSIC_VENUE,
     defaults: {
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      target_audience: ["Established Professionals (35-50)", "Small businesses"],
-      marketing_goals: ["Attract new customers", "Build customer loyalty", "Build brand awareness"],
-      important_seasons: ["New Year", "Back to School"],
-      service_delivery: ["In-person", "Virtual/Online", "Hybrid"],
-      client_type: ["Individuals", "Small businesses", "Medium businesses"],
-      consultation_process: true,
+      busiest_hours: ["Evening (5-8 PM)", "Night (8-11 PM)"],
+      busiest_days: ["Thursday", "Friday", "Saturday"],
+      target_audience: ["Young Professionals (25-34)", "Students (18-24)"],
+      marketing_goals: ["Build brand awareness", "Increase foot traffic", "Increase social media engagement"],
+      entertainment_types: ["Live bands", "DJ sets", "Acoustic sets"],
+    },
+  },
+  // LOCAL ATTRACTIONS - Museum
+  {
+    subcategory: BusinessSubCategory.MUSEUM,
+    defaults: {
+      busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
+      busiest_days: ["Saturday", "Sunday"],
+      target_audience: ["Families with children", "Students (18-24)", "All ages"],
+      marketing_goals: ["Attract new customers", "Build brand awareness"],
+      important_seasons: ["Summer", "Back to School", "Christmas/Holiday Season"],
+      guided_tours: true,
+      group_discounts: true,
     },
   },
 ];
@@ -2090,62 +1914,57 @@ function getIndustryDefaults(
     BusinessIndustries,
     Record<string, string | string[] | boolean | number>
   > = {
+    [BusinessIndustries.ENTERTAINMENT]: {
+      busiest_hours: ["Evening (5-8 PM)", "Night (8-11 PM)"],
+      busiest_days: ["Friday", "Saturday"],
+      marketing_goals: ["Build brand awareness", "Increase foot traffic"],
+    },
+    [BusinessIndustries.CLASSES_WORKSHOPS]: {
+      busiest_hours: ["Morning (9-12 PM)", "Evening (5-8 PM)"],
+      busiest_days: ["Saturday", "Sunday"],
+      marketing_goals: ["Attract new customers", "Build customer loyalty"],
+      trial_classes: true,
+    },
     [BusinessIndustries.FOOD_DRINK]: {
       busiest_hours: ["Lunch time (12-2 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday"],
       marketing_goals: ["Increase foot traffic", "Attract new customers"],
       seasonal_relevance: true,
     },
-    [BusinessIndustries.RETAIL]: {
+    [BusinessIndustries.SPORTS_OUTDOOR]: {
+      busiest_hours: ["Early morning (6-9 AM)", "Evening (5-8 PM)"],
+      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday"],
+      marketing_goals: ["Build customer loyalty", "Attract new customers"],
+      trial_sessions: true,
+    },
+    [BusinessIndustries.LOCAL_ATTRACTIONS]: {
+      busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
+      busiest_days: ["Saturday", "Sunday"],
+      marketing_goals: ["Attract new customers", "Build brand awareness"],
+      guided_tours: true,
+    },
+    [BusinessIndustries.RETAIL_SHOPPING]: {
       busiest_hours: ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday", "Sunday"],
       marketing_goals: ["Increase foot traffic", "Attract new customers"],
       seasonal_relevance: true,
       seasonal_products: true,
     },
-    [BusinessIndustries.HEALTH_BEAUTY]: {
+    [BusinessIndustries.HEALTH_WELLNESS]: {
       busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday"],
       marketing_goals: ["Build customer loyalty", "Attract new customers"],
       first_time_specials: true,
     },
-    [BusinessIndustries.FITNESS_WELLNESS]: {
-      busiest_hours: ["Early morning (6-9 AM)", "Evening (5-8 PM)"],
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday"],
-      marketing_goals: ["Build customer loyalty", "Attract new customers"],
-      trial_classes: true,
-    },
-    [BusinessIndustries.ENTERTAINMENT]: {
-      busiest_days: ["Friday", "Saturday", "Sunday"],
-      marketing_goals: ["Attract new customers", "Build brand awareness"],
-      packages_available: true,
-    },
-    [BusinessIndustries.AUTOMOTIVE_SERVICES]: {
-      busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      marketing_goals: ["Build customer loyalty", "Attract new customers"],
-      seasonal_services: true,
-    },
-    [BusinessIndustries.HOME_SERVICES]: {
+    [BusinessIndustries.HOME_PROFESSIONAL_SERVICES]: {
       busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       marketing_goals: ["Build customer loyalty", "Attract new customers"],
       free_estimates: true,
     },
-    [BusinessIndustries.PET_SERVICES]: {
-      busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
-      busiest_days: ["Friday", "Saturday"],
-      marketing_goals: ["Build customer loyalty", "Attract new customers"],
-      pet_types: ["Dogs", "Cats"],
-    },
-    [BusinessIndustries.HOSPITALITY]: {
+    [BusinessIndustries.PLACES_TO_STAY]: {
       busiest_days: ["Friday", "Saturday"],
       marketing_goals: ["Attract new customers", "Build brand awareness"],
       guest_type: ["Leisure travelers", "Families"],
-    },
-    [BusinessIndustries.PROFESSIONAL_SERVICES]: {
-      busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      marketing_goals: ["Attract new customers", "Build customer loyalty"],
-      consultation_process: true,
     },
   };
 
@@ -2217,7 +2036,7 @@ export function getInitialResponsesWithDefaults(
  * Standard: Important operational questions
  * Advanced: Optional questions and detailed insights
  */
-function assignPhaseToQuestion(question: any): AI_Training_Questionnaire_Type {
+function assignPhaseToQuestion(question: AI_Training_Questionnaire_Type): AI_Training_Questionnaire_Type {
   // If phase is already assigned, return as is
   if (question.phase) {
     return question;
@@ -2266,7 +2085,7 @@ export function getQuestionsByPhase(
   // Assign phases to questions that don't have them
   const questionsWithPhases = allQuestions.map(assignPhaseToQuestion);
 
-  return questionsWithPhases.filter((q) => q.phase! === phase);
+  return questionsWithPhases.filter((q) => q.phase === phase);
 }
 
 /**
@@ -2304,9 +2123,9 @@ export function getQuestionsGroupedByPhase(
   const questionsWithPhases = allQuestions.map(assignPhaseToQuestion);
 
   return {
-    [TrainingPhase.BASIC]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.BASIC),
-    [TrainingPhase.STANDARD]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.STANDARD),
-    [TrainingPhase.ADVANCED]: questionsWithPhases.filter((q) => q.phase! === TrainingPhase.ADVANCED),
+    [TrainingPhase.BASIC]: questionsWithPhases.filter((q) => q.phase === TrainingPhase.BASIC),
+    [TrainingPhase.STANDARD]: questionsWithPhases.filter((q) => q.phase === TrainingPhase.STANDARD),
+    [TrainingPhase.ADVANCED]: questionsWithPhases.filter((q) => q.phase === TrainingPhase.ADVANCED),
   };
 }
 
@@ -2344,16 +2163,15 @@ export function getPhaseSummary(
 
 export default {
   coreAI_Training_Questionnaire_Types,
-  foodDrinkQuestions,
-  retailQuestions,
-  healthBeautyQuestions,
-  fitnessWellnessQuestions,
   entertainmentQuestions,
-  automotiveQuestions,
-  homeServicesQuestions,
-  petServicesQuestions,
-  hospitalityQuestions,
-  professionalServicesQuestions,
+  classesWorkshopsQuestions,
+  foodDrinkQuestions,
+  sportsOutdoorQuestions,
+  localAttractionsQuestions,
+  retailShoppingQuestions,
+  healthWellnessQuestions,
+  homeProfessionalServicesQuestions,
+  placesToStayQuestions,
   getTrainingQuestions,
   getQuestionsByCategory,
   getRequiredQuestions,

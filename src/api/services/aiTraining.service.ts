@@ -419,6 +419,49 @@ function generateIndustryInsights(
   let insights = "\n## Industry-Specific Insights\n";
 
   switch (industry) {
+    case BusinessIndustries.ENTERTAINMENT:
+      insights += `
+- Typical booking lead time: ${
+        responseMap.get("booking_lead_time") || "not specified"
+      }
+- Group sizes: ${responseMap.get("group_sizes") || "not specified"}
+- Event types: ${responseMap.get("event_types") || "not specified"}
+- Capacity utilization: ${
+        responseMap.get("utilization_rate") || "not specified"
+      }
+- Venue atmosphere: ${responseMap.get("venue_atmosphere") || "not specified"}
+${
+  responseMap.get("last_minute_bookings")
+    ? "- Can promote last-minute deals to fill slots"
+    : ""
+}
+${
+  responseMap.get("recurring_events")
+    ? "- Highlight recurring events and regular programming"
+    : ""
+}
+`;
+      break;
+
+    case BusinessIndustries.CLASSES_WORKSHOPS:
+      insights += `
+- Class formats offered: ${responseMap.get("class_formats") || "not specified"}
+- Skill levels catered: ${responseMap.get("skill_levels") || "not specified"}
+- Class duration: ${responseMap.get("class_duration") || "not specified"}
+- Instructor credentials: ${responseMap.get("instructor_credentials") || "not specified"}
+${
+  responseMap.get("trial_classes")
+    ? "- Emphasize trial classes for new student acquisition"
+    : ""
+}
+${
+  responseMap.get("package_deals")
+    ? "- Highlight class packages and membership benefits"
+    : ""
+}
+`;
+      break;
+
     case BusinessIndustries.FOOD_DRINK:
       insights += `
 - Consider meal period promotions (${
@@ -433,15 +476,61 @@ function generateIndustryInsights(
 - Average check size: ${
         responseMap.get("average_check_size") || "not specified"
       }
+- Cuisine type: ${responseMap.get("cuisine_type") || "not specified"}
 ${
   responseMap.get("happy_hour_interest")
     ? "- Emphasize happy hour and off-peak specials"
     : ""
 }
+${
+  responseMap.get("delivery_options")
+    ? "- Promote delivery and takeout options"
+    : ""
+}
 `;
       break;
 
-    case BusinessIndustries.RETAIL:
+    case BusinessIndustries.SPORTS_OUTDOOR:
+      insights += `
+- Activity types: ${responseMap.get("activity_types") || "not specified"}
+- Experience levels: ${responseMap.get("experience_levels") || "not specified"}
+- Equipment provided: ${responseMap.get("equipment_provided") || "not specified"}
+- Seasonal availability: ${responseMap.get("seasonal_availability") || "not specified"}
+- Group vs individual: ${responseMap.get("group_individual") || "not specified"}
+${
+  responseMap.get("weather_dependent")
+    ? "- Weather-dependent activities - monitor conditions for promotions"
+    : ""
+}
+${
+  responseMap.get("beginner_friendly")
+    ? "- Emphasize beginner-friendly options and lessons"
+    : ""
+}
+`;
+      break;
+
+    case BusinessIndustries.LOCAL_ATTRACTIONS:
+      insights += `
+- Attraction type: ${responseMap.get("attraction_type") || "not specified"}
+- Visit duration: ${responseMap.get("visit_duration") || "not specified"}
+- Best time to visit: ${responseMap.get("best_visit_time") || "not specified"}
+- Age appropriateness: ${responseMap.get("age_appropriate") || "not specified"}
+- Guided tours available: ${responseMap.get("guided_tours") || "not specified"}
+${
+  responseMap.get("group_discounts")
+    ? "- Promote group discounts and family packages"
+    : ""
+}
+${
+  responseMap.get("seasonal_events")
+    ? "- Highlight seasonal events and special exhibitions"
+    : ""
+}
+`;
+      break;
+
+    case BusinessIndustries.RETAIL_SHOPPING:
       insights += `
 - Product categories: ${
         responseMap.get("product_categories") || "not specified"
@@ -450,6 +539,7 @@ ${
 - Inventory turnover: ${
         responseMap.get("inventory_turnover") || "not specified"
       }
+- Shopping experience: ${responseMap.get("shopping_experience") || "not specified"}
 ${
   responseMap.get("loyalty_program")
     ? "- Leverage loyalty program in promotions"
@@ -460,10 +550,15 @@ ${
     ? "- Focus on seasonal product promotions"
     : ""
 }
+${
+  responseMap.get("online_shopping")
+    ? "- Promote online shopping and local pickup options"
+    : ""
+}
 `;
       break;
 
-    case BusinessIndustries.HEALTH_BEAUTY:
+    case BusinessIndustries.HEALTH_WELLNESS:
       insights += `
 - Services offered: ${responseMap.get("services_offered") || "not specified"}
 - Typical service duration: ${
@@ -472,6 +567,8 @@ ${
 - Booking fill rate: ${
         responseMap.get("appointment_fill_rate") || "not specified"
       }
+- Specializations: ${responseMap.get("specializations") || "not specified"}
+- Membership structure: ${responseMap.get("membership_structure") || "not specified"}
 ${
   responseMap.get("first_time_specials")
     ? "- Promote first-time client specials aggressively"
@@ -482,76 +579,24 @@ ${
     ? "- Highlight membership and package benefits"
     : ""
 }
-`;
-      break;
-
-    case BusinessIndustries.FITNESS_WELLNESS:
-      insights += `
-- Membership structure: ${
-        responseMap.get("membership_structure") || "not specified"
-      }
-- Experience levels catered: ${
-        responseMap.get("experience_levels") || "not specified"
-      }
-- Primary challenge: ${
-        responseMap.get("member_retention_goal") || "not specified"
-      }
-- Under-booked slots: ${
-        responseMap.get("under_utilized_slots") || "not specified"
-      }
 ${
-  responseMap.get("trial_classes")
-    ? "- Emphasize trial classes for new member acquisition"
+  responseMap.get("wellness_programs")
+    ? "- Emphasize wellness programs and holistic approaches"
     : ""
 }
 `;
       break;
 
-    case BusinessIndustries.ENTERTAINMENT:
-      insights += `
-- Typical booking lead time: ${
-        responseMap.get("booking_lead_time") || "not specified"
-      }
-- Group sizes: ${responseMap.get("group_sizes") || "not specified"}
-- Event types: ${responseMap.get("event_types") || "not specified"}
-- Capacity utilization: ${
-        responseMap.get("utilization_rate") || "not specified"
-      }
-${
-  responseMap.get("last_minute_bookings")
-    ? "- Can promote last-minute deals to fill slots"
-    : ""
-}
-`;
-      break;
-
-    case BusinessIndustries.AUTOMOTIVE_SERVICES:
+    case BusinessIndustries.HOME_PROFESSIONAL_SERVICES:
       insights += `
 - Service types: ${responseMap.get("service_types") || "not specified"}
-- Vehicle types serviced: ${responseMap.get("vehicle_types") || "not specified"}
-- Typical service duration: ${
-        responseMap.get("service_duration") || "not specified"
-      }
-${
-  responseMap.get("seasonal_services")
-    ? "- Promote seasonal services proactively"
-    : ""
-}
-${
-  responseMap.get("package_deals")
-    ? "- Highlight service packages for better value"
-    : ""
-}
-`;
-      break;
-
-    case BusinessIndustries.HOME_SERVICES:
-      insights += `
 - Service radius: ${responseMap.get("service_area") || "not specified"}
 - Job sizes handled: ${responseMap.get("job_size") || "not specified"}
 - Scheduling flexibility: ${
         responseMap.get("scheduling_flexibility") || "not specified"
       }
+- Pricing model: ${responseMap.get("pricing_model") || "not specified"}
+- Client types: ${responseMap.get("client_type") || "not specified"}
 ${
   responseMap.get("emergency_services")
     ? "- Can promote 24/7 emergency availability"
@@ -562,49 +607,36 @@ ${
     ? "- Emphasize free estimates/consultations"
     : ""
 }
-`;
-      break;
-
-    case BusinessIndustries.PET_SERVICES:
-      insights += `
-- Pet types serviced: ${responseMap.get("pet_types") || "not specified"}
-- Service model: ${responseMap.get("appointment_based") || "not specified"}
-${responseMap.get("multi_pet_discount") ? "- Promote multi-pet discounts" : ""}
 ${
-  responseMap.get("package_deals_pets")
-    ? "- Highlight package deals and memberships"
+  responseMap.get("licensed_insured")
+    ? "- Highlight licensed and insured credentials"
     : ""
 }
 `;
       break;
 
-    case BusinessIndustries.HOSPITALITY:
+    case BusinessIndustries.PLACES_TO_STAY:
       insights += `
-- Room count: ${responseMap.get("room_count") || "not specified"}
+- Accommodation type: ${responseMap.get("accommodation_type") || "not specified"}
+- Room/unit count: ${responseMap.get("room_count") || "not specified"}
 - Occupancy rate: ${responseMap.get("occupancy_rate") || "not specified"}
 - Primary guest types: ${responseMap.get("guest_type") || "not specified"}
 - Low season: ${responseMap.get("low_season") || "not specified"}
-- Amenities: ${responseMap.get("amenities_hospitality") || "not specified"}
+- Amenities: ${responseMap.get("amenities") || "not specified"}
+- Check-in flexibility: ${responseMap.get("checkin_flexibility") || "not specified"}
 ${
   responseMap.get("special_packages")
-    ? "- Promote special packages (romance, adventure, etc.)"
+    ? "- Promote special packages (romance, adventure, family, etc.)"
     : ""
 }
-`;
-      break;
-
-    case BusinessIndustries.PROFESSIONAL_SERVICES:
-      insights += `
-- Service delivery: ${responseMap.get("service_delivery") || "not specified"}
-- Client types: ${responseMap.get("client_type") || "not specified"}
-- Pricing model: ${responseMap.get("pricing_model") || "not specified"}
-- Current capacity: ${
-        responseMap.get("capacity_constraints") || "not specified"
-      }
-- Specializations: ${responseMap.get("specializations") || "not specified"}
 ${
-  responseMap.get("consultation_process")
-    ? "- Emphasize free consultations"
+  responseMap.get("pet_friendly")
+    ? "- Highlight pet-friendly accommodations"
+    : ""
+}
+${
+  responseMap.get("local_partnerships")
+    ? "- Leverage partnerships with local attractions and restaurants"
     : ""
 }
 `;
