@@ -36,7 +36,7 @@ function generateEnhancedInstructions(
   businessName: string,
   industry: string,
   responses: ITrainingResponse[],
-  baseInstructions: string
+  baseInstructions: string,
 ): string {
   const responseMap = new Map(responses.map((r) => [r.questionId, r.answer]));
 
@@ -80,7 +80,7 @@ ${
 ${
   Array.isArray(brandVoice) && brandVoice.length > 0
     ? `Use a ${(brandVoice as string[]).join(
-        ", "
+        ", ",
       )} tone in all communications and recommendations.`
     : ""
 }
@@ -205,7 +205,7 @@ function generateEnhancedInstructionsWithGooglePlaces(
   industry: string,
   responses: ITrainingResponse[],
   baseInstructions: string,
-  googlePlacesData: any
+  googlePlacesData: any,
 ): string {
   const responseMap = new Map(responses.map((r) => [r.questionId, r.answer]));
 
@@ -224,7 +224,8 @@ function generateEnhancedInstructionsWithGooglePlaces(
   const businessDescription = responseMap.get("business_description") || "";
 
   // Format operating hours from Google Places
-  const operatingHours = googlePlacesData?.regularOpeningHours?.weekdayDescriptions
+  const operatingHours = googlePlacesData?.regularOpeningHours
+    ?.weekdayDescriptions
     ? googlePlacesData.regularOpeningHours.weekdayDescriptions.join("\n  ")
     : "Not available";
 
@@ -284,7 +285,7 @@ ${
 ${
   Array.isArray(brandVoice) && brandVoice.length > 0
     ? `Use a ${(brandVoice as string[]).join(
-        ", "
+        ", ",
       )} tone in all communications and recommendations.`
     : ""
 }
@@ -413,7 +414,7 @@ Remember: Your goal is to increase customer engagement and improve profitability
  */
 function generateIndustryInsights(
   industry: BusinessIndustries,
-  responses: ITrainingResponse[]
+  responses: ITrainingResponse[],
 ): string {
   const responseMap = new Map(responses.map((r) => [r.questionId, r.answer]));
   let insights = "\n## Industry-Specific Insights\n";
@@ -669,16 +670,20 @@ export class AITrainingService {
 
       logger.info(
         { businessId, foundAgent: !!businessAgent },
-        "Business agent lookup result"
+        "Business agent lookup result",
       );
 
       if (!businessAgent) {
-        throw new Error(`No AI agent found for business ID: ${businessId}`);
+        throw new Error(
+          `not found: No AI agent found for business ID: ${businessId}`,
+        );
       }
 
       // Get industry and subCategory from business agent
       const industry = businessAgent.category as BusinessIndustries;
-      const subCategory = businessAgent.subCategories?.[0] as BusinessSubCategory | undefined;
+      const subCategory = businessAgent.subCategories?.[0] as
+        | BusinessSubCategory
+        | undefined;
 
       // Check if training already exists
       const existingTraining = await AI_TrainingModel.findOne({
@@ -687,13 +692,13 @@ export class AITrainingService {
 
       logger.info(
         { businessId, existingTraining: !!existingTraining },
-        "Existing training check"
+        "Existing training check",
       );
 
       if (existingTraining) {
         const phaseSummary = getPhaseSummary(
           existingTraining.industry as BusinessIndustries,
-          existingTraining.subCategory as BusinessSubCategory
+          existingTraining.subCategory as BusinessSubCategory,
         );
 
         return {
@@ -709,9 +714,12 @@ export class AITrainingService {
       const basicQuestions = getQuestionsByPhaseUtil(
         industry,
         TrainingPhase.BASIC,
-        subCategory
+        subCategory,
       );
-      logger.info({ questionCount: basicQuestions.length }, "Basic questions fetched");
+      logger.info(
+        { questionCount: basicQuestions.length },
+        "Basic questions fetched",
+      );
 
       const phaseSummary = getPhaseSummary(industry, subCategory);
 
@@ -738,12 +746,20 @@ export class AITrainingService {
       }
 
       // remove prefilled questions from questions array
-      const filteredQuestions = basicQuestions.filter((q) => !responseMap.has(q.id));
+      const filteredQuestions = basicQuestions.filter(
+        (q) => !responseMap.has(q.id),
+      );
 
       // Calculate phase progress
-      const basicPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.BASIC);
-      const standardPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.STANDARD);
-      const advancedPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.ADVANCED);
+      const basicPhaseInfo = phaseSummary.find(
+        (p) => p.phase === TrainingPhase.BASIC,
+      );
+      const standardPhaseInfo = phaseSummary.find(
+        (p) => p.phase === TrainingPhase.STANDARD,
+      );
+      const advancedPhaseInfo = phaseSummary.find(
+        (p) => p.phase === TrainingPhase.ADVANCED,
+      );
 
       // Create new training record
       const training = await AI_TrainingModel.create({
@@ -760,8 +776,10 @@ export class AITrainingService {
           answeredQuestions: prefilledResponses.length,
           requiredQuestions: basicQuestions.filter((q) => q.required).length,
           completionPercentage: Math.min(
-            Math.round((prefilledResponses.length / basicQuestions.length) * 100),
-            100
+            Math.round(
+              (prefilledResponses.length / basicQuestions.length) * 100,
+            ),
+            100,
           ),
           phaseProgress: {
             basic: {
@@ -792,7 +810,7 @@ export class AITrainingService {
           questionCount: filteredQuestions.length,
           currentPhase: TrainingPhase.BASIC,
         },
-        "Training initialized successfully"
+        "Training initialized successfully",
       );
       return { training, questions: filteredQuestions, phaseSummary };
     } catch (error: any) {
@@ -805,7 +823,7 @@ export class AITrainingService {
           },
           businessId,
         },
-        "Error initializing training"
+        "Error initializing training",
       );
       throw error;
     }
@@ -816,7 +834,7 @@ export class AITrainingService {
    */
   private static validateResponse(
     response: { questionId: string; answer: any },
-    question: AI_Training_Questionnaire_Type
+    question: AI_Training_Questionnaire_Type,
   ): { valid: boolean; error?: string } {
     const { answer } = response;
     const { type, options, required } = question;
@@ -824,14 +842,28 @@ export class AITrainingService {
     // Check for empty/null answers on required questions
     if (required) {
       if (answer === null || answer === undefined) {
-        return { valid: false, error: `Answer is required for question: ${question.id}` };
+        return {
+          valid: false,
+          error: `Answer is required for question: ${question.id}`,
+        };
       }
 
-      if (type === "text" && typeof answer === "string" && answer.trim() === "") {
-        return { valid: false, error: `Answer cannot be empty for question: ${question.id}` };
+      if (
+        type === "text" &&
+        typeof answer === "string" &&
+        answer.trim() === ""
+      ) {
+        return {
+          valid: false,
+          error: `Answer cannot be empty for question: ${question.id}`,
+        };
       }
 
-      if (type === "multi_select" && Array.isArray(answer) && answer.length === 0) {
+      if (
+        type === "multi_select" &&
+        Array.isArray(answer) &&
+        answer.length === 0
+      ) {
         return {
           valid: false,
           error: `At least one option must be selected for question: ${question.id}`,
@@ -951,7 +983,7 @@ export class AITrainingService {
     responses: {
       questionId: string;
       answer: string | string[] | number | boolean;
-    }[]
+    }[],
   ) {
     try {
       const training = await AI_TrainingModel.findOne({
@@ -965,7 +997,7 @@ export class AITrainingService {
       // Get all questions for validation
       const allQuestions = getAI_Training_Questionnaire_Types(
         training.industry as BusinessIndustries,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       // Create a map for quick question lookup
@@ -979,7 +1011,7 @@ export class AITrainingService {
         const question = questionMap.get(response.questionId);
         if (!question) {
           validationErrors.push(
-            `Question ID "${response.questionId}" does not exist for this business`
+            `Question ID "${response.questionId}" does not exist for this business`,
           );
           continue;
         }
@@ -999,7 +1031,7 @@ export class AITrainingService {
       // All validations passed, now save the responses
       for (const response of responses) {
         const existingIndex = training.responses.findIndex(
-          (r) => r.questionId === response.questionId
+          (r) => r.questionId === response.questionId,
         );
 
         if (existingIndex >= 0) {
@@ -1021,34 +1053,48 @@ export class AITrainingService {
         training.metadata.answeredQuestions = training.responses.length;
 
         // Calculate completion percentage and cap at 100% to handle edge cases
-        const rawPercentage = (training.responses.length / (training.metadata.totalQuestions || 1)) * 100;
-        training.metadata.completionPercentage = Math.min(Math.round(rawPercentage), 100);
+        const rawPercentage =
+          (training.responses.length /
+            (training.metadata.totalQuestions || 1)) *
+          100;
+        training.metadata.completionPercentage = Math.min(
+          Math.round(rawPercentage),
+          100,
+        );
 
         // Update phase progress
         if (training.metadata.phaseProgress) {
-          const responseIds = new Set(training.responses.map((r) => r.questionId));
+          const responseIds = new Set(
+            training.responses.map((r) => r.questionId),
+          );
 
           // Get questions by phase
           const basicQuestions = getQuestionsByPhaseUtil(
             training.industry as BusinessIndustries,
             TrainingPhase.BASIC,
-            training.subCategory as BusinessSubCategory
+            training.subCategory as BusinessSubCategory,
           );
           const standardQuestions = getQuestionsByPhaseUtil(
             training.industry as BusinessIndustries,
             TrainingPhase.STANDARD,
-            training.subCategory as BusinessSubCategory
+            training.subCategory as BusinessSubCategory,
           );
           const advancedQuestions = getQuestionsByPhaseUtil(
             training.industry as BusinessIndustries,
             TrainingPhase.ADVANCED,
-            training.subCategory as BusinessSubCategory
+            training.subCategory as BusinessSubCategory,
           );
 
           // Count answered questions per phase
-          const basicAnswered = basicQuestions.filter((q) => responseIds.has(q.id)).length;
-          const standardAnswered = standardQuestions.filter((q) => responseIds.has(q.id)).length;
-          const advancedAnswered = advancedQuestions.filter((q) => responseIds.has(q.id)).length;
+          const basicAnswered = basicQuestions.filter((q) =>
+            responseIds.has(q.id),
+          ).length;
+          const standardAnswered = standardQuestions.filter((q) =>
+            responseIds.has(q.id),
+          ).length;
+          const advancedAnswered = advancedQuestions.filter((q) =>
+            responseIds.has(q.id),
+          ).length;
 
           training.metadata.phaseProgress.basic.answered = basicAnswered;
           training.metadata.phaseProgress.basic.completed =
@@ -1073,14 +1119,14 @@ export class AITrainingService {
 
       logger.info(
         { businessId, responseCount: responses.length },
-        "Training responses submitted successfully"
+        "Training responses submitted successfully",
       );
 
       return training;
     } catch (error: any) {
       logger.error(
         { error, businessId },
-        "Error submitting training responses"
+        "Error submitting training responses",
       );
       throw error;
     }
@@ -1104,12 +1150,12 @@ export class AITrainingService {
       const basicQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         TrainingPhase.BASIC,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       const requiredBasicQuestions = basicQuestions.filter((q) => q.required);
       const responsesMap = Object.fromEntries(
-        training.responses.map((r) => [r.questionId, r.answer])
+        training.responses.map((r) => [r.questionId, r.answer]),
       );
 
       const missingBasicRequired = requiredBasicQuestions
@@ -1119,8 +1165,8 @@ export class AITrainingService {
       if (missingBasicRequired.length > 0) {
         throw new Error(
           `Training incomplete. Missing required BASIC phase questions: ${missingBasicRequired.join(
-            ", "
-          )}. Please complete at least the Basic phase before finishing training.`
+            ", ",
+          )}. Please complete at least the Basic phase before finishing training.`,
         );
       }
 
@@ -1130,7 +1176,9 @@ export class AITrainingService {
       });
 
       if (!businessAgent) {
-        throw new Error(`No AI agent found for business ID: ${businessId}`);
+        throw new Error(
+          `not found: No AI agent found for business ID: ${businessId}`,
+        );
       }
 
       // Generate enhanced instructions
@@ -1139,12 +1187,12 @@ export class AITrainingService {
         businessAgent.businessName,
         training.industry,
         training.responses,
-        baseInstructions
+        baseInstructions,
       );
 
       const industryInsights = generateIndustryInsights(
         training.industry as BusinessIndustries,
-        training.responses
+        training.responses,
       );
 
       const finalInstructions = enhancedInstructions + industryInsights;
@@ -1156,20 +1204,27 @@ export class AITrainingService {
         });
         logger.info(
           { businessId, assistantId: businessAgent.assistantId },
-          "Assistant updated successfully"
+          "Assistant updated successfully",
         );
       } catch (assistantError: any) {
         // Log the assistant update error
         logger.error(
-          { error: assistantError, businessId, assistantId: businessAgent.assistantId },
-          "Failed to update OpenAI assistant"
+          {
+            error: assistantError,
+            businessId,
+            assistantId: businessAgent.assistantId,
+          },
+          "Failed to update OpenAI assistant",
         );
 
         // Check if it's a 404 error (assistant doesn't exist)
-        if (assistantError.status === 404 || assistantError.message?.includes("404")) {
+        if (
+          assistantError.status === 404 ||
+          assistantError.message?.includes("404")
+        ) {
           logger.warn(
             { businessId, assistantId: businessAgent.assistantId },
-            "Assistant not found in OpenAI. Attempting to create new assistant with training data..."
+            "Assistant not found in OpenAI. Attempting to create new assistant with training data...",
           );
 
           try {
@@ -1178,9 +1233,7 @@ export class AITrainingService {
               name: businessAgent.businessName,
               model: "gpt-4o",
               instructions: finalInstructions,
-              tools: [
-                { type: "file_search" },
-              ],
+              tools: [{ type: "file_search" }],
             });
 
             // Update the business agent with new assistant ID
@@ -1193,12 +1246,12 @@ export class AITrainingService {
                 oldAssistantId: assistantError.message,
                 newAssistantId: newAssistant.id,
               },
-              "Successfully created new assistant with training data"
+              "Successfully created new assistant with training data",
             );
           } catch (createError: any) {
             logger.error(
               { error: createError, businessId },
-              "Failed to create new assistant. Training will be marked as completed without assistant."
+              "Failed to create new assistant. Training will be marked as completed without assistant.",
             );
           }
         }
@@ -1217,9 +1270,10 @@ export class AITrainingService {
         message: "Training completed successfully",
         training,
         assistantId: businessAgent.assistantId,
-        warning: training.trainingStatus === "completed" && !finalInstructions
-          ? undefined
-          : "Assistant update may have failed, but training is marked as completed",
+        warning:
+          training.trainingStatus === "completed" && !finalInstructions
+            ? undefined
+            : "Assistant update may have failed, but training is marked as completed",
       };
     } catch (error: any) {
       logger.error({ error, businessId }, "Error completing training");
@@ -1246,7 +1300,7 @@ export class AITrainingService {
       // Get questions for this industry
       const questions = getAI_Training_Questionnaire_Types(
         training.industry as BusinessIndustries,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       return {
@@ -1268,12 +1322,12 @@ export class AITrainingService {
    */
   static async getTrainingQuestions(
     industry: BusinessIndustries,
-    subCategory?: BusinessSubCategory
+    subCategory?: BusinessSubCategory,
   ) {
     try {
       const questions = getAI_Training_Questionnaire_Types(
         industry,
-        subCategory
+        subCategory,
       );
       const requiredQuestions = getRequiredQuestions(industry, subCategory);
 
@@ -1295,12 +1349,12 @@ export class AITrainingService {
    */
   static async getTrainingQuestionsWithDefaults(
     industry: BusinessIndustries,
-    subCategory?: BusinessSubCategory
+    subCategory?: BusinessSubCategory,
   ) {
     try {
       const questionsWithDefaults = getQuestionsWithSmartDefaults(
         industry,
-        subCategory
+        subCategory,
       );
       const requiredQuestions = getRequiredQuestions(industry, subCategory);
       const smartDefaults = getSmartDefaults(industry, subCategory);
@@ -1324,7 +1378,7 @@ export class AITrainingService {
     } catch (error: any) {
       logger.error(
         { error, industry },
-        "Error getting training questions with defaults"
+        "Error getting training questions with defaults",
       );
       throw error;
     }
@@ -1412,12 +1466,12 @@ export class AITrainingService {
       const questions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         phase,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       const phaseSummary = getPhaseSummary(
         training.industry as BusinessIndustries,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       return {
@@ -1429,7 +1483,10 @@ export class AITrainingService {
         metadata: training.metadata,
       };
     } catch (error: any) {
-      logger.error({ error, businessId, phase }, "Error getting questions by phase");
+      logger.error(
+        { error, businessId, phase },
+        "Error getting questions by phase",
+      );
       throw error;
     }
   }
@@ -1444,7 +1501,10 @@ export class AITrainingService {
    * @param businessId - The business ID
    * @param queryPhase - Optional phase to query. If provided, returns questions from this phase instead of current phase
    */
-  static async getTrainingState(businessId: string, queryPhase?: TrainingPhase) {
+  static async getTrainingState(
+    businessId: string,
+    queryPhase?: TrainingPhase,
+  ) {
     try {
       logger.info({ businessId, queryPhase }, "Starting getTrainingState");
 
@@ -1453,15 +1513,20 @@ export class AITrainingService {
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
-      logger.info({
-        businessId,
-        foundAgent: !!businessAgent,
-        agentCategory: businessAgent?.category,
-        agentSubCategories: businessAgent?.subCategories
-      }, "Business agent lookup result");
+      logger.info(
+        {
+          businessId,
+          foundAgent: !!businessAgent,
+          agentCategory: businessAgent?.category,
+          agentSubCategories: businessAgent?.subCategories,
+        },
+        "Business agent lookup result",
+      );
 
       if (!businessAgent) {
-        throw new Error(`No AI agent found for business ID: ${businessId}`);
+        throw new Error(
+          `not found: No AI agent found for business ID: ${businessId}`,
+        );
       }
 
       // Check if training exists
@@ -1473,7 +1538,9 @@ export class AITrainingService {
       if (!training) {
         logger.info({ businessId }, "No training found, initializing");
         const industry = businessAgent.category as BusinessIndustries;
-        const subCategory = businessAgent.subCategories?.[0] as BusinessSubCategory | undefined;
+        const subCategory = businessAgent.subCategories?.[0] as
+          | BusinessSubCategory
+          | undefined;
 
         logger.info({ industry, subCategory }, "Getting basic phase questions");
 
@@ -1481,13 +1548,19 @@ export class AITrainingService {
         const basicQuestions = getQuestionsByPhaseUtil(
           industry,
           TrainingPhase.BASIC,
-          subCategory
+          subCategory,
         );
 
-        logger.info({ basicQuestionsCount: basicQuestions.length }, "Basic questions retrieved");
+        logger.info(
+          { basicQuestionsCount: basicQuestions.length },
+          "Basic questions retrieved",
+        );
 
         const phaseSummary = getPhaseSummary(industry, subCategory);
-        logger.info({ phaseSummaryLength: phaseSummary.length }, "Phase summary retrieved");
+        logger.info(
+          { phaseSummaryLength: phaseSummary.length },
+          "Phase summary retrieved",
+        );
 
         // Pre-fill business_name and business_description
         const prefilledResponses: ITrainingResponse[] = [];
@@ -1510,12 +1583,20 @@ export class AITrainingService {
         }
 
         // Remove prefilled questions from questions array
-        const filteredQuestions = basicQuestions.filter((q) => !responseMap.has(q.id));
+        const filteredQuestions = basicQuestions.filter(
+          (q) => !responseMap.has(q.id),
+        );
 
         // Calculate phase progress
-        const basicPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.BASIC);
-        const standardPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.STANDARD);
-        const advancedPhaseInfo = phaseSummary.find((p) => p.phase === TrainingPhase.ADVANCED);
+        const basicPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.BASIC,
+        );
+        const standardPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.STANDARD,
+        );
+        const advancedPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.ADVANCED,
+        );
 
         // Create new training record
         training = await AI_TrainingModel.create({
@@ -1532,8 +1613,10 @@ export class AITrainingService {
             answeredQuestions: prefilledResponses.length,
             requiredQuestions: basicQuestions.filter((q) => q.required).length,
             completionPercentage: Math.min(
-              Math.round((prefilledResponses.length / basicQuestions.length) * 100),
-              100
+              Math.round(
+                (prefilledResponses.length / basicQuestions.length) * 100,
+              ),
+              100,
             ),
             phaseProgress: {
               basic: {
@@ -1560,12 +1643,12 @@ export class AITrainingService {
       // Get phase summary
       const phaseSummary = getPhaseSummary(
         training.industry as BusinessIndustries,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       // Create response map for quick lookup
       const responseMap = new Map(
-        training.responses.map((r) => [r.questionId, r])
+        training.responses.map((r) => [r.questionId, r]),
       );
 
       // Check if current phase is completed and advance to next phase if needed
@@ -1573,12 +1656,12 @@ export class AITrainingService {
       const currentPhaseQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         training.currentPhase as TrainingPhase,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       // Count answered questions in current phase
       const currentPhaseAnswered = currentPhaseQuestions.filter((q) =>
-        responseMap.has(q.id)
+        responseMap.has(q.id),
       ).length;
 
       // If all questions in current phase are answered, advance to next phase
@@ -1592,50 +1675,59 @@ export class AITrainingService {
         }
 
         // Advance to next phase if available and not already completed
-        if (nextPhase && !training.completedPhases.includes(training.currentPhase as any)) {
+        if (
+          nextPhase &&
+          !training.completedPhases.includes(training.currentPhase as any)
+        ) {
           training.completedPhases.push(training.currentPhase as any);
           training.currentPhase = nextPhase;
           phaseChanged = true;
           await training.save();
 
           logger.info(
-            { businessId, oldPhase: training.completedPhases[training.completedPhases.length - 1], newPhase: nextPhase },
-            "Advanced to next phase"
+            {
+              businessId,
+              oldPhase:
+                training.completedPhases[training.completedPhases.length - 1],
+              newPhase: nextPhase,
+            },
+            "Advanced to next phase",
           );
         }
       }
 
       // Check if advanced phase is complete (separate check since it has no next phase)
-      if (training.currentPhase === TrainingPhase.ADVANCED && !training.completedPhases.includes(TrainingPhase.ADVANCED as any)) {
+      if (
+        training.currentPhase === TrainingPhase.ADVANCED &&
+        !training.completedPhases.includes(TrainingPhase.ADVANCED as any)
+      ) {
         const advancedPhaseQuestions = getQuestionsByPhaseUtil(
           training.industry as BusinessIndustries,
           TrainingPhase.ADVANCED,
-          training.subCategory as BusinessSubCategory
+          training.subCategory as BusinessSubCategory,
         );
         const advancedPhaseAnswered = advancedPhaseQuestions.filter((q) =>
-          responseMap.has(q.id)
+          responseMap.has(q.id),
         ).length;
 
         if (advancedPhaseAnswered === advancedPhaseQuestions.length) {
           training.completedPhases.push(TrainingPhase.ADVANCED as any);
           await training.save();
 
-          logger.info(
-            { businessId },
-            "Advanced phase marked as completed"
-          );
+          logger.info({ businessId }, "Advanced phase marked as completed");
         }
       }
 
       // Determine which phase to return questions for
       // If queryPhase is provided, use that; otherwise use current phase
-      const phaseToReturn = queryPhase || training.currentPhase as TrainingPhase;
+      const phaseToReturn =
+        queryPhase || (training.currentPhase as TrainingPhase);
 
       // Get questions for the queried/current phase
       const activePhaseQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         phaseToReturn,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
 
       // Add isAnswered status and answer to each question
@@ -1652,53 +1744,66 @@ export class AITrainingService {
       });
 
       // Count answered and remaining
-      const answeredCount = questionsWithStatus.filter((q) => q.isAnswered).length;
-      const remainingCount = questionsWithStatus.filter((q) => !q.isAnswered).length;
+      const answeredCount = questionsWithStatus.filter(
+        (q) => q.isAnswered,
+      ).length;
+      const remainingCount = questionsWithStatus.filter(
+        (q) => !q.isAnswered,
+      ).length;
 
       // Calculate correct metadata with proper percentages (capped at 100%)
-      const totalQuestionsAllPhases = phaseSummary.reduce((sum, p) => sum + p.totalQuestions, 0);
+      const totalQuestionsAllPhases = phaseSummary.reduce(
+        (sum, p) => sum + p.totalQuestions,
+        0,
+      );
       const totalAnsweredAllPhases = training.responses.length;
-      const totalRequiredAllPhases = phaseSummary.reduce((sum, p) => sum + p.requiredQuestions, 0);
+      const totalRequiredAllPhases = phaseSummary.reduce(
+        (sum, p) => sum + p.requiredQuestions,
+        0,
+      );
 
       // Calculate per-phase progress with percentages
       const phaseProgressWithPercentage = {
         basic: {
           total: training.metadata?.phaseProgress?.basic?.total || 0,
           answered: training.metadata?.phaseProgress?.basic?.answered || 0,
-          completed: training.metadata?.phaseProgress?.basic?.completed || false,
+          completed:
+            training.metadata?.phaseProgress?.basic?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.basic?.answered || 0) /
                 (training.metadata?.phaseProgress?.basic?.total || 1)) *
-                100
+                100,
             ),
-            100
+            100,
           ),
         },
         standard: {
           total: training.metadata?.phaseProgress?.standard?.total || 0,
           answered: training.metadata?.phaseProgress?.standard?.answered || 0,
-          completed: training.metadata?.phaseProgress?.standard?.completed || false,
+          completed:
+            training.metadata?.phaseProgress?.standard?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.standard?.answered || 0) /
                 (training.metadata?.phaseProgress?.standard?.total || 1)) *
-                100
+                100,
             ),
-            100
+            100,
           ),
         },
         advanced: {
           total: training.metadata?.phaseProgress?.advanced?.total || 0,
           answered: training.metadata?.phaseProgress?.advanced?.answered || 0,
-          completed: training.metadata?.phaseProgress?.advanced?.completed || false,
+          completed:
+            training.metadata?.phaseProgress?.advanced?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.advanced?.answered || 0) /
                 (training.metadata?.phaseProgress?.advanced?.total || 1)) *
-                100
+                100,
             ),
-            100
+            100,
           ),
         },
       };
@@ -1706,11 +1811,14 @@ export class AITrainingService {
       // Build corrected metadata
       const correctedMetadata = {
         totalQuestions: totalQuestionsAllPhases,
-        answeredQuestions: Math.min(totalAnsweredAllPhases, totalQuestionsAllPhases),
+        answeredQuestions: Math.min(
+          totalAnsweredAllPhases,
+          totalQuestionsAllPhases,
+        ),
         requiredQuestions: totalRequiredAllPhases,
         completionPercentage: Math.min(
           Math.round((totalAnsweredAllPhases / totalQuestionsAllPhases) * 100),
-          100
+          100,
         ),
         phaseProgress: phaseProgressWithPercentage,
       };
@@ -1722,9 +1830,11 @@ export class AITrainingService {
       const basicQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         TrainingPhase.BASIC,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
-      const basicAnswered = basicQuestions.filter((q) => responseMap.has(q.id)).length;
+      const basicAnswered = basicQuestions.filter((q) =>
+        responseMap.has(q.id),
+      ).length;
       if (basicAnswered === basicQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.BASIC);
       }
@@ -1732,9 +1842,11 @@ export class AITrainingService {
       const standardQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         TrainingPhase.STANDARD,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
-      const standardAnswered = standardQuestions.filter((q) => responseMap.has(q.id)).length;
+      const standardAnswered = standardQuestions.filter((q) =>
+        responseMap.has(q.id),
+      ).length;
       if (standardAnswered === standardQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.STANDARD);
       }
@@ -1742,9 +1854,11 @@ export class AITrainingService {
       const advancedQuestions = getQuestionsByPhaseUtil(
         training.industry as BusinessIndustries,
         TrainingPhase.ADVANCED,
-        training.subCategory as BusinessSubCategory
+        training.subCategory as BusinessSubCategory,
       );
-      const advancedAnswered = advancedQuestions.filter((q) => responseMap.has(q.id)).length;
+      const advancedAnswered = advancedQuestions.filter((q) =>
+        responseMap.has(q.id),
+      ).length;
       if (advancedAnswered === advancedQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.ADVANCED);
       }
@@ -1776,7 +1890,10 @@ export class AITrainingService {
           questions: questionsWithStatus,
         },
         metadata: correctedMetadata,
-        completedAt: correctedTrainingStatus === "completed" ? training.completedAt : undefined,
+        completedAt:
+          correctedTrainingStatus === "completed"
+            ? training.completedAt
+            : undefined,
       };
     } catch (error: any) {
       logger.error({ error, businessId }, "Error getting training state");
@@ -1790,7 +1907,7 @@ export class AITrainingService {
    */
   static async updateGooglePlacesData(
     businessId: string,
-    googlePlacesData: any
+    googlePlacesData: any,
   ): Promise<any> {
     try {
       logger.info({ businessId }, "Updating Google Places data");
@@ -1815,7 +1932,8 @@ export class AITrainingService {
           ? {
               openNow: googlePlacesData.regularOpeningHours.openNow,
               periods: googlePlacesData.regularOpeningHours.periods,
-              weekdayDescriptions: googlePlacesData.regularOpeningHours.weekdayDescriptions,
+              weekdayDescriptions:
+                googlePlacesData.regularOpeningHours.weekdayDescriptions,
             }
           : undefined,
         photos: googlePlacesData.photos?.map((photo: any) => ({
@@ -1850,7 +1968,7 @@ export class AITrainingService {
 
       logger.info(
         { businessId, hasOpeningHours: !!structuredData.regularOpeningHours },
-        "Google Places data updated successfully"
+        "Google Places data updated successfully",
       );
 
       // If training is completed, update the AI assistant with new information
@@ -1862,13 +1980,14 @@ export class AITrainingService {
 
           if (businessAgent && businessAgent.assistantId) {
             // Generate enhanced instructions with Google Places data
-            const enhancedInstructions = generateEnhancedInstructionsWithGooglePlaces(
-              businessAgent.businessName,
-              training.industry,
-              training.responses,
-              businessAgent.instructions || "",
-              structuredData
-            );
+            const enhancedInstructions =
+              generateEnhancedInstructionsWithGooglePlaces(
+                businessAgent.businessName,
+                training.industry,
+                training.responses,
+                businessAgent.instructions || "",
+                structuredData,
+              );
 
             // Update assistant
             await openai.beta.assistants.update(businessAgent.assistantId, {
@@ -1877,13 +1996,13 @@ export class AITrainingService {
 
             logger.info(
               { businessId, assistantId: businessAgent.assistantId },
-              "Assistant updated with Google Places data"
+              "Assistant updated with Google Places data",
             );
           }
         } catch (assistantError: any) {
           logger.error(
             { error: assistantError, businessId },
-            "Failed to update assistant with Google Places data, but data was saved"
+            "Failed to update assistant with Google Places data, but data was saved",
           );
           // Don't throw - data is saved even if assistant update fails
         }
