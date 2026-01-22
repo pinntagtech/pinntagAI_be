@@ -1524,9 +1524,7 @@ export class AITrainingService {
       );
 
       if (!businessAgent) {
-        throw new Error(
-          `not found: No AI agent found for business ID: ${businessId}`,
-        );
+        throw new Error(`No AI agent found for business ID: ${businessId}`);
       }
 
       // Check if training exists
