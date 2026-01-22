@@ -54,7 +54,7 @@ export class AITrainingController {
           },
           businessId: req.params?.businessId,
         },
-        "Error initializing training"
+        "Error initializing training",
       );
 
       if (error.message?.includes("not found")) {
@@ -115,7 +115,7 @@ export class AITrainingController {
 
       const result = await AITrainingService.submitTrainingResponses(
         businessId,
-        responses
+        responses,
       );
 
       return res.status(200).json({
@@ -223,6 +223,13 @@ export class AITrainingController {
 
       const result = await AITrainingService.getTrainingStatus(businessId);
 
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          error: "Training status not found",
+        });
+      }
+
       return res.status(200).json({
         success: true,
         data: result,
@@ -256,13 +263,13 @@ export class AITrainingController {
 
       if (
         !Object.values(BusinessIndustries).includes(
-          industry as BusinessIndustries
+          industry as BusinessIndustries,
         )
       ) {
         return res.status(400).json({
           success: false,
           error: `Invalid industry. Must be one of: ${Object.values(
-            BusinessIndustries
+            BusinessIndustries,
           ).join(", ")}`,
         });
       }
@@ -271,7 +278,7 @@ export class AITrainingController {
       if (
         subCategory &&
         !Object.values(BusinessSubCategory).includes(
-          subCategory as BusinessSubCategory
+          subCategory as BusinessSubCategory,
         )
       ) {
         return res.status(400).json({
@@ -282,7 +289,7 @@ export class AITrainingController {
 
       const result = await AITrainingService.getTrainingQuestions(
         industry as BusinessIndustries,
-        subCategory as BusinessSubCategory
+        subCategory as BusinessSubCategory,
       );
 
       return res.status(200).json({
@@ -337,14 +344,14 @@ export class AITrainingController {
         return res.status(400).json({
           success: false,
           error: `Invalid phase. Must be one of: ${Object.values(
-            TrainingPhase
+            TrainingPhase,
           ).join(", ")}`,
         });
       }
 
       const result = await AITrainingService.getQuestionsByPhase(
         businessId,
-        phase as TrainingPhase
+        phase as TrainingPhase,
       );
 
       return res.status(200).json({
@@ -352,7 +359,10 @@ export class AITrainingController {
         data: result,
       });
     } catch (error: any) {
-      logger.error({ error, businessId: req.params?.businessId }, "Error getting questions by phase");
+      logger.error(
+        { error, businessId: req.params?.businessId },
+        "Error getting questions by phase",
+      );
 
       if (error.message?.includes("not found")) {
         return res.status(404).json({
@@ -387,13 +397,13 @@ export class AITrainingController {
 
       if (
         !Object.values(BusinessIndustries).includes(
-          industry as BusinessIndustries
+          industry as BusinessIndustries,
         )
       ) {
         return res.status(400).json({
           success: false,
           error: `Invalid industry. Must be one of: ${Object.values(
-            BusinessIndustries
+            BusinessIndustries,
           ).join(", ")}`,
         });
       }
@@ -402,7 +412,7 @@ export class AITrainingController {
       if (
         subCategory &&
         !Object.values(BusinessSubCategory).includes(
-          subCategory as BusinessSubCategory
+          subCategory as BusinessSubCategory,
         )
       ) {
         return res.status(400).json({
@@ -413,7 +423,7 @@ export class AITrainingController {
 
       const result = await AITrainingService.getTrainingQuestionsWithDefaults(
         industry as BusinessIndustries,
-        subCategory as BusinessSubCategory
+        subCategory as BusinessSubCategory,
       );
 
       return res.status(200).json({
@@ -552,7 +562,10 @@ export class AITrainingController {
       }
 
       // Validate phase if provided
-      if (phase && !["basic", "standard", "advanced"].includes(phase as string)) {
+      if (
+        phase &&
+        !["basic", "standard", "advanced"].includes(phase as string)
+      ) {
         return res.status(400).json({
           success: false,
           error: "Invalid phase. Must be one of: basic, standard, advanced",
@@ -561,7 +574,7 @@ export class AITrainingController {
 
       const result = await AITrainingService.getTrainingState(
         businessId,
-        phase as TrainingPhase | undefined
+        phase as TrainingPhase | undefined,
       );
 
       return res.status(200).json({
@@ -569,14 +582,17 @@ export class AITrainingController {
         data: result,
       });
     } catch (error: any) {
-      logger.error({
-        error: {
-          message: error?.message,
-          stack: error?.stack,
-          name: error?.name,
+      logger.error(
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+            name: error?.name,
+          },
+          businessId: req.params?.businessId,
         },
-        businessId: req.params?.businessId
-      }, "Error getting training state");
+        "Error getting training state",
+      );
 
       if (error.message?.includes("not found")) {
         return res.status(404).json({
@@ -628,7 +644,7 @@ export class AITrainingController {
 
       const result = await AITrainingService.updateGooglePlacesData(
         businessId,
-        googlePlacesData
+        googlePlacesData,
       );
 
       return res.status(200).json({
@@ -644,7 +660,7 @@ export class AITrainingController {
           },
           businessId: req.params.businessId,
         },
-        "Error updating Google Places data"
+        "Error updating Google Places data",
       );
 
       return res.status(500).json({
