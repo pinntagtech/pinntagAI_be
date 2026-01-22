@@ -601,6 +601,13 @@ export class AITrainingController {
         });
       }
 
+      if (error.message?.includes("No AI agent found")) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
       return res.status(500).json({
         success: false,
         error: error.message || "Failed to get training state",
