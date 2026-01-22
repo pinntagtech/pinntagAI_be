@@ -84,7 +84,7 @@ const TrainingResponseSchema = new Schema<ITrainingResponse>(
     answer: { type: Schema.Types.Mixed, required: true },
     answeredAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export const AI_TrainingSchema = new Schema<IAI_Training>(
@@ -105,16 +105,15 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
       type: String,
       required: true,
       enum: [
-        "Food & Drink",
-        "Retail",
-        "Health & Beauty",
-        "Fitness & Wellness",
         "Entertainment",
-        "Automotive Services",
-        "Home Services",
-        "Pet Services",
-        "Hospitality",
-        "Professional Services",
+        "Classes and Workshops",
+        "Food & Drink",
+        "Sports & Outdoor",
+        "Local Attractions",
+        "Retail & Shopping",
+        "Health & Wellness",
+        "Home & Professional Services",
+        "Places to Stay",
       ],
     },
     subCategory: {
@@ -194,7 +193,7 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
       default: [],
     },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true, versionKey: false },
 );
 
 // Indexes for efficient querying
@@ -213,7 +212,7 @@ AI_TrainingSchema.pre("save", function (next) {
     const answeredCount = doc.responses.length;
     doc.metadata.answeredQuestions = answeredCount;
     doc.metadata.completionPercentage = Math.round(
-      (answeredCount / doc.metadata.totalQuestions) * 100
+      (answeredCount / doc.metadata.totalQuestions) * 100,
     );
 
     // Auto-update training status
@@ -234,5 +233,5 @@ AI_TrainingSchema.pre("save", function (next) {
 
 export const AI_TrainingModel = mongoose.model<IAI_Training>(
   "AI_Training",
-  AI_TrainingSchema
+  AI_TrainingSchema,
 );
