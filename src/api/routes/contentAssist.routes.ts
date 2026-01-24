@@ -78,11 +78,39 @@ router.post("/titles", internalApiKeyGuard, generateTitles);
  * @access Protected (internal API key)
  * @header x-internal-api-key: string (required)
  *
- * @body Same as /content-assist/titles
+ * @body {
+ *   businessId: string (required) - The business ID,
+ *   contentType: "offer" | "event" | "flash_offer" | "specials" | "drop_pin" (required),
+ *   category?: string,
+ *   subCategory?: string,
+ *   tags?: string[],
+ *   promotionType?: "percent_off" | "dollar_off" | "bogo" | "free_item" | "happy_hour" | "combo_bundle" | "custom_deal" | "family_fun",
+ *   percentOffValue?: number,
+ *   dollarOffValue?: number,
+ *   bogoOrFreeItem?: string,
+ *   count?: number (default: 5, max: 10),
+ *   excludeTitles?: string[] - Previously generated titles to exclude from new results
+ * }
+ *
  * @response Same as /content-assist/titles
  *
+ * @example Request:
+ * {
+ *   "businessId": "507f1f77bcf86cd799439011",
+ *   "contentType": "event",
+ *   "category": "Live Music",
+ *   "subCategory": "Acoustic Set",
+ *   "excludeTitles": [
+ *     "Acoustic Night: Wine & Melodies",
+ *     "Unwind with Live Acoustic Vibes",
+ *     "Weekend Serenade Awaits"
+ *   ],
+ *   "count": 5
+ * }
+ *
  * Note: This endpoint adds a refresh seed to ensure new titles are generated
- * even with the same input parameters.
+ * even with the same input parameters. Pass excludeTitles array to prevent
+ * previously generated titles from appearing in the new results.
  */
 router.post("/titles/refresh", internalApiKeyGuard, refreshTitles);
 

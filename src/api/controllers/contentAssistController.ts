@@ -112,6 +112,7 @@ export async function generateTitles(
       bogoOrFreeItem: params.bogoOrFreeItem,
       count,
       refreshSeed: params.refreshSeed,
+      excludeTitles: params.excludeTitles,
     });
 
     res.status(200).json(result);

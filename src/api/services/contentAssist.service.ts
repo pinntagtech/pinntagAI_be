@@ -43,6 +43,7 @@ export interface GenerateTitlesRequest {
   bogoOrFreeItem?: string;
   count?: number;
   refreshSeed?: string;
+  excludeTitles?: string[]; // Titles to exclude (used for refresh to avoid duplicates)
 }
 
 export interface GenerateDescriptionRequest {
@@ -101,6 +102,7 @@ interface TitleGenerationParams {
   bogoOrFreeItem?: string;
   count: number;
   refreshSeed?: string;
+  excludeTitles?: string[]; // Titles to exclude (used for refresh to avoid duplicates)
 }
 
 interface DescriptionGenerationParams {
@@ -403,6 +405,7 @@ export class ContentAssistService {
       bogoOrFreeItem,
       count,
       refreshSeed,
+      excludeTitles,
     } = params;
 
     const typeInstructions = this.getTitleInstructions(contentType, promotionType);
@@ -448,6 +451,11 @@ REQUIREMENTS:
 5. Create variety - don't repeat similar patterns
 
 ${refreshSeed ? `[Refresh seed: ${refreshSeed} - generate completely different titles than before]` : ""}
+${excludeTitles?.length ? `
+IMPORTANT - DO NOT USE THESE TITLES (already generated):
+${excludeTitles.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
+
+Generate completely NEW and DIFFERENT titles. Do not repeat or closely rephrase any of the above.` : ""}
 
 Return ONLY a JSON object in this exact format:
 {
