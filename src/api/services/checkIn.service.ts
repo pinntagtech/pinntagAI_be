@@ -35,7 +35,7 @@ export class CheckInService {
    */
   static async generateCheckInTitles(
     context: CheckInContext,
-    count: number = 10
+    count: number = 10,
   ): Promise<CheckInTitleResponse> {
     try {
       const { businessId } = context;
@@ -46,7 +46,9 @@ export class CheckInService {
       });
 
       if (!businessAI) {
-        throw new Error("Business AI assistant not found. Please create an agent first.");
+        throw new Error(
+          "Business AI assistant not found. Please create an agent first.",
+        );
       }
 
       // Build the prompt for title generation using business metadata
@@ -56,10 +58,13 @@ export class CheckInService {
         businessAI.category,
         businessAI.subCategories || [],
         businessAI.tags || [],
-        count
+        count,
       );
 
-      logger.info({ businessId, count }, "Generating check-in titles from business metadata");
+      logger.info(
+        { businessId, count },
+        "Generating check-in titles from business metadata",
+      );
 
       // Create a thread for this conversation
       const thread = await openai.beta.threads.create();
@@ -111,7 +116,7 @@ export class CheckInService {
 
       logger.info(
         { businessId, suggestionsCount: suggestions.length },
-        "Check-in titles generated successfully"
+        "Check-in titles generated successfully",
       );
 
       return {
@@ -123,7 +128,10 @@ export class CheckInService {
         },
       };
     } catch (error: any) {
-      logger.error({ error: error.message }, "Error generating check-in titles");
+      logger.error(
+        { error: error.message },
+        "Error generating check-in titles",
+      );
       throw error;
     }
   }
@@ -137,9 +145,9 @@ export class CheckInService {
     category: string,
     subCategories: string[],
     tags: string[],
-    count: number = 10
+    count: number = 10,
   ): string {
-    const prompt = `Generate exactly ${count} creative and engaging check-in titles for customers checking in at this business.
+    const prompt = `Generate exactly ${count} atmospheric mood words to be used as check-in titles for this business.
 
 BUSINESS INFORMATION:
 - Name: ${businessName}
@@ -149,32 +157,32 @@ BUSINESS INFORMATION:
 - Tags: ${tags.join(", ") || "N/A"}
 
 TITLE REQUIREMENTS (VERY IMPORTANT):
-1. Each title MUST be exactly 7-8 alphabetic characters long (not including the emoji)
-   Examples of CORRECT length: "Awesome" (7), "Vibing" (6), "Chillin" (7), "Lovin It" (8)
-   Examples of WRONG length: "Great" (5 - too short), "Wonderful" (9 - too long)
-2. Each title MUST include ONE relevant emoji
-3. Titles should be positive, fun, and relatable
-4. Titles should reflect the business category, vibe, and atmosphere
-5. Use casual, social media-friendly language
-6. Avoid generic titles - make them specific to the business type
+1. Each title MUST be an ADJECTIVE describing the ATMOSPHERE, MOOD, or VIBE.
+   - Do NOT use physical product descriptors (e.g., avoid "Cheesy", "Crusty", "Tasty").
+   - DO use feeling words (e.g., "Radiant", "Elegant", "Serene").
+2. Each title MUST be exactly 7-8 alphabetic characters long (not including the emoji).
+   Examples of CORRECT length: "Elegant" (7), "Radiant" (7), "Tranquil" (8), "Dynamic" (7)
+   Examples of WRONG length: "Cozy" (4 - too short), "Beautiful" (9 - too long)
+3. Each title MUST include ONE relevant emoji.
+4. Titles must match the specific vibe of the business (e.g., a spa should be calming, a club should be energetic).
 
 EXAMPLES FOR REFERENCE:
-- For a pizza restaurant: "Yummy 🍕", "Cheesy 🧀", "Crusty 🍕"
-- For a gym: "Pumped 💪", "Strong 💪", "Gains 🏋️"
-- For a cafe: "Cozy ☕", "Chillin ☕", "Buzzin ☕"
+- For a luxury restaurant: "Elegant ✨", "Refined 🍷", "Sublime 🍽️"
+- For a nature retreat: "Serene 🍃", "Natural 🌿", "Restful 🪵"
+- For a lively gym/club: "Dynamic ⚡", "Vibrant 🎵", "Intense 🔥"
 
 Please provide exactly ${count} title suggestions in the following JSON format:
 {
   "titles": [
-    {"title": "Awesome", "emoji": "✨"},
-    {"title": "Vibing", "emoji": "🎵"},
-    {"title": "Loving", "emoji": "❤️"}
+    {"title": "Radiant", "emoji": "✨"},
+    {"title": "Tranquil", "emoji": "🌊"},
+    {"title": "Spirited", "emoji": "🥂"}
   ]
 }
 
 CRITICAL:
 - Title text must be 7-8 characters ONLY (not counting the emoji)
-- Each title MUST have an emoji
+- Words must be MOOD/ATMOSPHERIC adjectives
 - Return ONLY the JSON object, no additional text
 - Generate exactly ${count} unique titles`;
 
@@ -186,7 +194,7 @@ CRITICAL:
    */
   private static parseTitleSuggestions(
     responseText: string,
-    expectedCount: number
+    expectedCount: number,
   ): string[] {
     try {
       // Try to parse as JSON first
@@ -198,7 +206,9 @@ CRITICAL:
             .filter((item: any) => {
               // Validate that title is 7-8 characters and has emoji
               const titleLength = item.title?.replace(/\s/g, "").length || 0;
-              return item.title && item.emoji && titleLength >= 6 && titleLength <= 8;
+              return (
+                item.title && item.emoji && titleLength >= 6 && titleLength <= 8
+              );
             })
             .map((item: any) => `${item.title.trim()} ${item.emoji}`);
 
@@ -217,7 +227,10 @@ CRITICAL:
       logger.warn("Failed to parse JSON response, using default titles");
       return this.getDefaultTitles(expectedCount);
     } catch (error) {
-      logger.error({ error }, "Error parsing title suggestions, using defaults");
+      logger.error(
+        { error },
+        "Error parsing title suggestions, using defaults",
+      );
       return this.getDefaultTitles(expectedCount);
     }
   }
@@ -248,7 +261,7 @@ CRITICAL:
   private static async pollRunUntilComplete(
     threadId: string,
     runId: string,
-    maxAttempts: number = 30
+    maxAttempts: number = 30,
   ): Promise<OpenAI.Beta.Threads.Runs.Run> {
     let attempts = 0;
     while (attempts < maxAttempts) {
@@ -265,7 +278,9 @@ CRITICAL:
         run.status === "cancelled" ||
         run.status === "expired"
       ) {
-        throw new Error(`Run ${run.status}: ${run.last_error?.message || "Unknown error"}`);
+        throw new Error(
+          `Run ${run.status}: ${run.last_error?.message || "Unknown error"}`,
+        );
       }
 
       // Wait before polling again

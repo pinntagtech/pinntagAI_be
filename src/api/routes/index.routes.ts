@@ -9,6 +9,7 @@ import { consumerAIRoutes } from "./consumerAI.routes.js";
 import aiAssistRoutes from "./aiAssist.routes.js";
 import { facebookRoutes } from "./facebook.routes.js";
 import checkInRoutes from "./checkIn.routes.js";
+import contentAssistRoutes from "./contentAssist.routes.js";
 
 // Import your route modules here
 // Example:
@@ -28,6 +29,7 @@ router.use("/engagement", engagementRoutes);
 router.use("/consumer-ai", consumerAIRoutes);
 router.use("/facebook", facebookRoutes);
 router.use("/checkin", checkInRoutes);
+router.use("/content-assist", contentAssistRoutes);
 
 // Setup global event handlers
 etlService.on("jobUpdate", (update) => {

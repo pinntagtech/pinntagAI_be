@@ -1,0 +1,830 @@
+import OpenAI from "openai";
+import mongoose from "mongoose";
+import { logger } from "../../utils/logger.js";
+import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
+import { AI_TrainingModel } from "../../models/AI_Training.model.js";
+import { UsageTrackingService } from "./usageTracking.service.js";
+import { UsageType } from "../../models/aiUsage.model.js";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// ===========================
+// Types
+// ===========================
+
+export type ContentCreationType =
+  | "offer"
+  | "event"
+  | "flash_offer"
+  | "specials"
+  | "drop_pin";
+
+export type PromotionType =
+  | "percent_off"
+  | "dollar_off"
+  | "bogo"
+  | "free_item"
+  | "happy_hour"
+  | "combo_bundle"
+  | "custom_deal"
+  | "family_fun";
+
+export interface GenerateTitlesRequest {
+  businessId: string;
+  contentType: ContentCreationType;
+  category?: string;
+  subCategory?: string;
+  tags?: string[];
+  promotionType?: PromotionType;
+  percentOffValue?: number;
+  dollarOffValue?: number;
+  bogoOrFreeItem?: string;
+  count?: number;
+  refreshSeed?: string;
+}
+
+export interface GenerateDescriptionRequest {
+  businessId: string;
+  title: string;
+  contentType: ContentCreationType;
+  category?: string;
+  subCategory?: string;
+  tags?: string[];
+  promotionType?: PromotionType;
+}
+
+export interface GenerateTitlesResponse {
+  success: boolean;
+  titles: string[];
+  metadata: {
+    businessName: string;
+    generatedAt: string;
+    contentType: ContentCreationType;
+    count: number;
+  };
+}
+
+export interface GenerateDescriptionResponse {
+  success: boolean;
+  description: string;
+  metadata: {
+    businessName: string;
+    generatedAt: string;
+    contentType: ContentCreationType;
+    titleUsed: string;
+  };
+}
+
+interface ContentGenerationContext {
+  businessId: string;
+  businessName: string;
+  businessDescription?: string;
+  businessCategory: string;
+  businessSubCategories: string[];
+  businessTags: string[];
+  assistantId: string;
+  brandVoice?: string[];
+  targetAudience?: string[];
+}
+
+interface TitleGenerationParams {
+  context: ContentGenerationContext;
+  contentType: ContentCreationType;
+  category?: string;
+  subCategory?: string;
+  tags?: string[];
+  promotionType?: PromotionType;
+  percentOffValue?: number;
+  dollarOffValue?: number;
+  bogoOrFreeItem?: string;
+  count: number;
+  refreshSeed?: string;
+}
+
+interface DescriptionGenerationParams {
+  context: ContentGenerationContext;
+  title: string;
+  contentType: ContentCreationType;
+  category?: string;
+  subCategory?: string;
+  tags?: string[];
+  promotionType?: PromotionType;
+}
+
+// ===========================
+// Service Class
+// ===========================
+
+export class ContentAssistService {
+  /**
+   * Get business context including AI assistant and training data
+   */
+  static async getBusinessContext(
+    businessId: string
+  ): Promise<ContentGenerationContext> {
+    // Validate businessId format
+    if (!mongoose.Types.ObjectId.isValid(businessId)) {
+      throw new Error("Invalid businessId format");
+    }
+
+    // Get business AI assistant
+    const businessAI = await BusinessAIAssistantModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+
+    if (!businessAI) {
+      const error = new Error(
+        "Business AI assistant not found. Please create an agent first."
+      );
+      (error as any).code = "BUSINESS_NOT_FOUND";
+      throw error;
+    }
+
+    if (!businessAI.assistantId) {
+      const error = new Error(
+        "Business does not have a configured AI assistant."
+      );
+      (error as any).code = "ASSISTANT_NOT_FOUND";
+      throw error;
+    }
+
+    // Optionally get training data for enhanced context
+    const training = await AI_TrainingModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+      trainingStatus: "completed",
+    });
+
+    const responseMap = training
+      ? new Map(training.responses.map((r) => [r.questionId, r.answer]))
+      : new Map();
+
+    return {
+      businessId,
+      businessName: businessAI.businessName,
+      businessDescription: businessAI.description,
+      businessCategory: businessAI.category,
+      businessSubCategories: businessAI.subCategories || [],
+      businessTags: businessAI.tags || [],
+      assistantId: businessAI.assistantId,
+      brandVoice: (responseMap.get("brand_voice") as string[]) || [],
+      targetAudience: (responseMap.get("target_audience") as string[]) || [],
+    };
+  }
+
+  /**
+   * Generate multiple title suggestions for content
+   */
+  static async generateTitles(
+    params: TitleGenerationParams
+  ): Promise<GenerateTitlesResponse> {
+    const {
+      context,
+      contentType,
+      category,
+      subCategory,
+      tags,
+      promotionType,
+      count,
+      refreshSeed,
+    } = params;
+
+    try {
+      // Build the prompt
+      const prompt = this.buildTitlePrompt(params);
+
+      logger.info(
+        { businessId: context.businessId, contentType, count },
+        "Generating content titles"
+      );
+
+      // Create thread and run with business assistant
+      const thread = await openai.beta.threads.create();
+
+      await openai.beta.threads.messages.create(thread.id, {
+        role: "user",
+        content: prompt,
+      });
+
+      const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: context.assistantId,
+      });
+
+      // Poll until completion
+      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
+
+      // Get response
+      const messages = await openai.beta.threads.messages.list(thread.id, {
+        limit: 10,
+      });
+      const lastMessage = messages.data.find((m) => m.role === "assistant");
+      const responseText =
+        lastMessage?.content
+          ?.map((c) => (c.type === "text" ? c.text.value : ""))
+          .join("\n") ?? "";
+
+      // Parse titles
+      const titles = this.parseTitleSuggestions(responseText, count);
+
+      // Track usage
+      await UsageTrackingService.trackUsage({
+        businessId: context.businessId,
+        type: UsageType.CONTENT_GENERATION,
+        subType: `content_assist_titles_${contentType}`,
+        promptTokens: finalRun.usage?.prompt_tokens || 0,
+        completionTokens: finalRun.usage?.completion_tokens || 0,
+        totalTokens: finalRun.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: true,
+        metadata: {
+          threadId: thread.id,
+          runId: finalRun.id,
+          contentType,
+          category,
+          subCategory,
+          titlesCount: titles.length,
+          isRefresh: !!refreshSeed,
+        },
+      });
+
+      logger.info(
+        { businessId: context.businessId, titlesCount: titles.length },
+        "Content titles generated successfully"
+      );
+
+      return {
+        success: true,
+        titles,
+        metadata: {
+          businessName: context.businessName,
+          generatedAt: new Date().toISOString(),
+          contentType,
+          count: titles.length,
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId: context.businessId },
+        "Error generating titles"
+      );
+
+      // Return fallback titles on error
+      const fallbackTitles = this.getFallbackTitles(contentType, count);
+      return {
+        success: true,
+        titles: fallbackTitles,
+        metadata: {
+          businessName: context.businessName,
+          generatedAt: new Date().toISOString(),
+          contentType,
+          count: fallbackTitles.length,
+        },
+      };
+    }
+  }
+
+  /**
+   * Generate description based on selected title
+   */
+  static async generateDescription(
+    params: DescriptionGenerationParams
+  ): Promise<GenerateDescriptionResponse> {
+    const { context, title, contentType, category, subCategory, tags, promotionType } =
+      params;
+
+    try {
+      // Build the prompt
+      const prompt = this.buildDescriptionPrompt(params);
+
+      logger.info(
+        { businessId: context.businessId, contentType, title },
+        "Generating content description"
+      );
+
+      // Create thread and run with business assistant
+      const thread = await openai.beta.threads.create();
+
+      await openai.beta.threads.messages.create(thread.id, {
+        role: "user",
+        content: prompt,
+      });
+
+      const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: context.assistantId,
+      });
+
+      // Poll until completion
+      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
+
+      // Get response
+      const messages = await openai.beta.threads.messages.list(thread.id, {
+        limit: 10,
+      });
+      const lastMessage = messages.data.find((m) => m.role === "assistant");
+      const responseText =
+        lastMessage?.content
+          ?.map((c) => (c.type === "text" ? c.text.value : ""))
+          .join("\n") ?? "";
+
+      // Parse description
+      const description = this.parseDescription(responseText);
+
+      // Track usage
+      await UsageTrackingService.trackUsage({
+        businessId: context.businessId,
+        type: UsageType.CONTENT_GENERATION,
+        subType: `content_assist_description_${contentType}`,
+        promptTokens: finalRun.usage?.prompt_tokens || 0,
+        completionTokens: finalRun.usage?.completion_tokens || 0,
+        totalTokens: finalRun.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: true,
+        metadata: {
+          threadId: thread.id,
+          runId: finalRun.id,
+          contentType,
+          category,
+          subCategory,
+          titleUsed: title,
+          descriptionLength: description.length,
+        },
+      });
+
+      logger.info(
+        { businessId: context.businessId, descriptionLength: description.length },
+        "Content description generated successfully"
+      );
+
+      return {
+        success: true,
+        description,
+        metadata: {
+          businessName: context.businessName,
+          generatedAt: new Date().toISOString(),
+          contentType,
+          titleUsed: title,
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId: context.businessId },
+        "Error generating description"
+      );
+
+      // Return fallback description on error
+      const fallbackDescription = this.getFallbackDescription(contentType, title);
+      return {
+        success: true,
+        description: fallbackDescription,
+        metadata: {
+          businessName: context.businessName,
+          generatedAt: new Date().toISOString(),
+          contentType,
+          titleUsed: title,
+        },
+      };
+    }
+  }
+
+  /**
+   * Build prompt for title generation based on content type
+   */
+  private static buildTitlePrompt(params: TitleGenerationParams): string {
+    const {
+      context,
+      contentType,
+      category,
+      subCategory,
+      tags,
+      promotionType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
+      count,
+      refreshSeed,
+    } = params;
+
+    const typeInstructions = this.getTitleInstructions(contentType, promotionType);
+
+    // Build promotion details string
+    let promotionDetails = "";
+    if (promotionType) {
+      promotionDetails = `- Promotion Type: ${promotionType.replace(/_/g, " ")}`;
+      if (promotionType === "percent_off" && percentOffValue) {
+        promotionDetails += `\n- Discount: ${percentOffValue}% off`;
+      } else if (promotionType === "dollar_off" && dollarOffValue) {
+        promotionDetails += `\n- Discount: $${dollarOffValue} off`;
+      } else if ((promotionType === "bogo" || promotionType === "free_item") && bogoOrFreeItem) {
+        promotionDetails += `\n- Item: ${bogoOrFreeItem}`;
+      }
+    }
+
+    return `Generate exactly ${count} compelling headlines/titles for the following content.
+
+BUSINESS INFORMATION:
+- Name: ${context.businessName}
+- Description: ${context.businessDescription || "N/A"}
+- Category: ${context.businessCategory}
+- Sub-categories: ${context.businessSubCategories.join(", ") || "N/A"}
+- Tags: ${context.businessTags.join(", ") || "N/A"}
+${context.brandVoice?.length ? `- Brand Voice: ${context.brandVoice.join(", ")}` : ""}
+${context.targetAudience?.length ? `- Target Audience: ${context.targetAudience.join(", ")}` : ""}
+
+CONTENT DETAILS:
+- Content Type: ${contentType}
+${category ? `- Category: ${category}` : ""}
+${subCategory ? `- Sub-Category: ${subCategory}` : ""}
+${tags?.length ? `- Additional Tags: ${tags.join(", ")}` : ""}
+${promotionDetails}
+
+${typeInstructions}
+
+REQUIREMENTS:
+1. Each title should be attention-grabbing and action-oriented
+2. Keep titles concise (5-10 words maximum)
+3. Make titles specific to the business and content type
+4. Use the brand voice if specified
+5. Create variety - don't repeat similar patterns
+
+${refreshSeed ? `[Refresh seed: ${refreshSeed} - generate completely different titles than before]` : ""}
+
+Return ONLY a JSON object in this exact format:
+{
+  "titles": [
+    "Title 1 here",
+    "Title 2 here"
+  ]
+}`;
+  }
+
+  /**
+   * Get content type specific instructions for title generation
+   */
+  private static getTitleInstructions(
+    contentType: ContentCreationType,
+    promotionType?: PromotionType
+  ): string {
+    const instructions: Record<ContentCreationType, string> = {
+      offer: `OFFER TITLES:
+PURPOSE: Low-friction incentives that convert discovery into visits. Evergreen deals, first-visit offers, or simple conversion boosters.
+SCENARIOS: "10% off your first coffee", "Free consultation", "Free dessert with entrée"
+STYLE GUIDELINES:
+- Emphasize value, savings, or exclusive benefits
+- Focus on trial and conversion (not urgency)
+- Make it feel like a welcoming invitation
+- Highlight what makes the offer compelling
+- Examples: "Your First Visit Treat Awaits", "New Here? Enjoy 10% Off", "Complimentary Dessert with Dinner"`,
+
+      event: `EVENT TITLES:
+PURPOSE: Create anticipation and give people a reason to plan a visit. Scheduled experiences with specific date/time.
+SCENARIOS: Trivia Night, Live Music, Saturday class series, Wine Tasting, Watch Party
+STYLE GUIDELINES:
+- Focus on the experience and atmosphere
+- Create excitement that makes people want to plan ahead
+- Highlight what makes this event special or unique
+- Make it feel like a destination worth visiting
+- Examples: "Trivia Night: Test Your Knowledge", "Live Jazz Returns This Weekend", "Wine Tasting Experience Awaits"`,
+
+      flash_offer: `FLASH OFFER TITLES (${promotionType?.replace(/_/g, " ") || "discount"}):
+PURPOSE: Real-time lever to fill quiet periods, move inventory, and drive immediate foot traffic. Action needed NOW.
+SCENARIOS: End-of-day pastry box, Iced coffee special 3-5pm, Lunch deal today only, Slow hour specials
+STYLE GUIDELINES:
+- Create strong urgency (limited time, limited quantity)
+- Be bold and attention-grabbing
+- Emphasize the short-term nature and immediate action needed
+- For ${promotionType?.replace(/_/g, " ") || "promotions"}: focus on immediate, tangible value
+- Examples: "2-Hour Flash: 50% Off Pastries", "Today Only: BOGO Everything", "Last Chance: Limited Quantity Left"`,
+
+      specials: `SPECIALS (RECURRING) TITLES:
+PURPOSE: Build habit and predictable repeat visits with weekly/monthly recurring offers. Creates customer routines.
+SCENARIOS: Taco Tuesday, Wing Wednesday, Brunch Sundays, Kids Eat Free nights, Weekly Happy Hour
+STYLE GUIDELINES:
+- Emphasize the recurring/routine nature
+- Make it feel like a tradition worth coming back for
+- Create anticipation for the regular event
+- Build loyalty and habit-forming language
+- Examples: "Taco Tuesday Returns", "Wing Wednesday: A Weekly Tradition", "Brunch Sundays Are Back"`,
+
+      drop_pin: `DROP PIN TITLES:
+PURPOSE: Unique advantage for mobile/temporary locations. Lets nearby customers find you instantly.
+SCENARIOS: Food truck locations, pop-up vendors, market stands, event vendors, mobile services
+STYLE GUIDELINES:
+- Location-focused and immediate
+- Create a sense of discovery and proximity
+- Perfect for mobile-first, on-the-go customers
+- Capture impulse purchases from nearby foot traffic
+- Examples: "We're Here Now!", "Find Us at the Park", "Pop-Up Alert: Limited Time Spot"`,
+    };
+
+    return instructions[contentType];
+  }
+
+  /**
+   * Build prompt for description generation based on content type
+   */
+  private static buildDescriptionPrompt(
+    params: DescriptionGenerationParams
+  ): string {
+    const { context, title, contentType, category, subCategory, tags, promotionType } =
+      params;
+
+    const typeInstructions = this.getDescriptionInstructions(
+      contentType,
+      promotionType
+    );
+
+    return `Generate a compelling description for the following content.
+
+BUSINESS INFORMATION:
+- Name: ${context.businessName}
+- Description: ${context.businessDescription || "N/A"}
+- Category: ${context.businessCategory}
+${context.brandVoice?.length ? `- Brand Voice: ${context.brandVoice.join(", ")}` : ""}
+${context.targetAudience?.length ? `- Target Audience: ${context.targetAudience.join(", ")}` : ""}
+
+CONTENT DETAILS:
+- Selected Title/Headline: "${title}"
+- Content Type: ${contentType}
+${category ? `- Category: ${category}` : ""}
+${subCategory ? `- Sub-Category: ${subCategory}` : ""}
+${tags?.length ? `- Tags: ${tags.join(", ")}` : ""}
+${promotionType ? `- Promotion Type: ${promotionType.replace(/_/g, " ")}` : ""}
+
+${typeInstructions}
+
+REQUIREMENTS:
+1. The description should complement and expand on the title
+2. Keep it concise but informative (2-4 sentences, 50-150 words)
+3. Include a subtle call-to-action when appropriate
+4. Match the brand voice
+5. Make it mobile-friendly (easy to read on small screens)
+6. Do NOT include placeholder text like [date] or [time] - be general or omit
+
+Return ONLY the description text, no JSON, no quotes, no labels.`;
+  }
+
+  /**
+   * Get content type specific instructions for description generation
+   */
+  private static getDescriptionInstructions(
+    contentType: ContentCreationType,
+    promotionType?: PromotionType
+  ): string {
+    const instructions: Record<ContentCreationType, string> = {
+      offer: `OFFER DESCRIPTION GUIDELINES:
+PURPOSE: Convert discovery into visits. Lower barriers for first-time customers.
+- Clearly explain what the offer includes and its value
+- Make it feel welcoming and low-risk to try
+- Focus on trial and discovery, not pressure
+- End with a warm invitation to visit
+- Highlight what makes this worth trying`,
+
+      event: `EVENT DESCRIPTION GUIDELINES:
+PURPOSE: Create anticipation and make people plan a visit. Turn venue into a destination.
+- Describe the experience attendees can expect
+- Create excitement that encourages planning ahead
+- Mention any special guests, features, or highlights
+- Make it feel like a destination worth visiting
+- Encourage social sharing and bringing friends`,
+
+      flash_offer: `FLASH OFFER DESCRIPTION GUIDELINES:
+PURPOSE: Drive immediate foot traffic during slow periods. Fill empty seats fast.
+- Emphasize the limited time nature clearly
+- Make the value proposition crystal clear and immediate
+- Create urgency that converts NOW (not later)
+- For ${promotionType?.replace(/_/g, " ") || "promotions"}: highlight the specific, tangible benefit
+- Focus on "come now" messaging`,
+
+      specials: `SPECIALS (RECURRING) DESCRIPTION GUIDELINES:
+PURPOSE: Build repeat visits and customer loyalty. Create predictable habits.
+- Emphasize this is a recurring tradition worth coming back for
+- Build anticipation for the regular event
+- Make customers feel part of a community or routine
+- Encourage making it a weekly/monthly habit
+- Highlight the consistency and reliability of the special`,
+
+      drop_pin: `DROP PIN DESCRIPTION GUIDELINES:
+PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby customers.
+- Focus on location, proximity, and immediacy
+- Keep it very short and punchy (people are on-the-go)
+- Create a sense of discovery and serendipity
+- Capture impulse decisions from foot traffic
+- Include what they'll find when they arrive`,
+    };
+
+    return instructions[contentType];
+  }
+
+  /**
+   * Parse title suggestions from AI response
+   */
+  private static parseTitleSuggestions(
+    responseText: string,
+    expectedCount: number
+  ): string[] {
+    try {
+      // Try to parse as JSON first
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.titles && Array.isArray(parsed.titles)) {
+          const validTitles = parsed.titles
+            .filter(
+              (title: any) =>
+                typeof title === "string" && title.trim().length > 0
+            )
+            .map((title: string) => title.trim());
+
+          if (validTitles.length >= expectedCount) {
+            return validTitles.slice(0, expectedCount);
+          }
+
+          // If we don't have enough valid titles, supplement with fallbacks
+          if (validTitles.length > 0) {
+            return validTitles;
+          }
+        }
+      }
+
+      // Try to extract titles from plain text (numbered list)
+      const lines = responseText
+        .split("\n")
+        .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
+        .filter((line) => line.length > 0 && line.length < 100);
+
+      if (lines.length >= expectedCount) {
+        return lines.slice(0, expectedCount);
+      }
+
+      // If parsing failed, return fallback
+      logger.warn("Failed to parse titles response, using fallbacks");
+      return this.getFallbackTitles("offer", expectedCount);
+    } catch (error) {
+      logger.error({ error }, "Error parsing title suggestions");
+      return this.getFallbackTitles("offer", expectedCount);
+    }
+  }
+
+  /**
+   * Parse description from AI response
+   */
+  private static parseDescription(responseText: string): string {
+    // Clean up the response - remove any JSON wrapping or labels
+    let description = responseText.trim();
+
+    // Remove JSON wrapper if present
+    const jsonMatch = description.match(/"description"\s*:\s*"([^"]+)"/);
+    if (jsonMatch) {
+      description = jsonMatch[1];
+    }
+
+    // Remove common labels
+    description = description
+      .replace(/^description:\s*/i, "")
+      .replace(/^output:\s*/i, "")
+      .trim();
+
+    // Remove surrounding quotes
+    if (
+      (description.startsWith('"') && description.endsWith('"')) ||
+      (description.startsWith("'") && description.endsWith("'"))
+    ) {
+      description = description.slice(1, -1);
+    }
+
+    return description || this.getFallbackDescription("offer", "");
+  }
+
+  /**
+   * Poll until the run is complete
+   */
+  private static async pollRunUntilComplete(
+    threadId: string,
+    runId: string,
+    maxAttempts: number = 30
+  ): Promise<OpenAI.Beta.Threads.Runs.Run> {
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+      const run = await openai.beta.threads.runs.retrieve(runId, {
+        thread_id: threadId,
+      });
+
+      if (run.status === "completed") {
+        return run;
+      }
+
+      if (
+        run.status === "failed" ||
+        run.status === "cancelled" ||
+        run.status === "expired"
+      ) {
+        throw new Error(
+          `Run ${run.status}: ${run.last_error?.message || "Unknown error"}`
+        );
+      }
+
+      // Wait before polling again
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      attempts++;
+    }
+
+    throw new Error("Run timed out");
+  }
+
+  /**
+   * Generate fallback titles if AI generation fails
+   */
+  private static getFallbackTitles(
+    contentType: ContentCreationType,
+    count: number
+  ): string[] {
+    const fallbacks: Record<ContentCreationType, string[]> = {
+      offer: [
+        "Your First Visit Treat Awaits",
+        "New Here? Welcome Offer Inside",
+        "Try Something New Today",
+        "Exclusive Welcome Offer",
+        "First-Timer Special",
+        "Complimentary Treat with Visit",
+        "Your Invitation to Try Us",
+        "New Customer Special",
+        "Welcome Gift Awaits",
+        "Discover Us with This Offer",
+      ],
+      event: [
+        "Join Us for Something Special",
+        "An Experience Awaits",
+        "Mark Your Calendar",
+        "You're Invited",
+        "Experience the Magic",
+        "Plan Your Visit",
+        "A Night to Remember",
+        "Save the Date",
+        "Bring Your Friends",
+        "Make It a Date Night",
+      ],
+      flash_offer: [
+        "Limited Time Only - Act Now",
+        "Flash Deal: Hours Left",
+        "Quick! Before It's Gone",
+        "Today Only Special",
+        "Hurry - While Supplies Last",
+        "Right Now: Flash Savings",
+        "Don't Wait - Ending Soon",
+        "Time's Running Out",
+        "Grab It Before It's Gone",
+        "Last Chance Today",
+      ],
+      specials: [
+        "It's That Day Again",
+        "Your Weekly Tradition Awaits",
+        "Back by Popular Demand",
+        "Join the Regulars",
+        "Make It a Habit",
+        "Every Week We Deliver",
+        "A Tradition Worth Keeping",
+        "Same Day, Same Great Deal",
+        "Your Favorite Day Returns",
+        "Weekly Treat Time",
+      ],
+      drop_pin: [
+        "We're Here Right Now",
+        "Find Us Nearby",
+        "Pop-Up Alert!",
+        "Spotted: We're Here",
+        "Live Location Drop",
+        "Come Find Us Today",
+        "Here for a Limited Time",
+        "We've Landed Nearby",
+        "Catch Us While You Can",
+        "Your Nearby Discovery",
+      ],
+    };
+
+    return fallbacks[contentType].slice(0, count);
+  }
+
+  /**
+   * Generate fallback description if AI generation fails
+   */
+  private static getFallbackDescription(
+    contentType: ContentCreationType,
+    title: string
+  ): string {
+    const fallbacks: Record<ContentCreationType, string> = {
+      offer:
+        "We'd love to welcome you! Take advantage of this special offer on your first visit and discover what makes us worth coming back for. No pressure, just great value waiting for you.",
+      event:
+        "Mark your calendar and plan your visit! This is your chance to experience something special with us. Bring friends, make memories, and be part of something worth talking about.",
+      flash_offer:
+        "This won't last long! We're offering something special right now for a limited time. Come in before it's gone and take advantage of these savings today.",
+      specials:
+        "It's that time again! Join our regulars for this recurring favorite. Make it part of your routine and enjoy something special you can count on.",
+      drop_pin:
+        "We're here right now! Find us nearby and discover what we're serving up today. Stop by while we're in the area - we'd love to see you!",
+    };
+
+    return fallbacks[contentType];
+  }
+}
