@@ -24,6 +24,8 @@ import {
 import { getS3ObjectStream } from "../../utils/s3.js";
 import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
+import { filterInappropriateTags } from "../../utils/contentModeration.utils.js";
+import { ApiError } from "../controllers/controller.utils.js";
 
 // ===========================
 // Types & Constants
@@ -365,11 +367,17 @@ export async function addS3FilesToVectorStore(
 async function getBusinessAssistant(
   businessId: string
 ): Promise<IBusiness_AI_Assistant> {
+  if (!mongoose.Types.ObjectId.isValid(businessId)) {
+    throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
+  }
   const businessAI = await BusinessAIAssistantModel.findOne({
     businessId: new mongoose.Types.ObjectId(businessId),
   });
   if (!businessAI?.assistantId) {
-    throw new Error("Business assistant not initialized");
+    throw ApiError.badRequest(
+      "Business assistant not initialized. Please create an agent first.",
+      "ASSISTANT_NOT_FOUND"
+    );
   }
   return businessAI;
 }
@@ -592,11 +600,17 @@ export class AIService {
    */
   static async getBusinessAIAgent(businessId: string) {
     try {
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
+      }
       const businessAI = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
       if (!businessAI) {
-        throw new Error(`No AI agent found for businessId: ${businessId}`);
+        throw ApiError.badRequest(
+          `No AI agent found for businessId: ${businessId}. Please create an agent first.`,
+          "BUSINESS_NOT_FOUND"
+        );
       }
       return businessAI;
     } catch (error: any) {
@@ -937,9 +951,12 @@ export class AIService {
         `- Customer segments they serve`,
         `\nTag formatting requirements:`,
         `- Lowercase`,
-        `- Short (1-3 words)`,
+        `- Short (1-3 words minimum, avoid single letter tags)`,
         `- Specific and descriptive`,
         `- Relevant to the business category`,
+        `- MUST be professional and appropriate for business use`,
+        `- NO profanity, offensive language, or inappropriate content`,
+        `- NO single character or meaningless tags`,
         `\nReturn ONLY a JSON array of strings, nothing else. Example: ["tag1", "tag2", "tag3"]`
       );
 
@@ -952,7 +969,7 @@ export class AIService {
           {
             role: "system",
             content:
-              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON object containing a 'tags' array of strings. IMPORTANT: Always generate tags based on the provided category and any available information. Even if website content seems unrelated or mismatched with the category, generate tags based on the category provided. Never return an error - always generate useful tags.",
+              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON object containing a 'tags' array of strings. IMPORTANT: Always generate tags based on the provided category and any available information. Even if website content seems unrelated or mismatched with the category, generate tags based on the category provided. Never return an error - always generate useful tags. CRITICAL: All tags MUST be professional, appropriate, and suitable for business marketing. NEVER generate profanity, offensive content, single characters, or inappropriate language. Each tag must be at least 2 characters and meaningful.",
           },
           {
             role: "user",
@@ -1009,8 +1026,10 @@ export class AIService {
           (tag): tag is string =>
             typeof tag === "string" && tag.trim().length > 0
         )
-        .map((tag) => tag.toLowerCase().trim())
-        .slice(0, maxTags);
+        .map((tag) => tag.toLowerCase().trim());
+
+      // Filter out inappropriate content (profanity, single chars, etc.)
+      tags = filterInappropriateTags(tags).slice(0, maxTags);
 
       if (tags.length === 0) {
         throw new Error("No valid tags generated");
@@ -1033,13 +1052,19 @@ export class AIService {
    */
   static async generateTagsForBusiness(businessId: string): Promise<string[]> {
     try {
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
+      }
       // Fetch business AI assistant data
       const businessAI = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
       if (!businessAI) {
-        throw new Error(`No AI agent found for business ID: ${businessId}`);
+        throw ApiError.badRequest(
+          `No AI agent found for business ID: ${businessId}. Please create an agent first.`,
+          "BUSINESS_NOT_FOUND"
+        );
       }
 
       console.log("Business AI data:", businessAI);
@@ -1049,7 +1074,7 @@ export class AIService {
       const subcategory = businessAI.subCategories?.[0] || undefined;
 
       if (!category) {
-        throw new Error("Business category is required to generate tags");
+        throw ApiError.badRequest("Business category is required to generate tags", "VALIDATION_ERROR");
       }
 
       // Generate tags using business context with cached website data
@@ -1080,13 +1105,19 @@ export class AIService {
     businessId: string
   ): Promise<string> {
     try {
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
+      }
       // Fetch business AI assistant data
       const businessAI = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
       if (!businessAI) {
-        throw new Error(`No AI agent found for business ID: ${businessId}`);
+        throw ApiError.badRequest(
+          `No AI agent found for business ID: ${businessId}. Please create an agent first.`,
+          "BUSINESS_NOT_FOUND"
+        );
       }
 
       // Extract category and subcategory from categories array
@@ -1094,8 +1125,9 @@ export class AIService {
       const subcategory = businessAI.subCategories?.[0] || undefined;
 
       if (!category) {
-        throw new Error(
-          "Business category is required to generate description"
+        throw ApiError.badRequest(
+          "Business category is required to generate description",
+          "VALIDATION_ERROR"
         );
       }
 
@@ -1137,14 +1169,20 @@ export class AIService {
     prompt: string,
     contentType: string
   ): Promise<GeneratedContent> {
+    // Validate businessId format
+    if (!mongoose.Types.ObjectId.isValid(businessId)) {
+      throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
+    }
+
     // Get business agent
     const businessAI = await BusinessAIAssistantModel.findOne({
       businessId: new mongoose.Types.ObjectId(businessId),
     });
 
     if (!businessAI?.assistantId) {
-      throw new Error(
-        "Business AI agent not found. Please create an agent first."
+      throw ApiError.badRequest(
+        "Business AI agent not found. Please create an agent first.",
+        "BUSINESS_NOT_FOUND"
       );
     }
 
@@ -1254,7 +1292,7 @@ export class AIService {
     // Check subscription access
     const access = await checkContentAssistAccess(businessId);
     if (!access.hasAccess) {
-      throw new Error(access.reason || "Content assist not available");
+      throw ApiError.forbidden(access.reason || "Content assist not available", "SUBSCRIPTION_REQUIRED");
     }
 
     try {
@@ -1329,7 +1367,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
     // Check subscription access
     const access = await checkContentAssistAccess(businessId);
     if (!access.hasAccess) {
-      throw new Error(access.reason || "Content assist not available");
+      throw ApiError.forbidden(access.reason || "Content assist not available", "SUBSCRIPTION_REQUIRED");
     }
 
     try {
@@ -1407,7 +1445,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
     // Check subscription access
     const access = await checkContentAssistAccess(businessId);
     if (!access.hasAccess) {
-      throw new Error(access.reason || "Content assist not available");
+      throw ApiError.forbidden(access.reason || "Content assist not available", "SUBSCRIPTION_REQUIRED");
     }
 
     try {
@@ -1486,7 +1524,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
     // Check subscription access
     const access = await checkContentAssistAccess(businessId);
     if (!access.hasAccess) {
-      throw new Error(access.reason || "Content assist not available");
+      throw ApiError.forbidden(access.reason || "Content assist not available", "SUBSCRIPTION_REQUIRED");
     }
 
     try {
@@ -1558,7 +1596,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
     // Check subscription access
     const access = await checkContentAssistAccess(businessId);
     if (!access.hasAccess) {
-      throw new Error(access.reason || "Content assist not available");
+      throw ApiError.forbidden(access.reason || "Content assist not available", "SUBSCRIPTION_REQUIRED");
     }
 
     try {

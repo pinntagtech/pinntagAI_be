@@ -5,6 +5,11 @@ import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model
 import { AI_TrainingModel } from "../../models/AI_Training.model.js";
 import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
+import {
+  filterInappropriateTitles,
+  isConversationalResponse,
+} from "../../utils/contentModeration.utils.js";
+import { ApiError } from "../controllers/controller.utils.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -128,7 +133,7 @@ export class ContentAssistService {
   ): Promise<ContentGenerationContext> {
     // Validate businessId format
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
-      throw new Error("Invalid businessId format");
+      throw ApiError.badRequest("Invalid businessId format", "INVALID_BUSINESS_ID");
     }
 
     // Get business AI assistant
@@ -137,19 +142,17 @@ export class ContentAssistService {
     });
 
     if (!businessAI) {
-      const error = new Error(
-        "Business AI assistant not found. Please create an agent first."
+      throw ApiError.badRequest(
+        "Business AI assistant not found. Please create an agent first.",
+        "BUSINESS_NOT_FOUND"
       );
-      (error as any).code = "BUSINESS_NOT_FOUND";
-      throw error;
     }
 
     if (!businessAI.assistantId) {
-      const error = new Error(
-        "Business does not have a configured AI assistant."
+      throw ApiError.badRequest(
+        "Business does not have a configured AI assistant.",
+        "ASSISTANT_NOT_FOUND"
       );
-      (error as any).code = "ASSISTANT_NOT_FOUND";
-      throw error;
     }
 
     // Optionally get training data for enhanced context
@@ -227,7 +230,7 @@ export class ContentAssistService {
           .join("\n") ?? "";
 
       // Parse titles
-      const titles = this.parseTitleSuggestions(responseText, count);
+      const titles = this.parseTitleSuggestions(responseText, count, contentType);
 
       // Track usage
       await UsageTrackingService.trackUsage({
@@ -449,6 +452,9 @@ REQUIREMENTS:
 3. Make titles specific to the business and content type
 4. Use the brand voice if specified
 5. Create variety - don't repeat similar patterns
+6. NEVER ask for more information - always generate titles with available context
+7. NEVER respond with conversational text like "I'm sorry" or "I need more details"
+8. ALWAYS generate exactly ${count} titles, no matter what
 
 ${refreshSeed ? `[Refresh seed: ${refreshSeed} - generate completely different titles than before]` : ""}
 ${excludeTitles?.length ? `
@@ -457,6 +463,7 @@ ${excludeTitles.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
 
 Generate completely NEW and DIFFERENT titles. Do not repeat or closely rephrase any of the above.` : ""}
 
+CRITICAL: You MUST return ONLY a valid JSON object. No explanations, no apologies, no questions.
 Return ONLY a JSON object in this exact format:
 {
   "titles": [
@@ -629,48 +636,61 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
    */
   private static parseTitleSuggestions(
     responseText: string,
-    expectedCount: number
+    expectedCount: number,
+    contentType: ContentCreationType
   ): string[] {
     try {
+      // Check if the entire response is a conversational response (AI asking for more info)
+      if (isConversationalResponse(responseText)) {
+        logger.warn(
+          { responseText: responseText.substring(0, 200) },
+          "AI returned conversational response instead of titles, using fallbacks"
+        );
+        return this.getFallbackTitles(contentType, expectedCount);
+      }
+
+      let titles: string[] = [];
+
       // Try to parse as JSON first
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.titles && Array.isArray(parsed.titles)) {
-          const validTitles = parsed.titles
+          titles = parsed.titles
             .filter(
               (title: any) =>
                 typeof title === "string" && title.trim().length > 0
             )
             .map((title: string) => title.trim());
-
-          if (validTitles.length >= expectedCount) {
-            return validTitles.slice(0, expectedCount);
-          }
-
-          // If we don't have enough valid titles, supplement with fallbacks
-          if (validTitles.length > 0) {
-            return validTitles;
-          }
         }
       }
 
-      // Try to extract titles from plain text (numbered list)
-      const lines = responseText
-        .split("\n")
-        .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
-        .filter((line) => line.length > 0 && line.length < 100);
-
-      if (lines.length >= expectedCount) {
-        return lines.slice(0, expectedCount);
+      // If JSON parsing didn't yield results, try plain text (numbered list)
+      if (titles.length === 0) {
+        titles = responseText
+          .split("\n")
+          .map((line) => line.replace(/^\d+[\.\)]\s*/, "").trim())
+          .filter((line) => line.length > 0 && line.length < 100);
       }
 
-      // If parsing failed, return fallback
-      logger.warn("Failed to parse titles response, using fallbacks");
-      return this.getFallbackTitles("offer", expectedCount);
+      // Filter out conversational responses and inappropriate content
+      titles = filterInappropriateTitles(titles);
+
+      if (titles.length >= expectedCount) {
+        return titles.slice(0, expectedCount);
+      }
+
+      // If we have some valid titles but not enough, return what we have
+      if (titles.length > 0) {
+        return titles;
+      }
+
+      // If no valid titles, return fallback
+      logger.warn("Failed to parse valid titles from response, using fallbacks");
+      return this.getFallbackTitles(contentType, expectedCount);
     } catch (error) {
       logger.error({ error }, "Error parsing title suggestions");
-      return this.getFallbackTitles("offer", expectedCount);
+      return this.getFallbackTitles(contentType, expectedCount);
     }
   }
 
