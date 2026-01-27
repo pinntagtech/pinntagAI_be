@@ -21,10 +21,10 @@ const openai = new OpenAI({
 
 export type ContentCreationType =
   | "offer"
-  | "event"
-  | "flash_offer"
-  | "specials"
-  | "drop_pin";
+  | "flashdeal"
+  | "spotlight"
+  | "dropped_pin"
+  | "business_event";
 
 export type PromotionType =
   | "percent_off"
@@ -491,17 +491,7 @@ STYLE GUIDELINES:
 - Highlight what makes the offer compelling
 - Examples: "Your First Visit Treat Awaits", "New Here? Enjoy 10% Off", "Complimentary Dessert with Dinner"`,
 
-      event: `EVENT TITLES:
-PURPOSE: Create anticipation and give people a reason to plan a visit. Scheduled experiences with specific date/time.
-SCENARIOS: Trivia Night, Live Music, Saturday class series, Wine Tasting, Watch Party
-STYLE GUIDELINES:
-- Focus on the experience and atmosphere
-- Create excitement that makes people want to plan ahead
-- Highlight what makes this event special or unique
-- Make it feel like a destination worth visiting
-- Examples: "Trivia Night: Test Your Knowledge", "Live Jazz Returns This Weekend", "Wine Tasting Experience Awaits"`,
-
-      flash_offer: `FLASH OFFER TITLES (${promotionType?.replace(/_/g, " ") || "discount"}):
+      flashdeal: `FLASH DEAL TITLES (${promotionType?.replace(/_/g, " ") || "discount"}):
 PURPOSE: Real-time lever to fill quiet periods, move inventory, and drive immediate foot traffic. Action needed NOW.
 SCENARIOS: End-of-day pastry box, Iced coffee special 3-5pm, Lunch deal today only, Slow hour specials
 STYLE GUIDELINES:
@@ -511,17 +501,17 @@ STYLE GUIDELINES:
 - For ${promotionType?.replace(/_/g, " ") || "promotions"}: focus on immediate, tangible value
 - Examples: "2-Hour Flash: 50% Off Pastries", "Today Only: BOGO Everything", "Last Chance: Limited Quantity Left"`,
 
-      specials: `SPECIALS (RECURRING) TITLES:
-PURPOSE: Build habit and predictable repeat visits with weekly/monthly recurring offers. Creates customer routines.
-SCENARIOS: Taco Tuesday, Wing Wednesday, Brunch Sundays, Kids Eat Free nights, Weekly Happy Hour
+      spotlight: `SPOTLIGHT TITLES:
+PURPOSE: Showcase what makes the business unique. Highlight features, achievements, or behind-the-scenes content.
+SCENARIOS: New menu item, staff spotlight, customer story, milestone celebration, behind-the-scenes
 STYLE GUIDELINES:
-- Emphasize the recurring/routine nature
-- Make it feel like a tradition worth coming back for
-- Create anticipation for the regular event
-- Build loyalty and habit-forming language
-- Examples: "Taco Tuesday Returns", "Wing Wednesday: A Weekly Tradition", "Brunch Sundays Are Back"`,
+- Focus on uniqueness and curiosity
+- Highlight what sets the business apart
+- Create intrigue that drives engagement
+- Celebrate achievements or special features
+- Examples: "Meet Our Head Chef", "Behind the Scenes", "What Makes Us Different"`,
 
-      drop_pin: `DROP PIN TITLES:
+      dropped_pin: `DROP PIN TITLES:
 PURPOSE: Unique advantage for mobile/temporary locations. Lets nearby customers find you instantly.
 SCENARIOS: Food truck locations, pop-up vendors, market stands, event vendors, mobile services
 STYLE GUIDELINES:
@@ -530,6 +520,16 @@ STYLE GUIDELINES:
 - Perfect for mobile-first, on-the-go customers
 - Capture impulse purchases from nearby foot traffic
 - Examples: "We're Here Now!", "Find Us at the Park", "Pop-Up Alert: Limited Time Spot"`,
+
+      business_event: `EVENT TITLES:
+PURPOSE: Create anticipation and give people a reason to plan a visit. Scheduled experiences with specific date/time.
+SCENARIOS: Trivia Night, Live Music, Saturday class series, Wine Tasting, Watch Party
+STYLE GUIDELINES:
+- Focus on the experience and atmosphere
+- Create excitement that makes people want to plan ahead
+- Highlight what makes this event special or unique
+- Make it feel like a destination worth visiting
+- Examples: "Trivia Night: Test Your Knowledge", "Live Jazz Returns This Weekend", "Wine Tasting Experience Awaits"`,
     };
 
     return instructions[contentType];
@@ -595,15 +595,7 @@ PURPOSE: Convert discovery into visits. Lower barriers for first-time customers.
 - End with a warm invitation to visit
 - Highlight what makes this worth trying`,
 
-      event: `EVENT DESCRIPTION GUIDELINES:
-PURPOSE: Create anticipation and make people plan a visit. Turn venue into a destination.
-- Describe the experience attendees can expect
-- Create excitement that encourages planning ahead
-- Mention any special guests, features, or highlights
-- Make it feel like a destination worth visiting
-- Encourage social sharing and bringing friends`,
-
-      flash_offer: `FLASH OFFER DESCRIPTION GUIDELINES:
+      flashdeal: `FLASH DEAL DESCRIPTION GUIDELINES:
 PURPOSE: Drive immediate foot traffic during slow periods. Fill empty seats fast.
 - Emphasize the limited time nature clearly
 - Make the value proposition crystal clear and immediate
@@ -611,21 +603,28 @@ PURPOSE: Drive immediate foot traffic during slow periods. Fill empty seats fast
 - For ${promotionType?.replace(/_/g, " ") || "promotions"}: highlight the specific, tangible benefit
 - Focus on "come now" messaging`,
 
-      specials: `SPECIALS (RECURRING) DESCRIPTION GUIDELINES:
-PURPOSE: Build repeat visits and customer loyalty. Create predictable habits.
-- Emphasize this is a recurring tradition worth coming back for
-- Build anticipation for the regular event
-- Make customers feel part of a community or routine
-- Encourage making it a weekly/monthly habit
-- Highlight the consistency and reliability of the special`,
+      spotlight: `SPOTLIGHT DESCRIPTION GUIDELINES:
+PURPOSE: Showcase uniqueness and drive engagement through storytelling.
+- Highlight what makes this feature, person, or achievement special
+- Create curiosity and intrigue
+- Tell a compelling story in a concise format
+- Encourage engagement and sharing`,
 
-      drop_pin: `DROP PIN DESCRIPTION GUIDELINES:
+      dropped_pin: `DROP PIN DESCRIPTION GUIDELINES:
 PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby customers.
 - Focus on location, proximity, and immediacy
 - Keep it very short and punchy (people are on-the-go)
 - Create a sense of discovery and serendipity
 - Capture impulse decisions from foot traffic
 - Include what they'll find when they arrive`,
+
+      business_event: `EVENT DESCRIPTION GUIDELINES:
+PURPOSE: Create anticipation and make people plan a visit. Turn venue into a destination.
+- Describe the experience attendees can expect
+- Create excitement that encourages planning ahead
+- Mention any special guests, features, or highlights
+- Make it feel like a destination worth visiting
+- Encourage social sharing and bringing friends`,
     };
 
     return instructions[contentType];
@@ -780,19 +779,7 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
         "Welcome Gift Awaits",
         "Discover Us with This Offer",
       ],
-      event: [
-        "Join Us for Something Special",
-        "An Experience Awaits",
-        "Mark Your Calendar",
-        "You're Invited",
-        "Experience the Magic",
-        "Plan Your Visit",
-        "A Night to Remember",
-        "Save the Date",
-        "Bring Your Friends",
-        "Make It a Date Night",
-      ],
-      flash_offer: [
+      flashdeal: [
         "Limited Time Only - Act Now",
         "Flash Deal: Hours Left",
         "Quick! Before It's Gone",
@@ -804,19 +791,19 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
         "Grab It Before It's Gone",
         "Last Chance Today",
       ],
-      specials: [
-        "It's That Day Again",
-        "Your Weekly Tradition Awaits",
-        "Back by Popular Demand",
-        "Join the Regulars",
-        "Make It a Habit",
-        "Every Week We Deliver",
-        "A Tradition Worth Keeping",
-        "Same Day, Same Great Deal",
-        "Your Favorite Day Returns",
-        "Weekly Treat Time",
+      spotlight: [
+        "Discover What Makes Us Special",
+        "Behind the Scenes",
+        "Meet the Team",
+        "Our Story, Your Experience",
+        "What Sets Us Apart",
+        "A Closer Look Inside",
+        "Spotlight On Us",
+        "The Story Behind the Magic",
+        "Why We Do What We Do",
+        "Something Worth Sharing",
       ],
-      drop_pin: [
+      dropped_pin: [
         "We're Here Right Now",
         "Find Us Nearby",
         "Pop-Up Alert!",
@@ -827,6 +814,18 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
         "We've Landed Nearby",
         "Catch Us While You Can",
         "Your Nearby Discovery",
+      ],
+      business_event: [
+        "Join Us for Something Special",
+        "An Experience Awaits",
+        "Mark Your Calendar",
+        "You're Invited",
+        "Experience the Magic",
+        "Plan Your Visit",
+        "A Night to Remember",
+        "Save the Date",
+        "Bring Your Friends",
+        "Make It a Date Night",
       ],
     };
 
@@ -843,14 +842,14 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
     const fallbacks: Record<ContentCreationType, string> = {
       offer:
         "We'd love to welcome you! Take advantage of this special offer on your first visit and discover what makes us worth coming back for. No pressure, just great value waiting for you.",
-      event:
-        "Mark your calendar and plan your visit! This is your chance to experience something special with us. Bring friends, make memories, and be part of something worth talking about.",
-      flash_offer:
+      flashdeal:
         "This won't last long! We're offering something special right now for a limited time. Come in before it's gone and take advantage of these savings today.",
-      specials:
-        "It's that time again! Join our regulars for this recurring favorite. Make it part of your routine and enjoy something special you can count on.",
-      drop_pin:
+      spotlight:
+        "There's something special we want to share with you. Take a closer look at what makes us unique and discover the story behind what we do.",
+      dropped_pin:
         "We're here right now! Find us nearby and discover what we're serving up today. Stop by while we're in the area - we'd love to see you!",
+      business_event:
+        "Mark your calendar and plan your visit! This is your chance to experience something special with us. Bring friends, make memories, and be part of something worth talking about.",
     };
 
     return fallbacks[contentType];
