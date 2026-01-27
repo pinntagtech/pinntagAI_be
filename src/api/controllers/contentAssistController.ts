@@ -19,9 +19,9 @@ import {
 const VALID_CONTENT_TYPES: ContentCreationType[] = [
   "offer",
   "flashdeal",
-  "spotlight",
-  "dropped_pin",
-  "business_event",
+  "specials",
+  "drop_pin",
+  "event",
 ];
 
 const VALID_PROMOTION_TYPES: PromotionType[] = [

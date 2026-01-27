@@ -22,9 +22,9 @@ const openai = new OpenAI({
 export type ContentCreationType =
   | "offer"
   | "flashdeal"
-  | "spotlight"
-  | "dropped_pin"
-  | "business_event";
+  | "specials"
+  | "drop_pin"
+  | "event";
 
 export type PromotionType =
   | "percent_off"
@@ -501,7 +501,7 @@ STYLE GUIDELINES:
 - For ${promotionType?.replace(/_/g, " ") || "promotions"}: focus on immediate, tangible value
 - Examples: "2-Hour Flash: 50% Off Pastries", "Today Only: BOGO Everything", "Last Chance: Limited Quantity Left"`,
 
-      spotlight: `SPOTLIGHT TITLES:
+      specials:`SPOTLIGHT TITLES:
 PURPOSE: Showcase what makes the business unique. Highlight features, achievements, or behind-the-scenes content.
 SCENARIOS: New menu item, staff spotlight, customer story, milestone celebration, behind-the-scenes
 STYLE GUIDELINES:
@@ -511,7 +511,7 @@ STYLE GUIDELINES:
 - Celebrate achievements or special features
 - Examples: "Meet Our Head Chef", "Behind the Scenes", "What Makes Us Different"`,
 
-      dropped_pin: `DROP PIN TITLES:
+      drop_pin: `DROP PIN TITLES:
 PURPOSE: Unique advantage for mobile/temporary locations. Lets nearby customers find you instantly.
 SCENARIOS: Food truck locations, pop-up vendors, market stands, event vendors, mobile services
 STYLE GUIDELINES:
@@ -521,7 +521,7 @@ STYLE GUIDELINES:
 - Capture impulse purchases from nearby foot traffic
 - Examples: "We're Here Now!", "Find Us at the Park", "Pop-Up Alert: Limited Time Spot"`,
 
-      business_event: `EVENT TITLES:
+      event: `EVENT TITLES:
 PURPOSE: Create anticipation and give people a reason to plan a visit. Scheduled experiences with specific date/time.
 SCENARIOS: Trivia Night, Live Music, Saturday class series, Wine Tasting, Watch Party
 STYLE GUIDELINES:
@@ -603,14 +603,14 @@ PURPOSE: Drive immediate foot traffic during slow periods. Fill empty seats fast
 - For ${promotionType?.replace(/_/g, " ") || "promotions"}: highlight the specific, tangible benefit
 - Focus on "come now" messaging`,
 
-      spotlight: `SPOTLIGHT DESCRIPTION GUIDELINES:
+      specials:`SPOTLIGHT DESCRIPTION GUIDELINES:
 PURPOSE: Showcase uniqueness and drive engagement through storytelling.
 - Highlight what makes this feature, person, or achievement special
 - Create curiosity and intrigue
 - Tell a compelling story in a concise format
 - Encourage engagement and sharing`,
 
-      dropped_pin: `DROP PIN DESCRIPTION GUIDELINES:
+      drop_pin: `DROP PIN DESCRIPTION GUIDELINES:
 PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby customers.
 - Focus on location, proximity, and immediacy
 - Keep it very short and punchy (people are on-the-go)
@@ -618,7 +618,7 @@ PURPOSE: Help mobile/pop-up businesses get discovered instantly by nearby custom
 - Capture impulse decisions from foot traffic
 - Include what they'll find when they arrive`,
 
-      business_event: `EVENT DESCRIPTION GUIDELINES:
+      event: `EVENT DESCRIPTION GUIDELINES:
 PURPOSE: Create anticipation and make people plan a visit. Turn venue into a destination.
 - Describe the experience attendees can expect
 - Create excitement that encourages planning ahead
@@ -791,7 +791,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "Grab It Before It's Gone",
         "Last Chance Today",
       ],
-      spotlight: [
+      specials:[
         "Discover What Makes Us Special",
         "Behind the Scenes",
         "Meet the Team",
@@ -803,7 +803,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "Why We Do What We Do",
         "Something Worth Sharing",
       ],
-      dropped_pin: [
+      drop_pin: [
         "We're Here Right Now",
         "Find Us Nearby",
         "Pop-Up Alert!",
@@ -815,7 +815,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "Catch Us While You Can",
         "Your Nearby Discovery",
       ],
-      business_event: [
+      event: [
         "Join Us for Something Special",
         "An Experience Awaits",
         "Mark Your Calendar",
@@ -846,9 +846,9 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "This won't last long! We're offering something special right now for a limited time. Come in before it's gone and take advantage of these savings today.",
       spotlight:
         "There's something special we want to share with you. Take a closer look at what makes us unique and discover the story behind what we do.",
-      dropped_pin:
+      drop_pin:
         "We're here right now! Find us nearby and discover what we're serving up today. Stop by while we're in the area - we'd love to see you!",
-      business_event:
+      event:
         "Mark your calendar and plan your visit! This is your chance to experience something special with us. Bring friends, make memories, and be part of something worth talking about.",
     };
 

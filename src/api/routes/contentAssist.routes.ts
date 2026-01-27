@@ -20,7 +20,7 @@ const router = Router();
  *
  * @body {
  *   businessId: string (required) - The business ID,
- *   contentType: "offer" | "flashdeal" | "spotlight" | "dropped_pin" | "business_event" (required),
+ *   contentType: "offer" | "flashdeal" | "specials" | "drop_pin" | "event" (required),
  *   category?: string (e.g., "Food & Drink Specials", "Live Music"),
  *   subCategory?: string (e.g., "Happy Hour", "Acoustic Set"),
  *   tags?: string[],
@@ -80,7 +80,7 @@ router.post("/titles", internalApiKeyGuard, generateTitles);
  *
  * @body {
  *   businessId: string (required) - The business ID,
- *   contentType: "offer" | "flashdeal" | "spotlight" | "dropped_pin" | "business_event" (required),
+ *   contentType: "offer" | "flashdeal" | "specials" | "drop_pin" | "event" (required),
  *   category?: string,
  *   subCategory?: string,
  *   tags?: string[],
@@ -123,7 +123,7 @@ router.post("/titles/refresh", internalApiKeyGuard, refreshTitles);
  * @body {
  *   businessId: string (required) - The business ID,
  *   title: string (required) - The selected headline,
- *   contentType: "offer" | "flashdeal" | "spotlight" | "dropped_pin" | "business_event" (required),
+ *   contentType: "offer" | "flashdeal" | "specials" | "drop_pin" | "event" (required),
  *   category?: string,
  *   subCategory?: string,
  *   tags?: string[],
