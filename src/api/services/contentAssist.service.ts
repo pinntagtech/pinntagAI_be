@@ -844,7 +844,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "We'd love to welcome you! Take advantage of this special offer on your first visit and discover what makes us worth coming back for. No pressure, just great value waiting for you.",
       flashdeal:
         "This won't last long! We're offering something special right now for a limited time. Come in before it's gone and take advantage of these savings today.",
-      spotlight:
+      specials:
         "There's something special we want to share with you. Take a closer look at what makes us unique and discover the story behind what we do.",
       drop_pin:
         "We're here right now! Find us nearby and discover what we're serving up today. Stop by while we're in the area - we'd love to see you!",
