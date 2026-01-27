@@ -353,7 +353,7 @@ export class EtlController {
       return res.json(metrics);
     } catch (error) {
       logger.error(error, "Failed to get metrics");
-      return res.status(500).json({ error: "Failed to get metrics" });
+      return res.status(400).json({ error: "Failed to get metrics" });
     }
   }
 

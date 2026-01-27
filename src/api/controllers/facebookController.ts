@@ -89,7 +89,7 @@ export class FacebookController {
       const redirectUri = process.env.FACEBOOK_REDIRECT_URI;
       console.log(redirectUri, "Redirect URI");
       if (!redirectUri) {
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           error: "FACEBOOK_REDIRECT_URI not configured in environment",
         });
@@ -168,7 +168,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error({ error: error.message }, "Error handling OAuth callback");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -201,7 +201,7 @@ export class FacebookController {
       }
     } catch (error: any) {
       logger.error({ error }, "Error generating long-lived token");
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
   /**
@@ -248,7 +248,7 @@ export class FacebookController {
       );
 
       if (!result.success || !result.data) {
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           error: result.error || "Failed to fetch Facebook posts",
         });
@@ -269,7 +269,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error("Error in getFacebookPosts:", error);
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -321,7 +321,7 @@ export class FacebookController {
       );
 
       if (!result.success || !result.data) {
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           error: result.error || "Failed to fetch Facebook posts",
         });
@@ -342,7 +342,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error("Error in getFacebookPostsPost:", error);
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -367,7 +367,7 @@ export class FacebookController {
       }
     } catch (error: any) {
       logger.error({ error }, "Error fetching all Facebook posts");
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
 
@@ -434,7 +434,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error({ error }, "Error in fetchAndSavePageData controller");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -475,7 +475,7 @@ export class FacebookController {
       }
     } catch (error: any) {
       logger.error({ error }, "Error generating long-lived page access token");
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
 
@@ -568,7 +568,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error({ error }, "Error in getFacebookPostsPaginated controller");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -705,7 +705,7 @@ export class FacebookController {
       });
     } catch (error: any) {
       logger.error({ error }, "Error in updateFacebookPostType controller");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });
@@ -786,7 +786,7 @@ export class FacebookController {
       return res.status(200).json(result);
     } catch (error: any) {
       console.error("Error in markPostsAsImported controller:", error);
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Internal server error",
       });

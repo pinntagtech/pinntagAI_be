@@ -64,7 +64,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to initialize training",
       });
@@ -133,7 +133,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to submit responses",
       });
@@ -191,7 +191,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to complete training",
       });
@@ -237,7 +237,7 @@ export class AITrainingController {
     } catch (error: any) {
       logger.error({ error }, "Error getting training status");
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get training status",
       });
@@ -299,7 +299,7 @@ export class AITrainingController {
     } catch (error: any) {
       logger.error({ error }, "Error getting training questions");
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get training questions",
       });
@@ -371,7 +371,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get questions by phase",
       });
@@ -433,7 +433,7 @@ export class AITrainingController {
     } catch (error: any) {
       logger.error({ error }, "Error getting training questions with defaults");
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error:
           error.message || "Failed to get training questions with defaults",
@@ -480,7 +480,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get training responses",
       });
@@ -528,7 +528,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to reset training",
       });
@@ -608,7 +608,7 @@ export class AITrainingController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get training state",
       });
@@ -670,7 +670,7 @@ export class AITrainingController {
         "Error updating Google Places data",
       );
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to update Google Places data",
       });

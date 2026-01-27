@@ -107,6 +107,7 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
       enum: [
         "Entertainment",
         "Classes and Workshops",
+        "Classes & Workshops",
         "Food & Drink",
         "Sports & Outdoor",
         "Local Attractions",

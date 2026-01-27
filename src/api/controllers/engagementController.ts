@@ -114,7 +114,7 @@ export class EngagementController {
       });
     } catch (error: any) {
       logger.error({ error: error.message, body: req.body }, "Failed to track engagement");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to track engagement",
       });
@@ -177,7 +177,7 @@ export class EngagementController {
       });
     } catch (error: any) {
       logger.error({ error: error.message }, "Failed to track batch engagement");
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to track batch engagement",
       });
@@ -210,7 +210,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to get event summary"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get event summary",
       });
@@ -243,7 +243,7 @@ export class EngagementController {
         { error: error.message, businessId: req.params.businessId },
         "Failed to get business summary"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get business summary",
       });
@@ -316,7 +316,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to get event time series"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get event time series",
       });
@@ -364,7 +364,7 @@ export class EngagementController {
         },
         "Failed to get user event status"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get user event status",
       });
@@ -420,7 +420,7 @@ export class EngagementController {
         { error: error.message, query: req.query },
         "Failed to list engagements"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to list engagements",
       });
@@ -472,7 +472,7 @@ export class EngagementController {
         { error: error.message, businessId: req.params.businessId },
         "Failed to get top events"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get top events",
       });
@@ -508,7 +508,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to get engagement by source"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get engagement by source",
       });
@@ -544,7 +544,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to get engagement by device"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get engagement by device",
       });
@@ -593,7 +593,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to get realtime engagement"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get realtime engagement",
       });
@@ -626,7 +626,7 @@ export class EngagementController {
         { error: error.message, eventId: req.params.eventId },
         "Failed to delete event engagements"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to delete event engagements",
       });
@@ -679,7 +679,7 @@ export class EngagementController {
         { error: error.message, businessId: req.params.businessId },
         "Failed to get AI training analytics"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get AI training analytics",
       });
@@ -717,7 +717,7 @@ export class EngagementController {
         { error: error.message, businessId: req.params.businessId },
         "Failed to generate AI training insights"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to generate AI training insights",
       });
@@ -767,7 +767,7 @@ export class EngagementController {
         { error: error.message, businessId: req.params.businessId },
         "Failed to get user segment analytics"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get user segment analytics",
       });

@@ -151,7 +151,7 @@ export class AIController {
         return res.status(400).json({ success: false, error: error.message });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to create AI agent",
       });
@@ -278,7 +278,7 @@ export class AIController {
         return res.status(404).json({ success: false, error: error.message });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to update AI agent",
       });
@@ -320,7 +320,7 @@ export class AIController {
         return res.status(404).json({ success: false, error: error.message });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to train AI agent",
       });
@@ -367,7 +367,7 @@ export class AIController {
         return res.status(404).json({ success: false, error: error.message });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to chat with AI agent",
       });
@@ -427,7 +427,7 @@ export class AIController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error:
           error.message || "Failed to get response from business assistant",
@@ -483,7 +483,7 @@ export class AIController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get business AI agent",
       });
@@ -543,7 +543,7 @@ export class AIController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to generate tags",
       });
@@ -610,7 +610,7 @@ export class AIController {
         });
       }
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to generate description",
       });

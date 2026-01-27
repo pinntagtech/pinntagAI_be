@@ -20,7 +20,7 @@ export const getFacebookLoginUrl = (req: Request, res: Response) => {
     return res.json({ success: true, url });
   } catch (error: any) {
     logger.error({ error }, "Error generating login URL");
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: error.message });
   }
 };
 
@@ -49,6 +49,6 @@ export const generateShortLivedToken = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     logger.error({ error }, "Error generating short-lived token");
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(400).json({ success: false, error: error.message });
   }
 };

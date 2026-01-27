@@ -60,7 +60,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.body?.userId },
         "Consumer AI chat failed"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to process chat message",
       });
@@ -93,7 +93,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.params.userId },
         "Failed to get consumer profile"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get profile",
       });
@@ -146,7 +146,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.params.userId },
         "Failed to get conversation history"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to get conversation history",
       });
@@ -182,7 +182,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.params.userId },
         "Failed to clear history"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to clear history",
       });
@@ -219,7 +219,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.params.userId },
         "Failed to sync preferences"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to sync preferences",
       });
@@ -267,7 +267,7 @@ export class ConsumerAIController {
         { error: error.message, userId: req.params.userId },
         "Failed to add preference"
       );
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         error: error.message || "Failed to add preference",
       });

@@ -229,7 +229,7 @@ router.get(
         data,
       });
     } catch (error: any) {
-      res.status(500).json({
+      res.status(400).json({
         success: false,
         error: "Failed to fetch data",
         message: error.message,

@@ -85,7 +85,7 @@ export const generateTemplate = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     logger.error({ error }, "Error generating template");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to generate template",
     });
@@ -131,7 +131,7 @@ export const generateMultipleTemplates = async (req: Request, res: Response) => 
     });
   } catch (error: any) {
     logger.error({ error }, "Error generating multiple templates");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to generate templates",
     });
@@ -214,7 +214,7 @@ export const getTemplates = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error fetching templates");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to fetch templates",
     });
@@ -244,7 +244,7 @@ export const getTemplateById = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error, templateId: req.params.id }, "Error fetching template");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to fetch template",
     });
@@ -270,7 +270,7 @@ export const triggerTemplateUpdate = async (_req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error triggering template update");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to trigger template update",
     });
@@ -296,7 +296,7 @@ export const generateForAllBusinesses = async (_req: Request, res: Response) => 
     });
   } catch (error: any) {
     logger.error({ error }, "Error generating templates for all businesses");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to generate templates for all businesses",
     });
@@ -339,7 +339,7 @@ export const generateGenericForIndustry = async (req: Request, res: Response) =>
     });
   } catch (error: any) {
     logger.error({ error }, "Error generating generic templates for industry");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to generate generic templates",
     });
@@ -388,7 +388,7 @@ export const triggerScheduledJob = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error triggering scheduled job");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to trigger scheduled job",
     });
@@ -454,7 +454,7 @@ export const triggerDailyTemplate = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error triggering daily template generation");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to trigger daily template generation",
     });
@@ -476,7 +476,7 @@ export const getSchedulerStatus = async (_req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error getting scheduler status");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to get scheduler status",
     });
@@ -503,7 +503,7 @@ export const generateForAllAgents = async (_req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error({ error }, "Error generating templates for all AI agents");
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       error: error.message || "Failed to generate templates for all AI agents",
     });
