@@ -48,7 +48,7 @@ const DEFAULT_TITLE_COUNT = 5;
  */
 export async function generateTitles(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   await withControllerError(res, "Error generating titles", async () => {
     const params: GenerateTitlesRequest = req.body;
@@ -86,17 +86,17 @@ export async function generateTitles(
     // Validate and normalize count
     const count = Math.min(
       Math.max(params.count || DEFAULT_TITLE_COUNT, 1),
-      MAX_TITLE_COUNT
+      MAX_TITLE_COUNT,
     );
 
     logger.info(
       { businessId: params.businessId, contentType: params.contentType, count },
-      "Generating content titles"
+      "Generating content titles",
     );
 
     // Get business context
     const context = await ContentAssistService.getBusinessContext(
-      params.businessId
+      params.businessId,
     );
 
     // Generate titles
@@ -125,10 +125,12 @@ export async function generateTitles(
  */
 export async function refreshTitles(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   // Add a unique refresh seed to force new generation
   req.body.refreshSeed = `refresh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  console.log("Refresh API Body:========================>", req.body);
 
   // Delegate to generateTitles
   return generateTitles(req, res);
@@ -140,7 +142,7 @@ export async function refreshTitles(
  */
 export async function generateDescription(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   await withControllerError(res, "Error generating description", async () => {
     const params: GenerateDescriptionRequest = req.body;
@@ -182,12 +184,12 @@ export async function generateDescription(
         contentType: params.contentType,
         title: params.title,
       },
-      "Generating content description"
+      "Generating content description",
     );
 
     // Get business context
     const context = await ContentAssistService.getBusinessContext(
-      params.businessId
+      params.businessId,
     );
 
     // Generate description

@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import mongoose from "mongoose";
 import {
   AI_TrainingModel,
@@ -20,10 +19,7 @@ import {
   getPhaseSummary,
 } from "../../utils/AI_Training_questionnaire.js";
 import { response } from "express";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from "../../utils/openai.js";
 
 // ===========================
 // Helper Functions

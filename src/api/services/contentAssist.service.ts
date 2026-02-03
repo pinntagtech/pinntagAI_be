@@ -10,10 +10,7 @@ import {
   isConversationalResponse,
 } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from "../../utils/openai.js";
 
 // ===========================
 // Types

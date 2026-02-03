@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { openai } from "../../utils/openai.js";
 import fs from "node:fs";
 import mongoose from "mongoose";
 import { toFile } from "openai/uploads";
@@ -44,9 +45,6 @@ export type Business = {
   category: string;
 };
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const ASSISTANT_INSTRUCTIONS = `
 You are the AI for the PinnTag Business app. You MUST restrict all discussions to app-relevant topics:

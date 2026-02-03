@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import mongoose from "mongoose";
 import { randomUUID } from "crypto";
 import {
@@ -11,10 +10,7 @@ import {
 } from "../../models/consumerAI.model.js";
 import { EngagementModel, EngagementActionType } from "../../models/engagement.model.js";
 import { logger } from "../../utils/logger.js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from "../../utils/openai.js";
 
 /**
  * Input for chat message

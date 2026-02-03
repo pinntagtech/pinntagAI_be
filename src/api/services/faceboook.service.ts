@@ -3,10 +3,7 @@ import qs from "qs";
 import OpenAI from "openai";
 import { logger } from "../../utils/logger.js";
 import { FacebookPostModel } from "../../models/facebookPost.model.js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from "../../utils/openai.js";
 
 interface FacebookPost {
   id: string;

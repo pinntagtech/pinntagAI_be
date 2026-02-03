@@ -4,10 +4,7 @@ import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model
 import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
 import { ApiError } from "../controllers/controller.utils.js";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from "../../utils/openai.js";
 
 // ===========================
 // Types

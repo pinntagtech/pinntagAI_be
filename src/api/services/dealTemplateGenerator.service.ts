@@ -10,17 +10,12 @@ import {
   TemplateScope,
   upsertTemplate,
 } from "../../models/pinntagBackend/dealTemplate.model.js";
-import OpenAI from "openai";
+import { openai } from "../../utils/openai.js";
 
 /**
  * Deal Template Generator Service
  * Generates deal/offer templates based on business training data
  */
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export interface DealTemplate {
   title: string;
