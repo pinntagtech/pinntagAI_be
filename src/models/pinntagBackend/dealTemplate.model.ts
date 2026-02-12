@@ -28,11 +28,14 @@ export enum TemplateScope {
 // Deal Template Interface (for templates collection in PinntagBackend DB)
 export interface IDealTemplate {
   _id?: string | Schema.Types.ObjectId;
+  user?: string | Schema.Types.ObjectId; // Creator user ID (refPath based on creatorType)
   creatorType: string;
   type: string;
   scope: string; // "generic" or "business_specific"
   businessId?: string | Schema.Types.ObjectId; // Only set for business-specific templates
+  businessProfile?: string | Schema.Types.ObjectId; // Reference to Business
   discountValue?: string;
+  discountType?: string; // Type of discount (e.g., "percentage", "fixed", "buy_one_get_one")
   categories: Array<string | Schema.Types.ObjectId>;
   title: string;
   keywords: string[];
@@ -74,11 +77,17 @@ export interface IDealTemplate {
 // Deal Template Schema Definition
 export const DealTemplateSchema = new Schema<IDealTemplate>(
   {
+    user: {
+      type: Schema.Types.ObjectId,
+      refPath: "creatorType"
+    },
     creatorType: { type: String, required: true, enum: Object.values(TemplateCreatorType) },
     type: { type: String, required: true, enum: Object.values(TemplateType) },
     scope: { type: String, required: true, enum: Object.values(TemplateScope), default: TemplateScope.GENERIC },
     businessId: { type: Schema.Types.ObjectId, ref: "Business" }, // Only for business-specific
+    businessProfile: { type: Schema.Types.ObjectId, ref: "Business" },
     discountValue: { type: String },
+    discountType: { type: String },
     categories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
     title: { type: String, required: true },
     keywords: [{ type: String }],
