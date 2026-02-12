@@ -26,6 +26,60 @@ import { openai } from "../../utils/openai.js";
 // ===========================
 
 /**
+ * Maps old category values to new BusinessIndustries enum values
+ * This handles migration from old category names to new standardized names
+ */
+function mapCategoryToIndustry(category: string): BusinessIndustries {
+  const categoryMapping: Record<string, BusinessIndustries> = {
+    // Direct matches (new categories)
+    "Entertainment": BusinessIndustries.ENTERTAINMENT,
+    "Classes and Workshops": BusinessIndustries.CLASSES_WORKSHOPS,
+    "Classes & Workshops": BusinessIndustries.CLASSES_WORKSHOPS,
+    "Food & Drink": BusinessIndustries.FOOD_DRINK,
+    "Sports & Outdoor": BusinessIndustries.SPORTS_OUTDOOR,
+    "Local Attractions": BusinessIndustries.LOCAL_ATTRACTIONS,
+    "Retail & Shopping": BusinessIndustries.RETAIL_SHOPPING,
+    "Health & Wellness": BusinessIndustries.HEALTH_WELLNESS,
+    "Home & Professional Services": BusinessIndustries.HOME_PROFESSIONAL_SERVICES,
+    "Places to Stay": BusinessIndustries.PLACES_TO_STAY,
+
+    // Old category mappings
+    "Beauty & Wellness": BusinessIndustries.HEALTH_WELLNESS,
+    "Fitness & Wellness": BusinessIndustries.HEALTH_WELLNESS,
+    "Health & Beauty": BusinessIndustries.HEALTH_WELLNESS,
+    "Retail": BusinessIndustries.RETAIL_SHOPPING,
+    "Shopping": BusinessIndustries.RETAIL_SHOPPING,
+    "Food": BusinessIndustries.FOOD_DRINK,
+    "Restaurants": BusinessIndustries.FOOD_DRINK,
+    "Sports": BusinessIndustries.SPORTS_OUTDOOR,
+    "Outdoor Activities": BusinessIndustries.SPORTS_OUTDOOR,
+    "Attractions": BusinessIndustries.LOCAL_ATTRACTIONS,
+    "Tourism": BusinessIndustries.LOCAL_ATTRACTIONS,
+    "Hotels": BusinessIndustries.PLACES_TO_STAY,
+    "Accommodation": BusinessIndustries.PLACES_TO_STAY,
+    "Lodging": BusinessIndustries.PLACES_TO_STAY,
+    "Professional Services": BusinessIndustries.HOME_PROFESSIONAL_SERVICES,
+    "Home Services": BusinessIndustries.HOME_PROFESSIONAL_SERVICES,
+    "Education": BusinessIndustries.CLASSES_WORKSHOPS,
+    "Classes": BusinessIndustries.CLASSES_WORKSHOPS,
+    "Workshops": BusinessIndustries.CLASSES_WORKSHOPS,
+  };
+
+  const mappedIndustry = categoryMapping[category];
+
+  if (mappedIndustry) {
+    return mappedIndustry;
+  }
+
+  // Log warning for unmapped categories and default to a sensible fallback
+  logger.warn(
+    { category },
+    "Unknown category encountered, defaulting to ENTERTAINMENT"
+  );
+  return BusinessIndustries.ENTERTAINMENT;
+}
+
+/**
  * Generates enhanced AI instructions based on training responses
  */
 function generateEnhancedInstructions(
@@ -676,7 +730,8 @@ export class AITrainingService {
       }
 
       // Get industry and subCategory from business agent
-      const industry = businessAgent.category as BusinessIndustries;
+      // Use mapping function to handle old category names
+      const industry = mapCategoryToIndustry(businessAgent.category);
       const subCategory = businessAgent.subCategories?.[0] as
         | BusinessSubCategory
         | undefined;
@@ -1531,7 +1586,8 @@ export class AITrainingService {
       // If no training exists, initialize it
       if (!training) {
         logger.info({ businessId }, "No training found, initializing");
-        const industry = businessAgent.category as BusinessIndustries;
+        // Use mapping function to handle old category names
+        const industry = mapCategoryToIndustry(businessAgent.category);
         const subCategory = businessAgent.subCategories?.[0] as
           | BusinessSubCategory
           | undefined;
