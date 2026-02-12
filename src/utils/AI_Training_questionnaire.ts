@@ -79,36 +79,40 @@ export enum EventCategories {
 
 export enum BusinessSubCategory {
   // Entertainment
-  LIVE_MUSIC_VENUE = "Live Music Venue",
-  NIGHTCLUB_DANCE_VENUE = "Nightclub / Dance Venue",
+  LIVE_MUSIC = "Live Music",
+  NIGHTCLUB_DANCE = "Nightclub & Dance",
   COMEDY_CLUB = "Comedy Club",
-  CINEMA = "Cinema",
-  THEATRE_PERFORMING_ARTS = "Theatre / Performing Arts",
-  ARCADE_GAMING_VENUE = "Arcade / Gaming Venue",
-  CULTURAL_CENTRE = "Cultural Centre",
+  CINEMA_THEATER = "Cinema / Theater",
+  CULTURAL_ARTS = "Cultural & Arts",
+  GAMES_CHALLENGES = "Games & Challenges",
+  BOWLING = "Bowling",
+  GOLF_MINI_GOLF = "Golf / Mini Golf",
+  VR_GAMING = "VR / Gaming",
+  ADVENTURE_ACTIVE_FUN = "Adventure & Active Fun",
+  ARCADES_AMUSEMENTS = "Arcades & Amusements",
 
   // Classes and Workshops
-  COOKING_STUDIO = "Cooking Studio",
-  ART_CRAFT_STUDIO = "Art & Craft Studio",
-  DANCE_SCHOOL = "Dance School",
-  MUSIC_PERFORMING_ARTS_SCHOOL = "Music / Performing Arts School",
-  LANGUAGE_CULTURAL_SCHOOL = "Language & Cultural School",
-  SKILL_TRAINING_STUDIO = "Skill Training Studio",
+  COOKING = "Cooking",
+  ART_CRAFT = "Art & Craft",
+  DANCE = "Dance",
+  MUSIC_PERFORMING_ARTS = "Music / Performing Arts",
+  LANGUAGE_CULTURAL = "Language & Cultural",
+  SKILL_TRAINING = "Skill Training",
 
   // Food & Drink
   RESTAURANT = "Restaurant",
-  CAFE_COFFEE_SHOP = "Café / Coffee Shop",
+  CAFE_COFFEE = "Café / Coffee",
   BAR_PUB = "Bar / Pub",
-  BAKERY_DESSERT_SHOP = "Bakery & Dessert Shop",
-  BREWERY_WINERY = "Brewery & Winery",
-  FOOD_TRUCK_STREET_FOOD = "Food Truck / Street Food",
+  BAKERY_DESSERT = "Bakery / Dessert",
+  BREWERY_WINERY = "Brewery / Winery",
+  FOOD_TRUCK_POPUP = "Food Truck / Pop-up",
 
   // Sports & Outdoor
-  GYM_FITNESS_STUDIO = "Gym / Fitness Studio",
-  YOGA_PILATES_STUDIO = "Yoga / Pilates Studio",
+  GYM_FITNESS = "Gym / Fitness",
+  YOGA_PILATES = "Yoga / Pilates",
   SPORTS_FACILITY = "Sports Facility",
-  ADVENTURE_ACTIVITY_OPERATOR = "Adventure & Activity Operator",
-  PARK_RECREATION_CENTRE = "Park / Recreation Centre",
+  ADVENTURE_OUTDOOR = "Adventure / Outdoor",
+  PARKS_RECREATION = "Parks / Recreation",
 
   // Local Attractions
   MUSEUM = "Museum",
@@ -116,35 +120,39 @@ export enum BusinessSubCategory {
   HISTORICAL_SITE_LANDMARK = "Historical Site / Landmark",
   CULTURAL_ATTRACTION = "Cultural Attraction",
   BOTANICAL_GARDEN_PARK = "Botanical Garden / Park",
+  ZOO_AQUARIUM = "Zoo / Aquarium",
 
   // Retail & Shopping
   FASHION_APPAREL = "Fashion & Apparel",
   SHOES_ACCESSORIES = "Shoes & Accessories",
-  SPECIALTY_BOUTIQUE_STORE = "Specialty / Boutique Store",
+  SPECIALTY_BOUTIQUE = "Specialty / Boutique",
   GROCERY_MARKET = "Grocery / Market",
-  POPUP_SEASONAL_RETAIL = "Pop-up / Seasonal Retail",
+  POPUP_SEASONAL = "Pop-up / Seasonal",
 
   // Health & Wellness
-  SPA_MASSAGE_CENTRE = "Spa & Massage Centre",
-  BEAUTY_SALON = "Beauty Salon",
-  AESTHETIC_CLINIC = "Aesthetic Clinic",
-  MENTAL_WELLNESS_CENTRE = "Mental Wellness Centre",
-  WELLNESS_STUDIO = "Wellness Studio",
+  SPA_MASSAGE = "Spa & Massage",
+  BEAUTY = "Beauty",
+  AESTHETIC = "Aesthetic",
+  WELLNESS = "Wellness",
+  NAIL = "Nail",
+  HAIR = "Hair",
+  MED_SPA = "Med spa",
 
   // Home & Professional Services
-  HOME_REPAIR_MAINTENANCE = "Home Repair & Maintenance",
-  CLEANING_HOUSEKEEPING = "Cleaning & Housekeeping",
-  GARDENING_LANDSCAPING = "Gardening & Landscaping",
-  AUTOMOTIVE_SERVICES = "Automotive Services",
-  EDUCATION_TUTORING = "Education & Tutoring",
-  PET_CARE_GROOMING = "Pet Care & Grooming",
+  HOME_REPAIR = "Home Repair",
+  CLEANING = "Cleaning",
+  LANDSCAPING = "Landscaping",
+  AUTO_SERVICES = "Auto Services",
+  TUTORING = "Tutoring",
+  PET_CARE = "Pet Care",
+  BUSINESS_PROFESSIONAL = "Business & Professional",
 
   // Places to Stay
   HOTEL_RESORT = "Hotel / Resort",
   HOSTEL_GUESTHOUSE = "Hostel / Guesthouse",
   BED_BREAKFAST = "Bed & Breakfast",
-  VACATION_RENTAL_SERVICED_APARTMENT = "Vacation Rental / Serviced Apartment",
-  CAMPING_GLAMPING_SITE = "Camping / Glamping Site",
+  SERVICED_APARTMENT = "Serviced Apartment",
+  CAMPING_GLAMPING = "Camping / Glamping",
 }
 
 // Event Subcategories
@@ -1697,9 +1705,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       important_seasons: ["Valentine's Day", "Mother's Day", "Father's Day", "Thanksgiving", "Christmas/Holiday Season"],
     },
   },
-  // FOOD & DRINK - Cafe/Coffee Shop
+  // FOOD & DRINK - Cafe/Coffee
   {
-    subcategory: BusinessSubCategory.CAFE_COFFEE_SHOP,
+    subcategory: BusinessSubCategory.CAFE_COFFEE,
     defaults: {
       busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)", "Afternoon (2-5 PM)"],
       busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -1723,9 +1731,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       happy_hour_interest: true,
     },
   },
-  // FOOD & DRINK - Bakery & Dessert Shop
+  // FOOD & DRINK - Bakery / Dessert
   {
-    subcategory: BusinessSubCategory.BAKERY_DESSERT_SHOP,
+    subcategory: BusinessSubCategory.BAKERY_DESSERT,
     defaults: {
       busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)"],
       busiest_days: ["Friday", "Saturday", "Sunday"],
@@ -1735,9 +1743,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       important_seasons: ["Valentine's Day", "Mother's Day", "Easter", "Thanksgiving", "Christmas/Holiday Season"],
     },
   },
-  // FOOD & DRINK - Food Truck / Street Food
+  // FOOD & DRINK - Food Truck / Pop-up
   {
-    subcategory: BusinessSubCategory.FOOD_TRUCK_STREET_FOOD,
+    subcategory: BusinessSubCategory.FOOD_TRUCK_POPUP,
     defaults: {
       busiest_hours: ["Lunch time (12-2 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -1747,9 +1755,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       dining_style: "Take-out focused",
     },
   },
-  // SPORTS & OUTDOOR - Gym / Fitness Studio
+  // SPORTS & OUTDOOR - Gym / Fitness
   {
-    subcategory: BusinessSubCategory.GYM_FITNESS_STUDIO,
+    subcategory: BusinessSubCategory.GYM_FITNESS,
     defaults: {
       busiest_hours: ["Early morning (6-9 AM)", "Morning (9-12 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday"],
@@ -1761,9 +1769,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       trial_sessions: true,
     },
   },
-  // SPORTS & OUTDOOR - Yoga / Pilates Studio
+  // SPORTS & OUTDOOR - Yoga / Pilates
   {
-    subcategory: BusinessSubCategory.YOGA_PILATES_STUDIO,
+    subcategory: BusinessSubCategory.YOGA_PILATES,
     defaults: {
       busiest_hours: ["Morning (9-12 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Monday", "Wednesday", "Thursday", "Saturday"],
@@ -1775,9 +1783,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       trial_sessions: true,
     },
   },
-  // HEALTH & WELLNESS - Beauty Salon
+  // HEALTH & WELLNESS - Beauty
   {
-    subcategory: BusinessSubCategory.BEAUTY_SALON,
+    subcategory: BusinessSubCategory.BEAUTY,
     defaults: {
       busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday"],
@@ -1788,9 +1796,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       first_time_specials: true,
     },
   },
-  // HEALTH & WELLNESS - Spa & Massage Centre
+  // HEALTH & WELLNESS - Spa & Massage
   {
-    subcategory: BusinessSubCategory.SPA_MASSAGE_CENTRE,
+    subcategory: BusinessSubCategory.SPA_MASSAGE,
     defaults: {
       busiest_hours: ["Afternoon (2-5 PM)", "Evening (5-8 PM)"],
       busiest_days: ["Friday", "Saturday", "Sunday"],
@@ -1815,9 +1823,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       loyalty_program: true,
     },
   },
-  // HOME & PROFESSIONAL SERVICES - Home Repair & Maintenance
+  // HOME & PROFESSIONAL SERVICES - Home Repair
   {
-    subcategory: BusinessSubCategory.HOME_REPAIR_MAINTENANCE,
+    subcategory: BusinessSubCategory.HOME_REPAIR,
     defaults: {
       busiest_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       target_audience: ["Families with children", "Established Professionals (35-50)", "Seniors (50+)"],
@@ -1828,9 +1836,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       service_guarantees: true,
     },
   },
-  // HOME & PROFESSIONAL SERVICES - Pet Care & Grooming
+  // HOME & PROFESSIONAL SERVICES - Pet Care
   {
-    subcategory: BusinessSubCategory.PET_CARE_GROOMING,
+    subcategory: BusinessSubCategory.PET_CARE,
     defaults: {
       busiest_hours: ["Morning (9-12 PM)", "Afternoon (2-5 PM)"],
       busiest_days: ["Friday", "Saturday"],
@@ -1852,9 +1860,9 @@ const smartDefaultsMapping: SmartDefaults[] = [
       special_packages: true,
     },
   },
-  // ENTERTAINMENT - Live Music Venue
+  // ENTERTAINMENT - Live Music
   {
-    subcategory: BusinessSubCategory.LIVE_MUSIC_VENUE,
+    subcategory: BusinessSubCategory.LIVE_MUSIC,
     defaults: {
       busiest_hours: ["Evening (5-8 PM)", "Night (8-11 PM)"],
       busiest_days: ["Thursday", "Friday", "Saturday"],

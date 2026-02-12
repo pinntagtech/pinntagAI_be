@@ -8,6 +8,7 @@ import { UsageType } from "../../models/aiUsage.model.js";
 import {
   filterInappropriateTitles,
   isConversationalResponse,
+  containsProfanity,
 } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
 import { openai } from "../../utils/openai.js";
@@ -32,6 +33,79 @@ export type PromotionType =
   | "combo_bundle"
   | "custom_deal"
   | "family_fun";
+
+// ===========================
+// Notification Types
+// ===========================
+
+export type NotificationAppType = "CONSUMER" | "BUSINESS";
+
+export type NotificationTriggerType =
+  | "offer_expiring"
+  | "offer_viewed_not_redeemed"
+  | "reward_progress"
+  | "new_event_nearby"
+  | "business_inactivity"
+  | "business_new_review"
+  | "weekend_events"
+  | "lunch_deals"
+  | "weekly_summary";
+
+export type NotificationTone = "playful" | "helpful" | "urgent" | "coach";
+
+export interface GenerateNotificationCopyRequest {
+  appType: NotificationAppType;
+  triggerType: NotificationTriggerType;
+  context: NotificationContext;
+  tone?: NotificationTone;
+  variantCount?: number;
+  emojiAllowed?: boolean;
+}
+
+export interface NotificationContext {
+  // Offer/Event context
+  offerName?: string;
+  eventName?: string;
+  businessName?: string;
+  businessId?: string;
+  category?: string;
+  // Time/location context
+  timeWindow?: string;
+  distanceBucket?: string;
+  cityArea?: string;
+  expiresIn?: string;
+  // Reward context
+  rewardProgress?: number;
+  rewardTarget?: number;
+  rewardName?: string;
+  // Business context (for business app)
+  daysSinceLastPost?: number;
+  newReviewRating?: number;
+  // Deep link
+  deepLink?: string;
+}
+
+export interface NotificationVariant {
+  id: string;
+  title: string;
+  body: string;
+  tone: NotificationTone;
+  hasEmoji: boolean;
+  urgencyLevel: "low" | "medium" | "high";
+}
+
+export interface GenerateNotificationCopyResponse {
+  success: boolean;
+  variants: NotificationVariant[];
+  fallbackUsed: boolean;
+  safetyFlags: string[];
+  metadata: {
+    appType: NotificationAppType;
+    triggerType: NotificationTriggerType;
+    generatedAt: string;
+    variantCount: number;
+  };
+}
 
 export interface GenerateTitlesRequest {
   businessId: string;
@@ -445,13 +519,14 @@ ${typeInstructions}
 
 REQUIREMENTS:
 1. Each title should be attention-grabbing and action-oriented
-2. Keep titles concise (5-10 words maximum)
-3. Make titles specific to the business and content type
-4. Use the brand voice if specified
-5. Create variety - don't repeat similar patterns
-6. NEVER ask for more information - always generate titles with available context
-7. NEVER respond with conversational text like "I'm sorry" or "I need more details"
-8. ALWAYS generate exactly ${count} titles, no matter what
+2. CRITICAL: Each title MUST be 60 characters or less (this is a hard limit)
+3. Keep titles concise (5-10 words maximum)
+4. Make titles specific to the business and content type
+5. Use the brand voice if specified
+6. Create variety - don't repeat similar patterns
+7. NEVER ask for more information - always generate titles with available context
+8. NEVER respond with conversational text like "I'm sorry" or "I need more details"
+9. ALWAYS generate exactly ${count} titles, no matter what
 
 ${refreshSeed ? `[Refresh seed: ${refreshSeed} - generate completely different titles than before]` : ""}
 ${excludeTitles?.length ? `
@@ -567,11 +642,12 @@ ${typeInstructions}
 
 REQUIREMENTS:
 1. The description should complement and expand on the title
-2. Keep it concise but informative (2-4 sentences, 50-150 words)
-3. Include a subtle call-to-action when appropriate
-4. Match the brand voice
-5. Make it mobile-friendly (easy to read on small screens)
-6. Do NOT include placeholder text like [date] or [time] - be general or omit
+2. CRITICAL: Description MUST be 140 characters or less (this is a hard limit for short descriptions)
+3. Keep it concise - 1-2 sentences maximum
+4. Include a subtle call-to-action when appropriate
+5. Match the brand voice
+6. Make it mobile-friendly (easy to read on small screens)
+7. Do NOT include placeholder text like [date] or [time] - be general or omit
 
 Return ONLY the description text, no JSON, no quotes, no labels.`;
   }
@@ -672,6 +748,11 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
       // Filter out conversational responses and inappropriate content
       titles = filterInappropriateTitles(titles);
 
+      // Enforce 60 character limit - truncate if necessary
+      titles = titles.map((title) =>
+        title.length > 60 ? title.substring(0, 57) + "..." : title
+      );
+
       if (titles.length >= expectedCount) {
         return titles.slice(0, expectedCount);
       }
@@ -715,6 +796,11 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
       (description.startsWith("'") && description.endsWith("'"))
     ) {
       description = description.slice(1, -1);
+    }
+
+    // Enforce 140 character limit - truncate if necessary
+    if (description.length > 140) {
+      description = description.substring(0, 137) + "...";
     }
 
     return description || this.getFallbackDescription("offer", "");
@@ -834,7 +920,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
    */
   private static getFallbackDescription(
     contentType: ContentCreationType,
-    title: string
+    _title: string
   ): string {
     const fallbacks: Record<ContentCreationType, string> = {
       offer:
@@ -850,5 +936,574 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
     };
 
     return fallbacks[contentType];
+  }
+
+  // ===========================
+  // Notification Copy Generation
+  // ===========================
+
+  /**
+   * Generate notification copy variants for push notifications
+   * Following PinnTag Notification Architecture safety and style guidelines
+   */
+  static async generateNotificationCopy(
+    request: GenerateNotificationCopyRequest
+  ): Promise<GenerateNotificationCopyResponse> {
+    const {
+      appType,
+      triggerType,
+      context,
+      tone = appType === "CONSUMER" ? "playful" : "coach",
+      variantCount = 5,
+      emojiAllowed = true,
+    } = request;
+
+    try {
+      const prompt = this.buildNotificationPrompt({
+        appType,
+        triggerType,
+        context,
+        tone,
+        variantCount,
+        emojiAllowed,
+      });
+
+      logger.info(
+        { appType, triggerType, variantCount },
+        "Generating notification copy variants"
+      );
+
+      // Use chat completions for notification copy (no assistant needed)
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: this.getNotificationSystemPrompt(appType),
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 1500,
+      });
+
+      const responseText = completion.choices[0]?.message?.content || "";
+
+      // Parse variants from response
+      let variants = this.parseNotificationVariants(
+        responseText,
+        variantCount,
+        tone
+      );
+
+      // Apply safety filters
+      const { filteredVariants, safetyFlags } =
+        this.applyNotificationSafetyFilters(variants);
+
+      // If all variants were filtered, use fallbacks
+      const fallbackUsed = filteredVariants.length === 0;
+      const finalVariants = fallbackUsed
+        ? this.getFallbackNotificationVariants(appType, triggerType, context)
+        : filteredVariants;
+
+      // Track usage
+      await UsageTrackingService.trackUsage({
+        businessId: context.businessId || "system",
+        type: UsageType.CONTENT_GENERATION,
+        subType: `notification_copy_${appType.toLowerCase()}_${triggerType}`,
+        promptTokens: completion.usage?.prompt_tokens || 0,
+        completionTokens: completion.usage?.completion_tokens || 0,
+        totalTokens: completion.usage?.total_tokens || 0,
+        model: "gpt-4o",
+        success: true,
+        metadata: {
+          appType,
+          triggerType,
+          variantCount: finalVariants.length,
+          fallbackUsed,
+          safetyFlags,
+        },
+      });
+
+      logger.info(
+        {
+          appType,
+          triggerType,
+          variantCount: finalVariants.length,
+          fallbackUsed,
+        },
+        "Notification copy generated successfully"
+      );
+
+      return {
+        success: true,
+        variants: finalVariants,
+        fallbackUsed,
+        safetyFlags,
+        metadata: {
+          appType,
+          triggerType,
+          generatedAt: new Date().toISOString(),
+          variantCount: finalVariants.length,
+        },
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, appType, triggerType },
+        "Error generating notification copy"
+      );
+
+      // Return fallback variants on error
+      const fallbackVariants = this.getFallbackNotificationVariants(
+        appType,
+        triggerType,
+        context
+      );
+
+      return {
+        success: true,
+        variants: fallbackVariants,
+        fallbackUsed: true,
+        safetyFlags: ["ai_generation_failed"],
+        metadata: {
+          appType,
+          triggerType,
+          generatedAt: new Date().toISOString(),
+          variantCount: fallbackVariants.length,
+        },
+      };
+    }
+  }
+
+  /**
+   * System prompt for notification copy generation
+   */
+  private static getNotificationSystemPrompt(
+    appType: NotificationAppType
+  ): string {
+    const brandVoice =
+      appType === "CONSUMER"
+        ? "playful, fun, Zomato/Swiggy-like tone - energetic and engaging"
+        : "coach/operator tone - supportive, actionable, business-focused";
+
+    return `You are PinnTagAI, a notification copy specialist for the PinnTag ${appType.toLowerCase()} app.
+
+BRAND VOICE: ${brandVoice}
+
+CRITICAL SAFETY RULES - NEVER VIOLATE:
+1. NO sensitive personal traits or health/financial assumptions
+2. NO deception - scarcity/discount claims must be truthful
+3. NO harassment or shaming language (NEVER say things like "you haven't opened us in days", "we miss you", "where have you been")
+4. NO profanity - keep tone playful, not rude
+5. NO guilt-tripping or manipulative language
+6. NO personal attribute speculation
+7. Comply with Apple/Google notification guidelines
+
+CHANNEL CONSTRAINTS:
+- Title: Maximum 50 characters
+- Body: Maximum 150 characters
+- Keep it mobile-friendly and scannable
+
+OUTPUT FORMAT: Return ONLY valid JSON with no additional text.`;
+  }
+
+  /**
+   * Build the notification generation prompt
+   */
+  private static buildNotificationPrompt(params: {
+    appType: NotificationAppType;
+    triggerType: NotificationTriggerType;
+    context: NotificationContext;
+    tone: NotificationTone;
+    variantCount: number;
+    emojiAllowed: boolean;
+  }): string {
+    const { appType, triggerType, context, tone, variantCount, emojiAllowed } =
+      params;
+
+    const triggerInstructions = this.getNotificationTriggerInstructions(
+      triggerType,
+      appType
+    );
+
+    // Build context string
+    const contextParts: string[] = [];
+    if (context.offerName) contextParts.push(`Offer: ${context.offerName}`);
+    if (context.eventName) contextParts.push(`Event: ${context.eventName}`);
+    if (context.businessName)
+      contextParts.push(`Business: ${context.businessName}`);
+    if (context.category) contextParts.push(`Category: ${context.category}`);
+    if (context.timeWindow)
+      contextParts.push(`Time Window: ${context.timeWindow}`);
+    if (context.distanceBucket)
+      contextParts.push(`Distance: ${context.distanceBucket}`);
+    if (context.cityArea) contextParts.push(`Area: ${context.cityArea}`);
+    if (context.expiresIn)
+      contextParts.push(`Expires In: ${context.expiresIn}`);
+    if (context.rewardProgress !== undefined && context.rewardTarget)
+      contextParts.push(
+        `Reward Progress: ${context.rewardProgress}/${context.rewardTarget}`
+      );
+    if (context.rewardName)
+      contextParts.push(`Reward: ${context.rewardName}`);
+    if (context.daysSinceLastPost)
+      contextParts.push(
+        `Days Since Last Post: ${context.daysSinceLastPost}`
+      );
+    if (context.newReviewRating)
+      contextParts.push(`New Review Rating: ${context.newReviewRating} stars`);
+    if (context.deepLink) contextParts.push(`Deep Link: ${context.deepLink}`);
+
+    return `Generate exactly ${variantCount} notification copy variants.
+
+TRIGGER TYPE: ${triggerType}
+APP: ${appType}
+TONE: ${tone}
+EMOJI ALLOWED: ${emojiAllowed ? "Yes (use sparingly, 1-2 max)" : "No"}
+
+CONTEXT:
+${contextParts.join("\n")}
+
+${triggerInstructions}
+
+REQUIREMENTS:
+1. Title: Max 50 chars, attention-grabbing
+2. Body: Max 150 chars, clear value proposition and CTA
+3. Each variant should have a different approach/angle
+4. Mix urgency levels (low, medium, high) across variants
+5. ${emojiAllowed ? "Include 1-2 relevant emojis in some variants" : "Do not use emojis"}
+
+Return ONLY a JSON object in this exact format:
+{
+  "variants": [
+    {
+      "title": "Short catchy title",
+      "body": "Compelling body text with clear value",
+      "tone": "${tone}",
+      "hasEmoji": true,
+      "urgencyLevel": "medium"
+    }
+  ]
+}`;
+  }
+
+  /**
+   * Get trigger-specific instructions for notification copy
+   */
+  private static getNotificationTriggerInstructions(
+    triggerType: NotificationTriggerType,
+    appType: NotificationAppType
+  ): string {
+    const instructions: Record<NotificationTriggerType, string> = {
+      offer_expiring: `OFFER EXPIRING NOTIFICATION:
+- Create urgency without being pushy
+- Focus on the value they'll miss, not guilt
+- Examples: "That deal is waiting", "Last chance for savings"
+- AVOID: "Don't miss out!", "You're about to lose this!"`,
+
+      offer_viewed_not_redeemed: `OFFER VIEWED NOT REDEEMED:
+- Gentle reminder, not pushy follow-up
+- Focus on the value/benefit
+- Examples: "Still thinking it over?", "That {category} deal is waiting"
+- AVOID: "You left something behind", "Complete your visit"`,
+
+      reward_progress: `REWARD PROGRESS UPDATE:
+- Celebrate progress, encourage next step
+- Show how close they are to the reward
+- Examples: "You're getting closer!", "X more to go"
+- AVOID: "You're falling behind", "Don't lose your progress"`,
+
+      new_event_nearby: `NEW EVENT NEARBY:
+- Highlight the experience and proximity
+- Create excitement about discovery
+- Examples: "Something fun nearby", "New experience in your area"
+- Match to user's known preferences if available`,
+
+      business_inactivity: `BUSINESS INACTIVITY NUDGE (${appType} APP):
+- Supportive coach tone, not shaming
+- Focus on quick wins and benefits
+- Examples: "Quick win for this week", "2 mins to get discovered"
+- AVOID: "We haven't seen you", "You've been inactive"`,
+
+      business_new_review: `NEW REVIEW NOTIFICATION:
+- Inform about the review objectively
+- Encourage engagement with customers
+- For positive: celebrate and encourage response
+- For negative: supportive tone, opportunity to respond`,
+
+      weekend_events: `WEEKEND EVENTS (Scheduled Fri/Sat):
+- Create anticipation for weekend plans
+- Focus on experience and social aspect
+- Examples: "Weekend plans sorted", "Your Saturday awaits"
+- Time it for late afternoon/evening`,
+
+      lunch_deals: `LUNCH DEALS (11:30-14:00 local):
+- Quick, actionable, immediate value
+- Focus on convenience and savings
+- Examples: "Lunch sorted", "Nearby deal alert"
+- Keep it snappy - people decide fast`,
+
+      weekly_summary: `WEEKLY BUSINESS SUMMARY:
+- Highlight key metrics briefly
+- Encourage action with positive framing
+- Examples: "Your week in review", "See how you're doing"
+- Include one actionable insight`,
+    };
+
+    return instructions[triggerType];
+  }
+
+  /**
+   * Parse notification variants from AI response
+   */
+  private static parseNotificationVariants(
+    responseText: string,
+    expectedCount: number,
+    defaultTone: NotificationTone
+  ): NotificationVariant[] {
+    try {
+      // Try to parse JSON
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.variants && Array.isArray(parsed.variants)) {
+          return parsed.variants
+            .slice(0, expectedCount)
+            .map((v: any, index: number) => ({
+              id: `variant_${index + 1}`,
+              title: String(v.title || "").slice(0, 50),
+              body: String(v.body || "").slice(0, 150),
+              tone: v.tone || defaultTone,
+              hasEmoji: Boolean(v.hasEmoji),
+              urgencyLevel: v.urgencyLevel || "medium",
+            }));
+        }
+      }
+
+      logger.warn("Failed to parse notification variants from JSON");
+      return [];
+    } catch (error) {
+      logger.error({ error }, "Error parsing notification variants");
+      return [];
+    }
+  }
+
+  /**
+   * Apply safety filters to notification variants
+   * Based on PinnTag Notification Architecture safety rules
+   */
+  private static applyNotificationSafetyFilters(
+    variants: NotificationVariant[]
+  ): { filteredVariants: NotificationVariant[]; safetyFlags: string[] } {
+    const safetyFlags: string[] = [];
+
+    // Shaming/guilt patterns to block
+    const shamingPatterns = [
+      /you haven't/i,
+      /we miss you/i,
+      /where have you been/i,
+      /you've been gone/i,
+      /don't forget about us/i,
+      /we noticed you/i,
+      /you left/i,
+      /you abandoned/i,
+      /you're missing/i,
+      /you're losing/i,
+      /falling behind/i,
+      /don't lose/i,
+      /you forgot/i,
+      /come back/i,
+      /we're waiting/i,
+      /lonely without you/i,
+    ];
+
+    // Sensitive inference patterns
+    const sensitivePatterns = [
+      /you (seem|look|appear|must be)/i,
+      /your (health|finances|money|budget)/i,
+      /struggling with/i,
+      /based on your (age|gender|income)/i,
+      /we know you/i,
+    ];
+
+    // Deceptive urgency patterns
+    const deceptivePatterns = [
+      /only \d+ left/i,
+      /selling out fast/i,
+      /almost gone/i,
+      /everyone is/i,
+      /last one/i,
+    ];
+
+    const filteredVariants = variants.filter((variant) => {
+      const fullText = `${variant.title} ${variant.body}`;
+
+      // Check for profanity
+      if (containsProfanity(fullText)) {
+        safetyFlags.push(`profanity_detected:${variant.id}`);
+        return false;
+      }
+
+      // Check for shaming patterns
+      for (const pattern of shamingPatterns) {
+        if (pattern.test(fullText)) {
+          safetyFlags.push(`shaming_language:${variant.id}`);
+          return false;
+        }
+      }
+
+      // Check for sensitive inference
+      for (const pattern of sensitivePatterns) {
+        if (pattern.test(fullText)) {
+          safetyFlags.push(`sensitive_inference:${variant.id}`);
+          return false;
+        }
+      }
+
+      // Check for deceptive patterns
+      for (const pattern of deceptivePatterns) {
+        if (pattern.test(fullText)) {
+          safetyFlags.push(`deceptive_urgency:${variant.id}`);
+          return false;
+        }
+      }
+
+      // Check title length
+      if (variant.title.length > 50) {
+        variant.title = variant.title.slice(0, 47) + "...";
+        safetyFlags.push(`title_truncated:${variant.id}`);
+      }
+
+      // Check body length
+      if (variant.body.length > 150) {
+        variant.body = variant.body.slice(0, 147) + "...";
+        safetyFlags.push(`body_truncated:${variant.id}`);
+      }
+
+      return true;
+    });
+
+    return { filteredVariants, safetyFlags };
+  }
+
+  /**
+   * Get fallback notification variants when AI fails or all variants filtered
+   */
+  private static getFallbackNotificationVariants(
+    appType: NotificationAppType,
+    triggerType: NotificationTriggerType,
+    context: NotificationContext
+  ): NotificationVariant[] {
+    const businessName = context.businessName || "a local spot";
+    const category = context.category || "deal";
+
+    const fallbacks: Record<
+      NotificationTriggerType,
+      NotificationVariant[]
+    > = {
+      offer_expiring: [
+        {
+          id: "fallback_1",
+          title: "Still thinking it over?",
+          body: `That ${category} deal is waiting. Tap to view before it's gone.`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "medium",
+        },
+        {
+          id: "fallback_2",
+          title: "Deal ending soon",
+          body: `Save on your next visit to ${businessName}. Check it out now.`,
+          tone: "helpful",
+          hasEmoji: false,
+          urgencyLevel: "high",
+        },
+      ],
+      offer_viewed_not_redeemed: [
+        {
+          id: "fallback_1",
+          title: "Still thinking it over?",
+          body: `That ${category} deal is waiting. Tap to view.`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "low",
+        },
+      ],
+      reward_progress: [
+        {
+          id: "fallback_1",
+          title: "Nice progress!",
+          body: `You're getting closer to your reward. Keep it up!`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "low",
+        },
+      ],
+      new_event_nearby: [
+        {
+          id: "fallback_1",
+          title: "Something fun nearby",
+          body: `Check out what's happening at ${businessName}. Tap to explore.`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "medium",
+        },
+      ],
+      business_inactivity: [
+        {
+          id: "fallback_1",
+          title: "Quick win for this week",
+          body: "Post a new offer in 2 mins and get discovered nearby.",
+          tone: "coach",
+          hasEmoji: false,
+          urgencyLevel: "medium",
+        },
+      ],
+      business_new_review: [
+        {
+          id: "fallback_1",
+          title: "New review received",
+          body: "See what customers are saying and respond to build loyalty.",
+          tone: "coach",
+          hasEmoji: false,
+          urgencyLevel: "medium",
+        },
+      ],
+      weekend_events: [
+        {
+          id: "fallback_1",
+          title: "Weekend plans sorted",
+          body: `Great events happening nearby. Find something fun to do.`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "low",
+        },
+      ],
+      lunch_deals: [
+        {
+          id: "fallback_1",
+          title: "Lunch sorted",
+          body: `Deals nearby right now. Grab something good.`,
+          tone: "playful",
+          hasEmoji: false,
+          urgencyLevel: "medium",
+        },
+      ],
+      weekly_summary: [
+        {
+          id: "fallback_1",
+          title: "Your week in review",
+          body: "See how your business performed this week.",
+          tone: "coach",
+          hasEmoji: false,
+          urgencyLevel: "low",
+        },
+      ],
+    };
+
+    return fallbacks[triggerType] || fallbacks.offer_expiring;
   }
 }

@@ -941,7 +941,7 @@ export class AIService {
       }
 
       contextParts.push(
-        `\nGenerate ${maxTags} relevant, specific tags that focus on this business's brand specialties and the types of deals they offer.`,
+        `\nGenerate exactly 5 relevant, specific tags that focus on this business's brand specialties and the types of deals they offer.`,
         `Tags should describe:`,
         `- Brand specialties (unique offerings, signature products/services, expertise areas)`,
         `- Deal types (discounts, promotions, packages, seasonal offers)`,
@@ -949,7 +949,8 @@ export class AIService {
         `- Customer segments they serve`,
         `\nTag formatting requirements:`,
         `- Lowercase`,
-        `- Short (1-3 words minimum, avoid single letter tags)`,
+        `- CRITICAL: Each tag MUST be 20 characters or less (hard limit)`,
+        `- Short (1-3 words, avoid single letter tags)`,
         `- Specific and descriptive`,
         `- Relevant to the business category`,
         `- MUST be professional and appropriate for business use`,

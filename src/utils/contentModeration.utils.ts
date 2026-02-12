@@ -91,26 +91,34 @@ export function isConversationalResponse(text: string): boolean {
 
 /**
  * Filter out inappropriate tags from an array
+ * Also enforces tag length limit (20 chars max) and max count (5 tags)
  */
 export function filterInappropriateTags(tags: string[]): string[] {
-  return tags.filter((tag) => {
-    // Filter out profanity
-    if (containsProfanity(tag)) {
-      return false;
-    }
+  return tags
+    .filter((tag) => {
+      // Filter out profanity
+      if (containsProfanity(tag)) {
+        return false;
+      }
 
-    // Filter out single character tags (like "e", "a" from the screenshot)
-    if (tag.trim().length <= 1) {
-      return false;
-    }
+      // Filter out single character tags (like "e", "a" from the screenshot)
+      if (tag.trim().length <= 1) {
+        return false;
+      }
 
-    // Filter out conversational responses
-    if (isConversationalResponse(tag)) {
-      return false;
-    }
+      // Filter out conversational responses
+      if (isConversationalResponse(tag)) {
+        return false;
+      }
 
-    return true;
-  });
+      // Filter out tags longer than 20 characters
+      if (tag.trim().length > 20) {
+        return false;
+      }
+
+      return true;
+    })
+    .slice(0, 5); // Enforce max 5 tags
 }
 
 /**

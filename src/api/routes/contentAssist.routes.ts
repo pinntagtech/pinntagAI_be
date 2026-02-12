@@ -4,6 +4,7 @@ import {
   generateTitles,
   generateDescription,
   refreshTitles,
+  generateNotificationCopy,
 } from "../controllers/contentAssistController.js";
 
 const router = Router();
@@ -163,5 +164,126 @@ router.post("/titles/refresh", internalApiKeyGuard, refreshTitles);
  * }
  */
 router.post("/description", internalApiKeyGuard, generateDescription);
+
+/**
+ * @route POST /content-assist/notification-copy
+ * @desc Generate AI-powered notification copy variants for push notifications
+ * @access Protected (internal API key)
+ * @header x-internal-api-key: string (required)
+ *
+ * @body {
+ *   appType: "CONSUMER" | "BUSINESS" (required) - Target app,
+ *   triggerType: string (required) - One of:
+ *     "offer_expiring" | "offer_viewed_not_redeemed" | "reward_progress" |
+ *     "new_event_nearby" | "business_inactivity" | "business_new_review" |
+ *     "weekend_events" | "lunch_deals" | "weekly_summary",
+ *   context: {
+ *     offerName?: string,
+ *     eventName?: string,
+ *     businessName?: string,
+ *     businessId?: string,
+ *     category?: string,
+ *     timeWindow?: string,
+ *     distanceBucket?: string (e.g., "<1km", "1-5km"),
+ *     cityArea?: string,
+ *     expiresIn?: string (e.g., "2 hours", "tomorrow"),
+ *     rewardProgress?: number,
+ *     rewardTarget?: number,
+ *     rewardName?: string,
+ *     daysSinceLastPost?: number,
+ *     newReviewRating?: number,
+ *     deepLink?: string
+ *   } (required),
+ *   tone?: "playful" | "helpful" | "urgent" | "coach" (default: playful for CONSUMER, coach for BUSINESS),
+ *   variantCount?: number (default: 5, max: 8),
+ *   emojiAllowed?: boolean (default: true)
+ * }
+ *
+ * @response {
+ *   success: boolean,
+ *   variants: [{
+ *     id: string,
+ *     title: string (max 50 chars),
+ *     body: string (max 150 chars),
+ *     tone: string,
+ *     hasEmoji: boolean,
+ *     urgencyLevel: "low" | "medium" | "high"
+ *   }],
+ *   fallbackUsed: boolean,
+ *   safetyFlags: string[],
+ *   metadata: {
+ *     appType: string,
+ *     triggerType: string,
+ *     generatedAt: string,
+ *     variantCount: number
+ *   }
+ * }
+ *
+ * @example Request (Consumer - Offer Expiring):
+ * {
+ *   "appType": "CONSUMER",
+ *   "triggerType": "offer_expiring",
+ *   "context": {
+ *     "offerName": "20% Off Lunch",
+ *     "businessName": "The Rustic Vine",
+ *     "category": "Food & Drink",
+ *     "expiresIn": "2 hours",
+ *     "deepLink": "pinntag://offer/123"
+ *   },
+ *   "tone": "playful",
+ *   "variantCount": 5,
+ *   "emojiAllowed": true
+ * }
+ *
+ * @example Request (Business - Inactivity Nudge):
+ * {
+ *   "appType": "BUSINESS",
+ *   "triggerType": "business_inactivity",
+ *   "context": {
+ *     "businessName": "Joe's Coffee",
+ *     "daysSinceLastPost": 7,
+ *     "deepLink": "pinntag://business/456/create"
+ *   },
+ *   "tone": "coach",
+ *   "variantCount": 3
+ * }
+ *
+ * @example Response:
+ * {
+ *   "success": true,
+ *   "variants": [
+ *     {
+ *       "id": "variant_1",
+ *       "title": "Still thinking it over?",
+ *       "body": "That Food & Drink deal at The Rustic Vine is waiting. Tap to grab it before it's gone!",
+ *       "tone": "playful",
+ *       "hasEmoji": false,
+ *       "urgencyLevel": "medium"
+ *     },
+ *     {
+ *       "id": "variant_2",
+ *       "title": "Deal ending soon",
+ *       "body": "20% Off Lunch expires in 2 hours. Don't let this one slip away.",
+ *       "tone": "urgent",
+ *       "hasEmoji": false,
+ *       "urgencyLevel": "high"
+ *     }
+ *   ],
+ *   "fallbackUsed": false,
+ *   "safetyFlags": [],
+ *   "metadata": {
+ *     "appType": "CONSUMER",
+ *     "triggerType": "offer_expiring",
+ *     "generatedAt": "2026-01-31T15:30:00.000Z",
+ *     "variantCount": 2
+ *   }
+ * }
+ *
+ * Safety Notes:
+ * - Copy is filtered for shaming language, sensitive inference, and deceptive claims
+ * - If AI fails or all variants are filtered, safe fallback templates are returned
+ * - Title max 50 chars, body max 150 chars (enforced)
+ */
+router.post("/notification-copy", internalApiKeyGuard, generateNotificationCopy);
 
 export default router;

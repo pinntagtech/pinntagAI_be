@@ -4,8 +4,12 @@ import {
   ContentAssistService,
   GenerateTitlesRequest,
   GenerateDescriptionRequest,
+  GenerateNotificationCopyRequest,
   ContentCreationType,
   PromotionType,
+  NotificationAppType,
+  NotificationTriggerType,
+  NotificationTone,
 } from "../services/contentAssist.service.js";
 import {
   validateRequiredFields,
@@ -35,8 +39,34 @@ const VALID_PROMOTION_TYPES: PromotionType[] = [
   "family_fun",
 ];
 
+const VALID_NOTIFICATION_APP_TYPES: NotificationAppType[] = [
+  "CONSUMER",
+  "BUSINESS",
+];
+
+const VALID_NOTIFICATION_TRIGGER_TYPES: NotificationTriggerType[] = [
+  "offer_expiring",
+  "offer_viewed_not_redeemed",
+  "reward_progress",
+  "new_event_nearby",
+  "business_inactivity",
+  "business_new_review",
+  "weekend_events",
+  "lunch_deals",
+  "weekly_summary",
+];
+
+const VALID_NOTIFICATION_TONES: NotificationTone[] = [
+  "playful",
+  "helpful",
+  "urgent",
+  "coach",
+];
+
 const MAX_TITLE_COUNT = 10;
 const DEFAULT_TITLE_COUNT = 5;
+const MAX_NOTIFICATION_VARIANT_COUNT = 8;
+const DEFAULT_NOTIFICATION_VARIANT_COUNT = 5;
 
 // ===========================
 // Controller Functions
@@ -201,6 +231,84 @@ export async function generateDescription(
       subCategory: params.subCategory,
       tags: params.tags,
       promotionType: params.promotionType,
+    });
+
+    res.status(200).json(result);
+  });
+}
+
+/**
+ * Generate notification copy variants
+ * POST /content-assist/notification-copy
+ */
+export async function generateNotificationCopy(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  await withControllerError(res, "Error generating notification copy", async () => {
+    const params: GenerateNotificationCopyRequest = req.body;
+
+    // Validate required fields
+    if (
+      !validateRequiredFields(res, params, [
+        { key: "appType" },
+        { key: "triggerType" },
+        { key: "context" },
+      ])
+    ) {
+      return;
+    }
+
+    // Validate appType
+    if (!VALID_NOTIFICATION_APP_TYPES.includes(params.appType)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid appType. Must be one of: ${VALID_NOTIFICATION_APP_TYPES.join(", ")}`,
+      });
+      return;
+    }
+
+    // Validate triggerType
+    if (!VALID_NOTIFICATION_TRIGGER_TYPES.includes(params.triggerType)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid triggerType. Must be one of: ${VALID_NOTIFICATION_TRIGGER_TYPES.join(", ")}`,
+      });
+      return;
+    }
+
+    // Validate tone if provided
+    if (params.tone && !VALID_NOTIFICATION_TONES.includes(params.tone)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid tone. Must be one of: ${VALID_NOTIFICATION_TONES.join(", ")}`,
+      });
+      return;
+    }
+
+    // Validate and normalize variantCount
+    const variantCount = Math.min(
+      Math.max(params.variantCount || DEFAULT_NOTIFICATION_VARIANT_COUNT, 1),
+      MAX_NOTIFICATION_VARIANT_COUNT,
+    );
+
+    logger.info(
+      {
+        appType: params.appType,
+        triggerType: params.triggerType,
+        variantCount,
+      },
+      "Generating notification copy variants",
+    );
+
+    // Generate notification copy
+    const result = await ContentAssistService.generateNotificationCopy({
+      appType: params.appType,
+      triggerType: params.triggerType,
+      context: params.context,
+      tone: params.tone,
+      variantCount,
+      emojiAllowed: params.emojiAllowed,
     });
 
     res.status(200).json(result);
