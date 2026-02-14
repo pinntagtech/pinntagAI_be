@@ -174,6 +174,10 @@ export class DealTemplateGeneratorService {
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
+      // Note: We don't auto-populate businessCategoryIds from agent.subCategories
+      // because subCategories contains category names (strings), not ObjectIds.
+      // businessCategoryIds should be passed explicitly as ObjectId strings if available.
+
       // Convert to database format
       const dbTemplate = this.convertToDatabaseFormat(
         template,
@@ -340,10 +344,11 @@ export class DealTemplateGeneratorService {
       participationCost: "",
       termsApplied: true,
       termsAndConditions: template.termsAndConditions,
+      // businessIndustry: Only set if we have an actual ObjectId string
+      // training.industry is an industry name (string), but the schema requires ObjectId
+      // Leave undefined rather than risk casting error
       businessIndustry: options.businessIndustryId
         ? (toObjectId(options.businessIndustryId) as any)
-        : training?.industry
-        ? (toObjectId(training.industry) as any)
         : undefined,
       businessCategories:
         options.businessCategoryIds?.map(c => toObjectId(c) as any) || [],

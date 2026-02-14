@@ -645,6 +645,19 @@ export class AgentTemplateGenerationJob {
 
     const businessObjectId = toObjectId(businessId);
 
+    // Generate tags from title, description, and occasion
+    const generatedTags = this.generateTagsForTemplate(
+      options.occasion || "general",
+      title,
+      description,
+      agent.tags || []
+    );
+
+    // Note: businessCategories are not populated for metadata-based templates
+    // because agent.subCategories contains category names (strings), not ObjectIds.
+    // The businessCategories field will be populated by dealTemplateGenerator.service.ts
+    // when the business has proper category mappings from the Pinntag backend.
+
     await upsertTemplate(
       {
         title,
@@ -659,7 +672,8 @@ export class AgentTemplateGenerationJob {
         title,
         description,
         thumbnail: imageUrl,
-        tags: agent.tags || [],
+        tags: generatedTags,
+        businessCategories: [], // Empty for metadata-based templates
         keywords: this.extractKeywords(title, description),
         discountValue: "15",
         minTargetAge: 18,
@@ -679,6 +693,62 @@ export class AgentTemplateGenerationJob {
         nextScheduledUpdate: nextUpdate,
       }
     );
+  }
+
+  /**
+   * Helper: Generate tags for template based on occasion, title, description, and agent tags
+   */
+  private static generateTagsForTemplate(
+    occasion: string,
+    title: string,
+    description: string,
+    agentTags: string[]
+  ): string[] {
+    const baseTags: string[] = [];
+
+    // Add occasion-based tags
+    const occasionTags: Record<string, string[]> = {
+      holiday: ["holiday", "celebration", "festive", "seasonal"],
+      seasonal: ["seasonal", "limited-time", "special"],
+      slow_period: ["off-peak", "value", "savings", "budget-friendly"],
+      trending: ["trending", "popular", "viral", "must-try"],
+      general: ["deal", "offer", "savings", "discount"],
+      monday_motivation: ["monday", "motivation", "start-of-week", "energy"],
+      tuesday_twofer: ["tuesday", "bogo", "two-for-one", "sharing"],
+      wednesday_midweek: ["wednesday", "midweek", "hump-day", "treat"],
+      thursday_throwback: ["thursday", "throwback", "classic", "nostalgia"],
+      friday_deals: ["friday", "weekend", "tgif", "celebration"],
+      saturday_special: ["saturday", "weekend", "family", "friends"],
+      sunday_selfcare: ["sunday", "self-care", "relaxation", "wellness"],
+    };
+
+    baseTags.push(...(occasionTags[occasion] || occasionTags.general));
+
+    // Add agent tags
+    if (agentTags && agentTags.length > 0) {
+      baseTags.push(...agentTags.slice(0, 3));
+    }
+
+    // Extract key words from title
+    const titleWords = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 3)
+      .slice(0, 3);
+    baseTags.push(...titleWords);
+
+    // Extract key words from description
+    const descWords = description
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 4)
+      .slice(0, 2);
+    baseTags.push(...descWords);
+
+    // Remove duplicates and return
+    return [...new Set(baseTags)].slice(0, 10);
   }
 
   /**
