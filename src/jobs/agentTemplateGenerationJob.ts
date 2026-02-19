@@ -812,18 +812,7 @@ export class AgentTemplateGenerationJob {
   /**
    * Helper: Get default thumbnail based on occasion
    */
-  private static getDefaultThumbnail(occasion?: string): string {
-    const baseUrl =
-      "https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/";
-
-    const thumbnails: Record<string, string> = {
-      holiday: `${baseUrl}Holiday_Special.jpg`,
-      seasonal: `${baseUrl}Seasonal_Sale.jpg`,
-      slow_period: `${baseUrl}Off_Peak_Deal.jpg`,
-      trending: `${baseUrl}Trending_Now.jpg`,
-      general: `${baseUrl}Special_Offer.jpg`,
-    };
-
-    return thumbnails[occasion || "general"] || thumbnails.general;
+  private static getDefaultThumbnail(_occasion?: string): string {
+    return "https://media-staging.pinntag.com/staging/Frame-1707479945-1771500682146.png";
   }
 }
