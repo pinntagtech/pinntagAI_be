@@ -19,7 +19,11 @@ import { openai } from "../../utils/openai.js";
 
 export interface DealTemplate {
   title: string;
-  description: string;
+  promotionType: string; // "percentage_off" | "dollar_off" | "bogo" | "free_item"
+  contentType: string; // "offer" | "broadcast" | "reward" | "event"
+  percentOffValue?: number;
+  dollarOffValue?: number;
+  bogoOrFreeItem?: string;
   suggestedDiscount: string;
   targetAudience: string[];
   bestTiming: {
@@ -146,6 +150,55 @@ export class DealTemplateGeneratorService {
       return templates;
     } catch (error: any) {
       logger.error({ error, businessId }, "Error generating multiple templates");
+      throw error;
+    }
+  }
+
+  /**
+   * Saves a pre-generated DealTemplate to the database without regenerating AI content.
+   * Use this when you have already called generateDealTemplate() and want to persist the
+   * result (e.g. to avoid a second redundant AI call in the overnight job).
+   */
+  static async savePreGeneratedTemplate(
+    businessId: string,
+    template: DealTemplate,
+    options: TemplateGenerationOptions = {}
+  ): Promise<IDealTemplate> {
+    try {
+      const businessAgent = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      if (!businessAgent) {
+        throw new Error(`No AI agent found for business ID: ${businessId}`);
+      }
+
+      const training = await AI_TrainingModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      const dbTemplate = this.convertToDatabaseFormat(template, businessAgent, training, options);
+
+      const nextUpdate = new Date();
+      nextUpdate.setHours(nextUpdate.getHours() + 24);
+
+      const savedTemplate = await upsertTemplate(
+        {
+          title: dbTemplate.title,
+          type: dbTemplate.type,
+          businessIndustry: dbTemplate.businessIndustry,
+        },
+        { ...dbTemplate, nextScheduledUpdate: nextUpdate }
+      );
+
+      logger.info(
+        { businessId, templateId: savedTemplate._id, occasion: options.occasion },
+        "Pre-generated deal template saved to database"
+      );
+
+      return savedTemplate;
+    } catch (error: any) {
+      logger.error({ error, businessId }, "Error saving pre-generated deal template");
       throw error;
     }
   }
@@ -304,8 +357,8 @@ export class DealTemplateGeneratorService {
     // Map target audience to genders
     const targetGenders = this.mapTargetAudienceToGenders(template.targetAudience);
 
-    // Generate keywords from title and description
-    const keywords = this.extractKeywords(template.title, template.description);
+    // Generate keywords from title only
+    const keywords = this.extractKeywords(template.title, "");
 
     // Generate promotion code
     const promotionCode = this.generatePromotionCode(template.title, options.occasion);
@@ -328,14 +381,16 @@ export class DealTemplateGeneratorService {
       scope,
       businessId: isGeneric ? undefined : (toObjectId(businessAgent.businessId) as any),
       discountValue,
+      promotionType: template.promotionType,
+      contentType: template.contentType,
+      percentOffValue: template.percentOffValue,
+      dollarOffValue: template.dollarOffValue,
+      bogoOrFreeItem: template.bogoOrFreeItem,
       categories: options.categories?.map(c => toObjectId(c) as any) || [],
       title: isGeneric
         ? this.makeGenericTitle(template.title, training?.industry)
         : template.title,
       keywords,
-      description: isGeneric
-        ? this.makeGenericDescription(template.description, businessAgent.businessName)
-        : template.description,
       minTargetAge: 18,
       maxTargetAge: 65,
       targetGenders,
@@ -444,27 +499,6 @@ export class DealTemplateGeneratorService {
   }
 
   /**
-   * Helper: Make description generic (remove business-specific references)
-   */
-  private static makeGenericDescription(description: string, businessName?: string): string {
-    // Replace business name with generic placeholder
-    let genericDesc = description;
-
-    if (businessName) {
-      const namePattern = new RegExp(businessName, "gi");
-      genericDesc = genericDesc.replace(namePattern, "us");
-    }
-
-    // Remove specific possessive references
-    genericDesc = genericDesc
-      .replace(/Visit us today/gi, "Visit today")
-      .replace(/our premium/gi, "premium")
-      .trim();
-
-    return genericDesc || description;
-  }
-
-  /**
    * Helper: Get default thumbnail based on occasion
    */
   private static getDefaultThumbnail(_occasion?: string): string {
@@ -472,9 +506,17 @@ export class DealTemplateGeneratorService {
   }
 
   /**
-   * Generates AI-powered title and description for a template
+   * Generates AI-powered template content.
+   *
+   * Two-phase approach:
+   *   Phase 1 – Select the promotion structure (type + values) that best fits
+   *             the occasion and industry. This is kept separate so the title
+   *             in Phase 2 can be written with full awareness of the deal.
+   *   Phase 2 – Generate a title that explicitly and naturally reflects the
+   *             promotion type decided in Phase 1 (e.g. "Save 20% this Monday",
+   *             "BOGO Tuesday — Bring a Friend!", "Free Dessert on Sunday").
    */
-  private static async generateAITitleAndDescription(params: {
+  private static async generateAITemplateContent(params: {
     businessName: string;
     industry: string;
     occasion: TemplateOccasion;
@@ -483,7 +525,14 @@ export class DealTemplateGeneratorService {
     discountRange: string;
     brandVoice?: string[];
     dealType: string;
-  }): Promise<{ title: string; description: string }> {
+  }): Promise<{
+    title: string;
+    promotionType: string;
+    contentType: string;
+    percentOffValue?: number;
+    dollarOffValue?: number;
+    bogoOrFreeItem?: string;
+  }> {
     const {
       businessName,
       industry,
@@ -498,112 +547,181 @@ export class DealTemplateGeneratorService {
     try {
       const discount = this.extractDiscountNumber(discountRange);
 
-      // Build context for AI generation
-      const contextParts = [
-        `Generate a compelling title and description for a ${dealType} template.`,
-        `Business Name: ${businessName}`,
-        `Industry: ${industry}`,
-        `Occasion: ${occasion}`,
-      ];
-
-      if (specificHoliday) {
-        contextParts.push(`Holiday: ${specificHoliday}`);
-      }
-
-      if (targetAudience.length > 0) {
-        contextParts.push(`Target Audience: ${targetAudience.join(", ")}`);
-      }
-
-      contextParts.push(`Discount: ${discount}%`);
-
-      if (brandVoice && brandVoice.length > 0) {
-        contextParts.push(`Brand Voice: ${brandVoice.join(", ")}`);
-      }
-
-      // Add occasion-specific instructions
-      const occasionInstructions: Record<string, string> = {
-        holiday: `Create an exciting, festive title and description that captures the holiday spirit${specificHoliday ? ` for ${specificHoliday}` : ""}.`,
-        seasonal: "Create a seasonally-relevant title and description that emphasizes timely savings.",
-        slow_period: "Create a value-focused title and description that highlights off-peak convenience and savings.",
-        trending: "Create a buzz-worthy, trendy title and description that creates FOMO and excitement.",
-        general: "Create a professional, compelling title and description that highlights value.",
-        monday_motivation: "Create an energizing, motivational title and description perfect for starting the week.",
-        tuesday_twofer: "Create a fun, sharing-focused title and description that emphasizes the buy-one-get-one value.",
-        wednesday_midweek: "Create a midweek treat-focused title and description that helps customers through the week.",
-        thursday_throwback: "Create a nostalgic, classic-focused title and description leveraging the #TBT theme.",
-        friday_deals: "Create an exciting, weekend-kickoff title and description that celebrates the end of the work week.",
-        saturday_special: "Create a family/group-friendly title and description perfect for weekend activities.",
-        sunday_selfcare: "Create a relaxing, self-care focused title and description for a restful Sunday.",
+      // ── Phase 1: choose promotion structure ──────────────────────────────
+      const occasionForcedPromotion: Record<string, string> = {
+        tuesday_twofer: "bogo",
+        sunday_selfcare: "free_item",
       };
+      const forcedPromotion = occasionForcedPromotion[occasion];
 
-      contextParts.push(occasionInstructions[occasion] || occasionInstructions.general);
+      const phase1Prompt = `You are a promotions strategist for a ${industry} business.
 
-      const prompt = `${contextParts.join("\n")}
+Context:
+- Occasion: ${occasion}${specificHoliday ? ` (${specificHoliday})` : ""}
+- Deal type: ${dealType}
+- Suggested discount budget: ${discount}%
+- Target audience: ${targetAudience.join(", ") || "general customers"}${brandVoice && brandVoice.length > 0 ? `\n- Brand voice: ${brandVoice.join(", ")}` : ""}
 
-Respond with ONLY a JSON object (no markdown, no explanation) with this structure:
+${forcedPromotion
+  ? `The promotion type MUST be "${forcedPromotion}" for this occasion.`
+  : `Choose the promotionType that will drive the most engagement for this occasion:
+  - "percentage_off" – e.g. 20% off (good for general, seasonal, holiday)
+  - "dollar_off" – e.g. $5 off (good for high-ticket items / trending)
+  - "bogo" – buy one get one (good for social occasions, group visits)
+  - "free_item" – a free add-on (good for self-care, loyalty, slow periods)`}
+
+Respond with ONLY a JSON object (no markdown):
 {
-  "title": "Catchy, attention-grabbing title (max 60 chars) that includes the discount percentage",
-  "description": "Engaging description (50-100 words) that creates excitement and clearly explains the offer"
+  "promotionType": "percentage_off | dollar_off | bogo | free_item",
+  "contentType": "offer | event | reward | broadcast",
+  "percentOffValue": <integer or null>,
+  "dollarOffValue": <integer or null>,
+  "bogoOrFreeItem": "<concise deal description or null>"
 }
 
-IMPORTANT:
-- The title MUST be concise (under 60 characters)
-- The title MUST include the ${discount}% discount
-- The description should mention ${businessName}
-- The description should be compelling and create urgency
-- Use the appropriate tone for ${occasion}
-- Target the description to ${targetAudience.join(" and ").toLowerCase() || "general customers"}`;
+Rules:
+- percentOffValue: set to ${discount} when promotionType is "percentage_off", else null
+- dollarOffValue: pick a round dollar amount (e.g. 5, 10, 15) when promotionType is "dollar_off", else null
+- bogoOrFreeItem: one short sentence (≤ 12 words) when promotionType is "bogo" or "free_item", else null
+- contentType "event" only for saturday_special or social/community occasions; otherwise "offer"`;
 
-      const response = await openai.chat.completions.create({
+      const phase1Response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          {
-            role: "system",
-            content: "You are a professional marketing copywriter specializing in promotional content. Generate compelling, concise titles and descriptions for business deals that drive customer engagement.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
+          { role: "system", content: "You are a promotions strategist. Respond only with valid JSON." },
+          { role: "user", content: phase1Prompt },
         ],
-        temperature: 0.8,
-        max_tokens: 300,
+        temperature: 0.5,
+        max_tokens: 150,
         response_format: { type: "json_object" },
       });
 
-      const responseContent = response.choices[0]?.message?.content?.trim();
+      const phase1Content = phase1Response.choices[0]?.message?.content?.trim();
+      if (!phase1Content) throw new Error("Empty Phase 1 response from OpenAI");
 
-      if (!responseContent) {
-        throw new Error("No response from OpenAI");
+      const promo = JSON.parse(phase1Content);
+      if (!promo.promotionType || !promo.contentType) throw new Error("Invalid Phase 1 response format");
+
+      // ── Build human-readable deal summary for Phase 2 ───────────────────
+      let dealSummary: string;
+      if (promo.promotionType === "percentage_off" && promo.percentOffValue) {
+        dealSummary = `${promo.percentOffValue}% off`;
+      } else if (promo.promotionType === "dollar_off" && promo.dollarOffValue) {
+        dealSummary = `$${promo.dollarOffValue} off`;
+      } else if (promo.promotionType === "bogo" && promo.bogoOrFreeItem) {
+        dealSummary = `BOGO – ${promo.bogoOrFreeItem}`;
+      } else if (promo.promotionType === "free_item" && promo.bogoOrFreeItem) {
+        dealSummary = `Free – ${promo.bogoOrFreeItem}`;
+      } else {
+        dealSummary = `${discount}% off`;
       }
 
-      const generated = JSON.parse(responseContent);
+      // ── Phase 2: generate a title that reflects the chosen deal ──────────
+      const occasionToneGuide: Record<string, string> = {
+        holiday: `festive and celebratory${specificHoliday ? ` for ${specificHoliday}` : ""}`,
+        seasonal: "seasonal and timely",
+        slow_period: "value-focused and convenient",
+        trending: "buzz-worthy and exciting, with FOMO",
+        general: "professional and compelling",
+        monday_motivation: "energising and motivational",
+        tuesday_twofer: "fun and social, emphasising sharing",
+        wednesday_midweek: "uplifting mid-week treat",
+        thursday_throwback: "nostalgic, using #ThrowbackThursday",
+        friday_deals: "exciting weekend-kickoff energy",
+        saturday_special: "family/group-friendly and vibrant",
+        sunday_selfcare: "calm, self-care and restorative",
+      };
 
-      if (!generated.title || !generated.description) {
-        throw new Error("Invalid response format from OpenAI");
-      }
+      const tone = occasionToneGuide[occasion] || "engaging and on-brand";
+
+      const phase2Prompt = `Write a promotional title for a ${industry} business.
+
+Deal: ${dealSummary}
+Occasion: ${occasion}${specificHoliday ? ` (${specificHoliday})` : ""}
+Tone: ${tone}
+Target audience: ${targetAudience.join(", ") || "general customers"}${brandVoice && brandVoice.length > 0 ? `\nBrand voice: ${brandVoice.join(", ")}` : ""}
+
+Rules:
+- The title MUST explicitly reference the deal (e.g. include "20% Off", "BOGO", "$5 Off", "Free [item]")
+- Maximum 60 characters
+- No generic filler like "Special Offer" or "Limited Time" without the deal detail
+- Make it feel fresh and specific to the occasion
+
+Respond with ONLY a JSON object:
+{ "title": "..." }`;
+
+      const phase2Response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are a marketing copywriter. Respond only with valid JSON." },
+          { role: "user", content: phase2Prompt },
+        ],
+        temperature: 0.8,
+        max_tokens: 80,
+        response_format: { type: "json_object" },
+      });
+
+      const phase2Content = phase2Response.choices[0]?.message?.content?.trim();
+      if (!phase2Content) throw new Error("Empty Phase 2 response from OpenAI");
+
+      const { title } = JSON.parse(phase2Content);
+      if (!title) throw new Error("Invalid Phase 2 response format");
 
       logger.info(
-        { businessName, occasion, title: generated.title },
-        "Generated AI title and description for template"
+        { businessName, occasion, title, promotionType: promo.promotionType, dealSummary },
+        "Generated AI template content (two-phase)"
       );
 
       return {
-        title: generated.title,
-        description: generated.description,
+        title,
+        promotionType: promo.promotionType,
+        contentType: promo.contentType,
+        percentOffValue: promo.percentOffValue ?? undefined,
+        dollarOffValue: promo.dollarOffValue ?? undefined,
+        bogoOrFreeItem: promo.bogoOrFreeItem ?? undefined,
       };
     } catch (error: any) {
       logger.warn(
         { error: error.message, businessName, occasion },
-        "Failed to generate AI content, falling back to template-based content"
+        "Failed to generate AI template content, using fallback"
       );
 
-      // Fallback to default title/description format if AI generation fails
-      const discount = this.extractDiscountNumber(discountRange);
-      return {
-        title: `${specificHoliday || occasion} Special - Save ${discount}%!`,
-        description: `Enjoy ${discount}% off at ${businessName}. Perfect for ${targetAudience.join(" and ").toLowerCase() || "everyone"}.`,
+      // Structured fallbacks that mirror the two-phase logic
+      const discount = parseInt(this.extractDiscountNumber(discountRange), 10);
+      const fallbacks: Record<string, {
+        promotionType: string; contentType: string;
+        title: string; percentOffValue?: number;
+        dollarOffValue?: number; bogoOrFreeItem?: string;
+      }> = {
+        tuesday_twofer: {
+          promotionType: "bogo", contentType: "offer",
+          title: "Two-for-Tuesday – Bring a Friend!",
+          bogoOrFreeItem: "Buy one, get one at equal or lesser value",
+        },
+        sunday_selfcare: {
+          promotionType: "free_item", contentType: "offer",
+          title: `Free Add-On This Sunday – Treat Yourself!`,
+          bogoOrFreeItem: "Free add-on with any service",
+        },
+        saturday_special: {
+          promotionType: "percentage_off", contentType: "event",
+          title: `${discount}% Off – Saturday Family Special!`,
+          percentOffValue: discount,
+        },
+        holiday: {
+          promotionType: "percentage_off", contentType: "offer",
+          title: `${discount}% Off – ${specificHoliday || "Holiday"} Celebration!`,
+          percentOffValue: discount,
+        },
       };
+
+      const fallback = fallbacks[occasion] ?? {
+        promotionType: "percentage_off", contentType: "offer",
+        title: `Save ${discount}% – ${(specificHoliday || occasion).replace(/_/g, " ")} Deal!`,
+        percentOffValue: discount,
+      };
+
+      return fallback;
     }
   }
 
@@ -796,8 +914,8 @@ IMPORTANT:
     const holiday = specificHoliday || "the holiday season";
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "holiday",
@@ -810,7 +928,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -846,8 +968,8 @@ IMPORTANT:
     const discount = this.extractDiscountNumber(discountRange);
     const currentSeason = this.getCurrentSeason();
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "seasonal",
@@ -860,7 +982,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -893,11 +1019,10 @@ IMPORTANT:
     brandVoice: string[]
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
-    const periodDesc = slowPeriods.length > 0 ? slowPeriods[0] : "weekday";
     const extendedAudience = [...targetAudience, "Budget-conscious customers"];
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "slow_period",
@@ -909,7 +1034,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience: extendedAudience,
       bestTiming: {
@@ -943,8 +1072,8 @@ IMPORTANT:
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "trending",
@@ -956,7 +1085,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -991,8 +1124,8 @@ IMPORTANT:
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "general",
@@ -1004,7 +1137,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -1037,8 +1174,8 @@ IMPORTANT:
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "monday_motivation",
@@ -1050,7 +1187,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -1084,8 +1225,8 @@ IMPORTANT:
     const discount = this.extractDiscountNumber(discountRange);
     const extendedAudience = [...targetAudience, "Groups", "Friends", "Couples"];
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "tuesday_twofer",
@@ -1097,7 +1238,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience: extendedAudience,
       bestTiming: {
@@ -1130,8 +1275,8 @@ IMPORTANT:
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "wednesday_midweek",
@@ -1143,7 +1288,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -1176,8 +1325,8 @@ IMPORTANT:
   ): Promise<DealTemplate> {
     const discount = this.extractDiscountNumber(discountRange);
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "thursday_throwback",
@@ -1189,7 +1338,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience,
       bestTiming: {
@@ -1223,8 +1376,8 @@ IMPORTANT:
     const discount = this.extractDiscountNumber(discountRange);
     const extendedAudience = [...targetAudience, "Weekend planners", "Party-goers"];
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "friday_deals",
@@ -1236,7 +1389,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience: extendedAudience,
       bestTiming: {
@@ -1271,8 +1428,8 @@ IMPORTANT:
     const discount = this.extractDiscountNumber(discountRange);
     const extendedAudience = [...targetAudience, "Families", "Groups", "Weekend shoppers"];
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "saturday_special",
@@ -1284,7 +1441,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience: extendedAudience,
       bestTiming: {
@@ -1319,8 +1480,8 @@ IMPORTANT:
     const discount = this.extractDiscountNumber(discountRange);
     const extendedAudience = [...targetAudience, "Wellness seekers", "Self-care enthusiasts"];
 
-    // Generate AI-powered title and description
-    const { title, description } = await this.generateAITitleAndDescription({
+    // Generate AI-powered template content
+    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "sunday_selfcare",
@@ -1332,7 +1493,11 @@ IMPORTANT:
 
     return {
       title,
-      description,
+      promotionType,
+      contentType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
       suggestedDiscount: discountRange,
       targetAudience: extendedAudience,
       bestTiming: {

@@ -286,37 +286,58 @@ export class AgentTemplateGenerationJob {
       });
     }
 
-    // Generate templates with images
+    // Fetch training data once so we can enrich the image prompt
+    const training = await AI_TrainingModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+    const responseMap = training
+      ? new Map(training.responses.map((r) => [r.questionId, r.answer]))
+      : new Map();
+
+    const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+    const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
+
+    // Generate templates with images — single AI call per occasion
     for (const occasion of occasions) {
       try {
-        // Generate the template content first
+        // Step 1: Generate template content (one AI call)
         const template = await DealTemplateGeneratorService.generateDealTemplate(
           businessId,
           occasion
         );
 
-        // Generate AI image with GENERIC content
+        // Step 2: Generate image using the template's promotion data + training context
         const imageUrl = await this.generateGenericTemplateImage(
           businessId,
           template.title,
-          template.description,
           agent.category,
           agent.subCategories,
-          occasion.occasion
-        );
-
-        // Save template with generated image
-        await DealTemplateGeneratorService.generateAndSaveDealTemplate(
-          businessId,
+          occasion.occasion,
           {
-            ...occasion,
-            thumbnailUrl: imageUrl,
+            industry: training?.industry,
+            promotionType: template.promotionType,
+            contentType: template.contentType,
+            targetAudience: trainingTargetAudience,
+            brandVoice: trainingBrandVoice,
           }
         );
 
+        // Step 3: Persist the already-generated template (no second AI call)
+        await DealTemplateGeneratorService.savePreGeneratedTemplate(
+          businessId,
+          template,
+          { ...occasion, thumbnailUrl: imageUrl }
+        );
+
         logger.info(
-          { businessId, occasion: occasion.occasion, imageUrl },
-          "Generated template with AI image for trained agent"
+          {
+            businessId,
+            occasion: occasion.occasion,
+            imageUrl,
+            promotionType: template.promotionType,
+            contentType: template.contentType,
+          },
+          "Generated and saved template with AI image for trained agent"
         );
       } catch (error: any) {
         logger.error(
@@ -433,14 +454,24 @@ export class AgentTemplateGenerationJob {
 
     for (const { occasion, title, descriptionText, specificHoliday } of occasions) {
       try {
-        // Generate AI image with GENERIC content
+        // Derive promotion context from occasion for image enrichment
+        const isBogo = occasion === "tuesday_twofer";
+        const isFreeItem = occasion === "sunday_selfcare";
+        const occasionPromotionType = isBogo ? "bogo" : isFreeItem ? "free_item" : "percentage_off";
+        const occasionContentType = occasion === "saturday_special" ? "event" : "offer";
+
+        // Generate AI image with occasion-aware enriched context
         const imageUrl = await this.generateGenericTemplateImage(
           businessId,
           title,
-          descriptionText,
           category,
           subCategories,
-          occasion
+          occasion,
+          {
+            industry: category,
+            promotionType: occasionPromotionType,
+            contentType: occasionContentType,
+          }
         );
 
         // Create a simple template structure for untrained agents
@@ -542,66 +573,103 @@ export class AgentTemplateGenerationJob {
   }
 
   /**
-   * Generate AI image with GENERIC content for templates
-   * Images should have generic visuals, no specific business names or details
+   * Generate AI image for templates.
+   * Accepts optional enriched context from a trained-agent template so the
+   * image style, mood, and subject matter reflect the actual promotion.
+   * Images remain GENERIC — no business names, logos, or specific text.
    */
   private static async generateGenericTemplateImage(
     businessId: string,
     title: string,
-    description: string,
     category?: string,
     subCategories?: string[],
-    occasion?: string
+    occasion?: string,
+    enrichedContext?: {
+      industry?: string;
+      promotionType?: string;
+      contentType?: string;
+      targetAudience?: string[];
+      brandVoice?: string[];
+    }
   ): Promise<string> {
     try {
-      // Build a GENERIC prompt that doesn't include specific business details
       const promptParts: string[] = [];
 
-      // Add occasion-specific visual guidance
-      if (occasion === "holiday") {
-        promptParts.push("Create a festive, celebratory promotional image");
-      } else if (occasion === "seasonal") {
-        promptParts.push("Create a seasonal promotional image");
-      } else if (occasion === "trending") {
-        promptParts.push("Create a modern, trendy promotional image with dynamic energy");
-      } else if (occasion === "slow_period") {
-        promptParts.push("Create a value-focused promotional image");
-      } else {
-        promptParts.push("Create a professional promotional image");
+      // ── Occasion mood ────────────────────────────────────────────────────
+      const occasionMoods: Record<string, string> = {
+        holiday: "festive, celebratory, warm-toned promotional image",
+        seasonal: "seasonal, nature-inspired promotional image",
+        trending: "modern, dynamic, high-energy promotional image with bold colours",
+        slow_period: "calm, inviting, value-focused promotional image",
+        monday_motivation: "energising, bright, motivational promotional image",
+        tuesday_twofer: "playful, social, duo-themed promotional image",
+        wednesday_midweek: "uplifting, mid-week treat promotional image",
+        thursday_throwback: "nostalgic, vintage-inspired promotional image",
+        friday_deals: "vibrant, exciting, weekend-ready promotional image",
+        saturday_special: "warm, family-friendly, lively promotional image",
+        sunday_selfcare: "calm, spa-like, soft-toned self-care promotional image",
+      };
+      promptParts.push(`Create a ${occasionMoods[occasion || ""] || "professional promotional image"}`);
+
+      // ── Industry / category subject matter ───────────────────────────────
+      const industry = enrichedContext?.industry || category;
+      if (industry) {
+        promptParts.push(`Visual subject: ${industry.toLowerCase()} theme`);
       }
 
-      // Add generic category context (not specific business)
-      if (category) {
-        promptParts.push(`Related to ${category.toLowerCase()} industry`);
-      }
-
-      // Add generic subcategory elements
       if (subCategories && subCategories.length > 0) {
         promptParts.push(
-          `Featuring elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
+          `Include elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
         );
       }
 
-      // Add generic visual instructions
-      promptParts.push("Use vibrant colors and professional design");
-      promptParts.push("Create an eye-catching layout suitable for marketing");
-      promptParts.push("Include abstract shapes or patterns, no specific text or business names");
-      promptParts.push("Make it suitable for social media and promotional use");
-      promptParts.push("Keep the content GENERIC and broadly applicable");
-      promptParts.push("NO text, NO logos, NO specific business information");
+      // ── Promotion-type visual cues ────────────────────────────────────────
+      if (enrichedContext?.promotionType) {
+        const promoVisuals: Record<string, string> = {
+          percentage_off: "Show a sense of savings and value — abstract percentage or discount symbol shapes",
+          dollar_off:     "Show a sense of currency value — abstract coin or price-tag shapes",
+          bogo:           "Show two items or a paired/duo composition to reflect buy-one-get-one",
+          free_item:      "Show a gift or bonus element — abstract gift-box or ribbon shapes",
+        };
+        const cue = promoVisuals[enrichedContext.promotionType];
+        if (cue) promptParts.push(cue);
+      }
+
+      // ── Content type influences overall mood ─────────────────────────────
+      if (enrichedContext?.contentType === "event") {
+        promptParts.push("Convey a social, event atmosphere with crowd energy");
+      } else if (enrichedContext?.contentType === "reward") {
+        promptParts.push("Convey a sense of achievement and reward");
+      }
+
+      // ── Brand voice colour palette hints ─────────────────────────────────
+      if (enrichedContext?.brandVoice && enrichedContext.brandVoice.length > 0) {
+        const voice = enrichedContext.brandVoice.join(", ").toLowerCase();
+        if (voice.includes("luxury") || voice.includes("premium")) {
+          promptParts.push("Use a premium colour palette — deep navy, gold, or ivory tones");
+        } else if (voice.includes("fun") || voice.includes("playful")) {
+          promptParts.push("Use bright, playful colours — yellow, coral, or turquoise accents");
+        } else if (voice.includes("professional") || voice.includes("corporate")) {
+          promptParts.push("Use clean, professional colours — blue, white, and grey");
+        }
+      }
+
+      // ── Mandatory generic constraints ────────────────────────────────────
+      promptParts.push("Use vibrant colours and professional graphic-design composition");
+      promptParts.push("Abstract shapes or patterns only — NO readable text, NO logos, NO business names");
+      promptParts.push("Suitable for social media and promotional marketing use");
 
       const genericPrompt = promptParts.join(". ");
 
       logger.info(
-        { businessId, occasion, category },
-        "Generating generic AI image for template"
+        { businessId, occasion, industry, promotionType: enrichedContext?.promotionType },
+        "Generating AI image for template"
       );
 
-      // Generate the image using Gemini service
       const result = await GeminiService.generateImage({
         businessId,
         prompt: genericPrompt,
-        contentType: "offer",
+        contentType: (enrichedContext?.contentType as any) || "offer",
         style: "professional",
         aspectRatio: "1:1",
       });
@@ -610,10 +678,9 @@ export class AgentTemplateGenerationJob {
     } catch (error: any) {
       logger.error(
         { businessId, error: error.message },
-        "Failed to generate generic AI image, using default thumbnail"
+        "Failed to generate AI image, using default thumbnail"
       );
 
-      // Fallback to default thumbnail if image generation fails
       return this.getDefaultThumbnail(occasion);
     }
   }
@@ -626,7 +693,7 @@ export class AgentTemplateGenerationJob {
     agent: any,
     options: TemplateGenerationOptions,
     title: string,
-    description: string,
+    _description: string,
     imageUrl: string
   ): Promise<void> {
     const { upsertTemplate, TemplateCreatorType, TemplateType, TemplateScope } =
@@ -645,11 +712,17 @@ export class AgentTemplateGenerationJob {
 
     const businessObjectId = toObjectId(businessId);
 
-    // Generate tags from title, description, and occasion
+    // Determine promotion fields based on occasion
+    const isBogo = options.occasion === "tuesday_twofer";
+    const promotionType = isBogo ? "bogo" : "percentage_off";
+    const percentOffValue = isBogo ? undefined : 15;
+    const bogoOrFreeItem = isBogo ? "Buy one, get one at equal or lesser value" : undefined;
+
+    // Generate tags from title and occasion
     const generatedTags = this.generateTagsForTemplate(
       options.occasion || "general",
       title,
-      description,
+      "",
       agent.tags || []
     );
 
@@ -670,12 +743,15 @@ export class AgentTemplateGenerationJob {
         scope: TemplateScope.BUSINESS_SPECIFIC,
         businessId: businessObjectId as any,
         title,
-        description,
         thumbnail: imageUrl,
         tags: generatedTags,
         businessCategories: [], // Empty for metadata-based templates
-        keywords: this.extractKeywords(title, description),
+        keywords: this.extractKeywords(title, ""),
         discountValue: "15",
+        promotionType,
+        contentType: "offer",
+        percentOffValue,
+        bogoOrFreeItem,
         minTargetAge: 18,
         maxTargetAge: 65,
         targetGenders: ["male", "female", "others"],

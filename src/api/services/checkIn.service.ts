@@ -146,7 +146,7 @@ export class CheckInService {
     tags: string[],
     count: number = 10,
   ): string {
-    const prompt = `Generate exactly ${count} atmospheric mood words to be used as check-in titles for this business.
+    const prompt = `Generate exactly ${count} two-word atmospheric mood phrases to be used as check-in titles for this business.
 
 BUSINESS INFORMATION:
 - Name: ${businessName}
@@ -156,32 +156,31 @@ BUSINESS INFORMATION:
 - Tags: ${tags.join(", ") || "N/A"}
 
 TITLE REQUIREMENTS (VERY IMPORTANT):
-1. Each title MUST be an ADJECTIVE describing the ATMOSPHERE, MOOD, or VIBE.
-   - Do NOT use physical product descriptors (e.g., avoid "Cheesy", "Crusty", "Tasty").
-   - DO use feeling words (e.g., "Radiant", "Elegant", "Serene").
-2. Each title MUST be exactly 7-8 alphabetic characters long (not including the emoji).
-   Examples of CORRECT length: "Elegant" (7), "Radiant" (7), "Tranquil" (8), "Dynamic" (7)
-   Examples of WRONG length: "Cozy" (4 - too short), "Beautiful" (9 - too long)
+1. Each title MUST be exactly TWO WORDS describing the ATMOSPHERE, MOOD, or VIBE.
+   - The phrase should feel natural and evocative (e.g., "Good Vibes", "Pure Bliss").
+   - Do NOT use physical product descriptors (e.g., avoid "Cheesy Bites", "Crispy Crust").
+   - DO use feeling/mood phrases (e.g., "Golden Hour", "Pure Bliss", "Good Vibes").
+2. Each title MUST be exactly 2 words (no more, no less).
 3. Each title MUST include ONE relevant emoji.
 4. Titles must match the specific vibe of the business (e.g., a spa should be calming, a club should be energetic).
 
 EXAMPLES FOR REFERENCE:
-- For a luxury restaurant: "Elegant ✨", "Refined 🍷", "Sublime 🍽️"
-- For a nature retreat: "Serene 🍃", "Natural 🌿", "Restful 🪵"
-- For a lively gym/club: "Dynamic ⚡", "Vibrant 🎵", "Intense 🔥"
+- For a luxury restaurant: "Golden Hour ✨", "Pure Elegance 🍷", "Fine Dining 🍽️"
+- For a nature retreat: "Pure Serenity 🍃", "Wild Escape 🌿", "Deep Calm 🪵"
+- For a lively gym/club: "Full Send ⚡", "High Energy 🎵", "Raw Power 🔥"
 
 Please provide exactly ${count} title suggestions in the following JSON format:
 {
   "titles": [
-    {"title": "Radiant", "emoji": "✨"},
-    {"title": "Tranquil", "emoji": "🌊"},
-    {"title": "Spirited", "emoji": "🥂"}
+    {"title": "Golden Hour", "emoji": "✨"},
+    {"title": "Pure Bliss", "emoji": "🌊"},
+    {"title": "Good Vibes", "emoji": "🥂"}
   ]
 }
 
 CRITICAL:
-- Title text must be 7-8 characters ONLY (not counting the emoji)
-- Words must be MOOD/ATMOSPHERIC adjectives
+- Title text must be exactly 2 words (not counting the emoji)
+- Phrases must be MOOD/ATMOSPHERIC and feel natural
 - Return ONLY the JSON object, no additional text
 - Generate exactly ${count} unique titles`;
 
@@ -203,11 +202,9 @@ CRITICAL:
         if (parsed.titles && Array.isArray(parsed.titles)) {
           const validTitles = parsed.titles
             .filter((item: any) => {
-              // Validate that title is 7-8 characters and has emoji
-              const titleLength = item.title?.replace(/\s/g, "").length || 0;
-              return (
-                item.title && item.emoji && titleLength >= 6 && titleLength <= 8
-              );
+              // Validate that title is exactly 2 words and has emoji
+              const wordCount = item.title?.trim().split(/\s+/).length || 0;
+              return item.title && item.emoji && wordCount === 2;
             })
             .map((item: any) => `${item.title.trim()} ${item.emoji}`);
 
@@ -239,16 +236,16 @@ CRITICAL:
    */
   private static getDefaultTitles(count: number): string[] {
     const defaults: string[] = [
-      "Awesome ✨",
-      "Vibing 🎵",
-      "Loving ❤️",
-      "Chillin 😎",
-      "Perfect 👌",
-      "Amazing 🌟",
-      "Great 👍",
-      "Stellar ⭐",
-      "Epic 🔥",
-      "Blessed 🙏",
+      "Good Vibes ✨",
+      "Pure Bliss 🎵",
+      "Great Times ❤️",
+      "Chill Mode 😎",
+      "Simply Perfect 👌",
+      "Feeling Amazing 🌟",
+      "Golden Hour ⭐",
+      "High Spirits 🔥",
+      "Full Joy 🙏",
+      "Top Notch 💫",
     ];
 
     return defaults.slice(0, count);

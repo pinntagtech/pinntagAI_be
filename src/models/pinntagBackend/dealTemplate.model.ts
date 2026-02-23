@@ -36,10 +36,15 @@ export interface IDealTemplate {
   businessProfile?: string | Schema.Types.ObjectId; // Reference to Business
   discountValue?: string;
   discountType?: string; // Type of discount (e.g., "percentage", "fixed", "buy_one_get_one")
+  promotionType?: string; // e.g., "percentage_off", "dollar_off", "bogo", "free_item"
+  contentType?: string; // e.g., "offer", "broadcast", "reward", "event"
+  percentOffValue?: number; // Numeric percentage discount value
+  dollarOffValue?: number; // Numeric dollar discount value
+  bogoOrFreeItem?: string; // Description of bogo/free item deal
   categories: Array<string | Schema.Types.ObjectId>;
   title: string;
   keywords: string[];
-  description: string;
+  description?: string;
   minTargetAge?: number;
   maxTargetAge?: number;
   targetGenders: string[];
@@ -88,10 +93,15 @@ export const DealTemplateSchema = new Schema<IDealTemplate>(
     businessProfile: { type: Schema.Types.ObjectId, ref: "Business" },
     discountValue: { type: String },
     discountType: { type: String },
+    promotionType: { type: String },
+    contentType: { type: String },
+    percentOffValue: { type: Number },
+    dollarOffValue: { type: Number },
+    bogoOrFreeItem: { type: String },
     categories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
     title: { type: String, required: true },
     keywords: [{ type: String }],
-    description: { type: String, required: true },
+    description: { type: String },
     minTargetAge: { type: Number, min: 0, max: 100 },
     maxTargetAge: { type: Number, min: 0, max: 100 },
     targetGenders: [{ type: String, enum: ["male", "female", "others", "all"] }],
