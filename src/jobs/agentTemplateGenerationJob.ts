@@ -2,6 +2,7 @@ import { logger } from "../utils/logger.js";
 import { AI_TrainingModel } from "../models/AI_Training.model.js";
 import { BusinessAIAssistantModel } from "../models/businessAIAssistant.model.js";
 import { DealTemplateGeneratorService, TemplateGenerationOptions } from "../api/services/dealTemplateGenerator.service.js";
+import { DiscountType } from "../models/pinntagBackend/dealTemplate.model.js";
 import { GeminiService } from "../api/services/gemini.service.js";
 import mongoose from "mongoose";
 
@@ -315,7 +316,7 @@ export class AgentTemplateGenerationJob {
           occasion.occasion,
           {
             industry: training?.industry,
-            promotionType: template.promotionType,
+            promotionType: template.discountType,
             contentType: template.contentType,
             targetAudience: trainingTargetAudience,
             brandVoice: trainingBrandVoice,
@@ -334,7 +335,7 @@ export class AgentTemplateGenerationJob {
             businessId,
             occasion: occasion.occasion,
             imageUrl,
-            promotionType: template.promotionType,
+            discountType: template.discountType,
             contentType: template.contentType,
           },
           "Generated and saved template with AI image for trained agent"
@@ -714,7 +715,7 @@ export class AgentTemplateGenerationJob {
 
     // Determine promotion fields based on occasion
     const isBogo = options.occasion === "tuesday_twofer";
-    const promotionType = isBogo ? "bogo" : "percentage_off";
+    const discountType = isBogo ? DiscountType.BOGO : DiscountType.Percentage;
     const percentOffValue = isBogo ? undefined : 15;
     const bogoOrFreeItem = isBogo ? "Buy one, get one at equal or lesser value" : undefined;
 
@@ -748,7 +749,7 @@ export class AgentTemplateGenerationJob {
         businessCategories: [], // Empty for metadata-based templates
         keywords: this.extractKeywords(title, ""),
         discountValue: "15",
-        promotionType,
+        discountType,
         contentType: "offer",
         percentOffValue,
         bogoOrFreeItem,

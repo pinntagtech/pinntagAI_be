@@ -2,6 +2,17 @@ import { Connection, Model, Schema } from "mongoose";
 import { getBackendConnection } from "../../db/connection.js";
 
 // Enums for Deal Templates
+export enum DiscountType {
+  Percentage = '% Off',
+  Flat = '$ Off',
+  BOGO = 'BOGO',
+  FREE_ITEM = 'Free Item',
+  BUNDLE = 'Combo/Bundle',
+  HAPPY_HOUR = 'Happy Hour',
+  FAMILY_FUN = 'Family Fun',
+  CUSTOM = 'Custom Deal',
+}
+
 export enum TemplateCreatorType {
   ADMIN = "Admin",
   BUSINESS = "Business",
@@ -35,8 +46,7 @@ export interface IDealTemplate {
   businessId?: string | Schema.Types.ObjectId; // Only set for business-specific templates
   businessProfile?: string | Schema.Types.ObjectId; // Reference to Business
   discountValue?: string;
-  discountType?: string; // Type of discount (e.g., "percentage", "fixed", "buy_one_get_one")
-  promotionType?: string; // e.g., "percentage_off", "dollar_off", "bogo", "free_item"
+  discountType?: DiscountType; // Type of discount
   contentType?: string; // e.g., "offer", "broadcast", "reward", "event"
   percentOffValue?: number; // Numeric percentage discount value
   dollarOffValue?: number; // Numeric dollar discount value
@@ -92,8 +102,7 @@ export const DealTemplateSchema = new Schema<IDealTemplate>(
     businessId: { type: Schema.Types.ObjectId, ref: "Business" }, // Only for business-specific
     businessProfile: { type: Schema.Types.ObjectId, ref: "Business" },
     discountValue: { type: String },
-    discountType: { type: String },
-    promotionType: { type: String },
+    discountType: { type: String, enum: Object.values(DiscountType) },
     contentType: { type: String },
     percentOffValue: { type: Number },
     dollarOffValue: { type: Number },

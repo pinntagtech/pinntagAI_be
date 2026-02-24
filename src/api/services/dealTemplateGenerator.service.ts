@@ -8,6 +8,7 @@ import {
   TemplateCreatorType,
   TemplateType,
   TemplateScope,
+  DiscountType,
   upsertTemplate,
 } from "../../models/pinntagBackend/dealTemplate.model.js";
 import { openai } from "../../utils/openai.js";
@@ -19,7 +20,7 @@ import { openai } from "../../utils/openai.js";
 
 export interface DealTemplate {
   title: string;
-  promotionType: string; // "percentage_off" | "dollar_off" | "bogo" | "free_item"
+  discountType: DiscountType;
   contentType: string; // "offer" | "broadcast" | "reward" | "event"
   percentOffValue?: number;
   dollarOffValue?: number;
@@ -381,7 +382,7 @@ export class DealTemplateGeneratorService {
       scope,
       businessId: isGeneric ? undefined : (toObjectId(businessAgent.businessId) as any),
       discountValue,
-      promotionType: template.promotionType,
+      discountType: template.discountType,
       contentType: template.contentType,
       percentOffValue: template.percentOffValue,
       dollarOffValue: template.dollarOffValue,
@@ -527,7 +528,7 @@ export class DealTemplateGeneratorService {
     dealType: string;
   }): Promise<{
     title: string;
-    promotionType: string;
+    discountType: DiscountType;
     contentType: string;
     percentOffValue?: number;
     dollarOffValue?: number;
@@ -548,11 +549,13 @@ export class DealTemplateGeneratorService {
       const discount = this.extractDiscountNumber(discountRange);
 
       // ── Phase 1: choose promotion structure ──────────────────────────────
-      const occasionForcedPromotion: Record<string, string> = {
-        tuesday_twofer: "bogo",
-        sunday_selfcare: "free_item",
+      const occasionForcedDiscount: Record<string, DiscountType> = {
+        tuesday_twofer: DiscountType.BOGO,
+        sunday_selfcare: DiscountType.FREE_ITEM,
       };
-      const forcedPromotion = occasionForcedPromotion[occasion];
+      const forcedDiscount = occasionForcedDiscount[occasion];
+
+      const discountTypeOptions = Object.values(DiscountType).join(" | ");
 
       const phase1Prompt = `You are a promotions strategist for a ${industry} business.
 
@@ -562,17 +565,21 @@ Context:
 - Suggested discount budget: ${discount}%
 - Target audience: ${targetAudience.join(", ") || "general customers"}${brandVoice && brandVoice.length > 0 ? `\n- Brand voice: ${brandVoice.join(", ")}` : ""}
 
-${forcedPromotion
-  ? `The promotion type MUST be "${forcedPromotion}" for this occasion.`
-  : `Choose the promotionType that will drive the most engagement for this occasion:
-  - "percentage_off" – e.g. 20% off (good for general, seasonal, holiday)
-  - "dollar_off" – e.g. $5 off (good for high-ticket items / trending)
-  - "bogo" – buy one get one (good for social occasions, group visits)
-  - "free_item" – a free add-on (good for self-care, loyalty, slow periods)`}
+${forcedDiscount
+  ? `The discountType MUST be "${forcedDiscount}" for this occasion.`
+  : `Choose the discountType that will drive the most engagement for this occasion:
+  - "${DiscountType.Percentage}" – e.g. 20% off (good for general, seasonal, holiday)
+  - "${DiscountType.Flat}" – e.g. $5 off (good for high-ticket items / trending)
+  - "${DiscountType.BOGO}" – buy one get one (good for social occasions, group visits)
+  - "${DiscountType.FREE_ITEM}" – a free add-on (good for self-care, loyalty, slow periods)
+  - "${DiscountType.BUNDLE}" – combo/bundle deal (good for upselling)
+  - "${DiscountType.HAPPY_HOUR}" – time-limited deal (good for slow periods)
+  - "${DiscountType.FAMILY_FUN}" – family-oriented deal (good for saturday/group occasions)
+  - "${DiscountType.CUSTOM}" – custom deal structure`}
 
 Respond with ONLY a JSON object (no markdown):
 {
-  "promotionType": "percentage_off | dollar_off | bogo | free_item",
+  "discountType": "${discountTypeOptions}",
   "contentType": "offer | event | reward | broadcast",
   "percentOffValue": <integer or null>,
   "dollarOffValue": <integer or null>,
@@ -580,9 +587,9 @@ Respond with ONLY a JSON object (no markdown):
 }
 
 Rules:
-- percentOffValue: set to ${discount} when promotionType is "percentage_off", else null
-- dollarOffValue: pick a round dollar amount (e.g. 5, 10, 15) when promotionType is "dollar_off", else null
-- bogoOrFreeItem: one short sentence (≤ 12 words) when promotionType is "bogo" or "free_item", else null
+- percentOffValue: set to ${discount} when discountType is "${DiscountType.Percentage}", else null
+- dollarOffValue: pick a round dollar amount (e.g. 5, 10, 15) when discountType is "${DiscountType.Flat}", else null
+- bogoOrFreeItem: one short sentence (≤ 12 words) when discountType is "${DiscountType.BOGO}" or "${DiscountType.FREE_ITEM}", else null
 - contentType "event" only for saturday_special or social/community occasions; otherwise "offer"`;
 
       const phase1Response = await openai.chat.completions.create({
@@ -600,18 +607,24 @@ Rules:
       if (!phase1Content) throw new Error("Empty Phase 1 response from OpenAI");
 
       const promo = JSON.parse(phase1Content);
-      if (!promo.promotionType || !promo.contentType) throw new Error("Invalid Phase 1 response format");
+      if (!promo.discountType || !promo.contentType) throw new Error("Invalid Phase 1 response format");
 
       // ── Build human-readable deal summary for Phase 2 ───────────────────
       let dealSummary: string;
-      if (promo.promotionType === "percentage_off" && promo.percentOffValue) {
+      if (promo.discountType === DiscountType.Percentage && promo.percentOffValue) {
         dealSummary = `${promo.percentOffValue}% off`;
-      } else if (promo.promotionType === "dollar_off" && promo.dollarOffValue) {
+      } else if (promo.discountType === DiscountType.Flat && promo.dollarOffValue) {
         dealSummary = `$${promo.dollarOffValue} off`;
-      } else if (promo.promotionType === "bogo" && promo.bogoOrFreeItem) {
+      } else if (promo.discountType === DiscountType.BOGO && promo.bogoOrFreeItem) {
         dealSummary = `BOGO – ${promo.bogoOrFreeItem}`;
-      } else if (promo.promotionType === "free_item" && promo.bogoOrFreeItem) {
+      } else if (promo.discountType === DiscountType.FREE_ITEM && promo.bogoOrFreeItem) {
         dealSummary = `Free – ${promo.bogoOrFreeItem}`;
+      } else if (promo.discountType === DiscountType.BUNDLE) {
+        dealSummary = promo.bogoOrFreeItem || "Combo/Bundle deal";
+      } else if (promo.discountType === DiscountType.HAPPY_HOUR) {
+        dealSummary = "Happy Hour special";
+      } else if (promo.discountType === DiscountType.FAMILY_FUN) {
+        dealSummary = "Family Fun deal";
       } else {
         dealSummary = `${discount}% off`;
       }
@@ -668,13 +681,13 @@ Respond with ONLY a JSON object:
       if (!title) throw new Error("Invalid Phase 2 response format");
 
       logger.info(
-        { businessName, occasion, title, promotionType: promo.promotionType, dealSummary },
+        { businessName, occasion, title, discountType: promo.discountType, dealSummary },
         "Generated AI template content (two-phase)"
       );
 
       return {
         title,
-        promotionType: promo.promotionType,
+        discountType: promo.discountType as DiscountType,
         contentType: promo.contentType,
         percentOffValue: promo.percentOffValue ?? undefined,
         dollarOffValue: promo.dollarOffValue ?? undefined,
@@ -689,34 +702,34 @@ Respond with ONLY a JSON object:
       // Structured fallbacks that mirror the two-phase logic
       const discount = parseInt(this.extractDiscountNumber(discountRange), 10);
       const fallbacks: Record<string, {
-        promotionType: string; contentType: string;
+        discountType: DiscountType; contentType: string;
         title: string; percentOffValue?: number;
         dollarOffValue?: number; bogoOrFreeItem?: string;
       }> = {
         tuesday_twofer: {
-          promotionType: "bogo", contentType: "offer",
+          discountType: DiscountType.BOGO, contentType: "offer",
           title: "Two-for-Tuesday – Bring a Friend!",
           bogoOrFreeItem: "Buy one, get one at equal or lesser value",
         },
         sunday_selfcare: {
-          promotionType: "free_item", contentType: "offer",
+          discountType: DiscountType.FREE_ITEM, contentType: "offer",
           title: `Free Add-On This Sunday – Treat Yourself!`,
           bogoOrFreeItem: "Free add-on with any service",
         },
         saturday_special: {
-          promotionType: "percentage_off", contentType: "event",
+          discountType: DiscountType.FAMILY_FUN, contentType: "event",
           title: `${discount}% Off – Saturday Family Special!`,
           percentOffValue: discount,
         },
         holiday: {
-          promotionType: "percentage_off", contentType: "offer",
+          discountType: DiscountType.Percentage, contentType: "offer",
           title: `${discount}% Off – ${specificHoliday || "Holiday"} Celebration!`,
           percentOffValue: discount,
         },
       };
 
       const fallback = fallbacks[occasion] ?? {
-        promotionType: "percentage_off", contentType: "offer",
+        discountType: DiscountType.Percentage, contentType: "offer",
         title: `Save ${discount}% – ${(specificHoliday || occasion).replace(/_/g, " ")} Deal!`,
         percentOffValue: discount,
       };
@@ -915,7 +928,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "holiday",
@@ -928,7 +941,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -969,7 +982,7 @@ Respond with ONLY a JSON object:
     const currentSeason = this.getCurrentSeason();
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "seasonal",
@@ -982,7 +995,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1022,7 +1035,7 @@ Respond with ONLY a JSON object:
     const extendedAudience = [...targetAudience, "Budget-conscious customers"];
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "slow_period",
@@ -1034,7 +1047,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1073,7 +1086,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "trending",
@@ -1085,7 +1098,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1125,7 +1138,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "general",
@@ -1137,7 +1150,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1175,7 +1188,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "monday_motivation",
@@ -1187,7 +1200,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1226,7 +1239,7 @@ Respond with ONLY a JSON object:
     const extendedAudience = [...targetAudience, "Groups", "Friends", "Couples"];
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "tuesday_twofer",
@@ -1238,7 +1251,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1276,7 +1289,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "wednesday_midweek",
@@ -1288,7 +1301,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1326,7 +1339,7 @@ Respond with ONLY a JSON object:
     const discount = this.extractDiscountNumber(discountRange);
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "thursday_throwback",
@@ -1338,7 +1351,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1377,7 +1390,7 @@ Respond with ONLY a JSON object:
     const extendedAudience = [...targetAudience, "Weekend planners", "Party-goers"];
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "friday_deals",
@@ -1389,7 +1402,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1429,7 +1442,7 @@ Respond with ONLY a JSON object:
     const extendedAudience = [...targetAudience, "Families", "Groups", "Weekend shoppers"];
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "saturday_special",
@@ -1441,7 +1454,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
@@ -1481,7 +1494,7 @@ Respond with ONLY a JSON object:
     const extendedAudience = [...targetAudience, "Wellness seekers", "Self-care enthusiasts"];
 
     // Generate AI-powered template content
-    const { title, promotionType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
+    const { title, discountType, contentType, percentOffValue, dollarOffValue, bogoOrFreeItem } = await this.generateAITemplateContent({
       businessName,
       industry,
       occasion: "sunday_selfcare",
@@ -1493,7 +1506,7 @@ Respond with ONLY a JSON object:
 
     return {
       title,
-      promotionType,
+      discountType,
       contentType,
       percentOffValue,
       dollarOffValue,
