@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import { logger } from "./utils/logger.js";
 import cors from "cors";
 import indexRouter from "./api/routes/index.routes.js";
+import { healthRouter } from "./api/routes/health.routes.js";
 
 // Add CORS and allowed origins as needed
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -31,9 +32,8 @@ export const buildApp = () => {
     })
   );
 
-  //   app.use("/health", healthRouter);
-  //   app.use("/etl", etlRouter);
-  //   app.use("/ai", aiRouter);
+  // Health check endpoint (used by ECS target group health checks)
+  app.use("/health", healthRouter);
 
   // use index routes
   app.use("/", indexRouter);

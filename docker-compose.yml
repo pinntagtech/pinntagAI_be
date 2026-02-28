@@ -7,6 +7,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
   ai:
     build:
       context: .
@@ -14,18 +15,16 @@ services:
       - mongo
     ports:
       - "4001:4001"
+    env_file:
+      - .env
     environment:
-      - USE_PRETTY_LOGS: "true"
-    NODE_ENV: development
-    PORT: 4001
-    # Use the container hostname for Mongo (service name = mongo)
-    MONGODB_URI: mongodb://mongo:27017/pinntag_ai
-    # If your ETL runs on the host, host.docker.internal works on macOS/Windows; on Linux, replace with your host IP
-    ETL_BASE_URL: http://host.docker.internal:8080/api/v1 # Include version path to Backend C
-    ETL_API_KEY: dev-etl-key
-    ENFORCE_INTERNAL_API_KEY: "true"
-    PINNTAG_BACKEND_TO_AI_KEY: change-me # Change this to a secure key
-    HTTP_TIMEOUT_MS: 15000
-    HTTP_RETRIES: 2
+      NODE_ENV: development
+      PORT: "4001"
+      USE_PRETTY_LOGS: "true"
+      MONGODB_URI: mongodb://mongo:27017/pinntag_ai
+      BACKEND_MONGODB_URI: mongodb://mongo:27017/pinntagPreProduction
+      # If ETL runs on host machine, use host.docker.internal (macOS/Windows)
+      ETL_BASE_URL: http://host.docker.internal:8000/api/v1
+
 volumes:
-    mongo_data:
+  mongo_data:
