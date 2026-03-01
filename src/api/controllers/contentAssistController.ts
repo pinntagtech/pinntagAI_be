@@ -113,6 +113,14 @@ export async function generateTitles(
       }
     }
 
+    // Default promotion values if not provided
+    if (params.promotionType === "dollar_off" && !params.dollarOffValue) {
+      params.dollarOffValue = 10;
+    }
+    if (params.promotionType === "percent_off" && !params.percentOffValue) {
+      params.percentOffValue = 10;
+    }
+
     // Validate and normalize count
     const count = Math.min(
       Math.max(params.count || DEFAULT_TITLE_COUNT, 1),
