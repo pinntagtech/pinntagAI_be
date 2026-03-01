@@ -42,6 +42,7 @@ function mapCategoryToIndustry(category: string): BusinessIndustries {
     "Health & Wellness": BusinessIndustries.HEALTH_WELLNESS,
     "Home & Professional Services": BusinessIndustries.HOME_PROFESSIONAL_SERVICES,
     "Places to Stay": BusinessIndustries.PLACES_TO_STAY,
+    "Mobile Businesses": BusinessIndustries.MOBILE_BUSINESSES,
 
     // Old category mappings
     "Beauty & Wellness": BusinessIndustries.HEALTH_WELLNESS,
@@ -688,6 +689,31 @@ ${
 ${
   responseMap.get("local_partnerships")
     ? "- Leverage partnerships with local attractions and restaurants"
+    : ""
+}
+`;
+      break;
+
+    case BusinessIndustries.MOBILE_BUSINESSES:
+      insights += `
+- Service area: ${responseMap.get("service_area") || "not specified"}
+- Operating schedule: ${responseMap.get("operating_schedule") || "not specified"}
+- Popular locations/events: ${responseMap.get("popular_locations") || "not specified"}
+- Menu highlights: ${responseMap.get("menu_highlights") || "not specified"}
+- Average serving capacity: ${responseMap.get("serving_capacity") || "not specified"}
+${
+  responseMap.get("event_catering")
+    ? "- Promote event catering and private bookings"
+    : ""
+}
+${
+  responseMap.get("social_media_presence")
+    ? "- Leverage social media to announce locations and daily specials"
+    : ""
+}
+${
+  responseMap.get("seasonal_menu")
+    ? "- Highlight seasonal and rotating menu items"
     : ""
 }
 `;

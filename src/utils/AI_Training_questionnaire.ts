@@ -50,6 +50,7 @@ export enum BusinessIndustries {
   HEALTH_WELLNESS = "Health & Wellness",
   HOME_PROFESSIONAL_SERVICES = "Home & Professional Services",
   PLACES_TO_STAY = "Places to Stay",
+  MOBILE_BUSINESSES = "Mobile Businesses",
 }
 
 // EventCategories (Event Types)
@@ -153,6 +154,9 @@ export enum BusinessSubCategory {
   BED_BREAKFAST = "Bed & Breakfast",
   SERVICED_APARTMENT = "Serviced Apartment",
   CAMPING_GLAMPING = "Camping / Glamping",
+
+  // Mobile Businesses
+  FOOD_TRUCK = "Food Truck",
 }
 
 // Event Subcategories
@@ -1504,6 +1508,89 @@ export const placesToStayQuestions: CategoryQuestions = {
 };
 
 // ============================================
+// MOBILE BUSINESSES SPECIFIC QUESTIONS
+// ============================================
+
+export const mobileBusinessesQuestions: CategoryQuestions = {
+  industry: BusinessIndustries.MOBILE_BUSINESSES,
+  commonQuestions: [
+    {
+      id: "service_area",
+      question: "What areas/neighborhoods do you typically serve?",
+      type: "text",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "operating_schedule",
+      question: "How do you determine your daily location/schedule?",
+      type: "multiple_choice",
+      options: [
+        "Fixed weekly schedule",
+        "Event-based",
+        "Social media announcements",
+        "App/website updates",
+        "Mix of fixed and flexible",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "popular_locations",
+      question: "What types of locations do you operate from most often?",
+      type: "multi_select",
+      options: [
+        "Business districts",
+        "Residential neighborhoods",
+        "Events & festivals",
+        "Markets & fairs",
+        "Near nightlife areas",
+        "Parks & public spaces",
+        "University/college campuses",
+      ],
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "menu_highlights",
+      question: "What are your signature or most popular items?",
+      type: "text",
+      required: true,
+      category: "business_info",
+    },
+    {
+      id: "serving_capacity",
+      question: "How many customers can you serve per hour on average?",
+      type: "number",
+      required: true,
+      category: "operations",
+    },
+    {
+      id: "event_catering",
+      question: "Do you offer catering or private event bookings?",
+      type: "boolean",
+      required: true,
+      category: "marketing",
+    },
+    {
+      id: "social_media_presence",
+      question: "Do you use social media to announce your daily location?",
+      type: "boolean",
+      required: true,
+      category: "marketing",
+    },
+    {
+      id: "seasonal_menu",
+      question: "Do you have rotating or seasonal menu items?",
+      type: "boolean",
+      required: true,
+      category: "business_info",
+    },
+  ],
+  specificQuestions: [],
+};
+
+// ============================================
 // MAIN MAPPING FUNCTION
 // ============================================
 
@@ -1541,6 +1628,9 @@ export function getTrainingQuestions(
       break;
     case BusinessIndustries.PLACES_TO_STAY:
       categoryQuestions = placesToStayQuestions;
+      break;
+    case BusinessIndustries.MOBILE_BUSINESSES:
+      categoryQuestions = mobileBusinessesQuestions;
       break;
     default:
       // Return only core questions if industry not found
@@ -1595,6 +1685,9 @@ export function getAI_Training_Questionnaire_Types(
       break;
     case BusinessIndustries.PLACES_TO_STAY:
       categoryQuestions = placesToStayQuestions;
+      break;
+    case BusinessIndustries.MOBILE_BUSINESSES:
+      categoryQuestions = mobileBusinessesQuestions;
       break;
     default:
       // Return only core questions if industry not found
@@ -1884,6 +1977,20 @@ const smartDefaultsMapping: SmartDefaults[] = [
       group_discounts: true,
     },
   },
+  // MOBILE BUSINESSES - Food Truck
+  {
+    subcategory: BusinessSubCategory.FOOD_TRUCK,
+    defaults: {
+      busiest_hours: ["Lunch time (12-2 PM)", "Evening (5-8 PM)"],
+      busiest_days: ["Wednesday", "Thursday", "Friday", "Saturday"],
+      target_audience: ["Young Professionals (25-34)", "Students (18-24)", "Families with children"],
+      marketing_goals: ["Build brand awareness", "Increase social media engagement", "Increase foot traffic"],
+      operating_schedule: "Mix of fixed and flexible",
+      event_catering: true,
+      social_media_presence: true,
+      seasonal_menu: true,
+    },
+  },
 ];
 
 /**
@@ -1973,6 +2080,13 @@ function getIndustryDefaults(
       busiest_days: ["Friday", "Saturday"],
       marketing_goals: ["Attract new customers", "Build brand awareness"],
       guest_type: ["Leisure travelers", "Families"],
+    },
+    [BusinessIndustries.MOBILE_BUSINESSES]: {
+      busiest_hours: ["Lunch time (12-2 PM)", "Evening (5-8 PM)"],
+      busiest_days: ["Wednesday", "Thursday", "Friday", "Saturday"],
+      marketing_goals: ["Build brand awareness", "Increase social media engagement", "Increase foot traffic"],
+      event_catering: true,
+      social_media_presence: true,
     },
   };
 
@@ -2180,6 +2294,7 @@ export default {
   healthWellnessQuestions,
   homeProfessionalServicesQuestions,
   placesToStayQuestions,
+  mobileBusinessesQuestions,
   getTrainingQuestions,
   getQuestionsByCategory,
   getRequiredQuestions,

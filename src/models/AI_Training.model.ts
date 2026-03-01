@@ -115,6 +115,7 @@ export const AI_TrainingSchema = new Schema<IAI_Training>(
         "Health & Wellness",
         "Home & Professional Services",
         "Places to Stay",
+        "Mobile Businesses",
       ],
     },
     subCategory: {
