@@ -47,6 +47,8 @@ const EnvSchema = z.object({
     ),
   // Pinntag Backend JWT secret for token verification
   PINNTAG_BACKEND_JWT_SECRET: z.string().min(1),
+  // Feature flag to enable/disable AI template generation cron jobs (saves OpenAI quota)
+  ENABLE_AI_TEMPLATE_GENERATION: z.coerce.boolean().default(false),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

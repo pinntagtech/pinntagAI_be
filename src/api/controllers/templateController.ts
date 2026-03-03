@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { logger } from "../../utils/logger.js";
+import { env } from "../../config/env.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
 import { TemplateUpdateJob } from "../../jobs/templateUpdateJob.js";
 import { JobScheduler } from "../../jobs/scheduler.js";
@@ -473,6 +474,7 @@ export const getSchedulerStatus = async (_req: Request, res: Response) => {
       success: true,
       data: status,
       count: status.length,
+      aiTemplateGenerationEnabled: env.ENABLE_AI_TEMPLATE_GENERATION,
     });
   } catch (error: any) {
     logger.error({ error }, "Error getting scheduler status");

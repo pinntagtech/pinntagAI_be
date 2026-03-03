@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { logger } from "../utils/logger.js";
+import { env } from "../config/env.js";
 import { TemplateUpdateJob } from "./templateUpdateJob.js";
 import { DailyTemplateJob } from "./dailyTemplateJob.js";
 import { AgentTemplateGenerationJob } from "./agentTemplateGenerationJob.js";
@@ -16,6 +17,15 @@ export class JobScheduler {
    */
   static start(): void {
     logger.info("Initializing job scheduler");
+
+    if (!env.ENABLE_AI_TEMPLATE_GENERATION) {
+      logger.info(
+        "AI template generation is DISABLED (ENABLE_AI_TEMPLATE_GENERATION=false). Skipping template cron jobs to save OpenAI quota."
+      );
+      return;
+    }
+
+    logger.info("AI template generation is ENABLED. Scheduling template cron jobs.");
 
     // Schedule overnight template updates
     // Runs every night at 2:00 AM
