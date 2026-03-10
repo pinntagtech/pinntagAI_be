@@ -995,17 +995,18 @@ Do NOT include any text, numbers, percentages, or discount values in the image.`
       tags.add(t.toLowerCase());
     });
 
-    // If still no tags, add generic business tags
+    // If still no tags, add the category name itself + generic searchable terms
     if (tags.size === 0) {
+      if (category) tags.add(category);
       [
-        "deals",
-        "offers",
-        "savings",
-        "local business",
-        "special",
-        "promotion",
-        "value",
-        "exclusive",
+        "near me",
+        "local",
+        "open now",
+        "best deals",
+        "top rated",
+        "popular",
+        "recommended",
+        "nearby",
       ].forEach((t) => tags.add(t));
     }
 
@@ -1013,44 +1014,26 @@ Do NOT include any text, numbers, percentages, or discount values in the image.`
   }
 
   /**
-   * Select relevant tags for a specific template occasion
+   * Select relevant tags for a specific template occasion.
+   * Tags are searchable nouns/items (e.g. "burger", "beer", "haircut")
+   * — NOT abstract concepts like "motivation" or "energize".
    */
   private static selectTemplateTags(
     categoryTags: string[],
-    occasion: string,
-    label: string,
+    _occasion: string,
+    _label: string,
   ): string[] {
     const tags = new Set<string>();
 
-    // Add occasion-specific tags
-    const occasionTags: Record<string, string[]> = {
-      monday_motivation: ["monday", "motivation", "start-of-week", "energize"],
-      tuesday_twofer: ["tuesday", "bogo", "two-for-one", "share"],
-      wednesday_midweek: ["wednesday", "midweek", "hump-day", "treat"],
-      thursday_throwback: ["thursday", "throwback", "nostalgia", "classic"],
-      friday_deals: ["friday", "weekend", "tgif", "deals"],
-      saturday_special: ["saturday", "weekend", "family", "fun"],
-      sunday_selfcare: ["sunday", "self-care", "relax", "wellness"],
-      holiday: ["holiday", "celebration", "festive", "seasonal"],
-      seasonal: ["seasonal", "limited-time", "fresh", "new"],
-      slow_period: ["value", "off-peak", "exclusive", "quiet-hours"],
-      trending: ["trending", "popular", "hot", "must-try"],
-      general: ["special", "offer", "deal", "savings"],
-    };
-
-    // Add occasion tags
-    (occasionTags[occasion] || occasionTags.general).forEach((t) =>
-      tags.add(t),
-    );
-
-    // Add some category tags (rotate through them for variety)
+    // Rotate through category tags so each template gets a slightly different set
+    // but all tags remain concrete, searchable items from the category
     const startIdx = Math.floor(
-      Math.random() * Math.max(1, categoryTags.length - 5),
+      Math.random() * Math.max(1, categoryTags.length - 6),
     );
-    categoryTags.slice(startIdx, startIdx + 5).forEach((t) => tags.add(t));
+    categoryTags.slice(startIdx, startIdx + 6).forEach((t) => tags.add(t));
 
-    // Also pick a few from the beginning for consistency
-    categoryTags.slice(0, 3).forEach((t) => tags.add(t));
+    // Always include the first few core category tags for consistency
+    categoryTags.slice(0, 4).forEach((t) => tags.add(t));
 
     return Array.from(tags).slice(0, 10);
   }
