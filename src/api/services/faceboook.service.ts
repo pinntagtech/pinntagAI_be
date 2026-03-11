@@ -826,8 +826,8 @@ export class FacebookService {
         "Using saved Facebook token to fetch page data"
       );
 
-      // Fetch all posts and events
-      const allData = await this.getAllPosts(token);
+      // Fetch all posts and events (pass useAI to control AI processing)
+      const allData = await this.getAllPosts(token, useAI);
 
       if (!allData.success || !allData.data) {
         return {
@@ -1029,7 +1029,7 @@ export class FacebookService {
    * Returns structured event data with title, description, image, schedule, and location
    * Filters to only return future events (after current date)
    */
-  async getAllPosts(token: string) {
+  async getAllPosts(token: string, useAI: boolean = true) {
     try {
       const now = new Date();
       const events: any[] = [];
@@ -1104,12 +1104,148 @@ export class FacebookService {
         );
 
         // ============================================================================
-        // 2. FETCH POSTS AND ANALYZE WITH AI (OCR for event flyers)
+        // 2. FETCH POSTS - With AI analysis or raw data based on useAI flag
         // ============================================================================
-        const postsResponse = await this.getAllPostsForPinntag(token, true, 80);
+        if (useAI) {
+          // AI flow: Analyze posts with AI (OCR for event flyers, title generation, filtering)
+          const postsResponse = await this.getAllPostsForPinntag(token, true, 80);
 
-        if (postsResponse.success && postsResponse.data?.posts) {
-          for (const post of postsResponse.data.posts) {
+          if (postsResponse.success && postsResponse.data?.posts) {
+            for (const post of postsResponse.data.posts) {
+              // Skip auto-generated event posts (we already have them from Events API)
+              const postEventId = post.id.split("_")[1];
+              if (eventIds.has(postEventId)) {
+                logger.info(
+                  { postId: post.id, eventId: postEventId },
+                  "Skipping auto-generated event post (already in Events API)"
+                );
+                continue;
+              }
+
+              // Process all suitable posts (events, offers, spotlight, flashlight)
+              // Use AI-generated data (title, type, schedule, ticketUrl)
+              const aiAnalysis = post.aiAnalysis;
+              const aiReason = aiAnalysis.reason || "";
+              const eventType = aiAnalysis?.type || "spotlight";
+
+              // Use AI-generated schedule if available, otherwise fallback to manual extraction
+              let schedule = aiAnalysis?.schedule;
+              if (!schedule || !schedule.startDate) {
+                // Fallback: Try to extract date/time from AI reason or post message
+                const dateMatch = aiReason.match(
+                  /(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i
+                );
+                const timeMatch = aiReason.match(
+                  /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i
+                );
+
+                let eventDate = null;
+                if (dateMatch) {
+                  try {
+                    eventDate = new Date(dateMatch[1]);
+                    if (isNaN(eventDate.getTime())) eventDate = null;
+                  } catch (e) {
+                    eventDate = null;
+                  }
+                }
+
+                schedule = {
+                  startDate: eventDate
+                    ? eventDate.toISOString().split("T")[0]
+                    : null,
+                  endDate: eventDate
+                    ? eventDate.toISOString().split("T")[0]
+                    : null,
+                  startTime: timeMatch ? timeMatch[1] : null,
+                  endTime: null,
+                  isRecurring: false,
+                };
+              }
+
+              // Skip if it's an event in the past (but keep offers/spotlight/flashlight regardless of date)
+              if (eventType === "event" && schedule?.startDate) {
+                const eventDate = new Date(schedule.startDate);
+                if (eventDate <= now) continue;
+              }
+
+              // Use AI-generated title or fallback
+              const title =
+                aiAnalysis?.title ||
+                post.message?.substring(0, 50) ||
+                `${
+                  eventType.charAt(0).toUpperCase() + eventType.slice(1)
+                } from Post`;
+
+              // Extract images
+              const images: string[] = [];
+              if (post.full_picture) images.push(post.full_picture);
+              if (post.attachments?.data) {
+                post.attachments.data.forEach((att: any) => {
+                  if (
+                    att.media?.image?.src &&
+                    !images.includes(att.media.image.src)
+                  ) {
+                    images.push(att.media.image.src);
+                  }
+                });
+              }
+
+              events.push({
+                id: post.id,
+                source: "facebook_post_ai_extracted",
+                title: title,
+                description: post.message || aiReason,
+                type: eventType,
+                images: images,
+                schedule: {
+                  startDate: schedule.startDate,
+                  endDate: schedule.endDate,
+                  startTime: schedule.startTime,
+                  endTime: schedule.endTime,
+                  isRecurring: schedule.isRecurring || false,
+                },
+                ticketUrl: aiAnalysis?.ticketUrl || null,
+                location: {
+                  name: null,
+                  address1: null,
+                  address2: null,
+                  city: null,
+                  state: null,
+                  country: null,
+                  zipcode: null,
+                  latitude: null,
+                  longitude: null,
+                },
+                isOnline: false,
+                metadata: {
+                  facebookPostId: post.id,
+                  extractedFromImage: !post.message,
+                  aiConfidenceScore: aiAnalysis.score,
+                  aiReason: aiReason,
+                  aiType: eventType,
+                  extractedFromPost: true,
+                },
+              });
+            }
+          }
+        } else {
+          // Non-AI flow: Fetch all posts and use caption directly
+          // Title = first 100 words of caption, Description = full caption
+          logger.info("Using non-AI flow: fetching all posts with raw captions");
+
+          const postsConfig = {
+            method: "get",
+            maxBodyLength: Infinity,
+            url: "https://graph.facebook.com/v20.0/me/posts?fields=id,message,created_time,full_picture,story,attachments{media,type,url,description,title},reactions.summary(total_count),comments.summary(total_count),shares&limit=100",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          };
+
+          const postsResponse = await axios.request(postsConfig);
+          const allPosts = postsResponse.data?.data || [];
+
+          for (const post of allPosts) {
             // Skip auto-generated event posts (we already have them from Events API)
             const postEventId = post.id.split("_")[1];
             if (eventIds.has(postEventId)) {
@@ -1120,59 +1256,19 @@ export class FacebookService {
               continue;
             }
 
-            // Process all suitable posts (events, offers, spotlight, flashlight)
-            // Use AI-generated data (title, type, schedule, ticketUrl)
-            const aiAnalysis = post.aiAnalysis;
-            const aiReason = aiAnalysis.reason || "";
-            const eventType = aiAnalysis?.type || "spotlight";
+            const caption = post.message || post.story || "";
 
-            // Use AI-generated schedule if available, otherwise fallback to manual extraction
-            let schedule = aiAnalysis?.schedule;
-            if (!schedule || !schedule.startDate) {
-              // Fallback: Try to extract date/time from AI reason or post message
-              const dateMatch = aiReason.match(
-                /(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i
-              );
-              const timeMatch = aiReason.match(
-                /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i
-              );
-
-              let eventDate = null;
-              if (dateMatch) {
-                try {
-                  eventDate = new Date(dateMatch[1]);
-                  if (isNaN(eventDate.getTime())) eventDate = null;
-                } catch (e) {
-                  eventDate = null;
-                }
-              }
-
-              schedule = {
-                startDate: eventDate
-                  ? eventDate.toISOString().split("T")[0]
-                  : null,
-                endDate: eventDate
-                  ? eventDate.toISOString().split("T")[0]
-                  : null,
-                startTime: timeMatch ? timeMatch[1] : null,
-                endTime: null,
-                isRecurring: false,
-              };
+            // Skip posts with no content at all
+            if (!caption && !post.full_picture && !post.attachments?.data?.length) {
+              continue;
             }
 
-            // Skip if it's an event in the past (but keep offers/spotlight/flashlight regardless of date)
-            if (eventType === "event" && schedule?.startDate) {
-              const eventDate = new Date(schedule.startDate);
-              if (eventDate <= now) continue;
-            }
+            // Title: first 100 words of the caption
+            const words = caption.split(/\s+/).filter((w: string) => w.length > 0);
+            const title = words.slice(0, 100).join(" ") || "Untitled Post";
 
-            // Use AI-generated title or fallback
-            const title =
-              aiAnalysis?.title ||
-              post.message?.substring(0, 50) ||
-              `${
-                eventType.charAt(0).toUpperCase() + eventType.slice(1)
-              } from Post`;
+            // Description: full caption
+            const description = caption;
 
             // Extract images
             const images: string[] = [];
@@ -1190,19 +1286,21 @@ export class FacebookService {
 
             events.push({
               id: post.id,
-              source: "facebook_post_ai_extracted",
+              source: "facebook_post_raw",
               title: title,
-              description: post.message || aiReason,
-              type: eventType,
+              description: description,
+              type: "post",
               images: images,
               schedule: {
-                startDate: schedule.startDate,
-                endDate: schedule.endDate,
-                startTime: schedule.startTime,
-                endTime: schedule.endTime,
-                isRecurring: schedule.isRecurring || false,
+                startDate: post.created_time
+                  ? new Date(post.created_time).toISOString().split("T")[0]
+                  : null,
+                endDate: null,
+                startTime: null,
+                endTime: null,
+                isRecurring: false,
               },
-              ticketUrl: aiAnalysis?.ticketUrl || null,
+              ticketUrl: null,
               location: {
                 name: null,
                 address1: null,
@@ -1217,14 +1315,17 @@ export class FacebookService {
               isOnline: false,
               metadata: {
                 facebookPostId: post.id,
-                extractedFromImage: !post.message,
-                aiConfidenceScore: aiAnalysis.score,
-                aiReason: aiReason,
-                aiType: eventType,
+                extractedFromImage: false,
                 extractedFromPost: true,
+                noAIProcessing: true,
               },
             });
           }
+
+          logger.info(
+            { totalRawPosts: allPosts.length, addedPosts: events.length - events.filter(e => e.source === "facebook_events_api").length },
+            "Fetched all Facebook posts without AI processing"
+          );
         }
       } catch (error: any) {
         logger.error(
@@ -1260,6 +1361,10 @@ export class FacebookService {
             fromPosts: events.filter(
               (e) => e.source === "facebook_post_ai_extracted"
             ).length,
+            fromRawPosts: events.filter(
+              (e) => e.source === "facebook_post_raw"
+            ).length,
+            usedAI: useAI,
           },
         },
       };

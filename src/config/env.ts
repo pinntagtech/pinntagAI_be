@@ -20,15 +20,27 @@ const EnvSchema = z.object({
     .or(z.string().nonempty().startsWith("mongodb://")),
   ETL_BASE_URL: z.string().nonempty().url().or(z.string().startsWith("http")),
   ETL_API_KEY: z.string().min(1),
-  ENFORCE_INTERNAL_API_KEY: z.coerce.boolean().default(false),
+  ENFORCE_INTERNAL_API_KEY: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
   PINNTAG_BACKEND_TO_AI_KEY: z.string().optional(),
   HTTP_TIMEOUT_MS: z.coerce.number().default(15000),
   HTTP_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
   ETL_API_KEY_HEADER_NAME: z.string().min(1).default("X-API-Key"),
   // Inbound auth config
-  AUTH_REQUIRE_API_KEY: z.coerce.boolean().default(false),
-  AUTH_REQUIRE_BEARER: z.coerce.boolean().default(false),
-  AUTH_REQUIRE_BOTH: z.coerce.boolean().default(false),
+  AUTH_REQUIRE_API_KEY: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
+  AUTH_REQUIRE_BEARER: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
+  AUTH_REQUIRE_BOTH: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
   AUTH_API_KEY_HEADER_NAME: z.string().min(1).default("x-api-key"),
   AUTH_STATIC_API_KEY: z.string().optional(),
   AUTH_BEARER_TOKEN: z.string().optional(),
@@ -48,7 +60,10 @@ const EnvSchema = z.object({
   // Pinntag Backend JWT secret for token verification
   PINNTAG_BACKEND_JWT_SECRET: z.string().min(1),
   // Feature flag to enable/disable AI template generation cron jobs (saves OpenAI quota)
-  ENABLE_AI_TEMPLATE_GENERATION: z.coerce.boolean().default(false),
+  ENABLE_AI_TEMPLATE_GENERATION: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
