@@ -614,6 +614,11 @@ export class FacebookService {
         return;
       }
 
+      logger.info(
+        { businessId, readyState: backendConn.readyState },
+        "Backend connection state for updatePinntagBackendBusiness"
+      );
+
       const BusinessBackendModel = getBackendBusinessModel(backendConn);
 
       // Prepare Facebook metadata matching Pinntag backend schema
@@ -662,7 +667,12 @@ export class FacebookService {
       }
 
       logger.info(
-        { businessId, pageId: facebookData.pageId },
+        {
+          businessId,
+          pageId: facebookData.pageId,
+          isFacebookConnected: result.isFacebookConnected,
+          isFacebookDatafetched: result.isFacebookDatafetched,
+        },
         "Successfully updated Pinntag backend business database"
       );
 
