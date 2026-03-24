@@ -90,8 +90,6 @@ const FacebookPostSchema = new Schema<IFacebookPost>(
     postId: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
     },
     type: {
       type: String,
@@ -199,8 +197,8 @@ FacebookPostSchema.index({ scrapedAt: -1 });
 FacebookPostSchema.index({ businessId: 1, status: 1 });
 FacebookPostSchema.index({ businessId: 1, "aiAnalysis.type": 1, status: 1 });
 
-// Compound index for business + page
-FacebookPostSchema.index({ businessId: 1, facebookPageId: 1, postId: 1 });
+// Compound unique index for business + postId (same post can exist for different businesses)
+FacebookPostSchema.index({ businessId: 1, postId: 1 }, { unique: true });
 
 // Text search index
 FacebookPostSchema.index({
