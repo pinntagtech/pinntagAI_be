@@ -962,12 +962,24 @@ export class FacebookService {
         const backendConn = await getBackendConnection();
         if (backendConn) {
           const BusinessBackendModel = getBackendBusinessModel(backendConn);
-          await BusinessBackendModel.findByIdAndUpdate(businessId, {
+          const updatedBusiness = await BusinessBackendModel.findByIdAndUpdate(businessId, {
             $set: {
               isFacebookDatafetched: true,
               lastFacebookDatafetched: new Date(),
             },
-          });
+          }, { new: true });
+
+          if (updatedBusiness) {
+            logger.info(
+              { businessId, isFacebookDatafetched: updatedBusiness.isFacebookDatafetched },
+              "Updated backend business isFacebookDatafetched"
+            );
+          } else {
+            logger.warn(
+              { businessId },
+              "Backend business not found for isFacebookDatafetched update"
+            );
+          }
         }
       } catch (backendError: any) {
         logger.warn(
