@@ -5,7 +5,7 @@ export interface IFacebookPost extends Document {
   facebookPageId: string;
   postId: string; // Facebook post ID
   type: "post" | "event";
-  source: "facebook_events_api" | "facebook_post_ai_extracted";
+  source: "facebook_events_api" | "facebook_post_ai_extracted" | "facebook_post_raw";
 
   // Post/Event content
   title?: string;
@@ -101,7 +101,7 @@ const FacebookPostSchema = new Schema<IFacebookPost>(
     },
     source: {
       type: String,
-      enum: ["facebook_events_api", "facebook_post_ai_extracted"],
+      enum: ["facebook_events_api", "facebook_post_ai_extracted", "facebook_post_raw"],
       required: true,
     },
 
