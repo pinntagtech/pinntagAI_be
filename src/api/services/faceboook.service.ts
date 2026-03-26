@@ -1,5 +1,6 @@
 import axios from "axios";
 import qs from "qs";
+import mongoose from "mongoose";
 import OpenAI from "openai";
 import { logger } from "../../utils/logger.js";
 import { FacebookPostModel } from "../../models/facebookPost.model.js";
@@ -1927,7 +1928,7 @@ export class FacebookService {
         FacebookPostModel.countDocuments(filter),
         // Get counts for each status type
         FacebookPostModel.aggregate([
-          { $match: { businessId } }, // Match businessId only, ignore other filters for stats
+          { $match: { businessId: new mongoose.Types.ObjectId(businessId) } }, // Match businessId only, ignore other filters for stats
           {
             $group: {
               _id: "$status",
