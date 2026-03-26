@@ -2080,7 +2080,7 @@ export class FacebookService {
 
       // Find and update the post
       const updatedPost = await FacebookPostModel.findOneAndUpdate(
-        { _id: postId, businessId }, // Ensure post belongs to business
+        { postId, businessId }, // Ensure post belongs to business
         { $set: updateData },
         { new: true }
       );
@@ -2148,7 +2148,7 @@ export class FacebookService {
       // Update all posts that match the postIds and businessId
       const result = await FacebookPostModel.updateMany(
         {
-          _id: { $in: postIds },
+          postId: { $in: postIds },
           businessId: businessId,
         },
         {

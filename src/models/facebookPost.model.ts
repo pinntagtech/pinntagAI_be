@@ -90,6 +90,7 @@ const FacebookPostSchema = new Schema<IFacebookPost>(
     postId: {
       type: String,
       required: true,
+      index: true,
     },
     type: {
       type: String,
