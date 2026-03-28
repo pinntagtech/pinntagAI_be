@@ -87,6 +87,14 @@ router.get("/page-data", facebookController.fetchAndSavePageData);
 router.get("/posts/paginated", facebookController.getFacebookPostsPaginated.bind(facebookController));
 
 /**
+ * @route GET /api/facebook/posts/refresh
+ * @desc Refresh Facebook posts & events - fetch new posts from Facebook that don't exist in DB
+ * @headers { Authorization: Bearer <JWT> }
+ * @query { useAI?: boolean (default true), minScore?: number (default 60) }
+ */
+router.get("/posts/refresh", facebookController.refreshFacebookPosts.bind(facebookController));
+
+/**
  * @route PUT /api/facebook/posts/:postId/type
  * @desc Update the type and/or status of a Facebook post
  * @headers { Authorization: Bearer <JWT> }

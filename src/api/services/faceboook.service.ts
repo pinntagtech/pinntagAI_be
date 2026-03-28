@@ -2079,9 +2079,9 @@ export class FacebookService {
         updateData.ignoreNote = ignoreNote;
       }
 
-      // Find and update the post (postId here is the MongoDB _id from route params)
+      // Find and update the post
       const updatedPost = await FacebookPostModel.findOneAndUpdate(
-        { _id: postId, businessId }, // Ensure post belongs to business
+        { postId, businessId }, // Ensure post belongs to business
         { $set: updateData },
         { new: true }
       );

@@ -792,6 +792,73 @@ export class FacebookController {
       });
     }
   }
+  /**
+   * Refresh Facebook posts and events - fetch new posts from Facebook that don't exist in DB
+   * GET /facebook/posts/refresh
+   * Headers: { Authorization: Bearer <JWT> }
+   * Query: { useAI?: boolean, minScore?: number }
+   */
+  async refreshFacebookPosts(req: Request, res: Response) {
+    try {
+      // Extract and decode JWT token to get businessId
+      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      logger.debug("JWT token decoded (unverified)");
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      const useAI = req.query.useAI !== "false";
+      const minScore = req.query.minScore ? parseInt(req.query.minScore as string, 10) : 60;
+
+      logger.info(
+        { businessId, useAI, minScore },
+        "Refreshing Facebook posts"
+      );
+
+      const result = await facebookService.fetchAndSavePageData(businessId, useAI, minScore);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || "Failed to refresh Facebook posts",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+      });
+    } catch (error: any) {
+      logger.error({ error }, "Error in refreshFacebookPosts controller");
+      return res.status(400).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
 }
 
 export const facebookController = new FacebookController();
