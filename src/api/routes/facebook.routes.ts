@@ -25,7 +25,10 @@ router.get("/login-url", getFacebookLoginUrl);
  * @headers { Authorization: Bearer <JWT> }
  * @query { code: string, state: string }
  */
-router.get("/oauth/callback", facebookController.handleOAuthCallback.bind(facebookController));
+router.get(
+  "/oauth/callback",
+  facebookController.handleOAuthCallback.bind(facebookController),
+);
 
 /**
  * @route POST /api/facebook/token
@@ -84,7 +87,10 @@ router.get("/page-data", facebookController.fetchAndSavePageData);
  *   status?: "pending" | "ignored" | "saved" | "imported"
  * }
  */
-router.get("/posts/paginated", facebookController.getFacebookPostsPaginated.bind(facebookController));
+router.get(
+  "/posts/paginated",
+  facebookController.getFacebookPostsPaginated.bind(facebookController),
+);
 
 /**
  * @route GET /api/facebook/posts/refresh
@@ -92,7 +98,10 @@ router.get("/posts/paginated", facebookController.getFacebookPostsPaginated.bind
  * @headers { Authorization: Bearer <JWT> }
  * @query { useAI?: boolean (default true), minScore?: number (default 60) }
  */
-router.get("/posts/refresh", facebookController.refreshFacebookPosts.bind(facebookController));
+router.get(
+  "/posts/refresh",
+  facebookController.refreshFacebookPosts.bind(facebookController),
+);
 
 /**
  * @route PUT /api/facebook/posts/:postId/type
@@ -105,7 +114,10 @@ router.get("/posts/refresh", facebookController.refreshFacebookPosts.bind(facebo
  *   ignoreNote?: string (required if ignoreReason is "other")
  * }
  */
-router.put("/posts/:postId/type", facebookController.updateFacebookPostType.bind(facebookController));
+router.put(
+  "/posts/:postId/type",
+  facebookController.updateFacebookPostType.bind(facebookController),
+);
 
 /**
  * @route POST /api/facebook/posts/bulk-import
@@ -115,6 +127,19 @@ router.put("/posts/:postId/type", facebookController.updateFacebookPostType.bind
  *   postIds: string[]
  * }
  */
-router.post("/posts/bulk-import", facebookController.markPostsAsImported.bind(facebookController));
+router.post(
+  "/posts/bulk-import",
+  facebookController.markPostsAsImported.bind(facebookController),
+);
+
+/**
+ * @route POST /api/facebook/disconnect
+ * @desc Disconnect Facebook page from a business
+ * @headers { Authorization: Bearer <JWT> }
+ */
+router.post(
+  "/disconnect",
+  facebookController.disconnectFacebook.bind(facebookController),
+);
 
 export { router as facebookRoutes };

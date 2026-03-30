@@ -39,7 +39,8 @@ export class FacebookController {
       }
 
       // Extract and decode JWT token to get businessId
-      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
 
       if (!authHeader || typeof authHeader !== "string") {
         return res.status(401).json({
@@ -49,7 +50,9 @@ export class FacebookController {
       }
 
       // Decode JWT token (we only need to decode, not verify, to extract businessProfile)
-      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
       const decodedToken = jwtService.decode(token);
 
       if (!decodedToken) {
@@ -74,15 +77,15 @@ export class FacebookController {
           userId: decodedToken.id,
           userType: decodedToken.userType,
           businessId,
-          state
+          state,
         },
-        "Decoded JWT token for Facebook OAuth callback"
+        "Decoded JWT token for Facebook OAuth callback",
       );
 
       // TODO: Verify state parameter against stored session value
       logger.info(
         { state, businessId },
-        "IMPORTANT: Verify this state matches your stored session value"
+        "IMPORTANT: Verify this state matches your stored session value",
       );
 
       // Get redirect URI from environment variable
@@ -97,13 +100,13 @@ export class FacebookController {
 
       logger.info(
         { codeLength: code.length, state, businessId },
-        "Processing Facebook OAuth callback - Complete flow"
+        "Processing Facebook OAuth callback - Complete flow",
       );
 
       // Step 1: Exchange code for short-lived access token
       const shortTokenResult = await facebookService.exchangeCodeForToken(
         code,
-        redirectUri
+        redirectUri,
       );
 
       if (!shortTokenResult.success) {
@@ -118,9 +121,8 @@ export class FacebookController {
       logger.info("Step 1: Obtained short-lived token");
 
       // Step 2: Exchange short-lived token for long-lived token
-      const longTokenResult = await facebookService.fetchLongLivedToken(
-        shortLivedToken
-      );
+      const longTokenResult =
+        await facebookService.fetchLongLivedToken(shortLivedToken);
 
       if (!longTokenResult.success) {
         return res.status(400).json({
@@ -135,7 +137,7 @@ export class FacebookController {
       // Step 3-4: Complete OAuth flow - Get page token, fetch metadata, save to database
       const oauthResult = await facebookService.completeOAuthFlow(
         longLivedToken,
-        businessId
+        businessId,
       );
 
       if (!oauthResult.success) {
@@ -151,7 +153,7 @@ export class FacebookController {
           pageId: oauthResult.data.pageId,
           pageName: oauthResult.data.pageMetadata?.name,
         },
-        "Step 3-4: Successfully completed OAuth flow and saved to database"
+        "Step 3-4: Successfully completed OAuth flow and saved to database",
       );
 
       // Step 5: Return complete page information
@@ -237,14 +239,14 @@ export class FacebookController {
 
       logger.info(
         { useAI: useAIFiltering, minScore: minAIScore },
-        "Fetching Facebook posts for Pinntag filtering"
+        "Fetching Facebook posts for Pinntag filtering",
       );
 
       // Fetch and filter posts
       const result = await facebookService.getAllPostsForPinntag(
         token,
         useAIFiltering,
-        minAIScore
+        minAIScore,
       );
 
       if (!result.success || !result.data) {
@@ -260,7 +262,7 @@ export class FacebookController {
           filtered: result.data.filtered,
           filterMethod: result.data.filterMethod,
         },
-        `Successfully fetched and filtered Facebook posts: ${result.data.filtered} out of ${result.data.total} posts are suitable for Pinntag`
+        `Successfully fetched and filtered Facebook posts: ${result.data.filtered} out of ${result.data.total} posts are suitable for Pinntag`,
       );
 
       return res.status(200).json({
@@ -310,14 +312,14 @@ export class FacebookController {
 
       logger.info(
         { useAI: useAIFiltering, minScore: minAIScore },
-        "Fetching Facebook posts for Pinntag filtering (POST)"
+        "Fetching Facebook posts for Pinntag filtering (POST)",
       );
 
       // Fetch and filter posts
       const result = await facebookService.getAllPostsForPinntag(
         token,
         useAIFiltering,
-        minAIScore
+        minAIScore,
       );
 
       if (!result.success || !result.data) {
@@ -333,7 +335,7 @@ export class FacebookController {
           filtered: result.data.filtered,
           filterMethod: result.data.filterMethod,
         },
-        `Successfully fetched and filtered Facebook posts: ${result.data.filtered} out of ${result.data.total} posts are suitable for Pinntag`
+        `Successfully fetched and filtered Facebook posts: ${result.data.filtered} out of ${result.data.total} posts are suitable for Pinntag`,
       );
 
       return res.status(200).json({
@@ -403,14 +405,14 @@ export class FacebookController {
 
       logger.info(
         { businessId, useAI: useAIFiltering, minScore: minAIScore },
-        "Fetching and saving Facebook page data using saved token"
+        "Fetching and saving Facebook page data using saved token",
       );
 
       // Fetch, save, and filter data (token retrieved from database)
       const result = await facebookService.fetchAndSavePageData(
         businessId,
         useAIFiltering,
-        minAIScore
+        minAIScore,
       );
 
       if (!result.success) {
@@ -425,7 +427,7 @@ export class FacebookController {
           businessId,
           summary: result.data?.summary,
         },
-        "Successfully fetched, saved, and filtered Facebook page data"
+        "Successfully fetched, saved, and filtered Facebook page data",
       );
 
       return res.status(200).json({
@@ -459,13 +461,13 @@ export class FacebookController {
 
       logger.info(
         { hasBusinessId: !!businessId, hasPageId: !!pageId },
-        "Generating long-lived page access token"
+        "Generating long-lived page access token",
       );
 
       const result = await facebookService.generateLongLivedPageToken(
         pageAccessToken,
         businessId,
-        pageId
+        pageId,
       );
 
       if (result.success) {
@@ -490,7 +492,8 @@ export class FacebookController {
       const { page, limit, type, minScore, status } = req.query;
 
       // Extract and decode JWT token to get businessId
-      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
 
       if (!authHeader || typeof authHeader !== "string") {
         return res.status(401).json({
@@ -499,7 +502,9 @@ export class FacebookController {
         });
       }
 
-      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
       const decodedToken = jwtService.decode(token);
 
       if (!decodedToken) {
@@ -521,7 +526,9 @@ export class FacebookController {
       // Parse optional parameters
       const pageNum = page ? parseInt(page as string, 10) : 1;
       const limitNum = limit ? parseInt(limit as string, 10) : 10;
-      const minScoreNum = minScore ? parseInt(minScore as string, 10) : undefined;
+      const minScoreNum = minScore
+        ? parseInt(minScore as string, 10)
+        : undefined;
 
       // Validate type if provided
       const validTypes = ["event", "offer", "spotlight", "flashlight"];
@@ -542,8 +549,15 @@ export class FacebookController {
       }
 
       logger.info(
-        { businessId, page: pageNum, limit: limitNum, type, minScore: minScoreNum, status },
-        "Fetching Facebook posts with pagination"
+        {
+          businessId,
+          page: pageNum,
+          limit: limitNum,
+          type,
+          minScore: minScoreNum,
+          status,
+        },
+        "Fetching Facebook posts with pagination",
       );
 
       const result = await facebookService.getFacebookPostsPaginated(
@@ -552,7 +566,7 @@ export class FacebookController {
         limitNum,
         type as "event" | "offer" | "spotlight" | "flashlight" | undefined,
         minScoreNum,
-        status as "pending" | "ignored" | "saved" | "imported" | undefined
+        status as "pending" | "ignored" | "saved" | "imported" | undefined,
       );
 
       if (!result.success) {
@@ -595,7 +609,8 @@ export class FacebookController {
       }
 
       // Extract and decode JWT token to get businessId
-      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
 
       if (!authHeader || typeof authHeader !== "string") {
         return res.status(401).json({
@@ -604,7 +619,9 @@ export class FacebookController {
         });
       }
 
-      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
       const decodedToken = jwtService.decode(token);
 
       if (!decodedToken) {
@@ -661,7 +678,12 @@ export class FacebookController {
         }
 
         // Validate ignoreReason
-        const validReasons = ["not_relevant", "personal_casual", "duplicate", "other"];
+        const validReasons = [
+          "not_relevant",
+          "personal_casual",
+          "duplicate",
+          "other",
+        ];
         if (!validReasons.includes(ignoreReason)) {
           return res.status(400).json({
             success: false,
@@ -680,7 +702,7 @@ export class FacebookController {
 
       logger.info(
         { postId, businessId, type, status, ignoreReason },
-        "Updating Facebook post"
+        "Updating Facebook post",
       );
 
       const result = await facebookService.updateFacebookPostType(
@@ -688,8 +710,13 @@ export class FacebookController {
         businessId,
         type as "event" | "offer" | "spotlight" | "flashlight" | undefined,
         status as "pending" | "ignored" | "saved" | "imported" | undefined,
-        ignoreReason as "not_relevant" | "personal_casual" | "duplicate" | "other" | undefined,
-        ignoreNote
+        ignoreReason as
+          | "not_relevant"
+          | "personal_casual"
+          | "duplicate"
+          | "other"
+          | undefined,
+        ignoreNote,
       );
 
       if (!result.success) {
@@ -745,7 +772,8 @@ export class FacebookController {
       }
 
       // Extract and decode JWT token to get businessId
-      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
 
       if (!authHeader || typeof authHeader !== "string") {
         return res.status(401).json({
@@ -754,7 +782,9 @@ export class FacebookController {
         });
       }
 
-      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
       const decodedToken = jwtService.decode(token);
 
       if (!decodedToken) {
@@ -776,7 +806,7 @@ export class FacebookController {
       // Call service method
       const result = await facebookService.bulkMarkPostsAsImported(
         postIds,
-        businessId
+        businessId,
       );
 
       if (!result.success) {
@@ -801,7 +831,8 @@ export class FacebookController {
   async refreshFacebookPosts(req: Request, res: Response) {
     try {
       // Extract and decode JWT token to get businessId
-      const authHeader = req.headers.authorization || req.headers["Authorization" as any];
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
 
       if (!authHeader || typeof authHeader !== "string") {
         return res.status(401).json({
@@ -810,7 +841,9 @@ export class FacebookController {
         });
       }
 
-      const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
       logger.debug("JWT token decoded (unverified)");
       const decodedToken = jwtService.decode(token);
 
@@ -831,14 +864,17 @@ export class FacebookController {
       }
 
       const useAI = req.query.useAI !== "false";
-      const minScore = req.query.minScore ? parseInt(req.query.minScore as string, 10) : 60;
+      const minScore = req.query.minScore
+        ? parseInt(req.query.minScore as string, 10)
+        : 60;
 
-      logger.info(
-        { businessId, useAI, minScore },
-        "Refreshing Facebook posts"
+      logger.info({ businessId, useAI, minScore }, "Refreshing Facebook posts");
+
+      const result = await facebookService.fetchAndSavePageData(
+        businessId,
+        useAI,
+        minScore,
       );
-
-      const result = await facebookService.fetchAndSavePageData(businessId, useAI, minScore);
 
       if (!result.success) {
         return res.status(400).json({
@@ -854,6 +890,69 @@ export class FacebookController {
     } catch (error: any) {
       logger.error({ error }, "Error in refreshFacebookPosts controller");
       return res.status(400).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
+   * Disconnect Facebook page from a business
+   * POST /facebook/disconnect
+   * Headers: { Authorization: Bearer <JWT> }
+   */
+  async disconnectFacebook(req: Request, res: Response) {
+    try {
+      // Extract and decode JWT token to get businessId
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      logger.info({ businessId }, "Disconnecting Facebook account");
+
+      const result = await facebookService.disconnectFacebook(businessId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: result.error || "Failed to disconnect Facebook",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Facebook disconnected successfully",
+      });
+    } catch (error: any) {
+      logger.error({ error }, "Error in disconnectFacebook controller");
+      return res.status(500).json({
         success: false,
         error: error.message || "Internal server error",
       });

@@ -73,7 +73,7 @@ export class FacebookService {
    */
   getLoginUrl(
     redirectUri: string,
-    scope: string[] = ["public_profile", "email", "user_posts"]
+    scope: string[] = ["public_profile", "email", "user_posts"],
   ) {
     const clientId = process.env.FACEBOOK_CLIENT_ID;
     const scopeString = scope.join(",");
@@ -104,13 +104,13 @@ export class FacebookService {
             .replace(clientSecret!, "***SECRET***")
             .replace(code, "***CODE***"),
         },
-        "Attempting to exchange code for token"
+        "Attempting to exchange code for token",
       );
 
       const response = await axios.request(config);
       logger.info(
         { data: response.data },
-        "Exchanged code for short-lived token"
+        "Exchanged code for short-lived token",
       );
       return {
         success: true,
@@ -125,7 +125,7 @@ export class FacebookService {
           clientId,
           redirectUri,
         },
-        "Error exchanging code for token"
+        "Error exchanging code for token",
       );
       return {
         success: false,
@@ -158,7 +158,7 @@ export class FacebookService {
       .catch((error) => {
         logger.error(
           { error: error.message },
-          "Error fetching long-lived token"
+          "Error fetching long-lived token",
         );
         return {
           success: false,
@@ -187,7 +187,7 @@ export class FacebookService {
   async generateLongLivedPageToken(
     pageAccessToken: string,
     businessId?: string,
-    pageId?: string
+    pageId?: string,
   ) {
     try {
       const client_id = process.env.FACEBOOK_CLIENT_ID;
@@ -206,7 +206,7 @@ export class FacebookService {
         const pageInfoResponse = await axios.request(pageInfoConfig);
         console.log(
           pageInfoResponse.data,
-          "############ fetched page info ############"
+          "############ fetched page info ############",
         );
         const pageData = pageInfoResponse.data;
 
@@ -230,12 +230,12 @@ export class FacebookService {
             pageName: pageData.name,
             category: pageData.category,
           },
-          "Fetched comprehensive page metadata from page access token"
+          "Fetched comprehensive page metadata from page access token",
         );
       } catch (pageInfoError: any) {
         logger.warn(
           { error: pageInfoError.message },
-          "Could not fetch page metadata from token, continuing without it"
+          "Could not fetch page metadata from token, continuing without it",
         );
       }
 
@@ -257,14 +257,13 @@ export class FacebookService {
           businessId,
           pageId: resolvedPageId,
         },
-        "Generated long-lived page access token"
+        "Generated long-lived page access token",
       );
 
       // If businessId is provided, save the token to database
       if (businessId) {
-        const { BusinessAIAssistantModel } = await import(
-          "../../models/businessAIAssistant.model.js"
-        );
+        const { BusinessAIAssistantModel } =
+          await import("../../models/businessAIAssistant.model.js");
 
         // Calculate expiration date
         // If expires_in is not provided, default to 60 days (5184000 seconds)
@@ -272,22 +271,25 @@ export class FacebookService {
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
 
-        const facebookMetaData = resolvedPageId && pageMetadata ? {
-          pageId: resolvedPageId,
-          pageAccessToken: longLivedToken,
-          tokenExpiresAt: expiresAt,
-          pageInfo: {
-            name: pageMetadata.name,
-            about: pageMetadata.about,
-            category: pageMetadata.category,
-            followers: pageMetadata.followers,
-            website: pageMetadata.website,
-            phone: pageMetadata.phone,
-            email: pageMetadata.email,
-            profilePicture: pageMetadata.profilePicture,
-            coverPhoto: pageMetadata.coverPhoto,
-          },
-        } : undefined;
+        const facebookMetaData =
+          resolvedPageId && pageMetadata
+            ? {
+                pageId: resolvedPageId,
+                pageAccessToken: longLivedToken,
+                tokenExpiresAt: expiresAt,
+                pageInfo: {
+                  name: pageMetadata.name,
+                  about: pageMetadata.about,
+                  category: pageMetadata.category,
+                  followers: pageMetadata.followers,
+                  website: pageMetadata.website,
+                  phone: pageMetadata.phone,
+                  email: pageMetadata.email,
+                  profilePicture: pageMetadata.profilePicture,
+                  coverPhoto: pageMetadata.coverPhoto,
+                },
+              }
+            : undefined;
 
         const updateData: any = {
           facebookPageAccessToken: longLivedToken,
@@ -320,7 +322,7 @@ export class FacebookService {
         const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
           { businessId },
           { $set: updateData },
-          { new: true }
+          { new: true },
         );
 
         if (!updatedBusiness) {
@@ -338,7 +340,7 @@ export class FacebookService {
             expiresAt,
             pageName: pageMetadata?.name,
           },
-          "Saved long-lived page access token and metadata to database"
+          "Saved long-lived page access token and metadata to database",
         );
 
         return {
@@ -398,7 +400,7 @@ export class FacebookService {
           error: error.message,
           response: error.response?.data,
         },
-        "Error generating long-lived page access token"
+        "Error generating long-lived page access token",
       );
       return {
         success: false,
@@ -441,7 +443,7 @@ export class FacebookService {
 
       logger.info(
         { pageId, pageName, totalPages: pages.length },
-        "Found pages, using first page"
+        "Found pages, using first page",
       );
 
       // Step 2: Fetch comprehensive page metadata
@@ -468,13 +470,12 @@ export class FacebookService {
 
       logger.info(
         { pageId, pageName: pageData.name, category: pageData.category },
-        "Fetched comprehensive page metadata"
+        "Fetched comprehensive page metadata",
       );
 
       // Step 3: Save to database
-      const { BusinessAIAssistantModel } = await import(
-        "../../models/businessAIAssistant.model.js"
-      );
+      const { BusinessAIAssistantModel } =
+        await import("../../models/businessAIAssistant.model.js");
 
       // Calculate expiration date (page tokens from /me/accounts are already long-lived, ~60 days)
       const expiresAt = new Date();
@@ -518,7 +519,7 @@ export class FacebookService {
       const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
         { businessId },
         { $set: updateData },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedBusiness) {
@@ -531,7 +532,7 @@ export class FacebookService {
 
       logger.info(
         { businessId, pageId, pageName: pageMetadata.name },
-        "Successfully saved page access token and metadata to AI assistant database"
+        "Successfully saved page access token and metadata to AI assistant database",
       );
 
       // Step 4: Update Pinntag backend business schema
@@ -544,12 +545,12 @@ export class FacebookService {
         });
         logger.info(
           { businessId, pageId },
-          "Successfully updated Pinntag backend business with Facebook data"
+          "Successfully updated Pinntag backend business with Facebook data",
         );
       } catch (backendError: any) {
         logger.error(
           { error: backendError.message, businessId },
-          "Failed to update Pinntag backend, but AI assistant data was saved successfully"
+          "Failed to update Pinntag backend, but AI assistant data was saved successfully",
         );
         // Don't fail the whole flow if backend update fails
       }
@@ -579,7 +580,7 @@ export class FacebookService {
           error: error.message,
           response: error.response?.data,
         },
-        "Error completing OAuth flow"
+        "Error completing OAuth flow",
       );
       return {
         success: false,
@@ -599,25 +600,24 @@ export class FacebookService {
       pageAccessToken: string;
       expiresAt: Date;
       pageMetadata: any;
-    }
+    },
   ) {
     try {
-      const { getBackendBusinessModel } = await import(
-        "../../models/pinntagBackend/business.model.js"
-      );
+      const { getBackendBusinessModel } =
+        await import("../../models/pinntagBackend/business.model.js");
       const { getBackendConnection } = await import("../../db/connection.js");
 
       const backendConn = await getBackendConnection();
       if (!backendConn) {
         logger.warn(
-          "Pinntag backend database connection not available, skipping update"
+          "Pinntag backend database connection not available, skipping update",
         );
         return;
       }
 
       logger.info(
         { businessId, readyState: backendConn.readyState },
-        "Backend connection state for updatePinntagBackendBusiness"
+        "Backend connection state for updatePinntagBackendBusiness",
       );
 
       const BusinessBackendModel = getBackendBusinessModel(backendConn);
@@ -642,7 +642,7 @@ export class FacebookService {
 
       logger.info(
         { businessId, pageId: facebookData.pageId },
-        "Updating Pinntag backend business database with Facebook data"
+        "Updating Pinntag backend business database with Facebook data",
       );
 
       // Update the business document
@@ -656,13 +656,13 @@ export class FacebookService {
             lastFacebookDatafetched: null,
           },
         },
-        { new: true }
+        { new: true },
       );
 
       if (!result) {
         logger.warn(
           { businessId },
-          "Business not found in Pinntag backend database"
+          "Business not found in Pinntag backend database",
         );
         return;
       }
@@ -674,7 +674,7 @@ export class FacebookService {
           isFacebookConnected: result.isFacebookConnected,
           isFacebookDatafetched: result.isFacebookDatafetched,
         },
-        "Successfully updated Pinntag backend business database"
+        "Successfully updated Pinntag backend business database",
       );
 
       return {
@@ -687,7 +687,7 @@ export class FacebookService {
           error: error.message,
           businessId,
         },
-        "Error updating Pinntag backend business database"
+        "Error updating Pinntag backend business database",
       );
       throw error;
     }
@@ -696,7 +696,7 @@ export class FacebookService {
   async createSocialPost(
     token: string,
     message: string,
-    mediaIds: Array<string>
+    mediaIds: Array<string>,
   ) {
     const data: { message: string; [key: string]: string } = {
       message,
@@ -768,7 +768,7 @@ export class FacebookService {
           success: false,
           data: error.message,
         };
-      }
+      },
     );
     return result;
   }
@@ -783,15 +783,13 @@ export class FacebookService {
   async fetchAndSavePageData(
     businessId: string,
     useAI: boolean = true,
-    minScore: number = 60
+    minScore: number = 60,
   ) {
     try {
-      const { FacebookPostModel } = await import(
-        "../../models/facebookPost.model.js"
-      );
-      const { BusinessAIAssistantModel } = await import(
-        "../../models/businessAIAssistant.model.js"
-      );
+      const { FacebookPostModel } =
+        await import("../../models/facebookPost.model.js");
+      const { BusinessAIAssistantModel } =
+        await import("../../models/businessAIAssistant.model.js");
 
       // Fetch business and get saved Facebook token
       const business = await BusinessAIAssistantModel.findOne({ businessId });
@@ -822,7 +820,7 @@ export class FacebookService {
         if (business.facebookPageTokenExpiresAt < now) {
           logger.warn(
             { businessId, expiresAt: business.facebookPageTokenExpiresAt },
-            "Facebook page access token has expired"
+            "Facebook page access token has expired",
           );
           return {
             success: false,
@@ -834,7 +832,7 @@ export class FacebookService {
 
       logger.info(
         { businessId, pageId },
-        "Using saved Facebook token to fetch page data"
+        "Using saved Facebook token to fetch page data",
       );
 
       // Fetch all posts and events (pass useAI to control AI processing)
@@ -863,7 +861,7 @@ export class FacebookService {
           if (existingPost) {
             logger.info(
               { postId: item.id, businessId },
-              "Post already exists in database, skipping"
+              "Post already exists in database, skipping",
             );
             skippedPosts.push({
               postId: item.id,
@@ -930,12 +928,12 @@ export class FacebookService {
           savedPosts.push(savedPost);
           logger.info(
             { postId: item.id, businessId },
-            "Successfully saved new post to database"
+            "Successfully saved new post to database",
           );
         } catch (saveError: any) {
           logger.error(
             { error: saveError.message, postId: item.id },
-            "Error saving post to database"
+            "Error saving post to database",
           );
           skippedPosts.push({ postId: item.id, error: saveError.message });
         }
@@ -949,7 +947,7 @@ export class FacebookService {
           saved: savedPosts.length,
           skipped: skippedPosts.length,
         },
-        "Completed saving Facebook data to database"
+        "Completed saving Facebook data to database",
       );
 
       // Update business_ai_assistant with data fetch timestamp
@@ -960,42 +958,48 @@ export class FacebookService {
             isFacebookDataFetched: true,
             lastFacebookDataFetched: new Date(),
           },
-        }
+        },
       );
 
       // Update pinntagBackend business with data fetch timestamp
       try {
-        const { getBackendBusinessModel } = await import(
-          "../../models/pinntagBackend/business.model.js"
-        );
+        const { getBackendBusinessModel } =
+          await import("../../models/pinntagBackend/business.model.js");
         const { getBackendConnection } = await import("../../db/connection.js");
 
         const backendConn = await getBackendConnection();
         if (backendConn) {
           const BusinessBackendModel = getBackendBusinessModel(backendConn);
-          const updatedBusiness = await BusinessBackendModel.findByIdAndUpdate(businessId, {
-            $set: {
-              isFacebookDatafetched: true,
-              lastFacebookDatafetched: new Date(),
+          const updatedBusiness = await BusinessBackendModel.findByIdAndUpdate(
+            businessId,
+            {
+              $set: {
+                isFacebookDatafetched: true,
+                lastFacebookDatafetched: new Date(),
+              },
             },
-          }, { new: true });
+            { new: true },
+          );
 
           if (updatedBusiness) {
             logger.info(
-              { businessId, isFacebookDatafetched: updatedBusiness.isFacebookDatafetched },
-              "Updated backend business isFacebookDatafetched"
+              {
+                businessId,
+                isFacebookDatafetched: updatedBusiness.isFacebookDatafetched,
+              },
+              "Updated backend business isFacebookDatafetched",
             );
           } else {
             logger.warn(
               { businessId },
-              "Backend business not found for isFacebookDatafetched update"
+              "Backend business not found for isFacebookDatafetched update",
             );
           }
         }
       } catch (backendError: any) {
         logger.warn(
           { error: backendError.message },
-          "Failed to update backend business data fetch timestamp"
+          "Failed to update backend business data fetch timestamp",
         );
       }
 
@@ -1013,7 +1017,7 @@ export class FacebookService {
             filtered: filteredPosts.length,
             minScore,
           },
-          "Applied AI filtering to saved posts"
+          "Applied AI filtering to saved posts",
         );
       }
 
@@ -1038,7 +1042,7 @@ export class FacebookService {
           error: error.message,
           businessId,
         },
-        "Error in fetchAndSavePageData"
+        "Error in fetchAndSavePageData",
       );
       return {
         success: false,
@@ -1123,7 +1127,7 @@ export class FacebookService {
 
         logger.info(
           { totalFbEvents: fbEvents.length, futureEvents: events.length },
-          "Fetched Facebook Events API"
+          "Fetched Facebook Events API",
         );
 
         // ============================================================================
@@ -1131,7 +1135,11 @@ export class FacebookService {
         // ============================================================================
         if (useAI) {
           // AI flow: Analyze posts with AI (OCR for event flyers, title generation, filtering)
-          const postsResponse = await this.getAllPostsForPinntag(token, true, 80);
+          const postsResponse = await this.getAllPostsForPinntag(
+            token,
+            true,
+            80,
+          );
 
           if (postsResponse.success && postsResponse.data?.posts) {
             for (const post of postsResponse.data.posts) {
@@ -1140,7 +1148,7 @@ export class FacebookService {
               if (eventIds.has(postEventId)) {
                 logger.info(
                   { postId: post.id, eventId: postEventId },
-                  "Skipping auto-generated event post (already in Events API)"
+                  "Skipping auto-generated event post (already in Events API)",
                 );
                 continue;
               }
@@ -1156,10 +1164,10 @@ export class FacebookService {
               if (!schedule || !schedule.startDate) {
                 // Fallback: Try to extract date/time from AI reason or post message
                 const dateMatch = aiReason.match(
-                  /(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i
+                  /(?:on|at)?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2})/i,
                 );
                 const timeMatch = aiReason.match(
-                  /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i
+                  /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i,
                 );
 
                 let eventDate = null;
@@ -1254,7 +1262,9 @@ export class FacebookService {
         } else {
           // Non-AI flow: Fetch all posts and use caption directly
           // Title = first 100 words of caption, Description = full caption
-          logger.info("Using non-AI flow: fetching all posts with raw captions");
+          logger.info(
+            "Using non-AI flow: fetching all posts with raw captions",
+          );
 
           const postsConfig = {
             method: "get",
@@ -1274,7 +1284,7 @@ export class FacebookService {
             if (eventIds.has(postEventId)) {
               logger.info(
                 { postId: post.id, eventId: postEventId },
-                "Skipping auto-generated event post (already in Events API)"
+                "Skipping auto-generated event post (already in Events API)",
               );
               continue;
             }
@@ -1282,12 +1292,18 @@ export class FacebookService {
             const caption = post.message || post.story || "";
 
             // Skip posts with no content at all
-            if (!caption && !post.full_picture && !post.attachments?.data?.length) {
+            if (
+              !caption &&
+              !post.full_picture &&
+              !post.attachments?.data?.length
+            ) {
               continue;
             }
 
             // Title: first 100 words of the caption
-            const words = caption.split(/\s+/).filter((w: string) => w.length > 0);
+            const words = caption
+              .split(/\s+/)
+              .filter((w: string) => w.length > 0);
             const title = words.slice(0, 100).join(" ") || "Untitled Post";
 
             // Description: full caption
@@ -1346,21 +1362,26 @@ export class FacebookService {
           }
 
           logger.info(
-            { totalRawPosts: allPosts.length, addedPosts: events.length - events.filter(e => e.source === "facebook_events_api").length },
-            "Fetched all Facebook posts without AI processing"
+            {
+              totalRawPosts: allPosts.length,
+              addedPosts:
+                events.length -
+                events.filter((e) => e.source === "facebook_events_api").length,
+            },
+            "Fetched all Facebook posts without AI processing",
           );
         }
       } catch (error: any) {
         logger.error(
           { error: error.message },
-          "Error in getAllPosts processing"
+          "Error in getAllPosts processing",
         );
         throw error;
       }
 
       logger.info(
         { totalEvents: events.length },
-        "Completed event extraction from Events API and Posts"
+        "Completed event extraction from Events API and Posts",
       );
 
       return {
@@ -1379,14 +1400,13 @@ export class FacebookService {
           summary: {
             totalEvents: events.length,
             fromEventsApi: events.filter(
-              (e) => e.source === "facebook_events_api"
+              (e) => e.source === "facebook_events_api",
             ).length,
             fromPosts: events.filter(
-              (e) => e.source === "facebook_post_ai_extracted"
+              (e) => e.source === "facebook_post_ai_extracted",
             ).length,
-            fromRawPosts: events.filter(
-              (e) => e.source === "facebook_post_raw"
-            ).length,
+            fromRawPosts: events.filter((e) => e.source === "facebook_post_raw")
+              .length,
             usedAI: useAI,
           },
         },
@@ -1398,7 +1418,7 @@ export class FacebookService {
           response: error.response?.data,
           status: error.response?.status,
         },
-        "Error fetching all posts/events"
+        "Error fetching all posts/events",
       );
       return {
         success: false,
@@ -1461,7 +1481,7 @@ export class FacebookService {
       ];
 
       const hasNonBusinessKeywords = nonBusinessKeywords.some((keyword) =>
-        message.includes(keyword)
+        message.includes(keyword),
       );
 
       if (hasNonBusinessKeywords) {
@@ -1482,7 +1502,9 @@ export class FacebookService {
         hasAttachments &&
         post.attachments.data.some(
           (att: any) =>
-            att.type === "photo" || att.type === "video" || att.type === "album"
+            att.type === "photo" ||
+            att.type === "video" ||
+            att.type === "album",
         );
       const hasMeaningfulText = hasMessage && post.message.length > 20;
       const hasGoodEngagement = totalEngagement >= 5;
@@ -1515,7 +1537,7 @@ export class FacebookService {
         commentsCount: post.comments?.summary?.total_count || 0,
         sharesCount: post.shares?.count || 0,
         attachmentDescriptions: attachmentsData.map(
-          (att) => att.description || att.title || ""
+          (att) => att.description || att.title || "",
         ),
       };
 
@@ -1589,10 +1611,10 @@ export class FacebookService {
         - Media Types: ${postData.mediaTypes.join(", ")}
         - Number of Images: ${imageUrls.length}
         - Engagement: ${postData.reactionsCount} reactions, ${
-        postData.commentsCount
-      } comments, ${postData.sharesCount} shares
+          postData.commentsCount
+        } comments, ${postData.sharesCount} shares
         - Attachment Descriptions: ${postData.attachmentDescriptions.join(
-          " | "
+          " | ",
         )}
 
         TYPE CLASSIFICATION (choose ONE):
@@ -1643,7 +1665,7 @@ export class FacebookService {
       if (imageUrls.length > 0) {
         logger.info(
           { postId: post.id, imageCount: imageUrls.length },
-          "Fetching images for multimodal AI analysis"
+          "Fetching images for multimodal AI analysis",
         );
 
         for (const imageUrl of imageUrls.slice(0, 3)) {
@@ -1655,7 +1677,7 @@ export class FacebookService {
             });
 
             const base64Image = Buffer.from(imageResponse.data).toString(
-              "base64"
+              "base64",
             );
             const mimeType =
               imageResponse.headers["content-type"] || "image/jpeg";
@@ -1670,12 +1692,12 @@ export class FacebookService {
 
             logger.info(
               { postId: post.id, imageUrl, mimeType },
-              "Successfully fetched image for analysis"
+              "Successfully fetched image for analysis",
             );
           } catch (imageError: any) {
             logger.warn(
               { postId: post.id, imageUrl, error: imageError.message },
-              "Failed to fetch image for analysis, continuing without it"
+              "Failed to fetch image for analysis, continuing without it",
             );
           }
         }
@@ -1704,7 +1726,7 @@ export class FacebookService {
           hadImages: imageUrls.length > 0,
           imagesAnalyzed: messageContent.length - 1,
         },
-        "AI analysis for post (with image analysis)"
+        "AI analysis for post (with image analysis)",
       );
 
       const analysis: AIAnalysisResult = JSON.parse(responseText);
@@ -1736,7 +1758,7 @@ export class FacebookService {
     } catch (error: any) {
       logger.error(
         { postId: post.id, error: error.message },
-        "Error analyzing post with AI"
+        "Error analyzing post with AI",
       );
       // Fallback to false if AI analysis fails
       return {
@@ -1752,14 +1774,14 @@ export class FacebookService {
    */
   async filterPostsWithAI(
     posts: any[],
-    minScore: number = 60
+    minScore: number = 60,
   ): Promise<Array<{ post: FacebookPost; aiAnalysis: AIAnalysisResult }>> {
     const results: Array<{ post: FacebookPost; aiAnalysis: AIAnalysisResult }> =
       [];
 
     logger.info(
       { totalPosts: posts.length, minScore },
-      "Starting AI filtering of posts"
+      "Starting AI filtering of posts",
     );
 
     // Process posts in parallel with concurrency limit
@@ -1773,7 +1795,7 @@ export class FacebookService {
             post,
             aiAnalysis: analysis,
           };
-        })
+        }),
       );
 
       results.push(...batchResults);
@@ -1782,7 +1804,7 @@ export class FacebookService {
     // Filter based on suitability and minimum score
     const filtered = results.filter(
       (result) =>
-        result.aiAnalysis.suitable && result.aiAnalysis.score >= minScore
+        result.aiAnalysis.suitable && result.aiAnalysis.score >= minScore,
     );
 
     logger.info(
@@ -1791,7 +1813,7 @@ export class FacebookService {
         analyzed: results.length,
         suitable: filtered.length,
       },
-      "AI filtering completed"
+      "AI filtering completed",
     );
 
     return filtered;
@@ -1806,7 +1828,7 @@ export class FacebookService {
   async getAllPostsForPinntag(
     token: string,
     useAI: boolean = true,
-    minScore: number = 60
+    minScore: number = 60,
   ) {
     try {
       const config = {
@@ -1827,7 +1849,7 @@ export class FacebookService {
           logger.info("Using AI-based filtering for Facebook posts");
           const aiFilteredResults = await this.filterPostsWithAI(
             allPosts,
-            minScore
+            minScore,
           );
 
           return {
@@ -1891,12 +1913,11 @@ export class FacebookService {
     limit: number = 10,
     type?: "event" | "offer" | "spotlight" | "flashlight",
     minScore?: number,
-    status?: "pending" | "ignored" | "saved" | "imported"
+    status?: "pending" | "ignored" | "saved" | "imported",
   ) {
     try {
-      const { FacebookPostModel } = await import(
-        "../../models/facebookPost.model.js"
-      );
+      const { FacebookPostModel } =
+        await import("../../models/facebookPost.model.js");
 
       // Validate and sanitize inputs
       const pageNum = Math.max(1, page);
@@ -1971,7 +1992,7 @@ export class FacebookService {
           status,
           stats,
         },
-        "Fetched Facebook posts with pagination"
+        "Fetched Facebook posts with pagination",
       );
 
       return {
@@ -1992,7 +2013,7 @@ export class FacebookService {
     } catch (error: any) {
       logger.error(
         { error: error.message, businessId },
-        "Error fetching Facebook posts with pagination"
+        "Error fetching Facebook posts with pagination",
       );
       return {
         success: false,
@@ -2016,12 +2037,11 @@ export class FacebookService {
     newType?: "event" | "offer" | "spotlight" | "flashlight",
     status?: "pending" | "ignored" | "saved" | "imported",
     ignoreReason?: "not_relevant" | "personal_casual" | "duplicate" | "other",
-    ignoreNote?: string
+    ignoreNote?: string,
   ) {
     try {
-      const { FacebookPostModel } = await import(
-        "../../models/facebookPost.model.js"
-      );
+      const { FacebookPostModel } =
+        await import("../../models/facebookPost.model.js");
 
       // Validate type if provided
       if (newType) {
@@ -2081,15 +2101,21 @@ export class FacebookService {
 
       // Find and update the post - support both MongoDB _id and Facebook postId
       const mongoose = await import("mongoose");
-      const isObjectId = mongoose.Types.ObjectId.isValid(postId) && postId.length === 24;
+      const isObjectId =
+        mongoose.Types.ObjectId.isValid(postId) && postId.length === 24;
       const filter = isObjectId
-        ? { $or: [{ _id: postId, businessId }, { postId, businessId }] }
+        ? {
+            $or: [
+              { _id: postId, businessId },
+              { postId, businessId },
+            ],
+          }
         : { postId, businessId };
 
       const updatedPost = await FacebookPostModel.findOneAndUpdate(
         filter,
         { $set: updateData },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedPost) {
@@ -2101,7 +2127,7 @@ export class FacebookService {
 
       logger.info(
         { postId, businessId, newType, status, ignoreReason },
-        "Updated Facebook post"
+        "Updated Facebook post",
       );
 
       return {
@@ -2111,7 +2137,7 @@ export class FacebookService {
     } catch (error: any) {
       logger.error(
         { error: error.message, postId, businessId },
-        "Error updating Facebook post"
+        "Error updating Facebook post",
       );
       return {
         success: false,
@@ -2128,7 +2154,7 @@ export class FacebookService {
    */
   async bulkMarkPostsAsImported(
     postIds: string[],
-    businessId: string
+    businessId: string,
   ): Promise<{
     success: boolean;
     message?: string;
@@ -2154,8 +2180,12 @@ export class FacebookService {
 
       // Update all posts that match the postIds (or _id) and businessId
       const mongoose = await import("mongoose");
-      const objectIds = postIds.filter(id => mongoose.Types.ObjectId.isValid(id) && id.length === 24);
-      const facebookIds = postIds.filter(id => !(mongoose.Types.ObjectId.isValid(id) && id.length === 24));
+      const objectIds = postIds.filter(
+        (id) => mongoose.Types.ObjectId.isValid(id) && id.length === 24,
+      );
+      const facebookIds = postIds.filter(
+        (id) => !(mongoose.Types.ObjectId.isValid(id) && id.length === 24),
+      );
 
       const filter: any = { businessId };
       if (objectIds.length > 0 && facebookIds.length > 0) {
@@ -2172,20 +2202,21 @@ export class FacebookService {
         filter.postId = { $in: facebookIds };
       }
 
-      const result = await FacebookPostModel.updateMany(
-        filter,
-        {
-          $set: {
-            status: "imported",
-            ignoreReason: null,
-            ignoreNote: null,
-          },
-        }
-      );
+      const result = await FacebookPostModel.updateMany(filter, {
+        $set: {
+          status: "imported",
+          ignoreReason: null,
+          ignoreNote: null,
+        },
+      });
 
       logger.info(
-        { businessId, requestedCount: postIds.length, updatedCount: result.modifiedCount },
-        "Bulk marked posts as imported"
+        {
+          businessId,
+          requestedCount: postIds.length,
+          updatedCount: result.modifiedCount,
+        },
+        "Bulk marked posts as imported",
       );
 
       return {
@@ -2197,11 +2228,111 @@ export class FacebookService {
     } catch (error: any) {
       logger.error(
         { error: error.message, businessId, postIdsCount: postIds?.length },
-        "Error bulk updating posts as imported"
+        "Error bulk updating posts as imported",
       );
       return {
         success: false,
         error: error.message || "Failed to bulk update posts",
+      };
+    }
+  }
+
+  /**
+   * Disconnects a Facebook page from a business
+   * Clears all Facebook-related metadata and tokens from the database
+   * @param businessId - Business ID to disconnect
+   */
+  async disconnectFacebook(businessId: string) {
+    try {
+      const { BusinessAIAssistantModel } =
+        await import("../../models/businessAIAssistant.model.js");
+
+      const updateData = {
+        $unset: {
+          facebookPageAccessToken: "",
+          facebookPageId: "",
+          facebookPageTokenExpiresAt: "",
+          facebookPageName: "",
+          facebookPageCategory: "",
+          facebookPageAbout: "",
+          facebookPageFollowers: "",
+          facebookPageWebsite: "",
+          facebookPagePhone: "",
+          facebookPageEmail: "",
+          facebookPageProfilePicture: "",
+          facebookPageCoverPhoto: "",
+          facebookPageMetadata: "",
+          facebookMetaData: "",
+          lastFacebookDataFetched: "",
+        },
+        $set: {
+          isFacebookConnected: false,
+          isFacebookDataFetched: false,
+        },
+      };
+
+      const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
+        { businessId },
+        updateData,
+        { new: true },
+      );
+
+      if (!updatedBusiness) {
+        logger.warn(
+          { businessId },
+          "Business not found for Facebook disconnect",
+        );
+        return {
+          success: false,
+          error: `Business with ID ${businessId} not found`,
+        };
+      }
+
+      // Update Pinntag backend business
+      try {
+        const { getBackendBusinessModel } =
+          await import("../../models/pinntagBackend/business.model.js");
+        const { getBackendConnection } = await import("../../db/connection.js");
+
+        const backendConn = await getBackendConnection();
+        if (backendConn) {
+          const BusinessBackendModel = getBackendBusinessModel(backendConn);
+          await BusinessBackendModel.findByIdAndUpdate(businessId, {
+            $unset: {
+              facebookMetaData: "",
+              lastFacebookDatafetched: "",
+            },
+            $set: {
+              isFacebookConnected: false,
+              isFacebookDatafetched: false,
+            },
+          });
+          logger.info(
+            { businessId },
+            "Cleared Facebook data from Pinntag backend business",
+          );
+        }
+      } catch (backendError: any) {
+        logger.warn(
+          { error: backendError.message, businessId },
+          "Failed to clear Facebook data from Pinntag backend business",
+        );
+      }
+
+      logger.info({ businessId }, "Successfully disconnected Facebook page");
+
+      return {
+        success: true,
+        data: "Facebook disconnected successfully",
+      };
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId },
+        "Error disconnecting Facebook",
+      );
+      return {
+        success: false,
+        error: error.message || "Failed to disconnect Facebook",
       };
     }
   }
