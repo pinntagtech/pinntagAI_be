@@ -2079,9 +2079,15 @@ export class FacebookService {
         updateData.ignoreNote = ignoreNote;
       }
 
-      // Find and update the post
+      // Find and update the post - support both MongoDB _id and Facebook postId
+      const mongoose = await import("mongoose");
+      const isObjectId = mongoose.Types.ObjectId.isValid(postId) && postId.length === 24;
+      const filter = isObjectId
+        ? { $or: [{ _id: postId, businessId }, { postId, businessId }] }
+        : { postId, businessId };
+
       const updatedPost = await FacebookPostModel.findOneAndUpdate(
-        { postId, businessId }, // Ensure post belongs to business
+        filter,
         { $set: updateData },
         { new: true }
       );
@@ -2146,12 +2152,28 @@ export class FacebookService {
         };
       }
 
-      // Update all posts that match the postIds and businessId
+      // Update all posts that match the postIds (or _id) and businessId
+      const mongoose = await import("mongoose");
+      const objectIds = postIds.filter(id => mongoose.Types.ObjectId.isValid(id) && id.length === 24);
+      const facebookIds = postIds.filter(id => !(mongoose.Types.ObjectId.isValid(id) && id.length === 24));
+
+      const filter: any = { businessId };
+      if (objectIds.length > 0 && facebookIds.length > 0) {
+        filter.$or = [
+          { _id: { $in: objectIds } },
+          { postId: { $in: postIds } },
+        ];
+      } else if (objectIds.length > 0) {
+        filter.$or = [
+          { _id: { $in: objectIds } },
+          { postId: { $in: objectIds } },
+        ];
+      } else {
+        filter.postId = { $in: facebookIds };
+      }
+
       const result = await FacebookPostModel.updateMany(
-        {
-          postId: { $in: postIds },
-          businessId: businessId,
-        },
+        filter,
         {
           $set: {
             status: "imported",
