@@ -20,6 +20,9 @@ import {
 } from "../../utils/AI_Training_questionnaire.js";
 import { response } from "express";
 import { openai } from "../../utils/openai.js";
+import { AIService, Business } from "./ai.service.js";
+import { getBackendConnection } from "../../db/connection.js";
+import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
 
 // ===========================
 // Helper Functions
@@ -740,7 +743,7 @@ export class AITrainingService {
       logger.info({ businessId }, "Starting training initialization");
 
       // Check if business exists and get its industry/subcategory
-      const businessAgent = await BusinessAIAssistantModel.findOne({
+      let businessAgent = await BusinessAIAssistantModel.findOne({
         businessId: new mongoose.Types.ObjectId(businessId),
       });
 
@@ -750,8 +753,72 @@ export class AITrainingService {
       );
 
       if (!businessAgent) {
-        throw new Error(
-          `not found: No AI agent found for business ID: ${businessId}`,
+        logger.info(
+          { businessId },
+          "No AI agent found, attempting to create one from backend business data",
+        );
+
+        // Fetch business data from pinntagBackend database
+        const backendConn = await getBackendConnection();
+        const BusinessBackendModel = getBackendBusinessModel(backendConn);
+        const backendBusiness = await BusinessBackendModel.findById(businessId)
+          .populate("businessCategories", "name")
+          .populate("businessIndustry", "name")
+          .lean();
+
+        if (!backendBusiness) {
+          throw new Error(
+            `not found: No business found in backend database for ID: ${businessId}`,
+          );
+        }
+
+        // Extract category name from populated businessCategories
+        const categoryName =
+          (backendBusiness.businessCategories as any)?.[0]?.name ??
+          (backendBusiness as any).businessIndustry?.name ??
+          "General";
+
+        // Build the Business payload for agent creation
+        const bizPayload: Business = {
+          businessId: backendBusiness._id.toString(),
+          businessName: backendBusiness.name ?? "Business",
+          name: backendBusiness.name ?? "Business",
+          category: categoryName,
+          subCategories: ((backendBusiness.businessCategories as any) ?? [])
+            .map((c: any) => (typeof c === "object" ? c.name : c))
+            .filter(Boolean),
+          tags: backendBusiness.tags ?? [],
+          description: backendBusiness.description,
+          website: backendBusiness.website,
+          industry: categoryName,
+        };
+
+        logger.info(
+          { businessId, bizPayload },
+          "Creating AI agent from backend business data",
+        );
+
+        await AIService.createAgentForBusiness(bizPayload);
+
+        // Update backend business to mark agent as created
+        await BusinessBackendModel.findByIdAndUpdate(businessId, {
+          $set: { isAgentCreated: true },
+        });
+
+        // Re-fetch the newly created agent
+        businessAgent = await BusinessAIAssistantModel.findOne({
+          businessId: new mongoose.Types.ObjectId(businessId),
+        });
+
+        if (!businessAgent) {
+          throw new Error(
+            `not found: Failed to create AI agent for business ID: ${businessId}`,
+          );
+        }
+
+        logger.info(
+          { businessId, assistantId: businessAgent.assistantId },
+          "AI agent created successfully from backend business data",
         );
       }
 
