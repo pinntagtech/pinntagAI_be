@@ -2277,6 +2277,8 @@ export class FacebookService {
         { new: true },
       );
 
+      //Delete the posts data as well
+      await FacebookPostModel.deleteMany({ businessId });
       if (!updatedBusiness) {
         logger.warn(
           { businessId },
