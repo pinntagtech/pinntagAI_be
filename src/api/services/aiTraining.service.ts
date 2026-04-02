@@ -758,13 +758,31 @@ export class AITrainingService {
           "No AI agent found, attempting to create one from backend business data",
         );
 
-        // Fetch business data from pinntagBackend database
+        // Fetch business data from pinntagBackend database using $lookup
+        // to resolve category/industry names (schemas aren't registered on this connection)
         const backendConn = await getBackendConnection();
         const BusinessBackendModel = getBackendBusinessModel(backendConn);
-        const backendBusiness = await BusinessBackendModel.findById(businessId)
-          .populate("businessCategories", "name")
-          .populate("businessIndustry", "name")
-          .lean();
+
+        const [backendBusiness] = await BusinessBackendModel.aggregate([
+          { $match: { _id: new mongoose.Types.ObjectId(businessId) } },
+          {
+            $lookup: {
+              from: "businesscategories",
+              localField: "businessCategories",
+              foreignField: "_id",
+              as: "_resolvedCategories",
+            },
+          },
+          {
+            $lookup: {
+              from: "businessindustries",
+              localField: "businessIndustry",
+              foreignField: "_id",
+              as: "_resolvedIndustry",
+            },
+          },
+          { $limit: 1 },
+        ]);
 
         if (!backendBusiness) {
           throw new Error(
@@ -772,11 +790,17 @@ export class AITrainingService {
           );
         }
 
-        // Extract category name from populated businessCategories
+        // Extract category/industry names from the $lookup results
+        const resolvedCategories: string[] = (
+          backendBusiness._resolvedCategories ?? []
+        ).map((c: any) => c.title ?? c.name);
+
+        const resolvedIndustryName: string | undefined =
+          backendBusiness._resolvedIndustry?.[0]?.title ??
+          backendBusiness._resolvedIndustry?.[0]?.name;
+
         const categoryName =
-          (backendBusiness.businessCategories as any)?.[0]?.name ??
-          (backendBusiness as any).businessIndustry?.name ??
-          "General";
+          resolvedCategories[0] ?? resolvedIndustryName ?? "General";
 
         // Build the Business payload for agent creation
         const bizPayload: Business = {
@@ -784,9 +808,9 @@ export class AITrainingService {
           businessName: backendBusiness.name ?? "Business",
           name: backendBusiness.name ?? "Business",
           category: categoryName,
-          subCategories: ((backendBusiness.businessCategories as any) ?? [])
-            .map((c: any) => (typeof c === "object" ? c.name : c))
-            .filter(Boolean),
+          subCategories: resolvedCategories.length > 0
+            ? resolvedCategories
+            : [categoryName],
           tags: backendBusiness.tags ?? [],
           description: backendBusiness.description,
           website: backendBusiness.website,
