@@ -763,6 +763,14 @@ export class AITrainingService {
         const backendConn = await getBackendConnection();
         const BusinessBackendModel = getBackendBusinessModel(backendConn);
 
+        // Debug: log connection state and try a simple count
+        const dbName = backendConn.db?.databaseName ?? "unknown";
+        const totalBusinesses = await BusinessBackendModel.countDocuments({});
+        logger.info(
+          { businessId, dbName, totalBusinesses, connState: backendConn.readyState },
+          "Backend DB connection debug info",
+        );
+
         const [backendBusiness] = await BusinessBackendModel.aggregate([
           { $match: { _id: new mongoose.Types.ObjectId(businessId) } },
           {
