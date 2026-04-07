@@ -2196,4 +2196,250 @@ export class AITrainingService {
       throw error;
     }
   }
+
+  /**
+   * Updates AI training configuration for a business.
+   * Supports updating: industry/category, business name, description, tone.
+   * If industry changes, resets training questions to match the new industry.
+   */
+  static async updateTraining(
+    businessId: string,
+    updates: {
+      industry?: string;
+      subCategory?: string;
+      businessName?: string;
+      description?: string;
+      tone?: string;
+      tags?: string[];
+    },
+  ) {
+    try {
+      logger.info({ businessId, updates }, "Updating AI training configuration");
+
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        throw new Error("Invalid businessId format");
+      }
+
+      // Find the business agent
+      const businessAgent = await BusinessAIAssistantModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      });
+
+      if (!businessAgent) {
+        throw new Error(
+          `not found: No AI agent found for business ID: ${businessId}`,
+        );
+      }
+
+      // Track what changed
+      const agentUpdates: Record<string, any> = {};
+      let industryChanged = false;
+
+      // Update business info fields on the agent
+      if (updates.businessName !== undefined) {
+        agentUpdates.businessName = updates.businessName;
+        agentUpdates.name = updates.businessName;
+      }
+      if (updates.description !== undefined) {
+        agentUpdates.description = updates.description;
+      }
+      if (updates.tone !== undefined) {
+        agentUpdates.tone = updates.tone;
+      }
+      if (updates.tags !== undefined) {
+        agentUpdates.tags = updates.tags;
+      }
+
+      // Handle industry/category change
+      if (updates.industry !== undefined) {
+        const newIndustry = mapCategoryToIndustry(updates.industry);
+        const currentIndustry = mapCategoryToIndustry(businessAgent.category);
+
+        if (newIndustry !== currentIndustry) {
+          industryChanged = true;
+          agentUpdates.category = updates.industry;
+        }
+      }
+
+      if (updates.subCategory !== undefined) {
+        agentUpdates.subCategories = [updates.subCategory];
+      }
+
+      // Apply agent updates
+      if (Object.keys(agentUpdates).length > 0) {
+        await BusinessAIAssistantModel.updateOne(
+          { businessId: new mongoose.Types.ObjectId(businessId) },
+          { $set: agentUpdates },
+        );
+        logger.info(
+          { businessId, agentUpdates },
+          "Updated BusinessAIAssistant record",
+        );
+      }
+
+      // Update the OpenAI assistant with new instructions
+      if (
+        updates.businessName ||
+        updates.description ||
+        updates.tone ||
+        updates.tags
+      ) {
+        try {
+          const updatedAgent = await BusinessAIAssistantModel.findOne({
+            businessId: new mongoose.Types.ObjectId(businessId),
+          });
+
+          if (updatedAgent) {
+            await AIService.updateAgent(businessId, {
+              businessName:
+                updates.businessName ?? updatedAgent.businessName,
+              name: updates.businessName ?? updatedAgent.name,
+              businessId,
+              description: updates.description ?? updatedAgent.description,
+              tone: updates.tone ?? (updatedAgent.tone as string),
+              tags: updates.tags ?? updatedAgent.tags ?? [],
+              category: updatedAgent.category,
+              subCategories: updatedAgent.subCategories ?? [],
+              industry: updatedAgent.category,
+            });
+            logger.info(
+              { businessId },
+              "Updated OpenAI assistant instructions",
+            );
+          }
+        } catch (assistantError: any) {
+          logger.error(
+            { error: assistantError, businessId },
+            "Failed to update OpenAI assistant, but local records updated",
+          );
+        }
+      }
+
+      // If industry changed, reset and re-initialize training with new questions
+      if (industryChanged) {
+        const refreshedAgent = await BusinessAIAssistantModel.findOne({
+          businessId: new mongoose.Types.ObjectId(businessId),
+        });
+
+        if (!refreshedAgent) {
+          throw new Error(
+            `not found: Agent not found after update for business ID: ${businessId}`,
+          );
+        }
+
+        const newIndustry = mapCategoryToIndustry(refreshedAgent.category);
+        const newSubCategory = refreshedAgent.subCategories?.[0] as
+          | BusinessSubCategory
+          | undefined;
+
+        // Get new questions for basic phase
+        const basicQuestions = getQuestionsByPhaseUtil(
+          newIndustry,
+          TrainingPhase.BASIC,
+          newSubCategory,
+        );
+        const phaseSummary = getPhaseSummary(newIndustry, newSubCategory);
+
+        // Pre-fill available data
+        const responseMap = new Map<string, any>();
+        if (refreshedAgent.businessName) {
+          responseMap.set("business_name", refreshedAgent.businessName);
+        }
+        if (refreshedAgent.description) {
+          responseMap.set("business_description", refreshedAgent.description);
+        }
+
+        const prefilledResponses: ITrainingResponse[] = [];
+        for (const [questionId, answer] of responseMap.entries()) {
+          prefilledResponses.push({
+            questionId,
+            answer,
+            answeredAt: new Date(),
+          });
+        }
+
+        const filteredQuestions = basicQuestions.filter(
+          (q) => !responseMap.has(q.id),
+        );
+
+        const basicPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.BASIC,
+        );
+        const standardPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.STANDARD,
+        );
+        const advancedPhaseInfo = phaseSummary.find(
+          (p) => p.phase === TrainingPhase.ADVANCED,
+        );
+
+        // Replace existing training record
+        await AI_TrainingModel.findOneAndUpdate(
+          { businessId: new mongoose.Types.ObjectId(businessId) },
+          {
+            $set: {
+              industry: newIndustry,
+              subCategory: newSubCategory,
+              responses: prefilledResponses,
+              trainingStatus: "not_started",
+              currentPhase: TrainingPhase.BASIC,
+              completedPhases: [],
+              completedAt: undefined,
+              questions: filteredQuestions,
+              metadata: {
+                totalQuestions: basicQuestions.length,
+                answeredQuestions: prefilledResponses.length,
+                requiredQuestions: basicQuestions.filter((q) => q.required)
+                  .length,
+                completionPercentage: Math.min(
+                  Math.round(
+                    (prefilledResponses.length / basicQuestions.length) * 100,
+                  ),
+                  100,
+                ),
+                phaseProgress: {
+                  basic: {
+                    total: basicPhaseInfo?.totalQuestions || 0,
+                    answered: prefilledResponses.length,
+                    completed: false,
+                  },
+                  standard: {
+                    total: standardPhaseInfo?.totalQuestions || 0,
+                    answered: 0,
+                    completed: false,
+                  },
+                  advanced: {
+                    total: advancedPhaseInfo?.totalQuestions || 0,
+                    answered: 0,
+                    completed: false,
+                  },
+                },
+              },
+            },
+          },
+          { upsert: true, new: true },
+        );
+
+        logger.info(
+          { businessId, newIndustry, newSubCategory },
+          "Training reset with new industry questions",
+        );
+
+        return {
+          message: "Training updated and reset with new industry",
+          industryChanged: true,
+          newIndustry,
+          phaseSummary,
+          questions: filteredQuestions,
+        };
+      }
+
+      return {
+        message: "Training configuration updated successfully",
+        industryChanged: false,
+      };
+    } catch (error: any) {
+      logger.error({ error, businessId }, "Error updating training");
+      throw error;
+    }
+  }
 }

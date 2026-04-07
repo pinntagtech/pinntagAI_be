@@ -676,6 +676,107 @@ export class AITrainingController {
       });
     }
   }
+  /**
+   * PUT /ai/training/update/:businessId
+   * Updates AI training configuration (industry, name, description, tone, tags)
+   * Params: businessId
+   * Body: { industry?, subCategory?, businessName?, description?, tone?, tags? }
+   */
+  async updateTraining(req: Request, res: Response) {
+    try {
+      const { businessId } = req.params;
+      const updates = req.body;
+
+      // Validate businessId
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "Business ID is required",
+        });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Business ID format",
+        });
+      }
+
+      // Validate that at least one update field is provided
+      const allowedFields = [
+        "industry",
+        "subCategory",
+        "businessName",
+        "description",
+        "tone",
+        "tags",
+      ];
+      const providedFields = Object.keys(updates).filter((k) =>
+        allowedFields.includes(k),
+      );
+
+      if (providedFields.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: `At least one update field is required. Allowed: ${allowedFields.join(", ")}`,
+        });
+      }
+
+      // Validate tone if provided
+      if (
+        updates.tone &&
+        !["professional", "casual", "friendly"].includes(updates.tone)
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Invalid tone. Allowed values are: professional, casual, friendly",
+        });
+      }
+
+      // Validate tags if provided
+      if (updates.tags && !Array.isArray(updates.tags)) {
+        return res.status(400).json({
+          success: false,
+          error: "Tags must be an array of strings",
+        });
+      }
+
+      const result = await AITrainingService.updateTraining(
+        businessId,
+        updates,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: result.message,
+      });
+    } catch (error: any) {
+      logger.error(
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+          },
+          businessId: req.params?.businessId,
+        },
+        "Error updating training",
+      );
+
+      if (error.message?.includes("not found")) {
+        return res.status(404).json({
+          success: false,
+          error: error.message,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: error.message || "Failed to update training",
+      });
+    }
+  }
 }
 
 const controller = new AITrainingController();
@@ -692,4 +793,5 @@ export const aiTrainingController = {
   resetTraining: controller.resetTraining.bind(controller),
   getTrainingState: controller.getTrainingState.bind(controller),
   updateGooglePlacesData: controller.updateGooglePlacesData.bind(controller),
+  updateTraining: controller.updateTraining.bind(controller),
 };

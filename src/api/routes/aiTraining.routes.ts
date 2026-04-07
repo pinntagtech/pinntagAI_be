@@ -80,6 +80,14 @@ aiTrainingRouter.get("/responses/:businessId", aiTrainingController.getTrainingR
 aiTrainingRouter.post("/reset", aiTrainingController.resetTraining);
 
 /**
+ * PUT /ai/training/update/:businessId
+ * Params: businessId
+ * Body: { industry?, subCategory?, businessName?, description?, tone?, tags? }
+ * Updates AI training configuration. If industry changes, resets training with new questions.
+ */
+aiTrainingRouter.put("/update/:businessId", aiTrainingController.updateTraining);
+
+/**
  * POST /ai/training/google-places/:businessId
  * Params: businessId
  * Body: Google Places API response data
