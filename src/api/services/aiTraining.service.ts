@@ -1680,6 +1680,7 @@ export class AITrainingService {
   static async getTrainingState(
     businessId: string,
     queryPhase?: TrainingPhase,
+    allQuestions?: boolean,
   ) {
     try {
       logger.info({ businessId, queryPhase }, "Starting getTrainingState");
@@ -2049,6 +2050,30 @@ export class AITrainingService {
         correctedTrainingStatus = "not_started";
       }
 
+      // Build allQuestions array if requested
+      let allQuestionsData: typeof questionsWithStatus | undefined;
+      if (allQuestions) {
+        const allPhases = [TrainingPhase.BASIC, TrainingPhase.STANDARD, TrainingPhase.ADVANCED];
+        const allPhaseQuestions = allPhases.flatMap((phase) =>
+          getQuestionsByPhaseUtil(
+            training.industry as BusinessIndustries,
+            phase,
+            training.subCategory as BusinessSubCategory,
+          ).map((q) => {
+            const response = responseMap.get(q.id);
+            const isAnswered = !!response;
+            return {
+              ...q,
+              phase,
+              isAnswered,
+              answer: isAnswered ? response.answer : undefined,
+              answeredAt: isAnswered ? response.answeredAt : undefined,
+            };
+          }),
+        );
+        allQuestionsData = allPhaseQuestions;
+      }
+
       return {
         trainingStatus: correctedTrainingStatus,
         currentPhase: training.currentPhase,
@@ -2064,6 +2089,7 @@ export class AITrainingService {
           remainingCount,
           questions: questionsWithStatus,
         },
+        ...(allQuestionsData ? { allQuestions: allQuestionsData } : {}),
         metadata: correctedMetadata,
         completedAt:
           correctedTrainingStatus === "completed"

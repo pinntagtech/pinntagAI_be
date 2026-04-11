@@ -544,7 +544,7 @@ export class AITrainingController {
   async getTrainingState(req: Request, res: Response) {
     try {
       const { businessId } = req.params;
-      const { phase } = req.query;
+      const { phase, allQuestions } = req.query;
 
       // Validate businessId
       if (!businessId) {
@@ -575,6 +575,7 @@ export class AITrainingController {
       const result = await AITrainingService.getTrainingState(
         businessId,
         phase as TrainingPhase | undefined,
+        allQuestions === "true",
       );
 
       return res.status(200).json({
