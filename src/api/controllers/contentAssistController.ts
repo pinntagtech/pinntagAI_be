@@ -26,6 +26,7 @@ const VALID_CONTENT_TYPES: ContentCreationType[] = [
   "specials",
   "drop_pin",
   "event",
+  "reward",
 ];
 
 const VALID_PROMOTION_TYPES: PromotionType[] = [

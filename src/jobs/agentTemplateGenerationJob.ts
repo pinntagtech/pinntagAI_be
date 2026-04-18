@@ -3,7 +3,7 @@ import { AI_TrainingModel } from "../models/AI_Training.model.js";
 import { BusinessAIAssistantModel } from "../models/businessAIAssistant.model.js";
 import { DealTemplateGeneratorService, TemplateGenerationOptions } from "../api/services/dealTemplateGenerator.service.js";
 import { DiscountType } from "../models/pinntagBackend/dealTemplate.model.js";
-import { GeminiService } from "../api/services/gemini.service.js";
+import { ImageGenerationService } from "../api/services/imageGeneration.service.js";
 import mongoose from "mongoose";
 
 /**
@@ -667,7 +667,7 @@ export class AgentTemplateGenerationJob {
         "Generating AI image for template"
       );
 
-      const result = await GeminiService.generateImage({
+      const result = await ImageGenerationService.generateImage({
         businessId,
         prompt: genericPrompt,
         contentType: (enrichedContext?.contentType as any) || "offer",

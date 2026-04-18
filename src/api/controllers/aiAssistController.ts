@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AIService } from "../services/ai.service.js";
-import { GeminiService } from "../services/gemini.service.js";
+import { ImageGenerationService } from "../services/imageGeneration.service.js";
 import { logger } from "../../utils/logger.js";
 import {
   ensureImageAccess,
@@ -273,7 +273,7 @@ export async function generateImage(
       return;
     }
 
-    const image = await GeminiService.generateImage(params);
+    const image = await ImageGenerationService.generateImage(params);
 
     res.status(200).json({
       success: true,
@@ -304,7 +304,7 @@ export async function editImage(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const image = await GeminiService.editImage(params);
+    const image = await ImageGenerationService.editImage(params);
 
     res.status(200).json({
       success: true,
@@ -338,7 +338,7 @@ export async function generateContentImage(
       return;
     }
 
-    const image = await GeminiService.generateContentImage(params);
+    const image = await ImageGenerationService.generateContentImage(params);
 
     res.status(200).json({
       success: true,
@@ -377,7 +377,7 @@ export async function generateImageVariations(
         return;
       }
 
-      const images = await GeminiService.generateImageVariations(
+      const images = await ImageGenerationService.generateImageVariations(
         params as ImageGenerationParams,
         count
       );
@@ -415,7 +415,7 @@ export async function generateTextImage(
       return;
     }
 
-    const image = await GeminiService.generateTextImage(params);
+    const image = await ImageGenerationService.generateTextImage(params);
 
     res.status(200).json({
       success: true,
