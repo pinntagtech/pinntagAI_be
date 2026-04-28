@@ -596,7 +596,10 @@ export class FacebookService {
   async completeOAuthFlow(userAccessToken: string, businessId: string) {
     try {
       logger.info({ businessId }, "Starting complete OAuth flow");
-
+      logger.info(
+        { userAccessToken },
+        "Received user access token for OAuth flow",
+      );
       // Step 1: Get Pages managed by the user
       const pagesResponse = await axios.get(
         `https://graph.facebook.com/v24.0/me/accounts`,
