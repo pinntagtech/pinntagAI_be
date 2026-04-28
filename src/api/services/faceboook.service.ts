@@ -594,101 +594,107 @@ export class FacebookService {
   // }
 
   async completeOAuthFlow(userAccessToken: string, businessId: string) {
+    const tokenTail = userAccessToken.slice(-4);
+    const tokenLen = userAccessToken.length;
+
     try {
-      logger.info({ businessId }, "Starting complete OAuth flow");
       logger.info(
-        { userAccessToken },
-        "Received user access token for OAuth flow",
+        { businessId, userTokenLen: tokenLen, userTokenTail: tokenTail },
+        "Starting Facebook OAuth completion",
       );
-      // Step 1: Get Pages managed by the user
+
+      // ---- Step 1: list Pages the user manages ---------------------------------
+      // /me/accounts is unlocked by `pages_show_list` (already approved).
+      // Each entry already includes a long-lived Page access token.
       const pagesResponse = await axios.get(
         `https://graph.facebook.com/v24.0/me/accounts`,
         {
           params: {
-            fields: "id,name,access_token",
+            fields: "id,name,access_token,tasks",
             access_token: userAccessToken,
           },
         },
       );
 
-      const pages = pagesResponse.data?.data;
+      const pages = pagesResponse.data?.data ?? [];
 
-      if (!pages || pages.length === 0) {
+      if (pages.length === 0) {
+        logger.warn({ businessId }, "User has no Facebook Pages");
         return {
           success: false,
-          data: "No Facebook pages found for this account. Please create or connect a Facebook Page first.",
+          data: "No Facebook Pages found for this account. Please create or connect a Facebook Page first.",
         };
       }
 
-      // For now using first page. Later allow user to select.
+      // TODO: when supporting users with multiple Pages, return the list to the
+      // frontend and let the user pick instead of defaulting to pages[0].
+      if (pages.length > 1) {
+        logger.info(
+          { businessId, pageCount: pages.length },
+          "User has multiple Pages, defaulting to first — add a picker later",
+        );
+      }
+
       const firstPage = pages[0];
-      const pageAccessToken = firstPage.access_token;
-      const pageId = firstPage.id;
-      const pageName = firstPage.name;
+      const pageId: string = firstPage.id;
+      const pageName: string = firstPage.name;
+      const pageAccessToken: string | undefined = firstPage.access_token;
 
       if (!pageAccessToken) {
+        // This happens when the user didn't grant pages_show_list, or when
+        // the Page is owned by a Business Manager that hasn't given the user
+        // the right tasks. The `tasks` array tells you which.
         logger.error(
-          { businessId, pageId, pageName },
+          { businessId, pageId, pageName, tasks: firstPage.tasks },
           "Page access token missing from /me/accounts response",
         );
-
         return {
           success: false,
-          data: "Facebook Page access token was not returned. Please reconnect your Facebook account with the required Page permissions.",
+          data: "Facebook Page access token was not returned. Please reconnect with Page management permissions granted.",
         };
       }
 
       logger.info(
         {
+          businessId,
           pageId,
           pageName,
           totalPages: pages.length,
-          hasPageAccessToken: !!pageAccessToken,
-          pageAccessTokenLength: pageAccessToken.length,
+          pageTokenLen: pageAccessToken.length,
+          pageTokenTail: pageAccessToken.slice(-4),
+          pageTasks: firstPage.tasks,
         },
-        "Found pages and extracted page access token",
+        "Resolved Page from /me/accounts",
       );
 
-      // Step 2: Fetch ONLY safe/minimal Page metadata
-      // Do NOT request followers_count, fan_count, likes, engagement, insights, phone, emails, cover for now.
-      const pageInfoResponse = await axios.get(
-        `https://graph.facebook.com/v24.0/${pageId}`,
-        {
-          params: {
-            fields: "id,name,picture{url}",
-            access_token: pageAccessToken,
-          },
-        },
-      );
-
-      const pageData = pageInfoResponse.data;
-
+      // ---- Step 2: build metadata WITHOUT calling /{pageId} --------------------
+      // The previous version called GET /{pageId}?fields=id,name,picture{url}.
+      // That endpoint is gated behind pages_read_engagement OR Page Public
+      // Metadata Access. PPCA does NOT cover it. We have neither, so we skip.
+      //
+      // Everything we need (id, name, token) is already in pages[0].
+      // Other fields are intentionally null until elevated permissions are
+      // approved or until we add a manual entry UI.
       const pageMetadata = {
-        name: pageData.name || pageName || null,
+        name: pageName,
         category: null,
         about: null,
         followers: null,
         website: null,
         phone: null,
         email: null,
-        profilePicture: pageData.picture?.data?.url || null,
+        profilePicture: null,
         coverPhoto: null,
-        rawData: pageData,
+        rawData: { id: pageId, name: pageName },
       };
 
-      logger.info(
-        {
-          pageId,
-          pageName: pageMetadata.name,
-          hasProfilePicture: !!pageMetadata.profilePicture,
-        },
-        "Fetched minimal safe Facebook Page metadata",
-      );
-
-      // Step 3: Save to AI assistant database
+      // ---- Step 3: persist to AI assistant DB ----------------------------------
       const { BusinessAIAssistantModel } =
         await import("../../models/businessAIAssistant.model.js");
 
+      // Page tokens from /me/accounts (when the user token is long-lived) are
+      // themselves long-lived — typically ~60 days, sometimes never-expiring.
+      // We assume 60 days defensively and trigger a re-auth before that.
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 60);
 
@@ -709,7 +715,7 @@ export class FacebookService {
         },
       };
 
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         facebookPageAccessToken: pageAccessToken,
         facebookPageId: pageId,
         facebookPageTokenExpiresAt: expiresAt,
@@ -720,7 +726,7 @@ export class FacebookService {
         facebookPageWebsite: null,
         facebookPagePhone: null,
         facebookPageEmail: null,
-        facebookPageProfilePicture: pageMetadata.profilePicture,
+        facebookPageProfilePicture: null,
         facebookPageCoverPhoto: null,
         facebookPageMetadata: pageMetadata.rawData,
         isFacebookConnected: true,
@@ -734,11 +740,7 @@ export class FacebookService {
       );
 
       if (!updatedBusiness) {
-        logger.warn(
-          { businessId },
-          "Business not found for Facebook token save",
-        );
-
+        logger.warn({ businessId }, "Business not found while saving FB token");
         return {
           success: false,
           data: `Business with ID ${businessId} not found`,
@@ -746,11 +748,11 @@ export class FacebookService {
       }
 
       logger.info(
-        { businessId, pageId, pageName: pageMetadata.name },
-        "Successfully saved Facebook Page token and minimal metadata",
+        { businessId, pageId, pageName },
+        "Saved Facebook Page token + minimal metadata to AI assistant DB",
       );
 
-      // Step 4: Update main Pinntag backend
+      // ---- Step 4: mirror to main Pinntag backend ------------------------------
       try {
         await this.updatePinntagBackendBusiness(businessId, {
           pageId,
@@ -758,15 +760,16 @@ export class FacebookService {
           expiresAt,
           pageMetadata,
         });
-
         logger.info(
           { businessId, pageId },
-          "Successfully updated Pinntag backend business with Facebook data",
+          "Mirrored Facebook data to Pinntag backend",
         );
       } catch (backendError: any) {
+        // Don't fail the whole OAuth flow if the secondary write fails — the
+        // primary record is already in the AI assistant DB.
         logger.error(
-          { error: backendError.message, businessId },
-          "Failed to update Pinntag backend, but AI assistant Facebook data was saved",
+          { err: backendError.message, businessId },
+          "Backend mirror failed, AI assistant data still saved",
         );
       }
 
@@ -790,17 +793,27 @@ export class FacebookService {
         },
       };
     } catch (error: any) {
+      // Surface the Graph API error structure so the next failure is
+      // immediately diagnosable instead of opaque.
+      const fbErr = error?.response?.data?.error;
       logger.error(
         {
-          error: error.message,
-          response: error.response?.data,
+          businessId,
+          message: error.message,
+          status: error?.response?.status,
+          fbCode: fbErr?.code,
+          fbSubcode: fbErr?.error_subcode,
+          fbType: fbErr?.type,
+          fbMessage: fbErr?.message,
+          fbTraceId: fbErr?.fbtrace_id,
+          // Helpful for debugging WHICH call broke when this method grows
+          url: error?.config?.url,
         },
-        "Error completing OAuth flow",
+        "completeOAuthFlow failed",
       );
-
       return {
         success: false,
-        data: error.response?.data?.error?.message || error.message,
+        data: fbErr?.message || error.message,
       };
     }
   }
