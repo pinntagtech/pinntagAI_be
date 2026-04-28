@@ -449,7 +449,8 @@ export class FacebookService {
       // Step 2: Fetch comprehensive page metadata
       const pageInfoConfig = {
         method: "get",
-        url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+        url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+        // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
       };
 
       const pageInfoResponse = await axios.request(pageInfoConfig);
@@ -459,7 +460,8 @@ export class FacebookService {
         name: pageData.name || null,
         category: pageData.category || null,
         about: pageData.about || pageData.description || null,
-        followers: pageData.followers_count || 0,
+        followers: null,
+        // followers: pageData.followers_count || 0,
         website: pageData.website || null,
         phone: pageData.phone || null,
         email: pageData.emails?.[0] || null,
@@ -489,7 +491,8 @@ export class FacebookService {
           name: pageMetadata.name,
           about: pageMetadata.about,
           category: pageMetadata.category,
-          followers: pageMetadata.followers,
+          // followers: pageMetadata.followers,
+          followers: null,
           website: pageMetadata.website,
           phone: pageMetadata.phone,
           email: pageMetadata.email,
@@ -565,7 +568,8 @@ export class FacebookService {
             name: pageMetadata.name,
             category: pageMetadata.category,
             about: pageMetadata.about,
-            followers: pageMetadata.followers,
+            // followers: pageMetadata.followers,
+            followers: null,
             website: pageMetadata.website,
             phone: pageMetadata.phone,
             email: pageMetadata.email,
