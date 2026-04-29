@@ -8,6 +8,12 @@ import {
   withControllerError,
 } from "./controller.utils.js";
 import {
+  SlowTimeRecommendationService,
+  SlowTimeTemplate,
+} from "../services/slowTimeRecommendation.service.js";
+import { ContentAssistService } from "../services/contentAssist.service.js";
+import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
+import {
   BroadcastContentParams,
   ContentImageParams,
   ContentType,
@@ -670,6 +676,187 @@ export async function updateTagsAndGenerateDescription(
           description,
         },
         message: "Tags updated and description generated successfully",
+      });
+    }
+  );
+}
+
+// ===========================
+// Slow-Time Manual Trigger
+// ===========================
+
+const SLOW_TIME_DISCOUNT_TYPE_MAP: Record<string, string> = {
+  "% Off": "Percentage",
+  "$ Off": "Flat",
+  "BOGO": "BOGO",
+  "Free Item": "FREE_ITEM",
+  "Happy Hour": "HAPPY_HOUR",
+};
+
+function slowTimeToDealTemplate(t: SlowTimeTemplate) {
+  const discountTypeKey =
+    (t.discountType && SLOW_TIME_DISCOUNT_TYPE_MAP[t.discountType]) ||
+    "CUSTOM";
+  return {
+    title: t.title,
+    discountType: discountTypeKey as any,
+    contentType: t.contentType,
+    suggestedDiscount: t.suggestedDiscountValue ?? "",
+    percentOffValue:
+      t.discountType === "% Off" && t.suggestedDiscountValue
+        ? Number(t.suggestedDiscountValue)
+        : undefined,
+    dollarOffValue:
+      t.discountType === "$ Off" && t.suggestedDiscountValue
+        ? Number(t.suggestedDiscountValue)
+        : undefined,
+    bogoOrFreeItem:
+      t.discountType === "BOGO" || t.discountType === "Free Item"
+        ? t.description
+        : undefined,
+    targetAudience: [],
+    bestTiming: {
+      days: t.bestTiming?.days ?? [],
+      hours: t.bestTiming?.hours ?? [],
+      seasonalNote: t.bestTiming?.seasonalNote,
+    },
+    callToAction: t.callToAction,
+    marketingTips: [t.rationale],
+    tags: [t.occasion, t.intensity],
+    dealType: t.type,
+    termsAndConditions: t.termsAndConditions,
+    image: "",
+  };
+}
+
+/**
+ * Manually trigger a slow-time deal template + notification for a business.
+ * POST /ai-assist/slow-time/trigger
+ *
+ * Body: {
+ *   businessId: string (required),
+ *   persistTemplate?: boolean,   // default false — when true, saves the template via DealTemplateGeneratorService
+ *   sendNotification?: boolean,  // default true — generate notification copy variants
+ *   notificationVariantCount?: number  // default 3
+ * }
+ */
+export async function triggerSlowTimeTemplate(
+  req: Request,
+  res: Response
+): Promise<void> {
+  await withControllerError(
+    res,
+    "Error triggering slow-time template",
+    async () => {
+      const {
+        businessId,
+        persistTemplate = false,
+        sendNotification = true,
+        notificationVariantCount = 3,
+      } = req.body ?? {};
+
+      if (
+        !validateRequiredFields(
+          res,
+          { businessId },
+          [{ key: "businessId" }]
+        )
+      ) {
+        return;
+      }
+
+      const recommendations =
+        await SlowTimeRecommendationService.getRecommendations(businessId);
+
+      const template =
+        recommendations.primaryTemplate ??
+        recommendations.alternativeTemplates[0] ??
+        null;
+
+      if (!template) {
+        res.status(200).json({
+          success: true,
+          triggered: false,
+          reason: "No slow-time signal detected for this business right now",
+          footprint: recommendations.footprint,
+        });
+        return;
+      }
+
+      let savedTemplateId: string | undefined;
+      if (persistTemplate) {
+        try {
+          const dealTemplate = slowTimeToDealTemplate(template);
+          const saved =
+            await DealTemplateGeneratorService.savePreGeneratedTemplate(
+              businessId,
+              dealTemplate as any,
+              {
+                occasion: "slow_period",
+                scope: "business_specific",
+              }
+            );
+          savedTemplateId = String(saved._id);
+        } catch (err: any) {
+          logger.warn(
+            { businessId, err: err?.message },
+            "Failed to persist slow-time template — returning unsaved template"
+          );
+        }
+      }
+
+      let notification:
+        | Awaited<
+            ReturnType<typeof ContentAssistService.generateNotificationCopy>
+          >
+        | undefined;
+      if (sendNotification) {
+        try {
+          notification = await ContentAssistService.generateNotificationCopy({
+            appType: "BUSINESS",
+            triggerType: "business_inactivity",
+            tone: "coach",
+            variantCount: notificationVariantCount,
+            emojiAllowed: true,
+            context: {
+              businessId,
+              offerName: template.title,
+              category: template.contentType,
+            },
+          });
+        } catch (err: any) {
+          logger.warn(
+            { businessId, err: err?.message },
+            "Failed to generate notification copy"
+          );
+        }
+      }
+
+      logger.info(
+        {
+          businessId,
+          occasion: template.occasion,
+          intensity: template.intensity,
+          persisted: !!savedTemplateId,
+          notificationVariants: notification?.variants?.length ?? 0,
+        },
+        "Slow-time template triggered manually"
+      );
+
+      res.status(200).json({
+        success: true,
+        triggered: true,
+        template,
+        ...(savedTemplateId ? { savedTemplateId } : {}),
+        footprint: recommendations.footprint,
+        alternatives: recommendations.alternativeTemplates,
+        notification: notification
+          ? {
+              variants: notification.variants,
+              fallbackUsed: notification.fallbackUsed,
+              safetyFlags: notification.safetyFlags,
+            }
+          : null,
       });
     }
   );

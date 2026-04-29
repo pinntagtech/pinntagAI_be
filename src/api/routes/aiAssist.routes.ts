@@ -17,6 +17,7 @@ import {
   getRecentUsage,
   getAllBusinessUsage,
   updateTagsAndGenerateDescription,
+  triggerSlowTimeTemplate,
 } from "../controllers/aiAssistController.js";
 
 const router = Router();
@@ -267,5 +268,34 @@ router.get("/usage/:businessId/recent", getRecentUsage);
  * }
  */
 router.post("/update-tags-and-description", updateTagsAndGenerateDescription);
+
+// ===========================
+// Slow-Time Manual Trigger
+// ===========================
+
+/**
+ * @route POST /ai-assist/slow-time/trigger
+ * @desc Manually trigger a slow-time deal template + notification copy for a business.
+ *       Selects the best template based on the business's user-footprint signals
+ *       (views, likes, RSVPs, follows, nearby visitors) and optionally persists
+ *       the template and/or returns notification copy variants for the backend
+ *       to deliver.
+ * @body {
+ *   businessId: string (required),
+ *   persistTemplate?: boolean (default: false),
+ *   sendNotification?: boolean (default: true),
+ *   notificationVariantCount?: number (default: 3)
+ * }
+ * @returns {
+ *   success: boolean,
+ *   triggered: boolean,
+ *   template?: SlowTimeTemplate,
+ *   savedTemplateId?: string,
+ *   footprint: FootprintSnapshot,
+ *   alternatives: SlowTimeTemplate[],
+ *   notification?: { variants, fallbackUsed, safetyFlags } | null
+ * }
+ */
+router.post("/slow-time/trigger", triggerSlowTimeTemplate);
 
 export default router;
