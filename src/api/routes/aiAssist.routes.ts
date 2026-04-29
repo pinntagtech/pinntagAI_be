@@ -35,7 +35,8 @@ const router = Router();
  *   urgency?: "low" | "medium" | "high",
  *   tone?: "professional" | "casual" | "friendly" | "exciting" | "urgent",
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/broadcast", generateBroadcastContent);
@@ -53,7 +54,8 @@ router.post("/broadcast", generateBroadcastContent);
  *   minPurchase?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/offer", generateOfferContent);
@@ -69,7 +71,8 @@ router.post("/offer", generateOfferContent);
  *   expiryDays?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/reward", generateRewardContent);
@@ -89,7 +92,8 @@ router.post("/reward", generateRewardContent);
  *   cost?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/event", generateEventContent);

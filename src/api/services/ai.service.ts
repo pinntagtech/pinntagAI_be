@@ -1286,6 +1286,7 @@ export class AIService {
       category,
       subcategory,
       tags,
+      dayPart,
     } = params;
 
     // Check subscription access
@@ -1306,6 +1307,7 @@ Content Details:
 ${category ? `- Category: ${category}` : ""}
 ${subcategory ? `- Subcategory: ${subcategory}` : ""}
 ${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${dayPart ? `- Meal Time / Day Part: ${dayPart} (food & drinks business — anchor the title to this meal occasion)` : ""}
 ${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
 
 Using your knowledge of this business, generate content that aligns with the brand identity and resonates with the target audience.
@@ -1361,6 +1363,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
       category,
       subcategory,
       tags,
+      dayPart,
     } = params;
 
     // Check subscription access
@@ -1384,6 +1387,7 @@ Offer Details:
 ${category ? `- Category: ${category}` : ""}
 ${subcategory ? `- Subcategory: ${subcategory}` : ""}
 ${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${dayPart ? `- Meal Time / Day Part: ${dayPart} (food & drinks business — anchor the title to this meal occasion, e.g. "Breakfast Bundle", "Late-Night Bites")` : ""}
 ${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
 
 Using your knowledge of this business, generate an offer that aligns with the brand identity and creates urgency for the target audience.
@@ -1439,6 +1443,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
       category,
       subcategory,
       tags,
+      dayPart,
     } = params;
 
     // Check subscription access
@@ -1460,6 +1465,7 @@ Reward Details:
 ${category ? `- Category: ${category}` : ""}
 ${subcategory ? `- Subcategory: ${subcategory}` : ""}
 ${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${dayPart ? `- Meal Time / Day Part: ${dayPart} (food & drinks business — anchor the title to this meal occasion)` : ""}
 ${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
 
 Using your knowledge of this business, generate reward content that makes customers feel valued and appreciated.
@@ -1518,6 +1524,7 @@ Respond with ONLY a JSON object (no markdown, no explanation) with this structur
       category,
       subcategory,
       tags,
+      dayPart,
     } = params;
 
     // Check subscription access
@@ -1542,6 +1549,7 @@ Event Details:
 ${category ? `- Category: ${category}` : ""}
 ${subcategory ? `- Subcategory: ${subcategory}` : ""}
 ${tags && tags.length > 0 ? `- Tags: ${tags.join(", ")}` : ""}
+${dayPart ? `- Meal Time / Day Part: ${dayPart} (food & drinks business — anchor the title to this meal occasion)` : ""}
 ${additionalContext ? `- Additional Context: ${additionalContext}` : ""}
 
 Using your knowledge of this business, generate event content that builds excitement and drives attendance.
