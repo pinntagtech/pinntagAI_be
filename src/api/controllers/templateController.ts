@@ -511,3 +511,63 @@ export const generateForAllAgents = async (_req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * On-demand template generation for a single business.
+ * POST /api/templates/generate-on-demand
+ * Body: { businessId: string, count?: number }
+ *
+ * Generates `count` templates (default 10, max 20) with AI images for the
+ * given business. Trained agents get business-specific templates; untrained
+ * agents get metadata-based templates. Returns the saved templates.
+ */
+export const generateTemplatesOnDemand = async (req: Request, res: Response) => {
+  try {
+    const { businessId } = req.body as { businessId?: string };
+    const requestedCount = Number(req.body?.count ?? 10);
+
+    if (!businessId) {
+      return res.status(400).json({
+        success: false,
+        error: "businessId is required",
+      });
+    }
+
+    if (!Number.isFinite(requestedCount) || requestedCount < 1) {
+      return res.status(400).json({
+        success: false,
+        error: "count must be a positive number",
+      });
+    }
+
+    const count = Math.min(Math.floor(requestedCount), 20);
+
+    logger.info(
+      { businessId, count },
+      "On-demand template generation requested"
+    );
+
+    const result = await AgentTemplateGenerationJob.executeForBusiness(
+      businessId,
+      count
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        businessId,
+        requested: count,
+        generated: result.successCount,
+        failed: result.failureCount,
+        isTrained: result.isTrained,
+        templates: result.templates,
+      },
+    });
+  } catch (error: any) {
+    logger.error({ error }, "Error generating on-demand templates");
+    return res.status(400).json({
+      success: false,
+      error: error.message || "Failed to generate templates on demand",
+    });
+  }
+};

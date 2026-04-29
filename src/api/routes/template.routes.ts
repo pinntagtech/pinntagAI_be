@@ -5,6 +5,7 @@ import {
   generateGenericForIndustry,
   generateMultipleTemplates,
   generateTemplate,
+  generateTemplatesOnDemand,
   getSchedulerStatus,
   getTemplateById,
   getTemplates,
@@ -12,6 +13,7 @@ import {
   triggerScheduledJob,
   triggerTemplateUpdate,
 } from "../controllers/templateController.js";
+import { internalApiKeyGuard } from "../../middleware/auth.js";
 
 const router = Router();
 
@@ -30,6 +32,17 @@ router.post("/generate", generateTemplate);
  * @body    { businessId, occasions: [{ occasion, specificHoliday?, scope? }] }
  */
 router.post("/generate-multiple", generateMultipleTemplates);
+
+/**
+ * @route   POST /api/templates/generate-on-demand
+ * @desc    On-demand AI template generation for a single business.
+ *          Generates `count` templates (default 10, max 20) with AI images.
+ *          Trained agents get business-specific templates; untrained agents
+ *          get metadata-based templates. Returns saved templates synchronously.
+ * @access  Internal (requires x-internal-api-key)
+ * @body    { businessId: string (required), count?: number (default 10, max 20) }
+ */
+router.post("/generate-on-demand", internalApiKeyGuard, generateTemplatesOnDemand);
 
 /**
  * @route   GET /api/templates

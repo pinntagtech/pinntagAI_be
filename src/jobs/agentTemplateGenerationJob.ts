@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger.js";
 import { AI_TrainingModel } from "../models/AI_Training.model.js";
 import { BusinessAIAssistantModel } from "../models/businessAIAssistant.model.js";
-import { DealTemplateGeneratorService, TemplateGenerationOptions } from "../api/services/dealTemplateGenerator.service.js";
+import { DealTemplateGeneratorService, TemplateGenerationOptions, DaySpecificOccasion } from "../api/services/dealTemplateGenerator.service.js";
 import { DiscountType } from "../models/pinntagBackend/dealTemplate.model.js";
 import { ImageGenerationService } from "../api/services/imageGeneration.service.js";
 import mongoose from "mongoose";
@@ -237,6 +237,249 @@ export class AgentTemplateGenerationJob {
       logger.error({ error }, "Error in overnight agent template generation job");
       throw error;
     }
+  }
+
+  /**
+   * On-demand template generation for a single business.
+   * Generates `count` templates with AI images and saves them.
+   * Mirrors the trained/untrained dispatch from execute() but for one business
+   * and pads the occasion list to always reach `count` templates.
+   */
+  static async executeForBusiness(
+    businessId: string,
+    count: number = 10
+  ): Promise<{
+    successCount: number;
+    failureCount: number;
+    isTrained: boolean;
+    templates: any[];
+  }> {
+    const startTime = Date.now();
+    logger.info({ businessId, count }, "Starting on-demand template generation");
+
+    const agent = await BusinessAIAssistantModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+
+    if (!agent) {
+      throw new Error(`No AI agent found for business ID: ${businessId}`);
+    }
+
+    const training = await AI_TrainingModel.findOne({
+      businessId: new mongoose.Types.ObjectId(businessId),
+    });
+
+    const isTrained = !!(training && training.trainingStatus === "completed");
+
+    const occasionPlan = this.buildOnDemandOccasionPlan(count);
+
+    const templates: any[] = [];
+    let failureCount = 0;
+
+    if (isTrained) {
+      const responseMap = new Map(
+        training!.responses.map((r) => [r.questionId, r.answer])
+      );
+      const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+      const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
+
+      for (const occasion of occasionPlan) {
+        try {
+          const template = await DealTemplateGeneratorService.generateDealTemplate(
+            businessId,
+            occasion
+          );
+
+          const imageUrl = await this.generateGenericTemplateImage(
+            businessId,
+            template.title,
+            agent.category,
+            agent.subCategories,
+            occasion.occasion,
+            {
+              industry: training?.industry,
+              promotionType: template.discountType,
+              contentType: template.contentType,
+              targetAudience: trainingTargetAudience,
+              brandVoice: trainingBrandVoice,
+            }
+          );
+
+          const saved = await DealTemplateGeneratorService.savePreGeneratedTemplate(
+            businessId,
+            template,
+            { ...occasion, thumbnailUrl: imageUrl }
+          );
+
+          templates.push(saved);
+        } catch (error: any) {
+          failureCount++;
+          logger.error(
+            { businessId, occasion: occasion.occasion, error: error.message },
+            "On-demand: failed to generate trained-agent template"
+          );
+        }
+      }
+    } else {
+      const { category, subCategories, tags, description } = agent as any;
+
+      for (const occasionOption of occasionPlan) {
+        const occasion = occasionOption.occasion!;
+        try {
+          const title = this.buildMetadataTitle(occasion, occasionOption.specificHoliday);
+          const descriptionText = this.buildMetadataDescription(
+            occasion,
+            category,
+            subCategories,
+            tags,
+            description,
+            occasionOption.specificHoliday
+          );
+
+          const isBogo = occasion === "tuesday_twofer";
+          const isFreeItem = occasion === "sunday_selfcare";
+          const occasionPromotionType = isBogo
+            ? "bogo"
+            : isFreeItem
+            ? "free_item"
+            : "percentage_off";
+          const occasionContentType = occasion === "saturday_special" ? "event" : "offer";
+
+          const imageUrl = await this.generateGenericTemplateImage(
+            businessId,
+            title,
+            category,
+            subCategories,
+            occasion,
+            {
+              industry: category,
+              promotionType: occasionPromotionType,
+              contentType: occasionContentType,
+            }
+          );
+
+          const templateOptions: TemplateGenerationOptions = {
+            occasion,
+            specificHoliday: occasionOption.specificHoliday,
+            scope: "business_specific",
+            thumbnailUrl: imageUrl,
+            categories: subCategories || [],
+          };
+
+          const saved = await this.saveMetadataBasedTemplate(
+            businessId,
+            agent,
+            templateOptions,
+            title,
+            descriptionText,
+            imageUrl
+          );
+
+          templates.push(saved);
+        } catch (error: any) {
+          failureCount++;
+          logger.error(
+            { businessId, occasion, error: error.message },
+            "On-demand: failed to generate metadata-based template"
+          );
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    logger.info(
+      {
+        businessId,
+        isTrained,
+        requested: count,
+        succeeded: templates.length,
+        failed: failureCount,
+        durationMs: duration,
+      },
+      "On-demand template generation completed"
+    );
+
+    return {
+      successCount: templates.length,
+      failureCount,
+      isTrained,
+      templates,
+    };
+  }
+
+  /**
+   * Build an occasion plan of `count` items, padded with day-of-week themes
+   * so on-demand calls always produce the requested number of templates.
+   */
+  private static buildOnDemandOccasionPlan(
+    count: number
+  ): TemplateGenerationOptions[] {
+    const currentDate = new Date();
+    const activeHolidays = this.detectCurrentOccasions(currentDate);
+    const dayOccasion = this.getCurrentDayOccasion(currentDate);
+
+    const plan: TemplateGenerationOptions[] = [];
+
+    // Core variety
+    plan.push({ occasion: "general", scope: "business_specific" });
+    plan.push({ occasion: "seasonal", scope: "business_specific" });
+    plan.push({ occasion: "trending", scope: "business_specific" });
+    plan.push({ occasion: "slow_period", scope: "business_specific" });
+
+    // Today's day-of-week theme
+    if (dayOccasion) {
+      plan.push({ occasion: dayOccasion as any, scope: "business_specific" });
+    }
+
+    // Active holidays
+    for (const holiday of activeHolidays) {
+      plan.push({
+        occasion: "holiday",
+        specificHoliday: holiday,
+        scope: "business_specific",
+      });
+    }
+
+    // Pad with remaining day-of-week themes (skip the one already added)
+    const dayThemes: DaySpecificOccasion[] = [
+      "friday_deals",
+      "saturday_special",
+      "sunday_selfcare",
+      "monday_motivation",
+      "tuesday_twofer",
+      "wednesday_midweek",
+      "thursday_throwback",
+    ];
+    for (const theme of dayThemes) {
+      if (plan.length >= count) break;
+      if (theme === dayOccasion) continue;
+      plan.push({ occasion: theme, scope: "business_specific" });
+    }
+
+    return plan.slice(0, count);
+  }
+
+  /**
+   * Build a title for metadata-based templates by occasion.
+   */
+  private static buildMetadataTitle(occasion: string, holiday?: string): string {
+    if (occasion === "holiday" && holiday) {
+      return `${holiday} Special - Celebrate with Us!`;
+    }
+    const titles: Record<string, string> = {
+      general: "Special Offer - Exclusive Deal",
+      seasonal: "Seasonal Special - Limited Time",
+      trending: "Trending Now - Don't Miss Out",
+      slow_period: "Off-Peak Savings - Great Value",
+      monday_motivation: "Motivation Monday - Start Your Week Right!",
+      tuesday_twofer: "Two-for-Tuesday - Double the Value!",
+      wednesday_midweek: "Midweek Madness - Hump Day Special!",
+      thursday_throwback: "Throwback Thursday - Classic Favorites!",
+      friday_deals: "Friday Deals - Weekend Kickoff!",
+      saturday_special: "Saturday Special - Family & Friends!",
+      sunday_selfcare: "Self-Care Sunday - Treat Yourself!",
+    };
+    return titles[occasion] || "Special Offer";
   }
 
   /**
@@ -696,7 +939,7 @@ export class AgentTemplateGenerationJob {
     title: string,
     _description: string,
     imageUrl: string
-  ): Promise<void> {
+  ): Promise<any> {
     const { upsertTemplate, TemplateCreatorType, TemplateType, TemplateScope } =
       await import("../models/pinntagBackend/dealTemplate.model.js");
 
@@ -732,7 +975,7 @@ export class AgentTemplateGenerationJob {
     // The businessCategories field will be populated by dealTemplateGenerator.service.ts
     // when the business has proper category mappings from the Pinntag backend.
 
-    await upsertTemplate(
+    return upsertTemplate(
       {
         title,
         type: TemplateType.OFFER,
