@@ -4,6 +4,11 @@ export interface ITrainingResponse {
   questionId: string;
   answer: string | string[] | number | boolean;
   answeredAt: Date;
+  // True when the answer was auto-populated from onboarding data and the user
+  // has not explicitly confirmed it yet. Prefilled responses are shown to the
+  // user but excluded from progress counts so the percentage stays at 0% until
+  // the user actually answers a question.
+  isPrefilled?: boolean;
 }
 
 export interface IGooglePlacesData {
@@ -83,6 +88,7 @@ const TrainingResponseSchema = new Schema<ITrainingResponse>(
     questionId: { type: String, required: true },
     answer: { type: Schema.Types.Mixed, required: true },
     answeredAt: { type: Date, default: Date.now },
+    isPrefilled: { type: Boolean, default: false },
   },
   { _id: false },
 );
@@ -209,9 +215,11 @@ AI_TrainingSchema.pre("save", function (next) {
   const doc = this as AI_TrainingDocument;
   doc.lastUpdated = new Date();
 
-  // Update completion percentage
+  // Update completion percentage. Prefilled responses are shown to the user
+  // but excluded from progress counts so the percentage stays at 0% until the
+  // user explicitly answers a question.
   if (doc.metadata && doc.metadata.totalQuestions) {
-    const answeredCount = doc.responses.length;
+    const answeredCount = doc.responses.filter((r) => !r.isPrefilled).length;
     doc.metadata.answeredQuestions = answeredCount;
     doc.metadata.completionPercentage = Math.round(
       (answeredCount / doc.metadata.totalQuestions) * 100,
