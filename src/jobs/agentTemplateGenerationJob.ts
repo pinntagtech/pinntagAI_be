@@ -839,6 +839,11 @@ export class AgentTemplateGenerationJob {
     try {
       const promptParts: string[] = [];
 
+      // ── PRIMARY CONSTRAINT — text-free imagery (placed first for max weight)
+      promptParts.push(
+        "IMPORTANT: produce a purely visual, text-free image. Absolutely NO text, NO letters, NO numbers, NO digits, NO percentage signs, NO dollar signs, NO words, NO captions, NO logos, NO typography of any kind"
+      );
+
       // ── Occasion mood ────────────────────────────────────────────────────
       const occasionMoods: Record<string, string> = {
         holiday: "festive, celebratory, warm-toned promotional image",
@@ -868,12 +873,15 @@ export class AgentTemplateGenerationJob {
       }
 
       // ── Promotion-type visual cues ────────────────────────────────────────
+      // Cues use object/scene metaphors only — avoid words like "percentage",
+      // "discount", or "currency" which trigger the model to render numerals
+      // and symbols.
       if (enrichedContext?.promotionType) {
         const promoVisuals: Record<string, string> = {
-          percentage_off: "Show a sense of savings and value — abstract percentage or discount symbol shapes",
-          dollar_off:     "Show a sense of currency value — abstract coin or price-tag shapes",
-          bogo:           "Show two items or a paired/duo composition to reflect buy-one-get-one",
-          free_item:      "Show a gift or bonus element — abstract gift-box or ribbon shapes",
+          percentage_off: "Show a value and savings mood through visual metaphors — gift tags, ribbons, radial burst patterns, or shopping bag imagery (no numerals or symbols)",
+          dollar_off:     "Show a value mood through visual metaphors — coin stacks, wallet, or price-tag shapes (no numerals or symbols)",
+          bogo:           "Show two paired or mirrored items in the composition (no numerals or symbols)",
+          free_item:      "Show a wrapped gift box with a ribbon, or a bonus item flourish (no numerals or symbols)",
         };
         const cue = promoVisuals[enrichedContext.promotionType];
         if (cue) promptParts.push(cue);
@@ -900,8 +908,11 @@ export class AgentTemplateGenerationJob {
 
       // ── Mandatory generic constraints ────────────────────────────────────
       promptParts.push("Use vibrant colours and professional graphic-design composition");
-      promptParts.push("Abstract shapes or patterns only — NO readable text, NO logos, NO business names");
       promptParts.push("Suitable for social media and promotional marketing use");
+      // Final reinforcement — last instructions also carry strong weight.
+      promptParts.push(
+        "FINAL REMINDER: zero text, zero letters, zero numerals, zero typography, zero symbols. The image must be entirely free of any written or printed characters in any language"
+      );
 
       const genericPrompt = promptParts.join(". ");
 
