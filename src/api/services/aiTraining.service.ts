@@ -1978,10 +1978,59 @@ export class AITrainingService {
 
       // Calculate correct metadata with proper percentages (capped at 100%).
       // Prefilled responses (auto-answered from onboarding) are excluded from
-      // the answered count so the percentage stays at 0% until the user
-      // explicitly answers a training question.
-      const totalQuestionsAllPhases = phaseSummary.reduce(
+      // both the numerator and denominator so the user can reach 100% by
+      // answering every editable question — the auto-answered ones don't
+      // count for or against progress.
+      const basicPhaseQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.BASIC,
+        training.subCategory as BusinessSubCategory,
+      );
+      const standardPhaseQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.STANDARD,
+        training.subCategory as BusinessSubCategory,
+      );
+      const advancedPhaseQuestions = getQuestionsByPhaseUtil(
+        training.industry as BusinessIndustries,
+        TrainingPhase.ADVANCED,
+        training.subCategory as BusinessSubCategory,
+      );
+
+      const basicQuestionIds = new Set(basicPhaseQuestions.map((q) => q.id));
+      const standardQuestionIds = new Set(
+        standardPhaseQuestions.map((q) => q.id),
+      );
+      const advancedQuestionIds = new Set(
+        advancedPhaseQuestions.map((q) => q.id),
+      );
+
+      const prefilledIdsByPhase = {
+        basic: new Set<string>(),
+        standard: new Set<string>(),
+        advanced: new Set<string>(),
+      };
+      for (const r of training.responses) {
+        if (!r.isPrefilled) continue;
+        if (basicQuestionIds.has(r.questionId)) {
+          prefilledIdsByPhase.basic.add(r.questionId);
+        } else if (standardQuestionIds.has(r.questionId)) {
+          prefilledIdsByPhase.standard.add(r.questionId);
+        } else if (advancedQuestionIds.has(r.questionId)) {
+          prefilledIdsByPhase.advanced.add(r.questionId);
+        }
+      }
+      const totalPrefilledAllPhases =
+        prefilledIdsByPhase.basic.size +
+        prefilledIdsByPhase.standard.size +
+        prefilledIdsByPhase.advanced.size;
+
+      const rawTotalQuestionsAllPhases = phaseSummary.reduce(
         (sum, p) => sum + p.totalQuestions,
+        0,
+      );
+      const totalQuestionsAllPhases = Math.max(
+        rawTotalQuestionsAllPhases - totalPrefilledAllPhases,
         0,
       );
       const totalAnsweredAllPhases = training.responses.filter(
@@ -1992,45 +2041,67 @@ export class AITrainingService {
         0,
       );
 
+      // Per-phase totals and percentages also exclude prefilled questions so
+      // each phase can reach 100% once all editable questions are answered.
+      const basicPrefilledCount = prefilledIdsByPhase.basic.size;
+      const standardPrefilledCount = prefilledIdsByPhase.standard.size;
+      const advancedPrefilledCount = prefilledIdsByPhase.advanced.size;
+
+      const basicTotalEditable = Math.max(
+        (training.metadata?.phaseProgress?.basic?.total || 0) -
+          basicPrefilledCount,
+        0,
+      );
+      const standardTotalEditable = Math.max(
+        (training.metadata?.phaseProgress?.standard?.total || 0) -
+          standardPrefilledCount,
+        0,
+      );
+      const advancedTotalEditable = Math.max(
+        (training.metadata?.phaseProgress?.advanced?.total || 0) -
+          advancedPrefilledCount,
+        0,
+      );
+
       // Calculate per-phase progress with percentages
       const phaseProgressWithPercentage = {
         basic: {
-          total: training.metadata?.phaseProgress?.basic?.total || 0,
+          total: basicTotalEditable,
           answered: training.metadata?.phaseProgress?.basic?.answered || 0,
           completed:
             training.metadata?.phaseProgress?.basic?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.basic?.answered || 0) /
-                (training.metadata?.phaseProgress?.basic?.total || 1)) *
+                (basicTotalEditable || 1)) *
                 100,
             ),
             100,
           ),
         },
         standard: {
-          total: training.metadata?.phaseProgress?.standard?.total || 0,
+          total: standardTotalEditable,
           answered: training.metadata?.phaseProgress?.standard?.answered || 0,
           completed:
             training.metadata?.phaseProgress?.standard?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.standard?.answered || 0) /
-                (training.metadata?.phaseProgress?.standard?.total || 1)) *
+                (standardTotalEditable || 1)) *
                 100,
             ),
             100,
           ),
         },
         advanced: {
-          total: training.metadata?.phaseProgress?.advanced?.total || 0,
+          total: advancedTotalEditable,
           answered: training.metadata?.phaseProgress?.advanced?.answered || 0,
           completed:
             training.metadata?.phaseProgress?.advanced?.completed || false,
           percentage: Math.min(
             Math.round(
               ((training.metadata?.phaseProgress?.advanced?.answered || 0) /
-                (training.metadata?.phaseProgress?.advanced?.total || 1)) *
+                (advancedTotalEditable || 1)) *
                 100,
             ),
             100,
@@ -2047,49 +2118,38 @@ export class AITrainingService {
         ),
         requiredQuestions: totalRequiredAllPhases,
         completionPercentage: Math.min(
-          Math.round((totalAnsweredAllPhases / totalQuestionsAllPhases) * 100),
+          Math.round(
+            (totalAnsweredAllPhases / (totalQuestionsAllPhases || 1)) * 100,
+          ),
           100,
         ),
         phaseProgress: phaseProgressWithPercentage,
       };
 
-      // Recalculate completedPhases based on actual answered questions
+      // Recalculate completedPhases based on actual answered questions.
+      // Prefilled responses count as answered for completion purposes — the
+      // phase is done when every question (prefilled or user-answered) has a
+      // response, even though prefilled ones don't show up in the percentage.
       const correctedCompletedPhases: TrainingPhase[] = [];
 
-      // Check each phase independently
-      const basicQuestions = getQuestionsByPhaseUtil(
-        training.industry as BusinessIndustries,
-        TrainingPhase.BASIC,
-        training.subCategory as BusinessSubCategory,
-      );
-      const basicAnswered = basicQuestions.filter((q) =>
+      const basicAnswered = basicPhaseQuestions.filter((q) =>
         responseMap.has(q.id),
       ).length;
-      if (basicAnswered === basicQuestions.length) {
+      if (basicAnswered === basicPhaseQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.BASIC);
       }
 
-      const standardQuestions = getQuestionsByPhaseUtil(
-        training.industry as BusinessIndustries,
-        TrainingPhase.STANDARD,
-        training.subCategory as BusinessSubCategory,
-      );
-      const standardAnswered = standardQuestions.filter((q) =>
+      const standardAnswered = standardPhaseQuestions.filter((q) =>
         responseMap.has(q.id),
       ).length;
-      if (standardAnswered === standardQuestions.length) {
+      if (standardAnswered === standardPhaseQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.STANDARD);
       }
 
-      const advancedQuestions = getQuestionsByPhaseUtil(
-        training.industry as BusinessIndustries,
-        TrainingPhase.ADVANCED,
-        training.subCategory as BusinessSubCategory,
-      );
-      const advancedAnswered = advancedQuestions.filter((q) =>
+      const advancedAnswered = advancedPhaseQuestions.filter((q) =>
         responseMap.has(q.id),
       ).length;
-      if (advancedAnswered === advancedQuestions.length) {
+      if (advancedAnswered === advancedPhaseQuestions.length) {
         correctedCompletedPhases.push(TrainingPhase.ADVANCED);
       }
 
