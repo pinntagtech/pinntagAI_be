@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import { TemplateUpdateJob } from "./templateUpdateJob.js";
 import { DailyTemplateJob } from "./dailyTemplateJob.js";
 import { AgentTemplateGenerationJob } from "./agentTemplateGenerationJob.js";
+import { SlowTimeTemplateRefreshJob } from "./slowTimeTemplateRefreshJob.js";
 
 /**
  * Job Scheduler
@@ -68,6 +69,23 @@ export class JobScheduler {
           await AgentTemplateGenerationJob.execute();
         } catch (error: any) {
           logger.error({ error }, "Agent template generation job failed");
+        }
+      }
+    );
+
+    // Schedule hourly slow-time template refresh
+    // Runs at the top of every hour for businesses opted in via
+    // BusinessAIAssistant.enableAutoSlowTimeTemplates. Updates the slow-time
+    // deal template in place based on user_footprint signals.
+    this.scheduleJob(
+      "slow-time-template-refresh",
+      "0 * * * *", // Cron expression: At minute 0 of every hour
+      async () => {
+        logger.info("Running slow-time template refresh job");
+        try {
+          await SlowTimeTemplateRefreshJob.execute();
+        } catch (error: any) {
+          logger.error({ error }, "Slow-time template refresh job failed");
         }
       }
     );
@@ -171,6 +189,9 @@ export class JobScheduler {
         break;
       case "agent-template-generation":
         await AgentTemplateGenerationJob.execute();
+        break;
+      case "slow-time-template-refresh":
+        await SlowTimeTemplateRefreshJob.execute();
         break;
       default:
         throw new Error(`Unknown job: ${name}`);

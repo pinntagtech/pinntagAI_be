@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
 import { getUserFootprintModel } from "../../models/pinntagBackend/userFootprint.model.js";
 import { getBackendConnection } from "../../db/connection.js";
+import { AI_TrainingModel } from "../../models/AI_Training.model.js";
 import { logger } from "../../utils/logger.js";
 
 export type FootprintIntensity = "low" | "moderate" | "high" | "critical";
@@ -371,10 +372,42 @@ function classifyIntensity(
   return "low";
 }
 
+interface TrainingContext {
+  slowPeriods: string[]; // e.g. ["Weekday afternoons", "Mid-week"]
+  busiestDays: string[]; // e.g. ["Friday", "Saturday", "Sunday"]
+  trainingComplete: boolean;
+}
+
+const MIN_BASELINE_VIEWS = 5; // Below this, projection-based signals are noise
+
+function isMidweekNow(now = new Date()): boolean {
+  const day = now.getDay(); // 0=Sun ... 6=Sat
+  return day >= 2 && day <= 4; // Tue, Wed, Thu
+}
+
+function isWeekdayAfternoonNow(now = new Date()): boolean {
+  const day = now.getDay();
+  const hour = now.getHours();
+  return day >= 1 && day <= 5 && hour >= 12 && hour < 17;
+}
+
+function trainingSaysSlowNow(slowPeriods: string[], now = new Date()): boolean {
+  if (!slowPeriods || slowPeriods.length === 0) return false;
+  const normalized = slowPeriods.map((s) => s.toLowerCase());
+  if (normalized.some((s) => s.includes("mid-week") || s === "midweek")) {
+    if (isMidweekNow(now)) return true;
+  }
+  if (normalized.some((s) => s.includes("weekday afternoon"))) {
+    if (isWeekdayAfternoonNow(now)) return true;
+  }
+  return false;
+}
+
 function detectSignals(
   recent: WindowedSummary,
   baseline: WindowedSummary,
   hasSlowTimeConfigured: boolean,
+  training: TrainingContext,
 ): RecommendationOccasion[] {
   const signals: RecommendationOccasion[] = [];
   const projectedBaselineViews = projectBaseline(baseline.totalBusinessViews);
@@ -383,8 +416,15 @@ function detectSignals(
       ? (recent.totalBusinessViews - projectedBaselineViews) /
         projectedBaselineViews
       : 0;
+  const baselineSignificant = baseline.totalBusinessViews >= MIN_BASELINE_VIEWS;
 
-  if (viewsDelta < -0.3) signals.push("low_views");
+  // Categorical "slow now" signal — fires when the business itself told us
+  // this time of week is slow. Doesn't depend on baseline math.
+  if (training.slowPeriods.some((p) => /mid-week/i.test(p)) && isMidweekNow()) {
+    signals.push("midweek_dip");
+  }
+
+  if (baselineSignificant && viewsDelta < -0.3) signals.push("low_views");
 
   // Conversion: views → check-ins or RSVPs
   const totalViews = recent.totalBusinessViews + recent.totalEventViews;
@@ -432,15 +472,22 @@ function detectSignals(
   }
 
   const downCount = [
-    viewsDelta < -0.3,
+    baselineSignificant && viewsDelta < -0.3,
     recent.totalLikes < projectedBaselineLikes * 0.5,
     recent.totalSaves < projectedBaselineSaves * 0.5,
     recent.totalRsvps < projectBaseline(baseline.totalRsvps) * 0.5,
     recent.newFollowers < projectBaseline(baseline.newFollowers) * 0.5,
   ].filter(Boolean).length;
-  if (downCount >= 3) signals.push("cold_window");
+  if (downCount >= 3 && baselineSignificant) signals.push("cold_window");
 
-  if (signals.length === 0 && hasSlowTimeConfigured) {
+  // Final fallback for completed-training businesses: if the business has any
+  // slow-time signal configured (clock window OR training answer) but no
+  // anomaly fired, suggest the evergreen template anyway.
+  const evergreenAvailable =
+    hasSlowTimeConfigured ||
+    training.slowPeriods.length > 0 ||
+    trainingSaysSlowNow(training.slowPeriods);
+  if (signals.length === 0 && evergreenAvailable) {
     signals.push("evergreen_slow_period");
   }
 
@@ -497,6 +544,36 @@ export class SlowTimeRecommendationService {
       );
     }
 
+    // Pull training-side categorical answers (slow_periods, busiest_days).
+    // These are richer than the clock-hour `business.slowTime` field for
+    // recommendation purposes.
+    const training: TrainingContext = {
+      slowPeriods: [],
+      busiestDays: [],
+      trainingComplete: false,
+    };
+    try {
+      const trainingDoc = await AI_TrainingModel.findOne({
+        businessId: new mongoose.Types.ObjectId(businessId),
+      })
+        .select("trainingStatus responses")
+        .lean();
+      training.trainingComplete = trainingDoc?.trainingStatus === "completed";
+      const responses = (trainingDoc?.responses ?? []) as Array<{
+        questionId: string;
+        answer: any;
+      }>;
+      const sp = responses.find((r) => r.questionId === "slow_periods")?.answer;
+      const bd = responses.find((r) => r.questionId === "busiest_days")?.answer;
+      training.slowPeriods = Array.isArray(sp) ? (sp as string[]) : [];
+      training.busiestDays = Array.isArray(bd) ? (bd as string[]) : [];
+    } catch (err) {
+      logger.warn(
+        { businessId, err: (err as Error).message },
+        "Could not read training context for slow-time recs",
+      );
+    }
+
     const [recent, baseline] = await Promise.all([
       getWindowedSummary(businessId, WINDOW_DAYS, eventIds, businessLocation).catch(
         (err) => {
@@ -529,7 +606,12 @@ export class SlowTimeRecommendationService {
       recent.totalBusinessViews,
       baseline.totalBusinessViews,
     );
-    const signals = detectSignals(recent, baseline, hasSlowTimeConfigured);
+    const signals = detectSignals(
+      recent,
+      baseline,
+      hasSlowTimeConfigured,
+      training,
+    );
 
     const interactedViews =
       recent.totalBusinessViews + recent.totalEventViews;
@@ -566,23 +648,23 @@ export class SlowTimeRecommendationService {
     const isSlowTime =
       signals.length > 0 || intensity === "high" || intensity === "critical";
 
-    if (!isSlowTime) {
-      return {
-        isSlowTime: false,
-        footprint,
-        primaryTemplate: null,
-        alternativeTemplates: [],
-      };
-    }
-
-    const ordered = signals.length > 0 ? signals : ["evergreen_slow_period" as const];
-    const primary = buildTemplate(ordered[0], intensity);
-    const alternatives = ordered
-      .slice(1)
-      .map((occ) => buildTemplate(occ, intensity));
+    // When training is complete we always hand back a template — the
+    // caller (training-state API, cron job) wants something ready to post.
+    // Footprint.signals still tells them whether this is a real anomaly
+    // or just the evergreen fallback.
+    const ordered: RecommendationOccasion[] =
+      signals.length > 0 ? signals : ["evergreen_slow_period"];
+    const primary =
+      training.trainingComplete || isSlowTime
+        ? buildTemplate(ordered[0], intensity)
+        : null;
+    const alternatives =
+      training.trainingComplete || isSlowTime
+        ? ordered.slice(1).map((occ) => buildTemplate(occ, intensity))
+        : [];
 
     return {
-      isSlowTime: true,
+      isSlowTime,
       footprint,
       primaryTemplate: primary,
       alternativeTemplates: alternatives,

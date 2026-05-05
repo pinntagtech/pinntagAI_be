@@ -50,6 +50,8 @@ export interface IBusiness_AI_Assistant extends Document {
   };
   isFacebookDataFetched?: boolean; // Whether Facebook data has been fetched
   lastFacebookDataFetched?: Date; // Last time Facebook data was fetched
+  enableAutoSlowTimeTemplates?: boolean; // Opt-in to hourly slow-time template refresh job
+  lastSlowTimeTemplateRefreshAt?: Date; // Last time the slow-time job touched this business
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,12 +117,15 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     },
     isFacebookDataFetched: { type: Boolean, default: false },
     lastFacebookDataFetched: { type: Date },
+    enableAutoSlowTimeTemplates: { type: Boolean, default: false },
+    lastSlowTimeTemplateRefreshAt: { type: Date },
   },
   { timestamps: true, versionKey: false }
 );
 
 BusinessAIAssistantSchema.index({ industry: 1 });
 BusinessAIAssistantSchema.index({ createdAt: -1 });
+BusinessAIAssistantSchema.index({ enableAutoSlowTimeTemplates: 1 });
 BusinessAIAssistantSchema.index({
   businessName: "text",
   name: "text",
