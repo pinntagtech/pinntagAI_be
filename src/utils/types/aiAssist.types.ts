@@ -169,6 +169,11 @@ export interface ContentImageParams {
   tone?: string;
   callToAction?: string;
   promoCode?: string;
+  // Constraints from the AI-generated content that should shape the
+  // visual (e.g. show "Valid through Sunday" or compliance disclaimers).
+  termsAndConditions?: string;
+  validityPeriod?: string;
+  hashtags?: string[];
 }
 
 // ===========================

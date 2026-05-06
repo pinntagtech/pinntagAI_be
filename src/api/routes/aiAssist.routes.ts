@@ -9,6 +9,7 @@ import {
   generateImage,
   editImage,
   generateContentImage,
+  generateAIContentImage,
   generateImageVariations,
   generateTextImage,
   checkAccess,
@@ -174,6 +175,40 @@ router.post("/edit-image", editImage);
  * }
  */
 router.post("/content-image", generateContentImage);
+
+/**
+ * @route POST /ai-assist/ai-content-image
+ * @desc Generate an image directly from AI-assist generated content. Pair
+ *       this with /ai-assist/{broadcast,offer,reward,event} — pass the
+ *       returned title, description, termsAndConditions, callToAction,
+ *       promoCode, hashtags, etc. straight through, and you'll get a
+ *       matching image. Subscription required.
+ * @body {
+ *   businessId: string (required),
+ *   contentType: "broadcast" | "offer" | "reward" | "event" (required),
+ *   title: string (required),
+ *   description?: string,
+ *   termsAndConditions?: string,
+ *   validityPeriod?: string,
+ *   callToAction?: string,
+ *   promoCode?: string,
+ *   hashtags?: string[],
+ *   category?: string,
+ *   subcategory?: string,
+ *   tags?: string[],
+ *   dealType?: string,
+ *   discountValue?: number,
+ *   discountType?: "percentage" | "fixed" | "buy_one_get_one",
+ *   eventType?: string,
+ *   targetAudience?: string,
+ *   tone?: string,
+ *   style?: ImageStyle,
+ *   aspectRatio?: ImageAspectRatio,
+ *   brandColors?: string[],
+ *   includeLogoSpace?: boolean
+ * }
+ */
+router.post("/ai-content-image", generateAIContentImage);
 
 /**
  * @route POST /ai-assist/image-variations

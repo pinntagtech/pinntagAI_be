@@ -354,6 +354,57 @@ export async function generateContentImage(
 }
 
 /**
+ * Generate an image directly from AI-assist generated content
+ * (title, description, T&C, CTA, promo code, etc.). Designed to be
+ * called right after one of the /ai-assist/{broadcast,offer,reward,event}
+ * endpoints so the image visually reflects the content.
+ *
+ * POST /ai-assist/ai-content-image
+ */
+export async function generateAIContentImage(
+  req: Request,
+  res: Response
+): Promise<void> {
+  await withControllerError(
+    res,
+    "Error generating AI content image",
+    async () => {
+      const params: ContentImageParams = req.body;
+
+      if (
+        !validateRequiredFields(res, params, [
+          { key: "businessId" },
+          { key: "contentType" },
+          { key: "title" },
+        ])
+      ) {
+        return;
+      }
+
+      if (!VALID_CONTENT_TYPES.includes(params.contentType)) {
+        res.status(400).json({
+          error: `Invalid contentType. Must be one of: ${VALID_CONTENT_TYPES.join(
+            ", "
+          )}`,
+        });
+        return;
+      }
+
+      if (!(await ensureImageAccess(res, params.businessId))) {
+        return;
+      }
+
+      const image = await ImageGenerationService.generateContentImage(params);
+
+      res.status(200).json({
+        success: true,
+        image,
+      });
+    }
+  );
+}
+
+/**
  * Generate image variations for A/B testing
  * POST /ai-assist/image-variations
  */
