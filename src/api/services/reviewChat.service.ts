@@ -92,9 +92,8 @@ class ReviewChatService {
       throw new Error("Business not found");
     }
 
-    const { summary, generated } = await this.getOrGenerateSummary(
-      businessObjId
-    );
+    const { summary, generated } =
+      await this.getOrGenerateSummary(businessObjId);
 
     const businessSnapshot = this.buildBusinessSnapshot(business);
     const systemPrompt = this.buildSystemPrompt(businessSnapshot, summary);
@@ -120,7 +119,7 @@ class ReviewChatService {
         tokensUsed: completion.usage?.total_tokens || 0,
         summaryGenerated: generated,
       },
-      "Review chat completed"
+      "Review chat completed",
     );
 
     return {
@@ -139,7 +138,7 @@ class ReviewChatService {
    * cached one is older than SUMMARY_TTL_HOURS, regenerates from raw reviews.
    */
   async getOrGenerateSummary(
-    businessId: mongoose.Types.ObjectId
+    businessId: mongoose.Types.ObjectId,
   ): Promise<{ summary: IReviewSummary | null; generated: boolean }> {
     const existing = await ReviewSummaryModel.findOne({
       business: businessId,
@@ -151,7 +150,10 @@ class ReviewChatService {
         SUMMARY_TTL_HOURS * 60 * 60 * 1000;
 
     if (isFresh) {
-      return { summary: existing as IReviewSummary, generated: false };
+      return {
+        summary: existing as unknown as IReviewSummary,
+        generated: false,
+      };
     }
 
     const summary = await this.generateSummary(businessId);
@@ -164,7 +166,7 @@ class ReviewChatService {
    * Upserts the result into ReviewSummaryModel.
    */
   async generateSummary(
-    businessId: mongoose.Types.ObjectId
+    businessId: mongoose.Types.ObjectId,
   ): Promise<IReviewSummary | null> {
     const conn = await getBackendConnection();
     const ReviewModel = getBackendReviewModel(conn);
@@ -182,8 +184,8 @@ class ReviewChatService {
       return null;
     }
 
-    const stats = this.computeStats(reviews as IReview[]);
-    const themes = await this.extractThemes(reviews as IReview[]);
+    const stats = this.computeStats(reviews as unknown as IReview[]);
+    const themes = await this.extractThemes(reviews as unknown as IReview[]);
 
     const summary = await ReviewSummaryModel.findOneAndUpdate(
       { business: businessId, source: "google_maps" },
@@ -206,7 +208,7 @@ class ReviewChatService {
           tokensUsed: themes.tokensUsed,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     ).lean();
 
     logger.info(
@@ -216,10 +218,10 @@ class ReviewChatService {
         avgRating: stats.avgRating,
         tokensUsed: themes.tokensUsed,
       },
-      "Generated review summary"
+      "Generated review summary",
     );
 
-    return summary as IReviewSummary;
+    return summary as unknown as IReviewSummary;
   }
 
   /** Pure aggregation over the review set — no LLM call. */
@@ -247,7 +249,7 @@ class ReviewChatService {
       .filter((r) => r.reviewedAt)
       .sort(
         (a, b) =>
-          new Date(a.reviewedAt!).getTime() - new Date(b.reviewedAt!).getTime()
+          new Date(a.reviewedAt!).getTime() - new Date(b.reviewedAt!).getTime(),
       );
     const windowStart = sorted[0]?.reviewedAt || new Date();
     const windowEnd = sorted[sorted.length - 1]?.reviewedAt || new Date();
@@ -257,13 +259,11 @@ class ReviewChatService {
     if (sorted.length >= 20) {
       const slice = Math.floor(sorted.length / 4);
       const oldAvg =
-        sorted
-          .slice(0, slice)
-          .reduce((acc, r) => acc + (r.rating || 0), 0) / slice;
+        sorted.slice(0, slice).reduce((acc, r) => acc + (r.rating || 0), 0) /
+        slice;
       const newAvg =
-        sorted
-          .slice(-slice)
-          .reduce((acc, r) => acc + (r.rating || 0), 0) / slice;
+        sorted.slice(-slice).reduce((acc, r) => acc + (r.rating || 0), 0) /
+        slice;
       const delta = newAvg - oldAvg;
       if (delta > 0.3) trend = "improving";
       else if (delta < -0.3) trend = "declining";
@@ -359,7 +359,7 @@ Rules:
     } catch (error: any) {
       logger.warn(
         { error: error.message },
-        "Theme extraction failed — returning empty themes"
+        "Theme extraction failed — returning empty themes",
       );
       return {
         positiveThemes: [],
@@ -387,12 +387,12 @@ Rules:
 
   private buildSystemPrompt(
     business: BusinessSnapshot,
-    summary: IReviewSummary | null
+    summary: IReviewSummary | null,
   ): string {
     const lines: string[] = [];
 
     lines.push(
-      `You are a helpful assistant answering questions about a specific business based on its customer reviews and profile.`
+      `You are a helpful assistant answering questions about a specific business based on its customer reviews and profile.`,
     );
     lines.push("");
     lines.push(`# Business Profile (authoritative facts)`);
@@ -402,7 +402,7 @@ Rules:
     if (business.category) lines.push(`Category: ${business.category}`);
     if (business.city || business.state)
       lines.push(
-        `Location: ${[business.city, business.state].filter(Boolean).join(", ")}`
+        `Location: ${[business.city, business.state].filter(Boolean).join(", ")}`,
       );
     if (business.phone) lines.push(`Phone: ${business.phone}`);
     if (business.website) lines.push(`Website: ${business.website}`);
@@ -410,15 +410,17 @@ Rules:
       lines.push(
         `Overall rating: ${business.rating}/5${
           business.reviewCount ? ` (${business.reviewCount} reviews)` : ""
-        }`
+        }`,
       );
     lines.push("");
 
     if (summary) {
-      lines.push(`# What customers say (based on ${summary.totalReviews} recent reviews)`);
+      lines.push(
+        `# What customers say (based on ${summary.totalReviews} recent reviews)`,
+      );
       lines.push(`Average rating: ${summary.averageRating}/5`);
       lines.push(
-        `Distribution: 5★ ${summary.ratingDistribution.five}, 4★ ${summary.ratingDistribution.four}, 3★ ${summary.ratingDistribution.three}, 2★ ${summary.ratingDistribution.two}, 1★ ${summary.ratingDistribution.one}`
+        `Distribution: 5★ ${summary.ratingDistribution.five}, 4★ ${summary.ratingDistribution.four}, 3★ ${summary.ratingDistribution.three}, 2★ ${summary.ratingDistribution.two}, 1★ ${summary.ratingDistribution.one}`,
       );
       lines.push(`Recent trend: ${summary.recentTrend}`);
 
@@ -449,28 +451,30 @@ Rules:
         }
       }
     } else {
-      lines.push(`# Reviews\nNo review summary available for this business yet.`);
+      lines.push(
+        `# Reviews\nNo review summary available for this business yet.`,
+      );
     }
 
     lines.push("");
     lines.push(`# Rules for your answer`);
     lines.push(
-      `1. Answer ONLY from the profile and review summary above. If the answer isn't there, say so honestly — don't guess prices, hours, or policies.`
+      `1. Answer ONLY from the profile and review summary above. If the answer isn't there, say so honestly — don't guess prices, hours, or policies.`,
     );
     lines.push(
-      `2. Distinguish facts (from profile / repeated review claims) from opinions (what some customers said).`
+      `2. Distinguish facts (from profile / repeated review claims) from opinions (what some customers said).`,
     );
     lines.push(
-      `3. When sharing opinions, indicate whether the sentiment is shared by many ("most visitors mention...") or just some ("a few reviewers noted...").`
+      `3. When sharing opinions, indicate whether the sentiment is shared by many ("most visitors mention...") or just some ("a few reviewers noted...").`,
     );
     lines.push(
-      `4. Keep responses to 2-4 sentences unless the user explicitly asks for detail.`
+      `4. Keep responses to 2-4 sentences unless the user explicitly asks for detail.`,
     );
     lines.push(
-      `5. Be warm and conversational, but never invent businesses, prices, dates, or features.`
+      `5. Be warm and conversational, but never invent businesses, prices, dates, or features.`,
     );
     lines.push(
-      `6. If the question is unrelated to this business, politely redirect.`
+      `6. If the question is unrelated to this business, politely redirect.`,
     );
 
     return lines.join("\n");
