@@ -7,6 +7,7 @@ import {
   SlowTimeTemplate,
 } from "../api/services/slowTimeRecommendation.service.js";
 import { ContentAssistService } from "../api/services/contentAssist.service.js";
+import { triggerNotification } from "../api/services/pinntagBackend.service.js";
 import {
   upsertTemplate,
   TemplateCreatorType,
@@ -100,7 +101,9 @@ export class SlowTimeTemplateRefreshJob {
     const agents = await BusinessAIAssistantModel.find({
       enableAutoSlowTimeTemplates: true,
     })
-      .select("businessId businessName")
+      .select(
+        "businessId businessName lastSlowTimeNotifiedAt lastSlowTimeNotifiedOccasion",
+      )
       .lean();
 
     if (agents.length === 0) {
@@ -202,9 +205,45 @@ export class SlowTimeTemplateRefreshJob {
           dealData,
         );
 
+        // Cooldown: don't re-notify a business more than once per 6 hours
+        // unless the picked occasion changed (e.g., evergreen → low_views)
+        // since the last delivery.
+        const COOLDOWN_MS = 6 * 60 * 60 * 1000;
+        const lastNotifiedAt = (agent as any).lastSlowTimeNotifiedAt as
+          | Date
+          | undefined;
+        const lastOccasion = (agent as any).lastSlowTimeNotifiedOccasion as
+          | string
+          | undefined;
+        const occasionChanged =
+          lastOccasion && lastOccasion !== template.occasion;
+        const cooldownExpired =
+          !lastNotifiedAt ||
+          Date.now() - new Date(lastNotifiedAt).getTime() >= COOLDOWN_MS;
+        const shouldNotify =
+          !!notificationVariants?.length && (cooldownExpired || occasionChanged);
+
+        let notificationDelivered = false;
+        if (shouldNotify) {
+          const v = notificationVariants![0];
+          const delivery = await triggerNotification({
+            businessId,
+            title: v.title,
+            message: v.body,
+          });
+          notificationDelivered = delivery.delivered;
+        }
+
+        const assistantUpdate: Record<string, any> = {
+          lastSlowTimeTemplateRefreshAt: new Date(),
+        };
+        if (notificationDelivered) {
+          assistantUpdate.lastSlowTimeNotifiedAt = new Date();
+          assistantUpdate.lastSlowTimeNotifiedOccasion = template.occasion;
+        }
         await BusinessAIAssistantModel.updateOne(
           { businessId: new mongoose.Types.ObjectId(businessId) },
-          { $set: { lastSlowTimeTemplateRefreshAt: new Date() } },
+          { $set: assistantUpdate },
         );
 
         refreshed++;
@@ -215,6 +254,9 @@ export class SlowTimeTemplateRefreshJob {
             intensity: template.intensity,
             signals: recs.footprint.signals,
             notificationVariants: notificationVariants?.length ?? 0,
+            notificationDelivered,
+            cooldownExpired,
+            occasionChanged: !!occasionChanged,
           },
           "Refreshed slow-time template",
         );

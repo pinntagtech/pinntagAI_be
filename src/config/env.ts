@@ -25,6 +25,8 @@ const EnvSchema = z.object({
     z.boolean()
   ).default(false),
   PINNTAG_BACKEND_TO_AI_KEY: z.string().optional(),
+  BACKEND_URL: z.string().url().optional(),
+  PINNTAG_AI_TO_BACKEND_KEY: z.string().optional(),
   HTTP_TIMEOUT_MS: z.coerce.number().default(15000),
   HTTP_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
   ETL_API_KEY_HEADER_NAME: z.string().min(1).default("X-API-Key"),

@@ -13,6 +13,7 @@ import {
 } from "../services/slowTimeRecommendation.service.js";
 import { ContentAssistService } from "../services/contentAssist.service.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
+import { triggerNotification } from "../services/pinntagBackend.service.js";
 import {
   BroadcastContentParams,
   ContentImageParams,
@@ -804,6 +805,7 @@ export async function triggerSlowTimeTemplate(
         persistTemplate = false,
         sendNotification = true,
         notificationVariantCount = 3,
+        dryRun = false,
       } = req.body ?? {};
 
       if (
@@ -883,6 +885,23 @@ export async function triggerSlowTimeTemplate(
         }
       }
 
+      // Manual trigger always delivers when sendNotification is true and at
+      // least one variant was generated. No cooldown — that's the point of
+      // the manual endpoint. `dryRun: true` skips delivery for previewing.
+      let delivery: Awaited<ReturnType<typeof triggerNotification>> | undefined;
+      if (
+        sendNotification &&
+        !dryRun &&
+        notification?.variants?.length
+      ) {
+        const v = notification.variants[0];
+        delivery = await triggerNotification({
+          businessId,
+          title: v.title,
+          message: v.body,
+        });
+      }
+
       logger.info(
         {
           businessId,
@@ -890,6 +909,8 @@ export async function triggerSlowTimeTemplate(
           intensity: template.intensity,
           persisted: !!savedTemplateId,
           notificationVariants: notification?.variants?.length ?? 0,
+          notificationDelivered: delivery?.delivered ?? false,
+          dryRun,
         },
         "Slow-time template triggered manually"
       );
@@ -906,6 +927,13 @@ export async function triggerSlowTimeTemplate(
               variants: notification.variants,
               fallbackUsed: notification.fallbackUsed,
               safetyFlags: notification.safetyFlags,
+              delivery: delivery
+                ? {
+                    delivered: delivery.delivered,
+                    status: delivery.status,
+                    error: delivery.error,
+                  }
+                : { delivered: false, skipped: dryRun ? "dryRun" : "no-variants" },
             }
           : null,
       });

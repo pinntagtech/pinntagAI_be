@@ -52,6 +52,8 @@ export interface IBusiness_AI_Assistant extends Document {
   lastFacebookDataFetched?: Date; // Last time Facebook data was fetched
   enableAutoSlowTimeTemplates?: boolean; // Opt-in to hourly slow-time template refresh job
   lastSlowTimeTemplateRefreshAt?: Date; // Last time the slow-time job touched this business
+  lastSlowTimeNotifiedAt?: Date; // Last time the slow-time job delivered a notification
+  lastSlowTimeNotifiedOccasion?: string; // Occasion of the last delivered notification
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,6 +121,8 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     lastFacebookDataFetched: { type: Date },
     enableAutoSlowTimeTemplates: { type: Boolean, default: false },
     lastSlowTimeTemplateRefreshAt: { type: Date },
+    lastSlowTimeNotifiedAt: { type: Date },
+    lastSlowTimeNotifiedOccasion: { type: String },
   },
   { timestamps: true, versionKey: false }
 );
