@@ -9,6 +9,7 @@ import {
   generateImage,
   editImage,
   generateContentImage,
+  generateAIContentImage,
   generateImageVariations,
   generateTextImage,
   checkAccess,
@@ -17,6 +18,7 @@ import {
   getRecentUsage,
   getAllBusinessUsage,
   updateTagsAndGenerateDescription,
+  triggerSlowTimeTemplate,
 } from "../controllers/aiAssistController.js";
 
 const router = Router();
@@ -35,7 +37,8 @@ const router = Router();
  *   urgency?: "low" | "medium" | "high",
  *   tone?: "professional" | "casual" | "friendly" | "exciting" | "urgent",
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/broadcast", generateBroadcastContent);
@@ -53,7 +56,8 @@ router.post("/broadcast", generateBroadcastContent);
  *   minPurchase?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/offer", generateOfferContent);
@@ -69,7 +73,8 @@ router.post("/offer", generateOfferContent);
  *   expiryDays?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/reward", generateRewardContent);
@@ -89,7 +94,8 @@ router.post("/reward", generateRewardContent);
  *   cost?: number,
  *   tone?: string,
  *   targetAudience?: string,
- *   additionalContext?: string
+ *   additionalContext?: string,
+ *   dayPart?: "BREAKFAST" | "BRUNCH" | "LUNCH" | "DINNER" | "LATE_NIGHT" (food & drinks businesses only — anchors title to meal occasion)
  * }
  */
 router.post("/event", generateEventContent);
@@ -169,6 +175,40 @@ router.post("/edit-image", editImage);
  * }
  */
 router.post("/content-image", generateContentImage);
+
+/**
+ * @route POST /ai-assist/ai-content-image
+ * @desc Generate an image directly from AI-assist generated content. Pair
+ *       this with /ai-assist/{broadcast,offer,reward,event} — pass the
+ *       returned title, description, termsAndConditions, callToAction,
+ *       promoCode, hashtags, etc. straight through, and you'll get a
+ *       matching image. Subscription required.
+ * @body {
+ *   businessId: string (required),
+ *   contentType: "broadcast" | "offer" | "reward" | "event" (required),
+ *   title: string (required),
+ *   description?: string,
+ *   termsAndConditions?: string,
+ *   validityPeriod?: string,
+ *   callToAction?: string,
+ *   promoCode?: string,
+ *   hashtags?: string[],
+ *   category?: string,
+ *   subcategory?: string,
+ *   tags?: string[],
+ *   dealType?: string,
+ *   discountValue?: number,
+ *   discountType?: "percentage" | "fixed" | "buy_one_get_one",
+ *   eventType?: string,
+ *   targetAudience?: string,
+ *   tone?: string,
+ *   style?: ImageStyle,
+ *   aspectRatio?: ImageAspectRatio,
+ *   brandColors?: string[],
+ *   includeLogoSpace?: boolean
+ * }
+ */
+router.post("/ai-content-image", generateAIContentImage);
 
 /**
  * @route POST /ai-assist/image-variations
@@ -263,5 +303,34 @@ router.get("/usage/:businessId/recent", getRecentUsage);
  * }
  */
 router.post("/update-tags-and-description", updateTagsAndGenerateDescription);
+
+// ===========================
+// Slow-Time Manual Trigger
+// ===========================
+
+/**
+ * @route POST /ai-assist/slow-time/trigger
+ * @desc Manually trigger a slow-time deal template + notification copy for a business.
+ *       Selects the best template based on the business's user-footprint signals
+ *       (views, likes, RSVPs, follows, nearby visitors) and optionally persists
+ *       the template and/or returns notification copy variants for the backend
+ *       to deliver.
+ * @body {
+ *   businessId: string (required),
+ *   persistTemplate?: boolean (default: false),
+ *   sendNotification?: boolean (default: true),
+ *   notificationVariantCount?: number (default: 3)
+ * }
+ * @returns {
+ *   success: boolean,
+ *   triggered: boolean,
+ *   template?: SlowTimeTemplate,
+ *   savedTemplateId?: string,
+ *   footprint: FootprintSnapshot,
+ *   alternatives: SlowTimeTemplate[],
+ *   notification?: { variants, fallbackUsed, safetyFlags } | null
+ * }
+ */
+router.post("/slow-time/trigger", triggerSlowTimeTemplate);
 
 export default router;

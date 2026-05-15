@@ -1,8 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { v4 as uuidv4 } from "uuid";
+import { toFile } from "openai";
 import { logger } from "../../utils/logger.js";
+import { openai } from "../../utils/openai.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import {
   ImageGenerationParams,
@@ -23,27 +24,21 @@ import { UsageType } from "../../models/aiUsage.model.js";
 // Configuration
 // ===========================
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-
-// Backblaze B2 configuration constants
 const S3_BUCKET = process.env.B2_BUCKET_NAME!;
 const CDN_DOMAIN = process.env.CDN_DOMAIN!;
 const S3_IMAGE_PREFIX = "ai-generated-images";
 
-// Model for image generation
-// Using Gemini 2.5 Flash Image (aka "Nano Banana") for fast image generation
-const IMAGE_MODEL = "gemini-2.5-flash-image";
+// gpt-image-1-mini: cheaper, faster sibling of gpt-image-1
+const OPENAI_IMAGE_MODEL = "gpt-image-1-mini";
 
-// Feature flag to enable/disable image generation
 const ENABLE_IMAGE_GENERATION = process.env.ENABLE_IMAGE_GENERATION === "true";
+
+type OpenAIImageSize = "1024x1024" | "1024x1536" | "1536x1024" | "auto";
 
 // ===========================
 // Helper Functions
 // ===========================
 
-/**
- * Build a detailed prompt based on content type and style
- */
 function buildImagePrompt(params: {
   basePrompt: string;
   style?: ImageStyle;
@@ -54,7 +49,6 @@ function buildImagePrompt(params: {
 }): string {
   const parts: string[] = [];
 
-  // Add style instructions
   if (params.style) {
     const styleInstructions: Record<ImageStyle, string> = {
       photorealistic: "Create a photorealistic, high-quality photograph",
@@ -67,7 +61,6 @@ function buildImagePrompt(params: {
     parts.push(styleInstructions[params.style]);
   }
 
-  // Add content type context
   if (params.contentType) {
     const contentContext: Record<ContentType, string> = {
       broadcast: "suitable for a business announcement or broadcast message",
@@ -78,27 +71,22 @@ function buildImagePrompt(params: {
     parts.push(contentContext[params.contentType]);
   }
 
-  // Add the main prompt
   parts.push(params.basePrompt);
 
-  // Add text to include
   if (params.includeText) {
     parts.push(
       `Include the following text prominently and legibly: "${params.includeText}"`
     );
   }
 
-  // Add color scheme
   if (params.colorScheme) {
     parts.push(`Use the following color scheme: ${params.colorScheme}`);
   }
 
-  // Add brand elements
   if (params.brandElements) {
     parts.push(`Incorporate these brand elements: ${params.brandElements}`);
   }
 
-  // Add quality instructions
   parts.push(
     "High quality, professional, suitable for marketing and social media use"
   );
@@ -107,8 +95,27 @@ function buildImagePrompt(params: {
 }
 
 /**
- * Upload image buffer to Backblaze B2 and return the CDN URL
+ * Map our aspect-ratio format to gpt-image-1-mini's supported sizes.
+ * gpt-image-1-mini supports: 1024x1024 (square), 1024x1536 (portrait),
+ * 1536x1024 (landscape), and "auto".
  */
+function mapAspectRatioToSize(
+  aspectRatio: string | undefined
+): OpenAIImageSize {
+  switch (aspectRatio) {
+    case "1:1":
+      return "1024x1024";
+    case "16:9":
+    case "4:3":
+      return "1536x1024";
+    case "9:16":
+    case "3:4":
+      return "1024x1536";
+    default:
+      return "1024x1024";
+  }
+}
+
 async function uploadImageToS3(
   imageBuffer: Buffer,
   businessId: string,
@@ -128,7 +135,6 @@ async function uploadImageToS3(
     "Uploading image to Backblaze B2"
   );
 
-  // Retry logic for network issues
   let lastError: any;
   const maxRetries = 3;
 
@@ -139,8 +145,6 @@ async function uploadImageToS3(
         `Upload attempt ${attempt}/${maxRetries}`
       );
 
-      // Create a fresh S3 client for each upload to avoid connection pooling issues
-      // Force IPv4 to avoid IPv6 timeout issues
       setDefaultAutoSelectFamily(false);
 
       const s3Client = new S3Client({
@@ -151,7 +155,7 @@ async function uploadImageToS3(
           secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
         },
         forcePathStyle: true,
-        maxAttempts: 1, // Disable SDK's internal retry to use our own
+        maxAttempts: 1,
         requestHandler: new NodeHttpHandler({
           connectionTimeout: 60000,
           requestTimeout: 120000,
@@ -165,18 +169,17 @@ async function uploadImageToS3(
           Key: key,
           Body: imageBuffer,
           ContentType: mimeType,
-          // Make publicly accessible for easy sharing
-          // ACL: "public-read",
         })
       );
 
-      // Destroy the client after use
       s3Client.destroy();
 
-      // Use CDN domain for public access
       const url = `https://${CDN_DOMAIN}/${key}`;
 
-      logger.info({ businessId, url, key, attempt }, "Image uploaded successfully to B2");
+      logger.info(
+        { businessId, url, key, attempt },
+        "Image uploaded successfully to B2"
+      );
 
       return { url, key };
     } catch (error: any) {
@@ -191,16 +194,14 @@ async function uploadImageToS3(
         `Upload attempt ${attempt} failed`
       );
 
-      // If not last attempt, wait before retry (exponential backoff)
       if (attempt < maxRetries) {
-        const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        const waitTime = Math.pow(2, attempt) * 1000;
         logger.info({ businessId, waitTime }, "Waiting before retry");
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
   }
 
-  // All retries failed
   logger.error(
     {
       businessId,
@@ -214,28 +215,6 @@ async function uploadImageToS3(
   throw lastError;
 }
 
-/**
- * Generate aspect ratio instructions for the prompt
- */
-function getAspectRatioInstructions(
-  aspectRatio: string | undefined
-): string {
-  if (!aspectRatio) return "";
-
-  const instructions: Record<string, string> = {
-    "1:1": "Create a square image (1:1 aspect ratio)",
-    "16:9": "Create a wide landscape image (16:9 aspect ratio, like a banner)",
-    "9:16": "Create a tall portrait image (9:16 aspect ratio, like a story)",
-    "4:3": "Create a standard landscape image (4:3 aspect ratio)",
-    "3:4": "Create a standard portrait image (3:4 aspect ratio)",
-  };
-
-  return instructions[aspectRatio] || "";
-}
-
-/**
- * Get default placeholder image based on content type when image generation is disabled
- */
 function getPlaceholderImage(contentType?: ContentType): string {
   const baseUrl = "https://pinntag-assets.s3.us-east-1.amazonaws.com/Templates/";
 
@@ -249,30 +228,50 @@ function getPlaceholderImage(contentType?: ContentType): string {
   return placeholders[contentType || "offer"] || placeholders.offer;
 }
 
+/**
+ * Extract a PNG buffer from an OpenAI images response. gpt-image-1-mini
+ * always returns base64 in `b64_json`.
+ */
+function extractImageBuffer(
+  response: { data?: Array<{ b64_json?: string | null; url?: string | null }> } | null
+): Buffer {
+  const first = response?.data?.[0];
+  if (!first?.b64_json) {
+    throw new Error("No image data in OpenAI response");
+  }
+  return Buffer.from(first.b64_json, "base64");
+}
+
 // ===========================
-// Gemini Service Class
+// OpenAI Image Service Class
 // ===========================
 
-export class GeminiService {
+export class OpenAIImageService {
   /**
-   * Generate an image from a text prompt
+   * Generate an image from a text prompt using gpt-image-1-mini.
    */
   static async generateImage(
     params: ImageGenerationParams
   ): Promise<GeneratedImage> {
-    const { businessId, prompt, contentType, style, aspectRatio, includeText, colorScheme, brandElements } = params;
+    const {
+      businessId,
+      prompt,
+      contentType,
+      style,
+      aspectRatio,
+      includeText,
+      colorScheme,
+      brandElements,
+    } = params;
 
-    // Check if image generation is disabled via feature flag
     if (!ENABLE_IMAGE_GENERATION) {
       logger.info(
         { businessId, contentType },
         "Image generation disabled via feature flag, returning placeholder"
       );
 
-      const placeholderUrl = getPlaceholderImage(contentType);
-
       return {
-        imageUrl: placeholderUrl,
+        imageUrl: getPlaceholderImage(contentType),
         s3Key: "placeholder",
         mimeType: "image/jpeg",
         prompt,
@@ -280,14 +279,12 @@ export class GeminiService {
       };
     }
 
-    // Check subscription access
     const access = await checkImageGenerationAccess(businessId);
     if (!access.hasAccess) {
       throw new Error(access.reason || "Image generation not available");
     }
 
     try {
-      // Build enhanced prompt
       const enhancedPrompt = buildImagePrompt({
         basePrompt: prompt,
         style,
@@ -297,90 +294,75 @@ export class GeminiService {
         brandElements,
       });
 
-      // Add aspect ratio instructions
-      const aspectInstructions = getAspectRatioInstructions(aspectRatio);
-      const finalPrompt = aspectInstructions
-        ? `${aspectInstructions}. ${enhancedPrompt}`
-        : enhancedPrompt;
+      const size = mapAspectRatioToSize(aspectRatio);
 
       logger.info(
-        { businessId, contentType, style, promptLength: finalPrompt.length },
-        "Generating image with Gemini"
+        {
+          businessId,
+          contentType,
+          style,
+          size,
+          promptLength: enhancedPrompt.length,
+          model: OPENAI_IMAGE_MODEL,
+        },
+        "Generating image with OpenAI gpt-image-1-mini"
       );
 
-      // Generate image using Gemini
-      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
-      const result = await model.generateContent(finalPrompt);
-      const response = result.response;
+      const response = await openai.images.generate({
+        model: OPENAI_IMAGE_MODEL,
+        prompt: enhancedPrompt,
+        size,
+        n: 1,
+      });
 
-      // Extract image from response
-      let imageData: string | null = null;
-      let mimeType = "image/png";
+      const imageBuffer = extractImageBuffer(response);
+      const mimeType = "image/png";
 
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageData = part.inlineData.data;
-            mimeType = part.inlineData.mimeType || "image/png";
-            break;
-          }
-        }
-      }
-
-      if (!imageData) {
-        throw new Error("No image data in Gemini response");
-      }
-
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(imageData, "base64");
-
-      // Upload to S3
       const { url, key } = await uploadImageToS3(
         imageBuffer,
         businessId,
         mimeType
       );
 
-      // Record usage for subscription limits
       await recordFeatureUsage(businessId, "images", 1);
 
-      // Track detailed usage
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_GENERATION,
         subType: contentType,
         imageCount: 1,
-        model: IMAGE_MODEL,
+        model: OPENAI_IMAGE_MODEL,
         success: true,
         metadata: {
           style,
           aspectRatio,
+          size,
           s3Key: key,
-          promptLength: finalPrompt.length,
+          promptLength: enhancedPrompt.length,
+          provider: "openai",
         },
       });
 
       logger.info(
         { businessId, s3Key: key },
-        "Image generated and uploaded successfully"
+        "Image generated with OpenAI and uploaded successfully"
       );
 
       return {
         imageUrl: url,
         s3Key: key,
         mimeType,
-        prompt: finalPrompt,
+        prompt: enhancedPrompt,
         style,
       };
     } catch (error: any) {
-      // Track failed usage
       const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_GENERATION,
         subType: contentType,
         imageCount: 0,
-        model: IMAGE_MODEL,
+        model: OPENAI_IMAGE_MODEL,
         success: false,
         errorMessage,
       });
@@ -390,21 +372,19 @@ export class GeminiService {
           businessId,
           error: errorMessage,
           errorStack: error.stack,
-          errorDetails: JSON.stringify(error, null, 2)
         },
-        "Error generating image with Gemini"
+        "Error generating image with OpenAI"
       );
       throw new Error(`Image generation failed: ${errorMessage}`);
     }
   }
 
   /**
-   * Edit an existing image with a text prompt
+   * Edit an existing image with a text prompt using gpt-image-1-mini.
    */
   static async editImage(params: ImageEditParams): Promise<GeneratedImage> {
     const { businessId, imageUrl, editPrompt, preserveElements } = params;
 
-    // Check if image generation is disabled via feature flag
     if (!ENABLE_IMAGE_GENERATION) {
       logger.info(
         { businessId },
@@ -412,103 +392,85 @@ export class GeminiService {
       );
 
       return {
-        imageUrl: imageUrl,
+        imageUrl,
         s3Key: "placeholder",
         mimeType: "image/jpeg",
         prompt: editPrompt,
       };
     }
 
-    // Check subscription access
     const access = await checkImageGenerationAccess(businessId);
     if (!access.hasAccess) {
       throw new Error(access.reason || "Image editing not available");
     }
 
     try {
-      // Fetch the existing image
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       }
 
-      const imageArrayBuffer = await imageResponse.arrayBuffer();
-      const imageBase64 = Buffer.from(imageArrayBuffer).toString("base64");
-      const imageMimeType =
+      const sourceMime =
         imageResponse.headers.get("content-type") || "image/png";
+      const sourceArrayBuffer = await imageResponse.arrayBuffer();
+      const sourceBuffer = Buffer.from(sourceArrayBuffer);
 
-      // Build edit prompt
       let fullPrompt = editPrompt;
       if (preserveElements && preserveElements.length > 0) {
         fullPrompt += `. Preserve these elements: ${preserveElements.join(", ")}`;
       }
 
-      logger.info(
-        { businessId, editPrompt: fullPrompt.substring(0, 100) },
-        "Editing image with Gemini"
+      const sourceExt = sourceMime.split("/")[1] || "png";
+      const sourceFile = await toFile(
+        sourceBuffer,
+        `source-image.${sourceExt}`,
+        { type: sourceMime }
       );
 
-      // Send image + prompt to Gemini
-      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
-      const result = await model.generateContent([
+      logger.info(
         {
-          inlineData: {
-            data: imageBase64,
-            mimeType: imageMimeType,
-          },
+          businessId,
+          editPrompt: fullPrompt.substring(0, 100),
+          model: OPENAI_IMAGE_MODEL,
         },
-        { text: fullPrompt },
-      ]);
-      const response = result.response;
+        "Editing image with OpenAI gpt-image-1-mini"
+      );
 
-      // Extract edited image from response
-      let imageData: string | null = null;
-      let mimeType = "image/png";
+      const response = await openai.images.edit({
+        model: OPENAI_IMAGE_MODEL,
+        image: sourceFile,
+        prompt: fullPrompt,
+        n: 1,
+      });
 
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageData = part.inlineData.data;
-            mimeType = part.inlineData.mimeType || "image/png";
-            break;
-          }
-        }
-      }
+      const editedBuffer = extractImageBuffer(response);
+      const mimeType = "image/png";
 
-      if (!imageData) {
-        throw new Error("No image data in Gemini edit response");
-      }
-
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(imageData, "base64");
-
-      // Upload to S3
       const { url, key } = await uploadImageToS3(
-        imageBuffer,
+        editedBuffer,
         businessId,
         mimeType
       );
 
-      // Record usage for subscription limits
       await recordFeatureUsage(businessId, "images", 1);
 
-      // Track detailed usage
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_EDIT,
         imageCount: 1,
-        model: IMAGE_MODEL,
+        model: OPENAI_IMAGE_MODEL,
         success: true,
         metadata: {
           s3Key: key,
           promptLength: fullPrompt.length,
           sourceImageUrl: imageUrl,
+          provider: "openai",
         },
       });
 
       logger.info(
         { businessId, s3Key: key },
-        "Image edited and uploaded successfully"
+        "Image edited with OpenAI and uploaded successfully"
       );
 
       return {
@@ -518,13 +480,12 @@ export class GeminiService {
         prompt: fullPrompt,
       };
     } catch (error: any) {
-      // Track failed usage
       const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_EDIT,
         imageCount: 0,
-        model: IMAGE_MODEL,
+        model: OPENAI_IMAGE_MODEL,
         success: false,
         errorMessage,
       });
@@ -534,16 +495,17 @@ export class GeminiService {
           businessId,
           error: errorMessage,
           errorStack: error.stack,
-          errorDetails: JSON.stringify(error, null, 2)
         },
-        "Error editing image with Gemini"
+        "Error editing image with OpenAI"
       );
       throw new Error(`Image editing failed: ${errorMessage}`);
     }
   }
 
   /**
-   * Generate an image optimized for specific content types
+   * Generate an image optimized for a specific content type, using
+   * title, description, deal/event terms and other AI-assist context
+   * to compose the prompt.
    */
   static async generateContentImage(
     params: ContentImageParams
@@ -573,10 +535,8 @@ export class GeminiService {
       hashtags,
     } = params;
 
-    // Build a comprehensive content-specific prompt
     const promptParts: string[] = [];
 
-    // Content type specific visuals
     const contentVisuals: Record<ContentType, string> = {
       broadcast:
         "Create an attention-grabbing announcement visual with dynamic elements",
@@ -595,44 +555,29 @@ export class GeminiService {
       promptParts.push(`Context: ${description.substring(0, 300)}`);
     }
 
-    // Add business context
-    if (category) {
-      promptParts.push(`Business category: ${category}`);
-    }
-    if (subcategory) {
-      promptParts.push(`Subcategory: ${subcategory}`);
-    }
+    if (category) promptParts.push(`Business category: ${category}`);
+    if (subcategory) promptParts.push(`Subcategory: ${subcategory}`);
     if (tags && tags.length > 0) {
       promptParts.push(`Related to: ${tags.slice(0, 5).join(", ")}`);
     }
 
-    // Add deal/offer specific elements
-    if (dealType) {
-      promptParts.push(`Deal type: ${dealType}`);
-    }
+    if (dealType) promptParts.push(`Deal type: ${dealType}`);
     if (discountValue && discountType) {
-      const discountText = discountType === "percentage"
-        ? `${discountValue}% off`
-        : discountType === "fixed"
-        ? `$${discountValue} off`
-        : "Buy One Get One";
+      const discountText =
+        discountType === "percentage"
+          ? `${discountValue}% off`
+          : discountType === "fixed"
+          ? `$${discountValue} off`
+          : "Buy One Get One";
       promptParts.push(`Visually represent: ${discountText}`);
     }
 
-    // Add event specific elements
-    if (eventType) {
-      promptParts.push(`Event type: ${eventType}`);
-    }
-
-    // Add audience and tone
+    if (eventType) promptParts.push(`Event type: ${eventType}`);
     if (targetAudience) {
       promptParts.push(`Target audience vibe: ${targetAudience}`);
     }
-    if (tone) {
-      promptParts.push(`Visual tone should be: ${tone}`);
-    }
+    if (tone) promptParts.push(`Visual tone should be: ${tone}`);
 
-    // Add text elements to include
     if (callToAction) {
       promptParts.push(`Include call-to-action text: "${callToAction}"`);
     }
@@ -644,6 +589,7 @@ export class GeminiService {
       promptParts.push(`Highlight validity: "${validityPeriod}"`);
     }
     if (termsAndConditions) {
+      // Use a short summary so the model treats it as visual context, not literal small print.
       const tcSummary = termsAndConditions.substring(0, 200);
       promptParts.push(
         `The visual must remain consistent with these terms (do not contradict them, do not render small print): ${tcSummary}`
@@ -655,7 +601,6 @@ export class GeminiService {
       );
     }
 
-    // Add brand colors
     if (brandColors && brandColors.length > 0) {
       promptParts.push(`Use brand colors: ${brandColors.join(", ")}`);
     }
@@ -666,7 +611,6 @@ export class GeminiService {
 
     const prompt = promptParts.join(". ");
 
-    // Use the main generateImage method
     return this.generateImage({
       businessId,
       prompt,
@@ -677,28 +621,29 @@ export class GeminiService {
   }
 
   /**
-   * Generate multiple image variations for A/B testing
+   * Generate multiple style variations for A/B testing.
+   * gpt-image-1-mini's `n` parameter is restricted to 1, so we issue
+   * sequential calls with different styles instead.
    */
   static async generateImageVariations(
     params: ImageGenerationParams,
     count: number = 3
   ): Promise<GeneratedImage[]> {
-    // Check if image generation is disabled via feature flag
     if (!ENABLE_IMAGE_GENERATION) {
       logger.info(
         { businessId: params.businessId },
         "Image variations disabled via feature flag, returning single placeholder"
       );
 
-      const placeholderUrl = getPlaceholderImage(params.contentType);
-
-      return [{
-        imageUrl: placeholderUrl,
-        s3Key: "placeholder",
-        mimeType: "image/jpeg",
-        prompt: params.prompt,
-        style: params.style,
-      }];
+      return [
+        {
+          imageUrl: getPlaceholderImage(params.contentType),
+          s3Key: "placeholder",
+          mimeType: "image/jpeg",
+          prompt: params.prompt,
+          style: params.style,
+        },
+      ];
     }
 
     const variations: GeneratedImage[] = [];
@@ -718,8 +663,12 @@ export class GeminiService {
         variations.push(variation);
       } catch (error: any) {
         logger.warn(
-          { businessId: params.businessId, variation: i, error: error.message },
-          "Failed to generate image variation"
+          {
+            businessId: params.businessId,
+            variation: i,
+            error: error.message,
+          },
+          "Failed to generate image variation with OpenAI"
         );
       }
     }
@@ -732,7 +681,7 @@ export class GeminiService {
   }
 
   /**
-   * Generate text-heavy images (posters, flyers, etc.)
+   * Generate text-heavy images (posters, flyers, etc.).
    */
   static async generateTextImage(params: {
     businessId: string;
@@ -755,7 +704,6 @@ export class GeminiService {
       colorScheme,
     } = params;
 
-    // Build a prompt for text-heavy image
     const promptParts = [
       "Create a marketing poster or flyer design",
       `Main headline text: "${headline}"`,

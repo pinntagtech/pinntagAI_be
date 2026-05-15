@@ -1,5 +1,6 @@
 import { GeminiService } from "./gemini.service.js";
 import { PrunaService } from "./pruna.service.js";
+import { OpenAIImageService } from "./openai-image.service.js";
 import { logger } from "../../utils/logger.js";
 import {
   ImageGenerationParams,
@@ -17,8 +18,9 @@ import {
  * Supported image generation providers.
  * - "pruna"  → Pruna P-Image (cost-efficient)
  * - "gemini" → Google Gemini 2.5 Flash Image
+ * - "openai" → OpenAI gpt-image-1-mini
  */
-type ImageProvider = "pruna" | "gemini";
+type ImageProvider = "pruna" | "gemini" | "openai";
 
 const IMAGE_PROVIDER: ImageProvider =
   (process.env.IMAGE_GENERATION_PROVIDER as ImageProvider) || "pruna";
@@ -27,12 +29,20 @@ logger.info({ provider: IMAGE_PROVIDER }, "Image generation provider configured"
 
 /**
  * Facade that delegates to the configured image generation provider.
- * All methods mirror the GeminiService / PrunaService interface so
- * callers don't need to know which backend is active.
+ * All methods mirror the GeminiService / PrunaService / OpenAIImageService
+ * interface so callers don't need to know which backend is active.
  */
 export class ImageGenerationService {
   private static get provider() {
-    return IMAGE_PROVIDER === "pruna" ? PrunaService : GeminiService;
+    switch (IMAGE_PROVIDER) {
+      case "openai":
+        return OpenAIImageService;
+      case "gemini":
+        return GeminiService;
+      case "pruna":
+      default:
+        return PrunaService;
+    }
   }
 
   static async generateImage(

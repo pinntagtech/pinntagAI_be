@@ -658,6 +658,9 @@ export class PrunaService {
       tone,
       callToAction,
       promoCode,
+      termsAndConditions,
+      validityPeriod,
+      hashtags,
     } = params;
 
     const promptParts: string[] = [];
@@ -718,6 +721,21 @@ export class PrunaService {
     }
     if (promoCode) {
       promptParts.push(`Include promo code prominently: "${promoCode}"`);
+    }
+
+    if (validityPeriod) {
+      promptParts.push(`Highlight validity: "${validityPeriod}"`);
+    }
+    if (termsAndConditions) {
+      const tcSummary = termsAndConditions.substring(0, 200);
+      promptParts.push(
+        `The visual must remain consistent with these terms (do not contradict them, do not render small print): ${tcSummary}`
+      );
+    }
+    if (hashtags && hashtags.length > 0) {
+      promptParts.push(
+        `Themes to evoke (do NOT render as text): ${hashtags.slice(0, 5).join(", ")}`
+      );
     }
 
     if (brandColors && brandColors.length > 0) {
