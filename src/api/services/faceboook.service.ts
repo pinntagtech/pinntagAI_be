@@ -1296,7 +1296,7 @@ export class FacebookService {
       try {
         const eventsConfig = {
           method: "get",
-          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_uri",
+          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_urireactions.summary(total_count),comments.summary(total_count),shares&limit=100",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -1309,13 +1309,14 @@ export class FacebookService {
         // Filter and transform Facebook Events
         fbEvents.forEach((event: any) => {
           // Skip canceled, draft, or past events
+          logger.info("Event details: " + JSON.stringify(event));
           if (event.is_canceled || event.is_draft) return;
 
           const eventStartTime = event.start_time
             ? new Date(event.start_time)
             : null;
           if (!eventStartTime || eventStartTime <= now) return;
-
+          logger.info(event, "Processing Facebook Event");
           events.push({
             id: event.id,
             source: "facebook_events_api",
@@ -2073,7 +2074,7 @@ export class FacebookService {
 
       if (response.data && response.data.data) {
         const allPosts = response.data.data;
-
+        logger.info("All posts data: " + JSON.stringify(allPosts));
         if (useAI) {
           logger.info("Using AI-based filtering for Facebook posts");
           const aiFilteredResults = await this.filterPostsWithAI(
