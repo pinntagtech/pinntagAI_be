@@ -1110,9 +1110,11 @@ export class FacebookService {
             description: item.description,
             fullPicture: item.images?.[0] || null,
             images: item.images || [],
-            reactions: 0,
-            comments: 0,
-            shares: 0,
+            // reactions: 0,
+            // comments: 0,
+            reactions: item.reactions,
+            comments: item.comments,
+            shares: item.shares,
             lastSyncedAt: new Date(),
             rawData: item,
           };
@@ -1450,7 +1452,9 @@ export class FacebookService {
                   }
                 });
               }
-
+              const reactionsCount = post.reactions?.summary?.total_count || 0;
+              const commentsCount = post.comments?.summary?.total_count || 0;
+              const sharesCount = post.shares?.count || 0;
               events.push({
                 id: post.id,
                 source: "facebook_post_ai_extracted",
@@ -1486,6 +1490,9 @@ export class FacebookService {
                   aiType: eventType,
                   extractedFromPost: true,
                 },
+                reactions: reactionsCount,
+                comments: commentsCount,
+                shares: sharesCount,
               });
             }
           }
@@ -1553,6 +1560,10 @@ export class FacebookService {
               });
             }
 
+            const reactionsCount = post.reactions?.summary?.total_count || 0;
+            const commentsCount = post.comments?.summary?.total_count || 0;
+            const sharesCount = post.shares?.count || 0;
+
             events.push({
               id: post.id,
               source: "facebook_post_raw",
@@ -1588,6 +1599,9 @@ export class FacebookService {
                 extractedFromPost: true,
                 noAIProcessing: true,
               },
+              reactions: reactionsCount,
+              comments: commentsCount,
+              shares: sharesCount,
             });
           }
 
