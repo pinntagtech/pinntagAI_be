@@ -57,6 +57,15 @@ router.post("/chat", rateLimitChat, (req, res) =>
 );
 
 /**
+ * POST /review-chat/feedback
+ * Thumbs up / down on a previous chat response.
+ * Body: { sessionId, businessId, rating: 1 | -1, reason?, sources?, abstained? }
+ */
+router.post("/feedback", (req, res) =>
+  reviewChatController.feedback(req, res),
+);
+
+/**
  * POST /review-chat/summary/:businessId/regenerate
  * Force regenerate the cached summary for a business.
  * Used by ops / after fresh review ingest.

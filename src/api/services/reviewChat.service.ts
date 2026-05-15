@@ -48,14 +48,43 @@ export interface ReviewChatInput {
   sessionId?: string;
 }
 
+export type ReviewChatSource = "profile" | "reviews" | "none";
+
 export interface ReviewChatResponse {
   sessionId: string;
   response: string;
+  sources: ReviewChatSource[];
+  abstained: boolean;
   metadata: {
     tokensUsed: number;
     summaryGenerated: boolean;
     reviewCount: number;
   };
+}
+
+/**
+ * Phrases that indicate the model declined to answer. Matched case-insensitive,
+ * substring. Keep this list short and obvious — false positives are cheap to fix
+ * (just remove the phrase) but a missing phrase silently hides a problem.
+ */
+const ABSTAIN_PHRASES = [
+  "i don't have",
+  "i do not have",
+  "i'm not sure",
+  "i am not sure",
+  "couldn't find",
+  "could not find",
+  "no information",
+  "no specific information",
+  "not mentioned",
+  "isn't mentioned",
+  "i can't answer",
+  "i cannot answer",
+];
+
+function detectAbstain(answer: string): boolean {
+  const lower = answer.toLowerCase();
+  return ABSTAIN_PHRASES.some((p) => lower.includes(p));
 }
 
 interface BusinessSnapshot {
@@ -106,11 +135,12 @@ class ReviewChatService {
       ],
       temperature: 0.4,
       max_tokens: MAX_OUTPUT_TOKENS,
+      response_format: { type: "json_object" },
     });
 
-    const answer =
-      completion.choices[0]?.message?.content?.trim() ||
-      "Sorry, I couldn't generate a response right now.";
+    const rawContent = completion.choices[0]?.message?.content?.trim();
+    const { answer, sources } = this.parseAnswer(rawContent);
+    const abstained = detectAbstain(answer);
 
     logger.info(
       {
@@ -118,6 +148,8 @@ class ReviewChatService {
         messageLength: input.message.length,
         tokensUsed: completion.usage?.total_tokens || 0,
         summaryGenerated: generated,
+        sources,
+        abstained,
       },
       "Review chat completed",
     );
@@ -125,12 +157,56 @@ class ReviewChatService {
     return {
       sessionId: input.sessionId || new mongoose.Types.ObjectId().toString(),
       response: answer,
+      sources,
+      abstained,
       metadata: {
         tokensUsed: completion.usage?.total_tokens || 0,
         summaryGenerated: generated,
         reviewCount: summary?.totalReviews || 0,
       },
     };
+  }
+
+  /**
+   * The model is asked to respond with `{ answer: string, sources: string[] }`.
+   * If the JSON is malformed or missing fields we degrade gracefully — return
+   * a useful answer (or a fallback) with `sources: ["none"]` so callers can
+   * still render something. Never throw from here; bad model output is normal.
+   */
+  private parseAnswer(raw: string | undefined): {
+    answer: string;
+    sources: ReviewChatSource[];
+  } {
+    if (!raw) {
+      return {
+        answer: "Sorry, I couldn't generate a response right now.",
+        sources: ["none"],
+      };
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      const answer =
+        typeof parsed.answer === "string" && parsed.answer.trim().length > 0
+          ? parsed.answer.trim()
+          : raw;
+
+      const validSources: ReviewChatSource[] = ["profile", "reviews", "none"];
+      const sources = Array.isArray(parsed.sources)
+        ? (parsed.sources.filter((s: unknown) =>
+            validSources.includes(s as ReviewChatSource),
+          ) as ReviewChatSource[])
+        : [];
+
+      return {
+        answer,
+        sources: sources.length > 0 ? sources : ["none"],
+      };
+    } catch {
+      // Model didn't return valid JSON. Use raw content as the answer,
+      // tag sources as unknown.
+      return { answer: raw, sources: ["none"] };
+    }
   }
 
   /**
@@ -475,6 +551,27 @@ Rules:
     );
     lines.push(
       `6. If the question is unrelated to this business, politely redirect.`,
+    );
+    lines.push("");
+    lines.push(`# Response format`);
+    lines.push(
+      `Respond with ONLY valid JSON matching this exact schema:`,
+    );
+    lines.push(
+      `{ "answer": "<your reply as a string, 2-4 sentences>", "sources": ["profile" | "reviews" | "none"] }`,
+    );
+    lines.push(`Source tagging rules:`);
+    lines.push(
+      `- Include "profile" if you used the business profile section (name, phone, hours, location, website, category).`,
+    );
+    lines.push(
+      `- Include "reviews" if you used the customer reviews section (themes, quotes, factual claims, ratings).`,
+    );
+    lines.push(
+      `- Include "none" if you didn't use either (greeting, off-topic deflection, refusal to answer).`,
+    );
+    lines.push(
+      `- Sources must reflect what you ACTUALLY used to construct the answer. Do not list a source just because it was provided.`,
     );
 
     return lines.join("\n");

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { reviewChatService } from "../services/reviewChat.service.js";
+import { ReviewChatFeedbackModel } from "../../models/reviewChatFeedback.model.js";
 import { logger } from "../../utils/logger.js";
 
 class ReviewChatController {
@@ -49,6 +50,66 @@ class ReviewChatController {
       const status = error.message === "Business not found" ? 404 : 500;
       return res
         .status(status)
+        .json({ success: false, error: error.message || "Internal error" });
+    }
+  }
+
+  /**
+   * POST /review-chat/feedback
+   * Body: { sessionId, businessId, rating: 1 | -1, reason?, sources?, abstained? }
+   *
+   * Thumbs up / down on a previous chat response. We collect this from
+   * day one even though the dashboard is future work — the data has to
+   * exist before we can analyze it.
+   */
+  async feedback(req: Request, res: Response): Promise<Response> {
+    try {
+      const { sessionId, businessId, rating, reason, sources, abstained } =
+        req.body || {};
+
+      if (!sessionId || typeof sessionId !== "string") {
+        return res
+          .status(400)
+          .json({ success: false, error: "sessionId is required" });
+      }
+      if (!businessId || !mongoose.Types.ObjectId.isValid(businessId)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Valid businessId is required" });
+      }
+      if (rating !== 1 && rating !== -1) {
+        return res
+          .status(400)
+          .json({ success: false, error: "rating must be 1 or -1" });
+      }
+      if (reason !== undefined && typeof reason !== "string") {
+        return res
+          .status(400)
+          .json({ success: false, error: "reason must be a string" });
+      }
+
+      const doc = await ReviewChatFeedbackModel.create({
+        sessionId,
+        business: new mongoose.Types.ObjectId(businessId),
+        rating,
+        reason: reason?.slice(0, 500),
+        sources: Array.isArray(sources) ? sources : undefined,
+        abstained: typeof abstained === "boolean" ? abstained : undefined,
+      });
+
+      logger.info(
+        { sessionId, businessId, rating, abstained },
+        "Review chat feedback recorded",
+      );
+
+      return res.json({ success: true, data: { id: doc._id } });
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, sessionId: req.body?.sessionId },
+        "Feedback recording failed",
+      );
+      return res
+        .status(500)
         .json({ success: false, error: error.message || "Internal error" });
     }
   }
