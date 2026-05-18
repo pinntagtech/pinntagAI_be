@@ -2521,8 +2521,6 @@ export class FacebookService {
         { new: true },
       );
 
-      //Delete the posts data as well
-      await FacebookPostModel.deleteMany({ businessId });
       if (!updatedBusiness) {
         logger.warn(
           { businessId },
@@ -2533,6 +2531,22 @@ export class FacebookService {
           error: `Business with ID ${businessId} not found`,
         };
       }
+
+      // Delete all Facebook posts for this business. Schema stores businessId
+      // as ObjectId, so build an $in filter that matches both the raw value
+      // and the cast ObjectId form to cover any legacy string-typed rows.
+      const businessIdFilters: any[] = [{ businessId }];
+      if (mongoose.isValidObjectId(businessId)) {
+        const asObjectId = new mongoose.Types.ObjectId(String(businessId));
+        businessIdFilters.push({ businessId: asObjectId });
+      }
+      const deleteResult = await FacebookPostModel.deleteMany({
+        $or: businessIdFilters,
+      });
+      logger.info(
+        { businessId, deletedPostsCount: deleteResult.deletedCount },
+        "Deleted Facebook posts for business on disconnect",
+      );
 
       // Update Pinntag backend business
       try {

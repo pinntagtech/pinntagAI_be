@@ -6,6 +6,7 @@ import {
   generateMultipleTemplates,
   generateTemplate,
   generateTemplatesOnDemand,
+  getOnDemandGenerationStatus,
   getSchedulerStatus,
   getTemplateById,
   getTemplates,
@@ -35,14 +36,29 @@ router.post("/generate-multiple", generateMultipleTemplates);
 
 /**
  * @route   POST /api/templates/generate-on-demand
- * @desc    On-demand AI template generation for a single business.
- *          Generates `count` templates (default 10, max 20) with AI images.
- *          Trained agents get business-specific templates; untrained agents
- *          get metadata-based templates. Returns saved templates synchronously.
+ * @desc    On-demand AI template generation for a single business (async).
+ *          Returns 202 with { jobId, status: "in_progress" }; runs in the
+ *          background via setImmediate. The pinntagBackend Business.aiTemplateGeneration
+ *          subdocument is updated at start and on completion/failure — poll
+ *          there (or via the status endpoint below) for progress.
  * @access  Internal (requires x-internal-api-key)
  * @body    { businessId: string (required), count?: number (default 10, max 20) }
  */
 router.post("/generate-on-demand", internalApiKeyGuard, generateTemplatesOnDemand);
+
+/**
+ * @route   GET /api/templates/generate-on-demand/status/:businessId
+ * @desc    Returns the latest on-demand generation status known to this
+ *          AI-service instance for the given business. Authoritative status
+ *          lives on the backend's Business.aiTemplateGeneration; this is a
+ *          per-instance in-memory fallback.
+ * @access  Internal (requires x-internal-api-key)
+ */
+router.get(
+  "/generate-on-demand/status/:businessId",
+  internalApiKeyGuard,
+  getOnDemandGenerationStatus
+);
 
 /**
  * @route   GET /api/templates

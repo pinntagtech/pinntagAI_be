@@ -1,10 +1,15 @@
 import { Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { logger } from "../../utils/logger.js";
 import { env } from "../../config/env.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
 import { TemplateUpdateJob } from "../../jobs/templateUpdateJob.js";
 import { JobScheduler } from "../../jobs/scheduler.js";
 import { AgentTemplateGenerationJob } from "../../jobs/agentTemplateGenerationJob.js";
+import {
+  markAiTemplateGenerationStarted,
+  markAiTemplateGenerationFinished,
+} from "../services/pinntagBackend.service.js";
 import {
   findActiveTemplates,
   findTemplatesByType,
@@ -513,13 +518,34 @@ export const generateForAllAgents = async (_req: Request, res: Response) => {
 };
 
 /**
- * On-demand template generation for a single business.
+ * In-memory status cache for on-demand template generation jobs, keyed by
+ * businessId. The authoritative source is `Business.aiTemplateGeneration` in
+ * the pinntagBackend DB; this map is a best-effort fallback so the AI service
+ * can answer status polls even when the backend hook is unavailable.
+ */
+type OnDemandJobStatus = {
+  jobId: string;
+  status: "in_progress" | "completed" | "failed";
+  requested: number;
+  generated: number;
+  failed: number;
+  isTrained: boolean | null;
+  startedAt: string;
+  finishedAt: string | null;
+  error: string | null;
+};
+
+const onDemandJobStatusByBusinessId = new Map<string, OnDemandJobStatus>();
+
+/**
+ * On-demand template generation for a single business (async).
  * POST /api/templates/generate-on-demand
  * Body: { businessId: string, count?: number }
  *
- * Generates `count` templates (default 10, max 20) with AI images for the
- * given business. Trained agents get business-specific templates; untrained
- * agents get metadata-based templates. Returns the saved templates.
+ * Returns 202 immediately with the jobId. Generation runs in the background
+ * via setImmediate; backend Business.aiTemplateGeneration is updated at
+ * start and on completion/failure. Poll the backend business profile (or
+ * GET /templates/generate-on-demand/status/:businessId) for progress.
  */
 export const generateTemplatesOnDemand = async (req: Request, res: Response) => {
   try {
@@ -540,34 +566,176 @@ export const generateTemplatesOnDemand = async (req: Request, res: Response) => 
       });
     }
 
+    const existing = onDemandJobStatusByBusinessId.get(businessId);
+    if (existing && existing.status === "in_progress") {
+      return res.status(409).json({
+        success: false,
+        error: "Template generation is already in progress for this business",
+        data: existing,
+      });
+    }
+
     const count = Math.min(Math.floor(requestedCount), 20);
+    const jobId = randomUUID();
+    const startedAt = new Date().toISOString();
+
+    onDemandJobStatusByBusinessId.set(businessId, {
+      jobId,
+      status: "in_progress",
+      requested: count,
+      generated: 0,
+      failed: 0,
+      isTrained: null,
+      startedAt,
+      finishedAt: null,
+      error: null,
+    });
 
     logger.info(
-      { businessId, count },
-      "On-demand template generation requested"
+      { businessId, count, jobId },
+      "On-demand template generation accepted (async)"
     );
 
+    // Notify backend before kicking off so a refresh of the business profile
+    // sees `in_progress` even if the worker hasn't moved yet.
+    markAiTemplateGenerationStarted({
+      businessId,
+      jobId,
+      requested: count,
+    }).catch((err) => {
+      logger.warn(
+        { businessId, jobId, err: err?.message },
+        "Failed to notify backend of generation start"
+      );
+    });
+
+    setImmediate(() => {
+      runOnDemandGenerationJob(businessId, count, jobId).catch((err) => {
+        logger.error(
+          { businessId, jobId, err: err?.message },
+          "On-demand generation worker crashed unexpectedly"
+        );
+      });
+    });
+
+    return res.status(202).json({
+      success: true,
+      data: {
+        businessId,
+        jobId,
+        status: "in_progress" as const,
+        requested: count,
+        startedAt,
+      },
+    });
+  } catch (error: any) {
+    logger.error({ error }, "Error accepting on-demand template generation");
+    return res.status(400).json({
+      success: false,
+      error: error.message || "Failed to start on-demand template generation",
+    });
+  }
+};
+
+const runOnDemandGenerationJob = async (
+  businessId: string,
+  count: number,
+  jobId: string
+): Promise<void> => {
+  try {
     const result = await AgentTemplateGenerationJob.executeForBusiness(
       businessId,
       count
     );
 
-    return res.status(200).json({
-      success: true,
-      data: {
+    const finishedAt = new Date().toISOString();
+    onDemandJobStatusByBusinessId.set(businessId, {
+      jobId,
+      status: "completed",
+      requested: count,
+      generated: result.successCount,
+      failed: result.failureCount,
+      isTrained: result.isTrained,
+      startedAt:
+        onDemandJobStatusByBusinessId.get(businessId)?.startedAt ?? finishedAt,
+      finishedAt,
+      error: null,
+    });
+
+    await markAiTemplateGenerationFinished({
+      businessId,
+      jobId,
+      status: "completed",
+      generated: result.successCount,
+      failed: result.failureCount,
+      isTrained: result.isTrained,
+      error: null,
+    });
+
+    logger.info(
+      {
         businessId,
-        requested: count,
+        jobId,
         generated: result.successCount,
         failed: result.failureCount,
-        isTrained: result.isTrained,
-        templates: result.templates,
       },
-    });
+      "On-demand template generation completed"
+    );
   } catch (error: any) {
-    logger.error({ error }, "Error generating on-demand templates");
+    const finishedAt = new Date().toISOString();
+    const message = error?.message ?? "Unknown error";
+    onDemandJobStatusByBusinessId.set(businessId, {
+      jobId,
+      status: "failed",
+      requested: count,
+      generated: 0,
+      failed: count,
+      isTrained: null,
+      startedAt:
+        onDemandJobStatusByBusinessId.get(businessId)?.startedAt ?? finishedAt,
+      finishedAt,
+      error: message,
+    });
+
+    await markAiTemplateGenerationFinished({
+      businessId,
+      jobId,
+      status: "failed",
+      generated: 0,
+      failed: count,
+      error: message,
+    }).catch(() => {
+      /* logged inside the helper */
+    });
+
+    logger.error(
+      { businessId, jobId, err: message },
+      "On-demand template generation failed"
+    );
+  }
+};
+
+/**
+ * GET /api/templates/generate-on-demand/status/:businessId
+ * Returns the latest known status for the most recent on-demand generation
+ * job for this business from the AI service's in-memory cache. Frontends
+ * should also (or instead) read `Business.aiTemplateGeneration` from the
+ * backend, which is the durable source of truth.
+ */
+export const getOnDemandGenerationStatus = (req: Request, res: Response) => {
+  const businessId = req.params.businessId;
+  if (!businessId) {
     return res.status(400).json({
       success: false,
-      error: error.message || "Failed to generate templates on demand",
+      error: "businessId is required",
     });
   }
+  const status = onDemandJobStatusByBusinessId.get(businessId);
+  if (!status) {
+    return res.status(404).json({
+      success: false,
+      error: "No on-demand generation job found for this business",
+    });
+  }
+  return res.status(200).json({ success: true, data: status });
 };
