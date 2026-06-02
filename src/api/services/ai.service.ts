@@ -941,22 +941,24 @@ export class AIService {
       }
 
       contextParts.push(
-        `\nGenerate exactly 5 relevant, specific tags that focus on this business's brand specialties and the types of deals they offer.`,
-        `Tags should describe:`,
-        `- Brand specialties (unique offerings, signature products/services, expertise areas)`,
-        `- Deal types (discounts, promotions, packages, seasonal offers)`,
-        `- Product/service categories they specialize in`,
-        `- Customer segments they serve`,
+        `\nGenerate exactly 5 discovery tags that help a consumer FIND this business when searching in a consumer app.`,
+        `Think like a customer: what words would someone type into search when they want what this business offers?`,
+        `Tags should be concrete, searchable keywords describing:`,
+        `- WHAT they sell or do (products, services, cuisine, dish/item types — e.g. "coffee", "haircut", "pizza", "yoga")`,
+        `- The business TYPE a consumer would search for (e.g. "cafe", "barbershop", "gym", "bakery")`,
+        `- Notable specialties or styles a consumer might search by (e.g. "vegan", "cold brew", "fade cuts")`,
+        `\nDO NOT generate marketing or promotional phrases. AVOID terms like "real-time offers", "deals", "promotions", "discounts", "event promotions", "packages" — consumers do not search for these.`,
+        `Each tag must be a noun-like search term a real person would type, not an advertising slogan.`,
         `\nTag formatting requirements:`,
         `- Lowercase`,
         `- CRITICAL: Each tag MUST be 20 characters or less (hard limit)`,
-        `- Short (1-3 words, avoid single letter tags)`,
-        `- Specific and descriptive`,
+        `- Short (1-2 words preferred, max 3; avoid single letter tags)`,
+        `- Specific, concrete, and searchable`,
         `- Relevant to the business category`,
         `- MUST be professional and appropriate for business use`,
         `- NO profanity, offensive language, or inappropriate content`,
         `- NO single character or meaningless tags`,
-        `\nReturn ONLY a JSON array of strings, nothing else. Example: ["tag1", "tag2", "tag3"]`
+        `\nReturn ONLY a JSON array of strings, nothing else. Example: ["coffee", "cafe", "cold brew", "pastries", "breakfast"]`
       );
 
       const prompt = contextParts.join("\n");
@@ -968,7 +970,7 @@ export class AIService {
           {
             role: "system",
             content:
-              "You are a business categorization expert specializing in brand specialties and deal types. Generate relevant, specific tags that highlight what makes this business unique (their specialties, signature offerings) and the types of deals/promotions they offer. Always respond with a valid JSON object containing a 'tags' array of strings. IMPORTANT: Always generate tags based on the provided category and any available information. Even if website content seems unrelated or mismatched with the category, generate tags based on the category provided. Never return an error - always generate useful tags. CRITICAL: All tags MUST be professional, appropriate, and suitable for business marketing. NEVER generate profanity, offensive content, single characters, or inappropriate language. Each tag must be at least 2 characters and meaningful.",
+              "You are a local-search and discovery expert. Your job is to generate the search keywords a CONSUMER would type into a consumer app to discover this business. Focus on what the business sells/does, its business type, and concrete specialties — NOT marketing or promotional phrases. Never produce slogans like 'real-time offers', 'event promotions', 'deals', or 'discounts'; consumers do not search for those. Always respond with a valid JSON object containing a 'tags' array of strings. IMPORTANT: Always generate tags based on the provided category and any available information. Even if website content seems unrelated or mismatched with the category, generate discovery tags based on the category provided. Never return an error - always generate useful, searchable tags. CRITICAL: All tags MUST be professional, appropriate, and suitable for business listing. NEVER generate profanity, offensive content, single characters, or inappropriate language. Each tag must be at least 2 characters and meaningful.",
           },
           {
             role: "user",

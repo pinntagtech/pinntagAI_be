@@ -12,6 +12,10 @@ import {
 } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
 import { openai } from "../../utils/openai.js";
+// Plain chat completions go through the LLM facade so they're portable to a
+// self-hosted model. The Assistants/Threads calls below stay on `openai`
+// directly — they're OpenAI-specific and not yet portable (see MAINTAINER_NOTES).
+import { llm } from "../../utils/llm.js";
 
 // ===========================
 // Types
@@ -1007,7 +1011,7 @@ PURPOSE: Reinforce loyalty and motivate continued engagement through earn-and-re
       );
 
       // Use chat completions for notification copy (no assistant needed)
-      const completion = await openai.chat.completions.create({
+      const completion = await llm.chatCompletion({
         model: "gpt-4o",
         messages: [
           {

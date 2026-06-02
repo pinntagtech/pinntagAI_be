@@ -1,19 +1,28 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  reviewChatFeedback.model.ts
 //
-//  Thumbs up / thumbs down on review chat responses. Collected from day one
+//  Thumbs up / thumbs down on a specific chat answer. Collected from day one
 //  so we have signal once we build a dashboard / quality pipeline.
 //
-//  Deliberately minimal — no message content, no PII. We can join on
-//  sessionId later if we add conversation persistence.
+//  Identity is (messageId, userId): one rating per user per answer. Re-rating
+//  the same message overwrites the previous value (handled via upsert on the
+//  unique index below), so we never accumulate duplicate rows for the same
+//  user+message.
+//
+//  Deliberately minimal — no message content. sessionId is kept as optional
+//  context for joins once conversation persistence exists.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import mongoose, { Schema, Document, Types } from "mongoose";
 
+export type FeedbackRating = "up" | "down";
+
 export interface IReviewChatFeedback extends Document {
-  sessionId: string;
+  messageId: string;
   business: Types.ObjectId;
-  rating: 1 | -1;
+  userId: string;
+  rating: FeedbackRating;
+  sessionId?: string;
   reason?: string;
   sources?: string[];
   abstained?: boolean;
@@ -23,13 +32,15 @@ export interface IReviewChatFeedback extends Document {
 
 const ReviewChatFeedbackSchema = new Schema<IReviewChatFeedback>(
   {
-    sessionId: { type: String, required: true, index: true },
+    messageId: { type: String, required: true, index: true },
     business: {
       type: Schema.Types.ObjectId,
       required: true,
       index: true,
     },
-    rating: { type: Number, enum: [1, -1], required: true },
+    userId: { type: String, required: true, index: true },
+    rating: { type: String, enum: ["up", "down"], required: true },
+    sessionId: { type: String },
     reason: { type: String, maxlength: 500 },
     sources: { type: [String], default: [] },
     abstained: { type: Boolean },
@@ -40,6 +51,13 @@ const ReviewChatFeedbackSchema = new Schema<IReviewChatFeedback>(
   },
 );
 
+// One rating per user per message. Re-rating overwrites via upsert on this key.
+ReviewChatFeedbackSchema.index(
+  { messageId: 1, userId: 1 },
+  { unique: true, name: "idx_message_user_unique" },
+);
+
+// Analytics: ratings for a business over time.
 ReviewChatFeedbackSchema.index(
   { business: 1, rating: 1, createdAt: -1 },
   { name: "idx_business_rating_date" },

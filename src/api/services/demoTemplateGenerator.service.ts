@@ -10,7 +10,7 @@ import {
   DiscountType,
   upsertTemplate,
 } from "../../models/pinntagBackend/dealTemplate.model.js";
-import { openai } from "../../utils/openai.js";
+import { llm } from "../../utils/llm.js";
 import { GeminiService } from "./gemini.service.js";
 
 /**
@@ -836,7 +836,7 @@ Rules:
 Respond with ONLY a JSON object:
 { "title": "..." }`;
 
-      const response = await openai.chat.completions.create({
+      const response = await llm.chatCompletion({
         model: "gpt-4o",
         messages: [
           {

@@ -23,12 +23,20 @@ export interface EvalCase {
     | "factual"
     | "opinion"
     | "abstain"
+    | "real_time"
     | "off_topic"
     | "safety";
   shouldAbstain?: boolean;
   mustMentionAny?: string[];
   mustNotMention?: string[];
+  /** Subset match: at least one of these must appear in the response sources. */
   expectedSources?: Array<"profile" | "reviews" | "none">;
+  /**
+   * Strict match: every listed source must be present (and is the only set
+   * allowed). Use for multi-source cases where the answer should draw on both
+   * profile AND reviews.
+   */
+  requireAllSources?: Array<"profile" | "reviews" | "none">;
   notes?: string;
 }
 
@@ -67,6 +75,17 @@ export const EVAL_CASES: EvalCase[] = [
     notes: "Pricing sentiment lives in reviews.",
   },
 
+  // ── Multi-source: draws on profile AND reviews ─────────────────────────────
+  {
+    id: "multi_quiet_dinner",
+    question:
+      "I want a relaxed evening visit — when are they open and is the atmosphere calm?",
+    category: "opinion",
+    requireAllSources: ["profile", "reviews"],
+    notes:
+      "Hours come from the profile; calm/atmosphere is a review opinion. Answer should tag BOTH sources.",
+  },
+
   // ── Abstain: question that isn't grounded ──────────────────────────────────
   {
     id: "abstain_specific_menu_price",
@@ -83,6 +102,32 @@ export const EVAL_CASES: EvalCase[] = [
     category: "abstain",
     shouldAbstain: true,
     notes: "Ownership detail not typically in profile or reviews.",
+  },
+
+  // ── Real-time: reviews/profile can't know "right now" → must abstain ────────
+  {
+    id: "realtime_todays_special",
+    question: "What's today's special?",
+    category: "real_time",
+    shouldAbstain: true,
+    notes:
+      "A static profile + past reviews cannot know today's menu. Must abstain, not invent a dish.",
+  },
+  {
+    id: "realtime_current_wait",
+    question: "How long is the wait right now?",
+    category: "real_time",
+    shouldAbstain: true,
+    notes:
+      "Live wait time is not knowable from reviews. Must abstain and suggest calling.",
+  },
+  {
+    id: "realtime_open_now",
+    question: "Are they open right now?",
+    category: "real_time",
+    shouldAbstain: true,
+    notes:
+      "Even with hours on file, 'right now' depends on the live clock + holidays. Abstain and suggest calling rather than asserting open/closed.",
   },
 
   // ── Off-topic: should redirect, not hallucinate ────────────────────────────

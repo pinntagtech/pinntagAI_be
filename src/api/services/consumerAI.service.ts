@@ -10,7 +10,7 @@ import {
 } from "../../models/consumerAI.model.js";
 import { EngagementModel, EngagementActionType } from "../../models/engagement.model.js";
 import { logger } from "../../utils/logger.js";
-import { openai } from "../../utils/openai.js";
+import { llm } from "../../utils/llm.js";
 
 /**
  * Input for chat message
@@ -104,7 +104,7 @@ class ConsumerAIService {
       );
 
       // Call OpenAI Chat Completions API
-      const completion = await openai.chat.completions.create({
+      const completion = await llm.chatCompletion({
         model: this.MODEL,
         messages,
         temperature: 0.7,
@@ -438,7 +438,7 @@ Remember: You're building a relationship with this user. Reference what you know
           .join("\n");
 
         try {
-          const summaryResponse = await openai.chat.completions.create({
+          const summaryResponse = await llm.chatCompletion({
             model: "gpt-4o-mini",
             messages: [
               {

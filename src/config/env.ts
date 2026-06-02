@@ -66,6 +66,12 @@ const EnvSchema = z.object({
     (v) => v === "true" || v === "1" || v === true,
     z.boolean()
   ).default(false),
+  // Feature flag for the nightly review-summary refresh cron (pre-warms
+  // per-business review summaries used by the consumer review chatbot).
+  ENABLE_REVIEW_SUMMARY_REFRESH: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

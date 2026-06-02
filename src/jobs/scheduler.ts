@@ -5,6 +5,7 @@ import { TemplateUpdateJob } from "./templateUpdateJob.js";
 import { DailyTemplateJob } from "./dailyTemplateJob.js";
 import { AgentTemplateGenerationJob } from "./agentTemplateGenerationJob.js";
 import { SlowTimeTemplateRefreshJob } from "./slowTimeTemplateRefreshJob.js";
+import { ReviewSummaryRefreshJob } from "./reviewSummaryRefreshJob.js";
 
 /**
  * Job Scheduler
@@ -18,6 +19,28 @@ export class JobScheduler {
    */
   static start(): void {
     logger.info("Initializing job scheduler");
+
+    // Nightly review-summary refresh. Gated by its own flag, and scheduled
+    // BEFORE the template-generation early-return below so it runs whether or
+    // not template generation is enabled — they're independent concerns.
+    if (env.ENABLE_REVIEW_SUMMARY_REFRESH) {
+      this.scheduleJob(
+        "review-summary-refresh",
+        "0 2 * * *", // At 02:00 AM every day
+        async () => {
+          logger.info("Running review summary refresh job");
+          try {
+            await ReviewSummaryRefreshJob.execute();
+          } catch (error: any) {
+            logger.error({ error }, "Review summary refresh job failed");
+          }
+        }
+      );
+    } else {
+      logger.info(
+        "Review summary refresh is DISABLED (ENABLE_REVIEW_SUMMARY_REFRESH=false)."
+      );
+    }
 
     if (!env.ENABLE_AI_TEMPLATE_GENERATION) {
       logger.info(
@@ -173,7 +196,10 @@ export class JobScheduler {
   /**
    * Manually trigger a job by name
    */
-  static async triggerJob(name: string, options?: { dayOfWeek?: number }): Promise<void> {
+  static async triggerJob(
+    name: string,
+    options?: { dayOfWeek?: number; businessId?: string }
+  ): Promise<void> {
     logger.info({ jobName: name, options }, "Manually triggering job");
 
     switch (name) {
@@ -192,6 +218,13 @@ export class JobScheduler {
         break;
       case "slow-time-template-refresh":
         await SlowTimeTemplateRefreshJob.execute();
+        break;
+      case "review-summary-refresh":
+        if (options?.businessId) {
+          await ReviewSummaryRefreshJob.executeForBusiness(options.businessId);
+        } else {
+          await ReviewSummaryRefreshJob.execute();
+        }
         break;
       default:
         throw new Error(`Unknown job: ${name}`);

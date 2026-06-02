@@ -33,6 +33,9 @@ export interface IReviewSummary extends Document {
     five: number;
   };
 
+  /** LLM-judged overall sentiment across the review set. */
+  overallSentiment: "positive" | "mixed" | "negative" | "neutral";
+
   positiveThemes: IThemeMention[];
   negativeThemes: IThemeMention[];
 
@@ -77,6 +80,12 @@ const ReviewSummarySchema = new Schema<IReviewSummary>(
       three: { type: Number, default: 0 },
       four: { type: Number, default: 0 },
       five: { type: Number, default: 0 },
+    },
+
+    overallSentiment: {
+      type: String,
+      enum: ["positive", "mixed", "negative", "neutral"],
+      default: "neutral",
     },
 
     positiveThemes: { type: [ThemeMentionSchema], default: [] },

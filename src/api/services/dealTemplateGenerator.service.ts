@@ -11,7 +11,7 @@ import {
   DiscountType,
   upsertTemplate,
 } from "../../models/pinntagBackend/dealTemplate.model.js";
-import { openai } from "../../utils/openai.js";
+import { llm } from "../../utils/llm.js";
 
 /**
  * Deal Template Generator Service
@@ -592,7 +592,7 @@ Rules:
 - bogoOrFreeItem: one short sentence (≤ 12 words) when discountType is "${DiscountType.BOGO}" or "${DiscountType.FREE_ITEM}", else null
 - contentType "event" only for saturday_special or social/community occasions; otherwise "offer"`;
 
-      const phase1Response = await openai.chat.completions.create({
+      const phase1Response = await llm.chatCompletion({
         model: "gpt-4o",
         messages: [
           { role: "system", content: "You are a promotions strategist. Respond only with valid JSON." },
@@ -663,7 +663,7 @@ Rules:
 Respond with ONLY a JSON object:
 { "title": "..." }`;
 
-      const phase2Response = await openai.chat.completions.create({
+      const phase2Response = await llm.chatCompletion({
         model: "gpt-4o",
         messages: [
           { role: "system", content: "You are a marketing copywriter. Respond only with valid JSON." },

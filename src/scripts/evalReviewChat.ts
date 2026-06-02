@@ -31,6 +31,18 @@ const MIN_PASS_RATE = 0.8;
 const MIN_ABSTAIN_RATE = 0.05;
 const MAX_ABSTAIN_RATE = 0.3;
 
+// Output cap. The chat call sets max_tokens: 400, so the model is physically
+// truncated at 400 output tokens. We assert answers stay under this here too —
+// an answer that pegs the cap is a sign it's being cut off (bad UX), not just
+// long. We estimate tokens from the answer string (~4 chars/token for English)
+// since the chat response exposes total tokens, not output-only.
+const MAX_ANSWER_TOKENS = 400;
+
+/** Rough English token estimate: ~4 characters per token. */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
 interface CaseResult {
   case: EvalCase;
   passed: boolean;
@@ -38,6 +50,7 @@ interface CaseResult {
   answer: string;
   sources: string[];
   abstained: boolean;
+  answerTokens: number;
 }
 
 function evaluateCase(
@@ -85,6 +98,24 @@ function evaluateCase(
     }
   }
 
+  if (c.requireAllSources && c.requireAllSources.length > 0) {
+    // Strict: every required source must be present (multi-source answers).
+    const missing = c.requireAllSources.filter((s) => !sources.includes(s));
+    if (missing.length > 0) {
+      failures.push(
+        `expected ALL sources [${c.requireAllSources.join(", ")}], missing [${missing.join(", ")}], got [${sources.join(", ")}]`,
+      );
+    }
+  }
+
+  // Brevity: no answer should exceed the 400-token output cap.
+  const answerTokens = estimateTokens(answer);
+  if (answerTokens > MAX_ANSWER_TOKENS) {
+    failures.push(
+      `answer ~${answerTokens} tokens exceeds ${MAX_ANSWER_TOKENS}-token cap`,
+    );
+  }
+
   return { passed: failures.length === 0, failures };
 }
 
@@ -121,6 +152,7 @@ async function runEval(businessId: string): Promise<number> {
         answer: response.response,
         sources: response.sources,
         abstained: response.abstained,
+        answerTokens: estimateTokens(response.response),
       });
 
       console.log(passed ? "PASS" : `FAIL — ${failures.join("; ")}`);
@@ -132,6 +164,7 @@ async function runEval(businessId: string): Promise<number> {
         answer: "",
         sources: [],
         abstained: false,
+        answerTokens: 0,
       });
       console.log(`ERROR — ${error.message}`);
     }
@@ -143,10 +176,17 @@ async function runEval(businessId: string): Promise<number> {
   const passRate = total > 0 ? passed / total : 0;
   const abstainCount = results.filter((r) => r.abstained).length;
   const abstainRate = total > 0 ? abstainCount / total : 0;
+  const maxTokens = results.reduce((m, r) => Math.max(m, r.answerTokens), 0);
+  const avgTokens =
+    total > 0
+      ? Math.round(results.reduce((s, r) => s + r.answerTokens, 0) / total)
+      : 0;
+  const overCap = results.filter((r) => r.answerTokens > MAX_ANSWER_TOKENS);
 
   console.log(`\n─── Results ──────────────────────────`);
   console.log(`Passed:        ${passed} / ${total} (${(passRate * 100).toFixed(1)}%)`);
   console.log(`Abstain rate:  ${abstainCount} / ${total} (${(abstainRate * 100).toFixed(1)}%)`);
+  console.log(`Answer tokens: avg ~${avgTokens}, max ~${maxTokens} (cap ${MAX_ANSWER_TOKENS})`);
 
   // ── Gates ─────────────────────────────────────────────────────────────────
   const gateFailures: string[] = [];
@@ -163,6 +203,11 @@ async function runEval(businessId: string): Promise<number> {
   if (abstainRate > MAX_ABSTAIN_RATE) {
     gateFailures.push(
       `abstain rate ${(abstainRate * 100).toFixed(1)}% > ${(MAX_ABSTAIN_RATE * 100).toFixed(0)}% (model may be over-refusing)`,
+    );
+  }
+  if (overCap.length > 0) {
+    gateFailures.push(
+      `${overCap.length} answer(s) exceeded the ${MAX_ANSWER_TOKENS}-token cap (max ~${maxTokens})`,
     );
   }
 
