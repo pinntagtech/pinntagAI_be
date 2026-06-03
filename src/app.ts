@@ -13,7 +13,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
     "http://localhost:4200",
     "http://localhost:5173",
     "https://pre-dev.api.pinntag.com",
-    "https://staging-ai.pinntag.com"
+    "https://dev.business.pinntag.com"
   ];
 
 export const buildApp = () => {
