@@ -10,10 +10,11 @@ import { healthRouter } from "./api/routes/health.routes.js";
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
   : [
-      "http://localhost:4200",
-      "http://localhost:5173",
-      "https://pre-dev.api.pinntag.com",
-    ];
+    "http://localhost:4200",
+    "http://localhost:5173",
+    "https://pre-dev.api.pinntag.com",
+    "https://staging-ai.pinntag.com"
+  ];
 
 export const buildApp = () => {
   const app = express();

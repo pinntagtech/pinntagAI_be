@@ -1189,23 +1189,20 @@ export class AITrainingService {
           .map((r) => r.questionId),
       );
 
+      // Filter out responses for prefilled questions since they are non-editable here
+      const userResponses = responses.filter(
+        (r) => !prefilledIds.has(r.questionId),
+      );
+
       // Validate all responses before saving
       const validationErrors: string[] = [];
 
-      for (const response of responses) {
+      for (const response of userResponses) {
         // Check if question exists
         const question = questionMap.get(response.questionId);
         if (!question) {
           validationErrors.push(
             `Question ID "${response.questionId}" does not exist for this business`,
-          );
-          continue;
-        }
-
-        // Reject edits to prefilled (auto-answered) questions
-        if (prefilledIds.has(response.questionId)) {
-          validationErrors.push(
-            `Question "${response.questionId}" is auto-answered from your business profile and cannot be edited here`,
           );
           continue;
         }
@@ -1225,7 +1222,7 @@ export class AITrainingService {
       // All validations passed, now save the responses. Only non-prefilled
       // questions reach this loop, so new/updated entries are user-answered
       // (isPrefilled stays false / unset).
-      for (const response of responses) {
+      for (const response of userResponses) {
         const existingIndex = training.responses.findIndex(
           (r) => r.questionId === response.questionId,
         );
@@ -1345,7 +1342,15 @@ export class AITrainingService {
       return training;
     } catch (error: any) {
       logger.error(
-        { error, businessId },
+        {
+          error: {
+            message: error?.message,
+            stack: error?.stack,
+            name: error?.name,
+            ...error
+          },
+          businessId,
+        },
         "Error submitting training responses",
       );
       throw error;
