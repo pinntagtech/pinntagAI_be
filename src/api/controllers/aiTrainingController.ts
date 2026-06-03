@@ -78,6 +78,7 @@ export class AITrainingController {
    */
   async submitResponses(req: Request, res: Response) {
     try {
+      logger.info({ body: req.body }, "Received submitResponses request from frontend");
       const { businessId, responses } = req.body;
 
       // Validate businessId
