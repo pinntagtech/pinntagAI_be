@@ -12,6 +12,10 @@ import {
 } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
 import { openai } from "../../utils/openai.js";
+// Plain chat completions go through the LLM facade so they're portable to a
+// self-hosted model. The Assistants/Threads calls below stay on `openai`
+// directly — they're OpenAI-specific and not yet portable (see MAINTAINER_NOTES).
+import { llm } from "../../utils/llm.js";
 
 // ===========================
 // Types
@@ -22,7 +26,8 @@ export type ContentCreationType =
   | "flashdeal"
   | "specials"
   | "drop_pin"
-  | "event";
+  | "event"
+  | "reward";
 
 export type PromotionType =
   | "percent_off"
@@ -602,6 +607,16 @@ STYLE GUIDELINES:
 - Highlight what makes this event special or unique
 - Make it feel like a destination worth visiting
 - Examples: "Trivia Night: Test Your Knowledge", "Live Jazz Returns This Weekend", "Wine Tasting Experience Awaits"`,
+
+      reward: `REWARD TITLES:
+PURPOSE: Loyalty-driven incentives that recognize repeat customers and encourage continued engagement. Earn-and-redeem mechanics, points, perks, or VIP benefits.
+SCENARIOS: "Earn 100 points on every visit", "Free coffee on your 10th order", "VIP member exclusive perk", "Cashback on next purchase", "Birthday reward"
+STYLE GUIDELINES:
+- Emphasize earning, status, and exclusivity
+- Make customers feel valued and recognized
+- Highlight the long-term benefit of staying engaged
+- Focus on the perk or milestone, not urgency
+- Examples: "Unlock Your Free Drink", "VIP Perk Just for You", "Earn Double Points This Week", "Your Loyalty Pays Off"`,
     };
 
     return instructions[contentType];
@@ -698,6 +713,14 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
 - Mention any special guests, features, or highlights
 - Make it feel like a destination worth visiting
 - Encourage social sharing and bringing friends`,
+
+      reward: `REWARD DESCRIPTION GUIDELINES:
+PURPOSE: Reinforce loyalty and motivate continued engagement through earn-and-redeem mechanics.
+- Clearly explain what the customer earns or unlocks
+- Make customers feel recognized and valued
+- Highlight the perk, milestone, or status benefit
+- Focus on long-term value, not short-term urgency
+- End with an inviting nudge to keep coming back`,
     };
 
     return instructions[contentType];
@@ -910,6 +933,18 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "Bring Your Friends",
         "Make It a Date Night",
       ],
+      reward: [
+        "Your Loyalty Pays Off",
+        "Unlock Your Reward",
+        "VIP Perk Just for You",
+        "Earn Points on Every Visit",
+        "A Thank-You from Us",
+        "Members-Only Treat",
+        "You've Earned This",
+        "Exclusive Reward Inside",
+        "Keep Coming Back, Keep Earning",
+        "A Little Something for Regulars",
+      ],
     };
 
     return fallbacks[contentType].slice(0, count);
@@ -933,6 +968,8 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
         "We're here right now! Find us nearby and discover what we're serving up today. Stop by while we're in the area - we'd love to see you!",
       event:
         "Mark your calendar and plan your visit! This is your chance to experience something special with us. Bring friends, make memories, and be part of something worth talking about.",
+      reward:
+        "Your loyalty deserves recognition. Unlock this exclusive perk as a thank-you for being a regular - and keep earning more every time you visit.",
     };
 
     return fallbacks[contentType];
@@ -974,7 +1011,7 @@ PURPOSE: Create anticipation and make people plan a visit. Turn venue into a des
       );
 
       // Use chat completions for notification copy (no assistant needed)
-      const completion = await openai.chat.completions.create({
+      const completion = await llm.chatCompletion({
         model: "gpt-4o",
         messages: [
           {

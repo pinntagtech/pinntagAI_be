@@ -415,75 +415,292 @@ export class FacebookService {
    * @param userAccessToken - Long-lived user access token
    * @param businessId - Business ID to save the page data
    */
+  // async completeOAuthFlow(userAccessToken: string, businessId: string) {
+  //   try {
+  //     logger.info({ businessId }, "Starting complete OAuth flow");
+
+  //     // Step 1: Get list of pages user manages
+  //     const pagesConfig = {
+  //       method: "get",
+  //       url: `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`,
+  //     };
+
+  //     const pagesResponse = await axios.request(pagesConfig);
+  //     const pages = pagesResponse.data.data;
+
+  //     if (!pages || pages.length === 0) {
+  //       return {
+  //         success: false,
+  //         data: "No Facebook pages found for this account. Please create a page first.",
+  //       };
+  //     }
+
+  //     // Use the first page (or you could let user select)
+  //     const firstPage = pages[0];
+  //     const pageAccessToken = firstPage.access_token; // This is already long-lived
+  //     const pageId = firstPage.id;
+  //     const pageName = firstPage.name;
+
+  //     logger.info(
+  //       { pageId, pageName, totalPages: pages.length },
+  //       "Found pages, using first page",
+  //     );
+
+  //     // Step 2: Fetch comprehensive page metadata
+  //     const pageInfoConfig = {
+  //       method: "get",
+  //       url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+  //       // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+  //     };
+
+  //     const pageInfoResponse = await axios.request(pageInfoConfig);
+  //     const pageData = pageInfoResponse.data;
+
+  //     const pageMetadata = {
+  //       name: pageData.name || null,
+  //       category: pageData.category || null,
+  //       about: pageData.about || pageData.description || null,
+  //       followers: null,
+  //       // followers: pageData.followers_count || 0,
+  //       website: pageData.website || null,
+  //       phone: pageData.phone || null,
+  //       email: pageData.emails?.[0] || null,
+  //       profilePicture: pageData.picture?.data?.url || null,
+  //       coverPhoto: pageData.cover?.source || null,
+  //       rawData: pageData,
+  //     };
+
+  //     logger.info(
+  //       { pageId, pageName: pageData.name, category: pageData.category },
+  //       "Fetched comprehensive page metadata",
+  //     );
+
+  //     // Step 3: Save to database
+  //     const { BusinessAIAssistantModel } =
+  //       await import("../../models/businessAIAssistant.model.js");
+
+  //     // Calculate expiration date (page tokens from /me/accounts are already long-lived, ~60 days)
+  //     const expiresAt = new Date();
+  //     expiresAt.setDate(expiresAt.getDate() + 60); // 60 days
+
+  //     const facebookMetaData = {
+  //       pageId: pageId,
+  //       pageAccessToken: pageAccessToken,
+  //       tokenExpiresAt: expiresAt,
+  //       pageInfo: {
+  //         name: pageMetadata.name,
+  //         about: pageMetadata.about,
+  //         category: pageMetadata.category,
+  //         // followers: pageMetadata.followers,
+  //         followers: null,
+  //         website: pageMetadata.website,
+  //         phone: pageMetadata.phone,
+  //         email: pageMetadata.email,
+  //         profilePicture: pageMetadata.profilePicture,
+  //         coverPhoto: pageMetadata.coverPhoto,
+  //       },
+  //     };
+
+  //     const updateData: any = {
+  //       facebookPageAccessToken: pageAccessToken,
+  //       facebookPageId: pageId,
+  //       facebookPageTokenExpiresAt: expiresAt,
+  //       facebookPageName: pageMetadata.name,
+  //       facebookPageCategory: pageMetadata.category,
+  //       facebookPageAbout: pageMetadata.about,
+  //       facebookPageFollowers: pageMetadata.followers,
+  //       facebookPageWebsite: pageMetadata.website,
+  //       facebookPagePhone: pageMetadata.phone,
+  //       facebookPageEmail: pageMetadata.email,
+  //       facebookPageProfilePicture: pageMetadata.profilePicture,
+  //       facebookPageCoverPhoto: pageMetadata.coverPhoto,
+  //       facebookPageMetadata: pageMetadata.rawData,
+  //       isFacebookConnected: true,
+  //       facebookMetaData: facebookMetaData,
+  //     };
+
+  //     const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
+  //       { businessId },
+  //       { $set: updateData },
+  //       { new: true },
+  //     );
+
+  //     if (!updatedBusiness) {
+  //       logger.warn({ businessId }, "Business not found for token save");
+  //       return {
+  //         success: false,
+  //         data: `Business with ID ${businessId} not found`,
+  //       };
+  //     }
+
+  //     logger.info(
+  //       { businessId, pageId, pageName: pageMetadata.name },
+  //       "Successfully saved page access token and metadata to AI assistant database",
+  //     );
+
+  //     // Step 4: Update Pinntag backend business schema
+  //     try {
+  //       await this.updatePinntagBackendBusiness(businessId, {
+  //         pageId,
+  //         pageAccessToken,
+  //         expiresAt,
+  //         pageMetadata,
+  //       });
+  //       logger.info(
+  //         { businessId, pageId },
+  //         "Successfully updated Pinntag backend business with Facebook data",
+  //       );
+  //     } catch (backendError: any) {
+  //       logger.error(
+  //         { error: backendError.message, businessId },
+  //         "Failed to update Pinntag backend, but AI assistant data was saved successfully",
+  //       );
+  //       // Don't fail the whole flow if backend update fails
+  //     }
+
+  //     return {
+  //       success: true,
+  //       data: {
+  //         accessToken: pageAccessToken,
+  //         expiresAt,
+  //         pageId,
+  //         pageMetadata: {
+  //           name: pageMetadata.name,
+  //           category: pageMetadata.category,
+  //           about: pageMetadata.about,
+  //           // followers: pageMetadata.followers,
+  //           followers: null,
+  //           website: pageMetadata.website,
+  //           phone: pageMetadata.phone,
+  //           email: pageMetadata.email,
+  //           profilePicture: pageMetadata.profilePicture,
+  //           coverPhoto: pageMetadata.coverPhoto,
+  //         },
+  //       },
+  //     };
+  //   } catch (error: any) {
+  //     logger.error(
+  //       {
+  //         error: error.message,
+  //         response: error.response?.data,
+  //       },
+  //       "Error completing OAuth flow",
+  //     );
+  //     return {
+  //       success: false,
+  //       data: error.response?.data?.error?.message || error.message,
+  //     };
+  //   }
+  // }
+
   async completeOAuthFlow(userAccessToken: string, businessId: string) {
+    const tokenTail = userAccessToken.slice(-4);
+    const tokenLen = userAccessToken.length;
+
     try {
-      logger.info({ businessId }, "Starting complete OAuth flow");
+      logger.info(
+        { businessId, userTokenLen: tokenLen, userTokenTail: tokenTail },
+        "Starting Facebook OAuth completion",
+      );
 
-      // Step 1: Get list of pages user manages
-      const pagesConfig = {
-        method: "get",
-        url: `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`,
-      };
+      // ---- Step 1: list Pages the user manages ---------------------------------
+      // /me/accounts is unlocked by `pages_show_list` (already approved).
+      // Each entry already includes a long-lived Page access token.
+      const pagesResponse = await axios.get(
+        `https://graph.facebook.com/v24.0/me/accounts`,
+        {
+          params: {
+            fields: "id,name,access_token,tasks",
+            access_token: userAccessToken,
+          },
+        },
+      );
 
-      const pagesResponse = await axios.request(pagesConfig);
-      const pages = pagesResponse.data.data;
+      const pages = pagesResponse.data?.data ?? [];
 
-      if (!pages || pages.length === 0) {
+      if (pages.length === 0) {
+        logger.warn({ businessId }, "User has no Facebook Pages");
         return {
           success: false,
-          data: "No Facebook pages found for this account. Please create a page first.",
+          data: "No Facebook Pages found for this account. Please create or connect a Facebook Page first.",
         };
       }
 
-      // Use the first page (or you could let user select)
+      // TODO: when supporting users with multiple Pages, return the list to the
+      // frontend and let the user pick instead of defaulting to pages[0].
+      if (pages.length > 1) {
+        logger.info(
+          { businessId, pageCount: pages.length },
+          "User has multiple Pages, defaulting to first — add a picker later",
+        );
+      }
+
       const firstPage = pages[0];
-      const pageAccessToken = firstPage.access_token; // This is already long-lived
-      const pageId = firstPage.id;
-      const pageName = firstPage.name;
+      const pageId: string = firstPage.id;
+      const pageName: string = firstPage.name;
+      const pageAccessToken: string | undefined = firstPage.access_token;
+
+      if (!pageAccessToken) {
+        // This happens when the user didn't grant pages_show_list, or when
+        // the Page is owned by a Business Manager that hasn't given the user
+        // the right tasks. The `tasks` array tells you which.
+        logger.error(
+          { businessId, pageId, pageName, tasks: firstPage.tasks },
+          "Page access token missing from /me/accounts response",
+        );
+        return {
+          success: false,
+          data: "Facebook Page access token was not returned. Please reconnect with Page management permissions granted.",
+        };
+      }
 
       logger.info(
-        { pageId, pageName, totalPages: pages.length },
-        "Found pages, using first page",
+        {
+          businessId,
+          pageId,
+          pageName,
+          totalPages: pages.length,
+          pageTokenLen: pageAccessToken.length,
+          pageTokenTail: pageAccessToken.slice(-4),
+          pageTasks: firstPage.tasks,
+        },
+        "Resolved Page from /me/accounts",
       );
 
-      // Step 2: Fetch comprehensive page metadata
-      const pageInfoConfig = {
-        method: "get",
-        url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
-      };
-
-      const pageInfoResponse = await axios.request(pageInfoConfig);
-      const pageData = pageInfoResponse.data;
-
+      // ---- Step 2: build metadata WITHOUT calling /{pageId} --------------------
+      // The previous version called GET /{pageId}?fields=id,name,picture{url}.
+      // That endpoint is gated behind pages_read_engagement OR Page Public
+      // Metadata Access. PPCA does NOT cover it. We have neither, so we skip.
+      //
+      // Everything we need (id, name, token) is already in pages[0].
+      // Other fields are intentionally null until elevated permissions are
+      // approved or until we add a manual entry UI.
       const pageMetadata = {
-        name: pageData.name || null,
-        category: pageData.category || null,
-        about: pageData.about || pageData.description || null,
-        followers: pageData.followers_count || 0,
-        website: pageData.website || null,
-        phone: pageData.phone || null,
-        email: pageData.emails?.[0] || null,
-        profilePicture: pageData.picture?.data?.url || null,
-        coverPhoto: pageData.cover?.source || null,
-        rawData: pageData,
+        name: pageName,
+        category: null,
+        about: null,
+        followers: null,
+        website: null,
+        phone: null,
+        email: null,
+        profilePicture: null,
+        coverPhoto: null,
+        rawData: { id: pageId, name: pageName },
       };
 
-      logger.info(
-        { pageId, pageName: pageData.name, category: pageData.category },
-        "Fetched comprehensive page metadata",
-      );
-
-      // Step 3: Save to database
+      // ---- Step 3: persist to AI assistant DB ----------------------------------
       const { BusinessAIAssistantModel } =
         await import("../../models/businessAIAssistant.model.js");
 
-      // Calculate expiration date (page tokens from /me/accounts are already long-lived, ~60 days)
+      // Page tokens from /me/accounts (when the user token is long-lived) are
+      // themselves long-lived — typically ~60 days, sometimes never-expiring.
+      // We assume 60 days defensively and trigger a re-auth before that.
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 60); // 60 days
+      expiresAt.setDate(expiresAt.getDate() + 60);
 
       const facebookMetaData = {
-        pageId: pageId,
-        pageAccessToken: pageAccessToken,
+        pageId,
+        pageAccessToken,
         tokenExpiresAt: expiresAt,
         pageInfo: {
           name: pageMetadata.name,
@@ -498,22 +715,22 @@ export class FacebookService {
         },
       };
 
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         facebookPageAccessToken: pageAccessToken,
         facebookPageId: pageId,
         facebookPageTokenExpiresAt: expiresAt,
         facebookPageName: pageMetadata.name,
-        facebookPageCategory: pageMetadata.category,
-        facebookPageAbout: pageMetadata.about,
-        facebookPageFollowers: pageMetadata.followers,
-        facebookPageWebsite: pageMetadata.website,
-        facebookPagePhone: pageMetadata.phone,
-        facebookPageEmail: pageMetadata.email,
-        facebookPageProfilePicture: pageMetadata.profilePicture,
-        facebookPageCoverPhoto: pageMetadata.coverPhoto,
+        facebookPageCategory: null,
+        facebookPageAbout: null,
+        facebookPageFollowers: null,
+        facebookPageWebsite: null,
+        facebookPagePhone: null,
+        facebookPageEmail: null,
+        facebookPageProfilePicture: null,
+        facebookPageCoverPhoto: null,
         facebookPageMetadata: pageMetadata.rawData,
         isFacebookConnected: true,
-        facebookMetaData: facebookMetaData,
+        facebookMetaData,
       };
 
       const updatedBusiness = await BusinessAIAssistantModel.findOneAndUpdate(
@@ -523,7 +740,7 @@ export class FacebookService {
       );
 
       if (!updatedBusiness) {
-        logger.warn({ businessId }, "Business not found for token save");
+        logger.warn({ businessId }, "Business not found while saving FB token");
         return {
           success: false,
           data: `Business with ID ${businessId} not found`,
@@ -531,11 +748,11 @@ export class FacebookService {
       }
 
       logger.info(
-        { businessId, pageId, pageName: pageMetadata.name },
-        "Successfully saved page access token and metadata to AI assistant database",
+        { businessId, pageId, pageName },
+        "Saved Facebook Page token + minimal metadata to AI assistant DB",
       );
 
-      // Step 4: Update Pinntag backend business schema
+      // ---- Step 4: mirror to main Pinntag backend ------------------------------
       try {
         await this.updatePinntagBackendBusiness(businessId, {
           pageId,
@@ -545,14 +762,15 @@ export class FacebookService {
         });
         logger.info(
           { businessId, pageId },
-          "Successfully updated Pinntag backend business with Facebook data",
+          "Mirrored Facebook data to Pinntag backend",
         );
       } catch (backendError: any) {
+        // Don't fail the whole OAuth flow if the secondary write fails — the
+        // primary record is already in the AI assistant DB.
         logger.error(
-          { error: backendError.message, businessId },
-          "Failed to update Pinntag backend, but AI assistant data was saved successfully",
+          { err: backendError.message, businessId },
+          "Backend mirror failed, AI assistant data still saved",
         );
-        // Don't fail the whole flow if backend update fails
       }
 
       return {
@@ -575,16 +793,27 @@ export class FacebookService {
         },
       };
     } catch (error: any) {
+      // Surface the Graph API error structure so the next failure is
+      // immediately diagnosable instead of opaque.
+      const fbErr = error?.response?.data?.error;
       logger.error(
         {
-          error: error.message,
-          response: error.response?.data,
+          businessId,
+          message: error.message,
+          status: error?.response?.status,
+          fbCode: fbErr?.code,
+          fbSubcode: fbErr?.error_subcode,
+          fbType: fbErr?.type,
+          fbMessage: fbErr?.message,
+          fbTraceId: fbErr?.fbtrace_id,
+          // Helpful for debugging WHICH call broke when this method grows
+          url: error?.config?.url,
         },
-        "Error completing OAuth flow",
+        "completeOAuthFlow failed",
       );
       return {
         success: false,
-        data: error.response?.data?.error?.message || error.message,
+        data: fbErr?.message || error.message,
       };
     }
   }
@@ -881,9 +1110,11 @@ export class FacebookService {
             description: item.description,
             fullPicture: item.images?.[0] || null,
             images: item.images || [],
-            reactions: 0,
-            comments: 0,
-            shares: 0,
+            // reactions: 0,
+            // comments: 0,
+            reactions: item.reactions,
+            comments: item.comments,
+            shares: item.shares,
             lastSyncedAt: new Date(),
             rawData: item,
           };
@@ -1067,7 +1298,7 @@ export class FacebookService {
       try {
         const eventsConfig = {
           method: "get",
-          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_uri",
+          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_urireactions.summary(total_count),comments.summary(total_count),shares&limit=100",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -1080,13 +1311,14 @@ export class FacebookService {
         // Filter and transform Facebook Events
         fbEvents.forEach((event: any) => {
           // Skip canceled, draft, or past events
+          logger.info("Event details: " + JSON.stringify(event));
           if (event.is_canceled || event.is_draft) return;
 
           const eventStartTime = event.start_time
             ? new Date(event.start_time)
             : null;
           if (!eventStartTime || eventStartTime <= now) return;
-
+          logger.info(event, "Processing Facebook Event");
           events.push({
             id: event.id,
             source: "facebook_events_api",
@@ -1220,7 +1452,9 @@ export class FacebookService {
                   }
                 });
               }
-
+              const reactionsCount = post.reactions?.summary?.total_count || 0;
+              const commentsCount = post.comments?.summary?.total_count || 0;
+              const sharesCount = post.shares?.count || 0;
               events.push({
                 id: post.id,
                 source: "facebook_post_ai_extracted",
@@ -1256,6 +1490,9 @@ export class FacebookService {
                   aiType: eventType,
                   extractedFromPost: true,
                 },
+                reactions: reactionsCount,
+                comments: commentsCount,
+                shares: sharesCount,
               });
             }
           }
@@ -1323,6 +1560,10 @@ export class FacebookService {
               });
             }
 
+            const reactionsCount = post.reactions?.summary?.total_count || 0;
+            const commentsCount = post.comments?.summary?.total_count || 0;
+            const sharesCount = post.shares?.count || 0;
+
             events.push({
               id: post.id,
               source: "facebook_post_raw",
@@ -1358,6 +1599,9 @@ export class FacebookService {
                 extractedFromPost: true,
                 noAIProcessing: true,
               },
+              reactions: reactionsCount,
+              comments: commentsCount,
+              shares: sharesCount,
             });
           }
 
@@ -1844,7 +2088,7 @@ export class FacebookService {
 
       if (response.data && response.data.data) {
         const allPosts = response.data.data;
-
+        logger.info("All posts data: " + JSON.stringify(allPosts));
         if (useAI) {
           logger.info("Using AI-based filtering for Facebook posts");
           const aiFilteredResults = await this.filterPostsWithAI(
@@ -2277,8 +2521,6 @@ export class FacebookService {
         { new: true },
       );
 
-      //Delete the posts data as well
-      await FacebookPostModel.deleteMany({ businessId });
       if (!updatedBusiness) {
         logger.warn(
           { businessId },
@@ -2289,6 +2531,22 @@ export class FacebookService {
           error: `Business with ID ${businessId} not found`,
         };
       }
+
+      // Delete all Facebook posts for this business. Schema stores businessId
+      // as ObjectId, so build an $in filter that matches both the raw value
+      // and the cast ObjectId form to cover any legacy string-typed rows.
+      const businessIdFilters: any[] = [{ businessId }];
+      if (mongoose.isValidObjectId(businessId)) {
+        const asObjectId = new mongoose.Types.ObjectId(String(businessId));
+        businessIdFilters.push({ businessId: asObjectId });
+      }
+      const deleteResult = await FacebookPostModel.deleteMany({
+        $or: businessIdFilters,
+      });
+      logger.info(
+        { businessId, deletedPostsCount: deleteResult.deletedCount },
+        "Deleted Facebook posts for business on disconnect",
+      );
 
       // Update Pinntag backend business
       try {

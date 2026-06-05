@@ -23,6 +23,21 @@ export type ImageStyle =
  */
 export type ImageAspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
 
+/**
+ * Meal-time day parts for food & drinks businesses.
+ * Sent only when the business industry is Food & Drink — drives meal-context
+ * phrasing in generated titles (e.g. "Breakfast Bundle", "Late-Night Bites").
+ */
+export const DayParts = {
+  BREAKFAST: "BREAKFAST",
+  BRUNCH: "BRUNCH",
+  LUNCH: "LUNCH",
+  DINNER: "DINNER",
+  LATE_NIGHT: "LATE_NIGHT",
+} as const;
+
+export type DayPart = (typeof DayParts)[keyof typeof DayParts];
+
 // ===========================
 // Content Generation Types
 // ===========================
@@ -38,6 +53,7 @@ export interface BaseContentParams {
   tone?: "professional" | "casual" | "friendly" | "exciting" | "urgent";
   targetAudience?: string;
   additionalContext?: string;
+  dayPart?: DayPart;
 }
 
 /**
@@ -153,6 +169,11 @@ export interface ContentImageParams {
   tone?: string;
   callToAction?: string;
   promoCode?: string;
+  // Constraints from the AI-generated content that should shape the
+  // visual (e.g. show "Valid through Sunday" or compliance disclaimers).
+  termsAndConditions?: string;
+  validityPeriod?: string;
+  hashtags?: string[];
 }
 
 // ===========================

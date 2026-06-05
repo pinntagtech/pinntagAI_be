@@ -8,9 +8,10 @@ export const aiTrainingRouter = Router();
 aiTrainingRouter.use(internalApiKeyGuard);
 
 /**
- * GET /ai/training/state/:businessId?phase=basic|standard|advanced
+ * GET /ai/training/state/:businessId?phase=basic|standard|advanced&allQuestions=true
  * Params: businessId
  * Query: phase (optional) - Returns questions from specific phase instead of current phase
+ *        allQuestions (optional) - If "true", returns all questions from all phases in a flat array
  * Gets comprehensive training state (current phase, answered/remaining questions, progress)
  * This is the primary API for getting all training information
  */

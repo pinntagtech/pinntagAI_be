@@ -1,12 +1,19 @@
 import { Request, Response } from "express";
 import { AIService } from "../services/ai.service.js";
-import { GeminiService } from "../services/gemini.service.js";
+import { ImageGenerationService } from "../services/imageGeneration.service.js";
 import { logger } from "../../utils/logger.js";
 import {
   ensureImageAccess,
   validateRequiredFields,
   withControllerError,
 } from "./controller.utils.js";
+import {
+  SlowTimeRecommendationService,
+  SlowTimeTemplate,
+} from "../services/slowTimeRecommendation.service.js";
+import { ContentAssistService } from "../services/contentAssist.service.js";
+import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
+import { triggerNotification } from "../services/pinntagBackend.service.js";
 import {
   BroadcastContentParams,
   ContentImageParams,
@@ -273,7 +280,7 @@ export async function generateImage(
       return;
     }
 
-    const image = await GeminiService.generateImage(params);
+    const image = await ImageGenerationService.generateImage(params);
 
     res.status(200).json({
       success: true,
@@ -304,7 +311,7 @@ export async function editImage(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const image = await GeminiService.editImage(params);
+    const image = await ImageGenerationService.editImage(params);
 
     res.status(200).json({
       success: true,
@@ -338,13 +345,64 @@ export async function generateContentImage(
       return;
     }
 
-    const image = await GeminiService.generateContentImage(params);
+    const image = await ImageGenerationService.generateContentImage(params);
 
     res.status(200).json({
       success: true,
       image,
     });
   });
+}
+
+/**
+ * Generate an image directly from AI-assist generated content
+ * (title, description, T&C, CTA, promo code, etc.). Designed to be
+ * called right after one of the /ai-assist/{broadcast,offer,reward,event}
+ * endpoints so the image visually reflects the content.
+ *
+ * POST /ai-assist/ai-content-image
+ */
+export async function generateAIContentImage(
+  req: Request,
+  res: Response
+): Promise<void> {
+  await withControllerError(
+    res,
+    "Error generating AI content image",
+    async () => {
+      const params: ContentImageParams = req.body;
+
+      if (
+        !validateRequiredFields(res, params, [
+          { key: "businessId" },
+          { key: "contentType" },
+          { key: "title" },
+        ])
+      ) {
+        return;
+      }
+
+      if (!VALID_CONTENT_TYPES.includes(params.contentType)) {
+        res.status(400).json({
+          error: `Invalid contentType. Must be one of: ${VALID_CONTENT_TYPES.join(
+            ", "
+          )}`,
+        });
+        return;
+      }
+
+      if (!(await ensureImageAccess(res, params.businessId))) {
+        return;
+      }
+
+      const image = await ImageGenerationService.generateContentImage(params);
+
+      res.status(200).json({
+        success: true,
+        image,
+      });
+    }
+  );
 }
 
 /**
@@ -377,7 +435,7 @@ export async function generateImageVariations(
         return;
       }
 
-      const images = await GeminiService.generateImageVariations(
+      const images = await ImageGenerationService.generateImageVariations(
         params as ImageGenerationParams,
         count
       );
@@ -415,7 +473,7 @@ export async function generateTextImage(
       return;
     }
 
-    const image = await GeminiService.generateTextImage(params);
+    const image = await ImageGenerationService.generateTextImage(params);
 
     res.status(200).json({
       success: true,
@@ -670,6 +728,214 @@ export async function updateTagsAndGenerateDescription(
           description,
         },
         message: "Tags updated and description generated successfully",
+      });
+    }
+  );
+}
+
+// ===========================
+// Slow-Time Manual Trigger
+// ===========================
+
+const SLOW_TIME_DISCOUNT_TYPE_MAP: Record<string, string> = {
+  "% Off": "Percentage",
+  "$ Off": "Flat",
+  "BOGO": "BOGO",
+  "Free Item": "FREE_ITEM",
+  "Happy Hour": "HAPPY_HOUR",
+};
+
+function slowTimeToDealTemplate(t: SlowTimeTemplate) {
+  const discountTypeKey =
+    (t.discountType && SLOW_TIME_DISCOUNT_TYPE_MAP[t.discountType]) ||
+    "CUSTOM";
+  return {
+    title: t.title,
+    discountType: discountTypeKey as any,
+    contentType: t.contentType,
+    suggestedDiscount: t.suggestedDiscountValue ?? "",
+    percentOffValue:
+      t.discountType === "% Off" && t.suggestedDiscountValue
+        ? Number(t.suggestedDiscountValue)
+        : undefined,
+    dollarOffValue:
+      t.discountType === "$ Off" && t.suggestedDiscountValue
+        ? Number(t.suggestedDiscountValue)
+        : undefined,
+    bogoOrFreeItem:
+      t.discountType === "BOGO" || t.discountType === "Free Item"
+        ? t.description
+        : undefined,
+    targetAudience: [],
+    bestTiming: {
+      days: t.bestTiming?.days ?? [],
+      hours: t.bestTiming?.hours ?? [],
+      seasonalNote: t.bestTiming?.seasonalNote,
+    },
+    callToAction: t.callToAction,
+    marketingTips: [t.rationale],
+    tags: [t.occasion, t.intensity],
+    dealType: t.type,
+    termsAndConditions: t.termsAndConditions,
+    image: "",
+  };
+}
+
+/**
+ * Manually trigger a slow-time deal template + notification for a business.
+ * POST /ai-assist/slow-time/trigger
+ *
+ * Body: {
+ *   businessId: string (required),
+ *   persistTemplate?: boolean,   // default false — when true, saves the template via DealTemplateGeneratorService
+ *   sendNotification?: boolean,  // default true — generate notification copy variants
+ *   notificationVariantCount?: number  // default 3
+ * }
+ */
+export async function triggerSlowTimeTemplate(
+  req: Request,
+  res: Response
+): Promise<void> {
+  await withControllerError(
+    res,
+    "Error triggering slow-time template",
+    async () => {
+      const {
+        businessId,
+        persistTemplate = false,
+        sendNotification = true,
+        notificationVariantCount = 3,
+        dryRun = false,
+      } = req.body ?? {};
+
+      if (
+        !validateRequiredFields(
+          res,
+          { businessId },
+          [{ key: "businessId" }]
+        )
+      ) {
+        return;
+      }
+
+      const recommendations =
+        await SlowTimeRecommendationService.getRecommendations(businessId);
+
+      const template =
+        recommendations.primaryTemplate ??
+        recommendations.alternativeTemplates[0] ??
+        null;
+
+      if (!template) {
+        res.status(200).json({
+          success: true,
+          triggered: false,
+          reason: "No slow-time signal detected for this business right now",
+          footprint: recommendations.footprint,
+        });
+        return;
+      }
+
+      let savedTemplateId: string | undefined;
+      if (persistTemplate) {
+        try {
+          const dealTemplate = slowTimeToDealTemplate(template);
+          const saved =
+            await DealTemplateGeneratorService.savePreGeneratedTemplate(
+              businessId,
+              dealTemplate as any,
+              {
+                occasion: "slow_period",
+                scope: "business_specific",
+              }
+            );
+          savedTemplateId = String(saved._id);
+        } catch (err: any) {
+          logger.warn(
+            { businessId, err: err?.message },
+            "Failed to persist slow-time template — returning unsaved template"
+          );
+        }
+      }
+
+      let notification:
+        | Awaited<
+            ReturnType<typeof ContentAssistService.generateNotificationCopy>
+          >
+        | undefined;
+      if (sendNotification) {
+        try {
+          notification = await ContentAssistService.generateNotificationCopy({
+            appType: "BUSINESS",
+            triggerType: "business_inactivity",
+            tone: "coach",
+            variantCount: notificationVariantCount,
+            emojiAllowed: true,
+            context: {
+              businessId,
+              offerName: template.title,
+              category: template.contentType,
+            },
+          });
+        } catch (err: any) {
+          logger.warn(
+            { businessId, err: err?.message },
+            "Failed to generate notification copy"
+          );
+        }
+      }
+
+      // Manual trigger always delivers when sendNotification is true and at
+      // least one variant was generated. No cooldown — that's the point of
+      // the manual endpoint. `dryRun: true` skips delivery for previewing.
+      let delivery: Awaited<ReturnType<typeof triggerNotification>> | undefined;
+      if (
+        sendNotification &&
+        !dryRun &&
+        notification?.variants?.length
+      ) {
+        const v = notification.variants[0];
+        delivery = await triggerNotification({
+          businessId,
+          title: v.title,
+          message: v.body,
+        });
+      }
+
+      logger.info(
+        {
+          businessId,
+          occasion: template.occasion,
+          intensity: template.intensity,
+          persisted: !!savedTemplateId,
+          notificationVariants: notification?.variants?.length ?? 0,
+          notificationDelivered: delivery?.delivered ?? false,
+          dryRun,
+        },
+        "Slow-time template triggered manually"
+      );
+
+      res.status(200).json({
+        success: true,
+        triggered: true,
+        template,
+        ...(savedTemplateId ? { savedTemplateId } : {}),
+        footprint: recommendations.footprint,
+        alternatives: recommendations.alternativeTemplates,
+        notification: notification
+          ? {
+              variants: notification.variants,
+              fallbackUsed: notification.fallbackUsed,
+              safetyFlags: notification.safetyFlags,
+              delivery: delivery
+                ? {
+                    delivered: delivery.delivered,
+                    status: delivery.status,
+                    error: delivery.error,
+                  }
+                : { delivered: false, skipped: dryRun ? "dryRun" : "no-variants" },
+            }
+          : null,
       });
     }
   );

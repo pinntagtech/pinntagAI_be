@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { v4 as uuidv4 } from "uuid";
@@ -23,19 +22,41 @@ import { UsageType } from "../../models/aiUsage.model.js";
 // Configuration
 // ===========================
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+const PRUNA_API_KEY = process.env.PRUNA_IMAGE_GEN_API_KEY!;
+const PRUNA_API_BASE = "https://api.pruna.ai/v1";
 
 // Backblaze B2 configuration constants
 const S3_BUCKET = process.env.B2_BUCKET_NAME!;
 const CDN_DOMAIN = process.env.CDN_DOMAIN!;
 const S3_IMAGE_PREFIX = "ai-generated-images";
 
-// Model for image generation
-// Using Gemini 2.5 Flash Image (aka "Nano Banana") for fast image generation
-const IMAGE_MODEL = "gemini-2.5-flash-image";
+// Model names
+const PRUNA_IMAGE_MODEL = "p-image";
+const PRUNA_IMAGE_EDIT_MODEL = "p-image-edit";
 
 // Feature flag to enable/disable image generation
 const ENABLE_IMAGE_GENERATION = process.env.ENABLE_IMAGE_GENERATION === "true";
+
+// ===========================
+// Pruna API Types
+// ===========================
+
+interface PrunaPredictionResponse {
+  id: string;
+  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
+  generation_url?: string;
+  error?: string;
+  message?: string;
+  /** Returned in async mode — URL to poll for status */
+  get_url?: string;
+}
+
+interface PrunaFileUploadResponse {
+  id: string;
+  urls: {
+    get: string;
+  };
+}
 
 // ===========================
 // Helper Functions
@@ -54,7 +75,6 @@ function buildImagePrompt(params: {
 }): string {
   const parts: string[] = [];
 
-  // Add style instructions
   if (params.style) {
     const styleInstructions: Record<ImageStyle, string> = {
       photorealistic: "Create a photorealistic, high-quality photograph",
@@ -67,7 +87,6 @@ function buildImagePrompt(params: {
     parts.push(styleInstructions[params.style]);
   }
 
-  // Add content type context
   if (params.contentType) {
     const contentContext: Record<ContentType, string> = {
       broadcast: "suitable for a business announcement or broadcast message",
@@ -78,32 +97,37 @@ function buildImagePrompt(params: {
     parts.push(contentContext[params.contentType]);
   }
 
-  // Add the main prompt
   parts.push(params.basePrompt);
 
-  // Add text to include
   if (params.includeText) {
     parts.push(
       `Include the following text prominently and legibly: "${params.includeText}"`
     );
   }
 
-  // Add color scheme
   if (params.colorScheme) {
     parts.push(`Use the following color scheme: ${params.colorScheme}`);
   }
 
-  // Add brand elements
   if (params.brandElements) {
     parts.push(`Incorporate these brand elements: ${params.brandElements}`);
   }
 
-  // Add quality instructions
   parts.push(
     "High quality, professional, suitable for marketing and social media use"
   );
 
   return parts.join(". ") + ".";
+}
+
+/**
+ * Map our aspect ratio format to Pruna's supported format
+ */
+function mapAspectRatio(
+  aspectRatio: string | undefined
+): string {
+  // Pruna supports aspect ratios like "16:9", "1:1", etc.
+  return aspectRatio || "1:1";
 }
 
 /**
@@ -128,7 +152,6 @@ async function uploadImageToS3(
     "Uploading image to Backblaze B2"
   );
 
-  // Retry logic for network issues
   let lastError: any;
   const maxRetries = 3;
 
@@ -139,8 +162,6 @@ async function uploadImageToS3(
         `Upload attempt ${attempt}/${maxRetries}`
       );
 
-      // Create a fresh S3 client for each upload to avoid connection pooling issues
-      // Force IPv4 to avoid IPv6 timeout issues
       setDefaultAutoSelectFamily(false);
 
       const s3Client = new S3Client({
@@ -151,7 +172,7 @@ async function uploadImageToS3(
           secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
         },
         forcePathStyle: true,
-        maxAttempts: 1, // Disable SDK's internal retry to use our own
+        maxAttempts: 1,
         requestHandler: new NodeHttpHandler({
           connectionTimeout: 60000,
           requestTimeout: 120000,
@@ -165,15 +186,11 @@ async function uploadImageToS3(
           Key: key,
           Body: imageBuffer,
           ContentType: mimeType,
-          // Make publicly accessible for easy sharing
-          // ACL: "public-read",
         })
       );
 
-      // Destroy the client after use
       s3Client.destroy();
 
-      // Use CDN domain for public access
       const url = `https://${CDN_DOMAIN}/${key}`;
 
       logger.info({ businessId, url, key, attempt }, "Image uploaded successfully to B2");
@@ -191,16 +208,14 @@ async function uploadImageToS3(
         `Upload attempt ${attempt} failed`
       );
 
-      // If not last attempt, wait before retry (exponential backoff)
       if (attempt < maxRetries) {
-        const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        const waitTime = Math.pow(2, attempt) * 1000;
         logger.info({ businessId, waitTime }, "Waiting before retry");
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
   }
 
-  // All retries failed
   logger.error(
     {
       businessId,
@@ -212,25 +227,6 @@ async function uploadImageToS3(
     "Failed to upload image to Backblaze B2 after all retries"
   );
   throw lastError;
-}
-
-/**
- * Generate aspect ratio instructions for the prompt
- */
-function getAspectRatioInstructions(
-  aspectRatio: string | undefined
-): string {
-  if (!aspectRatio) return "";
-
-  const instructions: Record<string, string> = {
-    "1:1": "Create a square image (1:1 aspect ratio)",
-    "16:9": "Create a wide landscape image (16:9 aspect ratio, like a banner)",
-    "9:16": "Create a tall portrait image (9:16 aspect ratio, like a story)",
-    "4:3": "Create a standard landscape image (4:3 aspect ratio)",
-    "3:4": "Create a standard portrait image (3:4 aspect ratio)",
-  };
-
-  return instructions[aspectRatio] || "";
 }
 
 /**
@@ -249,13 +245,131 @@ function getPlaceholderImage(contentType?: ContentType): string {
   return placeholders[contentType || "offer"] || placeholders.offer;
 }
 
+/**
+ * Call Pruna API to create a prediction (image generation)
+ */
+async function createPrunaPrediction(
+  prompt: string,
+  aspectRatio: string,
+  model: string = PRUNA_IMAGE_MODEL
+): Promise<PrunaPredictionResponse> {
+  const response = await fetch(`${PRUNA_API_BASE}/predictions`, {
+    method: "POST",
+    headers: {
+      "apikey": PRUNA_API_KEY,
+      "Model": model,
+      "Try-Sync": "true",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      input: {
+        prompt,
+        aspect_ratio: aspectRatio,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Pruna API error (${response.status}): ${errorBody}`);
+  }
+
+  return response.json() as Promise<PrunaPredictionResponse>;
+}
+
+/**
+ * Poll a Pruna prediction until it completes or fails
+ */
+async function pollPrunaPrediction(
+  predictionUrl: string,
+  maxWaitMs: number = 120000
+): Promise<PrunaPredictionResponse> {
+  const startTime = Date.now();
+  const pollInterval = 2000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const response = await fetch(predictionUrl, {
+      headers: {
+        "apikey": PRUNA_API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Pruna poll error (${response.status}): ${await response.text()}`);
+    }
+
+    const result = await response.json() as PrunaPredictionResponse;
+
+    if (result.status === "succeeded") {
+      return result;
+    }
+
+    if (result.status === "failed" || result.status === "canceled") {
+      throw new Error(`Pruna prediction ${result.status}: ${result.error || "Unknown error"}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error("Pruna prediction timed out after " + maxWaitMs + "ms");
+}
+
+/**
+ * Download image from Pruna generation URL
+ */
+async function downloadPrunaImage(
+  generationUrl: string
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  const response = await fetch(generationUrl, {
+    headers: {
+      "apikey": PRUNA_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to download Pruna image (${response.status}): ${await response.text()}`);
+  }
+
+  const mimeType = response.headers.get("content-type") || "image/jpeg";
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  return { buffer, mimeType };
+}
+
+/**
+ * Upload a file to Pruna for image editing
+ */
+async function uploadFileToPruna(
+  imageBuffer: Buffer,
+  filename: string = "image.jpg"
+): Promise<PrunaFileUploadResponse> {
+  const formData = new FormData();
+  const blob = new Blob([new Uint8Array(imageBuffer)]);
+  formData.append("content", blob, filename);
+
+  const response = await fetch(`${PRUNA_API_BASE}/files`, {
+    method: "POST",
+    headers: {
+      "apikey": PRUNA_API_KEY,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Pruna file upload error (${response.status}): ${await response.text()}`);
+  }
+
+  return response.json() as Promise<PrunaFileUploadResponse>;
+}
+
 // ===========================
-// Gemini Service Class
+// Pruna Service Class
 // ===========================
 
-export class GeminiService {
+export class PrunaService {
   /**
-   * Generate an image from a text prompt
+   * Generate an image from a text prompt using Pruna P-Image model
    */
   static async generateImage(
     params: ImageGenerationParams
@@ -269,10 +383,8 @@ export class GeminiService {
         "Image generation disabled via feature flag, returning placeholder"
       );
 
-      const placeholderUrl = getPlaceholderImage(contentType);
-
       return {
-        imageUrl: placeholderUrl,
+        imageUrl: getPlaceholderImage(contentType),
         s3Key: "placeholder",
         mimeType: "image/jpeg",
         prompt,
@@ -297,49 +409,34 @@ export class GeminiService {
         brandElements,
       });
 
-      // Add aspect ratio instructions
-      const aspectInstructions = getAspectRatioInstructions(aspectRatio);
-      const finalPrompt = aspectInstructions
-        ? `${aspectInstructions}. ${enhancedPrompt}`
-        : enhancedPrompt;
+      const prunaAspectRatio = mapAspectRatio(aspectRatio);
 
       logger.info(
-        { businessId, contentType, style, promptLength: finalPrompt.length },
-        "Generating image with Gemini"
+        { businessId, contentType, style, promptLength: enhancedPrompt.length, model: PRUNA_IMAGE_MODEL },
+        "Generating image with Pruna P-Image"
       );
 
-      // Generate image using Gemini
-      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
-      const result = await model.generateContent(finalPrompt);
-      const response = result.response;
+      // Create prediction via Pruna API (sync mode)
+      let prediction = await createPrunaPrediction(enhancedPrompt, prunaAspectRatio);
 
-      // Extract image from response
-      let imageData: string | null = null;
-      let mimeType = "image/png";
-
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageData = part.inlineData.data;
-            mimeType = part.inlineData.mimeType || "image/png";
-            break;
-          }
-        }
+      // If not immediately completed, poll for result
+      if (prediction.status !== "succeeded" && prediction.get_url) {
+        logger.info(
+          { businessId, predictionId: prediction.id, status: prediction.status },
+          "Pruna prediction not immediately ready, polling..."
+        );
+        prediction = await pollPrunaPrediction(prediction.get_url);
       }
 
-      if (!imageData) {
-        throw new Error("No image data in Gemini response");
+      if (!prediction.generation_url) {
+        throw new Error("No generation URL in Pruna response");
       }
 
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(imageData, "base64");
+      // Download the generated image
+      const { buffer: imageBuffer, mimeType } = await downloadPrunaImage(prediction.generation_url);
 
       // Upload to S3
-      const { url, key } = await uploadImageToS3(
-        imageBuffer,
-        businessId,
-        mimeType
-      );
+      const { url, key } = await uploadImageToS3(imageBuffer, businessId, mimeType);
 
       // Record usage for subscription limits
       await recordFeatureUsage(businessId, "images", 1);
@@ -350,37 +447,37 @@ export class GeminiService {
         type: UsageType.IMAGE_GENERATION,
         subType: contentType,
         imageCount: 1,
-        model: IMAGE_MODEL,
+        model: PRUNA_IMAGE_MODEL,
         success: true,
         metadata: {
           style,
           aspectRatio,
           s3Key: key,
-          promptLength: finalPrompt.length,
+          promptLength: enhancedPrompt.length,
+          provider: "pruna",
         },
       });
 
       logger.info(
         { businessId, s3Key: key },
-        "Image generated and uploaded successfully"
+        "Image generated with Pruna and uploaded successfully"
       );
 
       return {
         imageUrl: url,
         s3Key: key,
         mimeType,
-        prompt: finalPrompt,
+        prompt: enhancedPrompt,
         style,
       };
     } catch (error: any) {
-      // Track failed usage
       const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_GENERATION,
         subType: contentType,
         imageCount: 0,
-        model: IMAGE_MODEL,
+        model: PRUNA_IMAGE_MODEL,
         success: false,
         errorMessage,
       });
@@ -390,21 +487,19 @@ export class GeminiService {
           businessId,
           error: errorMessage,
           errorStack: error.stack,
-          errorDetails: JSON.stringify(error, null, 2)
         },
-        "Error generating image with Gemini"
+        "Error generating image with Pruna"
       );
       throw new Error(`Image generation failed: ${errorMessage}`);
     }
   }
 
   /**
-   * Edit an existing image with a text prompt
+   * Edit an existing image using Pruna P-Image-Edit model
    */
   static async editImage(params: ImageEditParams): Promise<GeneratedImage> {
     const { businessId, imageUrl, editPrompt, preserveElements } = params;
 
-    // Check if image generation is disabled via feature flag
     if (!ENABLE_IMAGE_GENERATION) {
       logger.info(
         { businessId },
@@ -419,7 +514,6 @@ export class GeminiService {
       };
     }
 
-    // Check subscription access
     const access = await checkImageGenerationAccess(businessId);
     if (!access.hasAccess) {
       throw new Error(access.reason || "Image editing not available");
@@ -433,9 +527,10 @@ export class GeminiService {
       }
 
       const imageArrayBuffer = await imageResponse.arrayBuffer();
-      const imageBase64 = Buffer.from(imageArrayBuffer).toString("base64");
-      const imageMimeType =
-        imageResponse.headers.get("content-type") || "image/png";
+      const imageBuffer = Buffer.from(imageArrayBuffer);
+
+      // Upload to Pruna file storage
+      const uploadResult = await uploadFileToPruna(imageBuffer, "source-image.jpg");
 
       // Build edit prompt
       let fullPrompt = editPrompt;
@@ -444,71 +539,68 @@ export class GeminiService {
       }
 
       logger.info(
-        { businessId, editPrompt: fullPrompt.substring(0, 100) },
-        "Editing image with Gemini"
+        { businessId, editPrompt: fullPrompt.substring(0, 100), model: PRUNA_IMAGE_EDIT_MODEL },
+        "Editing image with Pruna P-Image-Edit"
       );
 
-      // Send image + prompt to Gemini
-      const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
-      const result = await model.generateContent([
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: imageMimeType,
-          },
+      // Create prediction with the uploaded file reference
+      // p-image-edit accepts an "images" array of file URLs
+      const response = await fetch(`${PRUNA_API_BASE}/predictions`, {
+        method: "POST",
+        headers: {
+          "apikey": PRUNA_API_KEY,
+          "Model": PRUNA_IMAGE_EDIT_MODEL,
+          "Try-Sync": "true",
+          "Content-Type": "application/json",
         },
-        { text: fullPrompt },
-      ]);
-      const response = result.response;
+        body: JSON.stringify({
+          input: {
+            prompt: fullPrompt,
+            images: [uploadResult.urls.get],
+          },
+        }),
+      });
 
-      // Extract edited image from response
-      let imageData: string | null = null;
-      let mimeType = "image/png";
-
-      if (response.candidates && response.candidates[0]?.content?.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageData = part.inlineData.data;
-            mimeType = part.inlineData.mimeType || "image/png";
-            break;
-          }
-        }
+      if (!response.ok) {
+        throw new Error(`Pruna edit API error (${response.status}): ${await response.text()}`);
       }
 
-      if (!imageData) {
-        throw new Error("No image data in Gemini edit response");
+      let prediction = await response.json() as PrunaPredictionResponse;
+
+      // If not immediately completed, poll
+      if (prediction.status !== "succeeded" && prediction.get_url) {
+        prediction = await pollPrunaPrediction(prediction.get_url);
       }
 
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(imageData, "base64");
+      if (!prediction.generation_url) {
+        throw new Error("No generation URL in Pruna edit response");
+      }
+
+      // Download the edited image
+      const { buffer: editedBuffer, mimeType } = await downloadPrunaImage(prediction.generation_url);
 
       // Upload to S3
-      const { url, key } = await uploadImageToS3(
-        imageBuffer,
-        businessId,
-        mimeType
-      );
+      const { url, key } = await uploadImageToS3(editedBuffer, businessId, mimeType);
 
-      // Record usage for subscription limits
       await recordFeatureUsage(businessId, "images", 1);
 
-      // Track detailed usage
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_EDIT,
         imageCount: 1,
-        model: IMAGE_MODEL,
+        model: PRUNA_IMAGE_EDIT_MODEL,
         success: true,
         metadata: {
           s3Key: key,
           promptLength: fullPrompt.length,
           sourceImageUrl: imageUrl,
+          provider: "pruna",
         },
       });
 
       logger.info(
         { businessId, s3Key: key },
-        "Image edited and uploaded successfully"
+        "Image edited with Pruna and uploaded successfully"
       );
 
       return {
@@ -518,13 +610,12 @@ export class GeminiService {
         prompt: fullPrompt,
       };
     } catch (error: any) {
-      // Track failed usage
       const errorMessage = error.message || error.toString() || "Unknown error";
       await UsageTrackingService.trackUsage({
         businessId,
         type: UsageType.IMAGE_EDIT,
         imageCount: 0,
-        model: IMAGE_MODEL,
+        model: PRUNA_IMAGE_EDIT_MODEL,
         success: false,
         errorMessage,
       });
@@ -534,9 +625,8 @@ export class GeminiService {
           businessId,
           error: errorMessage,
           errorStack: error.stack,
-          errorDetails: JSON.stringify(error, null, 2)
         },
-        "Error editing image with Gemini"
+        "Error editing image with Pruna"
       );
       throw new Error(`Image editing failed: ${errorMessage}`);
     }
@@ -573,10 +663,8 @@ export class GeminiService {
       hashtags,
     } = params;
 
-    // Build a comprehensive content-specific prompt
     const promptParts: string[] = [];
 
-    // Content type specific visuals
     const contentVisuals: Record<ContentType, string> = {
       broadcast:
         "Create an attention-grabbing announcement visual with dynamic elements",
@@ -595,7 +683,6 @@ export class GeminiService {
       promptParts.push(`Context: ${description.substring(0, 300)}`);
     }
 
-    // Add business context
     if (category) {
       promptParts.push(`Business category: ${category}`);
     }
@@ -606,7 +693,6 @@ export class GeminiService {
       promptParts.push(`Related to: ${tags.slice(0, 5).join(", ")}`);
     }
 
-    // Add deal/offer specific elements
     if (dealType) {
       promptParts.push(`Deal type: ${dealType}`);
     }
@@ -619,12 +705,10 @@ export class GeminiService {
       promptParts.push(`Visually represent: ${discountText}`);
     }
 
-    // Add event specific elements
     if (eventType) {
       promptParts.push(`Event type: ${eventType}`);
     }
 
-    // Add audience and tone
     if (targetAudience) {
       promptParts.push(`Target audience vibe: ${targetAudience}`);
     }
@@ -632,7 +716,6 @@ export class GeminiService {
       promptParts.push(`Visual tone should be: ${tone}`);
     }
 
-    // Add text elements to include
     if (callToAction) {
       promptParts.push(`Include call-to-action text: "${callToAction}"`);
     }
@@ -655,7 +738,6 @@ export class GeminiService {
       );
     }
 
-    // Add brand colors
     if (brandColors && brandColors.length > 0) {
       promptParts.push(`Use brand colors: ${brandColors.join(", ")}`);
     }
@@ -666,7 +748,6 @@ export class GeminiService {
 
     const prompt = promptParts.join(". ");
 
-    // Use the main generateImage method
     return this.generateImage({
       businessId,
       prompt,
@@ -683,17 +764,14 @@ export class GeminiService {
     params: ImageGenerationParams,
     count: number = 3
   ): Promise<GeneratedImage[]> {
-    // Check if image generation is disabled via feature flag
     if (!ENABLE_IMAGE_GENERATION) {
       logger.info(
         { businessId: params.businessId },
         "Image variations disabled via feature flag, returning single placeholder"
       );
 
-      const placeholderUrl = getPlaceholderImage(params.contentType);
-
       return [{
-        imageUrl: placeholderUrl,
+        imageUrl: getPlaceholderImage(params.contentType),
         s3Key: "placeholder",
         mimeType: "image/jpeg",
         prompt: params.prompt,
@@ -719,7 +797,7 @@ export class GeminiService {
       } catch (error: any) {
         logger.warn(
           { businessId: params.businessId, variation: i, error: error.message },
-          "Failed to generate image variation"
+          "Failed to generate image variation with Pruna"
         );
       }
     }
@@ -755,7 +833,6 @@ export class GeminiService {
       colorScheme,
     } = params;
 
-    // Build a prompt for text-heavy image
     const promptParts = [
       "Create a marketing poster or flyer design",
       `Main headline text: "${headline}"`,

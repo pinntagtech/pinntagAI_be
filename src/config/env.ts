@@ -25,6 +25,8 @@ const EnvSchema = z.object({
     z.boolean()
   ).default(false),
   PINNTAG_BACKEND_TO_AI_KEY: z.string().optional(),
+  BACKEND_URL: z.string().url().optional(),
+  PINNTAG_AI_TO_BACKEND_KEY: z.string().optional(),
   HTTP_TIMEOUT_MS: z.coerce.number().default(15000),
   HTTP_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
   ETL_API_KEY_HEADER_NAME: z.string().min(1).default("X-API-Key"),
@@ -61,6 +63,12 @@ const EnvSchema = z.object({
   PINNTAG_BACKEND_JWT_SECRET: z.string().min(1),
   // Feature flag to enable/disable AI template generation cron jobs (saves OpenAI quota)
   ENABLE_AI_TEMPLATE_GENERATION: z.preprocess(
+    (v) => v === "true" || v === "1" || v === true,
+    z.boolean()
+  ).default(false),
+  // Feature flag for the nightly review-summary refresh cron (pre-warms
+  // per-business review summaries used by the consumer review chatbot).
+  ENABLE_REVIEW_SUMMARY_REFRESH: z.preprocess(
     (v) => v === "true" || v === "1" || v === true,
     z.boolean()
   ).default(false),
