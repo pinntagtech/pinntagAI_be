@@ -1,0 +1,27 @@
+cat > buildspec.yml << 'EOF'
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 692859910391.dkr.ecr.us-east-1.amazonaws.com
+      - IMAGE_URI=692859910391.dkr.ecr.us-east-1.amazonaws.com/pinntag-prod-ai
+      - IMAGE_TAG=prod
+
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t $IMAGE_URI:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo Pushing image to ECR...
+      - docker push $IMAGE_URI:$IMAGE_TAG
+      - echo Writing imagedefinitions.json...
+      - printf '[{"name":"ai","imageUri":"%s:%s"}]' $IMAGE_URI $IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+EOF
