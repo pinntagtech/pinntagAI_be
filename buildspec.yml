@@ -5,6 +5,8 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 692859910391.dkr.ecr.us-east-1.amazonaws.com
+      - echo Logging in to Amazon ECR Public...
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws || echo "ECR Public auth unavailable, falling back to anonymous pulls"
       - IMAGE_URI=692859910391.dkr.ecr.us-east-1.amazonaws.com/pinntag-prod-ai
       - IMAGE_TAG=prod
 
