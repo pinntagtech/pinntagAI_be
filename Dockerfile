@@ -1,5 +1,5 @@
 # ── Stage 1: build ────────────────────────────────────────────────
-FROM node:20-alpine AS build
+FROM public.ecr.aws/docker/library/node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
@@ -10,7 +10,7 @@ COPY src ./src
 RUN npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────
-FROM node:20-alpine
+FROM public.ecr.aws/docker/library/node:20-alpine
 WORKDIR /app
 
 # Security: run as non-root user
