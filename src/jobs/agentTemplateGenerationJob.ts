@@ -280,7 +280,12 @@ export class AgentTemplateGenerationJob {
       const responseMap = new Map(
         training!.responses.map((r) => [r.questionId, r.answer])
       );
-      const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+      const trainingBrandVoiceRaw = responseMap.get("brand_voice");
+      const trainingBrandVoice = Array.isArray(trainingBrandVoiceRaw)
+        ? trainingBrandVoiceRaw
+        : typeof trainingBrandVoiceRaw === "string" && trainingBrandVoiceRaw
+        ? [trainingBrandVoiceRaw]
+        : [];
       const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
 
       for (const occasion of occasionPlan) {
@@ -538,7 +543,12 @@ export class AgentTemplateGenerationJob {
       ? new Map(training.responses.map((r) => [r.questionId, r.answer]))
       : new Map();
 
-    const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+    const trainingBrandVoiceRaw = responseMap.get("brand_voice");
+    const trainingBrandVoice = Array.isArray(trainingBrandVoiceRaw)
+      ? trainingBrandVoiceRaw
+      : typeof trainingBrandVoiceRaw === "string" && trainingBrandVoiceRaw
+      ? [trainingBrandVoiceRaw]
+      : [];
     const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
 
     // Generate templates with images — single AI call per occasion

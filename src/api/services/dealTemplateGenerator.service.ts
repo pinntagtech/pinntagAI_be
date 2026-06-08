@@ -110,7 +110,12 @@ export class DealTemplateGeneratorService {
       const slowPeriods = (responseMap.get("slow_periods") as string[]) || [];
       const busiestDays = (responseMap.get("busiest_days") as string[]) || [];
       const marketingGoals = (responseMap.get("marketing_goals") as string[]) || [];
-      const brandVoice = (responseMap.get("brand_voice") as string[]) || [];
+      const brandVoiceRaw = responseMap.get("brand_voice");
+      const brandVoice = Array.isArray(brandVoiceRaw)
+        ? brandVoiceRaw
+        : typeof brandVoiceRaw === "string" && brandVoiceRaw
+        ? [brandVoiceRaw]
+        : [];
       const industry = training.industry;
 
       // Generate template based on occasion

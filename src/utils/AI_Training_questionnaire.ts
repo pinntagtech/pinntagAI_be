@@ -16,9 +16,11 @@ export interface AI_Training_Questionnaire_Type {
     | "text"
     | "multiple_choice"
     | "multi_select"
+    | "multi_select_with_text"
     | "number"
     | "time"
     | "boolean";
+  textTriggerOption?: string;
   options?: string[];
   required: boolean;
   category:
@@ -372,7 +374,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
     {
       id: "slow_periods",
       question: "When do you typically experience slow periods?",
-      type: "multi_select",
+      type: "multi_select_with_text",
       options: [
         "Monday mornings",
         "Weekday afternoons",
@@ -382,6 +384,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
         "Late nights",
         "Specific months (specify in comments)",
       ],
+      textTriggerOption: "Specific months (specify in comments)",
       required: true,
       category: "operations",
       phase: TrainingPhase.STANDARD,
@@ -472,7 +475,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
     {
       id: "brand_voice",
       question: "How would you describe your brand voice?",
-      type: "multi_select",
+      type: "multiple_choice",
       options: [
         "Professional",
         "Friendly and casual",
@@ -2112,7 +2115,7 @@ export function getQuestionsWithSmartDefaults(
     }
 
     // Only apply defaults to multi_select and multiple_choice questions
-    if (question.type === "multi_select" && Array.isArray(defaultValue)) {
+    if ((question.type === "multi_select" || question.type === "multi_select_with_text") && Array.isArray(defaultValue)) {
       return {
         ...question,
         suggestedAnswers: defaultValue,
