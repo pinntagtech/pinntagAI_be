@@ -1046,6 +1046,20 @@ export class AITrainingService {
           error: `At least one option must be selected for question: ${question.id}`,
         };
       }
+
+      if (
+        type === "multi_select_with_text" &&
+        typeof answer === "object" &&
+        !Array.isArray(answer) &&
+        answer !== null &&
+        Array.isArray((answer as any).selections) &&
+        (answer as any).selections.length === 0
+      ) {
+        return {
+          valid: false,
+          error: `At least one option must be selected for question: ${question.id}`,
+        };
+      }
     }
 
     // Type validation based on question type
@@ -1100,6 +1114,52 @@ export class AITrainingService {
           }
         }
         break;
+
+      case "multi_select_with_text": {
+        // Expected shape: { selections: string[], textValue?: string }
+        if (
+          typeof answer !== "object" ||
+          Array.isArray(answer) ||
+          answer === null ||
+          !Array.isArray((answer as any).selections)
+        ) {
+          return {
+            valid: false,
+            error: `Answer must be an object with a "selections" array for multi_select_with_text question: ${question.id}`,
+          };
+        }
+        const { selections, textValue } = answer as { selections: string[]; textValue?: string };
+        // Validate each selection against options
+        if (options) {
+          for (const selection of selections) {
+            if (typeof selection !== "string") {
+              return {
+                valid: false,
+                error: `All selections must be strings for question: ${question.id}`,
+              };
+            }
+            if (!options.includes(selection)) {
+              return {
+                valid: false,
+                error: `Selection "${selection}" is not a valid option for question: ${question.id}. Valid options: ${options.join(", ")}`,
+              };
+            }
+          }
+        }
+        // If the trigger option is selected, textValue is required
+        if (
+          question.textTriggerOption &&
+          selections.includes(question.textTriggerOption)
+        ) {
+          if (!textValue || textValue.trim() === "") {
+            return {
+              valid: false,
+              error: `A text value is required when "${question.textTriggerOption}" is selected for question: ${question.id}`,
+            };
+          }
+        }
+        break;
+      }
 
       case "number":
         if (typeof answer !== "number") {

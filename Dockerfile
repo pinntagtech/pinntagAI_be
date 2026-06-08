@@ -1,35 +1,12 @@
-# ── Stage 1: build ────────────────────────────────────────────────
-FROM public.ecr.aws/docker/library/node:20-alpine AS build
-WORKDIR /app
+FROM public.ecr.aws/docker/library/node:18-alpine
+
+WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --only=production
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
-
-# ── Stage 2: runtime ─────────────────────────────────────────────
-FROM public.ecr.aws/docker/library/node:20-alpine
-WORKDIR /app
-
-# Security: run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-ENV NODE_ENV=production
-
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-
-COPY --from=build /app/dist ./dist
-
-# Switch to non-root user
-USER appuser
+COPY . .
 
 EXPOSE 4001
 
-# ECS health check — ALB will also health-check /health
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:4001/health || exit 1
-
-CMD ["node", "dist/index.js"]
+CMD ["node", "src/main.js"]

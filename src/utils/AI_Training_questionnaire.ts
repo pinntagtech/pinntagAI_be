@@ -16,9 +16,15 @@ export interface AI_Training_Questionnaire_Type {
     | "text"
     | "multiple_choice"
     | "multi_select"
+    | "multi_select_with_text"
     | "number"
     | "time"
     | "boolean";
+  /**
+   * For "multi_select_with_text" questions: the exact option string that,
+   * when selected, reveals a required free-text input field.
+   */
+  textTriggerOption?: string;
   options?: string[];
   required: boolean;
   category:
@@ -372,7 +378,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
     {
       id: "slow_periods",
       question: "When do you typically experience slow periods?",
-      type: "multi_select",
+      type: "multi_select_with_text",
       options: [
         "Monday mornings",
         "Weekday afternoons",
@@ -382,6 +388,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
         "Late nights",
         "Specific months (specify in comments)",
       ],
+      textTriggerOption: "Specific months (specify in comments)",
       required: true,
       category: "operations",
       phase: TrainingPhase.STANDARD,
