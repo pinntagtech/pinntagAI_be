@@ -303,6 +303,7 @@ export class AgentTemplateGenerationJob {
             occasion.occasion,
             {
               industry: training?.industry,
+              visualSubject: this.buildVisualSubject(responseMap, agent.subCategories),
               promotionType: template.discountType,
               contentType: template.contentType,
               targetAudience: trainingTargetAudience,
@@ -358,6 +359,7 @@ export class AgentTemplateGenerationJob {
             occasion,
             {
               industry: category,
+              visualSubject: this.formatVisualSubject(tags || [], subCategories),
               promotionType: occasionPromotionType,
               contentType: occasionContentType,
             }
@@ -569,6 +571,7 @@ export class AgentTemplateGenerationJob {
           occasion.occasion,
           {
             industry: training?.industry,
+            visualSubject: this.buildVisualSubject(responseMap, agent.subCategories),
             promotionType: template.discountType,
             contentType: template.contentType,
             targetAudience: trainingTargetAudience,
@@ -723,6 +726,7 @@ export class AgentTemplateGenerationJob {
           occasion,
           {
             industry: category,
+            visualSubject: this.formatVisualSubject(tags || [], subCategories),
             promotionType: occasionPromotionType,
             contentType: occasionContentType,
           }
@@ -827,6 +831,68 @@ export class AgentTemplateGenerationJob {
   }
 
   /**
+   * Build a concrete "what to depict" subject for the image prompt from the
+   * business's own training answers. Using the actual cuisine / menu / offerings
+   * (e.g. "Japanese, sushi, ramen bowl") keeps the generated imagery on-theme
+   * instead of falling back to a generic "<industry> theme".
+   */
+  private static buildVisualSubject(
+    responseMap: Map<string, any>,
+    subCategories?: string[]
+  ): string | undefined {
+    const toParts = (v: any): string[] =>
+      (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : [])
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+
+    // Training answers that concretely describe what the business sells. These
+    // ids are industry-specific; whichever are present are combined in order.
+    const subjectFieldIds = [
+      "cuisine_type",
+      "menu_highlights",
+      "signature_products",
+      "products_sold",
+      "services_offered",
+      "entertainment_types",
+      "venue_type",
+      "class_types",
+    ];
+
+    const hints: string[] = [];
+    for (const id of subjectFieldIds) {
+      hints.push(...toParts(responseMap.get(id)));
+    }
+
+    return this.formatVisualSubject(hints, subCategories);
+  }
+
+  /**
+   * De-duplicate and format subject hints into a single concise phrase,
+   * optionally led by the business sub-category for context.
+   */
+  private static formatVisualSubject(
+    hints: string[],
+    subCategories?: string[]
+  ): string | undefined {
+    const seen = new Set<string>();
+    const unique = hints
+      .map((h) => h.trim())
+      .filter((h) => {
+        const key = h.toLowerCase();
+        if (!h || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 8);
+
+    if (unique.length === 0) return undefined;
+
+    const subCat = subCategories?.[0]?.trim();
+    const lead = subCat ? `${subCat.toLowerCase()}: ` : "";
+    return `${lead}${unique.join(", ")}`.slice(0, 200);
+  }
+
+  /**
    * Generate AI image for templates.
    * Accepts optional enriched context from a trained-agent template so the
    * image style, mood, and subject matter reflect the actual promotion.
@@ -840,6 +906,7 @@ export class AgentTemplateGenerationJob {
     occasion?: string,
     enrichedContext?: {
       industry?: string;
+      visualSubject?: string;
       promotionType?: string;
       contentType?: string;
       targetAudience?: string[];
@@ -868,18 +935,34 @@ export class AgentTemplateGenerationJob {
         saturday_special: "warm, family-friendly, lively promotional image",
         sunday_selfcare: "calm, spa-like, soft-toned self-care promotional image",
       };
-      promptParts.push(`Create a ${occasionMoods[occasion || ""] || "professional promotional image"}`);
+      const mood = occasionMoods[occasion || ""] || "professional promotional image";
 
-      // ── Industry / category subject matter ───────────────────────────────
-      const industry = enrichedContext?.industry || category;
-      if (industry) {
-        promptParts.push(`Visual subject: ${industry.toLowerCase()} theme`);
-      }
-
-      if (subCategories && subCategories.length > 0) {
+      // ── Subject matter ───────────────────────────────────────────────────
+      // Prefer a concrete subject built from the business's own offerings
+      // (e.g. "restaurant: Japanese, sushi, ramen bowl"). Without it the prompt
+      // fell back to a generic "<industry> theme", which produced unrelated
+      // stock food (burgers, turkey) for a sushi restaurant.
+      const visualSubject = enrichedContext?.visualSubject?.trim();
+      if (visualSubject) {
         promptParts.push(
-          `Include elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
+          `Create a ${mood} that prominently features ${visualSubject} as the central hero subject`
         );
+        promptParts.push(
+          `Depict ${visualSubject} authentically and accurately — every food item or product shown must match this; do NOT substitute or add unrelated cuisines, dishes, or items`
+        );
+      } else {
+        promptParts.push(`Create a ${mood}`);
+
+        const industry = enrichedContext?.industry || category;
+        if (industry) {
+          promptParts.push(`Visual subject: ${industry.toLowerCase()} theme`);
+        }
+
+        if (subCategories && subCategories.length > 0) {
+          promptParts.push(
+            `Include elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
+          );
+        }
       }
 
       // ── Promotion-type visual cues ────────────────────────────────────────
@@ -927,7 +1010,13 @@ export class AgentTemplateGenerationJob {
       const genericPrompt = promptParts.join(". ");
 
       logger.info(
-        { businessId, occasion, industry, promotionType: enrichedContext?.promotionType },
+        {
+          businessId,
+          occasion,
+          industry: enrichedContext?.industry || category,
+          visualSubject,
+          promotionType: enrichedContext?.promotionType,
+        },
         "Generating AI image for template"
       );
 
