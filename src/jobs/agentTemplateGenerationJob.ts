@@ -303,7 +303,7 @@ export class AgentTemplateGenerationJob {
             occasion.occasion,
             {
               industry: training?.industry,
-              visualSubject: this.buildVisualSubject(responseMap, agent.subCategories),
+              ...this.buildSubjectContext(responseMap, agent.subCategories),
               promotionType: template.discountType,
               contentType: template.contentType,
               targetAudience: trainingTargetAudience,
@@ -571,7 +571,7 @@ export class AgentTemplateGenerationJob {
           occasion.occasion,
           {
             industry: training?.industry,
-            visualSubject: this.buildVisualSubject(responseMap, agent.subCategories),
+            ...this.buildSubjectContext(responseMap, agent.subCategories),
             promotionType: template.discountType,
             contentType: template.contentType,
             targetAudience: trainingTargetAudience,
@@ -831,39 +831,132 @@ export class AgentTemplateGenerationJob {
   }
 
   /**
-   * Build a concrete "what to depict" subject for the image prompt from the
-   * business's own training answers. Using the actual cuisine / menu / offerings
-   * (e.g. "Japanese, sushi, ramen bowl") keeps the generated imagery on-theme
-   * instead of falling back to a generic "<industry> theme".
+   * Build the subject context for the image prompt from the business's own
+   * training answers. Returns a theme ANCHOR (what kind of place it is, e.g.
+   * "a Japanese sushi restaurant") kept separate from the menu items and
+   * beverage program — so the anchor keeps every image on-theme while the
+   * featured composition still varies per occasion/promotion (see
+   * buildFeaturedPresentation). Anchoring on the cuisine rather than a fixed
+   * item list avoids both off-theme stock food AND identical images.
    */
-  private static buildVisualSubject(
+  private static buildSubjectContext(
     responseMap: Map<string, any>,
     subCategories?: string[]
-  ): string | undefined {
+  ): { visualSubject?: string; menuItems?: string[]; beverageProgram?: string } {
     const toParts = (v: any): string[] =>
       (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : [])
         .map((s) => String(s).trim())
         .filter(Boolean);
 
-    // Training answers that concretely describe what the business sells. These
-    // ids are industry-specific; whichever are present are combined in order.
-    const subjectFieldIds = [
-      "cuisine_type",
-      "menu_highlights",
-      "signature_products",
-      "products_sold",
-      "services_offered",
-      "entertainment_types",
-      "venue_type",
-      "class_types",
-    ];
+    const dedupe = (parts: string[]): string[] => {
+      const seen = new Set<string>();
+      return parts
+        .map((p) => p.trim())
+        .filter((p) => {
+          const key = p.toLowerCase();
+          if (!p || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 8);
+    };
 
-    const hints: string[] = [];
-    for (const id of subjectFieldIds) {
-      hints.push(...toParts(responseMap.get(id)));
+    // Items the business can showcase (food + signature offerings).
+    const menuItems = dedupe([
+      ...toParts(responseMap.get("menu_highlights")),
+      ...toParts(responseMap.get("signature_products")),
+      ...toParts(responseMap.get("products_sold")),
+      ...toParts(responseMap.get("services_offered")),
+    ]);
+
+    const beverageProgramRaw = responseMap.get("drink_program");
+    const beverageProgram =
+      typeof beverageProgramRaw === "string" &&
+      beverageProgramRaw &&
+      !/no special|none/i.test(beverageProgramRaw)
+        ? beverageProgramRaw
+        : undefined;
+
+    // Theme anchor — prefer cuisine, then any other "what kind of place" answer,
+    // then the sub-category. This is the phrase every image is held to.
+    const cuisine = toParts(responseMap.get("cuisine_type")).join(" ");
+    const otherType = toParts(responseMap.get("venue_type")).join(" ");
+    const subCat = subCategories?.[0]?.trim();
+
+    let visualSubject: string | undefined;
+    if (cuisine) {
+      visualSubject = subCat
+        ? `a ${cuisine} ${subCat.toLowerCase()}`.replace(/\s+/g, " ")
+        : `authentic ${cuisine} cuisine`;
+    } else if (otherType) {
+      visualSubject = `a ${otherType.toLowerCase()}${subCat ? ` ${subCat.toLowerCase()}` : ""}`;
+    } else if (subCat) {
+      visualSubject = `a ${subCat.toLowerCase()}`;
     }
 
-    return this.formatVisualSubject(hints, subCategories);
+    return { visualSubject, menuItems, beverageProgram };
+  }
+
+  /**
+   * Build an occasion/promotion-specific "featured composition" line so each
+   * template image highlights something different (drinks for happy hour,
+   * paired plates for BOGO, a single dish for free-item, etc.) while staying
+   * within the theme anchor from buildSubjectContext.
+   */
+  private static buildFeaturedPresentation(
+    occasion?: string,
+    promotionType?: string,
+    menuItems?: string[],
+    beverageProgram?: string
+  ): string | undefined {
+    const items = (menuItems || []).filter(Boolean);
+    // Rotate the featured item by occasion so different templates differ even
+    // when the menu list is short.
+    const order = [
+      "general", "trending", "seasonal", "slow_period", "holiday",
+      "monday_motivation", "wednesday_midweek", "thursday_throwback",
+    ];
+    const idx = Math.max(0, order.indexOf(occasion || ""));
+    const pick = (n: number): string | undefined =>
+      items.length ? items[((n % items.length) + items.length) % items.length] : undefined;
+
+    const promo = (promotionType || "").toLowerCase();
+
+    // Drink-led contexts → showcase the beverage program.
+    if (promo.includes("happy hour")) {
+      return beverageProgram
+        ? `Center the composition on signature drinks and cocktails from the ${beverageProgram.toLowerCase()}, with a couple of small shareable plates alongside`
+        : `Center the composition on signature drinks and cocktails, with a couple of small shareable plates alongside`;
+    }
+
+    // Paired contexts → two matching items.
+    if (promo.includes("bogo") || occasion === "tuesday_twofer") {
+      const a = pick(0);
+      return `Show two matching plated dishes${a ? ` such as ${a}` : ""} side by side to suggest a pair`;
+    }
+
+    // Free-item / self-care → one hero dish plus a small bonus.
+    if (promo.includes("free item") || occasion === "sunday_selfcare") {
+      const a = pick(0);
+      return `Show a single beautifully plated signature dish${a ? ` like ${a}` : ""} with a small complimentary treat beside it`;
+    }
+
+    // Family / Saturday → a generous shared spread.
+    if (promo.includes("family") || occasion === "saturday_special") {
+      return `Show a generous shared spread of several dishes on a group table`;
+    }
+
+    // Seasonal → seasonal ingredients and styling.
+    if (occasion === "seasonal") {
+      const a = pick(idx);
+      return `Plate ${a || "a featured dish"} with fresh seasonal ingredients and seasonal table styling`;
+    }
+
+    // Default → rotate a single featured item for variety.
+    const featured = pick(idx);
+    return featured
+      ? `Center the composition on ${featured}, elegantly plated`
+      : `Center the composition on an elegant signature dish`;
   }
 
   /**
@@ -907,6 +1000,8 @@ export class AgentTemplateGenerationJob {
     enrichedContext?: {
       industry?: string;
       visualSubject?: string;
+      menuItems?: string[];
+      beverageProgram?: string;
       promotionType?: string;
       contentType?: string;
       targetAudience?: string[];
@@ -944,11 +1039,21 @@ export class AgentTemplateGenerationJob {
       // stock food (burgers, turkey) for a sushi restaurant.
       const visualSubject = enrichedContext?.visualSubject?.trim();
       if (visualSubject) {
-        promptParts.push(
-          `Create a ${mood} that prominently features ${visualSubject} as the central hero subject`
+        promptParts.push(`Create a ${mood} for ${visualSubject}`);
+
+        // Occasion/promotion-specific hero composition keeps each image distinct.
+        const featured = this.buildFeaturedPresentation(
+          occasion,
+          enrichedContext?.promotionType,
+          enrichedContext?.menuItems,
+          enrichedContext?.beverageProgram
         );
+        if (featured) promptParts.push(featured);
+
+        // Hold the image to the cuisine/theme, but explicitly invite variety so
+        // images for different occasions don't all look identical.
         promptParts.push(
-          `Depict ${visualSubject} authentically and accurately — every food item or product shown must match this; do NOT substitute or add unrelated cuisines, dishes, or items`
+          `Keep all food and drink authentic to ${visualSubject}, but vary the exact dishes, plating, garnishes, props, table setting, lighting, camera angle and background so this image is clearly distinct from other promotional images for the same business`
         );
       } else {
         promptParts.push(`Create a ${mood}`);
