@@ -2281,13 +2281,30 @@ export class AITrainingService {
         correctedCompletedPhases.push(TrainingPhase.ADVANCED);
       }
 
+      // Determine whether every mandatory/compulsory question across all phases
+      // has a response (prefilled or user-answered both satisfy the
+      // requirement). This lets us surface a distinct "ready" state once the
+      // business has supplied everything strictly needed, even if optional
+      // questions or whole phases remain unanswered.
+      const allRequiredQuestions = [
+        ...basicPhaseQuestions,
+        ...standardPhaseQuestions,
+        ...advancedPhaseQuestions,
+      ].filter((q) => q.required);
+      const allRequiredAnswered =
+        allRequiredQuestions.length > 0 &&
+        allRequiredQuestions.every((q) => responseMap.has(q.id));
+
       // Determine correct training status. "completed" only if all phases are
-      // done, "in_progress" if the user has answered at least one question
-      // (prefilled responses don't count — they exist before the user starts),
-      // "not_started" otherwise.
+      // done; "ready" if every mandatory question is answered but optional
+      // questions/phases remain; "in_progress" if the user has answered at
+      // least one question (prefilled responses don't count — they exist before
+      // the user starts); "not_started" otherwise.
       let correctedTrainingStatus: string;
       if (correctedCompletedPhases.length === 3) {
         correctedTrainingStatus = "completed";
+      } else if (allRequiredAnswered) {
+        correctedTrainingStatus = "ready";
       } else if (totalAnsweredAllPhases > 0) {
         correctedTrainingStatus = "in_progress";
       } else {
