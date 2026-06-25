@@ -289,7 +289,7 @@ async function createBusinessAgent(biz: Business) {
       );
     } catch (descError: any) {
       logger.warn(
-        { businessId: biz.businessId, error: descError },
+        { businessId: biz.businessId, err: descError },
         "Failed to generate description during agent creation"
       );
       // Don't fail agent creation if description generation fails
@@ -812,7 +812,7 @@ export class AIService {
 
       return generatedDescription;
     } catch (error: any) {
-      logger.error("Error generating agent description:", error);
+      logger.error({ err: error }, "Error generating agent description");
       throw new Error(`Failed to generate agent description: ${error.message}`);
     }
   }
