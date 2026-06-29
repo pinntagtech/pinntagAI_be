@@ -21,4 +21,4 @@ COPY --from=build /usr/src/app/dist ./dist
 
 EXPOSE 4001
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "--experimental-specifier-resolution=node", "dist/index.js"]
