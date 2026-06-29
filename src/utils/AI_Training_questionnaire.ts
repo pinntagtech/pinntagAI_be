@@ -13,26 +13,22 @@ export interface AI_Training_Questionnaire_Type {
   id: string;
   question: string;
   type:
-    | "text"
-    | "multiple_choice"
-    | "multi_select"
-    | "multi_select_with_text"
-    | "number"
-    | "time"
-    | "boolean";
-  /**
-   * For "multi_select_with_text" questions: the exact option string that,
-   * when selected, reveals a required free-text input field.
-   */
+  | "text"
+  | "multiple_choice"
+  | "multi_select"
+  | "multi_select_with_text"
+  | "number"
+  | "time"
+  | "boolean";
   textTriggerOption?: string;
   options?: string[];
   required: boolean;
   category:
-    | "business_info"
-    | "customer_profile"
-    | "operations"
-    | "marketing"
-    | "goals";
+  | "business_info"
+  | "customer_profile"
+  | "operations"
+  | "marketing"
+  | "goals";
   phase?: TrainingPhase; // Phase this question belongs to (auto-assigned if not provided)
   helpText?: string;
   suggestedAnswers?: string[]; // Pre-selected options based on business context
@@ -479,7 +475,7 @@ export const coreAI_Training_Questionnaire_Types: AI_Training_Questionnaire_Type
     {
       id: "brand_voice",
       question: "How would you describe your brand voice?",
-      type: "multi_select",
+      type: "multiple_choice",
       options: [
         "Professional",
         "Friendly and casual",
@@ -2119,7 +2115,7 @@ export function getQuestionsWithSmartDefaults(
     }
 
     // Only apply defaults to multi_select and multiple_choice questions
-    if (question.type === "multi_select" && Array.isArray(defaultValue)) {
+    if ((question.type === "multi_select" || question.type === "multi_select_with_text") && Array.isArray(defaultValue)) {
       return {
         ...question,
         suggestedAnswers: defaultValue,

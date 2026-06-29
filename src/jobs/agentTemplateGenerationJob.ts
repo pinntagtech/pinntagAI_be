@@ -280,7 +280,12 @@ export class AgentTemplateGenerationJob {
       const responseMap = new Map(
         training!.responses.map((r) => [r.questionId, r.answer])
       );
-      const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+      const trainingBrandVoiceRaw = responseMap.get("brand_voice");
+      const trainingBrandVoice = Array.isArray(trainingBrandVoiceRaw)
+        ? trainingBrandVoiceRaw
+        : typeof trainingBrandVoiceRaw === "string" && trainingBrandVoiceRaw
+        ? [trainingBrandVoiceRaw]
+        : [];
       const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
 
       for (const occasion of occasionPlan) {
@@ -298,6 +303,7 @@ export class AgentTemplateGenerationJob {
             occasion.occasion,
             {
               industry: training?.industry,
+              ...this.buildSubjectContext(responseMap, agent.subCategories),
               promotionType: template.discountType,
               contentType: template.contentType,
               targetAudience: trainingTargetAudience,
@@ -353,6 +359,7 @@ export class AgentTemplateGenerationJob {
             occasion,
             {
               industry: category,
+              visualSubject: this.formatVisualSubject(tags || [], subCategories),
               promotionType: occasionPromotionType,
               contentType: occasionContentType,
             }
@@ -538,7 +545,12 @@ export class AgentTemplateGenerationJob {
       ? new Map(training.responses.map((r) => [r.questionId, r.answer]))
       : new Map();
 
-    const trainingBrandVoice = (responseMap.get("brand_voice") as string[]) || [];
+    const trainingBrandVoiceRaw = responseMap.get("brand_voice");
+    const trainingBrandVoice = Array.isArray(trainingBrandVoiceRaw)
+      ? trainingBrandVoiceRaw
+      : typeof trainingBrandVoiceRaw === "string" && trainingBrandVoiceRaw
+      ? [trainingBrandVoiceRaw]
+      : [];
     const trainingTargetAudience = (responseMap.get("target_audience") as string[]) || [];
 
     // Generate templates with images — single AI call per occasion
@@ -559,6 +571,7 @@ export class AgentTemplateGenerationJob {
           occasion.occasion,
           {
             industry: training?.industry,
+            ...this.buildSubjectContext(responseMap, agent.subCategories),
             promotionType: template.discountType,
             contentType: template.contentType,
             targetAudience: trainingTargetAudience,
@@ -713,6 +726,7 @@ export class AgentTemplateGenerationJob {
           occasion,
           {
             industry: category,
+            visualSubject: this.formatVisualSubject(tags || [], subCategories),
             promotionType: occasionPromotionType,
             contentType: occasionContentType,
           }
@@ -817,6 +831,161 @@ export class AgentTemplateGenerationJob {
   }
 
   /**
+   * Build the subject context for the image prompt from the business's own
+   * training answers. Returns a theme ANCHOR (what kind of place it is, e.g.
+   * "a Japanese sushi restaurant") kept separate from the menu items and
+   * beverage program — so the anchor keeps every image on-theme while the
+   * featured composition still varies per occasion/promotion (see
+   * buildFeaturedPresentation). Anchoring on the cuisine rather than a fixed
+   * item list avoids both off-theme stock food AND identical images.
+   */
+  private static buildSubjectContext(
+    responseMap: Map<string, any>,
+    subCategories?: string[]
+  ): { visualSubject?: string; menuItems?: string[]; beverageProgram?: string } {
+    const toParts = (v: any): string[] =>
+      (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : [])
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+
+    const dedupe = (parts: string[]): string[] => {
+      const seen = new Set<string>();
+      return parts
+        .map((p) => p.trim())
+        .filter((p) => {
+          const key = p.toLowerCase();
+          if (!p || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 8);
+    };
+
+    // Items the business can showcase (food + signature offerings).
+    const menuItems = dedupe([
+      ...toParts(responseMap.get("menu_highlights")),
+      ...toParts(responseMap.get("signature_products")),
+      ...toParts(responseMap.get("products_sold")),
+      ...toParts(responseMap.get("services_offered")),
+    ]);
+
+    const beverageProgramRaw = responseMap.get("drink_program");
+    const beverageProgram =
+      typeof beverageProgramRaw === "string" &&
+      beverageProgramRaw &&
+      !/no special|none/i.test(beverageProgramRaw)
+        ? beverageProgramRaw
+        : undefined;
+
+    // Theme anchor — prefer cuisine, then any other "what kind of place" answer,
+    // then the sub-category. This is the phrase every image is held to.
+    const cuisine = toParts(responseMap.get("cuisine_type")).join(" ");
+    const otherType = toParts(responseMap.get("venue_type")).join(" ");
+    const subCat = subCategories?.[0]?.trim();
+
+    let visualSubject: string | undefined;
+    if (cuisine) {
+      visualSubject = subCat
+        ? `a ${cuisine} ${subCat.toLowerCase()}`.replace(/\s+/g, " ")
+        : `authentic ${cuisine} cuisine`;
+    } else if (otherType) {
+      visualSubject = `a ${otherType.toLowerCase()}${subCat ? ` ${subCat.toLowerCase()}` : ""}`;
+    } else if (subCat) {
+      visualSubject = `a ${subCat.toLowerCase()}`;
+    }
+
+    return { visualSubject, menuItems, beverageProgram };
+  }
+
+  /**
+   * Build an occasion/promotion-specific "featured composition" line so each
+   * template image highlights something different (drinks for happy hour,
+   * paired plates for BOGO, a single dish for free-item, etc.) while staying
+   * within the theme anchor from buildSubjectContext.
+   */
+  private static buildFeaturedPresentation(
+    occasion?: string,
+    promotionType?: string,
+    menuItems?: string[],
+    beverageProgram?: string
+  ): string | undefined {
+    const items = (menuItems || []).filter(Boolean);
+    // Rotate the featured item by occasion so different templates differ even
+    // when the menu list is short.
+    const order = [
+      "general", "trending", "seasonal", "slow_period", "holiday",
+      "monday_motivation", "wednesday_midweek", "thursday_throwback",
+    ];
+    const idx = Math.max(0, order.indexOf(occasion || ""));
+    const pick = (n: number): string | undefined =>
+      items.length ? items[((n % items.length) + items.length) % items.length] : undefined;
+
+    const promo = (promotionType || "").toLowerCase();
+
+    // Drink-led contexts → showcase the beverage program.
+    if (promo.includes("happy hour")) {
+      return beverageProgram
+        ? `Center the composition on signature drinks and cocktails from the ${beverageProgram.toLowerCase()}, with a couple of small shareable plates alongside`
+        : `Center the composition on signature drinks and cocktails, with a couple of small shareable plates alongside`;
+    }
+
+    // Paired contexts → two matching items.
+    if (promo.includes("bogo") || occasion === "tuesday_twofer") {
+      const a = pick(0);
+      return `Show two matching plated dishes${a ? ` such as ${a}` : ""} side by side to suggest a pair`;
+    }
+
+    // Free-item / self-care → one hero dish plus a small bonus.
+    if (promo.includes("free item") || occasion === "sunday_selfcare") {
+      const a = pick(0);
+      return `Show a single beautifully plated signature dish${a ? ` like ${a}` : ""} with a small complimentary treat beside it`;
+    }
+
+    // Family / Saturday → a generous shared spread.
+    if (promo.includes("family") || occasion === "saturday_special") {
+      return `Show a generous shared spread of several dishes on a group table`;
+    }
+
+    // Seasonal → seasonal ingredients and styling.
+    if (occasion === "seasonal") {
+      const a = pick(idx);
+      return `Plate ${a || "a featured dish"} with fresh seasonal ingredients and seasonal table styling`;
+    }
+
+    // Default → rotate a single featured item for variety.
+    const featured = pick(idx);
+    return featured
+      ? `Center the composition on ${featured}, elegantly plated`
+      : `Center the composition on an elegant signature dish`;
+  }
+
+  /**
+   * De-duplicate and format subject hints into a single concise phrase,
+   * optionally led by the business sub-category for context.
+   */
+  private static formatVisualSubject(
+    hints: string[],
+    subCategories?: string[]
+  ): string | undefined {
+    const seen = new Set<string>();
+    const unique = hints
+      .map((h) => h.trim())
+      .filter((h) => {
+        const key = h.toLowerCase();
+        if (!h || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 8);
+
+    if (unique.length === 0) return undefined;
+
+    const subCat = subCategories?.[0]?.trim();
+    const lead = subCat ? `${subCat.toLowerCase()}: ` : "";
+    return `${lead}${unique.join(", ")}`.slice(0, 200);
+  }
+
+  /**
    * Generate AI image for templates.
    * Accepts optional enriched context from a trained-agent template so the
    * image style, mood, and subject matter reflect the actual promotion.
@@ -830,6 +999,9 @@ export class AgentTemplateGenerationJob {
     occasion?: string,
     enrichedContext?: {
       industry?: string;
+      visualSubject?: string;
+      menuItems?: string[];
+      beverageProgram?: string;
       promotionType?: string;
       contentType?: string;
       targetAudience?: string[];
@@ -858,18 +1030,44 @@ export class AgentTemplateGenerationJob {
         saturday_special: "warm, family-friendly, lively promotional image",
         sunday_selfcare: "calm, spa-like, soft-toned self-care promotional image",
       };
-      promptParts.push(`Create a ${occasionMoods[occasion || ""] || "professional promotional image"}`);
+      const mood = occasionMoods[occasion || ""] || "professional promotional image";
 
-      // ── Industry / category subject matter ───────────────────────────────
-      const industry = enrichedContext?.industry || category;
-      if (industry) {
-        promptParts.push(`Visual subject: ${industry.toLowerCase()} theme`);
-      }
+      // ── Subject matter ───────────────────────────────────────────────────
+      // Prefer a concrete subject built from the business's own offerings
+      // (e.g. "restaurant: Japanese, sushi, ramen bowl"). Without it the prompt
+      // fell back to a generic "<industry> theme", which produced unrelated
+      // stock food (burgers, turkey) for a sushi restaurant.
+      const visualSubject = enrichedContext?.visualSubject?.trim();
+      if (visualSubject) {
+        promptParts.push(`Create a ${mood} for ${visualSubject}`);
 
-      if (subCategories && subCategories.length > 0) {
-        promptParts.push(
-          `Include elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
+        // Occasion/promotion-specific hero composition keeps each image distinct.
+        const featured = this.buildFeaturedPresentation(
+          occasion,
+          enrichedContext?.promotionType,
+          enrichedContext?.menuItems,
+          enrichedContext?.beverageProgram
         );
+        if (featured) promptParts.push(featured);
+
+        // Hold the image to the cuisine/theme, but explicitly invite variety so
+        // images for different occasions don't all look identical.
+        promptParts.push(
+          `Keep all food and drink authentic to ${visualSubject}, but vary the exact dishes, plating, garnishes, props, table setting, lighting, camera angle and background so this image is clearly distinct from other promotional images for the same business`
+        );
+      } else {
+        promptParts.push(`Create a ${mood}`);
+
+        const industry = enrichedContext?.industry || category;
+        if (industry) {
+          promptParts.push(`Visual subject: ${industry.toLowerCase()} theme`);
+        }
+
+        if (subCategories && subCategories.length > 0) {
+          promptParts.push(
+            `Include elements of ${subCategories.slice(0, 2).join(" and ").toLowerCase()}`
+          );
+        }
       }
 
       // ── Promotion-type visual cues ────────────────────────────────────────
@@ -917,7 +1115,13 @@ export class AgentTemplateGenerationJob {
       const genericPrompt = promptParts.join(". ");
 
       logger.info(
-        { businessId, occasion, industry, promotionType: enrichedContext?.promotionType },
+        {
+          businessId,
+          occasion,
+          industry: enrichedContext?.industry || category,
+          visualSubject,
+          promotionType: enrichedContext?.promotionType,
+        },
         "Generating AI image for template"
       );
 

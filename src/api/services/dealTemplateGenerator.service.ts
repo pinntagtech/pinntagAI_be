@@ -107,10 +107,25 @@ export class DealTemplateGeneratorService {
       const businessName = businessAgent.businessName;
       const targetAudience = (responseMap.get("target_audience") as string[]) || [];
       const discountRange = (responseMap.get("typical_discount_range") as string) || "10-20%";
-      const slowPeriods = (responseMap.get("slow_periods") as string[]) || [];
+      // slow_periods is a `multi_select_with_text` question, so its answer is
+      // stored as `{ selections: string[], textValue?: string }`. Older records
+      // may still hold a plain string[]. Normalize both shapes to a string[].
+      const slowPeriodsRaw = responseMap.get("slow_periods");
+      const slowPeriods: string[] = Array.isArray(slowPeriodsRaw)
+        ? (slowPeriodsRaw as string[])
+        : slowPeriodsRaw &&
+          typeof slowPeriodsRaw === "object" &&
+          Array.isArray((slowPeriodsRaw as any).selections)
+        ? ((slowPeriodsRaw as any).selections as string[])
+        : [];
       const busiestDays = (responseMap.get("busiest_days") as string[]) || [];
       const marketingGoals = (responseMap.get("marketing_goals") as string[]) || [];
-      const brandVoice = (responseMap.get("brand_voice") as string[]) || [];
+      const brandVoiceRaw = responseMap.get("brand_voice");
+      const brandVoice = Array.isArray(brandVoiceRaw)
+        ? brandVoiceRaw
+        : typeof brandVoiceRaw === "string" && brandVoiceRaw
+        ? [brandVoiceRaw]
+        : [];
       const industry = training.industry;
 
       // Generate template based on occasion

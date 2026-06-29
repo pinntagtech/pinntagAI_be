@@ -70,18 +70,71 @@ function mapCategoryToIndustry(category: string): BusinessIndustries {
     "Workshops": BusinessIndustries.CLASSES_WORKSHOPS,
   };
 
-  const mappedIndustry = categoryMapping[category];
-
-  if (mappedIndustry) {
-    return mappedIndustry;
+  // 1. Exact match (fast path — preserves behavior for canonical values)
+  const exact = categoryMapping[category];
+  if (exact) {
+    return exact;
   }
 
-  // Log warning for unmapped categories and default to a sensible fallback
+  // 2. Normalized match — tolerate casing, surrounding/duplicate whitespace,
+  //    "and" vs "&", and trailing pluralization (e.g. "Food & Drinks" must map
+  //    to "Food & Drink"). Without this, a single-character mismatch silently
+  //    fell through to the ENTERTAINMENT default below and gave, for example,
+  //    a sushi restaurant entertainment-themed deals and imagery.
+  const normalize = (value: string): string =>
+    value
+      .toLowerCase()
+      .replace(/\band\b/g, "&")
+      .replace(/[^a-z0-9&]+/g, " ")
+      .trim()
+      .split(" ")
+      .map((word) => word.replace(/s$/, "")) // drop trailing plural "s" per word
+      .join(" ");
+
+  const target = normalize(category);
+  for (const [key, value] of Object.entries(categoryMapping)) {
+    if (normalize(key) === target) {
+      return value;
+    }
+  }
+  for (const value of Object.values(BusinessIndustries)) {
+    if (normalize(value) === target) {
+      return value;
+    }
+  }
+
+  // 3. Keyword heuristics — last resort before guessing, so a category we don't
+  //    explicitly list still lands in the right industry instead of a blind default.
+  const heuristics: Array<[RegExp, BusinessIndustries]> = [
+    [/food|drink|restaurant|cafe|coffee|bar|dining|cuisine|eatery|bakery|bistro|pub/, BusinessIndustries.FOOD_DRINK],
+    [/retail|shop|store|boutique|market/, BusinessIndustries.RETAIL_SHOPPING],
+    [/health|wellness|beauty|spa|salon|fitness|gym|yoga/, BusinessIndustries.HEALTH_WELLNESS],
+    [/sport|outdoor|adventure/, BusinessIndustries.SPORTS_OUTDOOR],
+    [/hotel|stay|lodg|accommodation|hostel|resort/, BusinessIndustries.PLACES_TO_STAY],
+    [/class|workshop|course|education|training|school|academy/, BusinessIndustries.CLASSES_WORKSHOPS],
+    [/attraction|tour|museum|sightseeing/, BusinessIndustries.LOCAL_ATTRACTIONS],
+    [/service|repair|cleaning|professional|home/, BusinessIndustries.HOME_PROFESSIONAL_SERVICES],
+    [/entertainment|venue|club|cinema|theatre|theater|music|comedy|gaming/, BusinessIndustries.ENTERTAINMENT],
+  ];
+  for (const [pattern, industry] of heuristics) {
+    if (pattern.test(target)) {
+      logger.warn(
+        { category, matchedIndustry: industry },
+        "Unmapped category matched to industry via keyword heuristic"
+      );
+      return industry;
+    }
+  }
+
+  // 4. Genuinely unknown — default to FOOD_DRINK rather than ENTERTAINMENT.
+  //    Most SMBs on the platform are food/retail/service businesses, and an
+  //    entertainment default produces the most off-base creative (tickets,
+  //    venues, comedy) for them.
   logger.warn(
     { category },
-    "Unknown category encountered, defaulting to ENTERTAINMENT"
+    "Unknown category encountered, defaulting to FOOD_DRINK"
   );
-  return BusinessIndustries.ENTERTAINMENT;
+  return BusinessIndustries.FOOD_DRINK;
 }
 
 /**
@@ -98,7 +151,12 @@ function generateEnhancedInstructions(
   // Extract key training data
   const targetAudience = responseMap.get("target_audience") || [];
   const marketingGoals = responseMap.get("marketing_goals") || [];
-  const brandVoice = responseMap.get("brand_voice") || [];
+  const brandVoiceRaw = responseMap.get("brand_voice");
+  const brandVoice = Array.isArray(brandVoiceRaw)
+    ? brandVoiceRaw
+    : typeof brandVoiceRaw === "string" && brandVoiceRaw
+    ? [brandVoiceRaw]
+    : [];
   const busiestDays = responseMap.get("busiest_days") || [];
   const busiestHours = responseMap.get("busiest_hours") || [];
   const slowPeriods = responseMap.get("slow_periods") || [];
@@ -267,7 +325,12 @@ function generateEnhancedInstructionsWithGooglePlaces(
   // Extract key training data
   const targetAudience = responseMap.get("target_audience") || [];
   const marketingGoals = responseMap.get("marketing_goals") || [];
-  const brandVoice = responseMap.get("brand_voice") || [];
+  const brandVoiceRaw = responseMap.get("brand_voice");
+  const brandVoice = Array.isArray(brandVoiceRaw)
+    ? brandVoiceRaw
+    : typeof brandVoiceRaw === "string" && brandVoiceRaw
+    ? [brandVoiceRaw]
+    : [];
   const busiestDays = responseMap.get("busiest_days") || [];
   const busiestHours = responseMap.get("busiest_hours") || [];
   const slowPeriods = responseMap.get("slow_periods") || [];
@@ -2218,13 +2281,30 @@ export class AITrainingService {
         correctedCompletedPhases.push(TrainingPhase.ADVANCED);
       }
 
+      // Determine whether every mandatory/compulsory question across all phases
+      // has a response (prefilled or user-answered both satisfy the
+      // requirement). This lets us surface a distinct "ready" state once the
+      // business has supplied everything strictly needed, even if optional
+      // questions or whole phases remain unanswered.
+      const allRequiredQuestions = [
+        ...basicPhaseQuestions,
+        ...standardPhaseQuestions,
+        ...advancedPhaseQuestions,
+      ].filter((q) => q.required);
+      const allRequiredAnswered =
+        allRequiredQuestions.length > 0 &&
+        allRequiredQuestions.every((q) => responseMap.has(q.id));
+
       // Determine correct training status. "completed" only if all phases are
-      // done, "in_progress" if the user has answered at least one question
-      // (prefilled responses don't count — they exist before the user starts),
-      // "not_started" otherwise.
+      // done; "ready" if every mandatory question is answered but optional
+      // questions/phases remain; "in_progress" if the user has answered at
+      // least one question (prefilled responses don't count — they exist before
+      // the user starts); "not_started" otherwise.
       let correctedTrainingStatus: string;
       if (correctedCompletedPhases.length === 3) {
         correctedTrainingStatus = "completed";
+      } else if (allRequiredAnswered) {
+        correctedTrainingStatus = "ready";
       } else if (totalAnsweredAllPhases > 0) {
         correctedTrainingStatus = "in_progress";
       } else {

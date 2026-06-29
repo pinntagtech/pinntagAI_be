@@ -249,7 +249,11 @@ export class ContentAssistService {
       businessSubCategories: businessAI.subCategories || [],
       businessTags: businessAI.tags || [],
       assistantId: businessAI.assistantId,
-      brandVoice: (responseMap.get("brand_voice") as string[]) || [],
+      brandVoice: Array.isArray(responseMap.get("brand_voice"))
+        ? (responseMap.get("brand_voice") as string[])
+        : typeof responseMap.get("brand_voice") === "string" && responseMap.get("brand_voice")
+        ? [responseMap.get("brand_voice") as string]
+        : [],
       targetAudience: (responseMap.get("target_audience") as string[]) || [],
     };
   }
