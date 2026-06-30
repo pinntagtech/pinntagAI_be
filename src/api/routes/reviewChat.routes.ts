@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { reviewChatController } from "../controllers/reviewChat.controller.js";
-import { internalApiKeyGuard } from "../../middleware/auth.js";
+import { verifyPinntagJwt } from "../../middleware/jwtAuth.js";
 import { reviewChatRateLimit } from "../../middleware/reviewChatRateLimit.js";
 
 const router = Router();
 
 // ── Routes ───────────────────────────────────────────────────────────────────
+// The consumer app calls this service directly with a pinntag-backend-issued
+// JWT in `Authorization: Bearer <token>`. JWT identifies the user; we no
+// longer use the internal API key on this surface.
 
-router.use(internalApiKeyGuard);
+router.use(verifyPinntagJwt);
 
 /**
  * POST /review-chat/chat
@@ -31,10 +34,11 @@ router.post("/chat", reviewChatRateLimit, (req, res) =>
 /**
  * POST /review-chat/feedback
  * Thumbs up / down on a specific chat answer.
- * Body: { messageId, businessId, userId, rating: "up" | "down",
+ * Body: { messageId, businessId, rating: "up" | "down",
  *         sessionId?, reason?, sources?, abstained? }
- * Re-rating the same message by the same user overwrites the prior rating.
- * Returns 200 on success, 400 on missing/invalid required fields.
+ * userId is taken from the JWT (Authorization: Bearer …) — any `userId` in
+ * the body is ignored. Re-rating the same message by the same user overwrites
+ * the prior rating. Returns 200 on success, 400 on missing/invalid fields.
  */
 router.post("/feedback", (req, res) =>
   reviewChatController.feedback(req, res),

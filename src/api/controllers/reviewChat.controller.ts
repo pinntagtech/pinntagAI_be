@@ -59,27 +59,34 @@ class ReviewChatController {
 
   /**
    * POST /review-chat/feedback
-   * Body: { messageId, businessId, userId, rating: "up" | "down",
+   * Body: { messageId, businessId, rating: "up" | "down",
    *         sessionId?, reason?, sources?, abstained? }
+   *
+   * userId is taken from the JWT (req.user) — the body's `userId` is ignored
+   * if sent. A user can't rate as someone else.
    *
    * Thumbs up / down on a specific chat answer. Re-rating the same message by
    * the same user OVERWRITES the previous rating (upsert on messageId+userId),
-   * so we never store duplicate rows. We collect this from day one even though
-   * the dashboard is future work — the data has to exist before we can analyze
-   * it.
+   * so we never store duplicate rows.
    */
   async feedback(req: Request, res: Response): Promise<Response> {
     try {
       const {
         messageId,
         businessId,
-        userId,
         rating,
         sessionId,
         reason,
         sources,
         abstained,
       } = req.body || {};
+
+      // Identity comes from the verified JWT, not the body.
+      // Codebase convention is `req.user.userId`; fall back to `id` (the
+      // typed PinntagJwtPayload field) for robustness.
+      const userId =
+        (req.user?.userId as string | undefined) ??
+        (req.user?.id as string | undefined);
 
       // ── Required field validation (400 on any missing/invalid) ────────────
       if (!messageId || typeof messageId !== "string") {
@@ -92,10 +99,13 @@ class ReviewChatController {
           .status(400)
           .json({ success: false, error: "Valid businessId is required" });
       }
-      if (!userId || typeof userId !== "string") {
+      if (!userId) {
+        // verifyPinntagJwt guards the route, so this should only happen if a
+        // JWT was issued without a userId — treat as a 401, not a 400, since
+        // the token (not the body) is the problem.
         return res
-          .status(400)
-          .json({ success: false, error: "userId is required" });
+          .status(401)
+          .json({ success: false, error: "Token is missing user identity" });
       }
       if (rating !== "up" && rating !== "down") {
         return res
