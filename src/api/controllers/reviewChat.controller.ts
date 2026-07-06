@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { reviewChatService } from "../services/reviewChat.service.js";
+import { suggestedQuestionsService } from "../services/suggestedQuestions.service.js";
 import { ReviewChatFeedbackModel } from "../../models/reviewChatFeedback.model.js";
 import { logger } from "../../utils/logger.js";
 
@@ -213,6 +214,84 @@ class ReviewChatController {
       logger.error(
         { error: error.message },
         "Abstain stats query failed",
+      );
+      return res
+        .status(500)
+        .json({ success: false, error: error.message || "Internal error" });
+    }
+  }
+
+  /**
+   * GET /review-chat/suggestions/:businessId
+   * Returns the "conversation starter" chip labels for the entry screen —
+   * short (2-4 word) questions relevant to THIS specific business, generated
+   * from its profile + reviews + website content. Cached; refreshed on TTL.
+   *
+   * Fail-open: on any error we return `suggestions: []` so the frontend
+   * falls back to its own local defaults rather than showing an error.
+   */
+  async getSuggestions(req: Request, res: Response): Promise<Response> {
+    try {
+      const { businessId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid businessId" });
+      }
+
+      const doc =
+        await suggestedQuestionsService.getOrGenerateSuggestions(businessId);
+      return res.json({
+        success: true,
+        data: { suggestions: doc?.suggestions ?? [] },
+      });
+    } catch (error: any) {
+      // Should not happen — the service already swallows internal failures.
+      // Kept as a belt-and-suspenders so this endpoint never 500s the client.
+      logger.warn(
+        { error: error.message, businessId: req.params?.businessId },
+        "getSuggestions failed unexpectedly — returning empty list",
+      );
+      return res.status(200).json({
+        success: true,
+        data: { suggestions: [] },
+      });
+    }
+  }
+
+  /**
+   * POST /review-chat/suggestions/:businessId/regenerate
+   * Force-regenerates the chip labels for a business. Used by ops or after
+   * a significant business-profile update. Returns the fresh list.
+   */
+  async regenerateSuggestions(req: Request, res: Response): Promise<Response> {
+    try {
+      const { businessId } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(businessId)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid businessId" });
+      }
+
+      const doc = await suggestedQuestionsService.generateSuggestions(
+        new mongoose.Types.ObjectId(businessId),
+      );
+
+      if (!doc) {
+        return res.status(404).json({
+          success: false,
+          error: "Could not generate suggestions for this business",
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: { suggestions: doc.suggestions },
+      });
+    } catch (error: any) {
+      logger.error(
+        { error: error.message, businessId: req.params?.businessId },
+        "Suggestions regeneration failed",
       );
       return res
         .status(500)

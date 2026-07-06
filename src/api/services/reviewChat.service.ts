@@ -29,7 +29,10 @@ import {
   IReview,
   ReviewStatus,
 } from "../../models/pinntagBackend/review.model.js";
-import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
+import {
+  getBackendBusinessModel,
+  Schedule,
+} from "../../models/pinntagBackend/business.model.js";
 import {
   ReviewSummaryModel,
   IReviewSummary,
@@ -37,6 +40,8 @@ import {
 } from "../../models/reviewSummary.model.js";
 import { cacheGet, cacheSet } from "../../utils/redis.js";
 import { ChatAnswerEventModel } from "../../models/chatAnswerEvent.model.js";
+import { websiteSummaryService } from "./websiteSummary.service.js";
+import { IWebsiteSummary } from "../../models/websiteSummary.model.js";
 
 const CHAT_MODEL = "gpt-4o-mini";
 const SUMMARIZATION_MODEL = "gpt-4o-mini";
@@ -96,7 +101,7 @@ export interface ReviewChatInput {
   sessionId?: string;
 }
 
-export type ReviewChatSource = "profile" | "reviews" | "none";
+export type ReviewChatSource = "profile" | "reviews" | "website" | "none";
 
 export interface ReviewChatResponse {
   sessionId: string;
@@ -154,15 +159,46 @@ function detectAbstain(answer: string): boolean {
 }
 
 interface BusinessSnapshot {
+  // Identity + location
   name?: string;
   description?: string;
   city?: string;
   state?: string;
+  postalCode?: string;
   category?: string;
   phone?: string;
   website?: string;
   rating?: number;
   reviewCount?: number;
+  foundationYear?: number;
+  tags?: string[];
+
+  // Operational hours (already formatted into human-readable strings so the
+  // system prompt doesn't have to reason over the nested Schedule shape).
+  hoursText?: string;
+  busyTimeText?: string;
+  slowTimeText?: string;
+
+  // Booleans left tri-state on purpose: true and false are both meaningful
+  // answers ("yes, they have parking" / "no, they don't"). undefined = unknown.
+  isParkingAvailable?: boolean;
+  isWheelchairAccessible?: boolean;
+  acceptsReservations?: boolean;
+
+  // Text / list fields
+  reservationPolicy?: string;
+  paymentMethods?: string[];
+  menus?: string[];
+  allergenSummary?: string;
+  foodHygieneRating?: number;
+  covidSafetyMeasures?: string[];
+  healthAndSafetyPolicies?: string[];
+  sustainabilityEfforts?: string;
+
+  // Just a flag — the actual promotions payload isn't structured enough to
+  // paste into the prompt safely. Surfacing "there are promotions, check the
+  // deals section" is a safer play than inventing details.
+  hasPromotions?: boolean;
 }
 
 class ReviewChatService {
@@ -223,11 +259,24 @@ class ReviewChatService {
       throw new Error("Business not found");
     }
 
-    const { summary, generated } =
-      await this.getOrGenerateSummary(businessObjId);
-
     const businessSnapshot = this.buildBusinessSnapshot(business);
-    const systemPrompt = this.buildSystemPrompt(businessSnapshot, summary);
+
+    // Fetch review summary + website extract in parallel. The website
+    // pipeline never throws (fail-open); if it returns null or non-"ok"
+    // we just skip that block in the prompt.
+    const [{ summary, generated }, websiteSummary] = await Promise.all([
+      this.getOrGenerateSummary(businessObjId),
+      websiteSummaryService.getOrGenerateWebsiteSummary(
+        businessObjId,
+        businessSnapshot.website,
+      ),
+    ]);
+
+    const systemPrompt = this.buildSystemPrompt(
+      businessSnapshot,
+      summary,
+      websiteSummary,
+    );
 
     const completion = await llm.chatCompletion({
       model: CHAT_MODEL,
@@ -349,7 +398,12 @@ class ReviewChatService {
           ? parsed.answer.trim()
           : raw;
 
-      const validSources: ReviewChatSource[] = ["profile", "reviews", "none"];
+      const validSources: ReviewChatSource[] = [
+        "profile",
+        "reviews",
+        "website",
+        "none",
+      ];
       const sources = Array.isArray(parsed.sources)
         ? (parsed.sources.filter((s: unknown) =>
             validSources.includes(s as ReviewChatSource),
@@ -877,24 +931,210 @@ Rules:
     return result;
   }
 
-  /** Picks profile fields the LLM needs as authoritative context. */
+  /**
+   * Picks profile fields the LLM needs as authoritative context.
+   *
+   * The business schema in pinntagBackend has ~20 structured operational
+   * fields (hours, parking, reservations, payment methods, menus, allergens,
+   * accessibility, promotions, …). Every one of them is an authoritative fact
+   * the business has declared about itself, and every one of them was
+   * previously abstained on because we weren't sending them. This pulls the
+   * ones that matter to consumers and pre-formats the awkward nested shapes
+   * (Schedule, Hours, TimeBracket) into text the prompt can consume directly.
+   */
   private buildBusinessSnapshot(business: any): BusinessSnapshot {
+    const boolOrUndef = (v: unknown): boolean | undefined =>
+      typeof v === "boolean" ? v : undefined;
+    const stringArrOrUndef = (v: unknown): string[] | undefined =>
+      Array.isArray(v) && v.length > 0
+        ? v.filter((s) => typeof s === "string" && s.length > 0)
+        : undefined;
+    const trimmedStringOrUndef = (v: unknown): string | undefined =>
+      typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined;
+
     return {
       name: business.name,
       description: business.description || business.bio,
       city: business.city,
       state: business.state,
+      postalCode: trimmedStringOrUndef(business.postalCode),
       category: business.category,
       phone: business.phone,
       website: business.website,
       rating: business.rating,
       reviewCount: business.userRatingCount,
+      foundationYear:
+        typeof business.foundationYear === "number"
+          ? business.foundationYear
+          : undefined,
+      tags: stringArrOrUndef(business.tags),
+
+      hoursText:
+        this.formatHoursFromSchedule(business.regularTiming) ??
+        this.formatOverallHours(business.openingTime, business.closingTime),
+      busyTimeText: this.formatTimeBracket(business.busyTime),
+      slowTimeText: this.formatTimeBracket(business.slowTime),
+
+      isParkingAvailable: boolOrUndef(business.isParkingAvailable),
+      isWheelchairAccessible: boolOrUndef(business.isWheelchairAccessible),
+      acceptsReservations: boolOrUndef(business.acceptsReservations),
+
+      reservationPolicy: trimmedStringOrUndef(business.reservationPolicy),
+      paymentMethods: stringArrOrUndef(business.paymentMethods),
+      menus: stringArrOrUndef(business.menus),
+      allergenSummary: this.formatAllergens(business.allergenInformation),
+      foodHygieneRating:
+        typeof business.foodHygieneRating === "number"
+          ? business.foodHygieneRating
+          : undefined,
+      covidSafetyMeasures: stringArrOrUndef(business.covidSafetyMeasures),
+      healthAndSafetyPolicies: stringArrOrUndef(business.healthAndSafetyPolicies),
+      sustainabilityEfforts: trimmedStringOrUndef(business.sustainabilityEfforts),
+
+      hasPromotions:
+        Array.isArray(business.promotions) && business.promotions.length > 0,
     };
+  }
+
+  // ── Formatting helpers for the Mixed-typed timing / allergen fields ────────
+  // These deliberately return `undefined` when there's nothing useful to say,
+  // so buildSystemPrompt can skip the whole line with a simple truthy check.
+
+  private padTwo(n: number): string {
+    return n < 10 ? `0${n}` : String(n);
+  }
+
+  /** {hour, minute} → "HH:MM"; returns undefined if hour is missing. */
+  private formatHM(h: { hour?: number; minute?: number } | undefined | null):
+    | string
+    | undefined {
+    if (!h || typeof h.hour !== "number") return undefined;
+    const hour = Math.max(0, Math.min(23, Math.floor(h.hour)));
+    const minute =
+      typeof h.minute === "number"
+        ? Math.max(0, Math.min(59, Math.floor(h.minute)))
+        : 0;
+    return `${this.padTwo(hour)}:${this.padTwo(minute)}`;
+  }
+
+  /**
+   * Schedule.weekDays → "Mon 09:00–17:00, Tue 09:00–17:00, …"
+   *
+   * Days without a duration are skipped rather than listed as "closed" — we
+   * can't tell the difference between "closed that day" and "not yet filled
+   * in", and asserting closure we can't verify would be a hallucination.
+   */
+  private formatHoursFromSchedule(
+    schedule: Schedule | undefined | null,
+  ): string | undefined {
+    if (!schedule || !schedule.weekDays) return undefined;
+    const order: Array<
+      [keyof NonNullable<Schedule["weekDays"]>, string]
+    > = [
+      ["monday", "Mon"],
+      ["tuesday", "Tue"],
+      ["wednesday", "Wed"],
+      ["thursday", "Thu"],
+      ["friday", "Fri"],
+      ["saturday", "Sat"],
+      ["sunday", "Sun"],
+    ];
+
+    const parts: string[] = [];
+    for (const [key, label] of order) {
+      const day = schedule.weekDays[key];
+      const dur = day?.duration;
+      if (
+        !dur ||
+        typeof dur.startHour !== "number" ||
+        typeof dur.endHour !== "number"
+      ) {
+        continue;
+      }
+      const start = this.formatHM({ hour: dur.startHour, minute: dur.startMinute });
+      const end = this.formatHM({ hour: dur.endHour, minute: dur.endMinute });
+      if (!start || !end) continue;
+      parts.push(`${label} ${start}–${end}`);
+    }
+    return parts.length > 0 ? parts.join(", ") : undefined;
+  }
+
+  /**
+   * openingTime/closingTime is a flat {hour,minute} — a single overall
+   * opening/closing time not broken down by day. Format as "Open 09:00–17:00".
+   */
+  private formatOverallHours(
+    opening: { hour?: number; minute?: number } | undefined | null,
+    closing: { hour?: number; minute?: number } | undefined | null,
+  ): string | undefined {
+    const start = this.formatHM(opening);
+    const end = this.formatHM(closing);
+    if (!start && !end) return undefined;
+    if (start && end) return `Open ${start}–${end}`;
+    if (start) return `Opens ${start}`;
+    return `Closes ${end}`;
+  }
+
+  /** TimeBracket → "12:00–14:00"; undefined if either endpoint is missing. */
+  private formatTimeBracket(
+    bracket:
+      | {
+          startTime?: { hour?: number; minute?: number };
+          endTime?: { hour?: number; minute?: number };
+        }
+      | undefined
+      | null,
+  ): string | undefined {
+    if (!bracket) return undefined;
+    const start = this.formatHM(bracket.startTime);
+    const end = this.formatHM(bracket.endTime);
+    if (!start || !end) return undefined;
+    return `${start}–${end}`;
+  }
+
+  /**
+   * allergenInformation is `any[]` — could be strings, objects, or nothing.
+   * We flatten it to a comma-joined string of the human-readable pieces, or
+   * undefined if we can't extract anything usable. Best-effort — we'd rather
+   * omit than emit garbage into the prompt.
+   */
+  private formatAllergens(raw: unknown): string | undefined {
+    if (!Array.isArray(raw) || raw.length === 0) return undefined;
+    const pieces: string[] = [];
+    for (const item of raw) {
+      if (typeof item === "string" && item.trim().length > 0) {
+        pieces.push(item.trim());
+      } else if (item && typeof item === "object") {
+        const rec = item as Record<string, unknown>;
+        const label =
+          typeof rec.name === "string"
+            ? rec.name
+            : typeof rec.allergen === "string"
+              ? rec.allergen
+              : typeof rec.label === "string"
+                ? rec.label
+                : undefined;
+        if (label && label.trim().length > 0) pieces.push(label.trim());
+      }
+    }
+    if (pieces.length === 0) return undefined;
+    // Dedup case-insensitively; cap to keep the prompt bounded.
+    const seen = new Set<string>();
+    const deduped: string[] = [];
+    for (const p of pieces) {
+      const k = p.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      deduped.push(p);
+      if (deduped.length >= 15) break;
+    }
+    return deduped.join(", ");
   }
 
   private buildSystemPrompt(
     business: BusinessSnapshot,
     summary: IReviewSummary | null,
+    website: IWebsiteSummary | null,
   ): string {
     const lines: string[] = [];
 
@@ -913,13 +1153,130 @@ Rules:
       );
     if (business.phone) lines.push(`Phone: ${business.phone}`);
     if (business.website) lines.push(`Website: ${business.website}`);
+    if (business.postalCode) lines.push(`Postal code: ${business.postalCode}`);
+    if (typeof business.foundationYear === "number")
+      lines.push(`Founded: ${business.foundationYear}`);
+    if (business.tags && business.tags.length > 0)
+      lines.push(`Tags: ${business.tags.slice(0, 12).join(", ")}`);
     if (typeof business.rating === "number")
       lines.push(
         `Overall rating: ${business.rating}/5${
           business.reviewCount ? ` (${business.reviewCount} reviews)` : ""
         }`,
       );
+
+    // ── Operational block ─────────────────────────────────────────────────
+    // Everything below is the business's own declared facts (hours, parking,
+    // reservations, menus, etc.) — authoritative when present, so answers
+    // grounded on any of these lines should tag `sources: ["profile"]`.
+    const yesNo = (v: boolean): string => (v ? "Yes" : "No");
+    const opLines: string[] = [];
+
+    if (business.hoursText) opLines.push(`Hours: ${business.hoursText}`);
+    if (business.busyTimeText)
+      opLines.push(`Typical busy times: ${business.busyTimeText}`);
+    if (business.slowTimeText)
+      opLines.push(`Typical quiet times: ${business.slowTimeText}`);
+    if (typeof business.isParkingAvailable === "boolean")
+      opLines.push(`Parking available: ${yesNo(business.isParkingAvailable)}`);
+    if (typeof business.isWheelchairAccessible === "boolean")
+      opLines.push(
+        `Wheelchair accessible: ${yesNo(business.isWheelchairAccessible)}`,
+      );
+    if (typeof business.acceptsReservations === "boolean")
+      opLines.push(`Accepts reservations: ${yesNo(business.acceptsReservations)}`);
+    if (business.reservationPolicy)
+      opLines.push(
+        `Reservation policy: ${business.reservationPolicy.slice(0, 300)}`,
+      );
+    if (business.paymentMethods && business.paymentMethods.length > 0)
+      opLines.push(`Payment methods: ${business.paymentMethods.join(", ")}`);
+    if (business.menus && business.menus.length > 0) {
+      // Menus are typically URLs. Point at them rather than pretending we've
+      // read them — the LLM has no way to open a URL.
+      opLines.push(
+        `Menu(s) published: ${business.menus.length} link(s) on file — refer users to the business website / menu page for current items and prices.`,
+      );
+    }
+    if (business.allergenSummary)
+      opLines.push(`Allergen info on file: ${business.allergenSummary}`);
+    if (typeof business.foodHygieneRating === "number")
+      opLines.push(`Food hygiene rating: ${business.foodHygieneRating}`);
+    if (
+      business.healthAndSafetyPolicies &&
+      business.healthAndSafetyPolicies.length > 0
+    )
+      opLines.push(
+        `Health & safety policies: ${business.healthAndSafetyPolicies.slice(0, 6).join("; ")}`,
+      );
+    if (
+      business.covidSafetyMeasures &&
+      business.covidSafetyMeasures.length > 0
+    )
+      opLines.push(
+        `COVID safety measures: ${business.covidSafetyMeasures.slice(0, 6).join("; ")}`,
+      );
+    if (business.sustainabilityEfforts)
+      opLines.push(
+        `Sustainability: ${business.sustainabilityEfforts.slice(0, 300)}`,
+      );
+    if (business.hasPromotions)
+      opLines.push(
+        `Promotions/deals: This business has promotions on file. Direct users to the deals section — do NOT invent specific offers, prices, or expiry dates.`,
+      );
+
+    if (opLines.length > 0) {
+      lines.push("");
+      lines.push(`## Operational details`);
+      for (const l of opLines) lines.push(l);
+    }
     lines.push("");
+
+    // ── Website extract (business's own published content) ────────────────
+    // Sits between the structured profile and customer reviews: still the
+    // business's own voice (authoritative), but pulled from the website
+    // rather than the profile schema. Anything grounded on this block tags
+    // `sources: ["website"]`.
+    if (website && website.status === "ok") {
+      const w = website;
+      const hasAny =
+        w.aboutSummary ||
+        w.services.length > 0 ||
+        w.hoursText ||
+        w.policies.length > 0 ||
+        w.faqs.length > 0 ||
+        w.address ||
+        w.phone ||
+        w.otherFacts.length > 0;
+
+      if (hasAny) {
+        lines.push(`# Business Website (published by the business)`);
+        if (w.aboutSummary) lines.push(`About: ${w.aboutSummary}`);
+        if (w.hoursText) lines.push(`Hours (from website): ${w.hoursText}`);
+        if (w.address) lines.push(`Address (from website): ${w.address}`);
+        if (w.phone) lines.push(`Phone (from website): ${w.phone}`);
+        if (w.services.length > 0) {
+          lines.push(`## Services listed on the website`);
+          for (const s of w.services) lines.push(`- ${s}`);
+        }
+        if (w.policies.length > 0) {
+          lines.push(`## Policies stated on the website`);
+          for (const p of w.policies) lines.push(`- ${p}`);
+        }
+        if (w.faqs.length > 0) {
+          lines.push(`## FAQ from the website`);
+          for (const f of w.faqs) {
+            lines.push(`Q: ${f.q}`);
+            lines.push(`A: ${f.a}`);
+          }
+        }
+        if (w.otherFacts.length > 0) {
+          lines.push(`## Other facts from the website`);
+          for (const f of w.otherFacts) lines.push(`- ${f}`);
+        }
+        lines.push("");
+      }
+    }
 
     if (summary) {
       lines.push(
@@ -969,10 +1326,10 @@ Rules:
     lines.push("");
     lines.push(`# Rules for your answer`);
     lines.push(
-      `1. Answer ONLY from the profile and review summary above. If the answer is NOT in the profile or reviews, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, or features. It is always better to say you don't have that information than to invent an answer.`,
+      `1. Answer ONLY from the business profile, website block, or review summary above. If the answer is not in any of them, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, or features. It is always better to say you don't have that information than to invent an answer. Do NOT rely on general knowledge, memories of similar businesses, or anything outside the context above.`,
     );
     lines.push(
-      `2. When you don't have the answer, say it plainly using a phrase like "I don't have that information" or "that isn't mentioned in the reviews."${
+      `2. When you don't have the answer, say it plainly using a phrase like "I don't have that information" or "that isn't mentioned in the reviews / website / profile."${
         hasPhone
           ? ` Then suggest the user call the business directly at ${business.phone} to ask.`
           : ``
@@ -1004,20 +1361,26 @@ Rules:
       `Respond with ONLY valid JSON matching this exact schema:`,
     );
     lines.push(
-      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "none"] }`,
+      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "website" | "none"] }`,
     );
     lines.push(`Source tagging rules:`);
     lines.push(
-      `- Include "profile" when the answer comes from the business profile — factual things the business states about itself: hours, location, parking, phone, website, category. e.g. "Where are they located?" → ["profile"].`,
+      `- Include "profile" when the answer comes from the structured business profile above — factual things the business declared: hours, location, parking, wheelchair accessibility, reservations, payment methods, phone, website URL, category, menu availability, allergens, food hygiene rating, health & safety, promotions availability. e.g. "Where are they located?" → ["profile"]. "Do they have parking?" → ["profile"]. "Do they take reservations?" → ["profile"].`,
+    );
+    lines.push(
+      `- Include "website" when the answer comes from the "Business Website" block above — content the business published on its own site: about text, services listed, website hours, website-stated policies, FAQ answers, other website facts. e.g. "What services do they offer?" (from website services list) → ["website"]. "What's their cancellation policy?" (from website policies) → ["website"].`,
     );
     lines.push(
       `- Include "reviews" when the answer comes from customer reviews — opinions and experiences: noise level, service quality, food taste, atmosphere, value. e.g. "Is it noisy?" → ["reviews"].`,
     );
     lines.push(
-      `- Include BOTH "profile" and "reviews" when the answer genuinely draws on both — e.g. "Is it a good spot for a quiet dinner?" might use hours from the profile and ambiance opinions from reviews → ["profile","reviews"]. Use two sources only when both actually contributed.`,
+      `- Combine sources ONLY when the answer genuinely draws on more than one — e.g. hours from the profile plus ambiance opinions from reviews → ["profile","reviews"]. Do not list a source you didn't use.`,
     );
     lines.push(
-      `- Use exactly ["none"] when you didn't use either — greetings, off-topic deflections, and any time you don't know or abstain. If you say you don't have the information, the source is "none".`,
+      `- Prefer profile > website > reviews for the same fact if it appears in multiple places (profile is the business's declared record; website is their published content; reviews are third-party opinions).`,
+    );
+    lines.push(
+      `- Use exactly ["none"] when you didn't use any of the above — greetings, off-topic deflections, and any time you don't know or abstain. If you say you don't have the information, the source is "none".`,
     );
     lines.push(
       `- Sources must reflect what you ACTUALLY used to construct the answer. Do not list a source just because it was provided.`,

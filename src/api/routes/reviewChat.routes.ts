@@ -71,4 +71,25 @@ router.post("/summary/:businessId/regenerate", (req, res) =>
   reviewChatController.regenerateSummary(req, res)
 );
 
+/**
+ * GET /review-chat/suggestions/:businessId
+ * Conversation-starter chips for the entry screen — 2-4 word questions
+ * relevant to THIS specific business (generated from its profile + reviews
+ * + website content). Cached; refreshed on TTL.
+ * Returns: { success: true, data: { suggestions: string[] } }
+ * Fail-open: returns an empty array on any internal failure so the frontend
+ * can fall back to its own local defaults.
+ */
+router.get("/suggestions/:businessId", (req, res) =>
+  reviewChatController.getSuggestions(req, res),
+);
+
+/**
+ * POST /review-chat/suggestions/:businessId/regenerate
+ * Force-regenerate the chip labels for a business. Ops / after profile change.
+ */
+router.post("/suggestions/:businessId/regenerate", (req, res) =>
+  reviewChatController.regenerateSuggestions(req, res),
+);
+
 export { router as reviewChatRoutes };
