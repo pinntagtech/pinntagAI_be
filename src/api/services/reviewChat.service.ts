@@ -40,6 +40,9 @@ import {
   EventTypes,
   BackendDiscountType,
 } from "../../models/pinntagBackend/event.model.js";
+import { getBackendOutletModel } from "../../models/pinntagBackend/outlet.model.js";
+import { getBackendBroadcastModel } from "../../models/pinntagBackend/broadcast.model.js";
+import { getBackendMenuModel } from "../../models/pinntagBackend/menu.model.js";
 import {
   ReviewSummaryModel,
   IReviewSummary,
@@ -55,6 +58,22 @@ const SUMMARIZATION_MODEL = "gpt-4o-mini";
 const SUMMARY_TTL_HOURS = 24;
 const MAX_REVIEWS_FOR_SUMMARY = 100;
 const MAX_OUTPUT_TOKENS = 400;
+
+// ── Additional DB-grounding budgets ──────────────────────────────────────────
+// Each of these blocks is fetched fresh per (uncached) chat request and pasted
+// into the prompt. Caps keep the prompt bounded regardless of how much data a
+// business has on file.
+const MAX_OUTLETS = 8; // branches listed before we collapse to "+N more"
+const MAX_BROADCASTS = 3; // most-recent public announcements
+const MAX_NAMED_MENUS = 12;
+// Question-time review retrieval: pull recent reviews, keyword-rank in JS, keep
+// the top few short excerpts. Bounded so the extra prompt stays small and the
+// DB read stays a single indexed query (sort by reviewedAt).
+const MAX_REVIEW_CANDIDATES = 150; // recent reviews scanned for keyword hits
+const MAX_REVIEW_SNIPPETS = 6; // excerpts fed into the prompt
+const REVIEW_SNIPPET_CHARS = 220;
+const MIN_KEYWORD_CHARS = 3;
+const MAX_KEYWORDS = 6;
 
 // Exact-match answer cache. Same business + same (normalized) question returns
 // the stored answer for 24h, bypassing the LLM entirely.
@@ -113,6 +132,7 @@ export type ReviewChatSource =
   | "reviews"
   | "website"
   | "events"
+  | "broadcasts"
   | "none";
 
 /**
@@ -133,6 +153,49 @@ interface CondensedActiveEvent {
   terms?: string;
   eventUrl?: string;
   bookingUrl?: string;
+}
+
+/**
+ * A single physical branch of the business, pre-formatted for the prompt.
+ * Sourced from the `outlets` collection — the Business doc only carries a
+ * single flat HQ address, so this is how multi-location businesses get
+ * represented accurately. Tagged `profile` (business-declared facts).
+ */
+interface CondensedOutlet {
+  name?: string;
+  addressText?: string;
+  phone?: string;
+}
+
+/**
+ * A recent public announcement from the `broadcasts` collection. Only
+ * `visibility: "public"` broadcasts reach the anonymous consumer chat.
+ * Tagged `broadcasts`.
+ */
+interface CondensedBroadcast {
+  title?: string;
+  message?: string;
+}
+
+/**
+ * A named menu the business publishes (e.g. "Lunch Menu"). Content is stored
+ * as images, NOT structured line items — so we surface the menu's existence,
+ * never prices or dishes. Tagged `profile`.
+ */
+interface NamedMenu {
+  name: string;
+  type?: string;
+}
+
+/**
+ * A short excerpt from a real customer review, retrieved at question time by
+ * keyword match. Lets the bot answer "what do people say about <dish/service>"
+ * with grounded quotes instead of the coarse top-themes summary. Reviewer
+ * identity is intentionally dropped — only rating + text. Tagged `reviews`.
+ */
+interface ReviewSnippet {
+  rating?: number;
+  text: string;
 }
 
 export interface ReviewChatResponse {
@@ -318,24 +381,41 @@ class ReviewChatService {
 
     const businessSnapshot = this.buildBusinessSnapshot(business);
 
-    // Fetch review summary + website extract + active events in parallel.
-    // Every leg fails open — if any returns null/[]/errors we just skip that
-    // block in the prompt and keep serving the answer.
-    const [{ summary, generated }, websiteSummary, activeEvents] =
-      await Promise.all([
-        this.getOrGenerateSummary(businessObjId),
-        websiteSummaryService.getOrGenerateWebsiteSummary(
-          businessObjId,
-          businessSnapshot.website,
-        ),
-        this.getActiveEvents(businessObjId),
-      ]);
+    // Fetch every grounding source in parallel. Each leg fails open — if any
+    // returns null/[]/errors we just skip that block in the prompt and keep
+    // serving the answer. All of these are cheap indexed reads on the backend
+    // DB except the summary/website legs (which are cached and only
+    // occasionally regenerate), so the fan-out stays well within the SLA.
+    const [
+      { summary, generated },
+      websiteSummary,
+      activeEvents,
+      outlets,
+      broadcasts,
+      namedMenus,
+      reviewSnippets,
+    ] = await Promise.all([
+      this.getOrGenerateSummary(businessObjId),
+      websiteSummaryService.getOrGenerateWebsiteSummary(
+        businessObjId,
+        businessSnapshot.website,
+      ),
+      this.getActiveEvents(businessObjId),
+      this.getOutlets(business, conn),
+      this.getBroadcasts(businessObjId, conn),
+      this.getNamedMenus(businessObjId, conn),
+      this.retrieveReviewSnippets(businessObjId, input.message, conn),
+    ]);
 
     const systemPrompt = this.buildSystemPrompt(
       businessSnapshot,
       summary,
       websiteSummary,
       activeEvents,
+      outlets,
+      broadcasts,
+      namedMenus,
+      reviewSnippets,
     );
 
     const completion = await llm.chatCompletion({
@@ -463,6 +543,7 @@ class ReviewChatService {
         "reviews",
         "website",
         "events",
+        "broadcasts",
         "none",
       ];
       const sources = Array.isArray(parsed.sources)
@@ -755,6 +836,260 @@ class ReviewChatService {
     if (upcoming.length === 1) return fmt(upcoming[0]);
     if (upcoming.length === 2) return `${fmt(upcoming[0])}, ${fmt(upcoming[1])}`;
     return `${fmt(upcoming[0])} + ${upcoming.length - 1} more dates`;
+  }
+
+  /** Trim + length-clamp a possibly-non-string value; undefined when empty. */
+  private clampStr(s: unknown, n: number): string | undefined {
+    return typeof s === "string" && s.trim().length > 0
+      ? s.trim().slice(0, n)
+      : undefined;
+  }
+
+  /**
+   * Physical branches of the business, from the `outlets` collection.
+   *
+   * The Business doc only carries one flat HQ address; multi-location
+   * businesses live in `outlets`. We prefer the business's `activatedOutlets`
+   * list (the authoritative "these are live" set); if that's empty we fall
+   * back to querying outlets by business ref. Deleted outlets are always
+   * excluded. Fail-open → [] so the chat continues without the block.
+   */
+  private async getOutlets(
+    business: any,
+    conn: mongoose.Connection,
+  ): Promise<CondensedOutlet[]> {
+    try {
+      const OutletModel = getBackendOutletModel(conn);
+      const activated: mongoose.Types.ObjectId[] = Array.isArray(
+        business?.activatedOutlets,
+      )
+        ? business.activatedOutlets
+        : [];
+
+      const query: Record<string, unknown> = { isDeleted: { $ne: true } };
+      if (activated.length > 0) {
+        query._id = { $in: activated };
+      } else {
+        query.business = business._id;
+        query.isActive = { $ne: false };
+      }
+
+      const outlets = await OutletModel.find(query)
+        .limit(MAX_OUTLETS + 1) // +1 so buildSystemPrompt can say "+N more"
+        .lean();
+
+      return outlets
+        .map((o) => this.condenseOutlet(o))
+        .filter((o) => o.name || o.addressText);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(business?._id) },
+        "Fetching outlets failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Format a phone as "+<cc> <number>". Stored country codes sometimes already
+   * carry a leading "+", so we strip it before re-adding one (otherwise we emit
+   * "++1 ..."). Returns just the number when no country code is on file.
+   */
+  private formatPhone(countryCode: unknown, phone: unknown): string | undefined {
+    const p = this.clampStr(phone, 40);
+    if (!p) return undefined;
+    const ccRaw = this.clampStr(countryCode, 6);
+    if (!ccRaw) return p;
+    const cc = ccRaw.replace(/^\++/, "");
+    return cc ? `+${cc} ${p}` : p;
+  }
+
+  /** Reduce an outlet doc to name + one-line address + phone. */
+  private condenseOutlet(o: any): CondensedOutlet {
+    // Build the address, skipping parts that duplicate the immediately
+    // preceding one (source data often repeats e.g. city in two fields →
+    // "Atlanta, Atlanta").
+    const parts: string[] = [];
+    for (const key of ["address1", "address2", "city", "state", "postalCode"]) {
+      const v = this.clampStr(o?.[key], 120);
+      if (!v) continue;
+      if (parts.length && parts[parts.length - 1].toLowerCase() === v.toLowerCase())
+        continue;
+      parts.push(v);
+    }
+
+    const name = this.clampStr(o?.name, 100);
+    let addressText =
+      parts.length > 0 ? parts.join(", ").slice(0, 300) : undefined;
+    // address1 frequently repeats the outlet name as a prefix — strip it so we
+    // don't render "HOBNOB Tavern — HOBNOB Tavern 6690 ...".
+    if (addressText && name && addressText.toLowerCase().startsWith(name.toLowerCase())) {
+      const stripped = addressText.slice(name.length).replace(/^[\s,;-]+/, "");
+      if (stripped.length > 0) addressText = stripped;
+    }
+
+    return {
+      name,
+      addressText,
+      phone: this.formatPhone(o?.countryCode, o?.phone),
+    };
+  }
+
+  /**
+   * Recent PUBLIC announcements from the `broadcasts` collection. Follower-only
+   * broadcasts are excluded — the consumer chat is anonymous and must not leak
+   * audience-gated messages. Fail-open → [].
+   */
+  private async getBroadcasts(
+    businessId: mongoose.Types.ObjectId,
+    conn: mongoose.Connection,
+  ): Promise<CondensedBroadcast[]> {
+    try {
+      const BroadcastModel = getBackendBroadcastModel(conn);
+      const rows = await BroadcastModel.find({
+        business: businessId,
+        visibility: "public",
+      })
+        .sort({ createdAt: -1 })
+        .limit(MAX_BROADCASTS)
+        .lean();
+
+      return rows
+        .map((b) => ({
+          title: this.clampStr(b.title, 120),
+          message: this.clampStr(b.message, 300),
+        }))
+        .filter((b) => b.title || b.message);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Fetching broadcasts failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Named menus a business publishes (from the `menus` collection). These are
+   * image-based menus, NOT structured items — so we only surface their names
+   * and point users at the menu, never prices or dishes. Fail-open → [].
+   */
+  private async getNamedMenus(
+    businessId: mongoose.Types.ObjectId,
+    conn: mongoose.Connection,
+  ): Promise<NamedMenu[]> {
+    try {
+      const MenuModel = getBackendMenuModel(conn);
+      const rows = await MenuModel.find({ business: businessId })
+        .limit(MAX_NAMED_MENUS)
+        .lean();
+
+      return rows
+        .map((m) => ({
+          name: this.clampStr(m.name, 80) ?? "Menu",
+          type: this.clampStr(m.type, 40),
+        }))
+        .filter((m) => m.name);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Fetching named menus failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Question-time review retrieval. Answers the acceptance criterion "surface
+   * info mined from review comments" (e.g. "what do people say about the pad
+   * thai?"), which the coarse top-themes summary can't.
+   *
+   * Approach (keyword retrieval, no extra infra): extract content keywords from
+   * the question, pull the most recent ACTIVE reviews with text, score each by
+   * how many keywords it contains, and keep the top few short excerpts. A
+   * single indexed read (sort by reviewedAt) + in-memory scoring keeps this
+   * fast. Returns [] when the question has no usable keywords or nothing
+   * matches — the prompt block is then simply omitted. Fail-open on any error.
+   */
+  private async retrieveReviewSnippets(
+    businessId: mongoose.Types.ObjectId,
+    question: string,
+    conn: mongoose.Connection,
+  ): Promise<ReviewSnippet[]> {
+    const keywords = this.extractKeywords(question);
+    if (keywords.length === 0) return [];
+
+    try {
+      const ReviewModel = getBackendReviewModel(conn);
+      const reviews = await ReviewModel.find({
+        business: businessId,
+        status: ReviewStatus.ACTIVE,
+        text: { $exists: true, $nin: [null, ""] },
+      })
+        .sort({ reviewedAt: -1 })
+        .limit(MAX_REVIEW_CANDIDATES)
+        .select("text rating")
+        .lean();
+
+      const scored: Array<{ hits: number; rating?: number; text: string }> = [];
+      for (const r of reviews as unknown as IReview[]) {
+        const text = typeof r.text === "string" ? r.text : "";
+        if (text.length < 15) continue;
+        const lower = text.toLowerCase();
+        let hits = 0;
+        for (const k of keywords) if (lower.includes(k)) hits++;
+        if (hits > 0) {
+          scored.push({
+            hits,
+            rating: typeof r.rating === "number" ? r.rating : undefined,
+            text,
+          });
+        }
+      }
+
+      // Most keyword hits first; ties keep recency (reviews already sorted desc).
+      scored.sort((a, b) => b.hits - a.hits);
+
+      return scored.slice(0, MAX_REVIEW_SNIPPETS).map((s) => ({
+        rating: s.rating,
+        text: s.text.replace(/\s+/g, " ").trim().slice(0, REVIEW_SNIPPET_CHARS),
+      }));
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Review snippet retrieval failed — chat will continue without excerpts",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Pull content keywords out of a user question for review matching: lowercase,
+   * strip punctuation, drop short tokens and common stopwords, dedupe, cap.
+   * Deliberately simple — a miss just means no excerpts block, never a wrong
+   * answer.
+   */
+  private extractKeywords(question: string): string[] {
+    const STOPWORDS = new Set([
+      "the", "and", "for", "are", "you", "your", "what", "when", "where",
+      "who", "how", "why", "does", "did", "can", "could", "would", "should",
+      "there", "they", "this", "that", "these", "those", "with", "have", "has",
+      "had", "was", "were", "will", "any", "all", "about", "from", "into",
+      "out", "our", "their", "its", "his", "her", "she", "him", "them", "get",
+      "got", "not", "but", "some", "more", "much", "many", "here", "than",
+      "then", "which", "whom", "been", "being", "just", "like", "over", "very",
+      "also", "only", "such", "them", "tell", "know", "want", "need", "please",
+      "say", "said", "people", "customers", "reviews", "review",
+    ]);
+    return [
+      ...new Set(
+        question
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .split(/\s+/)
+          .filter((t) => t.length >= MIN_KEYWORD_CHARS && !STOPWORDS.has(t)),
+      ),
+    ].slice(0, MAX_KEYWORDS);
   }
 
   /**
@@ -1522,6 +1857,10 @@ Rules:
     summary: IReviewSummary | null,
     website: IWebsiteSummary | null,
     activeEvents: CondensedActiveEvent[],
+    outlets: CondensedOutlet[],
+    broadcasts: CondensedBroadcast[],
+    namedMenus: NamedMenu[],
+    reviewSnippets: ReviewSnippet[],
   ): string {
     const lines: string[] = [];
 
@@ -1542,7 +1881,7 @@ Rules:
       lines.push(`Address: ${business.addressText}`);
     if (business.phone)
       lines.push(
-        `Phone: ${business.countryCode ? `+${business.countryCode} ` : ""}${business.phone}`,
+        `Phone: ${this.formatPhone(business.countryCode, business.phone)}`,
       );
     if (business.email) lines.push(`Email: ${business.email}`);
     if (business.website) lines.push(`Website: ${business.website}`);
@@ -1620,7 +1959,17 @@ Rules:
       );
     if (business.paymentMethods && business.paymentMethods.length > 0)
       opLines.push(`Payment methods: ${business.paymentMethods.join(", ")}`);
-    if (business.menus && business.menus.length > 0) {
+    // Menus: we can name what the business publishes, but the actual items and
+    // prices live only as images/links we can't read — so we surface names and
+    // point users at the menu, and NEVER quote dishes or prices.
+    if (namedMenus.length > 0) {
+      const named = namedMenus
+        .map((m) => (m.type ? `${m.name} (${m.type})` : m.name))
+        .join(", ");
+      opLines.push(
+        `Menus published: ${named}. These are the menu names on file only — refer users to the business's menu page / website for the actual items and prices. Do NOT state or guess any menu items or prices.`,
+      );
+    } else if (business.menus && business.menus.length > 0) {
       // Menus are typically URLs. Point at them rather than pretending we've
       // read them — the LLM has no way to open a URL.
       opLines.push(
@@ -1660,6 +2009,27 @@ Rules:
       for (const l of opLines) lines.push(l);
     }
     lines.push("");
+
+    // ── Outlet locations ──────────────────────────────────────────────────
+    // Physical branches from the outlets collection. Business-declared facts,
+    // so answers grounded here tag `sources: ["profile"]`. The main profile
+    // "Address" line above is the HQ; this is the full branch list.
+    if (outlets.length > 0) {
+      lines.push(`## Outlet locations (branches of this business)`);
+      for (const o of outlets.slice(0, MAX_OUTLETS)) {
+        const bits: string[] = [];
+        if (o.name) bits.push(o.name);
+        if (o.addressText) bits.push(o.addressText);
+        if (o.phone) bits.push(`ph: ${o.phone}`);
+        lines.push(`- ${bits.join(" — ")}`);
+      }
+      if (outlets.length > MAX_OUTLETS) {
+        lines.push(
+          `- (+${outlets.length - MAX_OUTLETS} more branch(es) — tell the user there are additional locations and to check the business's page for the full list.)`,
+        );
+      }
+      lines.push("");
+    }
 
     // ── Website extract (business's own published content) ────────────────
     // Sits between the structured profile and customer reviews: still the
@@ -1734,6 +2104,22 @@ Rules:
       lines.push("");
     }
 
+    // ── Recent announcements (broadcasts) ─────────────────────────────────
+    // Public broadcasts the business sent out. Distinct from offers/events:
+    // these are general announcements. Answers grounded here tag
+    // `sources: ["broadcasts"]`.
+    if (broadcasts.length > 0) {
+      lines.push(`# Recent announcements from this business`);
+      lines.push(
+        `These are public announcements the business posted. Share them if relevant, but note they may be time-sensitive — do not present a past announcement as if it is happening now.`,
+      );
+      for (const b of broadcasts) {
+        if (b.title && b.message) lines.push(`- ${b.title}: ${b.message}`);
+        else lines.push(`- ${b.title || b.message}`);
+      }
+      lines.push("");
+    }
+
     if (summary) {
       lines.push(
         `# What customers say (based on ${summary.totalReviews} recent reviews)`,
@@ -1777,12 +2163,30 @@ Rules:
       );
     }
 
+    // ── Review excerpts relevant to this question ─────────────────────────
+    // Retrieved by keyword match against real review text. These let you
+    // answer specific "what do people say about <X>" questions that the
+    // summary above is too coarse for. Verbatim customer words — answers
+    // grounded here tag `sources: ["reviews"]`. If they don't actually cover
+    // what was asked, ignore them and abstain rather than stretching them.
+    if (reviewSnippets.length > 0) {
+      lines.push("");
+      lines.push(`# Customer review excerpts relevant to the question`);
+      lines.push(
+        `Verbatim excerpts from individual customer reviews that mention the question's topic. Use them to describe what customers said about specific dishes, services, or experiences, making clear these are individual opinions (e.g. "a few reviewers mentioned..."). Do not treat a single excerpt as an established fact.`,
+      );
+      for (const s of reviewSnippets) {
+        const star = typeof s.rating === "number" ? `${s.rating}★ ` : "";
+        lines.push(`- ${star}"${s.text}"`);
+      }
+    }
+
     const hasPhone = !!business.phone;
 
     lines.push("");
     lines.push(`# Rules for your answer`);
     lines.push(
-      `1. Answer ONLY from the business profile, active offers/events, website block, or review summary above. If the answer is not in any of them, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, features, or deals. It is always better to say you don't have that information than to invent an answer. Do NOT rely on general knowledge, memories of similar businesses, or anything outside the context above.`,
+      `1. Answer ONLY from the context above — the business profile, outlet locations, active offers/events, announcements, website block, review summary, or review excerpts. If the answer is not in any of them, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, features, deals, or locations. It is always better to say you don't have that information than to invent an answer. Do NOT rely on general knowledge, memories of similar businesses, or anything outside the context above.`,
     );
     lines.push(
       `2. When you don't have the answer, say it plainly using a phrase like "I don't have that information" or "that isn't mentioned in the reviews / website / profile."${
@@ -1817,11 +2221,11 @@ Rules:
       `Respond with ONLY valid JSON matching this exact schema:`,
     );
     lines.push(
-      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "website" | "events" | "none"] }`,
+      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "website" | "events" | "broadcasts" | "none"] }`,
     );
     lines.push(`Source tagging rules:`);
     lines.push(
-      `- Include "profile" when the answer comes from the structured business profile above — factual things the business declared: hours, location, parking, wheelchair accessibility, reservations, payment methods, phone, website URL, category, menu availability, allergens, food hygiene rating, health & safety, promotions availability. e.g. "Where are they located?" → ["profile"]. "Do they have parking?" → ["profile"]. "Do they take reservations?" → ["profile"].`,
+      `- Include "profile" when the answer comes from the structured business profile above — factual things the business declared: hours, location, outlet/branch addresses, parking, wheelchair accessibility, reservations, payment methods, phone, website URL, category, menu names/availability, allergens, food hygiene rating, health & safety, promotions availability. e.g. "Where are they located?" → ["profile"]. "Do they have more than one branch?" → ["profile"]. "Do they have parking?" → ["profile"].`,
     );
     lines.push(
       `- Include "website" when the answer comes from the "Business Website" block above — content the business published on its own site: about text, services listed, website hours, website-stated policies, FAQ answers, other website facts. e.g. "What services do they offer?" (from website services list) → ["website"]. "What's their cancellation policy?" (from website policies) → ["website"].`,
@@ -1830,13 +2234,16 @@ Rules:
       `- Include "events" when the answer comes from the "Active offers and events" block above — current deals, offers, flash sales, spotlights, business events, promo codes, event schedules. e.g. "Any deals right now?" → ["events"]. "What's the promo code?" → ["events"]. "Any events this week?" → ["events"]. If a user asks about offers/deals/events and the block is missing or empty, say there are none currently listed and tag ["none"].`,
     );
     lines.push(
-      `- Include "reviews" when the answer comes from customer reviews — opinions and experiences: noise level, service quality, food taste, atmosphere, value. e.g. "Is it noisy?" → ["reviews"].`,
+      `- Include "broadcasts" when the answer comes from the "Recent announcements" block — public announcements the business posted. e.g. "Any recent updates from them?" → ["broadcasts"]. If the block is missing, don't invent announcements.`,
+    );
+    lines.push(
+      `- Include "reviews" when the answer comes from customer reviews — the review summary OR the "Customer review excerpts" block — opinions and experiences: noise level, service quality, food taste, a specific dish, atmosphere, value. e.g. "Is it noisy?" → ["reviews"]. "What do people say about the pad thai?" → ["reviews"].`,
     );
     lines.push(
       `- Combine sources ONLY when the answer genuinely draws on more than one — e.g. hours from the profile plus ambiance opinions from reviews → ["profile","reviews"]. Do not list a source you didn't use.`,
     );
     lines.push(
-      `- Prefer profile > events > website > reviews for the same fact if it appears in multiple places (profile is the business's declared record; events are their current published offers; website is their published content; reviews are third-party opinions).`,
+      `- Prefer profile > events > broadcasts > website > reviews for the same fact if it appears in multiple places (profile is the business's declared record; events are their current published offers; broadcasts are their announcements; website is their published content; reviews are third-party opinions).`,
     );
     lines.push(
       `- Use exactly ["none"] when you didn't use any of the above — greetings, off-topic deflections, and any time you don't know or abstain. If you say you don't have the information, the source is "none".`,
