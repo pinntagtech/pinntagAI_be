@@ -745,7 +745,7 @@ const SLOW_TIME_DISCOUNT_TYPE_MAP: Record<string, string> = {
   "Happy Hour": "HAPPY_HOUR",
 };
 
-function slowTimeToDealTemplate(t: SlowTimeTemplate) {
+function slowTimeToDealTemplate(t: SlowTimeTemplate, imageUrl?: string) {
   const discountTypeKey =
     (t.discountType && SLOW_TIME_DISCOUNT_TYPE_MAP[t.discountType]) ||
     "CUSTOM";
@@ -777,7 +777,7 @@ function slowTimeToDealTemplate(t: SlowTimeTemplate) {
     tags: [t.occasion, t.intensity],
     dealType: t.type,
     termsAndConditions: t.termsAndConditions,
-    image: "",
+    image: imageUrl ?? "",
   };
 }
 
@@ -806,6 +806,7 @@ export async function triggerSlowTimeTemplate(
         sendNotification = true,
         notificationVariantCount = 3,
         dryRun = false,
+        includeImage = true,
       } = req.body ?? {};
 
       if (
@@ -819,7 +820,24 @@ export async function triggerSlowTimeTemplate(
       }
 
       const recommendations =
-        await SlowTimeRecommendationService.getRecommendations(businessId);
+        await SlowTimeRecommendationService.getRecommendations(businessId, {
+          image: includeImage === false ? "none" : "generate",
+        });
+
+      // The business owner's own switch (Business.dailyRecommendationEnabled)
+      // vetoes the manual trigger too — this endpoint must not be a way
+      // around it.
+      if (!recommendations.recommendationsEnabled) {
+        res.status(200).json({
+          success: true,
+          triggered: false,
+          recommendationsEnabled: false,
+          reason:
+            recommendations.disabledReason ||
+            "Daily recommendations are turned off for this business",
+        });
+        return;
+      }
 
       const template =
         recommendations.primaryTemplate ??
@@ -830,16 +848,19 @@ export async function triggerSlowTimeTemplate(
         res.status(200).json({
           success: true,
           triggered: false,
+          recommendationsEnabled: true,
           reason: "No slow-time signal detected for this business right now",
           footprint: recommendations.footprint,
         });
         return;
       }
 
+      const imageUrl = recommendations.primaryTemplateImageUrl;
+
       let savedTemplateId: string | undefined;
       if (persistTemplate) {
         try {
-          const dealTemplate = slowTimeToDealTemplate(template);
+          const dealTemplate = slowTimeToDealTemplate(template, imageUrl);
           const saved =
             await DealTemplateGeneratorService.savePreGeneratedTemplate(
               businessId,
@@ -907,6 +928,7 @@ export async function triggerSlowTimeTemplate(
           businessId,
           occasion: template.occasion,
           intensity: template.intensity,
+          imageUrl,
           persisted: !!savedTemplateId,
           notificationVariants: notification?.variants?.length ?? 0,
           notificationDelivered: delivery?.delivered ?? false,
@@ -918,7 +940,9 @@ export async function triggerSlowTimeTemplate(
       res.status(200).json({
         success: true,
         triggered: true,
+        recommendationsEnabled: true,
         template,
+        ...(imageUrl ? { imageUrl } : {}),
         ...(savedTemplateId ? { savedTemplateId } : {}),
         footprint: recommendations.footprint,
         alternatives: recommendations.alternativeTemplates,

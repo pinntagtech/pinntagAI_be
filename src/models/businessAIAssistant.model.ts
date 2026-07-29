@@ -50,10 +50,18 @@ export interface IBusiness_AI_Assistant extends Document {
   };
   isFacebookDataFetched?: boolean; // Whether Facebook data has been fetched
   lastFacebookDataFetched?: Date; // Last time Facebook data was fetched
-  enableAutoSlowTimeTemplates?: boolean; // Opt-in to hourly slow-time template refresh job
+  /**
+   * @deprecated Superseded by `Business.dailyRecommendationEnabled` on the
+   * backend, which is what the business owner actually toggles. Kept so
+   * existing documents stay readable; no longer consulted by the job.
+   */
+  enableAutoSlowTimeTemplates?: boolean;
   lastSlowTimeTemplateRefreshAt?: Date; // Last time the slow-time job touched this business
   lastSlowTimeNotifiedAt?: Date; // Last time the slow-time job delivered a notification
   lastSlowTimeNotifiedOccasion?: string; // Occasion of the last delivered notification
+  lastSlowTimeImageUrl?: string; // Cached AI artwork for the current slow-time template
+  lastSlowTimeImageOccasion?: string; // Occasion the cached image was generated for
+  lastSlowTimeImageAt?: Date; // When the cached image was generated
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +131,9 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     lastSlowTimeTemplateRefreshAt: { type: Date },
     lastSlowTimeNotifiedAt: { type: Date },
     lastSlowTimeNotifiedOccasion: { type: String },
+    lastSlowTimeImageUrl: { type: String },
+    lastSlowTimeImageOccasion: { type: String },
+    lastSlowTimeImageAt: { type: Date },
   },
   { timestamps: true, versionKey: false }
 );

@@ -2346,8 +2346,13 @@ export class AITrainingService {
         | undefined;
       if (correctedTrainingStatus === "completed") {
         try {
+          // `image: "cached"` — this is a polled read path, so it shows the
+          // artwork the refresh job already produced rather than paying for
+          // a fresh generation on every call.
           slowTimeRecommendations =
-            await SlowTimeRecommendationService.getRecommendations(businessId);
+            await SlowTimeRecommendationService.getRecommendations(businessId, {
+              image: "cached",
+            });
         } catch (recErr: any) {
           logger.warn(
             { businessId, err: recErr?.message },

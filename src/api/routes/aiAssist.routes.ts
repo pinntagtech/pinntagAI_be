@@ -315,16 +315,25 @@ router.post("/update-tags-and-description", updateTagsAndGenerateDescription);
  *       (views, likes, RSVPs, follows, nearby visitors) and optionally persists
  *       the template and/or returns notification copy variants for the backend
  *       to deliver.
+ *
+ *       Gated on Business.dailyRecommendationEnabled (pinntagBackend) — the
+ *       business owner's own switch. When it is off the endpoint returns
+ *       200 with triggered=false and recommendationsEnabled=false, and does
+ *       no template, image or notification work.
  * @body {
  *   businessId: string (required),
  *   persistTemplate?: boolean (default: false),
  *   sendNotification?: boolean (default: true),
- *   notificationVariantCount?: number (default: 3)
+ *   notificationVariantCount?: number (default: 3),
+ *   includeImage?: boolean (default: true)  // generate/reuse AI artwork
  * }
  * @returns {
  *   success: boolean,
  *   triggered: boolean,
+ *   recommendationsEnabled: boolean,
+ *   reason?: string,
  *   template?: SlowTimeTemplate,
+ *   imageUrl?: string,
  *   savedTemplateId?: string,
  *   footprint: FootprintSnapshot,
  *   alternatives: SlowTimeTemplate[],
