@@ -10,6 +10,11 @@ import { getBackendConnection } from "../db/connection.js";
 import { getBackendBusinessModel } from "../models/pinntagBackend/business.model.js";
 import { ContentAssistService } from "../api/services/contentAssist.service.js";
 import { SlowTimeImageService } from "../api/services/slowTimeImage.service.js";
+import {
+  chargeCredits,
+  hasSufficientCredits,
+  DAILY_RECOMMENDATION_CREDIT_COST,
+} from "../api/services/aiCredits.service.js";
 import { triggerNotification } from "../api/services/pinntagBackend.service.js";
 import {
   upsertTemplate,
@@ -168,7 +173,9 @@ export class SlowTimeTemplateRefreshJob {
     let processed = 0;
     let refreshed = 0;
     let skipped = 0;
+    let unfunded = 0;
     let failed = 0;
+    let creditsCharged = 0;
 
     for (const agent of agents) {
       const businessId = String(agent.businessId);
@@ -217,6 +224,23 @@ export class SlowTimeTemplateRefreshJob {
         );
         if (!isEvergreen && !hasRealSignal) {
           skipped++;
+          continue;
+        }
+
+        // Affordability is checked before the paid work (image + copy
+        // generation) so an unfunded wallet costs us nothing. The wallet is
+        // actually debited once the update has landed.
+        if (
+          !(await hasSufficientCredits(
+            businessId,
+            DAILY_RECOMMENDATION_CREDIT_COST,
+          ))
+        ) {
+          unfunded++;
+          logger.info(
+            { businessId, cost: DAILY_RECOMMENDATION_CREDIT_COST },
+            "Skipping slow-time refresh — insufficient AI credits",
+          );
           continue;
         }
 
@@ -280,6 +304,16 @@ export class SlowTimeTemplateRefreshJob {
           dealData,
         );
 
+        // The update has landed — charge for it. Debited after the write so a
+        // failed refresh is never billed; the conditional `$inc` inside
+        // chargeCredits is what actually guards the balance.
+        const charge = await chargeCredits(
+          businessId,
+          DAILY_RECOMMENDATION_CREDIT_COST,
+          "daily_recommendation_update",
+        );
+        if (charge.charged) creditsCharged += DAILY_RECOMMENDATION_CREDIT_COST;
+
         // Cooldown: don't re-notify a business more than once per 6 hours
         // unless the picked occasion changed (e.g., evergreen → low_views)
         // since the last delivery.
@@ -330,6 +364,10 @@ export class SlowTimeTemplateRefreshJob {
             signals: recs.footprint.signals,
             imageUrl: image?.imageUrl,
             imageCached: image?.cached ?? false,
+            creditsCharged: charge.charged
+              ? DAILY_RECOMMENDATION_CREDIT_COST
+              : 0,
+            creditBalance: charge.balance,
             notificationVariants: notificationVariants?.length ?? 0,
             notificationDelivered,
             cooldownExpired,
@@ -351,7 +389,9 @@ export class SlowTimeTemplateRefreshJob {
         processed,
         refreshed,
         skipped,
+        unfunded,
         failed,
+        creditsCharged,
         durationMs: Date.now() - startedAt,
       },
       "Slow-time template refresh job completed",

@@ -320,6 +320,11 @@ router.post("/update-tags-and-description", updateTagsAndGenerateDescription);
  *       business owner's own switch. When it is off the endpoint returns
  *       200 with triggered=false and recommendationsEnabled=false, and does
  *       no template, image or notification work.
+ *
+ *       Billing: persisting a template is a recommendation update and costs
+ *       DAILY_RECOMMENDATION_CREDIT_COST (5) credits; returns 402 when the
+ *       wallet cannot cover it. Previews (persistTemplate=false or
+ *       dryRun=true) are free.
  * @body {
  *   businessId: string (required),
  *   persistTemplate?: boolean (default: false),

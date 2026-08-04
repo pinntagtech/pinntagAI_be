@@ -12,6 +12,11 @@ import {
   SlowTimeTemplate,
 } from "../services/slowTimeRecommendation.service.js";
 import { ContentAssistService } from "../services/contentAssist.service.js";
+import {
+  chargeCredits,
+  hasSufficientCredits,
+  DAILY_RECOMMENDATION_CREDIT_COST,
+} from "../services/aiCredits.service.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
 import { triggerNotification } from "../services/pinntagBackend.service.js";
 import {
@@ -857,7 +862,27 @@ export async function triggerSlowTimeTemplate(
 
       const imageUrl = recommendations.primaryTemplateImageUrl;
 
+      // Persisting the template is a recommendation update, so it is billed
+      // at the same rate as the cron. Previews (persistTemplate=false) are
+      // free — nothing was updated.
+      const billable = !!persistTemplate && !dryRun;
+      if (
+        billable &&
+        !(await hasSufficientCredits(
+          businessId,
+          DAILY_RECOMMENDATION_CREDIT_COST
+        ))
+      ) {
+        res.status(402).json({
+          success: false,
+          error: "Insufficient AI credits",
+          cost: DAILY_RECOMMENDATION_CREDIT_COST,
+        });
+        return;
+      }
+
       let savedTemplateId: string | undefined;
+      let creditsCharged = 0;
       if (persistTemplate) {
         try {
           const dealTemplate = slowTimeToDealTemplate(template, imageUrl);
@@ -871,6 +896,17 @@ export async function triggerSlowTimeTemplate(
               }
             );
           savedTemplateId = String(saved._id);
+
+          if (billable) {
+            const charge = await chargeCredits(
+              businessId,
+              DAILY_RECOMMENDATION_CREDIT_COST,
+              "daily_recommendation_update"
+            );
+            if (charge.charged) {
+              creditsCharged = DAILY_RECOMMENDATION_CREDIT_COST;
+            }
+          }
         } catch (err: any) {
           logger.warn(
             { businessId, err: err?.message },
@@ -930,6 +966,7 @@ export async function triggerSlowTimeTemplate(
           intensity: template.intensity,
           imageUrl,
           persisted: !!savedTemplateId,
+          creditsCharged,
           notificationVariants: notification?.variants?.length ?? 0,
           notificationDelivered: delivery?.delivered ?? false,
           dryRun,
@@ -944,6 +981,7 @@ export async function triggerSlowTimeTemplate(
         template,
         ...(imageUrl ? { imageUrl } : {}),
         ...(savedTemplateId ? { savedTemplateId } : {}),
+        creditsCharged,
         footprint: recommendations.footprint,
         alternatives: recommendations.alternativeTemplates,
         notification: notification
