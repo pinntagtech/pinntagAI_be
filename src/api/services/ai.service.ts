@@ -462,24 +462,56 @@ export class AIService {
         businessId
       );
 
+      // Merge incoming updates over the stored agent so the description and
+      // instructions are generated from the post-update state of the business.
+      const businessName = updates.businessName ?? agent.businessName;
+      const name = updates.name ?? agent.name;
+      const tags = updates.tags ?? agent.tags ?? [];
+      const category = updates.category ?? agent.category;
+      const subCategories = updates.subCategories ?? agent.subCategories ?? [];
+      const website = updates.website ?? agent.website;
+
+      // If the website changed, refresh the cached scrape first so the
+      // regenerated description reflects the new site.
+      if (updates.website && updates.website !== agent.website) {
+        await AIService.scrapeAndCacheWebsiteData(businessId, updates.website);
+      }
+
+      // Regenerate the description unless the caller supplied one explicitly.
+      let description = updates.description ?? agent.description;
+      if (!updates.description) {
+        try {
+          description = await AIService.generateAgentDescription({
+            category: category || "",
+            subcategory: subCategories?.[0],
+            tags,
+            businessName,
+            website,
+            businessId,
+          });
+
+          logger.info(
+            { businessId, descriptionLength: description.length },
+            "Regenerated description during agent update"
+          );
+        } catch (descError: any) {
+          logger.warn(
+            { businessId, err: descError },
+            "Failed to regenerate description during agent update"
+          );
+          // Don't fail the update if description generation fails
+          description = agent.description;
+        }
+      }
+
       const updatedInstructions = [
-        `You are the AI agent for ${
-          updates.businessName ? updates.businessName : agent.businessName
-        }.`,
+        `You are the AI agent for ${businessName}.`,
         `Your knowledge is based on the following information about the business:`,
-        `Name: ${updates.name ? updates.name : agent.name}`,
-        `Description: ${
-          updates.description ? updates.description : agent.description
-        }`,
-        `Tags: ${
-          updates.tags ? updates.tags.join(", ") : (agent.tags ?? []).join(", ")
-        }`,
-        `Category: ${updates.category ? updates.category : agent.category}`,
-        `Subcategories: ${
-          updates.subCategories
-            ? updates.subCategories.join(", ")
-            : (agent.subCategories ?? []).join(", ")
-        }`,
+        `Name: ${name}`,
+        `Description: ${description}`,
+        `Tags: ${tags.join(", ")}`,
+        `Category: ${category}`,
+        `Subcategories: ${subCategories.join(", ")}`,
         `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
         `Tone: ${
           (updates.tone as any) ??
@@ -502,20 +534,25 @@ export class AIService {
       const updatedAgent = await BusinessAIAssistantModel.findOneAndUpdate(
         { businessId: new mongoose.Types.ObjectId(businessId) },
         {
-          businessName: updates.businessName ?? agent.businessName,
-          name: updates.name ?? agent.name,
-          description: updates.description ?? agent.description,
-          tags: updates.tags ?? agent.tags,
-          category: updates.category ?? agent.category,
-          subCategories: updates.subCategories ?? agent.subCategories,
+          businessName,
+          name,
+          description,
+          tags,
+          category,
+          subCategories,
           tone: updates.tone ?? agent.tone,
-          website: updates.website ?? agent.website,
+          website,
           instructions: updatedInstructions,
         },
         { new: true }
       );
 
-      return updatedAssistant;
+      return {
+        business_assistant_id: updatedAgent?.id ?? agent.id,
+        assistantId: agent.assistantId,
+        description,
+        assistant: updatedAssistant,
+      };
     } catch (error: any) {
       logger.error("Error updating business agent:", error);
       throw error;
