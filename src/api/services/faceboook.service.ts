@@ -200,7 +200,7 @@ export class FacebookService {
       try {
         const pageInfoConfig = {
           method: "get",
-          url: `https://graph.facebook.com/v24.0/me?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+          url: `https://graph.facebook.com/v24.0/me?fields=id,name,category,about,description,followers_count,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
         };
 
         const pageInfoResponse = await axios.request(pageInfoConfig);
@@ -449,8 +449,8 @@ export class FacebookService {
   //     // Step 2: Fetch comprehensive page metadata
   //     const pageInfoConfig = {
   //       method: "get",
-  //       url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
-  //       // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+  //       url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
+  //       // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
   //     };
 
   //     const pageInfoResponse = await axios.request(pageInfoConfig);
@@ -610,7 +610,7 @@ export class FacebookService {
         `https://graph.facebook.com/v24.0/me/accounts`,
         {
           params: {
-            fields: "id,name,access_token,tasks,picture{url},cover{source}",
+            fields: "id,name,access_token,tasks,picture.type(large){url},cover{source}",
             access_token: userAccessToken,
           },
         },
