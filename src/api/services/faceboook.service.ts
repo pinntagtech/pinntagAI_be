@@ -683,9 +683,14 @@ export class FacebookService {
         website: null,
         phone: null,
         email: null,
-        profilePicture: null,
-        coverPhoto: null,
-        rawData: { id: pageId, name: pageName },
+        profilePicture: firstPage.picture?.data?.url || null,
+        coverPhoto: firstPage.cover?.source || null,
+        rawData: {
+          id: pageId,
+          name: pageName,
+          picture: firstPage.picture,
+          cover: firstPage.cover,
+        },
       };
 
       // ---- Step 3: persist to AI assistant DB ----------------------------------
@@ -726,8 +731,8 @@ export class FacebookService {
         facebookPageWebsite: null,
         facebookPagePhone: null,
         facebookPageEmail: null,
-        facebookPageProfilePicture: null,
-        facebookPageCoverPhoto: null,
+        facebookPageProfilePicture: pageMetadata.profilePicture,
+        facebookPageCoverPhoto: pageMetadata.coverPhoto,
         facebookPageMetadata: pageMetadata.rawData,
         isFacebookConnected: true,
         facebookMetaData,
