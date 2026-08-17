@@ -31,6 +31,23 @@ router.get(
 );
 
 /**
+ * @route POST /api/facebook/native-login
+ * @desc Handle native Facebook SDK login (Android/iOS FacebookAuth.login()).
+ *       No authorization code or redirect_uri involved - the app already
+ *       has a usable access token from the native login dialog. Flow:
+ *       1. Decode JWT token to extract businessId from businessProfile
+ *       2. Exchange the native access token for a long-lived token
+ *       3. Get page access token and metadata, save to database
+ *       4. Return page info
+ * @headers { Authorization: Bearer <JWT> }
+ * @body { accessToken: string, state?: string }
+ */
+router.post(
+  "/native-login",
+  facebookController.handleNativeLogin.bind(facebookController),
+);
+
+/**
  * @route POST /api/facebook/token
  * @desc Exchange authorization code for short-lived user access token
  */

@@ -178,6 +178,145 @@ export class FacebookController {
   }
 
   /**
+   * Handle native Facebook SDK login (Android/iOS FacebookAuth.login()).
+   *
+   * Unlike handleOAuthCallback, there is no authorization "code" and no
+   * redirect_uri here - the mobile SDK performs the OAuth dialog itself
+   * (via the native Facebook app or system browser, never an embedded
+   * WebView) and hands the app a ready-to-use, already-short-lived Graph
+   * API access token directly. Sending that token through
+   * exchangeCodeForToken (which expects a real authorization code) fails,
+   * so this endpoint skips straight to the long-lived exchange and reuses
+   * the same completeOAuthFlow that handleOAuthCallback relies on:
+   * 1. Decode JWT token from Authorization header to get businessId
+   * 2. Exchange the native access token for a long-lived token
+   * 3. Fetch page token + metadata via completeOAuthFlow
+   * 4. Save to database
+   * 5. Return page information (same shape as handleOAuthCallback)
+   *
+   * POST /facebook/native-login
+   * Headers: { Authorization: Bearer <JWT> }
+   * Body: { accessToken: string, state?: string }
+   */
+  async handleNativeLogin(req: Request, res: Response) {
+    try {
+      const { accessToken, state } = req.body;
+
+      if (!accessToken || typeof accessToken !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "accessToken is required",
+        });
+      }
+
+      // Extract and decode JWT token to get businessId
+      const authHeader =
+        req.headers.authorization || req.headers["Authorization" as any];
+
+      if (!authHeader || typeof authHeader !== "string") {
+        return res.status(401).json({
+          success: false,
+          error: "Authorization header with JWT token is required",
+        });
+      }
+
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : authHeader;
+      const decodedToken = jwtService.decode(token);
+
+      if (!decodedToken) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid JWT token format",
+        });
+      }
+
+      const businessId = decodedToken.businessProfile;
+
+      if (!businessId) {
+        return res.status(400).json({
+          success: false,
+          error: "businessProfile not found in JWT token",
+        });
+      }
+
+      logger.info(
+        {
+          userId: decodedToken.id,
+          userType: decodedToken.userType,
+          businessId,
+          state,
+          tokenLen: accessToken.length,
+        },
+        "Processing native Facebook SDK login",
+      );
+
+      // Step 1: Exchange the native SDK's access token for a long-lived token.
+      // Facebook's fb_exchange_token grant doesn't care how the input token
+      // was originally obtained (browser redirect code-exchange or native
+      // SDK) - any valid, current access token for this app works here.
+      const longTokenResult =
+        await facebookService.fetchLongLivedToken(accessToken);
+
+      if (!longTokenResult.success) {
+        return res.status(400).json({
+          success: false,
+          error:
+            longTokenResult.data || "Failed to generate long-lived token",
+        });
+      }
+
+      const longLivedToken = longTokenResult.data.access_token;
+      logger.info({ businessId }, "Obtained long-lived user token (native)");
+
+      // Step 2-3: Get page token, fetch metadata, save to database - same
+      // logic the WebView-based flow already uses and has been tested with.
+      const oauthResult = await facebookService.completeOAuthFlow(
+        longLivedToken,
+        businessId,
+      );
+
+      if (!oauthResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: oauthResult.data || "Failed to complete OAuth flow",
+        });
+      }
+
+      logger.info(
+        {
+          businessId,
+          pageId: oauthResult.data.pageId,
+          pageName: oauthResult.data.pageMetadata?.name,
+        },
+        "Native login: successfully completed OAuth flow and saved to database",
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Facebook page connected successfully",
+        data: {
+          businessId,
+          pageId: oauthResult.data.pageId,
+          pageAccessToken: oauthResult.data.accessToken,
+          tokenExpiresAt: oauthResult.data.expiresAt,
+          pageInfo: oauthResult.data.pageMetadata,
+        },
+      });
+    } catch (error: any) {
+      logger.error(
+        { error: error.message },
+        "Error handling native Facebook login",
+      );
+      return res.status(400).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  /**
    * Generate a long-lived token from a short-lived token
    * POST /facebook/token/long-lived
    * Body: { shortLivedToken: string }
