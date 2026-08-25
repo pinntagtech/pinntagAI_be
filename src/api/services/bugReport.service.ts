@@ -19,7 +19,10 @@ import { logger } from "../../utils/logger.js";
 import { llm } from "../../utils/llm.js";
 import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
-import { containsProfanity } from "../../utils/contentModeration.utils.js";
+import {
+  containsProfanity,
+  isMeaningfulPhrase,
+} from "../../utils/contentModeration.utils.js";
 
 // ===========================
 // Types
@@ -165,12 +168,11 @@ export class BugReportService {
               screen,
               category,
               userNotes,
-              deviceInfo,
               refreshSeed,
             }),
           },
         ],
-        temperature: refreshSeed ? 0.8 : 0.5,
+        temperature: refreshSeed ? 0.75 : 0.4,
         max_tokens: 700,
         response_format: { type: "json_object" },
       });
@@ -222,9 +224,14 @@ export class BugReportService {
         "Bug description generated successfully",
       );
 
+      const deviceLine = this.formatDeviceLine(deviceInfo);
+      const description = deviceLine
+        ? `${this.stripDeviceLine(parsed.description)}\n\n${deviceLine}`
+        : this.stripDeviceLine(parsed.description);
+
       return {
         success: true,
-        description: parsed.description,
+        description,
         suggestedCategory: category || parsed.suggestedCategory,
         suggestedSeverity: parsed.suggestedSeverity,
         fallbackUsed: false,
@@ -261,16 +268,24 @@ export class BugReportService {
         ? "a business owner using the Pinntag business app to publish offers, events and rewards"
         : "a consumer using the Pinntag app to discover local offers, events and businesses";
 
-    return `You are a QA assistant that turns a short bug title into a clear bug report description for ${audience}.
+    return `You are a QA assistant that turns a short bug title into a bug report an engineer can act on, written for ${audience}.
 
 Write in first person, as the person reporting the bug ("I tapped...", "the screen froze").
 
+THE HARD PART — do not pad. A title alone contains very little information, and a
+long description built from a short title is worse than a short one: it buries the
+few real facts in filler. Restating the same fact in four different sections is the
+failure mode to avoid.
+
 STRICT RULES:
-- Use ONLY what the user gave you. Never invent error codes, timestamps, device models, account details, screen names or steps that were not stated or clearly implied by the title.
-- When a detail is unknown, leave a short bracketed placeholder such as [add the exact step] instead of guessing.
-- Keep it factual and neutral. No apologies, no greetings, no marketing tone, no blame.
-- Plain text only. No markdown headers, bold or bullet characters other than the numbered steps.
-- Under 180 words total.
+- Never restate the title verbatim, and never say the same thing twice across sections.
+- Use ONLY what the user gave you. Never invent error codes, timestamps, device models, account details, screen names or steps that were not stated or clearly implied.
+- When something is unknown, write a short bracketed placeholder for the user to fill in — [add the step where it broke] — instead of inventing a plausible-sounding step. Placeholders are the point: they ask the reporter for what only they know.
+- Steps to reproduce: 2 to 5 numbered imperative fragments ("Open Checkout", "Apply a coupon code"). Not sentences, no trailing full stops, no narration.
+- "Expected result" and "Actual result": one short clause each, under 12 words, and they must not mirror each other word-for-word.
+- Do NOT write a "Device:" line. Device details are appended automatically after you.
+- Factual and neutral. No apologies, greetings, markdown, or blame.
+- 120 words maximum. Shorter is better.
 
 Respond ONLY with a JSON object in this exact shape:
 {
@@ -278,6 +293,15 @@ Respond ONLY with a JSON object in this exact shape:
   "category": "crash | ui_display | performance | login_auth | payments | notifications | location_maps | offers_deals | media_upload | other",
   "severity": "low | medium | high | critical"
 }
+
+WORKED EXAMPLE — this is the level of detail a title-only request should produce:
+
+Input:
+BUG TITLE: App freezes when I apply a coupon at checkout
+SCREEN / FEATURE: Checkout
+
+Output:
+{"description":"What happened: The app froze at checkout right after I applied a coupon. [add what you saw just before it froze]\\n\\nSteps to reproduce:\\n1. Open Checkout\\n2. Enter a coupon code and tap Apply\\n3. [add the step where it froze]\\n\\nExpected result: Discount applies and the total updates.\\n\\nActual result: Screen freezes, taps do nothing.","category":"payments","severity":"high"}
 
 Severity guide: critical = app unusable or data/money lost; high = a core flow is blocked; medium = a feature misbehaves but has a workaround; low = cosmetic or minor.`;
   }
@@ -288,34 +312,103 @@ Severity guide: critical = app unusable or data/money lost; high = a core flow i
     screen?: string;
     category?: BugCategory;
     userNotes?: string;
-    deviceInfo?: BugDeviceInfo;
     refreshSeed?: string;
   }): string {
-    const { title, screen, category, userNotes, deviceInfo, refreshSeed } = params;
+    const { title, screen, category, userNotes, refreshSeed } = params;
 
-    const device = deviceInfo
-      ? [
-          deviceInfo.deviceModel,
-          deviceInfo.platform,
-          deviceInfo.osVersion && `OS ${deviceInfo.osVersion}`,
-          deviceInfo.appVersion && `app ${deviceInfo.appVersion}`,
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
-
+    // deviceInfo is deliberately NOT in this prompt. The model has no use for it
+    // beyond echoing it, and echoing is exactly where it went wrong — a caller's
+    // User-Agent came back as the device model. We append that line ourselves.
     const lines = [
       `BUG TITLE: ${title}`,
       screen ? `SCREEN / FEATURE: ${screen}` : "",
       category ? `USER-SELECTED CATEGORY: ${category}` : "",
-      userNotes ? `NOTES ALREADY WRITTEN BY THE USER (keep every fact from these):\n${userNotes}` : "",
-      device ? `DEVICE: ${device} — add this verbatim as a final "Device:" line.` : "",
+      userNotes
+        ? `NOTES ALREADY WRITTEN BY THE USER (keep every fact from these):\n${userNotes}`
+        : "",
       refreshSeed
-        ? `This is a regenerate request (seed ${refreshSeed}). Reword it differently while keeping the same facts.`
+        ? `This is a regenerate request (seed ${refreshSeed}). Reword it differently while keeping the same facts and the same placeholders.`
         : "",
     ].filter(Boolean);
 
     return `${lines.join("\n")}\n\nWrite the bug description now.`;
+  }
+
+  // ===========================
+  // Device line
+  // ===========================
+
+  /**
+   * Values that are plainly not a device — HTTP clients, browser User-Agent
+   * fragments, URLs. A caller that fills deviceModel from the User-Agent header
+   * would otherwise put "PostmanRuntime/7.56.1" in the bug report.
+   */
+  private static readonly NOT_A_DEVICE =
+    /(mozilla|applewebkit|gecko|chrome\/|safari\/|edg\/|runtime|okhttp|curl|wget|axios|node-fetch|postman|insomnia|python-requests|libwww|dart:io|java\/|go-http)/i;
+
+  private static readonly PLATFORM_LABELS: Record<string, string> = {
+    ios: "iOS",
+    android: "Android",
+    web: "Web",
+    ipados: "iPadOS",
+    macos: "macOS",
+    windows: "Windows",
+  };
+
+  /** A model name a human would recognise: no version slugs, no UA strings. */
+  private static cleanDeviceModel(value?: string): string | undefined {
+    const text = value?.trim();
+    if (!text || text.length > 40) return undefined;
+    if (this.NOT_A_DEVICE.test(text)) return undefined;
+    if (/[<>{}]|https?:\/\//.test(text)) return undefined;
+    if (/\/\s*\d/.test(text)) return undefined; // "Something/7.56.1"
+    return text;
+  }
+
+  /** A version string: has a digit, and nothing exotic. */
+  private static cleanVersion(value?: string): string | undefined {
+    const text = value?.trim();
+    if (!text || text.length > 20) return undefined;
+    if (!/\d/.test(text)) return undefined;
+    if (!/^[\w.\-+ ]+$/.test(text)) return undefined;
+    return text;
+  }
+
+  private static cleanPlatform(value?: string): string | undefined {
+    const key = value?.trim().toLowerCase();
+    if (!key) return undefined;
+    return this.PLATFORM_LABELS[key];
+  }
+
+  /**
+   * Build the "Device:" line ourselves, from validated parts only. Returns
+   * undefined when nothing survives validation — a wrong device line is worse
+   * than none, since it sends triage after the wrong platform.
+   */
+  private static formatDeviceLine(info?: BugDeviceInfo): string | undefined {
+    if (!info) return undefined;
+
+    const platform = this.cleanPlatform(info.platform);
+    const osVersion = this.cleanVersion(info.osVersion);
+    const appVersion = this.cleanVersion(info.appVersion);
+
+    const parts = [
+      this.cleanDeviceModel(info.deviceModel),
+      platform && osVersion ? `${platform} ${osVersion}` : platform,
+      appVersion ? `app ${appVersion}` : undefined,
+    ].filter(Boolean);
+
+    return parts.length ? `Device: ${parts.join(" · ")}` : undefined;
+  }
+
+  /** Drop any Device line the model wrote anyway, so ours is the only one. */
+  private static stripDeviceLine(description: string): string {
+    return description
+      .split("\n")
+      .filter((line) => !/^\s*device\s*:/i.test(line))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   }
 
   // ===========================
@@ -375,7 +468,7 @@ Severity guide: critical = app unusable or data/money lost; high = a core flow i
       };
     }
 
-    if (!this.isMeaningfulTitle(title)) {
+    if (!isMeaningfulPhrase(title)) {
       return {
         ok: false,
         reason: "gibberish",
@@ -385,30 +478,6 @@ Severity guide: critical = app unusable or data/money lost; high = a core flow i
     }
 
     return { ok: true };
-  }
-
-  private static isMeaningfulTitle(title: string): boolean {
-    const cleaned = title.toLowerCase().replace(/[^a-z\s]/g, " ").trim();
-    if (cleaned.replace(/\s/g, "").length < 6) return false;
-
-    const words = cleaned.split(/\s+/).filter(Boolean);
-    // Every "word" must look pronounceable — a vowel and not one letter repeated.
-    const realWords = words.filter(
-      (w) => /[aeiouy]/.test(w) && !/^(.)\1+$/.test(w) && !this.isRepeatedUnit(w),
-    );
-
-    return realWords.length >= 2 || realWords.join("").length >= 8;
-  }
-
-  /** "dsdsds" / "abcabcabc" — a short unit repeated to fake a word. */
-  private static isRepeatedUnit(word: string): boolean {
-    if (word.length < 4) return false;
-    for (let unit = 1; unit <= Math.floor(word.length / 2); unit++) {
-      if (word.length % unit !== 0) continue;
-      const chunk = word.slice(0, unit);
-      if (chunk.repeat(word.length / unit) === word) return true;
-    }
-    return false;
   }
 
   // ===========================
@@ -424,16 +493,7 @@ Severity guide: critical = app unusable or data/money lost; high = a core flow i
   }): GenerateBugDescriptionResponse {
     const { title, appType, category, deviceInfo, notice } = params;
 
-    const device = deviceInfo
-      ? [
-          deviceInfo.deviceModel,
-          deviceInfo.platform,
-          deviceInfo.osVersion && `OS ${deviceInfo.osVersion}`,
-          deviceInfo.appVersion && `app ${deviceInfo.appVersion}`,
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
+    const deviceLine = this.formatDeviceLine(deviceInfo);
 
     const description = [
       "What happened: [describe what you were doing when it went wrong]",
@@ -446,7 +506,7 @@ Severity guide: critical = app unusable or data/money lost; high = a core flow i
       "Expected result: [what you expected to see]",
       "",
       "Actual result: [what you saw instead]",
-      device ? `\nDevice: ${device}` : "",
+      deviceLine ? `\n${deviceLine}` : "",
     ]
       .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
       .join("\n")
