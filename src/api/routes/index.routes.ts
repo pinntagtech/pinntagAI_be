@@ -12,8 +12,6 @@ import { facebookRoutes } from "./facebook.routes.js";
 import checkInRoutes from "./checkIn.routes.js";
 import contentAssistRoutes from "./contentAssist.routes.js";
 import demoTemplateRoutes from "./demoTemplate.routes.js";
-import bugReportRoutes from "./bugReport.routes.js";
-import broadcastAssistRoutes from "./broadcastAssist.routes.js";
 
 // Import your route modules here
 // Example:
@@ -36,8 +34,6 @@ router.use("/facebook", facebookRoutes);
 router.use("/checkin", checkInRoutes);
 router.use("/content-assist", contentAssistRoutes);
 router.use("/demo-templates", demoTemplateRoutes);
-router.use("/bug-report", bugReportRoutes);
-router.use("/broadcast-assist", broadcastAssistRoutes);
 
 // Setup global event handlers
 etlService.on("jobUpdate", (update) => {
