@@ -1,10 +1,13 @@
-import OpenAI from "openai";
 import { logger } from "../../utils/logger.js";
 import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
 import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
 import { ApiError } from "../controllers/controller.utils.js";
-import { openai } from "../../utils/openai.js";
+import {
+  AGENT_MODEL,
+  resolveAgentInstructions,
+  runAgentPrompt,
+} from "../../utils/agentRuntime.js";
 
 // ===========================
 // Types
@@ -65,33 +68,14 @@ export class CheckInService {
         "Generating check-in titles from business metadata",
       );
 
-      // Create a thread for this conversation
-      const thread = await openai.beta.threads.create();
-
-      // Add the message
-      await openai.beta.threads.messages.create(thread.id, {
-        role: "user",
-        content: prompt,
+      // One Responses call replaces the thread/message/run/poll sequence.
+      const result = await runAgentPrompt({
+        instructions: resolveAgentInstructions(businessAI),
+        input: prompt,
+        vectorStoreId: businessAI.vectorStoreId,
       });
 
-      // Run with the business assistant
-      const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: businessAI.assistantId,
-      });
-
-      // Poll until completion
-      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
-
-      // Get the response
-      const messages = await openai.beta.threads.messages.list(thread.id, {
-        limit: 10,
-      });
-
-      const lastMessage = messages.data.find((m) => m.role === "assistant");
-      const responseText =
-        lastMessage?.content
-          ?.map((c) => (c.type === "text" ? c.text.value : ""))
-          .join("\n") ?? "";
+      const responseText = result.text;
 
       // Parse the response
       const suggestions = this.parseTitleSuggestions(responseText, count);
@@ -101,14 +85,13 @@ export class CheckInService {
         businessId,
         type: UsageType.CONTENT_GENERATION,
         subType: "check_in_titles",
-        promptTokens: finalRun.usage?.prompt_tokens || 0,
-        completionTokens: finalRun.usage?.completion_tokens || 0,
-        totalTokens: finalRun.usage?.total_tokens || 0,
-        model: "gpt-4o",
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
+        model: AGENT_MODEL,
         success: true,
         metadata: {
-          threadId: thread.id,
-          runId: finalRun.id,
+          responseId: result.responseId,
           suggestionsCount: suggestions.length,
         },
       });
@@ -251,39 +234,4 @@ CRITICAL:
     return defaults.slice(0, count);
   }
 
-  /**
-   * Poll until the run is complete
-   */
-  private static async pollRunUntilComplete(
-    threadId: string,
-    runId: string,
-    maxAttempts: number = 30,
-  ): Promise<OpenAI.Beta.Threads.Runs.Run> {
-    let attempts = 0;
-    while (attempts < maxAttempts) {
-      const run = await openai.beta.threads.runs.retrieve(runId, {
-        thread_id: threadId,
-      });
-
-      if (run.status === "completed") {
-        return run;
-      }
-
-      if (
-        run.status === "failed" ||
-        run.status === "cancelled" ||
-        run.status === "expired"
-      ) {
-        throw new Error(
-          `Run ${run.status}: ${run.last_error?.message || "Unknown error"}`,
-        );
-      }
-
-      // Wait before polling again
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    throw new Error("Run timed out");
-  }
 }

@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import mongoose from "mongoose";
 import { logger } from "../../utils/logger.js";
 import { BusinessAIAssistantModel } from "../../models/businessAIAssistant.model.js";
@@ -11,10 +10,14 @@ import {
   containsProfanity,
 } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
-import { openai } from "../../utils/openai.js";
+import {
+  AGENT_MODEL,
+  resolveAgentInstructions,
+  runAgentPrompt,
+} from "../../utils/agentRuntime.js";
 // Plain chat completions go through the LLM facade so they're portable to a
-// self-hosted model. The Assistants/Threads calls below stay on `openai`
-// directly — they're OpenAI-specific and not yet portable (see MAINTAINER_NOTES).
+// self-hosted model. Business-agent generation goes through agentRuntime, which
+// runs on the Responses API (the Assistants API this used to call was sunset).
 import { llm } from "../../utils/llm.js";
 
 // ===========================
@@ -167,6 +170,10 @@ interface ContentGenerationContext {
   businessSubCategories: string[];
   businessTags: string[];
   assistantId: string;
+  /** System prompt for this business, resolved from the stored agent doc. */
+  instructions: string;
+  /** Backs the file_search tool when the business has an indexed knowledge base. */
+  vectorStoreId?: string;
   brandVoice?: string[];
   targetAudience?: string[];
 }
@@ -249,6 +256,8 @@ export class ContentAssistService {
       businessSubCategories: businessAI.subCategories || [],
       businessTags: businessAI.tags || [],
       assistantId: businessAI.assistantId,
+      instructions: resolveAgentInstructions(businessAI),
+      vectorStoreId: businessAI.vectorStoreId,
       brandVoice: Array.isArray(responseMap.get("brand_voice"))
         ? (responseMap.get("brand_voice") as string[])
         : typeof responseMap.get("brand_voice") === "string" && responseMap.get("brand_voice")
@@ -284,30 +293,14 @@ export class ContentAssistService {
         "Generating content titles"
       );
 
-      // Create thread and run with business assistant
-      const thread = await openai.beta.threads.create();
-
-      await openai.beta.threads.messages.create(thread.id, {
-        role: "user",
-        content: prompt,
+      // One Responses call replaces the thread/message/run/poll sequence.
+      const result = await runAgentPrompt({
+        instructions: context.instructions,
+        input: prompt,
+        vectorStoreId: context.vectorStoreId,
       });
 
-      const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: context.assistantId,
-      });
-
-      // Poll until completion
-      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
-
-      // Get response
-      const messages = await openai.beta.threads.messages.list(thread.id, {
-        limit: 10,
-      });
-      const lastMessage = messages.data.find((m) => m.role === "assistant");
-      const responseText =
-        lastMessage?.content
-          ?.map((c) => (c.type === "text" ? c.text.value : ""))
-          .join("\n") ?? "";
+      const responseText = result.text;
 
       // Parse titles
       const titles = this.parseTitleSuggestions(responseText, count, contentType);
@@ -317,14 +310,13 @@ export class ContentAssistService {
         businessId: context.businessId,
         type: UsageType.CONTENT_GENERATION,
         subType: `content_assist_titles_${contentType}`,
-        promptTokens: finalRun.usage?.prompt_tokens || 0,
-        completionTokens: finalRun.usage?.completion_tokens || 0,
-        totalTokens: finalRun.usage?.total_tokens || 0,
-        model: "gpt-4o",
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
+        model: AGENT_MODEL,
         success: true,
         metadata: {
-          threadId: thread.id,
-          runId: finalRun.id,
+          responseId: result.responseId,
           contentType,
           category,
           subCategory,
@@ -387,30 +379,14 @@ export class ContentAssistService {
         "Generating content description"
       );
 
-      // Create thread and run with business assistant
-      const thread = await openai.beta.threads.create();
-
-      await openai.beta.threads.messages.create(thread.id, {
-        role: "user",
-        content: prompt,
+      // One Responses call replaces the thread/message/run/poll sequence.
+      const result = await runAgentPrompt({
+        instructions: context.instructions,
+        input: prompt,
+        vectorStoreId: context.vectorStoreId,
       });
 
-      const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: context.assistantId,
-      });
-
-      // Poll until completion
-      const finalRun = await this.pollRunUntilComplete(thread.id, run.id);
-
-      // Get response
-      const messages = await openai.beta.threads.messages.list(thread.id, {
-        limit: 10,
-      });
-      const lastMessage = messages.data.find((m) => m.role === "assistant");
-      const responseText =
-        lastMessage?.content
-          ?.map((c) => (c.type === "text" ? c.text.value : ""))
-          .join("\n") ?? "";
+      const responseText = result.text;
 
       // Parse description
       const description = this.parseDescription(responseText);
@@ -420,14 +396,13 @@ export class ContentAssistService {
         businessId: context.businessId,
         type: UsageType.CONTENT_GENERATION,
         subType: `content_assist_description_${contentType}`,
-        promptTokens: finalRun.usage?.prompt_tokens || 0,
-        completionTokens: finalRun.usage?.completion_tokens || 0,
-        totalTokens: finalRun.usage?.total_tokens || 0,
-        model: "gpt-4o",
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
+        model: AGENT_MODEL,
         success: true,
         metadata: {
-          threadId: thread.id,
-          runId: finalRun.id,
+          responseId: result.responseId,
           contentType,
           category,
           subCategory,
@@ -831,42 +806,6 @@ PURPOSE: Reinforce loyalty and motivate continued engagement through earn-and-re
     }
 
     return description || this.getFallbackDescription("offer", "");
-  }
-
-  /**
-   * Poll until the run is complete
-   */
-  private static async pollRunUntilComplete(
-    threadId: string,
-    runId: string,
-    maxAttempts: number = 30
-  ): Promise<OpenAI.Beta.Threads.Runs.Run> {
-    let attempts = 0;
-    while (attempts < maxAttempts) {
-      const run = await openai.beta.threads.runs.retrieve(runId, {
-        thread_id: threadId,
-      });
-
-      if (run.status === "completed") {
-        return run;
-      }
-
-      if (
-        run.status === "failed" ||
-        run.status === "cancelled" ||
-        run.status === "expired"
-      ) {
-        throw new Error(
-          `Run ${run.status}: ${run.last_error?.message || "Unknown error"}`
-        );
-      }
-
-      // Wait before polling again
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    throw new Error("Run timed out");
   }
 
   /**

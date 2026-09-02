@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { openai } from "../../utils/openai.js";
 import fs from "node:fs";
 import mongoose from "mongoose";
@@ -27,6 +26,14 @@ import { UsageTrackingService } from "./usageTracking.service.js";
 import { UsageType } from "../../models/aiUsage.model.js";
 import { filterInappropriateTags } from "../../utils/contentModeration.utils.js";
 import { ApiError } from "../controllers/controller.utils.js";
+import {
+  AGENT_MODEL,
+  ASSISTANT_INSTRUCTIONS,
+  buildAgentInstructions,
+  localAssistantId,
+  resolveAgentInstructions,
+  runAgentPrompt,
+} from "../../utils/agentRuntime.js";
 
 // ===========================
 // Types & Constants
@@ -46,37 +53,26 @@ export type Business = {
 };
 
 
-const ASSISTANT_INSTRUCTIONS = `
-You are the AI for the PinnTag Business app. You MUST restrict all discussions to app-relevant topics:
-- Creating/managing offers, events, promotions
-- Business onboarding, locations, schedules, pricing in-app
-- App how-to, account/billing (PinnTag), analytics, notifications
-- Integrations specifically related to PinnTag (Stripe/IAP status, etc.)
-
-Hard refusals (do NOT answer; give a short refusal + suggest an allowed topic):
-- Politics, news, elections, government policy
-- Religion, ideology debates, adult content
-- Personal legal/medical/financial advice unrelated to app usage
-- Anything not directly about PinnTag or the business’s use of it
-
-Refusal style:
-- 1 concise sentence: "I can't help with that here. I can help you with [allowed areas]."
-- Never provide partial answers to disallowed topics.
-`;
 
 // ===========================
 // Helper Functions
 // ===========================
 
 /**
- * Routes tool calls from the OpenAI assistant to appropriate backend services
+ * Routes tool calls from the business agent to appropriate backend services.
+ *
+ * Shape changed with the Responses API migration: a function call is now a flat
+ * `{ name, arguments, call_id }` item rather than the Assistants API's nested
+ * `toolCall.function.*`. The routing itself is unchanged.
  */
-async function toolRouter(toolCall: any): Promise<string> {
-  switch (toolCall.function.name) {
+async function toolRouter(toolCall: {
+  name: string;
+  arguments: string;
+  call_id: string;
+}): Promise<string> {
+  switch (toolCall.name) {
     case "getActiveOffers": {
-      const { businessId, limit } = JSON.parse(
-        toolCall.function.arguments || "{}"
-      );
+      const { businessId, limit } = JSON.parse(toolCall.arguments || "{}");
       const offers = await fetch(
         `${process.env.BACKEND_URL}/offers?businessId=${businessId}&limit=${
           limit ?? 5
@@ -86,7 +82,7 @@ async function toolRouter(toolCall: any): Promise<string> {
     }
     case "createEventDraft": {
       const { businessId, title, date } = JSON.parse(
-        toolCall.function.arguments || "{}"
+        toolCall.arguments || "{}"
       );
       const result = await fetch(`${process.env.BACKEND_URL}/events`, {
         method: "POST",
@@ -97,46 +93,6 @@ async function toolRouter(toolCall: any): Promise<string> {
     }
     default:
       return "{}";
-  }
-}
-
-/**
- * Polls an OpenAI assistant run until completion, handling tool calls
- */
-async function pollRunUntilComplete(
-  threadId: string,
-  runId: string
-): Promise<void> {
-  while (true) {
-    const run = await openai.beta.threads.runs.retrieve(runId, {
-      thread_id: threadId,
-    });
-
-    if (
-      run.status === "requires_action" &&
-      run.required_action?.submit_tool_outputs?.tool_calls
-    ) {
-      const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-      const outputs = await Promise.all(
-        toolCalls.map(async (tc) => ({
-          tool_call_id: tc.id,
-          output: await toolRouter(tc),
-        }))
-      );
-
-      await openai.beta.threads.runs.submitToolOutputs(runId, {
-        thread_id: threadId,
-        tool_outputs: outputs,
-      });
-    } else if (run.status === "completed") {
-      break;
-    } else if (["failed", "cancelled", "expired"].includes(run.status)) {
-      throw new Error(`Run ended with status: ${run.status}`);
-    }
-
-    await new Promise((resolve) => {
-      setTimeout(resolve, 400);
-    });
   }
 }
 
@@ -169,78 +125,30 @@ async function createBusinessAgent(biz: Business) {
       name: `${biz.name} Knowledge`,
     });
 
-    // 2) Create the assistant with biz-specific instructions + tools
-    let assistant;
-    assistant = await openai.beta.assistants.create({
-      name: `${biz.name}`,
-      model: "gpt-4o", // or gpt-4.1 / gpt-4o-mini depending on cost/latency
-      instructions: [
-        `You are the AI agent for ${biz.name}.`,
-        `Your knowledge is based on the following information about the business:`,
-        `Name: ${biz.name}`,
-        `Description: ${biz.description ?? "Not provided"}`,
-        `Tags: ${biz.tags?.join(", ") ?? "Not provided"}`,
-        `Category: ${biz.category ?? "Not provided"}`,
-        `Subcategories: ${biz.subCategories?.join(", ") ?? "Not provided"}`,
-        `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
-        `Tone: ${biz.tone ?? "professional, warm, succinct"}.`,
-        `If you don't know, say so briefly and ask for missing info.`,
-        `Use the provided tools to fetch live data from the business backend when relevant.`,
-        `${ASSISTANT_INSTRUCTIONS}`,
-      ].join("\n"),
-      tools: [
-        // A function tool that lets the agent call your backend (examples)
-        // {
-        //   type: "function",
-        //   function: {
-        //     name: "getActiveOffers",
-        //     description: "Fetch current offers for this business",
-        //     parameters: {
-        //       type: "object",
-        //       properties: {
-        //         businessId: { type: "string" },
-        //         limit: { type: "number" },
-        //       },
-        //       required: ["businessId"],
-        //     },
-        //   },
-        // },
-        // {
-        //   type: "function",
-        //   function: {
-        //     name: "createEventDraft",
-        //     description: "Create an event draft in the business system",
-        //     parameters: {
-        //       type: "object",
-        //       properties: {
-        //         businessId: { type: "string" },
-        //         title: { type: "string" },
-        //         date: { type: "string", description: "ISO 8601 date" },
-        //       },
-        //       required: ["businessId", "title", "date"],
-        //     },
-        //   },
-        // },
-      ],
-      // Connect the vector store for retrieval (you can attach later too)
-      tool_resources: {
-        file_search: {
-          vector_store_ids: [vectorStore.id],
-        },
-      },
+    // 2) Build the agent's instructions.
+    // Under the Assistants API these lived on a remote assistant object. That
+    // API is gone, so instructions are stored here and sent on every request.
+    const instructions = buildAgentInstructions({
+      businessName: biz.name,
+      name: biz.name,
+      description: biz.description,
+      tags: biz.tags,
+      category: biz.category,
+      subCategories: biz.subCategories,
+      tone: biz.tone,
     });
 
-    const thread = await openai.beta.threads.create();
-    //   await openai.beta.threads.messages.create(thread.id, {
-    //   role: "user",
-    //   content: userMessage,
-    //   });
+    // `assistantId` is now a local identifier, not a remote handle. It is still
+    // the codebase-wide gate for "this business has an agent", so we keep it
+    // populated and unique per business.
+    const assistantId = localAssistantId(biz.businessId);
 
     // 3) Persist ids for future use
     const businessAgent = await BusinessAIAssistantModel.create({
       businessId: new mongoose.Types.ObjectId(biz.businessId),
-      assistantId: assistant.id,
-      // vectorStoreId: vectorStore.id,
+      assistantId,
+      vectorStoreId: vectorStore.id,
+      instructions,
       businessName: biz.businessName,
       name: biz.name,
       description: biz.description,
@@ -249,7 +157,6 @@ async function createBusinessAgent(biz: Business) {
       subCategories: biz.subCategories,
       tone: biz.tone,
       website: biz.website,
-      threadId: thread.id,
     });
 
     // 4) Scrape website in background if website is provided
@@ -277,10 +184,26 @@ async function createBusinessAgent(biz: Business) {
         businessId: biz.businessId,
       });
 
-      // Update the business agent with the generated description
+      // Update the business agent with the generated description. Instructions
+      // are refreshed alongside it: they are the live system prompt now, so
+      // leaving them pinned to the pre-description text would strand every
+      // future generation on an incomplete profile.
       await BusinessAIAssistantModel.updateOne(
         { businessId: new mongoose.Types.ObjectId(biz.businessId) },
-        { $set: { description } }
+        {
+          $set: {
+            description,
+            instructions: buildAgentInstructions({
+              businessName: biz.name,
+              name: biz.name,
+              description,
+              tags: biz.tags,
+              category: biz.category,
+              subCategories: biz.subCategories,
+              tone: biz.tone,
+            }),
+          },
+        }
       );
 
       logger.info(
@@ -297,9 +220,9 @@ async function createBusinessAgent(biz: Business) {
 
     return {
       business_assistant_id: businessAgent.id,
-      assistantId: assistant.id,
+      assistantId,
       description,
-      // vectorStoreId: vectorStore.id
+      vectorStoreId: vectorStore.id,
     };
   } catch (err: any) {
     // If the OpenAI SDK throws an HTTP error, try to extract status/body
@@ -310,11 +233,11 @@ async function createBusinessAgent(biz: Business) {
         body: err?.response?.data || err?.response?.body || err?.body,
         stack: err?.stack,
       },
-      "OpenAI assistant.create failed"
+      "Business agent creation failed"
     );
     // rethrow a clearer error for upstream logging / client
     const re = new Error(
-      `OpenAI assistant creation failed${
+      `Business agent creation failed${
         err?.status ? ` (status ${err.status})` : ""
       }: ${err?.message ?? "unknown"}`
     ) as Error & { cause: any };
@@ -381,49 +304,42 @@ async function getBusinessAssistant(
 }
 
 /**
- * Creates a thread and chats with the business assistant
+ * Runs a single-turn chat against a business agent.
+ *
+ * Looks the agent up by `assistantId` so both legacy Assistants API ids
+ * (`asst_...`) already stored in Mongo and locally-minted ids keep resolving.
+ * Returns `threadId` for wire-compatibility with the existing
+ * `POST /ai/ask-business` response shape — it now carries the Responses id.
+ * Nothing round-trips it; this service has never had conversation memory.
  */
 async function chatWithAssistant(
   assistantId: string,
   userMessage: string,
   includeTopicReminder: boolean = false
 ): Promise<{ threadId: string; text: string }> {
-  // Create a new thread
-  const thread = await openai.beta.threads.create();
+  const agent = await BusinessAIAssistantModel.findOne({ assistantId });
 
-  // Optional: reinforce topic restriction at run-time
-  if (includeTopicReminder) {
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "assistant",
-      content: "Reminder: Only app-relevant questions will be answered.",
-    });
+  if (!agent) {
+    throw ApiError.badRequest(
+      "Business assistant not initialized. Please create an agent first.",
+      "ASSISTANT_NOT_FOUND"
+    );
   }
 
-  // Add user message
-  await openai.beta.threads.messages.create(thread.id, {
-    role: "user",
-    content: userMessage,
+  // The topic reminder used to be injected as a priming assistant message on
+  // the thread. With no thread to prime, it belongs on the instructions.
+  const instructions = includeTopicReminder
+    ? `${resolveAgentInstructions(agent)}\n\nReminder: Only app-relevant questions will be answered.`
+    : resolveAgentInstructions(agent);
+
+  const result = await runAgentPrompt({
+    instructions,
+    input: userMessage,
+    vectorStoreId: agent.vectorStoreId,
+    onToolCall: toolRouter,
   });
 
-  // Create and run the assistant
-  const run = await openai.beta.threads.runs.create(thread.id, {
-    assistant_id: assistantId,
-  });
-
-  // Poll until complete
-  await pollRunUntilComplete(thread.id, run.id);
-
-  // Retrieve assistant's response
-  const messages = await openai.beta.threads.messages.list(thread.id, {
-    limit: 10,
-  });
-  const last = messages.data.find((m) => m.role === "assistant");
-  const text =
-    last?.content
-      ?.map((c) => (c.type === "text" ? c.text.value : ""))
-      .join("\n") ?? "";
-
-  return { threadId: thread.id, text };
+  return { threadId: result.responseId, text: result.text };
 }
 
 // ===========================
@@ -504,32 +420,15 @@ export class AIService {
         }
       }
 
-      const updatedInstructions = [
-        `You are the AI agent for ${businessName}.`,
-        `Your knowledge is based on the following information about the business:`,
-        `Name: ${name}`,
-        `Description: ${description}`,
-        `Tags: ${tags.join(", ")}`,
-        `Category: ${category}`,
-        `Subcategories: ${subCategories.join(", ")}`,
-        `Primary goal: help the business engage customers with relevant events/offers and fast answers.`,
-        `Tone: ${
-          (updates.tone as any) ??
-          (agent.tone as any) ??
-          "professional, warm, succinct"
-        }.`,
-        `If you don't know, say so briefly and ask for missing info.`,
-        `Use the provided tools to fetch live data from the business backend when relevant.`,
-        `${ASSISTANT_INSTRUCTIONS}`,
-      ].join("\n");
-
-      const updatedAssistant = await openai.beta.assistants.update(
-        agent.assistantId,
-        {
-          name: updates.name ? `${updates.name}` : undefined,
-          instructions: updatedInstructions,
-        }
-      );
+      const updatedInstructions = buildAgentInstructions({
+        businessName,
+        name,
+        description,
+        tags,
+        category,
+        subCategories,
+        tone: updates.tone ?? agent.tone,
+      });
 
       const updatedAgent = await BusinessAIAssistantModel.findOneAndUpdate(
         { businessId: new mongoose.Types.ObjectId(businessId) },
@@ -551,7 +450,7 @@ export class AIService {
         business_assistant_id: updatedAgent?.id ?? agent.id,
         assistantId: agent.assistantId,
         description,
-        assistant: updatedAssistant,
+        assistant: updatedAgent,
       };
     } catch (error: any) {
       logger.error("Error updating business agent:", error);
@@ -575,10 +474,9 @@ export class AIService {
         businessId
       );
 
-      // Update the agent's knowledge base
-      await openai.beta.assistants.update(agent.assistantId, {
-        instructions: agent.instructions,
-      });
+      // Instructions are already stored on the agent document, which is what
+      // every generation reads. There is no remote assistant to push them to
+      // any more, so training is a no-op beyond confirming the agent exists.
       // Add local files
       // if (localPaths && localPaths.length > 0) {
       //   await AIService.addFilesToVectorStore(
@@ -1224,38 +1122,15 @@ export class AIService {
       );
     }
 
-    // Create a new thread for this generation
-    const thread = await openai.beta.threads.create();
-
-    // Add the generation request
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: prompt,
+    // One Responses call replaces the thread/message/run/poll sequence.
+    const result = await runAgentPrompt({
+      instructions: resolveAgentInstructions(businessAI),
+      input: prompt,
+      vectorStoreId: businessAI.vectorStoreId,
+      onToolCall: toolRouter,
     });
 
-    // Run the assistant
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: businessAI.assistantId,
-    });
-
-    // Poll until complete
-    await pollRunUntilComplete(thread.id, run.id);
-
-    // Get the final run to extract usage
-    const finalRun = await openai.beta.threads.runs.retrieve(run.id, {
-      thread_id: thread.id,
-    });
-
-    // Get the response
-    const messages = await openai.beta.threads.messages.list(thread.id, {
-      limit: 1,
-    });
-
-    const assistantMessage = messages.data.find((m) => m.role === "assistant");
-    const responseText =
-      assistantMessage?.content
-        ?.map((c) => (c.type === "text" ? c.text.value : ""))
-        .join("\n") ?? "";
+    const responseText = result.text;
 
     // Parse JSON from response (extract JSON if wrapped in markdown)
     let jsonContent = responseText;
@@ -1272,12 +1147,12 @@ export class AIService {
         businessId,
         type: UsageType.CONTENT_GENERATION,
         subType: contentType,
-        promptTokens: finalRun.usage?.prompt_tokens || 0,
-        completionTokens: finalRun.usage?.completion_tokens || 0,
-        totalTokens: finalRun.usage?.total_tokens || 0,
-        model: "gpt-4o",
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
+        model: AGENT_MODEL,
         success: true,
-        metadata: { threadId: thread.id, runId: run.id },
+        metadata: { responseId: result.responseId },
       });
 
       logger.info(
@@ -1291,10 +1166,10 @@ export class AIService {
         businessId,
         type: UsageType.CONTENT_GENERATION,
         subType: contentType,
-        promptTokens: finalRun.usage?.prompt_tokens || 0,
-        completionTokens: finalRun.usage?.completion_tokens || 0,
-        totalTokens: finalRun.usage?.total_tokens || 0,
-        model: "gpt-4o",
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        totalTokens: result.usage.totalTokens,
+        model: AGENT_MODEL,
         success: false,
         errorMessage: "Failed to parse JSON response",
       });

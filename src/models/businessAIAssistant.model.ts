@@ -10,13 +10,31 @@ export interface IBusiness_AI_Assistant extends Document {
   tags?: string[];
   name: string;
   vectorStoreId?: string;
+  /**
+   * Local agent identifier. Was an OpenAI Assistants API id (`asst_...`) until
+   * that API was sunset; new agents get a locally-minted `local_<businessId>`.
+   * Nothing dereferences it remotely any more — it is the "this business has an
+   * agent" gate and a stable per-business key. Legacy `asst_...` values are
+   * still honoured on lookup, so no backfill is required.
+   */
   assistantId: string;
   description?: string;
   website?: string;
   websiteData?: string; // Cached website content
   contactEmail?: string;
   metadata?: Record<string, any>;
+  /**
+   * @deprecated Assistants API thread id. Threads no longer exist — generation
+   * is stateless via the Responses API. Kept so existing documents stay
+   * readable; never written, never read.
+   */
   threadId?: string;
+  /**
+   * The agent's system prompt. Previously stored remotely on the Assistant
+   * object; now the source of truth, sent on every generation. May be empty on
+   * documents created before this migration — `resolveAgentInstructions()`
+   * rebuilds from the business fields in that case.
+   */
   instructions?: string;
   facebookPageAccessToken?: string; // Long-lived Facebook page access token
   facebookPageId?: string; // Facebook page ID
