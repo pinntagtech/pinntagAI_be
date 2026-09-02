@@ -2,38 +2,34 @@
 //  reviewChatRateLimit.ts — the bouncer for the consumer review chat
 //
 //  Two independent limits, both counted in Redis:
-//    1. Per session: ${MAX_PER_SESSION} messages total. The frontend sends a
-//       sessionId per chat session (per tab). A new tab = new sessionId = fresh
-//       budget — that's how "resets on tab close" works (the server can't see a
-//       tab close; it just counts per sessionId). No sessionId → this limit is
-//       skipped and only the IP limit applies.
-//    2. Per IP per day: ${MAX_PER_IP_PER_DAY} messages. Resets at local midnight
-//       via an absolute Redis expiry, regardless of when the day's first
-//       request arrived.
+//    1. Per user per day: MAX_PER_USER_PER_DAY messages. Keyed off the JWT's
+//       userId (the consumer app calls this service directly with a Bearer
+//       token; the route is JWT-gated, so req.user is always populated by the
+//       time this middleware runs). Resets at local midnight via an absolute
+//       Redis expiry, regardless of when the day's first message arrived.
+//    2. Per IP per day: MAX_PER_IP_PER_DAY messages. Separate abuse guard for
+//       cases where many fresh accounts share an IP (NAT, lab, attacker pool).
 //
 //  When either limit is exceeded → HTTP 429 with a friendly message.
 //
 //  Fail-open: if Redis is unreachable (counter returns null), we let the
 //  request through. A Redis outage must not take the bot down. Consistent with
 //  the answer cache, which also fails open.
+//
+//  History note: an earlier design used a per-sessionId counter intended to
+//  "reset on tab close" — meaningless on mobile, and easily bypassed by app
+//  relaunch. With JWT-identified requests we now key off userId, which is
+//  what we actually want.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Request, Response, NextFunction } from "express";
-import {
-  incrementWithTtl,
-  incrementWithExpireAt,
-} from "../utils/redis.js";
+import { incrementWithExpireAt } from "../utils/redis.js";
 import { logger } from "../utils/logger.js";
 
-const MAX_PER_SESSION = 20;
+const MAX_PER_USER_PER_DAY = 20;
 const MAX_PER_IP_PER_DAY = 100;
 
-// Safety TTL for session counters so abandoned sessions don't live forever.
-// The session "resets" by getting a new id (new tab), not by time — this is
-// just garbage collection for keys no one will touch again.
-const SESSION_COUNTER_TTL_SECONDS = 24 * 60 * 60;
-
-const SESSION_PREFIX = "reviewchat:rl:session";
+const USER_PREFIX = "reviewchat:rl:user";
 const IP_PREFIX = "reviewchat:rl:ip";
 
 /** First IP in x-forwarded-for, else req.ip. Matches the rest of the app. */
@@ -45,7 +41,18 @@ function resolveIp(req: Request): string {
   );
 }
 
-/** Epoch seconds at the next local midnight — when the daily IP counter resets. */
+/**
+ * userId from the JWT. Codebase uses `userId` everywhere but the typed field
+ * is `id`; the catch-all on PinntagJwtPayload makes both valid at runtime.
+ * Try `userId` first (the common convention here), fall back to `id`.
+ */
+function resolveUserId(req: Request): string | undefined {
+  const u = req.user;
+  if (!u) return undefined;
+  return (u.userId as string | undefined) ?? (u.id as string | undefined);
+}
+
+/** Epoch seconds at the next local midnight — when daily counters reset. */
 function nextLocalMidnightUnix(): number {
   const now = new Date();
   const midnight = new Date(
@@ -60,14 +67,17 @@ function nextLocalMidnightUnix(): number {
   return Math.floor(midnight.getTime() / 1000);
 }
 
-const SESSION_LIMIT_MESSAGE =
-  "You've reached the limit for this chat session. Please start a new chat to continue.";
+const USER_LIMIT_MESSAGE =
+  "You've reached today's limit. Please try again tomorrow.";
 const IP_LIMIT_MESSAGE =
   "You've reached today's limit. Please try again tomorrow.";
 
 /**
  * Express middleware enforcing the two limits. Order: check IP first (the
- * harder daily cap that protects the bill), then session.
+ * abuse guard), then per-user (the per-account cap).
+ *
+ * Assumes verifyPinntagJwt has already run upstream — req.user should be set.
+ * If somehow it isn't, we still apply the IP cap as a baseline guard.
  */
 export async function reviewChatRateLimit(
   req: Request,
@@ -75,12 +85,12 @@ export async function reviewChatRateLimit(
   next: NextFunction,
 ): Promise<void> {
   const ip = resolveIp(req);
-  const sessionId =
-    typeof req.body?.sessionId === "string" ? req.body.sessionId : undefined;
+  const userId = resolveUserId(req);
+  const midnight = nextLocalMidnightUnix();
 
-  // ── Per-IP daily limit ──────────────────────────────────────────────────
+  // ── Per-IP daily limit (abuse guard) ────────────────────────────────────
   const ipKey = `${IP_PREFIX}:${ip}`;
-  const ipCount = await incrementWithExpireAt(ipKey, nextLocalMidnightUnix());
+  const ipCount = await incrementWithExpireAt(ipKey, midnight);
 
   // ipCount === null → Redis unavailable → fail open (skip both limits; we
   // can't count, so we don't block).
@@ -93,22 +103,20 @@ export async function reviewChatRateLimit(
     return;
   }
 
-  // ── Per-session limit ─────────────────────────────────────────────────────
-  // Only when the client supplied a sessionId. No session → IP limit is the
-  // only guard, which is acceptable (the IP cap still protects the bill).
-  if (sessionId && ipCount !== null) {
-    const sessionKey = `${SESSION_PREFIX}:${sessionId}`;
-    const sessionCount = await incrementWithTtl(
-      sessionKey,
-      SESSION_COUNTER_TTL_SECONDS,
-    );
+  // ── Per-user daily limit ─────────────────────────────────────────────────
+  // The route is JWT-gated so userId is normally set. If it's missing, the IP
+  // cap above is the only guard for this request — acceptable for the rare
+  // edge case (e.g. a token that decoded without userId).
+  if (userId && ipCount !== null) {
+    const userKey = `${USER_PREFIX}:${userId}`;
+    const userCount = await incrementWithExpireAt(userKey, midnight);
 
-    if (sessionCount !== null && sessionCount > MAX_PER_SESSION) {
+    if (userCount !== null && userCount > MAX_PER_USER_PER_DAY) {
       logger.info(
-        { sessionId, sessionCount, limit: MAX_PER_SESSION },
-        "Review chat session rate limit hit",
+        { userId, userCount, limit: MAX_PER_USER_PER_DAY },
+        "Review chat user daily rate limit hit",
       );
-      res.status(429).json({ success: false, error: SESSION_LIMIT_MESSAGE });
+      res.status(429).json({ success: false, error: USER_LIMIT_MESSAGE });
       return;
     }
   }

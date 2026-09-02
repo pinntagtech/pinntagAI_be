@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { reviewChatController } from "../controllers/reviewChat.controller.js";
-import { internalApiKeyGuard } from "../../middleware/auth.js";
+import { verifyPinntagJwt } from "../../middleware/jwtAuth.js";
 import { reviewChatRateLimit } from "../../middleware/reviewChatRateLimit.js";
 
 const router = Router();
 
 // ── Routes ───────────────────────────────────────────────────────────────────
+// The consumer app calls this service directly with a pinntag-backend-issued
+// JWT in `Authorization: Bearer <token>`. JWT identifies the user; we no
+// longer use the internal API key on this surface.
 
-router.use(internalApiKeyGuard);
+router.use(verifyPinntagJwt);
 
 /**
  * POST /review-chat/chat
@@ -31,10 +34,11 @@ router.post("/chat", reviewChatRateLimit, (req, res) =>
 /**
  * POST /review-chat/feedback
  * Thumbs up / down on a specific chat answer.
- * Body: { messageId, businessId, userId, rating: "up" | "down",
+ * Body: { messageId, businessId, rating: "up" | "down",
  *         sessionId?, reason?, sources?, abstained? }
- * Re-rating the same message by the same user overwrites the prior rating.
- * Returns 200 on success, 400 on missing/invalid required fields.
+ * userId is taken from the JWT (Authorization: Bearer …) — any `userId` in
+ * the body is ignored. Re-rating the same message by the same user overwrites
+ * the prior rating. Returns 200 on success, 400 on missing/invalid fields.
  */
 router.post("/feedback", (req, res) =>
   reviewChatController.feedback(req, res),
@@ -65,6 +69,27 @@ router.get("/summary/:businessId", (req, res) =>
  */
 router.post("/summary/:businessId/regenerate", (req, res) =>
   reviewChatController.regenerateSummary(req, res)
+);
+
+/**
+ * GET /review-chat/suggestions/:businessId
+ * Conversation-starter chips for the entry screen — 2-4 word questions
+ * relevant to THIS specific business (generated from its profile + reviews
+ * + website content). Cached; refreshed on TTL.
+ * Returns: { success: true, data: { suggestions: string[] } }
+ * Fail-open: returns an empty array on any internal failure so the frontend
+ * can fall back to its own local defaults.
+ */
+router.get("/suggestions/:businessId", (req, res) =>
+  reviewChatController.getSuggestions(req, res),
+);
+
+/**
+ * POST /review-chat/suggestions/:businessId/regenerate
+ * Force-regenerate the chip labels for a business. Ops / after profile change.
+ */
+router.post("/suggestions/:businessId/regenerate", (req, res) =>
+  reviewChatController.regenerateSuggestions(req, res),
 );
 
 export { router as reviewChatRoutes };

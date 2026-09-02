@@ -54,10 +54,24 @@ export interface SlowTimeTemplate {
 }
 
 export interface SlowTimeRecommendations {
+  /**
+   * Mirrors `Business.dailyRecommendationEnabled` on the backend — the
+   * business owner's own switch for slow-time recommendations. When false,
+   * nothing is computed and every template field comes back empty.
+   */
+  recommendationsEnabled: boolean;
+  /** Present only when `recommendationsEnabled` is false — why it was skipped. */
+  disabledReason?: string;
   isSlowTime: boolean;
   footprint: FootprintSnapshot;
   primaryTemplate: SlowTimeTemplate | null;
   alternativeTemplates: SlowTimeTemplate[];
+  /**
+   * AI-generated artwork for `primaryTemplate`, grounded in what the
+   * business actually sells. Undefined when image generation is disabled,
+   * not requested, or could not produce a trustworthy image.
+   */
+  primaryTemplateImageUrl?: string;
 }
 
 const TEMPLATE_LIBRARY: Record<
@@ -502,9 +516,30 @@ function buildTemplate(
   return { ...base, intensity };
 }
 
+/** Zeroed snapshot returned when recommendations are switched off. */
+const DISABLED_FOOTPRINT: FootprintSnapshot = {
+  windowDays: WINDOW_DAYS,
+  ...EMPTY_SUMMARY,
+  engagementRate: 0,
+  baselineBusinessViews: 0,
+  viewsDeltaPct: 0,
+  intensity: "low",
+  signals: [],
+};
+
+export interface GetRecommendationsOptions {
+  /**
+   * Attach artwork for the primary template. Read paths pass `"cached"` so a
+   * dashboard poll never triggers a paid image generation; the refresh job
+   * passes `"generate"`.
+   */
+  image?: "none" | "cached" | "generate";
+}
+
 export class SlowTimeRecommendationService {
   static async getRecommendations(
     businessId: string,
+    options: GetRecommendationsOptions = {},
   ): Promise<SlowTimeRecommendations> {
     if (!mongoose.Types.ObjectId.isValid(businessId)) {
       throw new Error("Invalid businessId format");
@@ -513,13 +548,44 @@ export class SlowTimeRecommendationService {
     let hasSlowTimeConfigured = false;
     let businessLocation: { lat: number; lng: number } | null = null;
     let eventIds: mongoose.Types.ObjectId[] = [];
+    // Fails closed: unless we positively read consent from the backend, no
+    // recommendations are produced.
+    let recommendationsEnabled = false;
+    const unreadableConsentReason =
+      "Could not read the business's recommendation preference";
 
     try {
       const backendConn = await getBackendConnection();
       const BusinessModel = getBackendBusinessModel(backendConn);
       const business = await BusinessModel.findById(businessId)
-        .select("slowTime latitude longitude")
+        .select("slowTime latitude longitude dailyRecommendationEnabled")
         .lean();
+
+      if (!business) {
+        return {
+          recommendationsEnabled: false,
+          disabledReason: "Business not found",
+          isSlowTime: false,
+          footprint: DISABLED_FOOTPRINT,
+          primaryTemplate: null,
+          alternativeTemplates: [],
+        };
+      }
+
+      recommendationsEnabled =
+        (business as any).dailyRecommendationEnabled === true;
+      if (!recommendationsEnabled) {
+        return {
+          recommendationsEnabled: false,
+          disabledReason:
+            "Daily recommendations are turned off for this business",
+          isSlowTime: false,
+          footprint: DISABLED_FOOTPRINT,
+          primaryTemplate: null,
+          alternativeTemplates: [],
+        };
+      }
+
       hasSlowTimeConfigured = !!(business as any)?.slowTime?.startTime;
       const lat = (business as any)?.latitude;
       const lng = (business as any)?.longitude;
@@ -542,6 +608,18 @@ export class SlowTimeRecommendationService {
         { businessId, err: (err as Error).message },
         "Could not read business context for slow-time recs",
       );
+      // Consent unread → nothing is produced. Only the event lookup is
+      // allowed to fail softly, and by then consent is already confirmed.
+      if (!recommendationsEnabled) {
+        return {
+          recommendationsEnabled: false,
+          disabledReason: unreadableConsentReason,
+          isSlowTime: false,
+          footprint: DISABLED_FOOTPRINT,
+          primaryTemplate: null,
+          alternativeTemplates: [],
+        };
+      }
     }
 
     // Pull training-side categorical answers (slow_periods, busiest_days).
@@ -663,11 +741,51 @@ export class SlowTimeRecommendationService {
         ? ordered.slice(1).map((occ) => buildTemplate(occ, intensity))
         : [];
 
+    const primaryTemplateImageUrl = await resolveTemplateImage(
+      businessId,
+      primary,
+      options.image ?? "none",
+    );
+
     return {
+      recommendationsEnabled: true,
       isSlowTime,
       footprint,
       primaryTemplate: primary,
       alternativeTemplates: alternatives,
+      ...(primaryTemplateImageUrl ? { primaryTemplateImageUrl } : {}),
     };
+  }
+}
+
+/**
+ * Attach artwork to the primary template. Image work is best-effort — a
+ * missing image never blocks the recommendation itself.
+ */
+async function resolveTemplateImage(
+  businessId: string,
+  template: SlowTimeTemplate | null,
+  mode: NonNullable<GetRecommendationsOptions["image"]>,
+): Promise<string | undefined> {
+  if (!template || mode === "none") return undefined;
+
+  try {
+    const { SlowTimeImageService } = await import("./slowTimeImage.service.js");
+
+    if (mode === "cached") {
+      return SlowTimeImageService.getCachedImage(businessId, template.occasion);
+    }
+
+    const result = await SlowTimeImageService.getOrCreateImage(
+      businessId,
+      template,
+    );
+    return result?.imageUrl;
+  } catch (err) {
+    logger.warn(
+      { businessId, err: (err as Error).message },
+      "Could not resolve slow-time template image",
+    );
+    return undefined;
   }
 }

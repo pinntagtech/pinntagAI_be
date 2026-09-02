@@ -97,9 +97,10 @@ export class JobScheduler {
     );
 
     // Schedule hourly slow-time template refresh
-    // Runs at the top of every hour for businesses opted in via
-    // BusinessAIAssistant.enableAutoSlowTimeTemplates. Updates the slow-time
-    // deal template in place based on user_footprint signals.
+    // Runs at the top of every hour for businesses whose owner enabled
+    // Business.dailyRecommendationEnabled in the backend. Updates the
+    // slow-time deal template (and its artwork) in place based on
+    // user_footprint signals.
     this.scheduleJob(
       "slow-time-template-refresh",
       "0 * * * *", // Cron expression: At minute 0 of every hour

@@ -55,18 +55,18 @@ interface AIAnalysisResult {
   ticketUrl?: string | null;
   // Legacy field for backward compatibility
   category?:
-    | "promotion"
-    | "event"
-    | "product"
-    | "service"
-    | "announcement"
-    | "other";
+  | "promotion"
+  | "event"
+  | "product"
+  | "service"
+  | "announcement"
+  | "other";
 }
 
 const AI_MODEL_NAME = "gpt-4o"; // OpenAI GPT-4o supports vision/multimodal
 
 export class FacebookService {
-  constructor() {}
+  constructor() { }
 
   /**
    * Generates the Facebook Login URL for the user to authenticate
@@ -200,7 +200,7 @@ export class FacebookService {
       try {
         const pageInfoConfig = {
           method: "get",
-          url: `https://graph.facebook.com/v24.0/me?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+          url: `https://graph.facebook.com/v24.0/me?fields=id,name,category,about,description,followers_count,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
         };
 
         const pageInfoResponse = await axios.request(pageInfoConfig);
@@ -274,21 +274,21 @@ export class FacebookService {
         const facebookMetaData =
           resolvedPageId && pageMetadata
             ? {
-                pageId: resolvedPageId,
-                pageAccessToken: longLivedToken,
-                tokenExpiresAt: expiresAt,
-                pageInfo: {
-                  name: pageMetadata.name,
-                  about: pageMetadata.about,
-                  category: pageMetadata.category,
-                  followers: pageMetadata.followers,
-                  website: pageMetadata.website,
-                  phone: pageMetadata.phone,
-                  email: pageMetadata.email,
-                  profilePicture: pageMetadata.profilePicture,
-                  coverPhoto: pageMetadata.coverPhoto,
-                },
-              }
+              pageId: resolvedPageId,
+              pageAccessToken: longLivedToken,
+              tokenExpiresAt: expiresAt,
+              pageInfo: {
+                name: pageMetadata.name,
+                about: pageMetadata.about,
+                category: pageMetadata.category,
+                followers: pageMetadata.followers,
+                website: pageMetadata.website,
+                phone: pageMetadata.phone,
+                email: pageMetadata.email,
+                profilePicture: pageMetadata.profilePicture,
+                coverPhoto: pageMetadata.coverPhoto,
+              },
+            }
             : undefined;
 
         const updateData: any = {
@@ -355,16 +355,16 @@ export class FacebookService {
             pageId: resolvedPageId || null,
             pageMetadata: pageMetadata
               ? {
-                  name: pageMetadata.name,
-                  category: pageMetadata.category,
-                  about: pageMetadata.about,
-                  followers: pageMetadata.followers,
-                  website: pageMetadata.website,
-                  phone: pageMetadata.phone,
-                  email: pageMetadata.email,
-                  profilePicture: pageMetadata.profilePicture,
-                  coverPhoto: pageMetadata.coverPhoto,
-                }
+                name: pageMetadata.name,
+                category: pageMetadata.category,
+                about: pageMetadata.about,
+                followers: pageMetadata.followers,
+                website: pageMetadata.website,
+                phone: pageMetadata.phone,
+                email: pageMetadata.email,
+                profilePicture: pageMetadata.profilePicture,
+                coverPhoto: pageMetadata.coverPhoto,
+              }
               : null,
           },
         };
@@ -381,16 +381,16 @@ export class FacebookService {
           pageId: resolvedPageId || null,
           pageMetadata: pageMetadata
             ? {
-                name: pageMetadata.name,
-                category: pageMetadata.category,
-                about: pageMetadata.about,
-                followers: pageMetadata.followers,
-                website: pageMetadata.website,
-                phone: pageMetadata.phone,
-                email: pageMetadata.email,
-                profilePicture: pageMetadata.profilePicture,
-                coverPhoto: pageMetadata.coverPhoto,
-              }
+              name: pageMetadata.name,
+              category: pageMetadata.category,
+              about: pageMetadata.about,
+              followers: pageMetadata.followers,
+              website: pageMetadata.website,
+              phone: pageMetadata.phone,
+              email: pageMetadata.email,
+              profilePicture: pageMetadata.profilePicture,
+              coverPhoto: pageMetadata.coverPhoto,
+            }
             : null,
         },
       };
@@ -449,8 +449,8 @@ export class FacebookService {
   //     // Step 2: Fetch comprehensive page metadata
   //     const pageInfoConfig = {
   //       method: "get",
-  //       url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
-  //       // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture{url},cover{source}&access_token=${pageAccessToken}`,
+  //       url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
+  //       // url: `https://graph.facebook.com/v24.0/${pageId}?fields=id,name,category,about,description,followers_count,website,phone,emails,picture.type(large){url},cover{source}&access_token=${pageAccessToken}`,
   //     };
 
   //     const pageInfoResponse = await axios.request(pageInfoConfig);
@@ -610,7 +610,7 @@ export class FacebookService {
         `https://graph.facebook.com/v24.0/me/accounts`,
         {
           params: {
-            fields: "id,name,access_token,tasks",
+            fields: "id,name,access_token,tasks,picture.type(large){url},cover{source}",
             access_token: userAccessToken,
           },
         },
@@ -683,9 +683,14 @@ export class FacebookService {
         website: null,
         phone: null,
         email: null,
-        profilePicture: null,
-        coverPhoto: null,
-        rawData: { id: pageId, name: pageName },
+        profilePicture: firstPage.picture?.data?.url || null,
+        coverPhoto: firstPage.cover?.source || null,
+        rawData: {
+          id: pageId,
+          name: pageName,
+          picture: firstPage.picture,
+          cover: firstPage.cover,
+        },
       };
 
       // ---- Step 3: persist to AI assistant DB ----------------------------------
@@ -726,8 +731,8 @@ export class FacebookService {
         facebookPageWebsite: null,
         facebookPagePhone: null,
         facebookPageEmail: null,
-        facebookPageProfilePicture: null,
-        facebookPageCoverPhoto: null,
+        facebookPageProfilePicture: pageMetadata.profilePicture,
+        facebookPageCoverPhoto: pageMetadata.coverPhoto,
         facebookPageMetadata: pageMetadata.rawData,
         isFacebookConnected: true,
         facebookMetaData,
@@ -927,7 +932,7 @@ export class FacebookService {
     message: string,
     mediaIds: Array<string>,
   ) {
-    const data: { message: string; [key: string]: string } = {
+    const data: { message: string;[key: string]: string } = {
       message,
     };
     if (mediaIds.length > 0) {
@@ -1141,12 +1146,12 @@ export class FacebookService {
               title: item.title,
               schedule: item.schedule
                 ? {
-                    startDate: item.schedule.startDate,
-                    endDate: item.schedule.endDate,
-                    startTime: item.schedule.startTime,
-                    endTime: item.schedule.endTime,
-                    isRecurring: item.schedule.isRecurring || false,
-                  }
+                  startDate: item.schedule.startDate,
+                  endDate: item.schedule.endDate,
+                  startTime: item.schedule.startTime,
+                  endTime: item.schedule.endTime,
+                  isRecurring: item.schedule.isRecurring || false,
+                }
                 : undefined,
               ticketUrl: item.ticketUrl || null,
               category: item.metadata.aiCategory || "event",
@@ -1435,8 +1440,7 @@ export class FacebookService {
               const title =
                 aiAnalysis?.title ||
                 post.message?.substring(0, 50) ||
-                `${
-                  eventType.charAt(0).toUpperCase() + eventType.slice(1)
+                `${eventType.charAt(0).toUpperCase() + eventType.slice(1)
                 } from Post`;
 
               // Extract images
@@ -1806,9 +1810,8 @@ export class FacebookService {
         PRIMARY USE CASE: Extract EVENTS and DEALS from business Facebook posts and transform them into a unified event format.
         Posts with event flyers, promotional images, or deal announcements (even without text messages) are highly valuable.
 
-        ${
-          imageUrls.length > 0
-            ? `
+        ${imageUrls.length > 0
+          ? `
         ⚠️ CRITICAL: IMAGE ANALYSIS WITH OCR ⚠️
         This post has ${imageUrls.length} image(s) attached. You MUST analyze the images FIRST and READ ANY TEXT IN THE IMAGES.
 
@@ -1839,7 +1842,7 @@ export class FacebookService {
         - Common patterns: eventbrite.com, ticketmaster.com, "register at", "book at", "RSVP"
         - Extract any URL that appears to be for tickets, bookings, or registration
         `
-            : `
+          : `
         GENERATE A TITLE:
         - Create a descriptive title from the post message/caption (5-10 words max)
         - For offers/deals: Include the key value proposition
@@ -1854,8 +1857,7 @@ export class FacebookService {
         - Has Media: ${postData.hasMedia}
         - Media Types: ${postData.mediaTypes.join(", ")}
         - Number of Images: ${imageUrls.length}
-        - Engagement: ${postData.reactionsCount} reactions, ${
-          postData.commentsCount
+        - Engagement: ${postData.reactionsCount} reactions, ${postData.commentsCount
         } comments, ${postData.sharesCount} shares
         - Attachment Descriptions: ${postData.attachmentDescriptions.join(
           " | ",
@@ -2349,11 +2351,11 @@ export class FacebookService {
         mongoose.Types.ObjectId.isValid(postId) && postId.length === 24;
       const filter = isObjectId
         ? {
-            $or: [
-              { _id: postId, businessId },
-              { postId, businessId },
-            ],
-          }
+          $or: [
+            { _id: postId, businessId },
+            { postId, businessId },
+          ],
+        }
         : { postId, businessId };
 
       const updatedPost = await FacebookPostModel.findOneAndUpdate(

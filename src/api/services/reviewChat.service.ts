@@ -29,7 +29,20 @@ import {
   IReview,
   ReviewStatus,
 } from "../../models/pinntagBackend/review.model.js";
-import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
+import {
+  getBackendBusinessModel,
+  Schedule,
+} from "../../models/pinntagBackend/business.model.js";
+import {
+  getBackendEventModel,
+  IBackendEvent,
+  BackendEventStatus,
+  EventTypes,
+  BackendDiscountType,
+} from "../../models/pinntagBackend/event.model.js";
+import { getBackendOutletModel } from "../../models/pinntagBackend/outlet.model.js";
+import { getBackendBroadcastModel } from "../../models/pinntagBackend/broadcast.model.js";
+import { getBackendMenuModel } from "../../models/pinntagBackend/menu.model.js";
 import {
   ReviewSummaryModel,
   IReviewSummary,
@@ -37,12 +50,30 @@ import {
 } from "../../models/reviewSummary.model.js";
 import { cacheGet, cacheSet } from "../../utils/redis.js";
 import { ChatAnswerEventModel } from "../../models/chatAnswerEvent.model.js";
+import { websiteSummaryService } from "./websiteSummary.service.js";
+import { IWebsiteSummary } from "../../models/websiteSummary.model.js";
 
 const CHAT_MODEL = "gpt-4o-mini";
 const SUMMARIZATION_MODEL = "gpt-4o-mini";
 const SUMMARY_TTL_HOURS = 24;
 const MAX_REVIEWS_FOR_SUMMARY = 100;
 const MAX_OUTPUT_TOKENS = 400;
+
+// ── Additional DB-grounding budgets ──────────────────────────────────────────
+// Each of these blocks is fetched fresh per (uncached) chat request and pasted
+// into the prompt. Caps keep the prompt bounded regardless of how much data a
+// business has on file.
+const MAX_OUTLETS = 8; // branches listed before we collapse to "+N more"
+const MAX_BROADCASTS = 3; // most-recent public announcements
+const MAX_NAMED_MENUS = 12;
+// Question-time review retrieval: pull recent reviews, keyword-rank in JS, keep
+// the top few short excerpts. Bounded so the extra prompt stays small and the
+// DB read stays a single indexed query (sort by reviewedAt).
+const MAX_REVIEW_CANDIDATES = 150; // recent reviews scanned for keyword hits
+const MAX_REVIEW_SNIPPETS = 6; // excerpts fed into the prompt
+const REVIEW_SNIPPET_CHARS = 220;
+const MIN_KEYWORD_CHARS = 3;
+const MAX_KEYWORDS = 6;
 
 // Exact-match answer cache. Same business + same (normalized) question returns
 // the stored answer for 24h, bypassing the LLM entirely.
@@ -96,7 +127,76 @@ export interface ReviewChatInput {
   sessionId?: string;
 }
 
-export type ReviewChatSource = "profile" | "reviews" | "none";
+export type ReviewChatSource =
+  | "profile"
+  | "reviews"
+  | "website"
+  | "events"
+  | "broadcasts"
+  | "none";
+
+/**
+ * Condensed event/deal shape fed into the chat prompt. Full IBackendEvent is
+ * heavy and mostly irrelevant to consumer Q&A — we keep only the fields a
+ * consumer would ask about (title, discount, cost, schedule, terms).
+ */
+interface CondensedActiveEvent {
+  title: string;
+  /** Human-readable event type: "offer" | "flash deal" | "spotlight" | "event". */
+  type: string;
+  description?: string;
+  isFree?: boolean;
+  discount?: string;
+  cost?: string;
+  promoCode?: string;
+  scheduleText?: string;
+  terms?: string;
+  eventUrl?: string;
+  bookingUrl?: string;
+}
+
+/**
+ * A single physical branch of the business, pre-formatted for the prompt.
+ * Sourced from the `outlets` collection — the Business doc only carries a
+ * single flat HQ address, so this is how multi-location businesses get
+ * represented accurately. Tagged `profile` (business-declared facts).
+ */
+interface CondensedOutlet {
+  name?: string;
+  addressText?: string;
+  phone?: string;
+}
+
+/**
+ * A recent public announcement from the `broadcasts` collection. Only
+ * `visibility: "public"` broadcasts reach the anonymous consumer chat.
+ * Tagged `broadcasts`.
+ */
+interface CondensedBroadcast {
+  title?: string;
+  message?: string;
+}
+
+/**
+ * A named menu the business publishes (e.g. "Lunch Menu"). Content is stored
+ * as images, NOT structured line items — so we surface the menu's existence,
+ * never prices or dishes. Tagged `profile`.
+ */
+interface NamedMenu {
+  name: string;
+  type?: string;
+}
+
+/**
+ * A short excerpt from a real customer review, retrieved at question time by
+ * keyword match. Lets the bot answer "what do people say about <dish/service>"
+ * with grounded quotes instead of the coarse top-themes summary. Reviewer
+ * identity is intentionally dropped — only rating + text. Tagged `reviews`.
+ */
+interface ReviewSnippet {
+  rating?: number;
+  text: string;
+}
 
 export interface ReviewChatResponse {
   sessionId: string;
@@ -154,15 +254,71 @@ function detectAbstain(answer: string): boolean {
 }
 
 interface BusinessSnapshot {
+  // Identity + location
   name?: string;
   description?: string;
+  addressText?: string;
   city?: string;
   state?: string;
+  postalCode?: string;
+  district?: string;
+  county?: string;
   category?: string;
   phone?: string;
+  countryCode?: string;
+  email?: string;
   website?: string;
   rating?: number;
   reviewCount?: number;
+  followersCount?: number;
+  foundationYear?: number;
+  tags?: string[];
+  verificationStatus?: string;
+
+  // How the business operates — physical / mobile / online. All three can be
+  // true (multi-mode). Unit counts are only surfaced when > 0.
+  operationModes?: string[]; // ["Physical (3 units)", "Mobile", "Online"]
+  teamSizeText?: string; // "5-15 people"
+
+  // Social presence — channels the business advertises being on. We surface
+  // presence + public URL where available; connection tokens etc. are
+  // internal and never sent.
+  socialChannels?: string[]; // ["Facebook", "Instagram: https://…", "X: https://…"]
+
+  // Facebook business-profile mini-mirror. When the business connected FB,
+  // pageInfo carries a second authoritative source of profile facts (page
+  // name/about/category/followers/website/phone). Treated as profile.
+  facebookPageName?: string;
+  facebookPageCategory?: string;
+  facebookPageAbout?: string;
+  facebookPageFollowers?: number;
+
+  // Operational hours (already formatted into human-readable strings so the
+  // system prompt doesn't have to reason over the nested Schedule shape).
+  hoursText?: string;
+  busyTimeText?: string;
+  slowTimeText?: string;
+
+  // Booleans left tri-state on purpose: true and false are both meaningful
+  // answers ("yes, they have parking" / "no, they don't"). undefined = unknown.
+  isParkingAvailable?: boolean;
+  isWheelchairAccessible?: boolean;
+  acceptsReservations?: boolean;
+
+  // Text / list fields
+  reservationPolicy?: string;
+  paymentMethods?: string[];
+  menus?: string[];
+  allergenSummary?: string;
+  foodHygieneRating?: number;
+  covidSafetyMeasures?: string[];
+  healthAndSafetyPolicies?: string[];
+  sustainabilityEfforts?: string;
+
+  // Just a flag — the actual promotions payload isn't structured enough to
+  // paste into the prompt safely. Surfacing "there are promotions, check the
+  // deals section" is a safer play than inventing details.
+  hasPromotions?: boolean;
 }
 
 class ReviewChatService {
@@ -223,11 +379,44 @@ class ReviewChatService {
       throw new Error("Business not found");
     }
 
-    const { summary, generated } =
-      await this.getOrGenerateSummary(businessObjId);
-
     const businessSnapshot = this.buildBusinessSnapshot(business);
-    const systemPrompt = this.buildSystemPrompt(businessSnapshot, summary);
+
+    // Fetch every grounding source in parallel. Each leg fails open — if any
+    // returns null/[]/errors we just skip that block in the prompt and keep
+    // serving the answer. All of these are cheap indexed reads on the backend
+    // DB except the summary/website legs (which are cached and only
+    // occasionally regenerate), so the fan-out stays well within the SLA.
+    const [
+      { summary, generated },
+      websiteSummary,
+      activeEvents,
+      outlets,
+      broadcasts,
+      namedMenus,
+      reviewSnippets,
+    ] = await Promise.all([
+      this.getOrGenerateSummary(businessObjId),
+      websiteSummaryService.getOrGenerateWebsiteSummary(
+        businessObjId,
+        businessSnapshot.website,
+      ),
+      this.getActiveEvents(businessObjId),
+      this.getOutlets(business, conn),
+      this.getBroadcasts(businessObjId, conn),
+      this.getNamedMenus(businessObjId, conn),
+      this.retrieveReviewSnippets(businessObjId, input.message, conn),
+    ]);
+
+    const systemPrompt = this.buildSystemPrompt(
+      businessSnapshot,
+      summary,
+      websiteSummary,
+      activeEvents,
+      outlets,
+      broadcasts,
+      namedMenus,
+      reviewSnippets,
+    );
 
     const completion = await llm.chatCompletion({
       model: CHAT_MODEL,
@@ -349,7 +538,14 @@ class ReviewChatService {
           ? parsed.answer.trim()
           : raw;
 
-      const validSources: ReviewChatSource[] = ["profile", "reviews", "none"];
+      const validSources: ReviewChatSource[] = [
+        "profile",
+        "reviews",
+        "website",
+        "events",
+        "broadcasts",
+        "none",
+      ];
       const sources = Array.isArray(parsed.sources)
         ? (parsed.sources.filter((s: unknown) =>
             validSources.includes(s as ReviewChatSource),
@@ -457,6 +653,443 @@ class ReviewChatService {
       },
       perBusiness,
     };
+  }
+
+  /**
+   * Fetch currently-active offers / deals / events for a business, condensed
+   * for the chat prompt. Consumer-facing types only (offers, flash deals,
+   * spotlights, business events) — private events, dropped pins, and drafted
+   * templates are excluded.
+   *
+   * Filter contract:
+   *   - status = PUBLISHED, not disabled, not a saved template
+   *   - schedule is either empty (ongoing offer) OR has at least one date
+   *     from today onward. All-past events drop out.
+   *
+   * Fail-open: any error returns [] so the chat call still succeeds without
+   * the events block.
+   */
+  private async getActiveEvents(
+    businessId: mongoose.Types.ObjectId,
+  ): Promise<CondensedActiveEvent[]> {
+    const MAX_EVENTS = 5;
+    const CONSUMER_TYPES: string[] = [
+      EventTypes.OFFER,
+      EventTypes.FLASHDEAL,
+      EventTypes.SPOTLIGHT,
+      EventTypes.FORMAL,
+    ];
+
+    try {
+      const EventModel = await getBackendEventModel();
+      const now = new Date();
+      const results = (await EventModel.find({
+        businessProfile: businessId,
+        status: BackendEventStatus.PUBLISHED,
+        isDisabled: { $ne: true },
+        isSavedAsTemplate: { $ne: true },
+        type: { $in: CONSUMER_TYPES },
+      })
+        .sort({ updatedAt: -1 })
+        .limit(50) // pull a bit more than we need; upcoming-filter drops the rest
+        .lean()) as unknown as IBackendEvent[];
+
+      const withSoonest: Array<{
+        ev: IBackendEvent;
+        soonest: Date | null;
+      }> = [];
+
+      for (const ev of results) {
+        const soonest = this.soonestUpcomingDate(ev, now);
+        // schedule empty → treat as ongoing (soonest = null but still keep)
+        if (soonest === null && !(ev.schedule && ev.schedule.length > 0)) {
+          withSoonest.push({ ev, soonest: null });
+        } else if (soonest !== null) {
+          withSoonest.push({ ev, soonest });
+        }
+      }
+
+      // Sort: ongoing (null) first, then soonest upcoming ascending. Ties
+      // broken by updatedAt (already sorted desc from the query).
+      withSoonest.sort((a, b) => {
+        if (a.soonest === null && b.soonest === null) return 0;
+        if (a.soonest === null) return -1;
+        if (b.soonest === null) return 1;
+        return a.soonest.getTime() - b.soonest.getTime();
+      });
+
+      return withSoonest
+        .slice(0, MAX_EVENTS)
+        .map(({ ev }) => this.condenseEvent(ev));
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Fetching active events failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * The earliest schedule.date that's today or later. Returns null when
+   * there's no schedule at all OR when every scheduled date is in the past.
+   * Callers distinguish the two cases by also inspecting `ev.schedule.length`.
+   */
+  private soonestUpcomingDate(ev: IBackendEvent, now: Date): Date | null {
+    if (!ev.schedule || !Array.isArray(ev.schedule) || ev.schedule.length === 0)
+      return null;
+    let soonest: number | null = null;
+    for (const entry of ev.schedule) {
+      const d = entry?.date ? new Date(entry.date) : null;
+      if (!d || isNaN(d.getTime())) continue;
+      if (d.getTime() < now.getTime()) continue;
+      if (soonest === null || d.getTime() < soonest) soonest = d.getTime();
+    }
+    return soonest === null ? null : new Date(soonest);
+  }
+
+  /**
+   * Reduce a heavy IBackendEvent to just what a consumer would ask about.
+   * All fields are string-clamped so the events block stays bounded even if
+   * a business writes a novel in the description.
+   */
+  private condenseEvent(ev: IBackendEvent): CondensedActiveEvent {
+    const trim = (s: unknown, n: number): string | undefined =>
+      typeof s === "string" && s.trim().length > 0
+        ? s.trim().slice(0, n)
+        : undefined;
+
+    return {
+      title: trim(ev.title, 120) ?? "(untitled)",
+      type: this.humanEventType(ev.type),
+      description: trim(ev.description, 240),
+      isFree: typeof ev.isFree === "boolean" ? ev.isFree : undefined,
+      discount: this.formatDiscount(ev.discountType, ev.discountValue),
+      cost: trim(ev.participationCost, 60),
+      promoCode: trim(ev.promotionCode, 40),
+      scheduleText: this.formatEventSchedule(ev.schedule),
+      terms: trim(ev.termsAndConditions, 240),
+      eventUrl: trim(ev.eventUrl, 200),
+      bookingUrl:
+        Array.isArray(ev.bookingUrl) && ev.bookingUrl.length > 0
+          ? trim(ev.bookingUrl[0], 200)
+          : undefined,
+    };
+  }
+
+  private humanEventType(t: string | undefined): string {
+    switch (t) {
+      case EventTypes.OFFER:
+        return "offer";
+      case EventTypes.FLASHDEAL:
+        return "flash deal";
+      case EventTypes.SPOTLIGHT:
+        return "spotlight";
+      case EventTypes.FORMAL:
+        return "event";
+      default:
+        return t || "event";
+    }
+  }
+
+  /**
+   * "PERCENTAGE" + "20" → "20% off". "FIXED" + "5" → "$5 off". "BUY_ONE_GET_ONE"
+   * → "Buy 1 Get 1". Returns undefined if we don't have a discount to state.
+   */
+  private formatDiscount(
+    type: string | undefined,
+    value: string | undefined,
+  ): string | undefined {
+    if (!type) return undefined;
+    if (type === BackendDiscountType.BUY_ONE_GET_ONE) return "Buy 1 Get 1 free";
+    const v = typeof value === "string" ? value.trim() : "";
+    if (!v) return undefined;
+    if (type === BackendDiscountType.PERCENTAGE) return `${v}% off`;
+    if (type === BackendDiscountType.FIXED) return `${v} off`;
+    return undefined;
+  }
+
+  /**
+   * Compact schedule string. Empty → "Ongoing"; one date → "Nov 15, 2026";
+   * multiple → "Nov 15, 2026 + 2 more dates". All past dates → undefined
+   * (event should have been filtered by soonestUpcomingDate already).
+   */
+  private formatEventSchedule(
+    schedule: IBackendEvent["schedule"] | undefined,
+  ): string | undefined {
+    if (!schedule || schedule.length === 0) return "Ongoing";
+    const now = Date.now();
+    const upcoming = schedule
+      .map((s) => (s?.date ? new Date(s.date) : null))
+      .filter((d): d is Date => !!d && !isNaN(d.getTime()) && d.getTime() >= now)
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (upcoming.length === 0) return undefined;
+
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+    if (upcoming.length === 1) return fmt(upcoming[0]);
+    if (upcoming.length === 2) return `${fmt(upcoming[0])}, ${fmt(upcoming[1])}`;
+    return `${fmt(upcoming[0])} + ${upcoming.length - 1} more dates`;
+  }
+
+  /** Trim + length-clamp a possibly-non-string value; undefined when empty. */
+  private clampStr(s: unknown, n: number): string | undefined {
+    return typeof s === "string" && s.trim().length > 0
+      ? s.trim().slice(0, n)
+      : undefined;
+  }
+
+  /**
+   * Physical branches of the business, from the `outlets` collection.
+   *
+   * The Business doc only carries one flat HQ address; multi-location
+   * businesses live in `outlets`. We prefer the business's `activatedOutlets`
+   * list (the authoritative "these are live" set); if that's empty we fall
+   * back to querying outlets by business ref. Deleted outlets are always
+   * excluded. Fail-open → [] so the chat continues without the block.
+   */
+  private async getOutlets(
+    business: any,
+    conn: mongoose.Connection,
+  ): Promise<CondensedOutlet[]> {
+    try {
+      const OutletModel = getBackendOutletModel(conn);
+      const activated: mongoose.Types.ObjectId[] = Array.isArray(
+        business?.activatedOutlets,
+      )
+        ? business.activatedOutlets
+        : [];
+
+      const query: Record<string, unknown> = { isDeleted: { $ne: true } };
+      if (activated.length > 0) {
+        query._id = { $in: activated };
+      } else {
+        query.business = business._id;
+        query.isActive = { $ne: false };
+      }
+
+      const outlets = await OutletModel.find(query)
+        .limit(MAX_OUTLETS + 1) // +1 so buildSystemPrompt can say "+N more"
+        .lean();
+
+      return outlets
+        .map((o) => this.condenseOutlet(o))
+        .filter((o) => o.name || o.addressText);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(business?._id) },
+        "Fetching outlets failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Format a phone as "+<cc> <number>". Stored country codes sometimes already
+   * carry a leading "+", so we strip it before re-adding one (otherwise we emit
+   * "++1 ..."). Returns just the number when no country code is on file.
+   */
+  private formatPhone(countryCode: unknown, phone: unknown): string | undefined {
+    const p = this.clampStr(phone, 40);
+    if (!p) return undefined;
+    const ccRaw = this.clampStr(countryCode, 6);
+    if (!ccRaw) return p;
+    const cc = ccRaw.replace(/^\++/, "");
+    return cc ? `+${cc} ${p}` : p;
+  }
+
+  /** Reduce an outlet doc to name + one-line address + phone. */
+  private condenseOutlet(o: any): CondensedOutlet {
+    // Build the address, skipping parts that duplicate the immediately
+    // preceding one (source data often repeats e.g. city in two fields →
+    // "Atlanta, Atlanta").
+    const parts: string[] = [];
+    for (const key of ["address1", "address2", "city", "state", "postalCode"]) {
+      const v = this.clampStr(o?.[key], 120);
+      if (!v) continue;
+      if (parts.length && parts[parts.length - 1].toLowerCase() === v.toLowerCase())
+        continue;
+      parts.push(v);
+    }
+
+    const name = this.clampStr(o?.name, 100);
+    let addressText =
+      parts.length > 0 ? parts.join(", ").slice(0, 300) : undefined;
+    // address1 frequently repeats the outlet name as a prefix — strip it so we
+    // don't render "HOBNOB Tavern — HOBNOB Tavern 6690 ...".
+    if (addressText && name && addressText.toLowerCase().startsWith(name.toLowerCase())) {
+      const stripped = addressText.slice(name.length).replace(/^[\s,;-]+/, "");
+      if (stripped.length > 0) addressText = stripped;
+    }
+
+    return {
+      name,
+      addressText,
+      phone: this.formatPhone(o?.countryCode, o?.phone),
+    };
+  }
+
+  /**
+   * Recent PUBLIC announcements from the `broadcasts` collection. Follower-only
+   * broadcasts are excluded — the consumer chat is anonymous and must not leak
+   * audience-gated messages. Fail-open → [].
+   */
+  private async getBroadcasts(
+    businessId: mongoose.Types.ObjectId,
+    conn: mongoose.Connection,
+  ): Promise<CondensedBroadcast[]> {
+    try {
+      const BroadcastModel = getBackendBroadcastModel(conn);
+      const rows = await BroadcastModel.find({
+        business: businessId,
+        visibility: "public",
+      })
+        .sort({ createdAt: -1 })
+        .limit(MAX_BROADCASTS)
+        .lean();
+
+      return rows
+        .map((b) => ({
+          title: this.clampStr(b.title, 120),
+          message: this.clampStr(b.message, 300),
+        }))
+        .filter((b) => b.title || b.message);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Fetching broadcasts failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Named menus a business publishes (from the `menus` collection). These are
+   * image-based menus, NOT structured items — so we only surface their names
+   * and point users at the menu, never prices or dishes. Fail-open → [].
+   */
+  private async getNamedMenus(
+    businessId: mongoose.Types.ObjectId,
+    conn: mongoose.Connection,
+  ): Promise<NamedMenu[]> {
+    try {
+      const MenuModel = getBackendMenuModel(conn);
+      const rows = await MenuModel.find({ business: businessId })
+        .limit(MAX_NAMED_MENUS)
+        .lean();
+
+      return rows
+        .map((m) => ({
+          name: this.clampStr(m.name, 80) ?? "Menu",
+          type: this.clampStr(m.type, 40),
+        }))
+        .filter((m) => m.name);
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Fetching named menus failed — chat will continue without them",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Question-time review retrieval. Answers the acceptance criterion "surface
+   * info mined from review comments" (e.g. "what do people say about the pad
+   * thai?"), which the coarse top-themes summary can't.
+   *
+   * Approach (keyword retrieval, no extra infra): extract content keywords from
+   * the question, pull the most recent ACTIVE reviews with text, score each by
+   * how many keywords it contains, and keep the top few short excerpts. A
+   * single indexed read (sort by reviewedAt) + in-memory scoring keeps this
+   * fast. Returns [] when the question has no usable keywords or nothing
+   * matches — the prompt block is then simply omitted. Fail-open on any error.
+   */
+  private async retrieveReviewSnippets(
+    businessId: mongoose.Types.ObjectId,
+    question: string,
+    conn: mongoose.Connection,
+  ): Promise<ReviewSnippet[]> {
+    const keywords = this.extractKeywords(question);
+    if (keywords.length === 0) return [];
+
+    try {
+      const ReviewModel = getBackendReviewModel(conn);
+      const reviews = await ReviewModel.find({
+        business: businessId,
+        status: ReviewStatus.ACTIVE,
+        text: { $exists: true, $nin: [null, ""] },
+      })
+        .sort({ reviewedAt: -1 })
+        .limit(MAX_REVIEW_CANDIDATES)
+        .select("text rating")
+        .lean();
+
+      const scored: Array<{ hits: number; rating?: number; text: string }> = [];
+      for (const r of reviews as unknown as IReview[]) {
+        const text = typeof r.text === "string" ? r.text : "";
+        if (text.length < 15) continue;
+        const lower = text.toLowerCase();
+        let hits = 0;
+        for (const k of keywords) if (lower.includes(k)) hits++;
+        if (hits > 0) {
+          scored.push({
+            hits,
+            rating: typeof r.rating === "number" ? r.rating : undefined,
+            text,
+          });
+        }
+      }
+
+      // Most keyword hits first; ties keep recency (reviews already sorted desc).
+      scored.sort((a, b) => b.hits - a.hits);
+
+      return scored.slice(0, MAX_REVIEW_SNIPPETS).map((s) => ({
+        rating: s.rating,
+        text: s.text.replace(/\s+/g, " ").trim().slice(0, REVIEW_SNIPPET_CHARS),
+      }));
+    } catch (err: any) {
+      logger.warn(
+        { error: err.message, businessId: String(businessId) },
+        "Review snippet retrieval failed — chat will continue without excerpts",
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Pull content keywords out of a user question for review matching: lowercase,
+   * strip punctuation, drop short tokens and common stopwords, dedupe, cap.
+   * Deliberately simple — a miss just means no excerpts block, never a wrong
+   * answer.
+   */
+  private extractKeywords(question: string): string[] {
+    const STOPWORDS = new Set([
+      "the", "and", "for", "are", "you", "your", "what", "when", "where",
+      "who", "how", "why", "does", "did", "can", "could", "would", "should",
+      "there", "they", "this", "that", "these", "those", "with", "have", "has",
+      "had", "was", "were", "will", "any", "all", "about", "from", "into",
+      "out", "our", "their", "its", "his", "her", "she", "him", "them", "get",
+      "got", "not", "but", "some", "more", "much", "many", "here", "than",
+      "then", "which", "whom", "been", "being", "just", "like", "over", "very",
+      "also", "only", "such", "them", "tell", "know", "want", "need", "please",
+      "say", "said", "people", "customers", "reviews", "review",
+    ]);
+    return [
+      ...new Set(
+        question
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .split(/\s+/)
+          .filter((t) => t.length >= MIN_KEYWORD_CHARS && !STOPWORDS.has(t)),
+      ),
+    ].slice(0, MAX_KEYWORDS);
   }
 
   /**
@@ -877,24 +1510,357 @@ Rules:
     return result;
   }
 
-  /** Picks profile fields the LLM needs as authoritative context. */
+  /**
+   * Picks profile fields the LLM needs as authoritative context.
+   *
+   * The business schema in pinntagBackend has ~20 structured operational
+   * fields (hours, parking, reservations, payment methods, menus, allergens,
+   * accessibility, promotions, …). Every one of them is an authoritative fact
+   * the business has declared about itself, and every one of them was
+   * previously abstained on because we weren't sending them. This pulls the
+   * ones that matter to consumers and pre-formats the awkward nested shapes
+   * (Schedule, Hours, TimeBracket) into text the prompt can consume directly.
+   */
   private buildBusinessSnapshot(business: any): BusinessSnapshot {
+    const boolOrUndef = (v: unknown): boolean | undefined =>
+      typeof v === "boolean" ? v : undefined;
+    const stringArrOrUndef = (v: unknown): string[] | undefined =>
+      Array.isArray(v) && v.length > 0
+        ? v.filter((s) => typeof s === "string" && s.length > 0)
+        : undefined;
+    const trimmedStringOrUndef = (v: unknown): string | undefined =>
+      typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined;
+
     return {
       name: business.name,
       description: business.description || business.bio,
+      addressText: this.formatAddressLines(business),
       city: business.city,
       state: business.state,
+      postalCode: trimmedStringOrUndef(business.postalCode),
+      district: trimmedStringOrUndef(business.district),
+      county: trimmedStringOrUndef(business.county),
       category: business.category,
       phone: business.phone,
+      countryCode: trimmedStringOrUndef(business.countryCode),
+      email: trimmedStringOrUndef(business.email),
       website: business.website,
       rating: business.rating,
       reviewCount: business.userRatingCount,
+      followersCount:
+        typeof business.followersCount === "number" &&
+        business.followersCount > 0
+          ? business.followersCount
+          : undefined,
+      foundationYear:
+        typeof business.foundationYear === "number"
+          ? business.foundationYear
+          : undefined,
+      tags: stringArrOrUndef(business.tags),
+      verificationStatus: this.formatVerificationStatus(
+        business.verificationStatus,
+      ),
+      operationModes: this.formatOperationModes(business),
+      teamSizeText: this.formatTeamSize(business.teamSize),
+      socialChannels: this.formatSocialChannels(business),
+      facebookPageName: trimmedStringOrUndef(
+        business?.facebookMetaData?.pageInfo?.name,
+      ),
+      facebookPageCategory: trimmedStringOrUndef(
+        business?.facebookMetaData?.pageInfo?.category,
+      ),
+      facebookPageAbout: trimmedStringOrUndef(
+        business?.facebookMetaData?.pageInfo?.about,
+      ),
+      facebookPageFollowers:
+        typeof business?.facebookMetaData?.pageInfo?.followers === "number" &&
+        business.facebookMetaData.pageInfo.followers > 0
+          ? business.facebookMetaData.pageInfo.followers
+          : undefined,
+
+      hoursText:
+        this.formatHoursFromSchedule(business.regularTiming) ??
+        this.formatOverallHours(business.openingTime, business.closingTime),
+      busyTimeText: this.formatTimeBracket(business.busyTime),
+      slowTimeText: this.formatTimeBracket(business.slowTime),
+
+      isParkingAvailable: boolOrUndef(business.isParkingAvailable),
+      isWheelchairAccessible: boolOrUndef(business.isWheelchairAccessible),
+      acceptsReservations: boolOrUndef(business.acceptsReservations),
+
+      reservationPolicy: trimmedStringOrUndef(business.reservationPolicy),
+      paymentMethods: stringArrOrUndef(business.paymentMethods),
+      menus: stringArrOrUndef(business.menus),
+      allergenSummary: this.formatAllergens(business.allergenInformation),
+      foodHygieneRating:
+        typeof business.foodHygieneRating === "number"
+          ? business.foodHygieneRating
+          : undefined,
+      covidSafetyMeasures: stringArrOrUndef(business.covidSafetyMeasures),
+      healthAndSafetyPolicies: stringArrOrUndef(business.healthAndSafetyPolicies),
+      sustainabilityEfforts: trimmedStringOrUndef(business.sustainabilityEfforts),
+
+      hasPromotions:
+        Array.isArray(business.promotions) && business.promotions.length > 0,
     };
+  }
+
+  // ── Formatting helpers for the Mixed-typed timing / allergen fields ────────
+  // These deliberately return `undefined` when there's nothing useful to say,
+  // so buildSystemPrompt can skip the whole line with a simple truthy check.
+
+  /**
+   * Joins the three-line street address + district + county into one line,
+   * de-duplicating whitespace and empty parts. Returns undefined when there
+   * are no address parts to render (city/state are shown separately).
+   */
+  private formatAddressLines(business: any): string | undefined {
+    const parts: string[] = [];
+    for (const key of [
+      "addressLine1",
+      "addressLine2",
+      "addressLine3",
+      "district",
+      "county",
+    ]) {
+      const v = business?.[key];
+      if (typeof v === "string" && v.trim().length > 0) parts.push(v.trim());
+    }
+    if (parts.length === 0) return undefined;
+    return parts.join(", ").slice(0, 300);
+  }
+
+  /**
+   * Normalizes verificationStatus. The stored value is a raw string
+   * ("NOT_VERIFIED", "VERIFIED", "PENDING", …) that we don't want to
+   * leak into the prompt in that form. Map the safe ones; drop the noisy
+   * default so we don't advertise unverified businesses as such.
+   */
+  private formatVerificationStatus(raw: unknown): string | undefined {
+    if (typeof raw !== "string") return undefined;
+    const s = raw.trim().toUpperCase();
+    if (s === "VERIFIED") return "verified by Pinntag";
+    if (s === "PENDING") return "verification pending";
+    // Explicitly do NOT surface "NOT_VERIFIED" — it's the default and
+    // surfacing it as a fact would misinform the consumer.
+    return undefined;
+  }
+
+  /**
+   * Turns the three isPhysicalType/isMobileType/isOnlineType flags into
+   * a compact human list. Only true modes are included; unit counts are
+   * appended when > 0. Returns undefined if no mode is declared.
+   */
+  private formatOperationModes(business: any): string[] | undefined {
+    const modes: string[] = [];
+    if (business?.isPhysicalType === true) {
+      const n =
+        typeof business.physicalUnits === "number" && business.physicalUnits > 0
+          ? ` (${business.physicalUnits} location${business.physicalUnits === 1 ? "" : "s"})`
+          : "";
+      modes.push(`Physical${n}`);
+    }
+    if (business?.isMobileType === true) {
+      const n =
+        typeof business.mobileUnits === "number" && business.mobileUnits > 0
+          ? ` (${business.mobileUnits} unit${business.mobileUnits === 1 ? "" : "s"})`
+          : "";
+      modes.push(`Mobile${n}`);
+    }
+    if (business?.isOnlineType === true) modes.push("Online");
+    return modes.length > 0 ? modes : undefined;
+  }
+
+  /** teamSize.{min,max} → "5-15 people" / "10+ people" / "5 people". */
+  private formatTeamSize(
+    teamSize: { min?: number; max?: number | null } | undefined | null,
+  ): string | undefined {
+    if (!teamSize) return undefined;
+    const min = typeof teamSize.min === "number" ? teamSize.min : undefined;
+    const max = typeof teamSize.max === "number" ? teamSize.max : undefined;
+    if (min === undefined && max === undefined) return undefined;
+    if (min !== undefined && max !== undefined && max > 0) {
+      if (min === max) return `${min} people`;
+      return `${min}-${max} people`;
+    }
+    if (min !== undefined) return `${min}+ people`;
+    return `up to ${max} people`;
+  }
+
+  /**
+   * Which social platforms the business advertises presence on. Only surfaces
+   * connected platforms with a public URL (or, for FB, a page name). Never
+   * surfaces the connection tokens themselves.
+   */
+  private formatSocialChannels(business: any): string[] | undefined {
+    const out: string[] = [];
+    if (business?.isFacebookConnected === true) {
+      const pageName = business?.facebookMetaData?.pageInfo?.name;
+      out.push(
+        typeof pageName === "string" && pageName.trim().length > 0
+          ? `Facebook: ${pageName.trim()}`
+          : `Facebook`,
+      );
+    }
+    if (business?.isInstagramConnected === true) {
+      const url = business?.instagramPageUrl;
+      out.push(
+        typeof url === "string" && url.trim().length > 0
+          ? `Instagram: ${url.trim()}`
+          : `Instagram`,
+      );
+    }
+    if (business?.isXConnected === true) {
+      const url = business?.XPageUrl;
+      out.push(
+        typeof url === "string" && url.trim().length > 0
+          ? `X: ${url.trim()}`
+          : `X`,
+      );
+    }
+    return out.length > 0 ? out : undefined;
+  }
+
+  private padTwo(n: number): string {
+    return n < 10 ? `0${n}` : String(n);
+  }
+
+  /** {hour, minute} → "HH:MM"; returns undefined if hour is missing. */
+  private formatHM(h: { hour?: number; minute?: number } | undefined | null):
+    | string
+    | undefined {
+    if (!h || typeof h.hour !== "number") return undefined;
+    const hour = Math.max(0, Math.min(23, Math.floor(h.hour)));
+    const minute =
+      typeof h.minute === "number"
+        ? Math.max(0, Math.min(59, Math.floor(h.minute)))
+        : 0;
+    return `${this.padTwo(hour)}:${this.padTwo(minute)}`;
+  }
+
+  /**
+   * Schedule.weekDays → "Mon 09:00–17:00, Tue 09:00–17:00, …"
+   *
+   * Days without a duration are skipped rather than listed as "closed" — we
+   * can't tell the difference between "closed that day" and "not yet filled
+   * in", and asserting closure we can't verify would be a hallucination.
+   */
+  private formatHoursFromSchedule(
+    schedule: Schedule | undefined | null,
+  ): string | undefined {
+    if (!schedule || !schedule.weekDays) return undefined;
+    const order: Array<
+      [keyof NonNullable<Schedule["weekDays"]>, string]
+    > = [
+      ["monday", "Mon"],
+      ["tuesday", "Tue"],
+      ["wednesday", "Wed"],
+      ["thursday", "Thu"],
+      ["friday", "Fri"],
+      ["saturday", "Sat"],
+      ["sunday", "Sun"],
+    ];
+
+    const parts: string[] = [];
+    for (const [key, label] of order) {
+      const day = schedule.weekDays[key];
+      const dur = day?.duration;
+      if (
+        !dur ||
+        typeof dur.startHour !== "number" ||
+        typeof dur.endHour !== "number"
+      ) {
+        continue;
+      }
+      const start = this.formatHM({ hour: dur.startHour, minute: dur.startMinute });
+      const end = this.formatHM({ hour: dur.endHour, minute: dur.endMinute });
+      if (!start || !end) continue;
+      parts.push(`${label} ${start}–${end}`);
+    }
+    return parts.length > 0 ? parts.join(", ") : undefined;
+  }
+
+  /**
+   * openingTime/closingTime is a flat {hour,minute} — a single overall
+   * opening/closing time not broken down by day. Format as "Open 09:00–17:00".
+   */
+  private formatOverallHours(
+    opening: { hour?: number; minute?: number } | undefined | null,
+    closing: { hour?: number; minute?: number } | undefined | null,
+  ): string | undefined {
+    const start = this.formatHM(opening);
+    const end = this.formatHM(closing);
+    if (!start && !end) return undefined;
+    if (start && end) return `Open ${start}–${end}`;
+    if (start) return `Opens ${start}`;
+    return `Closes ${end}`;
+  }
+
+  /** TimeBracket → "12:00–14:00"; undefined if either endpoint is missing. */
+  private formatTimeBracket(
+    bracket:
+      | {
+          startTime?: { hour?: number; minute?: number };
+          endTime?: { hour?: number; minute?: number };
+        }
+      | undefined
+      | null,
+  ): string | undefined {
+    if (!bracket) return undefined;
+    const start = this.formatHM(bracket.startTime);
+    const end = this.formatHM(bracket.endTime);
+    if (!start || !end) return undefined;
+    return `${start}–${end}`;
+  }
+
+  /**
+   * allergenInformation is `any[]` — could be strings, objects, or nothing.
+   * We flatten it to a comma-joined string of the human-readable pieces, or
+   * undefined if we can't extract anything usable. Best-effort — we'd rather
+   * omit than emit garbage into the prompt.
+   */
+  private formatAllergens(raw: unknown): string | undefined {
+    if (!Array.isArray(raw) || raw.length === 0) return undefined;
+    const pieces: string[] = [];
+    for (const item of raw) {
+      if (typeof item === "string" && item.trim().length > 0) {
+        pieces.push(item.trim());
+      } else if (item && typeof item === "object") {
+        const rec = item as Record<string, unknown>;
+        const label =
+          typeof rec.name === "string"
+            ? rec.name
+            : typeof rec.allergen === "string"
+              ? rec.allergen
+              : typeof rec.label === "string"
+                ? rec.label
+                : undefined;
+        if (label && label.trim().length > 0) pieces.push(label.trim());
+      }
+    }
+    if (pieces.length === 0) return undefined;
+    // Dedup case-insensitively; cap to keep the prompt bounded.
+    const seen = new Set<string>();
+    const deduped: string[] = [];
+    for (const p of pieces) {
+      const k = p.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      deduped.push(p);
+      if (deduped.length >= 15) break;
+    }
+    return deduped.join(", ");
   }
 
   private buildSystemPrompt(
     business: BusinessSnapshot,
     summary: IReviewSummary | null,
+    website: IWebsiteSummary | null,
+    activeEvents: CondensedActiveEvent[],
+    outlets: CondensedOutlet[],
+    broadcasts: CondensedBroadcast[],
+    namedMenus: NamedMenu[],
+    reviewSnippets: ReviewSnippet[],
   ): string {
     const lines: string[] = [];
 
@@ -911,15 +1877,248 @@ Rules:
       lines.push(
         `Location: ${[business.city, business.state].filter(Boolean).join(", ")}`,
       );
-    if (business.phone) lines.push(`Phone: ${business.phone}`);
+    if (business.addressText)
+      lines.push(`Address: ${business.addressText}`);
+    if (business.phone)
+      lines.push(
+        `Phone: ${this.formatPhone(business.countryCode, business.phone)}`,
+      );
+    if (business.email) lines.push(`Email: ${business.email}`);
     if (business.website) lines.push(`Website: ${business.website}`);
+    if (business.postalCode) lines.push(`Postal code: ${business.postalCode}`);
+    if (typeof business.foundationYear === "number")
+      lines.push(`Founded: ${business.foundationYear}`);
+    if (business.tags && business.tags.length > 0)
+      lines.push(`Tags: ${business.tags.slice(0, 12).join(", ")}`);
+    if (business.verificationStatus)
+      lines.push(`Verification: ${business.verificationStatus}`);
+    if (business.operationModes && business.operationModes.length > 0)
+      lines.push(
+        `Operates as: ${business.operationModes.join(", ")}`,
+      );
+    if (business.teamSizeText)
+      lines.push(`Team size: ${business.teamSizeText}`);
+    if (business.socialChannels && business.socialChannels.length > 0)
+      lines.push(`Social: ${business.socialChannels.join(" | ")}`);
     if (typeof business.rating === "number")
       lines.push(
         `Overall rating: ${business.rating}/5${
           business.reviewCount ? ` (${business.reviewCount} reviews)` : ""
         }`,
       );
+    if (typeof business.followersCount === "number")
+      lines.push(`Followers on Pinntag: ${business.followersCount}`);
+
+    // ── Facebook page mini-profile ────────────────────────────────────────
+    // When the business has connected Facebook, `facebookMetaData.pageInfo`
+    // carries a second authoritative source of profile facts. We surface the
+    // ones a consumer would ask about; treat them as `["profile"]`.
+    if (
+      business.facebookPageName ||
+      business.facebookPageAbout ||
+      business.facebookPageCategory ||
+      typeof business.facebookPageFollowers === "number"
+    ) {
+      lines.push("");
+      lines.push(`## Facebook page (verified via connection)`);
+      if (business.facebookPageName)
+        lines.push(`Page name: ${business.facebookPageName}`);
+      if (business.facebookPageCategory)
+        lines.push(`Page category: ${business.facebookPageCategory}`);
+      if (business.facebookPageAbout)
+        lines.push(`Page about: ${business.facebookPageAbout.slice(0, 400)}`);
+      if (typeof business.facebookPageFollowers === "number")
+        lines.push(
+          `Facebook followers: ${business.facebookPageFollowers}`,
+        );
+    }
+
+    // ── Operational block ─────────────────────────────────────────────────
+    // Everything below is the business's own declared facts (hours, parking,
+    // reservations, menus, etc.) — authoritative when present, so answers
+    // grounded on any of these lines should tag `sources: ["profile"]`.
+    const yesNo = (v: boolean): string => (v ? "Yes" : "No");
+    const opLines: string[] = [];
+
+    if (business.hoursText) opLines.push(`Hours: ${business.hoursText}`);
+    if (business.busyTimeText)
+      opLines.push(`Typical busy times: ${business.busyTimeText}`);
+    if (business.slowTimeText)
+      opLines.push(`Typical quiet times: ${business.slowTimeText}`);
+    if (typeof business.isParkingAvailable === "boolean")
+      opLines.push(`Parking available: ${yesNo(business.isParkingAvailable)}`);
+    if (typeof business.isWheelchairAccessible === "boolean")
+      opLines.push(
+        `Wheelchair accessible: ${yesNo(business.isWheelchairAccessible)}`,
+      );
+    if (typeof business.acceptsReservations === "boolean")
+      opLines.push(`Accepts reservations: ${yesNo(business.acceptsReservations)}`);
+    if (business.reservationPolicy)
+      opLines.push(
+        `Reservation policy: ${business.reservationPolicy.slice(0, 300)}`,
+      );
+    if (business.paymentMethods && business.paymentMethods.length > 0)
+      opLines.push(`Payment methods: ${business.paymentMethods.join(", ")}`);
+    // Menus: we can name what the business publishes, but the actual items and
+    // prices live only as images/links we can't read — so we surface names and
+    // point users at the menu, and NEVER quote dishes or prices.
+    if (namedMenus.length > 0) {
+      const named = namedMenus
+        .map((m) => (m.type ? `${m.name} (${m.type})` : m.name))
+        .join(", ");
+      opLines.push(
+        `Menus published: ${named}. These are the menu names on file only — refer users to the business's menu page / website for the actual items and prices. Do NOT state or guess any menu items or prices.`,
+      );
+    } else if (business.menus && business.menus.length > 0) {
+      // Menus are typically URLs. Point at them rather than pretending we've
+      // read them — the LLM has no way to open a URL.
+      opLines.push(
+        `Menu(s) published: ${business.menus.length} link(s) on file — refer users to the business website / menu page for current items and prices.`,
+      );
+    }
+    if (business.allergenSummary)
+      opLines.push(`Allergen info on file: ${business.allergenSummary}`);
+    if (typeof business.foodHygieneRating === "number")
+      opLines.push(`Food hygiene rating: ${business.foodHygieneRating}`);
+    if (
+      business.healthAndSafetyPolicies &&
+      business.healthAndSafetyPolicies.length > 0
+    )
+      opLines.push(
+        `Health & safety policies: ${business.healthAndSafetyPolicies.slice(0, 6).join("; ")}`,
+      );
+    if (
+      business.covidSafetyMeasures &&
+      business.covidSafetyMeasures.length > 0
+    )
+      opLines.push(
+        `COVID safety measures: ${business.covidSafetyMeasures.slice(0, 6).join("; ")}`,
+      );
+    if (business.sustainabilityEfforts)
+      opLines.push(
+        `Sustainability: ${business.sustainabilityEfforts.slice(0, 300)}`,
+      );
+    if (business.hasPromotions)
+      opLines.push(
+        `Promotions/deals: This business has promotions on file. Direct users to the deals section — do NOT invent specific offers, prices, or expiry dates.`,
+      );
+
+    if (opLines.length > 0) {
+      lines.push("");
+      lines.push(`## Operational details`);
+      for (const l of opLines) lines.push(l);
+    }
     lines.push("");
+
+    // ── Outlet locations ──────────────────────────────────────────────────
+    // Physical branches from the outlets collection. Business-declared facts,
+    // so answers grounded here tag `sources: ["profile"]`. The main profile
+    // "Address" line above is the HQ; this is the full branch list.
+    if (outlets.length > 0) {
+      lines.push(`## Outlet locations (branches of this business)`);
+      for (const o of outlets.slice(0, MAX_OUTLETS)) {
+        const bits: string[] = [];
+        if (o.name) bits.push(o.name);
+        if (o.addressText) bits.push(o.addressText);
+        if (o.phone) bits.push(`ph: ${o.phone}`);
+        lines.push(`- ${bits.join(" — ")}`);
+      }
+      if (outlets.length > MAX_OUTLETS) {
+        lines.push(
+          `- (+${outlets.length - MAX_OUTLETS} more branch(es) — tell the user there are additional locations and to check the business's page for the full list.)`,
+        );
+      }
+      lines.push("");
+    }
+
+    // ── Website extract (business's own published content) ────────────────
+    // Sits between the structured profile and customer reviews: still the
+    // business's own voice (authoritative), but pulled from the website
+    // rather than the profile schema. Anything grounded on this block tags
+    // `sources: ["website"]`.
+    if (website && website.status === "ok") {
+      const w = website;
+      const hasAny =
+        w.aboutSummary ||
+        w.services.length > 0 ||
+        w.hoursText ||
+        w.policies.length > 0 ||
+        w.faqs.length > 0 ||
+        w.address ||
+        w.phone ||
+        w.otherFacts.length > 0;
+
+      if (hasAny) {
+        lines.push(`# Business Website (published by the business)`);
+        if (w.aboutSummary) lines.push(`About: ${w.aboutSummary}`);
+        if (w.hoursText) lines.push(`Hours (from website): ${w.hoursText}`);
+        if (w.address) lines.push(`Address (from website): ${w.address}`);
+        if (w.phone) lines.push(`Phone (from website): ${w.phone}`);
+        if (w.services.length > 0) {
+          lines.push(`## Services listed on the website`);
+          for (const s of w.services) lines.push(`- ${s}`);
+        }
+        if (w.policies.length > 0) {
+          lines.push(`## Policies stated on the website`);
+          for (const p of w.policies) lines.push(`- ${p}`);
+        }
+        if (w.faqs.length > 0) {
+          lines.push(`## FAQ from the website`);
+          for (const f of w.faqs) {
+            lines.push(`Q: ${f.q}`);
+            lines.push(`A: ${f.a}`);
+          }
+        }
+        if (w.otherFacts.length > 0) {
+          lines.push(`## Other facts from the website`);
+          for (const f of w.otherFacts) lines.push(`- ${f}`);
+        }
+        lines.push("");
+      }
+    }
+
+    // ── Active offers / deals / events ────────────────────────────────────
+    // Sits between the "static" profile+website blocks and reviews because
+    // it's the most consumer-actionable info: what's on RIGHT NOW at this
+    // business. Answers grounded here tag `sources: ["events"]`.
+    if (activeEvents && activeEvents.length > 0) {
+      lines.push(`# Active offers and events at this business`);
+      lines.push(
+        `The following are currently published by the business. If a user asks about deals, offers, events, or promotions, answer from this list only. Do NOT claim there are no offers if any are listed here.`,
+      );
+      for (const ev of activeEvents) {
+        const bits: string[] = [];
+        bits.push(`[${ev.type}]`);
+        bits.push(ev.title);
+        if (ev.discount) bits.push(`— ${ev.discount}`);
+        else if (ev.isFree === true) bits.push(`— free`);
+        else if (ev.cost) bits.push(`— ${ev.cost}`);
+        lines.push(`- ${bits.join(" ")}`);
+        if (ev.description) lines.push(`    ${ev.description}`);
+        if (ev.scheduleText) lines.push(`    When: ${ev.scheduleText}`);
+        if (ev.promoCode) lines.push(`    Promo code: ${ev.promoCode}`);
+        if (ev.terms) lines.push(`    Terms: ${ev.terms}`);
+        if (ev.bookingUrl) lines.push(`    Booking: ${ev.bookingUrl}`);
+        else if (ev.eventUrl) lines.push(`    Link: ${ev.eventUrl}`);
+      }
+      lines.push("");
+    }
+
+    // ── Recent announcements (broadcasts) ─────────────────────────────────
+    // Public broadcasts the business sent out. Distinct from offers/events:
+    // these are general announcements. Answers grounded here tag
+    // `sources: ["broadcasts"]`.
+    if (broadcasts.length > 0) {
+      lines.push(`# Recent announcements from this business`);
+      lines.push(
+        `These are public announcements the business posted. Share them if relevant, but note they may be time-sensitive — do not present a past announcement as if it is happening now.`,
+      );
+      for (const b of broadcasts) {
+        if (b.title && b.message) lines.push(`- ${b.title}: ${b.message}`);
+        else lines.push(`- ${b.title || b.message}`);
+      }
+      lines.push("");
+    }
 
     if (summary) {
       lines.push(
@@ -964,15 +2163,33 @@ Rules:
       );
     }
 
+    // ── Review excerpts relevant to this question ─────────────────────────
+    // Retrieved by keyword match against real review text. These let you
+    // answer specific "what do people say about <X>" questions that the
+    // summary above is too coarse for. Verbatim customer words — answers
+    // grounded here tag `sources: ["reviews"]`. If they don't actually cover
+    // what was asked, ignore them and abstain rather than stretching them.
+    if (reviewSnippets.length > 0) {
+      lines.push("");
+      lines.push(`# Customer review excerpts relevant to the question`);
+      lines.push(
+        `Verbatim excerpts from individual customer reviews that mention the question's topic. Use them to describe what customers said about specific dishes, services, or experiences, making clear these are individual opinions (e.g. "a few reviewers mentioned..."). Do not treat a single excerpt as an established fact.`,
+      );
+      for (const s of reviewSnippets) {
+        const star = typeof s.rating === "number" ? `${s.rating}★ ` : "";
+        lines.push(`- ${star}"${s.text}"`);
+      }
+    }
+
     const hasPhone = !!business.phone;
 
     lines.push("");
     lines.push(`# Rules for your answer`);
     lines.push(
-      `1. Answer ONLY from the profile and review summary above. If the answer is NOT in the profile or reviews, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, or features. It is always better to say you don't have that information than to invent an answer.`,
+      `1. Answer ONLY from the context above — the business profile, outlet locations, active offers/events, announcements, website block, review summary, or review excerpts. If the answer is not in any of them, you MUST say so honestly — never guess, never make up prices, hours, policies, menu items, features, deals, or locations. It is always better to say you don't have that information than to invent an answer. Do NOT rely on general knowledge, memories of similar businesses, or anything outside the context above.`,
     );
     lines.push(
-      `2. When you don't have the answer, say it plainly using a phrase like "I don't have that information" or "that isn't mentioned in the reviews."${
+      `2. When you don't have the answer, say it plainly using a phrase like "I don't have that information" or "that isn't mentioned in the reviews / website / profile."${
         hasPhone
           ? ` Then suggest the user call the business directly at ${business.phone} to ask.`
           : ``
@@ -1004,20 +2221,32 @@ Rules:
       `Respond with ONLY valid JSON matching this exact schema:`,
     );
     lines.push(
-      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "none"] }`,
+      `{ "answer": "<your reply as a string, 1-3 short sentences>", "sources": ["profile" | "reviews" | "website" | "events" | "broadcasts" | "none"] }`,
     );
     lines.push(`Source tagging rules:`);
     lines.push(
-      `- Include "profile" when the answer comes from the business profile — factual things the business states about itself: hours, location, parking, phone, website, category. e.g. "Where are they located?" → ["profile"].`,
+      `- Include "profile" when the answer comes from the structured business profile above — factual things the business declared: hours, location, outlet/branch addresses, parking, wheelchair accessibility, reservations, payment methods, phone, website URL, category, menu names/availability, allergens, food hygiene rating, health & safety, promotions availability. e.g. "Where are they located?" → ["profile"]. "Do they have more than one branch?" → ["profile"]. "Do they have parking?" → ["profile"].`,
     );
     lines.push(
-      `- Include "reviews" when the answer comes from customer reviews — opinions and experiences: noise level, service quality, food taste, atmosphere, value. e.g. "Is it noisy?" → ["reviews"].`,
+      `- Include "website" when the answer comes from the "Business Website" block above — content the business published on its own site: about text, services listed, website hours, website-stated policies, FAQ answers, other website facts. e.g. "What services do they offer?" (from website services list) → ["website"]. "What's their cancellation policy?" (from website policies) → ["website"].`,
     );
     lines.push(
-      `- Include BOTH "profile" and "reviews" when the answer genuinely draws on both — e.g. "Is it a good spot for a quiet dinner?" might use hours from the profile and ambiance opinions from reviews → ["profile","reviews"]. Use two sources only when both actually contributed.`,
+      `- Include "events" when the answer comes from the "Active offers and events" block above — current deals, offers, flash sales, spotlights, business events, promo codes, event schedules. e.g. "Any deals right now?" → ["events"]. "What's the promo code?" → ["events"]. "Any events this week?" → ["events"]. If a user asks about offers/deals/events and the block is missing or empty, say there are none currently listed and tag ["none"].`,
     );
     lines.push(
-      `- Use exactly ["none"] when you didn't use either — greetings, off-topic deflections, and any time you don't know or abstain. If you say you don't have the information, the source is "none".`,
+      `- Include "broadcasts" when the answer comes from the "Recent announcements" block — public announcements the business posted. e.g. "Any recent updates from them?" → ["broadcasts"]. If the block is missing, don't invent announcements.`,
+    );
+    lines.push(
+      `- Include "reviews" when the answer comes from customer reviews — the review summary OR the "Customer review excerpts" block — opinions and experiences: noise level, service quality, food taste, a specific dish, atmosphere, value. e.g. "Is it noisy?" → ["reviews"]. "What do people say about the pad thai?" → ["reviews"].`,
+    );
+    lines.push(
+      `- Combine sources ONLY when the answer genuinely draws on more than one — e.g. hours from the profile plus ambiance opinions from reviews → ["profile","reviews"]. Do not list a source you didn't use.`,
+    );
+    lines.push(
+      `- Prefer profile > events > broadcasts > website > reviews for the same fact if it appears in multiple places (profile is the business's declared record; events are their current published offers; broadcasts are their announcements; website is their published content; reviews are third-party opinions).`,
+    );
+    lines.push(
+      `- Use exactly ["none"] when you didn't use any of the above — greetings, off-topic deflections, and any time you don't know or abstain. If you say you don't have the information, the source is "none".`,
     );
     lines.push(
       `- Sources must reflect what you ACTUALLY used to construct the answer. Do not list a source just because it was provided.`,

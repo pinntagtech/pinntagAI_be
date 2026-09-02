@@ -12,6 +12,11 @@ import {
   SlowTimeTemplate,
 } from "../services/slowTimeRecommendation.service.js";
 import { ContentAssistService } from "../services/contentAssist.service.js";
+import {
+  chargeCredits,
+  hasSufficientCredits,
+  DAILY_RECOMMENDATION_CREDIT_COST,
+} from "../services/aiCredits.service.js";
 import { DealTemplateGeneratorService } from "../services/dealTemplateGenerator.service.js";
 import { triggerNotification } from "../services/pinntagBackend.service.js";
 import {
@@ -745,7 +750,7 @@ const SLOW_TIME_DISCOUNT_TYPE_MAP: Record<string, string> = {
   "Happy Hour": "HAPPY_HOUR",
 };
 
-function slowTimeToDealTemplate(t: SlowTimeTemplate) {
+function slowTimeToDealTemplate(t: SlowTimeTemplate, imageUrl?: string) {
   const discountTypeKey =
     (t.discountType && SLOW_TIME_DISCOUNT_TYPE_MAP[t.discountType]) ||
     "CUSTOM";
@@ -777,7 +782,7 @@ function slowTimeToDealTemplate(t: SlowTimeTemplate) {
     tags: [t.occasion, t.intensity],
     dealType: t.type,
     termsAndConditions: t.termsAndConditions,
-    image: "",
+    image: imageUrl ?? "",
   };
 }
 
@@ -806,6 +811,7 @@ export async function triggerSlowTimeTemplate(
         sendNotification = true,
         notificationVariantCount = 3,
         dryRun = false,
+        includeImage = true,
       } = req.body ?? {};
 
       if (
@@ -819,7 +825,24 @@ export async function triggerSlowTimeTemplate(
       }
 
       const recommendations =
-        await SlowTimeRecommendationService.getRecommendations(businessId);
+        await SlowTimeRecommendationService.getRecommendations(businessId, {
+          image: includeImage === false ? "none" : "generate",
+        });
+
+      // The business owner's own switch (Business.dailyRecommendationEnabled)
+      // vetoes the manual trigger too — this endpoint must not be a way
+      // around it.
+      if (!recommendations.recommendationsEnabled) {
+        res.status(200).json({
+          success: true,
+          triggered: false,
+          recommendationsEnabled: false,
+          reason:
+            recommendations.disabledReason ||
+            "Daily recommendations are turned off for this business",
+        });
+        return;
+      }
 
       const template =
         recommendations.primaryTemplate ??
@@ -830,16 +853,39 @@ export async function triggerSlowTimeTemplate(
         res.status(200).json({
           success: true,
           triggered: false,
+          recommendationsEnabled: true,
           reason: "No slow-time signal detected for this business right now",
           footprint: recommendations.footprint,
         });
         return;
       }
 
+      const imageUrl = recommendations.primaryTemplateImageUrl;
+
+      // Persisting the template is a recommendation update, so it is billed
+      // at the same rate as the cron. Previews (persistTemplate=false) are
+      // free — nothing was updated.
+      const billable = !!persistTemplate && !dryRun;
+      if (
+        billable &&
+        !(await hasSufficientCredits(
+          businessId,
+          DAILY_RECOMMENDATION_CREDIT_COST
+        ))
+      ) {
+        res.status(402).json({
+          success: false,
+          error: "Insufficient AI credits",
+          cost: DAILY_RECOMMENDATION_CREDIT_COST,
+        });
+        return;
+      }
+
       let savedTemplateId: string | undefined;
+      let creditsCharged = 0;
       if (persistTemplate) {
         try {
-          const dealTemplate = slowTimeToDealTemplate(template);
+          const dealTemplate = slowTimeToDealTemplate(template, imageUrl);
           const saved =
             await DealTemplateGeneratorService.savePreGeneratedTemplate(
               businessId,
@@ -850,6 +896,17 @@ export async function triggerSlowTimeTemplate(
               }
             );
           savedTemplateId = String(saved._id);
+
+          if (billable) {
+            const charge = await chargeCredits(
+              businessId,
+              DAILY_RECOMMENDATION_CREDIT_COST,
+              "daily_recommendation_update"
+            );
+            if (charge.charged) {
+              creditsCharged = DAILY_RECOMMENDATION_CREDIT_COST;
+            }
+          }
         } catch (err: any) {
           logger.warn(
             { businessId, err: err?.message },
@@ -907,7 +964,9 @@ export async function triggerSlowTimeTemplate(
           businessId,
           occasion: template.occasion,
           intensity: template.intensity,
+          imageUrl,
           persisted: !!savedTemplateId,
+          creditsCharged,
           notificationVariants: notification?.variants?.length ?? 0,
           notificationDelivered: delivery?.delivered ?? false,
           dryRun,
@@ -918,8 +977,11 @@ export async function triggerSlowTimeTemplate(
       res.status(200).json({
         success: true,
         triggered: true,
+        recommendationsEnabled: true,
         template,
+        ...(imageUrl ? { imageUrl } : {}),
         ...(savedTemplateId ? { savedTemplateId } : {}),
+        creditsCharged,
         footprint: recommendations.footprint,
         alternatives: recommendations.alternativeTemplates,
         notification: notification

@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { internalApiKeyGuard } from "../../middleware/auth.js";
+import { generateDescription } from "../controllers/descriptionAssistController.js";
 import {
   generateBroadcastContent,
   generateOfferContent,
@@ -22,6 +24,91 @@ import {
 } from "../controllers/aiAssistController.js";
 
 const router = Router();
+
+// ===========================
+// Unified Description Assist
+// ===========================
+
+/**
+ * @route POST /ai-assist/description
+ * @desc The single "AI Assist ✨" endpoint: the user has typed a title, this
+ *       writes the description body. Handles both the first tap and every
+ *       "Regenerate" tap after it. Replaces /bug-report/description,
+ *       /broadcast-assist/description and their /refresh variants.
+ * @access Protected (internal API key)
+ * @header x-internal-api-key: string (required)
+ *
+ * @body {
+ *   type: "bug_report" | "broadcast" (required) - which field is being written,
+ *   title: string (required, min 3 chars) - the title the user typed,
+ *   regenerate?: boolean (default false) - true on a "Regenerate" tap: same
+ *                facts, new wording,
+ *   businessId?: string - bug_report: AI usage tracking.
+ *                         broadcast: pulls brand voice/category/audience so the
+ *                         copy isn't generic. Ignored if the business has no
+ *                         assistant yet — generation continues from the title.
+ *   userId?: string - log correlation only,
+ *
+ *   context?: {
+ *     // type: "bug_report"
+ *     appType?: "CONSUMER" | "BUSINESS" (default "CONSUMER"),
+ *     screen?: string - where the bug happened, e.g. "Checkout",
+ *     category?: "crash" | "ui_display" | "performance" | "login_auth" |
+ *                "payments" | "notifications" | "location_maps" |
+ *                "offers_deals" | "media_upload" | "other",
+ *     userNotes?: string - text already in the box; every fact in it is kept,
+ *     deviceInfo?: { platform?, osVersion?, appVersion?, deviceModel? }
+ *                  - validated, then appended as a "Device:" line. Never fill
+ *                    deviceModel from the User-Agent header,
+ *
+ *     // type: "broadcast"
+ *     purpose?: "announcement" | "update" | "reminder" | "promotion" | "general",
+ *     tone?: "professional" | "casual" | "friendly" | "exciting" | "urgent",
+ *     length?: "short" | "standard" - 40 words/280 chars vs 80 words/500 chars,
+ *     keyPoints?: string[] - facts to include (max 5); nothing beyond them is invented,
+ *     callToAction?: string - what the reader should do next,
+ *     emojiAllowed?: boolean (default false)
+ *   }
+ * }
+ *
+ * @response {
+ *   success: boolean,
+ *   type: "bug_report" | "broadcast",
+ *   description: string,
+ *   fallbackUsed: boolean,
+ *   notice?: string,        // present when fallbackUsed — show as a hint
+ *   bugReport?: { suggestedCategory: string, suggestedSeverity: "low" | "medium" | "high" | "critical" },
+ *   broadcast?: { characterCount: number, purpose: string, tone: string },
+ *   metadata: { generatedAt: string, titleUsed: string, model: string, businessName?: string }
+ * }
+ *
+ * @example Bug report:
+ * {
+ *   "type": "bug_report",
+ *   "title": "App freezes when I apply a coupon at checkout",
+ *   "context": {
+ *     "screen": "Checkout",
+ *     "deviceInfo": { "platform": "ios", "osVersion": "17.2", "appVersion": "2.3.1" }
+ *   }
+ * }
+ *
+ * @example Broadcast, regenerating:
+ * {
+ *   "type": "broadcast",
+ *   "title": "Closed this Saturday for a private event",
+ *   "regenerate": true,
+ *   "businessId": "507f1f77bcf86cd799439011",
+ *   "context": { "purpose": "announcement", "tone": "friendly" }
+ * }
+ *
+ * Notes:
+ * - Never 500s on an AI failure. Unusable titles (gibberish, profanity) and model
+ *   errors return 200 with a fill-in-the-blanks scaffold, fallbackUsed: true and
+ *   a `notice`. Branch on `fallbackUsed`, not on `success`.
+ * - Missing specifics come back as bracketed placeholders like [add the date],
+ *   never as invented dates, prices or steps.
+ */
+router.post("/description", internalApiKeyGuard, generateDescription);
 
 // ===========================
 // Content Generation Routes
@@ -315,16 +402,30 @@ router.post("/update-tags-and-description", updateTagsAndGenerateDescription);
  *       (views, likes, RSVPs, follows, nearby visitors) and optionally persists
  *       the template and/or returns notification copy variants for the backend
  *       to deliver.
+ *
+ *       Gated on Business.dailyRecommendationEnabled (pinntagBackend) — the
+ *       business owner's own switch. When it is off the endpoint returns
+ *       200 with triggered=false and recommendationsEnabled=false, and does
+ *       no template, image or notification work.
+ *
+ *       Billing: persisting a template is a recommendation update and costs
+ *       DAILY_RECOMMENDATION_CREDIT_COST (5) credits; returns 402 when the
+ *       wallet cannot cover it. Previews (persistTemplate=false or
+ *       dryRun=true) are free.
  * @body {
  *   businessId: string (required),
  *   persistTemplate?: boolean (default: false),
  *   sendNotification?: boolean (default: true),
- *   notificationVariantCount?: number (default: 3)
+ *   notificationVariantCount?: number (default: 3),
+ *   includeImage?: boolean (default: true)  // generate/reuse AI artwork
  * }
  * @returns {
  *   success: boolean,
  *   triggered: boolean,
+ *   recommendationsEnabled: boolean,
+ *   reason?: string,
  *   template?: SlowTimeTemplate,
+ *   imageUrl?: string,
  *   savedTemplateId?: string,
  *   footprint: FootprintSnapshot,
  *   alternatives: SlowTimeTemplate[],

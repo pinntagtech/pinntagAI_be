@@ -451,6 +451,7 @@ type DemoOccasion = (typeof DEMO_OCCASIONS)[number]["occasion"];
 
 interface DemoTemplate {
   title: string;
+  description: string;
   discountType: DiscountType;
   contentType: string;
   percentOffValue?: number;
@@ -621,14 +622,17 @@ export class DemoTemplateGeneratorService {
       contentType,
     } = this.determineDiscount(occasion, index);
 
-    // Generate AI title (without discount value in title)
-    const title = await this.generateDemoTitle({
+    // Generate AI title (without discount value in title) and description
+    const { title, description } = await this.generateDemoContent({
       businessName,
       category,
       occasion,
       label,
       specificHoliday,
       discountType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
     });
 
     // Generate AI image
@@ -649,6 +653,7 @@ export class DemoTemplateGeneratorService {
 
     return {
       title,
+      description,
       discountType,
       contentType,
       percentOffValue,
@@ -797,17 +802,21 @@ export class DemoTemplateGeneratorService {
   }
 
   /**
-   * Generate an AI title that does NOT include discount values.
-   * The title should be catchy and relevant to the occasion + category.
+   * Generate an AI title and description.
+   * The title must NOT include discount values; the description may reference
+   * the deal so the customer knows what they actually get.
    */
-  private static async generateDemoTitle(params: {
+  private static async generateDemoContent(params: {
     businessName: string;
     category: string;
     occasion: string;
     label: string;
     specificHoliday?: string;
     discountType: DiscountType;
-  }): Promise<string> {
+    percentOffValue?: number;
+    dollarOffValue?: number;
+    bogoOrFreeItem?: string;
+  }): Promise<{ title: string; description: string }> {
     const {
       businessName,
       category,
@@ -815,16 +824,27 @@ export class DemoTemplateGeneratorService {
       label,
       specificHoliday,
       discountType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
     } = params;
 
+    const dealSummary = this.buildDealSummary(
+      discountType,
+      percentOffValue,
+      dollarOffValue,
+      bogoOrFreeItem,
+    );
+
     try {
-      const prompt = `Write a short promotional title for a ${category || "local"} business called "${businessName}".
+      const prompt = `Write a short promotional title and description for a ${category || "local"} business called "${businessName}".
 
 Context:
 - Occasion: ${label}${specificHoliday ? ` (${specificHoliday})` : ""}
 - Deal type: ${discountType}
+- What the customer gets: ${dealSummary}
 
-Rules:
+Rules for the title:
 - Maximum 50 characters
 - Do NOT include any specific discount numbers, percentages, or dollar amounts in the title
 - Do NOT use "20% Off", "$10 Off", "Save 30%" or any numeric discount references
@@ -833,8 +853,15 @@ Rules:
 - Examples of GOOD titles: "Treat Yourself Tuesday", "Weekend Vibes Await", "Your Monday Pick-Me-Up", "Fresh Flavors, Fresh Deals"
 - Examples of BAD titles: "Save 25% This Monday", "$10 Off Your Order", "30% Weekend Special"
 
+Rules for the description:
+- 1-2 sentences (25-45 words) that expand on the title
+- State plainly what the customer gets (${dealSummary}) and why it is worth coming in
+- Match the occasion and the tone of the title; do not repeat the title verbatim
+- Do not invent specific menu items, prices or dates that were not given above
+- Plain text only (no emojis, hashtags or markdown)
+
 Respond with ONLY a JSON object:
-{ "title": "..." }`;
+{ "title": "...", "description": "..." }`;
 
       const response = await llm.chatCompletion({
         model: "gpt-4o",
@@ -847,14 +874,14 @@ Respond with ONLY a JSON object:
           { role: "user", content: prompt },
         ],
         temperature: 0.9,
-        max_tokens: 80,
+        max_tokens: 250,
         response_format: { type: "json_object" },
       });
 
       const content = response.choices[0]?.message?.content?.trim();
       if (!content) throw new Error("Empty response from OpenAI");
 
-      const { title } = JSON.parse(content);
+      const { title, description } = JSON.parse(content);
       if (!title) throw new Error("No title in response");
 
       // Safety check: strip any discount numbers that may have slipped through
@@ -862,14 +889,66 @@ Respond with ONLY a JSON object:
         .replace(/\d+%\s*(off|discount)?/gi, "")
         .replace(/\$\d+\s*(off|discount)?/gi, "")
         .trim();
-      return sanitized || title;
+
+      return {
+        title: sanitized || title,
+        description:
+          typeof description === "string" && description.trim().length > 0
+            ? description.trim()
+            : this.getFallbackDescription(occasion, label, dealSummary),
+      };
     } catch (error: any) {
       logger.warn(
         { error: error.message, label: params.label },
         "AI title generation failed, using fallback",
       );
-      return this.getFallbackTitle(occasion, label, category);
+      return {
+        title: this.getFallbackTitle(occasion, label, category),
+        description: this.getFallbackDescription(occasion, label, dealSummary),
+      };
     }
+  }
+
+  /**
+   * Human-readable summary of what the customer gets
+   */
+  private static buildDealSummary(
+    discountType: DiscountType,
+    percentOffValue?: number,
+    dollarOffValue?: number,
+    bogoOrFreeItem?: string,
+  ): string {
+    if (percentOffValue) return `${percentOffValue}% off`;
+    if (dollarOffValue) return `$${dollarOffValue} off`;
+    if (bogoOrFreeItem) return bogoOrFreeItem;
+    return `${discountType} deal`;
+  }
+
+  /**
+   * Fallback description when AI generation fails or omits it
+   */
+  private static getFallbackDescription(
+    occasion: string,
+    label: string,
+    dealSummary: string,
+  ): string {
+    const when: Record<string, string> = {
+      monday_motivation: "to start the week right",
+      tuesday_twofer: "every Tuesday",
+      wednesday_midweek: "to break up the midweek",
+      thursday_throwback: "this Throwback Thursday",
+      friday_deals: "to kick off the weekend",
+      saturday_special: "all Saturday",
+      sunday_selfcare: "this Sunday",
+      holiday: "during the celebrations",
+      seasonal: "this season",
+      slow_period: "during our quieter hours",
+      trending: "while it is trending",
+      general: "for a limited time",
+    };
+
+    const timing = when[occasion] || label.toLowerCase();
+    return `Enjoy ${dealSummary} ${timing}. It is a limited-time offer, so stop by or book ahead to make the most of it before it ends.`;
   }
 
   /**
@@ -1136,6 +1215,7 @@ Do NOT include any text, numbers, percentages, or discount values in the image.`
       bogoOrFreeItem: template.bogoOrFreeItem,
       categories: [],
       title: template.title,
+      description: template.description,
       keywords: Array.from(new Set(keywords)).slice(0, 8),
       minTargetAge: 18,
       maxTargetAge: 65,

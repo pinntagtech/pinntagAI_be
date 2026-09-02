@@ -61,6 +61,34 @@ export interface StripeAccountStatus {
   currently_due?: string[];
   disabled_reason?: string | null;
   lastUpdatedAt?: Date;
+  bank_name?: string;
+  last4?: string;
+}
+
+export interface QRTemplates {
+  flyerPamphletUrl?: string;
+  tableCounterTentUrl?: string;
+  posterUrl?: string;
+  billboardUrl?: string;
+  stickerUrl?: string;
+  digitalScreenUrl?: string;
+}
+
+/**
+ * Mirror of the backend's `Business.aiTemplateGeneration` sub-document —
+ * the AI service reports template-generation progress back into it via the
+ * internal backend endpoints (see templateController).
+ */
+export interface AITemplateGeneration {
+  status?: "idle" | "in_progress" | "completed" | "failed";
+  jobId?: string | null;
+  requested?: number;
+  generated?: number;
+  failed?: number;
+  isTrained?: boolean | null;
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
+  error?: string | null;
 }
 
 export interface FacebookPageInfo {
@@ -88,12 +116,14 @@ export interface IBusiness extends Document {
   status?: number;
   logo?: string | null;
   logoThumbnail?: string | null;
+  logoUploaded?: boolean;
   activeSubscription?: mongoose.Types.ObjectId;
   isRegistered?: boolean;
   businessCategories?: mongoose.Types.ObjectId[];
   businessIndustry?: mongoose.Types.ObjectId;
   cover?: string | null;
   coverThumbnail?: string | null;
+  vehicleType?: string;
   constitution?: mongoose.Types.ObjectId;
   documentNumber?: string;
   description?: string;
@@ -107,6 +137,7 @@ export interface IBusiness extends Document {
   bio?: string;
   outlets?: mongoose.Types.ObjectId[];
   activatedOutlets?: mongoose.Types.ObjectId[];
+  activatedOutletsLength?: number;
   countryCode?: string;
   phone?: string;
   email?: string;
@@ -117,6 +148,7 @@ export interface IBusiness extends Document {
   addressLine2?: string;
   addressLine3?: string;
   city?: string;
+  locality?: string;
   district?: string;
   state?: string;
   country?: mongoose.Types.ObjectId;
@@ -184,9 +216,13 @@ export interface IBusiness extends Document {
   addressVerifiedBy?: mongoose.Types.ObjectId;
   uniqueId?: string;
   profileCompletionPercentage?: number;
+  aiTrainingPercentage?: number;
   QRCode?: string;
+  downloadQr?: string;
+  QRTemplates?: QRTemplates;
   appRedirectLink?: string;
   isAgentCreated?: boolean;
+  aiAgentId?: string;
   viewsCount?: number;
   stripeAccountId?: string;
   connectStatus?: string;
@@ -203,6 +239,19 @@ export interface IBusiness extends Document {
   XPageUrl?: string;
   isFacebookDatafetched?: boolean;
   lastFacebookDatafetched?: Date;
+  consumerCheckInSuggestions?: string[];
+  isBoosted?: boolean;
+  boostOrder?: number;
+  showVerificationBanner?: boolean;
+  isCvb?: boolean;
+  aiTemplateGeneration?: AITemplateGeneration;
+  /**
+   * Business-owner switch for AI daily / slow-time recommendations.
+   * Owned by the backend (business settings screen); the AI service only
+   * reads it. When false or unset, no slow-time recommendation, template
+   * refresh or notification is produced for this business.
+   */
+  dailyRecommendationEnabled?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -240,6 +289,39 @@ const StripeAccountStatusSchema = new Schema(
     currently_due: { type: [String], default: [] },
     disabled_reason: { type: String, default: null },
     lastUpdatedAt: { type: Date },
+    bank_name: { type: String },
+    last4: { type: String },
+  },
+  { _id: false }
+);
+
+const QRTemplatesSchema = new Schema(
+  {
+    flyerPamphletUrl: { type: String },
+    tableCounterTentUrl: { type: String },
+    posterUrl: { type: String },
+    billboardUrl: { type: String },
+    stickerUrl: { type: String },
+    digitalScreenUrl: { type: String },
+  },
+  { _id: false }
+);
+
+const AITemplateGenerationSchema = new Schema(
+  {
+    status: {
+      type: String,
+      enum: ["idle", "in_progress", "completed", "failed"],
+      default: "idle",
+    },
+    jobId: { type: String, default: null },
+    requested: { type: Number, default: 0 },
+    generated: { type: Number, default: 0 },
+    failed: { type: Number, default: 0 },
+    isTrained: { type: Boolean, default: null },
+    startedAt: { type: Date, default: null },
+    finishedAt: { type: Date, default: null },
+    error: { type: String, default: null },
   },
   { _id: false }
 );
@@ -251,6 +333,7 @@ const BusinessSchema = new Schema<IBusiness>(
     status: { type: Number, default: 0 },
     logo: { type: String, default: null },
     logoThumbnail: { type: String, default: null },
+    logoUploaded: { type: Boolean, default: false },
     activeSubscription: { type: Schema.Types.ObjectId, ref: "Subscription" },
     isRegistered: { type: Boolean },
     businessCategories: [
@@ -259,6 +342,7 @@ const BusinessSchema = new Schema<IBusiness>(
     businessIndustry: { type: Schema.Types.ObjectId, ref: "BusinessIndustry" },
     cover: { type: String, default: null },
     coverThumbnail: { type: String, default: null },
+    vehicleType: { type: String },
     constitution: { type: Schema.Types.ObjectId, ref: "BusinessConstitution" },
     documentNumber: { type: String },
     description: { type: String },
@@ -272,6 +356,7 @@ const BusinessSchema = new Schema<IBusiness>(
     bio: { type: String },
     outlets: [{ type: Schema.Types.ObjectId, ref: "Outlet" }],
     activatedOutlets: [{ type: Schema.Types.ObjectId, ref: "Outlet" }],
+    activatedOutletsLength: { type: Number },
     countryCode: { type: String },
     phone: { type: String },
     email: { type: String },
@@ -282,6 +367,7 @@ const BusinessSchema = new Schema<IBusiness>(
     addressLine2: { type: String },
     addressLine3: { type: String },
     city: { type: String },
+    locality: { type: String },
     district: { type: String },
     state: { type: String },
     country: { type: Schema.Types.ObjectId, ref: "BusinessCountry" },
@@ -352,9 +438,13 @@ const BusinessSchema = new Schema<IBusiness>(
     addressVerifiedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     uniqueId: { type: String },
     profileCompletionPercentage: { type: Number, default: 0 },
+    aiTrainingPercentage: { type: Number, default: 0 },
     QRCode: { type: String },
+    downloadQr: { type: String },
+    QRTemplates: { type: QRTemplatesSchema },
     appRedirectLink: { type: String },
     isAgentCreated: { type: Boolean, default: false },
+    aiAgentId: { type: String },
     viewsCount: { type: Number, default: 0 },
     stripeAccountId: { type: String },
     connectStatus: { type: String, default: ConnectStatus.PENDING },
@@ -371,6 +461,18 @@ const BusinessSchema = new Schema<IBusiness>(
     XPageUrl: { type: String },
     isFacebookDatafetched: { type: Boolean, default: false },
     lastFacebookDatafetched: { type: Date },
+    consumerCheckInSuggestions: [{ type: String }],
+    isBoosted: { type: Boolean, default: false },
+    boostOrder: { type: Number, default: 1000 },
+    showVerificationBanner: { type: Boolean, default: true },
+    isCvb: { type: Boolean, default: false },
+    aiTemplateGeneration: {
+      type: AITemplateGenerationSchema,
+      default: () => ({ status: "idle" }),
+    },
+    // Business-owner opt-in for AI daily / slow-time recommendations.
+    // Written by the backend, read-only here.
+    dailyRecommendationEnabled: { type: Boolean, default: false },
   },
   {
     collection: "businesses",

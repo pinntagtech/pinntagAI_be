@@ -10,13 +10,31 @@ export interface IBusiness_AI_Assistant extends Document {
   tags?: string[];
   name: string;
   vectorStoreId?: string;
+  /**
+   * Local agent identifier. Was an OpenAI Assistants API id (`asst_...`) until
+   * that API was sunset; new agents get a locally-minted `local_<businessId>`.
+   * Nothing dereferences it remotely any more — it is the "this business has an
+   * agent" gate and a stable per-business key. Legacy `asst_...` values are
+   * still honoured on lookup, so no backfill is required.
+   */
   assistantId: string;
   description?: string;
   website?: string;
   websiteData?: string; // Cached website content
   contactEmail?: string;
   metadata?: Record<string, any>;
+  /**
+   * @deprecated Assistants API thread id. Threads no longer exist — generation
+   * is stateless via the Responses API. Kept so existing documents stay
+   * readable; never written, never read.
+   */
   threadId?: string;
+  /**
+   * The agent's system prompt. Previously stored remotely on the Assistant
+   * object; now the source of truth, sent on every generation. May be empty on
+   * documents created before this migration — `resolveAgentInstructions()`
+   * rebuilds from the business fields in that case.
+   */
   instructions?: string;
   facebookPageAccessToken?: string; // Long-lived Facebook page access token
   facebookPageId?: string; // Facebook page ID
@@ -50,10 +68,18 @@ export interface IBusiness_AI_Assistant extends Document {
   };
   isFacebookDataFetched?: boolean; // Whether Facebook data has been fetched
   lastFacebookDataFetched?: Date; // Last time Facebook data was fetched
-  enableAutoSlowTimeTemplates?: boolean; // Opt-in to hourly slow-time template refresh job
+  /**
+   * @deprecated Superseded by `Business.dailyRecommendationEnabled` on the
+   * backend, which is what the business owner actually toggles. Kept so
+   * existing documents stay readable; no longer consulted by the job.
+   */
+  enableAutoSlowTimeTemplates?: boolean;
   lastSlowTimeTemplateRefreshAt?: Date; // Last time the slow-time job touched this business
   lastSlowTimeNotifiedAt?: Date; // Last time the slow-time job delivered a notification
   lastSlowTimeNotifiedOccasion?: string; // Occasion of the last delivered notification
+  lastSlowTimeImageUrl?: string; // Cached AI artwork for the current slow-time template
+  lastSlowTimeImageOccasion?: string; // Occasion the cached image was generated for
+  lastSlowTimeImageAt?: Date; // When the cached image was generated
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +149,9 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     lastSlowTimeTemplateRefreshAt: { type: Date },
     lastSlowTimeNotifiedAt: { type: Date },
     lastSlowTimeNotifiedOccasion: { type: String },
+    lastSlowTimeImageUrl: { type: String },
+    lastSlowTimeImageOccasion: { type: String },
+    lastSlowTimeImageAt: { type: Date },
   },
   { timestamps: true, versionKey: false }
 );

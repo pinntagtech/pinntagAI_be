@@ -19,7 +19,6 @@ import {
   getPhaseSummary,
 } from "../../utils/AI_Training_questionnaire.js";
 import { response } from "express";
-import { openai } from "../../utils/openai.js";
 import { AIService, Business } from "./ai.service.js";
 import { getBackendConnection } from "../../db/connection.js";
 import { getBackendBusinessModel } from "../../models/pinntagBackend/business.model.js";
@@ -1545,66 +1544,30 @@ export class AITrainingService {
 
       const finalInstructions = enhancedInstructions + industryInsights;
 
-      // Update OpenAI assistant with enhanced instructions
+      // Persist the enhanced instructions on the agent document. This used to
+      // push to a remote OpenAI assistant object; that API is gone, and the
+      // stored instructions are now what every generation actually sends.
+      //
+      // The old 404-recovery branch here (recreate the assistant if OpenAI had
+      // lost it) is deliberately not carried over — there is no remote object
+      // left to go missing.
       try {
-        await openai.beta.assistants.update(businessAgent.assistantId, {
-          instructions: finalInstructions,
-        });
+        businessAgent.instructions = finalInstructions;
+        await businessAgent.save();
         logger.info(
           { businessId, assistantId: businessAgent.assistantId },
-          "Assistant updated successfully",
+          "Agent instructions updated successfully",
         );
       } catch (assistantError: any) {
-        // Log the assistant update error
         logger.error(
           {
             error: assistantError,
             businessId,
             assistantId: businessAgent.assistantId,
           },
-          "Failed to update OpenAI assistant",
+          "Failed to persist agent instructions",
         );
-
-        // Check if it's a 404 error (assistant doesn't exist)
-        if (
-          assistantError.status === 404 ||
-          assistantError.message?.includes("404")
-        ) {
-          logger.warn(
-            { businessId, assistantId: businessAgent.assistantId },
-            "Assistant not found in OpenAI. Attempting to create new assistant with training data...",
-          );
-
-          try {
-            // Create a new assistant with the training data
-            const newAssistant = await openai.beta.assistants.create({
-              name: businessAgent.businessName,
-              model: "gpt-4o",
-              instructions: finalInstructions,
-              tools: [{ type: "file_search" }],
-            });
-
-            // Update the business agent with new assistant ID
-            businessAgent.assistantId = newAssistant.id;
-            await businessAgent.save();
-
-            logger.info(
-              {
-                businessId,
-                oldAssistantId: assistantError.message,
-                newAssistantId: newAssistant.id,
-              },
-              "Successfully created new assistant with training data",
-            );
-          } catch (createError: any) {
-            logger.error(
-              { error: createError, businessId },
-              "Failed to create new assistant. Training will be marked as completed without assistant.",
-            );
-          }
-        }
-
-        // Continue to mark training as completed even if assistant operations fail
+        // Continue to mark training as completed even if the write fails
       }
 
       // Mark training as completed
@@ -2346,8 +2309,13 @@ export class AITrainingService {
         | undefined;
       if (correctedTrainingStatus === "completed") {
         try {
+          // `image: "cached"` — this is a polled read path, so it shows the
+          // artwork the refresh job already produced rather than paying for
+          // a fresh generation on every call.
           slowTimeRecommendations =
-            await SlowTimeRecommendationService.getRecommendations(businessId);
+            await SlowTimeRecommendationService.getRecommendations(businessId, {
+              image: "cached",
+            });
         } catch (recErr: any) {
           logger.warn(
             { businessId, err: recErr?.message },
@@ -2475,14 +2443,13 @@ export class AITrainingService {
                 structuredData,
               );
 
-            // Update assistant
-            await openai.beta.assistants.update(businessAgent.assistantId, {
-              instructions: enhancedInstructions,
-            });
+            // Persist the enriched instructions on the agent document.
+            businessAgent.instructions = enhancedInstructions;
+            await businessAgent.save();
 
             logger.info(
               { businessId, assistantId: businessAgent.assistantId },
-              "Assistant updated with Google Places data",
+              "Agent instructions updated with Google Places data",
             );
           }
         } catch (assistantError: any) {

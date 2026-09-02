@@ -263,7 +263,11 @@ export class AIController {
 
       const result = await AIService.updateAgent(businessId, updates);
 
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: "AI agent updated successfully",
+      });
     } catch (error: any) {
       logger.error(
         { error, businessId: req.params.businessId },

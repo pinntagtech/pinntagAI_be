@@ -1152,7 +1152,7 @@ export class AgentTemplateGenerationJob {
     agent: any,
     options: TemplateGenerationOptions,
     title: string,
-    _description: string,
+    description: string,
     imageUrl: string
   ): Promise<any> {
     const { upsertTemplate, TemplateCreatorType, TemplateType, TemplateScope } =
@@ -1181,7 +1181,7 @@ export class AgentTemplateGenerationJob {
     const generatedTags = this.generateTagsForTemplate(
       options.occasion || "general",
       title,
-      "",
+      description,
       agent.tags || []
     );
 
@@ -1202,10 +1202,11 @@ export class AgentTemplateGenerationJob {
         scope: TemplateScope.BUSINESS_SPECIFIC,
         businessId: businessObjectId as any,
         title,
+        description,
         thumbnail: imageUrl,
         tags: generatedTags,
         businessCategories: [], // Empty for metadata-based templates
-        keywords: this.extractKeywords(title, ""),
+        keywords: this.extractKeywords(title, description),
         discountValue: "15",
         discountType,
         contentType: "offer",

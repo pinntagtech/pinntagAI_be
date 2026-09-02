@@ -83,6 +83,39 @@ export function containsProfanity(text: string): boolean {
 }
 
 /**
+ * Is this text something a model can actually work from?
+ *
+ * Catches keyboard mash ("dsdsds", "aaaa", "asdasdasd") before it reaches an
+ * LLM, which would otherwise invent a confident, entirely fictional expansion
+ * of it. Used by the AI-assist endpoints, where the user's short input is the
+ * only grounding the model gets.
+ */
+export function isMeaningfulPhrase(text: string, minWords = 2): boolean {
+  const cleaned = text.toLowerCase().replace(/[^a-z\s]/g, " ").trim();
+  if (cleaned.replace(/\s/g, "").length < 6) return false;
+
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  // A "word" counts only if it looks pronounceable: it has a vowel, isn't one
+  // letter repeated, and isn't a short unit tiled to fake length.
+  const realWords = words.filter(
+    (w) => /[aeiouy]/.test(w) && !/^(.)\1+$/.test(w) && !isRepeatedUnit(w),
+  );
+
+  return realWords.length >= minWords || realWords.join("").length >= 8;
+}
+
+/** "dsdsds" / "abcabcabc" — a short unit repeated to fake a word. */
+function isRepeatedUnit(word: string): boolean {
+  if (word.length < 4) return false;
+  for (let unit = 1; unit <= Math.floor(word.length / 2); unit++) {
+    if (word.length % unit !== 0) continue;
+    const chunk = word.slice(0, unit);
+    if (chunk.repeat(word.length / unit) === word) return true;
+  }
+  return false;
+}
+
+/**
  * Check if text is a conversational AI response (not actual content)
  */
 export function isConversationalResponse(text: string): boolean {

@@ -6,7 +6,15 @@ import {
   SlowTimeRecommendationService,
   SlowTimeTemplate,
 } from "../api/services/slowTimeRecommendation.service.js";
+import { getBackendConnection } from "../db/connection.js";
+import { getBackendBusinessModel } from "../models/pinntagBackend/business.model.js";
 import { ContentAssistService } from "../api/services/contentAssist.service.js";
+import { SlowTimeImageService } from "../api/services/slowTimeImage.service.js";
+import {
+  chargeCredits,
+  hasSufficientCredits,
+  DAILY_RECOMMENDATION_CREDIT_COST,
+} from "../api/services/aiCredits.service.js";
 import { triggerNotification } from "../api/services/pinntagBackend.service.js";
 import {
   upsertTemplate,
@@ -31,6 +39,7 @@ const SLOW_TIME_DISCOUNT_TYPE_MAP: Record<string, DiscountType> = {
 function buildDealTemplateData(
   businessId: string,
   template: SlowTimeTemplate,
+  thumbnailUrl?: string,
 ): Partial<IDealTemplate> {
   const discountType =
     (template.discountType && SLOW_TIME_DISCOUNT_TYPE_MAP[template.discountType]) ||
@@ -59,6 +68,7 @@ function buildDealTemplateData(
         ? template.description
         : undefined,
     categories: [],
+    ...(thumbnailUrl ? { thumbnail: thumbnailUrl } : {}),
     title: template.title,
     keywords: [],
     description: template.description,
@@ -81,13 +91,45 @@ function buildDealTemplateData(
 }
 
 /**
+ * Businesses whose owner has switched daily recommendations on
+ * (`Business.dailyRecommendationEnabled` in the pinntagBackend DB). That flag
+ * is the single source of truth for this feature — the older
+ * `BusinessAIAssistant.enableAutoSlowTimeTemplates` field is no longer read.
+ */
+async function findOptedInBusinessIds(): Promise<Set<string>> {
+  const backendConn = await getBackendConnection();
+  const BusinessModel = getBackendBusinessModel(backendConn);
+
+  const businesses = await BusinessModel.find({
+    dailyRecommendationEnabled: true,
+    isDeleted: { $ne: true },
+  })
+    .select("_id")
+    .lean();
+
+  return new Set(businesses.map((b) => String(b._id)));
+}
+
+/** Same check as `findOptedInBusinessIds`, for a single business. */
+async function isOptedIn(businessId: string): Promise<boolean> {
+  const backendConn = await getBackendConnection();
+  const BusinessModel = getBackendBusinessModel(backendConn);
+
+  const business = await BusinessModel.findById(businessId)
+    .select("dailyRecommendationEnabled")
+    .lean();
+
+  return business?.dailyRecommendationEnabled === true;
+}
+
+/**
  * Slow-Time Template Refresh Job
  *
- * Hourly job. For each business that has opted in
- * (BusinessAIAssistant.enableAutoSlowTimeTemplates === true), checks if the
- * business is currently in a slow window — using the user_footprints data
- * and the training-side `slow_periods` answer — and if so, refreshes the
- * business's slow-time deal template in place.
+ * Hourly job. For each business whose owner has turned daily recommendations
+ * on (`Business.dailyRecommendationEnabled`), checks if the business is
+ * currently in a slow window — using the user_footprints data and the
+ * training-side `slow_periods` answer — and if so, refreshes the business's
+ * slow-time deal template in place, artwork included.
  *
  * Notification copy is generated and persisted on the deal template doc
  * (under aiGenerationData.notificationVariants) for the backend to pick
@@ -98,8 +140,22 @@ export class SlowTimeTemplateRefreshJob {
     const startedAt = Date.now();
     logger.info("Starting slow-time template refresh job");
 
+    const optedInBusinessIds = await findOptedInBusinessIds();
+
+    if (optedInBusinessIds.size === 0) {
+      logger.info("No businesses have daily recommendations enabled");
+      return;
+    }
+
+    // The AI assistant doc carries the per-business cooldown state; only
+    // businesses that have one can be processed (they need a trained agent
+    // anyway).
     const agents = await BusinessAIAssistantModel.find({
-      enableAutoSlowTimeTemplates: true,
+      businessId: {
+        $in: [...optedInBusinessIds].map(
+          (id) => new mongoose.Types.ObjectId(id),
+        ),
+      },
     })
       .select(
         "businessId businessName lastSlowTimeNotifiedAt lastSlowTimeNotifiedOccasion",
@@ -107,14 +163,19 @@ export class SlowTimeTemplateRefreshJob {
       .lean();
 
     if (agents.length === 0) {
-      logger.info("No businesses opted into auto slow-time templates");
+      logger.info(
+        { optedIn: optedInBusinessIds.size },
+        "Businesses have daily recommendations enabled but no AI agent yet",
+      );
       return;
     }
 
     let processed = 0;
     let refreshed = 0;
     let skipped = 0;
+    let unfunded = 0;
     let failed = 0;
+    let creditsCharged = 0;
 
     for (const agent of agents) {
       const businessId = String(agent.businessId);
@@ -133,9 +194,18 @@ export class SlowTimeTemplateRefreshJob {
           continue;
         }
 
+        // Image work is deferred until after the refresh decision below, so
+        // skipped ticks cost nothing.
         const recs = await SlowTimeRecommendationService.getRecommendations(
           businessId,
+          { image: "none" },
         );
+
+        if (!recs.recommendationsEnabled) {
+          // Owner switched the feature off between the query and now.
+          skipped++;
+          continue;
+        }
 
         const template = recs.primaryTemplate;
         if (!template) {
@@ -157,7 +227,36 @@ export class SlowTimeTemplateRefreshJob {
           continue;
         }
 
-        const dealData = buildDealTemplateData(businessId, template);
+        // Affordability is checked before the paid work (image + copy
+        // generation) so an unfunded wallet costs us nothing. The wallet is
+        // actually debited once the update has landed.
+        if (
+          !(await hasSufficientCredits(
+            businessId,
+            DAILY_RECOMMENDATION_CREDIT_COST,
+          ))
+        ) {
+          unfunded++;
+          logger.info(
+            { businessId, cost: DAILY_RECOMMENDATION_CREDIT_COST },
+            "Skipping slow-time refresh — insufficient AI credits",
+          );
+          continue;
+        }
+
+        // Artwork for the template. Reuses the cached image while the
+        // occasion is unchanged, and yields no image at all rather than one
+        // that failed the accuracy check.
+        const image = await SlowTimeImageService.getOrCreateImage(
+          businessId,
+          template,
+        );
+
+        const dealData = buildDealTemplateData(
+          businessId,
+          template,
+          image?.imageUrl,
+        );
 
         // Generate notification copy (best-effort) and stash on the doc
         // for the backend to deliver. Stays AI-side copy-only.
@@ -204,6 +303,16 @@ export class SlowTimeTemplateRefreshJob {
           } as any,
           dealData,
         );
+
+        // The update has landed — charge for it. Debited after the write so a
+        // failed refresh is never billed; the conditional `$inc` inside
+        // chargeCredits is what actually guards the balance.
+        const charge = await chargeCredits(
+          businessId,
+          DAILY_RECOMMENDATION_CREDIT_COST,
+          "daily_recommendation_update",
+        );
+        if (charge.charged) creditsCharged += DAILY_RECOMMENDATION_CREDIT_COST;
 
         // Cooldown: don't re-notify a business more than once per 6 hours
         // unless the picked occasion changed (e.g., evergreen → low_views)
@@ -253,6 +362,12 @@ export class SlowTimeTemplateRefreshJob {
             occasion: template.occasion,
             intensity: template.intensity,
             signals: recs.footprint.signals,
+            imageUrl: image?.imageUrl,
+            imageCached: image?.cached ?? false,
+            creditsCharged: charge.charged
+              ? DAILY_RECOMMENDATION_CREDIT_COST
+              : 0,
+            creditBalance: charge.balance,
             notificationVariants: notificationVariants?.length ?? 0,
             notificationDelivered,
             cooldownExpired,
@@ -274,7 +389,9 @@ export class SlowTimeTemplateRefreshJob {
         processed,
         refreshed,
         skipped,
+        unfunded,
         failed,
+        creditsCharged,
         durationMs: Date.now() - startedAt,
       },
       "Slow-time template refresh job completed",
@@ -289,15 +406,16 @@ export class SlowTimeTemplateRefreshJob {
     const agent = await BusinessAIAssistantModel.findOne({
       businessId: new mongoose.Types.ObjectId(businessId),
     })
-      .select("businessId businessName enableAutoSlowTimeTemplates")
+      .select("businessId businessName")
       .lean();
 
     if (!agent) {
       throw new Error(`No AI agent found for business ID: ${businessId}`);
     }
-    if (!agent.enableAutoSlowTimeTemplates) {
+
+    if (!(await isOptedIn(businessId))) {
       throw new Error(
-        `Business ${businessId} has not opted into auto slow-time templates`,
+        `Business ${businessId} has daily recommendations turned off`,
       );
     }
 
