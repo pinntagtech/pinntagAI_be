@@ -593,6 +593,86 @@ export class FacebookService {
   //   }
   // }
 
+  /**
+   * Fetches follower and post counts for a connected Page.
+   *
+   * Both come from endpoints gated behind `pages_read_engagement`. If that
+   * permission isn't granted on the Meta app, these calls fail and we return
+   * nulls — the same value the connect flow used to hardcode — so the caller
+   * degrades to exactly the previous behaviour rather than erroring.
+   *
+   * Each metric is fetched independently so one missing permission or a
+   * partially-restricted Page doesn't cost us the other number. Graph error
+   * codes are logged so a permission problem is diagnosable from the logs
+   * instead of silently presenting as a blank card in the app.
+   */
+  private async fetchPageEngagementMetrics(
+    pageAccessToken: string,
+  ): Promise<{ followers: number | null; postsCount: number | null }> {
+    let followers: number | null = null;
+    let postsCount: number | null = null;
+
+    const logGraphFailure = (error: any, metric: string) => {
+      const fbErr = error?.response?.data?.error;
+      logger.warn(
+        {
+          metric,
+          status: error?.response?.status,
+          fbCode: fbErr?.code,
+          fbSubcode: fbErr?.error_subcode,
+          fbType: fbErr?.type,
+          fbMessage: fbErr?.message,
+          fbTraceId: fbErr?.fbtrace_id,
+        },
+        `Could not fetch Facebook ${metric} — likely missing pages_read_engagement`,
+      );
+    };
+
+    // Followers. `/me` with a Page token resolves to that Page. This mirrors
+    // the call generateLongLivedPageToken already makes successfully.
+    // `followers_count` and `fan_count` differ (followers vs. likes) and either
+    // may be absent depending on the Page, so fall back between them.
+    try {
+      const response = await axios.get(
+        "https://graph.facebook.com/v24.0/me",
+        {
+          params: {
+            fields: "followers_count,fan_count",
+            access_token: pageAccessToken,
+          },
+        },
+      );
+      const data = response.data ?? {};
+      const raw = data.followers_count ?? data.fan_count;
+      followers = typeof raw === "number" ? raw : null;
+    } catch (error: any) {
+      logGraphFailure(error, "follower count");
+    }
+
+    // Post count. `summary=total_count` gives the total without paging the
+    // whole feed; `limit=1` keeps the payload small since we discard the posts
+    // themselves. If the edge doesn't return a summary we leave this null
+    // rather than reporting the page size as if it were the total.
+    try {
+      const response = await axios.get(
+        "https://graph.facebook.com/v24.0/me/posts",
+        {
+          params: {
+            limit: 1,
+            summary: "total_count",
+            access_token: pageAccessToken,
+          },
+        },
+      );
+      const total = response.data?.summary?.total_count;
+      postsCount = typeof total === "number" ? total : null;
+    } catch (error: any) {
+      logGraphFailure(error, "post count");
+    }
+
+    return { followers, postsCount };
+  }
+
   async completeOAuthFlow(userAccessToken: string, businessId: string) {
     const tokenTail = userAccessToken.slice(-4);
     const tokenLen = userAccessToken.length;
@@ -667,19 +747,24 @@ export class FacebookService {
         "Resolved Page from /me/accounts",
       );
 
-      // ---- Step 2: build metadata WITHOUT calling /{pageId} --------------------
-      // The previous version called GET /{pageId}?fields=id,name,picture{url}.
-      // That endpoint is gated behind pages_read_engagement OR Page Public
-      // Metadata Access. PPCA does NOT cover it. We have neither, so we skip.
+      // ---- Step 2: build metadata, enriched with what we can read -------------
+      // We deliberately don't call GET /{pageId} for the profile fields: it's
+      // gated behind pages_read_engagement OR Page Public Metadata Access, and
+      // PPCA does NOT cover it. Everything structural (id, name, token, picture,
+      // cover) is already in pages[0].
       //
-      // Everything we need (id, name, token) is already in pages[0].
-      // Other fields are intentionally null until elevated permissions are
-      // approved or until we add a manual entry UI.
+      // Follower and post counts are fetched separately and defensively — the
+      // app shows them on the connect card, and they come back null (exactly
+      // what this used to hardcode) when the permission isn't granted, so a
+      // missing permission degrades the card instead of failing the connect.
+      const engagement = await this.fetchPageEngagementMetrics(pageAccessToken);
+
       const pageMetadata = {
         name: pageName,
         category: null,
         about: null,
-        followers: null,
+        followers: engagement.followers,
+        postsCount: engagement.postsCount,
         website: null,
         phone: null,
         email: null,
@@ -692,6 +777,16 @@ export class FacebookService {
           cover: firstPage.cover,
         },
       };
+
+      logger.info(
+        {
+          businessId,
+          pageId,
+          followers: engagement.followers,
+          postsCount: engagement.postsCount,
+        },
+        "Resolved Page engagement metrics",
+      );
 
       // ---- Step 3: persist to AI assistant DB ----------------------------------
       const { BusinessAIAssistantModel } =
@@ -712,6 +807,7 @@ export class FacebookService {
           about: pageMetadata.about,
           category: pageMetadata.category,
           followers: pageMetadata.followers,
+          postsCount: pageMetadata.postsCount,
           website: pageMetadata.website,
           phone: pageMetadata.phone,
           email: pageMetadata.email,
@@ -727,7 +823,8 @@ export class FacebookService {
         facebookPageName: pageMetadata.name,
         facebookPageCategory: null,
         facebookPageAbout: null,
-        facebookPageFollowers: null,
+        facebookPageFollowers: engagement.followers,
+        facebookPagePostsCount: engagement.postsCount,
         facebookPageWebsite: null,
         facebookPagePhone: null,
         facebookPageEmail: null,
@@ -789,6 +886,7 @@ export class FacebookService {
             category: pageMetadata.category,
             about: pageMetadata.about,
             followers: pageMetadata.followers,
+            postsCount: pageMetadata.postsCount,
             website: pageMetadata.website,
             phone: pageMetadata.phone,
             email: pageMetadata.email,

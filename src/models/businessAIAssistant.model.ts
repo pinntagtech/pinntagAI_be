@@ -45,6 +45,7 @@ export interface IBusiness_AI_Assistant extends Document {
   facebookPageCoverPhoto?: string; // Facebook page cover photo URL
   facebookPageAbout?: string; // Facebook page about/description
   facebookPageFollowers?: number; // Number of followers
+  facebookPagePostsCount?: number; // Number of posts on the page
   facebookPageWebsite?: string; // Website from Facebook page
   facebookPagePhone?: string; // Phone number from Facebook page
   facebookPageEmail?: string; // Email from Facebook page
@@ -59,6 +60,7 @@ export interface IBusiness_AI_Assistant extends Document {
       about?: string;
       category?: string;
       followers?: number;
+      postsCount?: number;
       website?: string;
       phone?: string;
       email?: string;
@@ -116,6 +118,7 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
     facebookPageCoverPhoto: { type: String }, // Facebook page cover photo URL
     facebookPageAbout: { type: String }, // Facebook page about/description
     facebookPageFollowers: { type: Number }, // Number of followers
+    facebookPagePostsCount: { type: Number }, // Number of posts on the page
     facebookPageWebsite: { type: String }, // Website from Facebook page
     facebookPagePhone: { type: String }, // Phone number from Facebook page
     facebookPageEmail: { type: String }, // Email from Facebook page
@@ -132,6 +135,7 @@ export const BusinessAIAssistantSchema = new Schema<IBusiness_AI_Assistant>(
             about: { type: String },
             category: { type: String },
             followers: { type: Number },
+            postsCount: { type: Number },
             website: { type: String },
             phone: { type: String },
             email: { type: String },
