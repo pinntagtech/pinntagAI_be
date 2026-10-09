@@ -68,6 +68,10 @@ const CONVERSATIONAL_PATTERNS = [
   /can you (tell|provide|give)/i,
   /would you like me to/i,
   /let me know/i,
+  // Scope-guard refusals from the business agent's system prompt
+  // ("I can't help with that here. I can help you with ...").
+  /^i (can['’]?t|cannot|can not|won['’]?t) (help|assist)/i,
+  /\bi can help you with\b/i,
 ];
 
 /**

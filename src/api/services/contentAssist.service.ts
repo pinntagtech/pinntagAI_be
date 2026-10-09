@@ -389,7 +389,7 @@ export class ContentAssistService {
       const responseText = result.text;
 
       // Parse description
-      const description = this.parseDescription(responseText);
+      const description = this.parseDescription(responseText, contentType);
 
       // Track usage
       await UsageTrackingService.trackUsage({
@@ -481,7 +481,9 @@ export class ContentAssistService {
       }
     }
 
-    return `Generate exactly ${count} compelling headlines/titles for the following content.
+    return `This is an in-app PinnTag content-creation request for this business's own promotion, so it is always in scope. Promotions such as happy hours, drink specials, and bar/nightlife events are normal business content - write them, do not refuse.
+
+Generate exactly ${count} compelling headlines/titles for the following content.
 
 BUSINESS INFORMATION:
 - Name: ${context.businessName}
@@ -615,7 +617,9 @@ STYLE GUIDELINES:
       promotionType
     );
 
-    return `Generate a compelling description for the following content.
+    return `This is an in-app PinnTag content-creation request for this business's own promotion, so it is always in scope. Promotions such as happy hours, drink specials, and bar/nightlife events are normal business content - write them, do not refuse.
+
+Generate a compelling description for the following content.
 
 BUSINESS INFORMATION:
 - Name: ${context.businessName}
@@ -776,7 +780,20 @@ PURPOSE: Reinforce loyalty and motivate continued engagement through earn-and-re
   /**
    * Parse description from AI response
    */
-  private static parseDescription(responseText: string): string {
+  private static parseDescription(
+    responseText: string,
+    contentType: ContentCreationType
+  ): string {
+    // The agent's scope guard can refuse (e.g. on "happy hour"); never ship
+    // the refusal text as the description.
+    if (isConversationalResponse(responseText)) {
+      logger.warn(
+        { responseText: responseText.substring(0, 200) },
+        "AI returned conversational response instead of description, using fallback"
+      );
+      return this.getFallbackDescription(contentType, "");
+    }
+
     // Clean up the response - remove any JSON wrapping or labels
     let description = responseText.trim();
 
@@ -805,7 +822,7 @@ PURPOSE: Reinforce loyalty and motivate continued engagement through earn-and-re
       description = description.substring(0, 137) + "...";
     }
 
-    return description || this.getFallbackDescription("offer", "");
+    return description || this.getFallbackDescription(contentType, "");
   }
 
   /**
