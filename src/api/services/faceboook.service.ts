@@ -149,7 +149,13 @@ export class FacebookService {
     const result = axios
       .request(config)
       .then((response) => {
-        logger.info({ data: response.data }, "Fetched long-lived token");
+        logger.info(
+          {
+            tokenTail: response.data?.access_token?.slice(-4),
+            expiresIn: response.data?.expires_in,
+          },
+          "Fetched long-lived token",
+        );
         return {
           success: true,
           data: response.data,
@@ -699,7 +705,29 @@ export class FacebookService {
       const pages = pagesResponse.data?.data ?? [];
 
       if (pages.length === 0) {
-        logger.warn({ businessId }, "User has no Facebook Pages");
+        // Log why the list is empty: missing/declined pages_show_list, or the
+        // Page wasn't ticked in the login dialog (no target_ids on the scope).
+        let tokenDebug: unknown;
+        try {
+          const debugResponse = await axios.get(
+            `https://graph.facebook.com/v24.0/debug_token`,
+            {
+              params: {
+                input_token: userAccessToken,
+                access_token: `${process.env.FACEBOOK_CLIENT_ID}|${process.env.FACEBOOK_CLIENT_SECRET}`,
+              },
+            },
+          );
+          const { scopes, granular_scopes, user_id, is_valid } =
+            debugResponse.data?.data ?? {};
+          tokenDebug = { is_valid, user_id, scopes, granular_scopes };
+        } catch (error: any) {
+          tokenDebug = error?.response?.data ?? error?.message;
+        }
+        logger.warn(
+          { businessId, tokenDebug },
+          "User has no Facebook Pages",
+        );
         return {
           success: false,
           data: "No Facebook Pages found for this account. Please create or connect a Facebook Page first.",
