@@ -702,12 +702,14 @@ export class FacebookService {
         },
       );
 
-      const pages = pagesResponse.data?.data ?? [];
+      let pages = pagesResponse.data?.data ?? [];
+      let tokenDebug: any;
 
       if (pages.length === 0) {
-        // Log why the list is empty: missing/declined pages_show_list, or the
-        // Page wasn't ticked in the login dialog (no target_ids on the scope).
-        let tokenDebug: unknown;
+        // /me/accounts only lists Pages where the user has a direct role. Pages
+        // reached through a Business Portfolio are missing there, but the Page
+        // IDs the user ticked in the login dialog are on the token's granular
+        // scopes, and each can be fetched directly by ID.
         try {
           const debugResponse = await axios.get(
             `https://graph.facebook.com/v24.0/debug_token`,
@@ -724,6 +726,42 @@ export class FacebookService {
         } catch (error: any) {
           tokenDebug = error?.response?.data ?? error?.message;
         }
+
+        const grantedPageIds: string[] =
+          tokenDebug?.granular_scopes?.find(
+            (s: any) => s.scope === "pages_show_list",
+          )?.target_ids ?? [];
+
+        for (const pageId of grantedPageIds) {
+          try {
+            const pageResponse = await axios.get(
+              `https://graph.facebook.com/v24.0/${pageId}`,
+              {
+                params: {
+                  fields:
+                    "id,name,access_token,tasks,picture.type(large){url},cover{source}",
+                  access_token: userAccessToken,
+                },
+              },
+            );
+            pages.push(pageResponse.data);
+          } catch (error: any) {
+            logger.warn(
+              { businessId, pageId, error: error?.response?.data ?? error?.message },
+              "Failed to fetch granted Page by ID",
+            );
+          }
+        }
+
+        if (pages.length > 0) {
+          logger.info(
+            { businessId, pageIds: pages.map((p: any) => p.id) },
+            "Resolved Pages from token granular scopes (not in /me/accounts)",
+          );
+        }
+      }
+
+      if (pages.length === 0) {
         logger.warn(
           { businessId, tokenDebug },
           "User has no Facebook Pages",
