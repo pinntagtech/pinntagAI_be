@@ -1468,7 +1468,7 @@ export class FacebookService {
       try {
         const eventsConfig = {
           method: "get",
-          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_urireactions.summary(total_count),comments.summary(total_count),shares&limit=100",
+          url: "https://graph.facebook.com/v20.0/me/events?fields=id,name,description,start_time,end_time,place,cover,is_canceled,is_online,is_draft,ticket_uri&limit=100",
           headers: {
             Authorization: `Bearer ${token}`,
           },
