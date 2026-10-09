@@ -738,8 +738,9 @@ export class FacebookService {
               `https://graph.facebook.com/v24.0/${pageId}`,
               {
                 params: {
+                  // `tasks` only exists on /me/accounts entries, not the Page node.
                   fields:
-                    "id,name,access_token,tasks,picture.type(large){url},cover{source}",
+                    "id,name,access_token,picture.type(large){url},cover{source}",
                   access_token: userAccessToken,
                 },
               },
