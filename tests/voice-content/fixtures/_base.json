@@ -1,0 +1,31 @@
+{
+  "requestId": "eval",
+  "contentType": "offer",
+  "locale": "en-US",
+  "nowIso": "2026-10-23T14:00:00.000Z",
+  "business": { "name": "Joe's Tavern", "industry": "Food & Drink", "isFoodAndDrink": true, "verified": false },
+  "outlets": [
+    {
+      "id": "66f0c1a2b3d4e5f601234567",
+      "name": "Downtown",
+      "address": "12 Peachtree St, Atlanta, GA",
+      "city": "Atlanta",
+      "timezone": "America/New_York",
+      "localDate": "2026-10-23",
+      "localWeekday": "fri"
+    },
+    {
+      "id": "66f0c1a2b3d4e5f601234568",
+      "name": "Midtown",
+      "address": "900 Peachtree St NE, Atlanta, GA",
+      "city": "Atlanta",
+      "timezone": "America/New_York",
+      "localDate": "2026-10-23",
+      "localWeekday": "fri"
+    }
+  ],
+  "allowedDiscountTypes": ["% Off", "$ Off", "BOGO", "Happy Hour", "Combo/Bundle", "Custom Deal"],
+  "maxDaysAhead": 7,
+  "recurringAllowed": true,
+  "maxTags": 5
+}

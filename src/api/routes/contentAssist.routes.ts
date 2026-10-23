@@ -12,6 +12,7 @@ const router = Router();
 // ===========================
 // All routes protected by internal API key
 // ===========================
+router.use(internalApiKeyGuard);
 
 /**
  * @route POST /content-assist/titles
@@ -71,7 +72,7 @@ const router = Router();
  *   }
  * }
  */
-router.post("/titles", internalApiKeyGuard, generateTitles);
+router.post("/titles", generateTitles);
 
 /**
  * @route POST /content-assist/titles/refresh
@@ -113,7 +114,7 @@ router.post("/titles", internalApiKeyGuard, generateTitles);
  * even with the same input parameters. Pass excludeTitles array to prevent
  * previously generated titles from appearing in the new results.
  */
-router.post("/titles/refresh", internalApiKeyGuard, refreshTitles);
+router.post("/titles/refresh", refreshTitles);
 
 /**
  * @route POST /content-assist/description
@@ -163,7 +164,7 @@ router.post("/titles/refresh", internalApiKeyGuard, refreshTitles);
  *   }
  * }
  */
-router.post("/description", internalApiKeyGuard, generateDescription);
+router.post("/description", generateDescription);
 
 /**
  * @route POST /content-assist/notification-copy
@@ -284,6 +285,6 @@ router.post("/description", internalApiKeyGuard, generateDescription);
  * - If AI fails or all variants are filtered, safe fallback templates are returned
  * - Title max 50 chars, body max 150 chars (enforced)
  */
-router.post("/notification-copy", internalApiKeyGuard, generateNotificationCopy);
+router.post("/notification-copy", generateNotificationCopy);
 
 export default router;

@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { Request, Response, NextFunction } from "express";
 import { env } from "../config/env.js";
 import { ApiKeyModel } from "../models/ApiKey.js";
@@ -10,8 +11,19 @@ type AuthCheck = {
 };
 
 /**
- * Optional incoming API-key protection for routes exposed to Pinntag backend.
+ * Constant-time key comparison. Hashing first gives equal-length buffers, so
+ * neither the content nor the length of the expected key leaks through timing.
+ */
+export function safeKeyEquals(given: string, expected: string): boolean {
+  const a = createHash("sha256").update(given).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+/**
+ * Incoming API-key protection for routes exposed to Pinntag backend.
  * Requires header: x-internal-api-key: <PINNTAG_BACKEND_TO_AI_KEY>
+ * Enforced unless ENFORCE_INTERNAL_API_KEY is explicitly false (never in production).
  */
 export function internalApiKeyGuard(
   req: Request,
@@ -20,7 +32,8 @@ export function internalApiKeyGuard(
 ) {
   if (!env.ENFORCE_INTERNAL_API_KEY) return next();
   const key = req.header("x-internal-api-key");
-  if (!key || key !== env.PINNTAG_BACKEND_TO_AI_KEY) {
+  const expected = env.PINNTAG_BACKEND_TO_AI_KEY;
+  if (!key || !expected || !safeKeyEquals(key, expected)) {
     return res.status(401).json({ success: false, error: "Unauthorized" });
   }
   return next();

@@ -20,10 +20,12 @@ const EnvSchema = z.object({
     .or(z.string().nonempty().startsWith("mongodb://")),
   ETL_BASE_URL: z.string().nonempty().url().or(z.string().startsWith("http")),
   ETL_API_KEY: z.string().min(1),
+  // On by default: the guard protects every route that spends OpenAI credit.
+  // Only an explicit "false" turns it off, and never in production.
   ENFORCE_INTERNAL_API_KEY: z.preprocess(
-    (v) => v === "true" || v === "1" || v === true,
+    (v) => v === undefined || v === "" ? undefined : v === "true" || v === "1" || v === true,
     z.boolean()
-  ).default(false),
+  ).default(true),
   PINNTAG_BACKEND_TO_AI_KEY: z.string().optional(),
   BACKEND_URL: z.string().url().optional(),
   PINNTAG_AI_TO_BACKEND_KEY: z.string().optional(),
@@ -72,6 +74,24 @@ const EnvSchema = z.object({
     (v) => v === "true" || v === "1" || v === true,
     z.boolean()
   ).default(false),
+  OPENAI_API_KEY: z.string().min(1),
+  // Model for POST /voice-content/draft; change without a deploy.
+  VOICE_CONTENT_LLM_MODEL: z.string().min(1).default("gpt-4o-mini"),
+}).superRefine((e, ctx) => {
+  if (e.NODE_ENV === "production" && !e.ENFORCE_INTERNAL_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ENFORCE_INTERNAL_API_KEY"],
+      message: "must be true in production",
+    });
+  }
+  if (e.ENFORCE_INTERNAL_API_KEY && !e.PINNTAG_BACKEND_TO_AI_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PINNTAG_BACKEND_TO_AI_KEY"],
+      message: "required when ENFORCE_INTERNAL_API_KEY is true",
+    });
+  }
 });
 
 export type Env = z.infer<typeof EnvSchema>;

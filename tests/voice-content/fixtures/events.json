@@ -1,0 +1,35 @@
+{
+  "slice": "Events, English and Spanish",
+  "cases": [
+    {
+      "id": "en-event-free",
+      "request": { "contentType": "business_event", "text": "live jazz night this saturday from 8 to 11 pm at midtown free entry" },
+      "expect": { "language": "en", "isFree": true, "participationCost": null, "outlets": ["Midtown"],
+        "schedule": { "fixed": [["2026-10-24", "20:00", "23:00"]] } }
+    },
+    {
+      "id": "en-event-paid-link",
+      "request": { "contentType": "business_event", "text": "wine tasting next thursday 6 to 8 tickets are 25 dollars book at https://joestavern.com/wine" },
+      "expect": { "language": "en", "isFree": false, "participationCost": "25", "bookingUrl": "https://joestavern.com/wine",
+        "outlets": ["Downtown", "Midtown"], "schedule": { "fixed": [["2026-10-29", "18:00", "20:00"]] } }
+    },
+    {
+      "id": "en-event-weekly",
+      "request": { "contentType": "business_event", "text": "trivia every wednesday 7 to 9 at downtown" },
+      "expect": { "language": "en", "outlets": ["Downtown"],
+        "schedule": { "recurring": { "startDate": "2026-10-28", "endDate": null, "weekDays": [["wed", "19:00", "21:00"]] } } }
+    },
+    {
+      "id": "es-event-free",
+      "request": { "contentType": "business_event", "locale": "es-US", "text": "noche de karaoke este sábado de 9 a 11 de la noche entrada gratis en Midtown" },
+      "expect": { "language": "es", "isFree": true, "participationCost": null, "outlets": ["Midtown"],
+        "schedule": { "fixed": [["2026-10-24", "21:00", "23:00"]] } }
+    },
+    {
+      "id": "es-event-paid-multiday",
+      "request": { "contentType": "business_event", "locale": "es-US", "text": "cata de cervezas este domingo y lunes de 5 a 7 de la tarde boletos a 15 dólares" },
+      "expect": { "language": "es", "isFree": false, "participationCost": "15", "outlets": ["Downtown", "Midtown"],
+        "schedule": { "fixed": [["2026-10-25", "17:00", "19:00"], ["2026-10-26", "17:00", "19:00"]] } }
+    }
+  ]
+}

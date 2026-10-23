@@ -10,6 +10,7 @@ export enum UsageType {
   IMAGE_EDIT = "image_edit",
   CHAT = "chat",
   AGENT_QUERY = "agent_query",
+  VOICE_CONTENT = "voice_content",
 }
 
 export enum ContentGenerationType {

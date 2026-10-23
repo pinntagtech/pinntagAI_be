@@ -1,0 +1,47 @@
+{
+  "slice": "Offers, English",
+  "cases": [
+    {
+      "id": "en-offer-contract-example",
+      "request": { "text": "happy hour this friday from 5 to 8 two drinks for 10 dollars at our downtown location" },
+      "expect": { "language": "en", "discountType": "Happy Hour", "discountValue": null, "outlets": ["Downtown"],
+        "schedule": { "fixed": [["2026-10-23", "17:00", "20:00"]] } }
+    },
+    {
+      "id": "en-offer-weekly-percent-both",
+      "request": { "text": "20 percent off all burgers every tuesday from 11 to 3 at both locations" },
+      "expect": { "language": "en", "discountType": "% Off", "discountValue": "20", "outlets": ["Downtown", "Midtown"],
+        "schedule": { "recurring": { "startDate": "2026-10-27", "endDate": null, "weekDays": [["tue", "11:00", "15:00"]] } } }
+    },
+    {
+      "id": "en-offer-weekend-bogo",
+      "request": { "text": "buy one get one free wings this weekend from noon to 9 pm midtown only" },
+      "expect": { "language": "en", "discountType": "BOGO", "discountValue": null, "outlets": ["Midtown"],
+        "schedule": { "fixed": [["2026-10-24", "12:00", "21:00"], ["2026-10-25", "12:00", "21:00"]] } }
+    },
+    {
+      "id": "en-offer-dollar-off-none-named",
+      "request": { "text": "five dollars off any large pizza tomorrow 4 to 10" },
+      "expect": { "language": "en", "discountType": "$ Off", "discountValue": "5", "outlets": ["Downtown", "Midtown"],
+        "schedule": { "fixed": [["2026-10-24", "16:00", "22:00"]] } }
+    },
+    {
+      "id": "en-offer-brunch-misheard",
+      "request": { "text": "15% off brunch sunday 10am to 2pm at down town" },
+      "expect": { "language": "en", "discountType": "% Off", "discountValue": "15", "outlets": ["Downtown"],
+        "schedule": { "fixed": [["2026-10-25", "10:00", "14:00"]] } }
+    },
+    {
+      "id": "en-offer-two-days",
+      "request": { "text": "half price appetizers this monday and wednesday 3 to 6 at mid town" },
+      "expect": { "language": "en", "discountType": "% Off", "discountValue": "50", "outlets": ["Midtown"],
+        "schedule": { "fixed": [["2026-10-26", "15:00", "18:00"], ["2026-10-28", "15:00", "18:00"]] } }
+    },
+    {
+      "id": "en-offer-today-friday",
+      "request": { "text": "this friday only 10 dollars off any bottle of wine from 6 to 10 pm at downtown" },
+      "expect": { "language": "en", "discountType": "$ Off", "discountValue": "10", "outlets": ["Downtown"],
+        "schedule": { "fixed": [["2026-10-23", "18:00", "22:00"]] } }
+    }
+  ]
+}

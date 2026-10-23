@@ -1,0 +1,41 @@
+{
+  "slice": "Offers, Spanish and mixed",
+  "cases": [
+    {
+      "id": "es-offer-hora-feliz",
+      "request": { "locale": "es-US", "text": "hora feliz este viernes de 5 a 8 de la tarde dos cervezas por 10 dólares en Downtown" },
+      "expect": { "language": "es", "discountType": "Happy Hour", "discountValue": null, "outlets": ["Downtown"],
+        "schedule": { "fixed": [["2026-10-23", "17:00", "20:00"]] } }
+    },
+    {
+      "id": "es-offer-2x1-weekly",
+      "request": { "locale": "es-US", "text": "2x1 en margaritas todos los martes de 6 a 9 de la noche en Midtown" },
+      "expect": { "language": "es", "discountType": "BOGO", "discountValue": null, "outlets": ["Midtown"],
+        "schedule": { "recurring": { "startDate": "2026-10-27", "endDate": null, "weekDays": [["tue", "18:00", "21:00"]] } } }
+    },
+    {
+      "id": "es-offer-fin-de-semana",
+      "request": { "locale": "es-MX", "text": "20 por ciento de descuento en toda la comida este fin de semana de 12 a 8 de la noche" },
+      "expect": { "language": "es", "discountType": "% Off", "discountValue": "20", "outlets": ["Downtown", "Midtown"],
+        "schedule": { "fixed": [["2026-10-24", "12:00", "20:00"], ["2026-10-25", "12:00", "20:00"]] } }
+    },
+    {
+      "id": "es-offer-spanglish-weekly",
+      "request": { "locale": "es-US", "text": "tenemos happy hour todos los jueves de 4 a 7 de la tarde con bebidas a mitad de precio en downtown" },
+      "expect": { "language": "es", "discountType": "Happy Hour", "outlets": ["Downtown"],
+        "schedule": { "recurring": { "startDate": "2026-10-29", "endDate": null, "weekDays": [["thu", "16:00", "19:00"]] } } }
+    },
+    {
+      "id": "es-offer-mediodia",
+      "request": { "locale": "es-US", "text": "5 dólares de descuento en el almuerzo este lunes desde el mediodía hasta las 3 de la tarde" },
+      "expect": { "language": "es", "discountType": "$ Off", "discountValue": "5", "outlets": ["Downtown", "Midtown"],
+        "schedule": { "fixed": [["2026-10-26", "12:00", "15:00"]] } }
+    },
+    {
+      "id": "es-offer-en-locale-hint-wrong",
+      "request": { "locale": "en-US", "text": "todos los domingos 2x1 en tacos de 2 a 4 de la tarde en Midtown" },
+      "expect": { "language": "es", "discountType": "BOGO", "outlets": ["Midtown"],
+        "schedule": { "recurring": { "startDate": "2026-10-25", "endDate": null, "weekDays": [["sun", "14:00", "16:00"]] } } }
+    }
+  ]
+}
