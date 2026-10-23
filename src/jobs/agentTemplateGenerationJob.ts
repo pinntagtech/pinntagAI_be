@@ -343,12 +343,7 @@ export class AgentTemplateGenerationJob {
           );
 
           const isBogo = occasion === "tuesday_twofer";
-          const isFreeItem = occasion === "sunday_selfcare";
-          const occasionPromotionType = isBogo
-            ? "bogo"
-            : isFreeItem
-            ? "free_item"
-            : "percentage_off";
+          const occasionPromotionType = isBogo ? "bogo" : "percentage_off";
           const occasionContentType = occasion === "saturday_special" ? "event" : "offer";
 
           const imageUrl = await this.generateGenericTemplateImage(
@@ -713,8 +708,7 @@ export class AgentTemplateGenerationJob {
       try {
         // Derive promotion context from occasion for image enrichment
         const isBogo = occasion === "tuesday_twofer";
-        const isFreeItem = occasion === "sunday_selfcare";
-        const occasionPromotionType = isBogo ? "bogo" : isFreeItem ? "free_item" : "percentage_off";
+        const occasionPromotionType = isBogo ? "bogo" : "percentage_off";
         const occasionContentType = occasion === "saturday_special" ? "event" : "offer";
 
         // Generate AI image with occasion-aware enriched context
@@ -935,10 +929,10 @@ export class AgentTemplateGenerationJob {
       return `Show two matching plated dishes${a ? ` such as ${a}` : ""} side by side to suggest a pair`;
     }
 
-    // Free-item / self-care → one hero dish plus a small bonus.
-    if (promo.includes("free item") || occasion === "sunday_selfcare") {
+    // Self-care → one calm hero dish.
+    if (occasion === "sunday_selfcare") {
       const a = pick(0);
-      return `Show a single beautifully plated signature dish${a ? ` like ${a}` : ""} with a small complimentary treat beside it`;
+      return `Show a single beautifully plated signature dish${a ? ` like ${a}` : ""} in a calm, relaxed setting`;
     }
 
     // Family / Saturday → a generous shared spread.

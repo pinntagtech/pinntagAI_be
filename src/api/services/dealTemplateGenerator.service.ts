@@ -569,11 +569,13 @@ export class DealTemplateGeneratorService {
       // ── Phase 1: choose promotion structure ──────────────────────────────
       const occasionForcedDiscount: Record<string, DiscountType> = {
         tuesday_twofer: DiscountType.BOGO,
-        sunday_selfcare: DiscountType.FREE_ITEM,
       };
       const forcedDiscount = occasionForcedDiscount[occasion];
 
-      const discountTypeOptions = Object.values(DiscountType).join(" | ");
+      // Free Item templates are no longer generated.
+      const discountTypeOptions = Object.values(DiscountType)
+        .filter((t) => t !== DiscountType.FREE_ITEM)
+        .join(" | ");
 
       const phase1Prompt = `You are a promotions strategist for a ${industry} business.
 
@@ -589,7 +591,6 @@ ${forcedDiscount
   - "${DiscountType.Percentage}" – e.g. 20% off (good for general, seasonal, holiday)
   - "${DiscountType.Flat}" – e.g. $5 off (good for high-ticket items / trending)
   - "${DiscountType.BOGO}" – buy one get one (good for social occasions, group visits)
-  - "${DiscountType.FREE_ITEM}" – a free add-on (good for self-care, loyalty, slow periods)
   - "${DiscountType.BUNDLE}" – combo/bundle deal (good for upselling)
   - "${DiscountType.HAPPY_HOUR}" – time-limited deal (good for slow periods)
   - "${DiscountType.FAMILY_FUN}" – family-oriented deal (good for saturday/group occasions)
@@ -607,7 +608,7 @@ Respond with ONLY a JSON object (no markdown):
 Rules:
 - percentOffValue: set to ${discount} when discountType is "${DiscountType.Percentage}", else null
 - dollarOffValue: pick a round dollar amount (e.g. 5, 10, 15) when discountType is "${DiscountType.Flat}", else null
-- bogoOrFreeItem: one short sentence (≤ 12 words) when discountType is "${DiscountType.BOGO}" or "${DiscountType.FREE_ITEM}", else null
+- bogoOrFreeItem: one short sentence (≤ 12 words) when discountType is "${DiscountType.BOGO}" or "${DiscountType.BUNDLE}", else null
 - contentType "event" only for saturday_special or social/community occasions; otherwise "offer"`;
 
       const phase1Response = await llm.chatCompletion({
@@ -627,6 +628,14 @@ Rules:
       const promo = JSON.parse(phase1Content);
       if (!promo.discountType || !promo.contentType) throw new Error("Invalid Phase 1 response format");
 
+      // Never persist a Free Item template, even if the model picks it anyway.
+      if (promo.discountType === DiscountType.FREE_ITEM) {
+        promo.discountType = DiscountType.Percentage;
+        promo.percentOffValue = parseInt(discount, 10) || 20;
+        promo.dollarOffValue = null;
+        promo.bogoOrFreeItem = null;
+      }
+
       // ── Build human-readable deal summary for Phase 2 ───────────────────
       let dealSummary: string;
       if (promo.discountType === DiscountType.Percentage && promo.percentOffValue) {
@@ -635,8 +644,6 @@ Rules:
         dealSummary = `$${promo.dollarOffValue} off`;
       } else if (promo.discountType === DiscountType.BOGO && promo.bogoOrFreeItem) {
         dealSummary = `BOGO – ${promo.bogoOrFreeItem}`;
-      } else if (promo.discountType === DiscountType.FREE_ITEM && promo.bogoOrFreeItem) {
-        dealSummary = `Free – ${promo.bogoOrFreeItem}`;
       } else if (promo.discountType === DiscountType.BUNDLE) {
         dealSummary = promo.bogoOrFreeItem || "Combo/Bundle deal";
       } else if (promo.discountType === DiscountType.HAPPY_HOUR) {
@@ -746,11 +753,10 @@ Respond with ONLY a JSON object:
           bogoOrFreeItem: "Buy one, get one at equal or lesser value",
         },
         sunday_selfcare: {
-          discountType: DiscountType.FREE_ITEM, contentType: "offer",
-          title: `Free Add-On This Sunday – Treat Yourself!`,
-          description:
-            "Enjoy a complimentary add-on with any service this Sunday. Slow down, treat yourself and end the week feeling refreshed – no extra cost, just book ahead.",
-          bogoOrFreeItem: "Free add-on with any service",
+          discountType: DiscountType.Percentage, contentType: "offer",
+          title: `${discount}% Off This Sunday – Treat Yourself!`,
+          description: `Take ${discount}% off this Sunday. Slow down, treat yourself and end the week feeling refreshed – just plan your visit ahead.`,
+          percentOffValue: discount,
         },
         saturday_special: {
           discountType: DiscountType.FAMILY_FUN, contentType: "event",

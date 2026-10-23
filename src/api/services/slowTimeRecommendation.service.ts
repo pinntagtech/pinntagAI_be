@@ -114,16 +114,17 @@ const TEMPLATE_LIBRARY: Record<
     occasion: "lapsed_likers",
     type: "spotlight",
     contentType: "reward",
-    title: "A Little Something, On the House",
+    title: "We Missed You — 15% Off This Week",
     description:
-      "Stop by this week and a free treat is waiting for you with any purchase. Our way of saying thanks for remembering us.",
+      "Stop by this week and take 15% off any purchase. Our way of saying thanks for remembering us.",
     callToAction: "Redeem this week",
     termsAndConditions:
       "Valid for 7 days. Show this post at checkout. One per customer.",
-    discountType: "Free Item",
+    discountType: "% Off",
+    suggestedDiscountValue: "15",
     bestTiming: { days: ["Tuesday", "Wednesday", "Thursday"] },
     rationale:
-      "People liked or saved you a while ago without coming back. A small free item brings them through the door.",
+      "People liked or saved you a while ago without coming back. A small welcome-back discount brings them through the door.",
   },
   midweek_dip: {
     occasion: "midweek_dip",

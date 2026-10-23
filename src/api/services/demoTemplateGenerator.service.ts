@@ -776,9 +776,9 @@ export class DemoTemplateGeneratorService {
         percentOffValue: 25,
       }, // Saturday
       {
-        discountType: DiscountType.FREE_ITEM,
+        discountType: DiscountType.Percentage,
         contentType: "offer",
-        bogoOrFreeItem: "Free add-on with any purchase",
+        percentOffValue: 25,
       }, // Sunday
       // Extra
       {
